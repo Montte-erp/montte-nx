@@ -45,7 +45,7 @@ import {
 } from "@/features/bills/ui/bills-columns";
 import { BillForm } from "@/features/bills/ui/bills-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
 const [useBillsPayableTableState] =
@@ -155,7 +155,7 @@ interface BillsListProps {
 function BillsList({ type, tableState, onTableStateChange }: BillsListProps) {
    const [sorting, setSorting] = useState<SortingState>([]);
    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
    const { data } = useSuspenseQuery(
@@ -188,22 +188,22 @@ function BillsList({ type, tableState, onTableStateChange }: BillsListProps) {
 
    const handlePay = useCallback(
       (bill: BillRow) => {
-         openDialogStack({
+         openCredenza({
             children: (
-               <BillPayDialogStack bill={bill} onSuccess={closeDialogStack} />
+               <BillPayDialogStack bill={bill} onSuccess={closeCredenza} />
             ),
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
    );
 
    const handleEdit = useCallback(
       (bill: BillRow) => {
-         openDialogStack({
-            children: <BillForm bill={bill} onSuccess={closeDialogStack} />,
+         openCredenza({
+            children: <BillForm bill={bill} onSuccess={closeCredenza} />,
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
    );
 
    const handleCancel = useCallback(

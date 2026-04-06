@@ -51,7 +51,7 @@ import {
 } from "./-inventory/inventory-product-columns";
 import { InventoryProductForm } from "./-inventory/inventory-product-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
 const searchSchema = z.object({
@@ -123,7 +123,7 @@ function InventoryList() {
       orpc.inventory.getProducts.queryOptions({}),
    );
 
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
@@ -166,30 +166,30 @@ function InventoryList() {
 
    const handleMovement = useCallback(
       (product: InventoryProductRow) => {
-         openDialogStack({
+         openCredenza({
             children: (
                <InventoryMovementDialogStack
-                  onSuccess={closeDialogStack}
+                  onSuccess={closeCredenza}
                   product={product}
                />
             ),
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
    );
 
    const handleHistory = useCallback(
       (product: InventoryProductRow) => {
-         openDialogStack({
+         openCredenza({
             children: <InventoryHistorySheet product={product} />,
          });
       },
-      [openDialogStack],
+      [openCredenza],
    );
 
    const handleEdit = useCallback(
       (product: InventoryProductRow) => {
-         openDialogStack({
+         openCredenza({
             children: (
                <InventoryProductForm
                   defaultValues={{
@@ -202,12 +202,12 @@ function InventoryList() {
                      sellingPrice: product.sellingPrice,
                   }}
                   mode="edit"
-                  onSuccess={closeDialogStack}
+                  onSuccess={closeCredenza}
                />
             ),
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
    );
 
    const handleArchive = useCallback(
@@ -297,15 +297,15 @@ function InventoryList() {
 // =============================================================================
 
 function InventoryPage() {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
 
    const handleCreate = useCallback(() => {
-      openDialogStack({
+      openCredenza({
          children: (
-            <InventoryProductForm mode="create" onSuccess={closeDialogStack} />
+            <InventoryProductForm mode="create" onSuccess={closeCredenza} />
          ),
       });
-   }, [openDialogStack, closeDialogStack]);
+   }, [openCredenza, closeCredenza]);
 
    return (
       <main className="flex flex-col gap-4">

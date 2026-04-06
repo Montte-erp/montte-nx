@@ -1,5 +1,9 @@
 import { getOrganizationMembers } from "@core/database/repositories/auth-repository";
-import { member, organization, subscription } from "@core/database/schemas/auth";
+import {
+   member,
+   organization,
+   subscription,
+} from "@core/database/schemas/auth";
 import { generatePresignedPutUrl } from "@core/files/client";
 import { minioClient } from "@/integrations/singletons";
 import { WebAppError } from "@core/logging/errors";

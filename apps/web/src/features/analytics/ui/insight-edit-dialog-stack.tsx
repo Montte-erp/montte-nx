@@ -7,11 +7,12 @@ import type {
 import { insightConfigSchema } from "@packages/analytics/types";
 import { Button } from "@packages/ui/components/button";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Input } from "@packages/ui/components/input";
 import { cn } from "@packages/ui/lib/utils";
 import {
@@ -25,7 +26,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
 import type { InsightType } from "@/features/analytics/hooks/use-insight-config";
 import { useInsightConfig } from "@/features/analytics/hooks/use-insight-config";
-import { closeDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 import { BreakdownQueryBuilder } from "./breakdown-query-builder";
 import {
@@ -54,6 +55,7 @@ function InsightEditDialogStackContent({
    insightId,
 }: InsightEditDialogStackProps) {
    const queryClient = useQueryClient();
+   const { closeCredenza } = useCredenza();
 
    const { data: insight } = useSuspenseQuery(
       orpc.insights.getById.queryOptions({ input: { id: insightId } }),
@@ -86,7 +88,7 @@ function InsightEditDialogStackContent({
                   input: { id: insightId },
                }).queryKey,
             });
-            closeDialogStack();
+            closeCredenza();
          },
          onError: () => toast.error("Erro ao atualizar insight"),
       }),
@@ -105,17 +107,17 @@ function InsightEditDialogStackContent({
    }, [insightId, name, config, updateMutation]);
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader className="pb-3">
-            <DialogStackTitle className="text-base">
+      <>
+         <CredenzaHeader className="pb-3">
+            <CredenzaTitle className="text-base">
                {insight?.name ?? "Configurar insight"}
-            </DialogStackTitle>
-            <DialogStackDescription>
+            </CredenzaTitle>
+            <CredenzaDescription>
                Ajuste as configurações do insight.
-            </DialogStackDescription>
-         </DialogStackHeader>
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-         <div className="flex-1 p-0 overflow-hidden">
+         <CredenzaBody className="p-0 overflow-hidden">
             <div className="flex h-[500px]">
                <aside className="w-[220px] shrink-0 border-r flex flex-col overflow-y-auto">
                   <div className="p-3 flex flex-col gap-4">
@@ -191,10 +193,10 @@ function InsightEditDialogStackContent({
                   </ErrorBoundary>
                </div>
             </div>
-         </div>
+         </CredenzaBody>
 
-         <div className="border-t px-4 py-4">
-            <Button onClick={closeDialogStack} variant="outline">
+         <CredenzaFooter>
+            <Button onClick={closeCredenza} variant="outline">
                Cancelar
             </Button>
             <Button disabled={updateMutation.isPending} onClick={handleSave}>
@@ -203,8 +205,8 @@ function InsightEditDialogStackContent({
                )}
                Salvar
             </Button>
-         </div>
-      </DialogStackContent>
+         </CredenzaFooter>
+      </>
    );
 }
 

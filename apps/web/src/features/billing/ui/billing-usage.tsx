@@ -34,9 +34,7 @@ function getCategoryFromEventName(eventName: string): string {
 function humanizeEventName(eventName: string): string {
    const parts = eventName.split(".");
    const name = parts[parts.length - 1] ?? eventName;
-   return name
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
+   return name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function formatBRL(value: number): string {
@@ -72,11 +70,14 @@ function EventRow({ item }: { item: MeterUsageItem }) {
                      {item.used.toLocaleString("pt-BR")}
                      {hasLimit && (
                         <span className="text-muted-foreground">
-                           {" "}/ {item.freeTierLimit.toLocaleString("pt-BR")}
+                           {" "}
+                           / {item.freeTierLimit.toLocaleString("pt-BR")}
                         </span>
                      )}
                   </p>
-                  <p className="text-xs text-muted-foreground">Uso / Gratuito</p>
+                  <p className="text-xs text-muted-foreground">
+                     Uso / Gratuito
+                  </p>
                </div>
                <div className="text-right">
                   <p className="tabular-nums font-medium">
@@ -98,7 +99,6 @@ function EventRow({ item }: { item: MeterUsageItem }) {
       </div>
    );
 }
-
 
 export function BillingUsage() {
    const { data: meterUsage } = useSuspenseQuery(

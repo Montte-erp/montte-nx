@@ -13,6 +13,7 @@
 ## Task 1: Migrate Redis from per-event keys to hash per org
 
 **Files:**
+
 - Modify: `packages/events/src/credits.ts`
 
 Currently uses separate Redis string keys `usage:{orgId}:{eventName}`. Migrate to a single Redis hash `usage:{orgId}` with fields per event name. TTL is set on the hash key itself.
@@ -106,6 +107,7 @@ git commit -m "refactor(events): migrate Redis usage tracking to hash per org"
 ## Task 2: Update FREE_TIER_LIMITS, EVENT_PRICES, STRIPE_METER_EVENTS in constants
 
 **Files:**
+
 - Modify: `core/stripe/src/constants.ts`
 
 Remove `nfe.emitted` and `document.signed` (not yet implemented). Add all new events from MON-185 spec.
@@ -216,6 +218,7 @@ git commit -m "feat(stripe): expand event catalog constants for pay-as-you-go mo
 ## Task 3: Remove materialized views from schema
 
 **Files:**
+
 - Modify: `core/database/src/schemas/event-views.ts`
 - Modify: `core/database/src/schema.ts`
 
@@ -236,6 +239,7 @@ Remove the exports for: `dailyUsageByEvent`, `currentMonthUsageByEvent`, `curren
 **Step 3: Remove the export from `core/database/src/schema.ts`**
 
 If the file is empty after removals:
+
 ```typescript
 // Remove this line from schema.ts:
 export * from "@core/database/schemas/event-views";
@@ -255,6 +259,7 @@ git commit -m "feat(database): remove billing materialized views (Stripe is sour
 ## Task 4: Remove reconcile logic and refresh-views logic
 
 **Files:**
+
 - Delete: `packages/events/src/reconcile.ts`
 - Delete: `packages/events/src/refresh-views.ts`
 - Delete: `apps/worker/src/jobs/reconcile-credits.ts`
@@ -356,6 +361,7 @@ git commit -m "feat(worker): remove billing reconciliation cron and materialized
 ## Task 5: Update billing oRPC router to query Stripe directly
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/orpc/router/billing.ts`
 
 Remove `getCurrentUsage`, `getStorageUsage`, `getCategoryUsage`, `getDailyUsage` (all rely on materialized views). Replace with `getMeterUsage` that queries Stripe Meters API for current period usage per event.
@@ -382,7 +388,8 @@ export const getInvoices = protectedProcedure
    )
    .handler(async ({ context, input }) => {
       const { db, stripeClient, userId } = context;
-      if (!stripeClient) throw WebAppError.internal("Stripe client not configured");
+      if (!stripeClient)
+         throw WebAppError.internal("Stripe client not configured");
 
       const userRecord = await db.query.user.findFirst({
          where: (fields, { eq }) => eq(fields.id, userId),
@@ -415,7 +422,8 @@ export const getInvoices = protectedProcedure
 export const getUpcomingInvoice = protectedProcedure.handler(
    async ({ context }) => {
       const { db, stripeClient, userId } = context;
-      if (!stripeClient) throw WebAppError.internal("Stripe client not configured");
+      if (!stripeClient)
+         throw WebAppError.internal("Stripe client not configured");
 
       const userRecord = await db.query.user.findFirst({
          where: (fields, { eq }) => eq(fields.id, userId),
@@ -467,89 +475,86 @@ export const getPaymentStatus = protectedProcedure.handler(
    },
 );
 
-export const getMeterUsage = protectedProcedure.handler(
-   async ({ context }) => {
-      const { db, stripeClient, userId } = context;
+export const getMeterUsage = protectedProcedure.handler(async ({ context }) => {
+   const { db, stripeClient, userId } = context;
 
-      if (!stripeClient) {
-         return buildLocalUsageFallback();
-      }
+   if (!stripeClient) {
+      return buildLocalUsageFallback();
+   }
 
-      const userRecord = await db.query.user.findFirst({
-         where: (fields, { eq }) => eq(fields.id, userId),
-      });
+   const userRecord = await db.query.user.findFirst({
+      where: (fields, { eq }) => eq(fields.id, userId),
+   });
 
-      if (!userRecord?.stripeCustomerId) {
-         return buildLocalUsageFallback();
-      }
+   if (!userRecord?.stripeCustomerId) {
+      return buildLocalUsageFallback();
+   }
 
-      try {
-         const now = Math.floor(Date.now() / 1000);
-         const startOfMonth = Math.floor(
-            new Date(
-               new Date().getFullYear(),
-               new Date().getMonth(),
-               1,
-            ).getTime() / 1000,
-         );
+   try {
+      const now = Math.floor(Date.now() / 1000);
+      const startOfMonth = Math.floor(
+         new Date(
+            new Date().getFullYear(),
+            new Date().getMonth(),
+            1,
+         ).getTime() / 1000,
+      );
 
-         const meterEventNames = Object.values(STRIPE_METER_EVENTS);
-         const meters = await stripeClient.billing.meters.list({ limit: 100 });
+      const meterEventNames = Object.values(STRIPE_METER_EVENTS);
+      const meters = await stripeClient.billing.meters.list({ limit: 100 });
 
-         const meterByEventName = new Map(
-            meters.data.map((m) => [m.event_name, m.id]),
-         );
+      const meterByEventName = new Map(
+         meters.data.map((m) => [m.event_name, m.id]),
+      );
 
-         const usageByEvent = await Promise.all(
-            Object.entries(STRIPE_METER_EVENTS).map(
-               async ([eventName, meterEventName]) => {
-                  const meterId = meterByEventName.get(meterEventName);
-                  if (!meterId) {
-                     return {
-                        eventName,
-                        used: 0,
-                        freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
-                        pricePerEvent: EVENT_PRICES[eventName] ?? "0",
-                     };
-                  }
+      const usageByEvent = await Promise.all(
+         Object.entries(STRIPE_METER_EVENTS).map(
+            async ([eventName, meterEventName]) => {
+               const meterId = meterByEventName.get(meterEventName);
+               if (!meterId) {
+                  return {
+                     eventName,
+                     used: 0,
+                     freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
+                     pricePerEvent: EVENT_PRICES[eventName] ?? "0",
+                  };
+               }
 
-                  try {
-                     const summary =
-                        await stripeClient.billing.meters.listEventSummaries(
-                           meterId,
-                           {
-                              customer: userRecord.stripeCustomerId!,
-                              start_time: startOfMonth,
-                              end_time: now,
-                              value_grouping_window: "month",
-                           },
-                        );
-                     const used =
-                        summary.data[0]?.aggregated_value ?? 0;
-                     return {
-                        eventName,
-                        used,
-                        freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
-                        pricePerEvent: EVENT_PRICES[eventName] ?? "0",
-                     };
-                  } catch {
-                     return {
-                        eventName,
-                        used: 0,
-                        freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
-                        pricePerEvent: EVENT_PRICES[eventName] ?? "0",
-                     };
-                  }
-               },
-            ),
-         );
+               try {
+                  const summary =
+                     await stripeClient.billing.meters.listEventSummaries(
+                        meterId,
+                        {
+                           customer: userRecord.stripeCustomerId!,
+                           start_time: startOfMonth,
+                           end_time: now,
+                           value_grouping_window: "month",
+                        },
+                     );
+                  const used = summary.data[0]?.aggregated_value ?? 0;
+                  return {
+                     eventName,
+                     used,
+                     freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
+                     pricePerEvent: EVENT_PRICES[eventName] ?? "0",
+                  };
+               } catch {
+                  return {
+                     eventName,
+                     used: 0,
+                     freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
+                     pricePerEvent: EVENT_PRICES[eventName] ?? "0",
+                  };
+               }
+            },
+         ),
+      );
 
-         return usageByEvent;
-      } catch {
-         throw WebAppError.internal("Failed to fetch meter usage");
-      }
-   },
-);
+      return usageByEvent;
+   } catch {
+      throw WebAppError.internal("Failed to fetch meter usage");
+   }
+});
 
 function buildLocalUsageFallback() {
    return Object.keys(FREE_TIER_LIMITS).map((eventName) => ({
@@ -581,6 +586,7 @@ git commit -m "feat(billing): replace materialized view queries with Stripe Mete
 ## Task 6: Update billing UI to use getMeterUsage
 
 **Files:**
+
 - Modify: `apps/web/src/features/billing/ui/billing-usage.tsx`
 - Modify: `apps/web/src/features/billing/ui/billing-overview.tsx` (check if it uses getCurrentUsage)
 
@@ -595,6 +601,7 @@ grep -n "getCurrentUsage\|getStorageUsage\|getCategoryUsage\|getDailyUsage" apps
 Replace the `useQuery` call for `getDailyUsage` with `getMeterUsage`. Display a table of events grouped by category with: event name, used this month, free tier limit, price per event, overage count.
 
 Key categories to display (map from event name prefix):
+
 - `finance.*` → "Financeiro"
 - `ai.*` → "Inteligência Artificial"
 - `workflow.*` → "Automações"
@@ -607,6 +614,7 @@ Key categories to display (map from event name prefix):
 - `payment.*` → "Pagamentos"
 
 For each event row show:
+
 - Event display name (from event name, humanized)
 - Used / Free limit (e.g. "150 / 1.000")
 - Price per event (e.g. "R$ 0,001")
@@ -638,6 +646,7 @@ bun run typecheck 2>&1 | head -60
 **Step 2: Fix each error**
 
 Common errors to expect:
+
 - Imports of `currentMonthUsageByCategory`, `currentMonthStorageCost`, `dailyUsageByEvent`, `currentMonthUsageByEvent` from `@core/database/schema` — remove usages
 - Imports of `reconcileUsageCounters` from `@packages/events/reconcile` — remove
 - Imports of `refreshUsageViews` from `@packages/events/refresh-views` — remove
@@ -662,6 +671,7 @@ git commit -m "fix: resolve type errors after billing migration"
 ## Task 8: Update seed-event-catalog.ts script
 
 **Files:**
+
 - Modify: `scripts/seed-event-catalog.ts`
 
 The seed script needs to include all new events from the updated `FREE_TIER_LIMITS` / `EVENT_PRICES` constants. Verify it reads from constants rather than hardcoding — if it does, it may work automatically.

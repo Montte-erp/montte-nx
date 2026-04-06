@@ -13,6 +13,7 @@
 ### Task 1: Create organization-config schema
 
 **Files:**
+
 - Create: `core/database/src/schemas/organization-config.ts`
 - Modify: `core/database/src/schema.ts`
 
@@ -105,6 +106,7 @@ export type TipoRotulo = (typeof tipoRotuloEnum.enumValues)[number];
 **Step 2: Export from schema.ts**
 
 In `core/database/src/schema.ts`, add after the last export line:
+
 ```typescript
 export * from "@core/database/schemas/organization-config";
 ```
@@ -114,6 +116,7 @@ export * from "@core/database/schemas/organization-config";
 ```bash
 bun run db:push
 ```
+
 Expected: Two new tables created, two new enums created.
 
 **Step 4: Commit**
@@ -128,6 +131,7 @@ git commit -m "feat(database): add organizacao_modulo and organizacao_rotulo_con
 ### Task 2: Replace DEFAULT_CATEGORIES with EMPRESARIAL preset seeder
 
 **Files:**
+
 - Modify: `core/database/src/repositories/categories-repository.ts`
 
 **Step 1: Replace DEFAULT_CATEGORIES and add seedEmpresarialCategories**
@@ -137,19 +141,21 @@ Remove the `DEFAULT_CATEGORIES` constant and `seedDefaultCategories` function. A
 The tree structure (use Portuguese names, `level` is auto-derived from presence of parentId):
 
 **Income (receita):**
+
 - Vendas
-  - Produtos
-  - Serviços
+   - Produtos
+   - Serviços
 - Outras receitas
 
 **Expense (despesa):**
+
 - Custos
-  - CMV (Custo da Mercadoria Vendida)
-  - Serviços de Terceiros
+   - CMV (Custo da Mercadoria Vendida)
+   - Serviços de Terceiros
 - Despesas Operacionais
-  - Administrativo
-  - Comercial
-  - Marketing
+   - Administrativo
+   - Comercial
+   - Marketing
 - Pessoal
 - Impostos
 - Tarifas Bancárias
@@ -173,10 +179,7 @@ const EMPRESARIAL_CATEGORIES: CategorySeed[] = [
    {
       name: "Custos",
       type: "expense",
-      children: [
-         { name: "CMV" },
-         { name: "Serviços de Terceiros" },
-      ],
+      children: [{ name: "CMV" }, { name: "Serviços de Terceiros" }],
    },
    {
       name: "Despesas Operacionais",
@@ -235,9 +238,11 @@ export async function seedEmpresarialCategories(
 **Step 2: Update all callers of seedDefaultCategories**
 
 Search for any usages of `seedDefaultCategories`:
+
 ```bash
 grep -r "seedDefaultCategories" /home/yorizel/Documents/montte-nx --include="*.ts" --include="*.tsx"
 ```
+
 Replace each call with `seedEmpresarialCategories`.
 
 **Step 3: Commit**
@@ -252,6 +257,7 @@ git commit -m "feat(database): replace DEFAULT_CATEGORIES with EMPRESARIAL prese
 ### Task 3: Create organization-config repository
 
 **Files:**
+
 - Create: `core/database/src/repositories/organization-config-repository.ts`
 
 ```typescript
@@ -353,9 +359,13 @@ export async function getOrganizacaoRotuloConfig(
 **Step 4: Add relations to `core/database/src/relations.ts`**
 
 Check if relations.ts exists, open it, and add:
+
 ```typescript
 import { relations } from "drizzle-orm";
-import { organizacaoModulo, organizacaoRotuloConfig } from "@core/database/schemas/organization-config";
+import {
+   organizacaoModulo,
+   organizacaoRotuloConfig,
+} from "@core/database/schemas/organization-config";
 // (add these relations if the file uses drizzle relations)
 ```
 
@@ -373,11 +383,13 @@ git commit -m "feat(database): add organization-config repository with seed, get
 ### Task 4: Apply preset at onboarding
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/orpc/router/onboarding.ts`
 
 **Step 1: Import seedOrganizacaoConfig and seedEmpresarialCategories in the onboarding router**
 
 Add to the imports at top of onboarding.ts:
+
 ```typescript
 import { seedEmpresarialCategories } from "@core/database/repositories/categories-repository";
 import { seedOrganizacaoConfig } from "@core/database/repositories/organization-config-repository";
@@ -413,6 +425,7 @@ git commit -m "feat(onboarding): seed empresarial categories and module config a
 ### Task 5: Create organization-config oRPC router
 
 **Files:**
+
 - Create: `apps/web/src/integrations/orpc/router/organization-config.ts`
 - Modify: `apps/web/src/integrations/orpc/router/index.ts`
 
@@ -460,11 +473,13 @@ export const getRotuloConfig = protectedProcedure.handler(
 In `apps/web/src/integrations/orpc/router/index.ts`:
 
 Add import:
+
 ```typescript
 import * as organizationConfigRouter from "./organization-config";
 ```
 
 Add to the exported object:
+
 ```typescript
 organizationConfig: organizationConfigRouter,
 ```
@@ -481,6 +496,7 @@ git commit -m "feat(orpc): add organization-config router (getModules, updateMod
 ### Task 6: Create useOrganizationModules hook and wire into nav
 
 **Files:**
+
 - Create: `apps/web/src/layout/dashboard/hooks/use-organization-modules.ts`
 - Modify: `apps/web/src/layout/dashboard/ui/sidebar-nav.tsx`
 - Modify: `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts`
@@ -528,12 +544,14 @@ export function useOrganizationModules() {
 **Step 2: Add `moduleKey` to NavItemDef type in sidebar-nav-items.ts**
 
 In `NavItemDef`, add optional field:
+
 ```typescript
 /** Modulo enum key — if set, item is hidden when that module is disabled */
 moduleKey?: import("@core/database/schemas/organization-config").Modulo;
 ```
 
 Then set `moduleKey` on the relevant nav items:
+
 - `bank-accounts` → `moduleKey: "CONTAS"`
 - `credit-cards` → `moduleKey: "CARTOES"`
 - `goals` → `moduleKey: "PLANEJAMENTO"`
@@ -545,6 +563,7 @@ Then set `moduleKey` on the relevant nav items:
 **Step 3: Integrate into SidebarDefaultItems and NavGroup in sidebar-nav.tsx**
 
 In `SidebarDefaultItems`, import and use `useOrganizationModules`:
+
 ```tsx
 const { isModuleEnabled } = useOrganizationModules();
 
@@ -586,13 +605,18 @@ git commit -m "feat(ui): wire organizacao_modulo config into sidebar nav visibil
 ### Task 7: Add relations.ts entry for new tables
 
 **Files:**
+
 - Modify: `core/database/src/relations.ts`
 
 **Step 1: Read relations.ts and add relations for the new tables if the file uses drizzle `relations()`**
 
 Open `core/database/src/relations.ts`. If it defines relations for other tables, add:
+
 ```typescript
-import { organizacaoModulo, organizacaoRotuloConfig } from "@core/database/schemas/organization-config";
+import {
+   organizacaoModulo,
+   organizacaoRotuloConfig,
+} from "@core/database/schemas/organization-config";
 // No foreign key relations needed since teamId references auth.team which is outside drizzle schema control
 // Skip if not needed
 ```
@@ -604,6 +628,7 @@ If the file only exports from schemas without explicit drizzle relations, no cha
 ```bash
 bun run typecheck
 ```
+
 Fix any type errors before committing.
 
 **Step 3: Final commit**

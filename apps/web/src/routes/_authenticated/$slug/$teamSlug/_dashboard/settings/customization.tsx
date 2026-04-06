@@ -159,14 +159,17 @@ function PreferencesSectionContent() {
       setHasConsent(!posthog.has_opted_out_capturing());
    }, [posthog]);
 
-   const handleConsentChange = useCallback((checked: boolean) => {
-      if (checked) {
-         posthog.opt_in_capturing();
-      } else {
-         posthog.opt_out_capturing();
-      }
-      setHasConsent(checked);
-   }, [posthog]);
+   const handleConsentChange = useCallback(
+      (checked: boolean) => {
+         if (checked) {
+            posthog.opt_in_capturing();
+         } else {
+            posthog.opt_out_capturing();
+         }
+         setHasConsent(checked);
+      },
+      [posthog],
+   );
 
    return (
       <div className="space-y-6">

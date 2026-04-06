@@ -13,7 +13,13 @@ import {
 import type { Redis } from "@core/redis/connection";
 import type { StripeClient } from "@core/stripe";
 import { sanitizeData } from "@core/utils/sanitization";
-import { auth, db, posthog, redis, stripeClient } from "@/integrations/singletons";
+import {
+   auth,
+   db,
+   posthog,
+   redis,
+   stripeClient,
+} from "@/integrations/singletons";
 
 export interface ORPCContext {
    headers: Headers;

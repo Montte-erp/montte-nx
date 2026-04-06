@@ -5,6 +5,7 @@
 **Goal:** Remove custom feedback UI wrappers and `@packages/feedback`. Use PostHog native surveys directly via `posthog.renderSurvey(id)`. Keep the early-access banner but drive its CTA from a typed `POSTHOG_SURVEYS` config. Make sidebar stage badges dynamically driven by PostHog `earlyAccessFeatures` — no hardcoded stages.
 
 **Architecture:**
+
 - `core/posthog` owns three config files: `surveys.ts` (survey ID map), `feature-flags.ts` (flag key const + type). Both server and client import from there.
 - `EarlyAccessBannerTemplate` gets a `surveyId` field instead of `form`. Clicking the CTA calls `posthog.renderSurvey(surveyId)` directly — no wrapper helper.
 - Feature flag hooks (`useFeatureFlagEnabled`, `useFeatureFlagVariantKey`, etc.) are imported directly from `posthog-js/react` at the call site — never re-exported via `client.tsx`.
@@ -20,6 +21,7 @@
 `client.tsx` currently has: a router pageview tracker, thin wrappers (`identifyClient`, `setClientGroup`, `captureClientEvent`) over `posthog.identify/group/capture`, and a `usePostHog` re-export. None of these belong — PostHog React provider handles pageviews, and thin wrappers over a public API add no value. When code needs PostHog, it uses `posthog-js` or `posthog-js/react` directly.
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/posthog/client.tsx`
 - Modify: `apps/web/src/routes/__root.tsx` (remove `PosthogRouterTracker`)
 - Modify: `apps/web/src/layout/dashboard/ui/dashboard-layout.tsx` (replace helper calls with a colocated hook)
@@ -28,6 +30,7 @@
 **Step 1: Delete from client.tsx**
 
 Remove entirely:
+
 - `identifyClient` function
 - `setClientGroup` function
 - `captureClientEvent` function
@@ -38,6 +41,7 @@ Remove entirely:
 - The `useState` and `useEffect` imports (if now unused)
 
 Keep:
+
 - `PostHogWrapper` provider component
 - `EarlyAccessFeature`, `EarlyAccessStage`, `normalizeEarlyAccessStage` types (still consumed by `use-early-access.tsx`)
 
@@ -86,9 +90,10 @@ export function PostHogWrapper({
 
 Remove the `hasConsent` prop from `PostHogWrapper` entirely — it was `opt_out_capturing_by_default: !hasConsent`. PostHog's localStorage-persisted opt-out takes over (set up in Telemetry task).
 
-**Step 2: Remove PosthogRouterTracker from __root.tsx**
+**Step 2: Remove PosthogRouterTracker from \_\_root.tsx**
 
 Open `apps/web/src/routes/__root.tsx`. Remove:
+
 - The `PosthogRouterTracker` import from `@/integrations/posthog/client`
 - The `<PosthogRouterTracker location={...} />` JSX element
 
@@ -103,38 +108,38 @@ import { usePostHog } from "posthog-js/react";
 import { useEffect } from "react";
 
 type IdentityProps = {
-  userId: string | undefined;
-  email: string | undefined;
-  name: string | undefined;
-  organizationId: string | undefined;
-  organizationName: string | undefined;
-  organizationSlug: string | undefined;
+   userId: string | undefined;
+   email: string | undefined;
+   name: string | undefined;
+   organizationId: string | undefined;
+   organizationName: string | undefined;
+   organizationSlug: string | undefined;
 };
 
 export function usePostHogIdentity({
-  userId,
-  email,
-  name,
-  organizationId,
-  organizationName,
-  organizationSlug,
+   userId,
+   email,
+   name,
+   organizationId,
+   organizationName,
+   organizationSlug,
 }: IdentityProps) {
-  const posthog = usePostHog();
+   const posthog = usePostHog();
 
-  const identify = useStableHandler(() => {
-    if (!userId) return;
-    posthog.identify(userId, { email, name });
-    if (organizationId) {
-      posthog.group("organization", organizationId, {
-        name: organizationName,
-        slug: organizationSlug,
-      });
-    }
-  });
+   const identify = useStableHandler(() => {
+      if (!userId) return;
+      posthog.identify(userId, { email, name });
+      if (organizationId) {
+         posthog.group("organization", organizationId, {
+            name: organizationName,
+            slug: organizationSlug,
+         });
+      }
+   });
 
-  useEffect(() => {
-    identify();
-  }, [userId, organizationId, identify]);
+   useEffect(() => {
+      identify();
+   }, [userId, organizationId, identify]);
 }
 ```
 
@@ -146,12 +151,12 @@ Open `dashboard-layout.tsx`. Replace the `useEffect` that calls `identifyClient`
 import { usePostHogIdentity } from "./-dashboard/use-posthog-identity";
 
 usePostHogIdentity({
-  userId: session?.user?.id,
-  email: session?.user?.email,
-  name: session?.user?.name,
-  organizationId: activeOrganization?.id,
-  organizationName: activeOrganization?.name,
-  organizationSlug: activeOrganization?.slug,
+   userId: session?.user?.id,
+   email: session?.user?.email,
+   name: session?.user?.name,
+   organizationId: activeOrganization?.id,
+   organizationName: activeOrganization?.name,
+   organizationSlug: activeOrganization?.slug,
 });
 ```
 
@@ -180,6 +185,7 @@ git commit -m "feat: slim down posthog client.tsx, replace wrappers with direct 
 **Context:** `telemetryConsent` is stored as a Better Auth `additionalFields` on the `user` table and passed to `PostHogWrapper` as `hasConsent`. The goal is to delete that DB field entirely and use PostHog's own `posthog.opt_out_capturing()` / `posthog.opt_in_capturing()` / `posthog.has_opted_out_capturing()` APIs, which persist to localStorage automatically.
 
 **Files:**
+
 - Modify: `core/authentication/src/server.ts` — remove `telemetryConsent` from `additionalFields`
 - Modify: `apps/web/src/routes/__root.tsx` — remove `hasConsent` prop from `PostHogWrapper` call sites
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/customization.tsx` — replace DB mutation with PostHog hook calls
@@ -217,23 +223,23 @@ import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-w
 import { usePostHog } from "posthog-js/react";
 
 function PreferencesSectionContent() {
-  const posthog = usePostHog();
-  const [hasConsent, setHasConsent] = useState(true);
+   const posthog = usePostHog();
+   const [hasConsent, setHasConsent] = useState(true);
 
-  useIsomorphicLayoutEffect(() => {
-    setHasConsent(!posthog.has_opted_out_capturing());
-  }, [posthog]);
+   useIsomorphicLayoutEffect(() => {
+      setHasConsent(!posthog.has_opted_out_capturing());
+   }, [posthog]);
 
-  const handleConsentChange = useStableHandler((checked: boolean) => {
-    if (checked) {
-      posthog.opt_in_capturing();
-    } else {
-      posthog.opt_out_capturing();
-    }
-    setHasConsent(checked);
-  });
+   const handleConsentChange = useStableHandler((checked: boolean) => {
+      if (checked) {
+         posthog.opt_in_capturing();
+      } else {
+         posthog.opt_out_capturing();
+      }
+      setHasConsent(checked);
+   });
 
-  // ...rest of component unchanged, use hasConsent + handleConsentChange
+   // ...rest of component unchanged, use hasConsent + handleConsentChange
 }
 ```
 
@@ -261,6 +267,7 @@ git commit -m "feat: replace DB-backed telemetry consent with PostHog native opt
 This is the single source of truth for survey IDs and their feature flag association. It lives in `core/posthog` (no runtime dependency — pure typed data) and is consumed by the web app via `@core/posthog/surveys`.
 
 **Files:**
+
 - Create: `core/posthog/src/surveys.ts`
 - Modify: `core/posthog/package.json` (add `./surveys` export)
 
@@ -270,23 +277,23 @@ This is the single source of truth for survey IDs and their feature flag associa
 // core/posthog/src/surveys.ts
 
 export type PostHogSurveyEntry = {
-  id: string;
-  flagKey: string | null;
+   id: string;
+   flagKey: string | null;
 };
 
 export const POSTHOG_SURVEYS = {
-  bugReport: {
-    id: "019c6be5-4893-0000-7270-57dc03529638",
-    flagKey: null,
-  },
-  featureRequest: {
-    id: "019c6be5-5783-0000-684e-aceb5002b650",
-    flagKey: null,
-  },
-  featureFeedback: {
-    id: "019c6be5-6296-0000-b0a3-2ab421e77719",
-    flagKey: null,
-  },
+   bugReport: {
+      id: "019c6be5-4893-0000-7270-57dc03529638",
+      flagKey: null,
+   },
+   featureRequest: {
+      id: "019c6be5-5783-0000-684e-aceb5002b650",
+      flagKey: null,
+   },
+   featureFeedback: {
+      id: "019c6be5-6296-0000-b0a3-2ab421e77719",
+      flagKey: null,
+   },
 } as const satisfies Record<string, PostHogSurveyEntry>;
 
 export type PostHogSurveyKey = keyof typeof POSTHOG_SURVEYS;
@@ -326,6 +333,7 @@ git commit -m "feat: add posthog surveys config to core/posthog"
 ### Task 2: Update EarlyAccessBanner to use PostHog native surveys
 
 **Files:**
+
 - Modify: `apps/web/src/features/billing/ui/early-access-banner.tsx`
 
 **Step 1: Replace form-based CTA with PostHog survey trigger**
@@ -419,6 +427,7 @@ For each usage, replace `form: "feedback"` with `surveyId: POSTHOG_SURVEYS.featu
 and `form: "request"` with `surveyId: POSTHOG_SURVEYS.featureRequest.id`.
 
 Import:
+
 ```typescript
 import { POSTHOG_SURVEYS } from "@core/posthog/surveys";
 ```
@@ -441,12 +450,14 @@ git commit -m "feat: update EarlyAccessBanner to use posthog renderSurvey"
 ### Task 4: Remove oRPC feedback router + root router entry
 
 **Files:**
+
 - Delete: `apps/web/src/integrations/orpc/router/feedback.ts`
 - Modify: `apps/web/src/integrations/orpc/router/index.ts`
 
 **Step 1: Remove feedback entry from root router**
 
 Open `apps/web/src/integrations/orpc/router/index.ts`. Delete:
+
 ```typescript
 import * as feedback from "./feedback";
 // and the router entry:
@@ -477,11 +488,13 @@ git commit -m "feat: remove oRPC feedback router"
 ### Task 5: Remove feedbackSender singleton
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/singletons.ts`
 
 **Step 1: Remove feedbackSender**
 
 Open `singletons.ts`. Remove:
+
 - `import { createFeedbackSender } from "@packages/feedback/sender"`
 - `export const feedbackSender = createFeedbackSender({...})`
 
@@ -503,6 +516,7 @@ git commit -m "feat: remove feedbackSender singleton"
 ### Task 6: Delete all custom feedback UI components
 
 **Files:**
+
 - Delete: `apps/web/src/features/feedback/` (entire directory)
 
 **Step 1: Delete directory**
@@ -529,11 +543,13 @@ git commit -m "feat: delete custom feedback UI components"
 ### Task 7: Remove AutoBugReporter from dashboard layout
 
 **Files:**
+
 - Modify: `apps/web/src/layout/dashboard/ui/dashboard-layout.tsx`
 
 **Step 1: Remove AutoBugReporter**
 
 Open `dashboard-layout.tsx`. Delete:
+
 - Any import from `@/features/feedback`
 - The `<AutoBugReporter />` JSX element and surrounding logic
 
@@ -555,11 +571,13 @@ git commit -m "feat: remove AutoBugReporter from dashboard layout"
 ### Task 8: Replace sidebar feedback button with PostHog survey trigger
 
 **Files:**
+
 - Modify: `apps/web/src/layout/dashboard/ui/app-sidebar.tsx`
 
 **Step 1: Replace SidebarFeedbackButton with direct posthog capture**
 
 Import:
+
 ```typescript
 import posthog from "posthog-js";
 ```
@@ -604,6 +622,7 @@ git commit -m "feat: replace sidebar feedback popover with posthog capture"
 **Problem:** `STATIC_FEATURES` in `use-early-access.tsx` hardcodes `stage` for each feature. The sidebar's `FeatureStageBadge` calls `getFeatureStage(flagKey)` which falls back to the static stage if PostHog hasn't returned anything. Stage should be owned exclusively by PostHog — if it's not in PostHog, badge shows nothing.
 
 **Files:**
+
 - Modify: `apps/web/src/hooks/use-early-access.tsx`
 - Possibly modify: `apps/web/src/integrations/posthog/client.tsx` (if `EarlyAccessFeature.stage` doesn't allow `null`)
 
@@ -613,36 +632,41 @@ Open `use-early-access.tsx`. Update `STATIC_FEATURES` — remove the `stage` fie
 
 ```typescript
 const STATIC_FEATURES = [
-  {
-    flagKey: "contacts",
-    name: "Contatos",
-    description: "Cadastro de clientes e fornecedores, vinculação com transações e cobranças.",
-    documentationUrl: null,
-  },
-  {
-    flagKey: "inventory",
-    name: "Produtos (Estoque)",
-    description: "Cadastre e gerencie o catálogo de produtos da sua empresa — controle de estoque, preços, variantes e categorias.",
-    documentationUrl: null,
-  },
-  {
-    flagKey: "services",
-    name: "Gestão de Serviços",
-    description: "Gestão completa de serviços: planos, assinaturas, descontos negociados e faturamento recorrente.",
-    documentationUrl: null,
-  },
-  {
-    flagKey: "advanced-analytics",
-    name: "Análises Avançadas",
-    description: "Acesse dados avançados, dashboards personalizados e insights inteligentes em um só lugar.",
-    documentationUrl: null,
-  },
-  {
-    flagKey: "data-management",
-    name: "Dados",
-    description: "Pipeline de dados para captura de eventos externos via webhooks e SDKs.",
-    documentationUrl: null,
-  },
+   {
+      flagKey: "contacts",
+      name: "Contatos",
+      description:
+         "Cadastro de clientes e fornecedores, vinculação com transações e cobranças.",
+      documentationUrl: null,
+   },
+   {
+      flagKey: "inventory",
+      name: "Produtos (Estoque)",
+      description:
+         "Cadastre e gerencie o catálogo de produtos da sua empresa — controle de estoque, preços, variantes e categorias.",
+      documentationUrl: null,
+   },
+   {
+      flagKey: "services",
+      name: "Gestão de Serviços",
+      description:
+         "Gestão completa de serviços: planos, assinaturas, descontos negociados e faturamento recorrente.",
+      documentationUrl: null,
+   },
+   {
+      flagKey: "advanced-analytics",
+      name: "Análises Avançadas",
+      description:
+         "Acesse dados avançados, dashboards personalizados e insights inteligentes em um só lugar.",
+      documentationUrl: null,
+   },
+   {
+      flagKey: "data-management",
+      name: "Dados",
+      description:
+         "Pipeline de dados para captura de eventos externos via webhooks e SDKs.",
+      documentationUrl: null,
+   },
 ];
 ```
 
@@ -652,26 +676,26 @@ Replace the `features` useMemo:
 
 ```typescript
 const features = useMemo<EarlyAccessFeature[]>(() => {
-  const posthogByKey = new Map(
-    posthogFeatures.filter((f) => f.flagKey).map((f) => [f.flagKey, f]),
-  );
+   const posthogByKey = new Map(
+      posthogFeatures.filter((f) => f.flagKey).map((f) => [f.flagKey, f]),
+   );
 
-  const merged = STATIC_FEATURES.map((f) => {
-    const fromPosthog = posthogByKey.get(f.flagKey);
-    return {
-      flagKey: f.flagKey,
-      name: fromPosthog?.name ?? f.name,
-      description: fromPosthog?.description ?? f.description,
-      documentationUrl: fromPosthog?.documentationUrl ?? f.documentationUrl,
-      stage: fromPosthog?.stage ?? null,
-    } satisfies EarlyAccessFeature;
-  });
+   const merged = STATIC_FEATURES.map((f) => {
+      const fromPosthog = posthogByKey.get(f.flagKey);
+      return {
+         flagKey: f.flagKey,
+         name: fromPosthog?.name ?? f.name,
+         description: fromPosthog?.description ?? f.description,
+         documentationUrl: fromPosthog?.documentationUrl ?? f.documentationUrl,
+         stage: fromPosthog?.stage ?? null,
+      } satisfies EarlyAccessFeature;
+   });
 
-  const extra = posthogFeatures.filter(
-    (f) => f.flagKey && !STATIC_FLAG_KEYS.has(f.flagKey),
-  );
+   const extra = posthogFeatures.filter(
+      (f) => f.flagKey && !STATIC_FLAG_KEYS.has(f.flagKey),
+   );
 
-  return [...merged, ...extra];
+   return [...merged, ...extra];
 }, [posthogFeatures]);
 ```
 
@@ -681,11 +705,11 @@ Open `apps/web/src/integrations/posthog/client.tsx`. Find `EarlyAccessFeature` t
 
 ```typescript
 export type EarlyAccessFeature = {
-  flagKey: string | null;
-  name: string;
-  description: string;
-  stage: EarlyAccessStage | null;
-  documentationUrl: string | null;
+   flagKey: string | null;
+   name: string;
+   description: string;
+   stage: EarlyAccessStage | null;
+   documentationUrl: string | null;
 };
 ```
 
@@ -713,6 +737,7 @@ git commit -m "feat: dynamic sidebar stage badges from posthog earlyAccessFeatur
 Move the hardcoded `FLAG_KEYS` set out of the early-access router into `core/posthog` so both server and client share the same source of truth for which flags exist.
 
 **Files:**
+
 - Create: `core/posthog/src/feature-flags.ts`
 - Modify: `core/posthog/package.json` (add `./feature-flags` export)
 - Modify: `apps/web/src/integrations/orpc/router/early-access.ts` (consume from `@core/posthog/feature-flags`)
@@ -724,11 +749,11 @@ Move the hardcoded `FLAG_KEYS` set out of the early-access router into `core/pos
 // core/posthog/src/feature-flags.ts
 
 export const FEATURE_FLAG_KEYS = [
-  "contacts",
-  "inventory",
-  "services",
-  "advanced-analytics",
-  "data-management",
+   "contacts",
+   "inventory",
+   "services",
+   "advanced-analytics",
+   "data-management",
 ] as const;
 
 export type FeatureFlagKey = (typeof FEATURE_FLAG_KEYS)[number];
@@ -793,6 +818,7 @@ git commit -m "feat: add FEATURE_FLAG_KEYS to core/posthog, use in router and ho
 ### Task 12: Delete @packages/feedback package
 
 **Files:**
+
 - Delete: `packages/feedback/` (entire directory)
 - Modify: any `package.json` that depends on `@packages/feedback`
 
@@ -838,6 +864,7 @@ git commit -m "feat: delete @packages/feedback package"
 ```bash
 bun run typecheck && bun run check
 ```
+
 Expected: clean.
 
 **Step 2: Smoke test**
@@ -855,6 +882,7 @@ bun dev
 **Step 3: PostHog dashboard config checklist**
 
 Ensure in PostHog (project: `montte-erp`):
+
 - Survey `019c6be5-4893-…` (Bug Report) — set targeting: fires on `feedback_button_clicked` event OR manually triggered
 - Survey `019c6be5-5783-…` (Feature Request) — same
 - Survey `019c6be5-6296-…` (Feature Feedback) — link to feature flag (e.g. `advanced-analytics`) in survey targeting if desired

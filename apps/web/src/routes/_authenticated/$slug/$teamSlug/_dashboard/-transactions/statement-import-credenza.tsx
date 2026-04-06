@@ -430,7 +430,7 @@ function MapStep({
                         : null;
                      return (
                         <div
-                           className="grid grid-cols-[10rem_1fr] items-start gap-2 rounded-lg border bg-muted/20 px-3 py-2.5"
+                           className="grid grid-cols-[10rem_1fr] items-start gap-2 rounded-lg border bg-muted/20 px-3 py-2.5 overflow-hidden"
                            key={field}
                         >
                            <div className="flex flex-col gap-0.5 pt-1">
@@ -438,7 +438,7 @@ function MapStep({
                                  {FIELD_LABELS[field]}
                               </span>
                            </div>
-                           <div className="flex flex-col gap-1">
+                           <div className="flex flex-col gap-1 min-w-0">
                               <Combobox
                                  options={[
                                     {

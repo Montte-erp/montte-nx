@@ -143,7 +143,9 @@ export function TransactionFilterBar({
    const [searchInput, setSearchInput] = useState(filters.search);
    const debouncedSearch = useDebouncedValue(searchInput, 350);
 
-   const stableOnFiltersChange = useCallback(onFiltersChange, [onFiltersChange]);
+   const stableOnFiltersChange = useCallback(onFiltersChange, [
+      onFiltersChange,
+   ]);
    const filtersRef = useRef(filters);
    useEffect(() => {
       filtersRef.current = filters;

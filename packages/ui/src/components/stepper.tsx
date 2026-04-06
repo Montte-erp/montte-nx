@@ -89,7 +89,10 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(
                      {...props}
                   >
                      <ol
-                        className={cn(classForNavigationList({ variant }), "w-full")}
+                        className={cn(
+                           classForNavigationList({ variant }),
+                           "w-full",
+                        )}
                         date-component="stepper-navigation-list"
                      >
                         {children}

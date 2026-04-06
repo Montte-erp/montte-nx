@@ -1,11 +1,12 @@
 import { Button } from "@packages/ui/components/button";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useState, useTransition } from "react";
@@ -28,15 +29,15 @@ export function BulkCategorizeForm({
    const categories = categoriesResult;
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Categorizar lançamentos</DialogStackTitle>
-            <DialogStackDescription>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Categorizar lançamentos</CredenzaTitle>
+            <CredenzaDescription>
                Aplicar categoria a {selectedCount}{" "}
                {selectedCount === 1 ? "lançamento" : "lançamentos"}
-            </DialogStackDescription>
-         </DialogStackHeader>
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody className="px-4">
             <Combobox
                emptyMessage="Nenhuma categoria encontrada."
                onValueChange={setCategoryId}
@@ -45,8 +46,8 @@ export function BulkCategorizeForm({
                searchPlaceholder="Buscar categoria..."
                value={categoryId}
             />
-         </div>
-         <div className="border-t px-4 py-4">
+         </CredenzaBody>
+         <CredenzaFooter>
             <div className="flex flex-col gap-2">
                <Button
                   className="w-full"
@@ -71,7 +72,7 @@ export function BulkCategorizeForm({
                   Aplicar
                </Button>
             </div>
-         </div>
-      </DialogStackContent>
+         </CredenzaFooter>
+      </>
    );
 }

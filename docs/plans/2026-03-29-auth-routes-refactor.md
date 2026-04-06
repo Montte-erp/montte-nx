@@ -15,6 +15,7 @@
 The key `"montte:pending-invitation-id"` is currently defined in the callback route file and imported back into `auth/callback.tsx`. Shared localStorage keys belong in the feature folder of their domain.
 
 **Files:**
+
 - Create: `apps/web/src/features/organization/constants.ts`
 - Modify: `apps/web/src/routes/callback/organization/invitation/$invitationId.tsx`
 - Modify: `apps/web/src/routes/auth/callback.tsx`
@@ -28,6 +29,7 @@ export const PENDING_INVITATION_KEY = "montte:pending-invitation-id";
 **Step 2: Update the invitation callback route**
 
 In `apps/web/src/routes/callback/organization/invitation/$invitationId.tsx`:
+
 - Remove: `export const PENDING_INVITATION_KEY = "montte:pending-invitation-id";`
 - Add import: `import { PENDING_INVITATION_KEY } from "@/features/organization/constants";`
 
@@ -37,6 +39,7 @@ In `apps/web/src/routes/callback/organization/invitation/$invitationId.tsx`:
 - To: `import { PENDING_INVITATION_KEY } from "@/features/organization/constants";`
 
 **Step 4: Commit**
+
 ```bash
 git add apps/web/src/features/organization/constants.ts \
         apps/web/src/routes/callback/organization/invitation/'$invitationId'.tsx \
@@ -51,6 +54,7 @@ git commit -m "refactor(organization): extract PENDING_INVITATION_KEY to feature
 `TermsAndPrivacyText` is duplicated in both `sign-in/index.tsx` and `sign-up.tsx`. `GoogleIcon` is defined inline in `sign-in/index.tsx`. Both are shared between auth routes — they belong in a private `-auth/` folder at the auth level.
 
 **Files:**
+
 - Create: `apps/web/src/routes/auth/-auth/terms-and-privacy-text.tsx`
 - Create: `apps/web/src/routes/auth/-auth/google-icon.tsx`
 - Modify: `apps/web/src/routes/auth/sign-in/index.tsx`
@@ -121,23 +125,26 @@ export function GoogleIcon() {
 ```
 
 **Step 3: Update `sign-in/index.tsx`**
+
 - Remove the inline `GoogleIcon` and `TermsAndPrivacyText` function definitions
 - Add imports:
-  ```typescript
-  import { GoogleIcon } from "../-auth/google-icon";
-  import { TermsAndPrivacyText } from "../-auth/terms-and-privacy-text";
-  ```
+   ```typescript
+   import { GoogleIcon } from "../-auth/google-icon";
+   import { TermsAndPrivacyText } from "../-auth/terms-and-privacy-text";
+   ```
 - Replace `<FieldDescription className="text-center"><TermsAndPrivacyText /></FieldDescription>` with `<TermsAndPrivacyText />` (it includes `FieldDescription` now)
 
 **Step 4: Update `sign-up.tsx`**
+
 - Remove inline `TermsAndPrivacyText` function definition
 - Add import:
-  ```typescript
-  import { TermsAndPrivacyText } from "./-auth/terms-and-privacy-text";
-  ```
+   ```typescript
+   import { TermsAndPrivacyText } from "./-auth/terms-and-privacy-text";
+   ```
 - Replace `<FieldDescription className="text-center"><TermsAndPrivacyText /></FieldDescription>` with `<TermsAndPrivacyText />`
 
 **Step 5: Commit**
+
 ```bash
 git add apps/web/src/routes/auth/-auth/ \
         apps/web/src/routes/auth/sign-in/index.tsx \
@@ -152,6 +159,7 @@ git commit -m "refactor(auth): extract shared TermsAndPrivacyText and GoogleIcon
 The password step needs a visual strength indicator that shows feedback as the user types. Derive strength from the live field value. Use four levels: fraca, razoável, boa, forte.
 
 **Files:**
+
 - Create: `apps/web/src/routes/auth/-auth/password-strength-card.tsx`
 - Modify: `apps/web/src/routes/auth/sign-up.tsx`
 
@@ -225,6 +233,7 @@ Inside `PasswordStep()`, after the password field group and before the confirm p
 ```
 
 **Step 3: Commit**
+
 ```bash
 git add apps/web/src/routes/auth/-auth/password-strength-card.tsx \
         apps/web/src/routes/auth/sign-up.tsx
@@ -238,6 +247,7 @@ git commit -m "feat(auth): add password strength card to sign-up password step"
 The invite member form and related dialogs are inline in `settings/organization/members.tsx`. This file is the only consumer. Per the private components pattern, these should live in `-members/` colocated with the route.
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/-members/invite-member-form.tsx`
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members.tsx`
 
@@ -246,22 +256,26 @@ The invite member form and related dialogs are inline in `settings/organization/
 **Step 2: Create `-members/invite-member-form.tsx`**
 
 Extract the invite form component (the `DialogStackContent` with email input, role select, and invite button) into this file. It needs:
+
 - `useQueryClient` for invalidation
 - `orpc` client
 - `authClient` for `inviteOrganizationMember`
 - `useOrganizationId` or equivalent context (check how `organizationId` is passed in the original)
 
 The exported component signature should be:
+
 ```typescript
 export function InviteMemberForm() { ... }
 ```
 
 **Step 3: Update `members.tsx`**
+
 - Remove the inline invite dialog implementation
 - Import: `import { InviteMemberForm } from "./-members/invite-member-form";`
 - Render `<InviteMemberForm />` in place of the extracted code
 
 **Step 4: Commit**
+
 ```bash
 git add "apps/web/src/routes/_authenticated/\$slug/\$teamSlug/_dashboard/settings/organization/-members/" \
         "apps/web/src/routes/_authenticated/\$slug/\$teamSlug/_dashboard/settings/organization/members.tsx"
@@ -275,6 +289,7 @@ git commit -m "refactor(settings): colocate invite member form in -members/ priv
 `sign-up.tsx` calls `form.handleSubmit()` without wrapping in `useTransition`. Per CLAUDE.md, the correct pattern for auth forms is `useTransition` + `startTransition(async () => { await form.handleSubmit() })`.
 
 **Files:**
+
 - Modify: `apps/web/src/routes/auth/sign-up.tsx`
 
 **Step 1: Add `useTransition`**
@@ -284,11 +299,13 @@ import { type FormEvent, useCallback, useTransition } from "react";
 ```
 
 In `SignUpPage`:
+
 ```typescript
 const [isPending, startTransition] = useTransition();
 ```
 
 **Step 2: Update `handleSubmit`**
+
 ```typescript
 const handleSubmit = useCallback(
    (e: FormEvent) => {
@@ -305,6 +322,7 @@ const handleSubmit = useCallback(
 **Step 3: Wire `isPending` into the submit button**
 
 The submit button is wrapped in `form.Subscribe`. Add `isPending` to its `disabled` condition:
+
 ```tsx
 <Button
    className="h-11"
@@ -320,6 +338,7 @@ The submit button is wrapped in `form.Subscribe`. Add `isPending` to its `disabl
 Add `import { Loader2 } from "lucide-react";` if not already present.
 
 **Step 4: Commit**
+
 ```bash
 git add apps/web/src/routes/auth/sign-up.tsx
 git commit -m "refactor(auth): use useTransition in sign-up form submission"

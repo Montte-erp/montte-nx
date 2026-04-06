@@ -13,6 +13,7 @@
 ### Task 1: Create and run GitHub issues script
 
 **Files:**
+
 - Create: `scripts/create-removed-features-issues.ts`
 
 **Step 1: Create the script**
@@ -23,49 +24,49 @@ import { execSync } from "node:child_process";
 const REPO = "Montte-erp/montte-nx";
 
 const issues = [
-  {
-    title: "feat(settings): reintroduce Webhooks in project settings",
-    body: `## Context\nWebhooks were removed from the settings UI as the feature is not yet fully supported.\n\n## What needs to be done\n- Re-add the \`project-webhooks\` nav item in \`settings-nav-items.ts\`\n- Restore route \`settings/project/webhooks.tsx\`\n- Restore feature folder \`features/webhooks/\`\n- Restore oRPC router \`router/webhooks.ts\` and wire it back to the main router\n- Add proper delivery retries and event catalog UI\n\n## Labels\n\`feature\`, \`settings\``,
-    labels: "feature,enhancement",
-  },
-  {
-    title: "feat(settings): reintroduce Controle de Acesso in project settings",
-    body: `## Context\nAccess Control was removed from the settings UI as the feature is not yet fully supported.\n\n## What needs to be done\n- Re-add the \`project-access-control\` nav item in \`settings-nav-items.ts\`\n- Restore route \`settings/project/access-control.tsx\`\n- Restore feature folder \`features/access-control/\`\n- Design proper RBAC model for team-level access control\n\n## Labels\n\`feature\`, \`settings\``,
-    labels: "feature,enhancement",
-  },
-  {
-    title: "feat(settings): implement Registro de Atividades (Activity Logs)",
-    body: `## Context\nActivity Logs were referenced in the nav but never implemented. Removed from nav to avoid dead links.\n\n## What needs to be done\n- Create route \`settings/project/activity-logs.tsx\`\n- Create oRPC procedure to query activity log events\n- Design activity log schema (who, what, when, resource)\n- Add \`project-activity-logs\` nav item back to \`settings-nav-items.ts\`\n\n## Labels\n\`feature\`, \`settings\``,
-    labels: "feature,enhancement",
-  },
-  {
-    title: "feat(settings): implement Funções (Roles) in organization settings",
-    body: `## Context\nOrganization Roles were referenced in the nav but never implemented. Removed from nav to avoid dead links.\n\n## What needs to be done\n- Create route \`settings/organization/roles.tsx\`\n- Design custom roles model on top of Better Auth member roles\n- Add \`org-roles\` nav item back to \`settings-nav-items.ts\`\n\n## Labels\n\`feature\`, \`settings\``,
-    labels: "feature,enhancement",
-  },
-  {
-    title: "feat(settings): reintroduce SSO & Auth Domains in organization settings",
-    body: `## Context\nSSO and Auth Domains (organization/authentication) were removed as the feature is gated behind Enterprise addon and not fully built.\n\n## What needs to be done\n- Restore route \`settings/organization/authentication.tsx\`\n- Restore feature folder \`features/sso/\`\n- Implement SAML 2.0 / OIDC integration via Better Auth SSO plugin\n- Implement verified domain auto-join flow\n- Re-add \`org-authentication\` nav item\n\n## Labels\n\`feature\`, \`settings\`, \`enterprise\``,
-    labels: "feature,enhancement",
-  },
-  {
-    title: "feat(settings): reintroduce Segurança in organization settings",
-    body: `## Context\nOrganization Security settings were removed as the feature is not yet fully supported.\n\n## What needs to be done\n- Restore route \`settings/organization/security.tsx\`\n- Define org-level security policies (2FA enforcement, session policies, IP allowlists)\n- Re-add \`org-security\` nav item\n\n## Labels\n\`feature\`, \`settings\``,
-    labels: "feature,enhancement",
-  },
-  {
-    title: "feat(search): reintroduce global search feature",
-    body: `## Context\nThe global search feature and page were removed as the implementation was incomplete and the UX needed a complete rethink.\n\n## What needs to be done\n- Redesign the search UX (command palette vs dedicated page)\n- Restore or rewrite \`features/search/\`\n- Restore or rewrite \`router/search.ts\` (globalSearch procedure)\n- Restore route \`search.tsx\`\n- Consider integrating with a proper full-text search solution\n\n## Labels\n\`feature\`, \`search\``,
-    labels: "feature,enhancement",
-  },
+   {
+      title: "feat(settings): reintroduce Webhooks in project settings",
+      body: `## Context\nWebhooks were removed from the settings UI as the feature is not yet fully supported.\n\n## What needs to be done\n- Re-add the \`project-webhooks\` nav item in \`settings-nav-items.ts\`\n- Restore route \`settings/project/webhooks.tsx\`\n- Restore feature folder \`features/webhooks/\`\n- Restore oRPC router \`router/webhooks.ts\` and wire it back to the main router\n- Add proper delivery retries and event catalog UI\n\n## Labels\n\`feature\`, \`settings\``,
+      labels: "feature,enhancement",
+   },
+   {
+      title: "feat(settings): reintroduce Controle de Acesso in project settings",
+      body: `## Context\nAccess Control was removed from the settings UI as the feature is not yet fully supported.\n\n## What needs to be done\n- Re-add the \`project-access-control\` nav item in \`settings-nav-items.ts\`\n- Restore route \`settings/project/access-control.tsx\`\n- Restore feature folder \`features/access-control/\`\n- Design proper RBAC model for team-level access control\n\n## Labels\n\`feature\`, \`settings\``,
+      labels: "feature,enhancement",
+   },
+   {
+      title: "feat(settings): implement Registro de Atividades (Activity Logs)",
+      body: `## Context\nActivity Logs were referenced in the nav but never implemented. Removed from nav to avoid dead links.\n\n## What needs to be done\n- Create route \`settings/project/activity-logs.tsx\`\n- Create oRPC procedure to query activity log events\n- Design activity log schema (who, what, when, resource)\n- Add \`project-activity-logs\` nav item back to \`settings-nav-items.ts\`\n\n## Labels\n\`feature\`, \`settings\``,
+      labels: "feature,enhancement",
+   },
+   {
+      title: "feat(settings): implement Funções (Roles) in organization settings",
+      body: `## Context\nOrganization Roles were referenced in the nav but never implemented. Removed from nav to avoid dead links.\n\n## What needs to be done\n- Create route \`settings/organization/roles.tsx\`\n- Design custom roles model on top of Better Auth member roles\n- Add \`org-roles\` nav item back to \`settings-nav-items.ts\`\n\n## Labels\n\`feature\`, \`settings\``,
+      labels: "feature,enhancement",
+   },
+   {
+      title: "feat(settings): reintroduce SSO & Auth Domains in organization settings",
+      body: `## Context\nSSO and Auth Domains (organization/authentication) were removed as the feature is gated behind Enterprise addon and not fully built.\n\n## What needs to be done\n- Restore route \`settings/organization/authentication.tsx\`\n- Restore feature folder \`features/sso/\`\n- Implement SAML 2.0 / OIDC integration via Better Auth SSO plugin\n- Implement verified domain auto-join flow\n- Re-add \`org-authentication\` nav item\n\n## Labels\n\`feature\`, \`settings\`, \`enterprise\``,
+      labels: "feature,enhancement",
+   },
+   {
+      title: "feat(settings): reintroduce Segurança in organization settings",
+      body: `## Context\nOrganization Security settings were removed as the feature is not yet fully supported.\n\n## What needs to be done\n- Restore route \`settings/organization/security.tsx\`\n- Define org-level security policies (2FA enforcement, session policies, IP allowlists)\n- Re-add \`org-security\` nav item\n\n## Labels\n\`feature\`, \`settings\``,
+      labels: "feature,enhancement",
+   },
+   {
+      title: "feat(search): reintroduce global search feature",
+      body: `## Context\nThe global search feature and page were removed as the implementation was incomplete and the UX needed a complete rethink.\n\n## What needs to be done\n- Redesign the search UX (command palette vs dedicated page)\n- Restore or rewrite \`features/search/\`\n- Restore or rewrite \`router/search.ts\` (globalSearch procedure)\n- Restore route \`search.tsx\`\n- Consider integrating with a proper full-text search solution\n\n## Labels\n\`feature\`, \`search\``,
+      labels: "feature,enhancement",
+   },
 ];
 
 for (const issue of issues) {
-  console.log(`Creating issue: ${issue.title}`);
-  execSync(
-    `gh issue create --repo ${REPO} --title ${JSON.stringify(issue.title)} --body ${JSON.stringify(issue.body)} --label ${issue.labels}`,
-    { stdio: "inherit" },
-  );
+   console.log(`Creating issue: ${issue.title}`);
+   execSync(
+      `gh issue create --repo ${REPO} --title ${JSON.stringify(issue.title)} --body ${JSON.stringify(issue.body)} --label ${issue.labels}`,
+      { stdio: "inherit" },
+   );
 }
 
 console.log("Done! All issues created.");
@@ -91,6 +92,7 @@ git commit -m "chore: add script to create removed-feature tracking issues"
 ### Task 2: Remove webhooks, access-control, SSO, org-security routes + feature folders
 
 **Files:**
+
 - Delete: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/webhooks.tsx`
 - Delete: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/access-control.tsx`
 - Delete: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/authentication.tsx`
@@ -134,6 +136,7 @@ rm apps/web/src/integrations/orpc/router/search.ts
 **Step 4: Remove webhooks + search from the main router index**
 
 Open `apps/web/src/integrations/orpc/router/index.ts` and remove:
+
 - The `webhooks` import and its entry in the router object
 - The `search` import and its entry in the router object
 
@@ -157,16 +160,19 @@ git commit -m "chore: remove webhooks, access-control, SSO, org-security, and se
 ### Task 3: Clean up settings nav items
 
 **Files:**
+
 - Modify: `apps/web/src/layout/dashboard/ui/settings-nav-items.ts`
 
 **Step 1: Remove these nav items from the file**
 
 From the `project` section, remove:
+
 - `project-webhooks` (Webhooks)
 - `project-access-control` (Controle de acesso)
 - `project-activity-logs` (Registro de atividades)
 
 From the `organization` section, remove:
+
 - `org-roles` (Funções)
 - `org-authentication` (Domínios de auth & SSO)
 - `org-security` (Segurança)
@@ -178,12 +184,14 @@ Also remove unused icon imports: `Webhook`, `ShieldCheck`, `ScrollText`, `UserCo
 Remaining nav items after cleanup:
 
 **Espaço section:**
+
 - Geral
 - Módulos (with children)
 - Integrações
 - Zona de perigo
 
 **Organização section:**
+
 - Geral
 - Membros
 - Faturamento
@@ -201,6 +209,7 @@ git commit -m "chore(settings): remove unsupported nav items"
 ### Task 4: Refactor general.tsx — remove domains, add project name editing
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general.tsx`
 
 **Context:** The oRPC team router currently has `updateAllowedDomains` but no `updateName`. We need to check if Better Auth's `team.update` is available and add an oRPC procedure for it, or use `authClient.organization.updateTeam` directly.
@@ -212,12 +221,14 @@ Read `apps/web/src/integrations/orpc/router/team.ts` to see existing procedures.
 **Step 2: Rewrite general.tsx**
 
 Remove:
+
 - All domain-related state (`newDomain`, `allowedDomains`)
 - `updateDomainsMutation` and all domain handlers
 - The entire "Domínios Permitidos" section JSX
 - `Globe`, `X` imports
 
 Add:
+
 - TanStack Form for the project name field
 - `useTransition` for loading state
 - Call `authClient.organization.updateTeam({ teamId, data: { name } })` directly inside `onSubmit` — **do NOT wrap in useMutation**
@@ -227,26 +238,37 @@ Add:
 const [isPending, startTransition] = useTransition();
 
 const form = useForm({
-  defaultValues: { name: teamData.name },
-  onSubmit: async ({ value }) => {
-    const { error } = await authClient.organization.updateTeam({
-      teamId,
-      data: { name: value.name },
-    });
-    if (error) { toast.error("Não foi possível atualizar o nome."); return; }
-    toast.success("Nome atualizado!");
-    queryClient.invalidateQueries({ queryKey: orpc.team.get.queryOptions({ input: { teamId } }).queryKey });
-  },
+   defaultValues: { name: teamData.name },
+   onSubmit: async ({ value }) => {
+      const { error } = await authClient.organization.updateTeam({
+         teamId,
+         data: { name: value.name },
+      });
+      if (error) {
+         toast.error("Não foi possível atualizar o nome.");
+         return;
+      }
+      toast.success("Nome atualizado!");
+      queryClient.invalidateQueries({
+         queryKey: orpc.team.get.queryOptions({ input: { teamId } }).queryKey,
+      });
+   },
 });
 
-const handleSubmit = useCallback((e: React.FormEvent) => {
-  e.preventDefault();
-  e.stopPropagation();
-  startTransition(async () => { await form.handleSubmit(); });
-}, [form]);
+const handleSubmit = useCallback(
+   (e: React.FormEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      startTransition(async () => {
+         await form.handleSubmit();
+      });
+   },
+   [form],
+);
 ```
 
 The page should have:
+
 1. **Configurações do Espaço** section — project name (editable via TanStack Form), project ID (read-only)
 2. **Resumo do Espaço** section — created at date
 

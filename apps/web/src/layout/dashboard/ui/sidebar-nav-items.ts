@@ -19,7 +19,6 @@ import type { SubSidebarSection } from "../hooks/use-sidebar-nav";
 
 export type NavItemAction = {
    type: "create";
-   /** Route to navigate to for creation, or "sheet" to open a create sheet */
    target: "navigate" | "sheet" | "sub-menu";
 };
 
@@ -28,22 +27,16 @@ export type NavItemDef = {
    label: string;
    icon: LucideIcon;
    route: string;
-   /** Show a '+' quick-action button */
    quickAction?: NavItemAction;
-   /** Item expands a floating sub-panel */
    subPanel?: SubSidebarSection;
-   /** PostHog early access flag key — if set, item is hidden when user is not enrolled */
    earlyAccessFlag?: string;
-   /** Fallback stage shown when PostHog hasn't resolved the feature yet */
    earlyAccessFallbackStage?:
       | "alpha"
       | "beta"
       | "concept"
       | "general-availability";
-   /** Whether the item can be hidden by the user via sidebar visibility settings */
    configurable?: boolean;
-   /** Per-accountType label overrides */
-   labelOverrides?: Partial<Record<"personal" | "business", string>>;
+   children?: NavItemDef[];
 };
 
 export type NavGroupDef = {
@@ -115,18 +108,26 @@ export const navGroups: NavGroupDef[] = [
             configurable: true,
          },
          {
-            id: "categories",
-            label: "Categorias",
+            id: "classificacao",
+            label: "Classificação",
             icon: Tag,
             route: "/$slug/$teamSlug/categories",
-            configurable: true,
-         },
-         {
-            id: "tags",
-            label: "Centros de Custo",
-            icon: Tags,
-            route: "/$slug/$teamSlug/tags",
-            configurable: true,
+            children: [
+               {
+                  id: "categories",
+                  label: "Categorias",
+                  icon: Tag,
+                  route: "/$slug/$teamSlug/categories",
+                  configurable: true,
+               },
+               {
+                  id: "tags",
+                  label: "Centros de Custo",
+                  icon: Tags,
+                  route: "/$slug/$teamSlug/tags",
+                  configurable: true,
+               },
+            ],
          },
          {
             id: "goals",

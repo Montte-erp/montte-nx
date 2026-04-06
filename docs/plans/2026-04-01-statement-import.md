@@ -24,11 +24,13 @@
 ## Task 1: Add `finance.statement_imported` event
 
 **Files:**
+
 - Modify: `packages/events/src/finance.ts`
 
 **Step 1: Add event key to FINANCE_EVENTS constant**
 
 In `FINANCE_EVENTS` object, add:
+
 ```typescript
 "finance.statement_imported": "finance.statement_imported",
 ```
@@ -43,7 +45,9 @@ export const financeStatementImportedSchema = z.object({
    format: z.enum(["csv", "xlsx", "ofx"]),
    rowCount: z.number().int().nonnegative(),
 });
-export type FinanceStatementImportedEvent = z.infer<typeof financeStatementImportedSchema>;
+export type FinanceStatementImportedEvent = z.infer<
+   typeof financeStatementImportedSchema
+>;
 
 export function emitFinanceStatementImported(
    emit: EmitFn,
@@ -64,6 +68,7 @@ export function emitFinanceStatementImported(
 ```bash
 cd /path/to/worktree && bun run typecheck 2>&1 | grep -i "finance"
 ```
+
 Expected: no errors from finance.ts
 
 **Step 4: Commit**
@@ -78,6 +83,7 @@ git commit -m "feat(events): add finance.statement_imported event"
 ## Task 2: Add billing constants for statement import
 
 **Files:**
+
 - Modify: `core/stripe/src/constants.ts`
 
 **Step 1: Add to FREE_TIER_LIMITS**
@@ -103,6 +109,7 @@ git commit -m "feat(events): add finance.statement_imported event"
 ```bash
 bun run typecheck 2>&1 | grep -i "constants"
 ```
+
 Expected: no errors
 
 **Step 5: Commit**
@@ -117,6 +124,7 @@ git commit -m "feat(billing): add finance.statement_imported free tier and prici
 ## Task 3: Install `xlsx` package for XLSX parsing
 
 **Files:**
+
 - Modify: `apps/web/package.json`
 
 **Step 1: Add xlsx to web app dependencies**
@@ -147,6 +155,7 @@ git commit -m "chore(deps): add xlsx for bank statement XLSX parsing"
 ## Task 4: Add `importStatement` oRPC procedure
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/orpc/router/transactions.ts`
 
 **Context:** The existing `importBulk` creates transactions individually. `importStatement` performs a true bulk insert (single DB round-trip) and emits exactly ONE `finance.statement_imported` billing event per call.
@@ -209,7 +218,8 @@ export const importStatement = protectedProcedure
          input.bankAccountId,
          context.teamId,
       );
-      if (!bankAccount) throw WebAppError.notFound("Conta bancária não encontrada");
+      if (!bankAccount)
+         throw WebAppError.notFound("Conta bancária não encontrada");
 
       const rows = input.transactions.map((t) => ({
          teamId: context.teamId,
@@ -251,6 +261,7 @@ export const importStatement = protectedProcedure
 **Step 3: Add missing imports**
 
 Near the top of the file, add:
+
 ```typescript
 import { WebAppError } from "@core/logging/errors";
 import { getBankAccount } from "@core/database/repositories/bank-accounts-repository";
@@ -263,6 +274,7 @@ import { getBankAccount } from "@core/database/repositories/bank-accounts-reposi
 Check `apps/web/src/integrations/orpc/server.ts` for what `context.redis`, `context.stripeCustomerId`, and `context.organizationId` look like — adjust if named differently.
 
 Run:
+
 ```bash
 grep -n "redis\|stripeCustomerId\|organizationId" apps/web/src/integrations/orpc/server.ts | head -20
 ```
@@ -272,6 +284,7 @@ grep -n "redis\|stripeCustomerId\|organizationId" apps/web/src/integrations/orpc
 ```bash
 bun run typecheck 2>&1 | grep "transactions.ts"
 ```
+
 Expected: no errors
 
 **Step 6: Commit**
@@ -286,6 +299,7 @@ git commit -m "feat(transactions): add importStatement procedure with billing"
 ## Task 5: Create StatementImportDialogStack UI
 
 **Files:**
+
 - Create: `apps/web/src/features/transactions/ui/statement-import-dialog-stack.tsx`
 
 **Context:** This follows the same pattern as `ServiceImportDialogStack` (4-step wizard: upload → map → preview → confirm) but supports CSV, XLSX, and OFX. OFX format auto-maps (no column mapping needed). Uses `@f-o-t/csv` (already in deps), `@f-o-t/ofx` (already in deps), `xlsx` (just added).
@@ -876,6 +890,7 @@ git commit -m "feat(transactions): add StatementImportDialogStack (CSV/XLSX/OFX)
 ## Task 6: Wire the import button in the transactions page
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/transactions.tsx`
 
 **Context:** The page already has an `Upload` icon button and imports `TransactionImportDialogStack`. The new statement import replaces or supplements this button.
@@ -889,6 +904,7 @@ grep -n "Upload\|import\|Import" apps/web/src/routes/_authenticated/\$slug/\$tea
 **Step 2: Add import for StatementImportDialogStack**
 
 Add to imports:
+
 ```typescript
 import { StatementImportDialogStack } from "@/features/transactions/ui/statement-import-dialog-stack";
 ```
@@ -896,6 +912,7 @@ import { StatementImportDialogStack } from "@/features/transactions/ui/statement
 **Step 3: Add a handler for statement import**
 
 Inside `TransactionsPage`, add:
+
 ```typescript
 const handleStatementImport = useCallback(() => {
    openDialogStack({
@@ -909,6 +926,7 @@ const handleStatementImport = useCallback(() => {
 **Step 4: Add a button to the DefaultHeader actions**
 
 Find where the existing Upload button renders. Add a new action or replace with:
+
 ```typescript
 {
    label: "Importar extrato",

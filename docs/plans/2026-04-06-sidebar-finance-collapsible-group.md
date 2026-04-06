@@ -42,11 +42,13 @@ Target:
 ### Task 1: Extend `NavItemDef` and `NavGroupDef` types + update data
 
 **Files:**
+
 - Modify: `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts`
 
 **Step 1: Add `children` to `NavItemDef`**
 
 Add to `NavItemDef`:
+
 ```typescript
 /** Sub-items rendered as SidebarMenuSub when expanded */
 children?: NavItemDef[];
@@ -88,42 +90,10 @@ Replace the `categories` and `tags` entries with a single parent item:
 
 ---
 
-### Task 2: Persist collapse state for the sub-item
+### Task 2: Add `CollapsibleNavItem` component in `sidebar-nav.tsx`
 
 **Files:**
-- Modify: `apps/web/src/layout/dashboard/hooks/use-finance-nav-preferences.ts`
 
-**Step 1: Add one `createLocalStorageState` entry for the sub-item**
-
-```typescript
-const [useClassificacaoOpen] = createLocalStorageState<boolean>(
-   "montte:sidebar:classificacao-open",
-   true, // open by default
-);
-```
-
-Export from `useFinanceNavPreferences`:
-
-```typescript
-export function useFinanceNavPreferences() {
-   // ...existing wantedItems / isWanted / toggleItem...
-   const [classificacaoOpen, setClassificacaoOpen] = useClassificacaoOpen();
-
-   return {
-      wantedItems,
-      isWanted,
-      toggleItem,
-      classificacaoOpen: classificacaoOpen ?? true,
-      setClassificacaoOpen,
-   };
-}
-```
-
----
-
-### Task 3: Add `CollapsibleNavItem` component in `sidebar-nav.tsx`
-
-**Files:**
 - Modify: `apps/web/src/layout/dashboard/ui/sidebar-nav.tsx`
 
 **Step 1: Import new primitives**
@@ -155,31 +125,25 @@ function CollapsibleNavItem({
    slug,
    teamSlug,
    isItemActive,
-   open,
-   onOpenChange,
    onMainItemClick,
 }: {
    item: NavItemDef;
    slug: string;
    teamSlug?: string | null;
    isItemActive: (item: NavItemDef) => boolean;
-   open: boolean;
-   onOpenChange: (open: boolean) => void;
    onMainItemClick: () => void;
 }) {
    const Icon = item.icon;
    const anyChildActive = item.children?.some(isItemActive) ?? false;
 
    return (
-      <Collapsible
-         asChild
-         className="group/collapsible"
-         onOpenChange={onOpenChange}
-         open={open}
-      >
+      <Collapsible asChild className="group/collapsible" defaultOpen>
          <SidebarMenuItem>
             <CollapsibleTrigger asChild>
-               <SidebarMenuButton isActive={anyChildActive} tooltip={item.label}>
+               <SidebarMenuButton
+                  isActive={anyChildActive}
+                  tooltip={item.label}
+               >
                   <Icon />
                   <span>{item.label}</span>
                   <ChevronRight className="ml-auto size-3.5 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
@@ -189,7 +153,10 @@ function CollapsibleNavItem({
                <SidebarMenuSub>
                   {(item.children ?? []).map((child) => (
                      <SidebarMenuSubItem key={child.id}>
-                        <SidebarMenuSubButton asChild isActive={isItemActive(child)}>
+                        <SidebarMenuSubButton
+                           asChild
+                           isActive={isItemActive(child)}
+                        >
                            <Link
                               onClick={onMainItemClick}
                               params={{ slug, teamSlug: teamSlug ?? "" }}
@@ -210,45 +177,43 @@ function CollapsibleNavItem({
 
 **Step 3: Update `NavGroup` to use `CollapsibleNavItem` when item has `children`**
 
-In `NavGroup`, pull `classificacaoOpen` and `setClassificacaoOpen` from `useFinanceNavPreferences()`, then replace the `visibleItems.map` block:
+No new state needed — shadcn `Collapsible` manages open/close internally via `defaultOpen`. Just replace the `visibleItems.map` block in `NavGroup`:
 
 ```tsx
-const { isWanted, classificacaoOpen, setClassificacaoOpen } = useFinanceNavPreferences();
-
-// in JSX:
-{visibleItems.map((item) =>
-   item.children ? (
-      <CollapsibleNavItem
-         isItemActive={isItemActive}
-         item={item}
-         key={item.id}
-         onMainItemClick={onMainItemClick}
-         onOpenChange={setClassificacaoOpen}
-         open={classificacaoOpen}
-         slug={slug}
-         teamSlug={teamSlug}
-      />
-   ) : (
-      <NavItem
-         isActive={isItemActive(item)}
-         item={item}
-         key={item.id}
-         onMainItemClick={onMainItemClick}
-         onSubPanelToggle={onSubPanelToggle}
-         slug={slug}
-         teamSlug={teamSlug}
-      />
-   )
-)}
+{
+   visibleItems.map((item) =>
+      item.children ? (
+         <CollapsibleNavItem
+            isItemActive={isItemActive}
+            item={item}
+            key={item.id}
+            onMainItemClick={onMainItemClick}
+            slug={slug}
+            teamSlug={teamSlug}
+         />
+      ) : (
+         <NavItem
+            isActive={isItemActive(item)}
+            item={item}
+            key={item.id}
+            onMainItemClick={onMainItemClick}
+            onSubPanelToggle={onSubPanelToggle}
+            slug={slug}
+            teamSlug={teamSlug}
+         />
+      ),
+   );
+}
 ```
 
 > The "Finanças" `SidebarGroupLabel` stays exactly as it is — no changes to group collapsing.
 
 ---
 
-### Task 4: Update `sidebar-nav-config-form.tsx` to handle nested items
+### Task 3: Update `sidebar-nav-config-form.tsx` to handle nested items
 
 **Files:**
+
 - Modify: `apps/web/src/layout/dashboard/ui/sidebar-nav-config-form.tsx`
 
 The config form lets users toggle item visibility. It currently iterates `group.items`. It needs to also flatten `item.children` so nested items appear in the config list.
@@ -271,16 +236,17 @@ This ensures "Categorias" and "Centros de Custo" still appear in settings even t
 
 ---
 
-### Task 5: Verify `isItemActive` works for nested children
+### Task 4: Verify `isItemActive` works for nested children
 
 **Files:**
+
 - Read: `apps/web/src/layout/dashboard/ui/sidebar-nav.tsx` (no change needed — verify)
 
 `isItemActive` in `useNavHandlers` uses `router.buildLocation` + `pathname.startsWith`. Since children have real routes, this already works correctly. No change needed — just confirm visually by navigating to `/categories` and `/tags`.
 
 ---
 
-### Task 6: Manual smoke test
+### Task 5: Manual smoke test
 
 1. Open sidebar — "Finanças" label has a chevron.
 2. Click label → group collapses, all finance items hide.
@@ -291,4 +257,4 @@ This ensures "Categorias" and "Centros de Custo" still appear in settings even t
 7. Parent "Classificação" also highlights when a child is active.
 8. Collapse "Classificação" → state persists on refresh.
 9. Sidebar in icon mode → no chevrons visible, tooltips work.
-10. Open settings config form → "Categorias" and "Centros de Custo" still appear as toggleable items.
+10.   Open settings config form → "Categorias" and "Centros de Custo" still appear as toggleable items.

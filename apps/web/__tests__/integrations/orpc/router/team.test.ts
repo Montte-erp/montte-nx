@@ -124,7 +124,10 @@ describe("team router", () => {
          await expect(
             call(
                teamRouter.addMember,
-               { teamId: getTeamId(ctx), userId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee" },
+               {
+                  teamId: getTeamId(ctx),
+                  userId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+               },
                { context: ctx },
             ),
          ).rejects.toSatisfy(
@@ -142,17 +145,35 @@ describe("team router", () => {
 
          await ctx.db
             .insert(member)
-            .values({ organizationId: orgId, userId: freshUserId, role: "member", createdAt: new Date() })
+            .values({
+               organizationId: orgId,
+               userId: freshUserId,
+               role: "member",
+               createdAt: new Date(),
+            })
             .onConflictDoNothing();
 
          await ctx.db
             .delete(teamMember)
-            .where(and(eq(teamMember.teamId, teamId), eq(teamMember.userId, freshUserId)));
+            .where(
+               and(
+                  eq(teamMember.teamId, teamId),
+                  eq(teamMember.userId, freshUserId),
+               ),
+            );
 
-         await call(teamRouter.addMember, { teamId, userId: freshUserId }, { context: ctx });
+         await call(
+            teamRouter.addMember,
+            { teamId, userId: freshUserId },
+            { context: ctx },
+         );
 
          await expect(
-            call(teamRouter.addMember, { teamId, userId: freshUserId }, { context: ctx }),
+            call(
+               teamRouter.addMember,
+               { teamId, userId: freshUserId },
+               { context: ctx },
+            ),
          ).rejects.toSatisfy(
             (e: ORPCError<string, unknown>) => e.code === "BAD_REQUEST",
          );

@@ -4,14 +4,14 @@ Shared component library, hooks, and styling built on Radix, Tailwind, and CVA.
 
 ## Exports
 
-| Export            | Purpose                                                  |
-| ----------------- | -------------------------------------------------------- |
-| `./components/*`  | Radix-based primitives (Button, Dialog, Credenza, DataTable, etc.) |
-| `./blocks/*`      | Composite UI blocks                                      |
-| `./hooks/*`       | SSR-safe hooks (`useMediaQuery`, `useIsMobile`, `useLocalStorage`) |
-| `./lib/*`         | Utility functions (`cn`, formatters)                     |
-| `./globals.css`   | Tailwind stylesheet                                      |
-| `./postcss.config`| PostCSS configuration                                    |
+| Export             | Purpose                                                            |
+| ------------------ | ------------------------------------------------------------------ |
+| `./components/*`   | Radix-based primitives (Button, Dialog, Credenza, DataTable, etc.) |
+| `./blocks/*`       | Composite UI blocks                                                |
+| `./hooks/*`        | SSR-safe hooks (`useMediaQuery`, `useIsMobile`, `useLocalStorage`) |
+| `./lib/*`          | Utility functions (`cn`, formatters)                               |
+| `./globals.css`    | Tailwind stylesheet                                                |
+| `./postcss.config` | PostCSS configuration                                              |
 
 ## Usage
 

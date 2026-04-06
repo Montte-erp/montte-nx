@@ -34,9 +34,7 @@ function getCategoryFromEventName(eventName: string): string {
 function humanizeEventName(eventName: string): string {
    const parts = eventName.split(".");
    const name = parts[parts.length - 1] ?? eventName;
-   return name
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
+   return name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function computeOverageCost(item: MeterUsageItem): number {
@@ -65,11 +63,13 @@ export function BillingSpend() {
       byCategory.set(cat, existing);
    }
 
-   const sortedCategories = [...byCategory.entries()].sort(([, aItems], [, bItems]) => {
-      const aTotal = aItems.reduce((s, i) => s + computeOverageCost(i), 0);
-      const bTotal = bItems.reduce((s, i) => s + computeOverageCost(i), 0);
-      return bTotal - aTotal;
-   });
+   const sortedCategories = [...byCategory.entries()].sort(
+      ([, aItems], [, bItems]) => {
+         const aTotal = aItems.reduce((s, i) => s + computeOverageCost(i), 0);
+         const bTotal = bItems.reduce((s, i) => s + computeOverageCost(i), 0);
+         return bTotal - aTotal;
+      },
+   );
 
    const totalCost = billableItems.reduce(
       (sum, item) => sum + computeOverageCost(item),
@@ -98,7 +98,9 @@ export function BillingSpend() {
       <div className="space-y-4">
          <Card>
             <CardHeader>
-               <CardTitle className="text-base">Total cobrado este mes</CardTitle>
+               <CardTitle className="text-base">
+                  Total cobrado este mes
+               </CardTitle>
                <CardDescription>
                   Apenas o que excede o tier gratuito é cobrado
                </CardDescription>

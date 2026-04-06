@@ -36,7 +36,7 @@ import {
 } from "@/features/credit-cards/ui/credit-cards-columns";
 import { CreditCardForm } from "@/features/credit-cards/ui/credit-cards-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 import { tableSearchSchema } from "@/lib/table-search-schema";
 import { z } from "zod";
@@ -89,7 +89,7 @@ function CreditCardsList() {
    const navigate = Route.useNavigate();
    const { sorting, columnFilters } = Route.useSearch();
    const [tableState, setTableState] = useCreditCardsTableState();
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const {
       rowSelection,
@@ -151,7 +151,7 @@ function CreditCardsList() {
 
    const handleEdit = useCallback(
       (card: CreditCardRow) => {
-         openDialogStack({
+         openCredenza({
             children: (
                <ErrorBoundary
                   FallbackComponent={createErrorFallback({
@@ -162,14 +162,14 @@ function CreditCardsList() {
                      <CreditCardForm
                         card={card}
                         mode="edit"
-                        onSuccess={closeDialogStack}
+                        onSuccess={closeCredenza}
                      />
                   </Suspense>
                </ErrorBoundary>
             ),
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
    );
 
    const handleDelete = useCallback(
@@ -271,10 +271,10 @@ function CreditCardsList() {
 }
 
 function CreditCardsPage() {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
 
    function handleCreate() {
-      openDialogStack({
+      openCredenza({
          children: (
             <ErrorBoundary
                FallbackComponent={createErrorFallback({
@@ -282,7 +282,7 @@ function CreditCardsPage() {
                })}
             >
                <Suspense fallback={<CreditCardFormSkeleton />}>
-                  <CreditCardForm mode="create" onSuccess={closeDialogStack} />
+                  <CreditCardForm mode="create" onSuccess={closeCredenza} />
                </Suspense>
             </ErrorBoundary>
          ),

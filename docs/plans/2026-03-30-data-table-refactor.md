@@ -13,6 +13,7 @@
 ## Task 1: Refactor `DataTable` component
 
 **Files:**
+
 - Modify: `packages/ui/src/components/data-table.tsx`
 
 ### Step 1: Replace the props interface
@@ -21,27 +22,27 @@ Remove all optional feature flags and storage concerns. New interface:
 
 ```typescript
 export type DataTableStoredState = {
-  columnOrder: string[];
-  columnVisibility: VisibilityState;
+   columnOrder: string[];
+   columnVisibility: VisibilityState;
 };
 
 interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
-  data: TData[];
-  getRowId: (row: TData) => string;
-  sorting: SortingState;
-  onSortingChange: OnChangeFn<SortingState>;
-  columnFilters: ColumnFiltersState;
-  onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
-  tableState: DataTableStoredState | null;
-  onTableStateChange: (state: DataTableStoredState) => void;
-  pagination?: DataTablePaginationProps;
-  rowSelection?: RowSelectionState;
-  onRowSelectionChange?: (state: RowSelectionState) => void;
-  renderActions?: (props: { row: Row<TData> }) => React.ReactNode;
-  renderSubComponent?: (props: { row: Row<TData> }) => React.ReactNode;
-  groupBy?: (row: TData) => string;
-  renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
+   columns: ColumnDef<TData, TValue>[];
+   data: TData[];
+   getRowId: (row: TData) => string;
+   sorting: SortingState;
+   onSortingChange: OnChangeFn<SortingState>;
+   columnFilters: ColumnFiltersState;
+   onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
+   tableState: DataTableStoredState | null;
+   onTableStateChange: (state: DataTableStoredState) => void;
+   pagination?: DataTablePaginationProps;
+   rowSelection?: RowSelectionState;
+   onRowSelectionChange?: (state: RowSelectionState) => void;
+   renderActions?: (props: { row: Row<TData> }) => React.ReactNode;
+   renderSubComponent?: (props: { row: Row<TData> }) => React.ReactNode;
+   groupBy?: (row: TData) => string;
+   renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
 }
 ```
 
@@ -82,33 +83,34 @@ No `useLocalStorage`, no `useId`, no `instanceId`, no `lsPrefix`, no `storedColu
 ### Step 3: Remove all feature-flag-derived booleans
 
 Delete these lines entirely:
+
 - `const useLocalVisibility = ...`
 - `const effectiveColumnVisibility = useMemo(...)` — replace with direct read:
 
 ```typescript
 const effectiveColumnVisibility: VisibilityState =
-  tableState?.columnVisibility ?? {};
+   tableState?.columnVisibility ?? {};
 ```
 
 ### Step 4: Update `handleColumnVisibilityChange`
 
 ```typescript
 const handleColumnVisibilityChange = useCallback(
-  (
-    updaterOrValue:
-      | VisibilityState
-      | ((old: VisibilityState) => VisibilityState),
-  ) => {
-    const next =
-      typeof updaterOrValue === "function"
-        ? updaterOrValue(effectiveColumnVisibility)
-        : updaterOrValue;
-    onTableStateChange({
-      columnOrder: columnOrder,
-      columnVisibility: next,
-    });
-  },
-  [effectiveColumnVisibility, onTableStateChange, columnOrder],
+   (
+      updaterOrValue:
+         | VisibilityState
+         | ((old: VisibilityState) => VisibilityState),
+   ) => {
+      const next =
+         typeof updaterOrValue === "function"
+            ? updaterOrValue(effectiveColumnVisibility)
+            : updaterOrValue;
+      onTableStateChange({
+         columnOrder: columnOrder,
+         columnVisibility: next,
+      });
+   },
+   [effectiveColumnVisibility, onTableStateChange, columnOrder],
 );
 ```
 
@@ -144,27 +146,27 @@ No more stored order init from localStorage — read from `tableState` prop:
 
 ```typescript
 const isFixedColumn = (id: string) =>
-  id === "drag-handle" || id === "__actions";
+   id === "drag-handle" || id === "__actions";
 
 const [columnOrder, setColumnOrder] = useState<string[]>(() => {
-  const draggableIds = allColumns
-    .filter((c) => !isFixedColumn(c.id ?? ""))
-    .map((c) => c.id ?? "");
-  if (tableState?.columnOrder) {
-    return tableState.columnOrder.filter((id) => draggableIds.includes(id));
-  }
-  return draggableIds;
+   const draggableIds = allColumns
+      .filter((c) => !isFixedColumn(c.id ?? ""))
+      .map((c) => c.id ?? "");
+   if (tableState?.columnOrder) {
+      return tableState.columnOrder.filter((id) => draggableIds.includes(id));
+   }
+   return draggableIds;
 });
 
 useEffect(() => {
-  setColumnOrder((prev) => {
-    const draggableIds = allColumns
-      .filter((c) => !isFixedColumn(c.id ?? ""))
-      .map((c) => c.id ?? "");
-    const kept = prev.filter((id) => draggableIds.includes(id));
-    const added = draggableIds.filter((id) => !prev.includes(id));
-    return [...kept, ...added];
-  });
+   setColumnOrder((prev) => {
+      const draggableIds = allColumns
+         .filter((c) => !isFixedColumn(c.id ?? ""))
+         .map((c) => c.id ?? "");
+      const kept = prev.filter((id) => draggableIds.includes(id));
+      const added = draggableIds.filter((id) => !prev.includes(id));
+      return [...kept, ...added];
+   });
 }, [allColumns]);
 ```
 
@@ -175,14 +177,14 @@ Replace the `columnOrderMounted` ref + effect with a simpler effect that only fi
 ```typescript
 const columnOrderMounted = useRef(false);
 useEffect(() => {
-  if (!columnOrderMounted.current) {
-    columnOrderMounted.current = true;
-    return;
-  }
-  onTableStateChange({
-    columnOrder,
-    columnVisibility: effectiveColumnVisibility,
-  });
+   if (!columnOrderMounted.current) {
+      columnOrderMounted.current = true;
+      return;
+   }
+   onTableStateChange({
+      columnOrder,
+      columnVisibility: effectiveColumnVisibility,
+   });
 }, [columnOrder]);
 ```
 
@@ -190,25 +192,25 @@ useEffect(() => {
 
 ```typescript
 const table = useReactTable({
-  columns: allColumns,
-  data,
-  enableRowSelection: true,
-  getCoreRowModel: getCoreRowModel(),
-  getFilteredRowModel: getFilteredRowModel(),
-  getRowId: (originalRow) => getRowId(originalRow),
-  getSortedRowModel: getSortedRowModel(),
-  onColumnFiltersChange,
-  onColumnVisibilityChange: handleColumnVisibilityChange,
-  onRowSelectionChange: handleRowSelectionChange,
-  onSortingChange,
-  onColumnOrderChange: setColumnOrder,
-  state: {
-    columnFilters,
-    columnVisibility: effectiveColumnVisibility,
-    rowSelection,
-    sorting,
-    columnOrder,
-  },
+   columns: allColumns,
+   data,
+   enableRowSelection: true,
+   getCoreRowModel: getCoreRowModel(),
+   getFilteredRowModel: getFilteredRowModel(),
+   getRowId: (originalRow) => getRowId(originalRow),
+   getSortedRowModel: getSortedRowModel(),
+   onColumnFiltersChange,
+   onColumnVisibilityChange: handleColumnVisibilityChange,
+   onRowSelectionChange: handleRowSelectionChange,
+   onSortingChange,
+   onColumnOrderChange: setColumnOrder,
+   state: {
+      columnFilters,
+      columnVisibility: effectiveColumnVisibility,
+      rowSelection,
+      sorting,
+      columnOrder,
+   },
 });
 ```
 
@@ -250,6 +252,7 @@ Expected: no errors.
 ## Task 2: Update `categories.tsx`
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/categories.tsx`
 
 ### Step 1: Add `validateSearch` to the route
@@ -261,29 +264,32 @@ import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import type { SortingState, ColumnFiltersState } from "@tanstack/react-table";
 
 const categoriesSearchSchema = z.object({
-  sorting: z
-    .array(z.object({ id: z.string(), desc: z.boolean() }))
-    .optional()
-    .default([]),
-  columnFilters: z
-    .array(z.object({ id: z.string(), value: z.unknown() }))
-    .optional()
-    .default([]),
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .optional()
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .optional()
+      .default([]),
 });
 
-const [useCategoriesTableState] = createLocalStorageState<DataTableStoredState | null>(
-  "montte:datatable:categories",
-  null,
-);
+const [useCategoriesTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:categories",
+      null,
+   );
 
 export const Route = createFileRoute(
-  "/_authenticated/$slug/$teamSlug/_dashboard/categories",
+   "/_authenticated/$slug/$teamSlug/_dashboard/categories",
 )({
-  validateSearch: categoriesSearchSchema,
-  loader: ({ context }) => {
-    context.queryClient.prefetchQuery(orpc.categories.getAll.queryOptions({}));
-  },
-  component: CategoriesPage,
+   validateSearch: categoriesSearchSchema,
+   loader: ({ context }) => {
+      context.queryClient.prefetchQuery(
+         orpc.categories.getAll.queryOptions({}),
+      );
+   },
+   component: CategoriesPage,
 });
 ```
 
@@ -347,6 +353,7 @@ bun run typecheck --projects=apps/web
 ## Task 3: Update `transactions-list.tsx`
 
 **Files:**
+
 - Modify: `apps/web/src/features/transactions/ui/transactions-list.tsx`
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/transactions.tsx` (add validateSearch)
 
@@ -356,15 +363,15 @@ Find the transactions route file and add the same `categoriesSearchSchema` patte
 
 ```typescript
 const transactionsSearchSchema = z.object({
-  // preserve existing search params
-  sorting: z
-    .array(z.object({ id: z.string(), desc: z.boolean() }))
-    .optional()
-    .default([]),
-  columnFilters: z
-    .array(z.object({ id: z.string(), value: z.unknown() }))
-    .optional()
-    .default([]),
+   // preserve existing search params
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .optional()
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .optional()
+      .default([]),
 });
 ```
 
@@ -374,10 +381,11 @@ const transactionsSearchSchema = z.object({
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import type { DataTableStoredState } from "@packages/ui/components/data-table";
 
-const [useTransactionsTableState] = createLocalStorageState<DataTableStoredState | null>(
-  "montte:datatable:transactions",
-  null,
-);
+const [useTransactionsTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:transactions",
+      null,
+   );
 ```
 
 ### Step 3: Wire props in `TransactionsList`
@@ -389,6 +397,7 @@ Pass `sorting`, `onSortingChange`, `columnFilters`, `onColumnFiltersChange`, `ta
 ## Task 4: Update remaining call sites (bulk)
 
 **Files** (each needs the same treatment):
+
 - `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/tags.tsx`
 - `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/contacts.tsx`
 - `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/credit-cards.tsx`
@@ -416,6 +425,7 @@ Pass `sorting`, `onSortingChange`, `columnFilters`, `onColumnFiltersChange`, `ta
 ### Pattern for feature files (billing-usage, billing-spend, event-catalog-table)
 
 These are not routes — they don't have access to `Route.useSearch()`. For these:
+
 - `sorting` starts as `useState<SortingState>([])` — local state, not URL
 - `columnFilters` starts as `useState<ColumnFiltersState>([])` — local state, not URL
 - `tableState` from `createLocalStorageState` at module level
@@ -434,6 +444,7 @@ Expected: no errors across all packages.
 ## Task 5: Remove `editable-dashboard-grid.tsx` usage (analytics)
 
 **Files:**
+
 - Modify: `apps/web/src/features/analytics/ui/editable-dashboard-grid.tsx`
 
 This file uses DataTable too. Apply the same feature-file pattern (local useState for sorting/filters, createLocalStorageState for tableState).

@@ -13,6 +13,7 @@
 ## Task 1: Add `checkDuplicates` oRPC procedure
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/orpc/router/transactions.ts`
 - Modify: `apps/web/src/integrations/orpc/router/index.ts` (verify it's already exported via barrel or direct)
 
@@ -25,13 +26,16 @@ export const checkDuplicates = protectedProcedure
    .input(
       z.object({
          bankAccountId: z.string().uuid(),
-         transactions: z.array(
-            z.object({
-               date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-               amount: z.string().regex(/^-?\d+(\.\d+)?$/),
-               type: z.enum(["income", "expense"]),
-            }),
-         ).min(1).max(1000),
+         transactions: z
+            .array(
+               z.object({
+                  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+                  amount: z.string().regex(/^-?\d+(\.\d+)?$/),
+                  type: z.enum(["income", "expense"]),
+               }),
+            )
+            .min(1)
+            .max(1000),
       }),
    )
    .handler(async ({ context, input }) => {
@@ -95,6 +99,7 @@ git commit -m "feat(transactions): add checkDuplicates oRPC procedure"
 ## Task 2: Rename import file + move to credenza naming
 
 **Files:**
+
 - Rename: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/-transactions/statement-import-dialog-stack.tsx` → `statement-import-credenza.tsx`
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/transactions.tsx`
 
@@ -108,15 +113,19 @@ mv apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/-transactions/s
 **Step 2: Update the import in transactions.tsx**
 
 Change:
+
 ```typescript
 import { StatementImportDialogStack } from "./-transactions/statement-import-dialog-stack";
 ```
+
 To:
+
 ```typescript
 import { StatementImportCredenza } from "./-transactions/statement-import-credenza";
 ```
 
 And update usage:
+
 ```typescript
 children: <StatementImportCredenza onClose={closeCredenza} />,
 ```
@@ -140,11 +149,13 @@ git commit -m "refactor(transactions): rename import dialog-stack to credenza"
 ## Task 3: Wizard state — add bankAccountId at top level
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/-transactions/statement-import-credenza.tsx`
 
 **Step 1: Add bankAccountId to ImportWizard state**
 
 In `ImportWizard`, add:
+
 ```typescript
 const [bankAccountId, setBankAccountId] = useState<string>("");
 ```
@@ -159,6 +170,7 @@ const [bankAccountId, setBankAccountId] = useState<string>("");
 `ConfirmStepInner` currently has `useSuspenseQuery(orpc.bankAccounts.getAll...)` and a `Combobox`. Remove both. The account is now set in step 1.
 
 Update `ConfirmStepInner` props:
+
 ```typescript
 interface ConfirmStepInnerProps {
    methods: StepperMethods;
@@ -182,6 +194,7 @@ bun run typecheck
 ## Task 4: UploadStep — add bank account selector
 
 **Files:**
+
 - Modify: `statement-import-credenza.tsx` — `UploadStep` component
 
 **Step 1: Update UploadStep props**
@@ -191,7 +204,11 @@ interface UploadStepProps {
    methods: StepperMethods;
    bankAccountId: string;
    onBankAccountChange: (id: string) => void;
-   onFileReady: (rows: ValidatedRow[], format: FileFormat, raw: RawData | null) => void;
+   onFileReady: (
+      rows: ValidatedRow[],
+      format: FileFormat,
+      raw: RawData | null,
+   ) => void;
 }
 ```
 
@@ -207,7 +224,10 @@ Inside `UploadStep` render, before the `Dropzone`, add:
    <Combobox
       id="import-account"
       name="import-account"
-      options={(bankAccounts ?? []).map((a) => ({ value: a.id, label: a.name }))}
+      options={(bankAccounts ?? []).map((a) => ({
+         value: a.id,
+         label: a.name,
+      }))}
       onValueChange={onBankAccountChange}
       placeholder="Selecionar conta..."
       value={bankAccountId}
@@ -225,22 +245,27 @@ Inside `UploadStep` render, before the `Dropzone`, add:
 ```
 
 Below the dropzone, add the template download link (only shown when account is selected):
+
 ```tsx
-{bankAccountId && (
-   <button
-      type="button"
-      className="text-xs text-muted-foreground underline underline-offset-2"
-      onClick={handleDownloadTemplate}
-   >
-      Baixar modelo CSV
-   </button>
-)}
+{
+   bankAccountId && (
+      <button
+         type="button"
+         className="text-xs text-muted-foreground underline underline-offset-2"
+         onClick={handleDownloadTemplate}
+      >
+         Baixar modelo CSV
+      </button>
+   );
+}
 ```
 
 The template download function:
+
 ```typescript
 function handleDownloadTemplate() {
-   const headers = "data,nome,tipo,valor,descricao\n2024-01-15,Pagamento fornecedor,despesa,1500.00,NF 123";
+   const headers =
+      "data,nome,tipo,valor,descricao\n2024-01-15,Pagamento fornecedor,despesa,1500.00,NF 123";
    const blob = new Blob([headers], { type: "text/csv;charset=utf-8;" });
    const url = URL.createObjectURL(blob);
    const a = document.createElement("a");
@@ -258,11 +283,13 @@ function handleDownloadTemplate() {
 ## Task 5: DE PARA step — inline sample data + localStorage mapping cache
 
 **Files:**
+
 - Modify: `statement-import-credenza.tsx` — `MapStep` component + top-level helpers
 
 **Step 1: Add headers fingerprint helper**
 
 At module level:
+
 ```typescript
 function headersFingerprint(headers: string[]): string {
    return [...headers].sort().join(",");
@@ -278,7 +305,11 @@ function mappingStorageKey(headers: string[]): string {
 In `ImportWizard.handleFileReady`, after `guessMapping`, check localStorage:
 
 ```typescript
-function handleFileReady(parsedRows: ValidatedRow[], fmt: FileFormat, raw: RawData | null) {
+function handleFileReady(
+   parsedRows: ValidatedRow[],
+   fmt: FileFormat,
+   raw: RawData | null,
+) {
    setFormat(fmt);
    if (raw) {
       setRawData(raw);
@@ -302,6 +333,7 @@ function handleFileReady(parsedRows: ValidatedRow[], fmt: FileFormat, raw: RawDa
 ```
 
 Add `savedMappingApplied` state to `ImportWizard`:
+
 ```typescript
 const [savedMappingApplied, setSavedMappingApplied] = useState(false);
 ```
@@ -333,23 +365,28 @@ interface MapStepProps {
 Add the "mapeamento anterior aplicado" banner (shown when `savedMappingApplied`):
 
 ```tsx
-{savedMappingApplied && (
-   <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2">
-      <p className="text-xs text-muted-foreground">Mapeamento anterior aplicado</p>
-      <button
-         type="button"
-         className="text-xs text-muted-foreground hover:text-foreground"
-         onClick={onDismissSavedMapping}
-      >
-         Redefinir
-      </button>
-   </div>
-)}
+{
+   savedMappingApplied && (
+      <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2">
+         <p className="text-xs text-muted-foreground">
+            Mapeamento anterior aplicado
+         </p>
+         <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground"
+            onClick={onDismissSavedMapping}
+         >
+            Redefinir
+         </button>
+      </div>
+   );
+}
 ```
 
 **Step 5: Add sample values column to each mapping row**
 
 Extract sample values helper:
+
 ```typescript
 function getSampleValues(raw: RawData, header: string): string {
    const idx = raw.headers.indexOf(header);
@@ -365,30 +402,38 @@ function getSampleValues(raw: RawData, header: string): string {
 Update the mapping row render:
 
 ```tsx
-{COLUMN_FIELDS.map((field) => (
-   <div className="grid grid-cols-[7rem_1fr_auto] items-center gap-4" key={field}>
-      <span className="text-sm font-medium shrink-0">
-         {FIELD_LABELS[field]}
-      </span>
-      <Combobox
-         options={[
-            { value: "__none__", label: "— Não mapear —" },
-            ...raw.headers.map((h) => ({ value: h, label: h })),
-         ]}
-         onValueChange={(v) =>
-            onMappingChange({ ...mapping, [field]: v === "__none__" ? "" : v })
-         }
-         value={mapping[field] || "__none__"}
-      />
-      {mapping[field] && mapping[field] !== "__none__" ? (
-         <p className="text-xs text-muted-foreground max-w-32 truncate">
-            {getSampleValues(raw, mapping[field])}
-         </p>
-      ) : (
-         <p className="w-32" />
-      )}
-   </div>
-))}
+{
+   COLUMN_FIELDS.map((field) => (
+      <div
+         className="grid grid-cols-[7rem_1fr_auto] items-center gap-4"
+         key={field}
+      >
+         <span className="text-sm font-medium shrink-0">
+            {FIELD_LABELS[field]}
+         </span>
+         <Combobox
+            options={[
+               { value: "__none__", label: "— Não mapear —" },
+               ...raw.headers.map((h) => ({ value: h, label: h })),
+            ]}
+            onValueChange={(v) =>
+               onMappingChange({
+                  ...mapping,
+                  [field]: v === "__none__" ? "" : v,
+               })
+            }
+            value={mapping[field] || "__none__"}
+         />
+         {mapping[field] && mapping[field] !== "__none__" ? (
+            <p className="text-xs text-muted-foreground max-w-32 truncate">
+               {getSampleValues(raw, mapping[field])}
+            </p>
+         ) : (
+            <p className="w-32" />
+         )}
+      </div>
+   ));
+}
 ```
 
 **Step 6: Verify typecheck**
@@ -398,6 +443,7 @@ Update the mapping row render:
 ## Task 6: PreviewStep — totals, date range, duplicate flags
 
 **Files:**
+
 - Modify: `statement-import-credenza.tsx` — `PreviewStep` component + `ImportWizard`
 
 **Step 1: Add duplicate detection**
@@ -405,6 +451,7 @@ Update the mapping row render:
 After map step applies rows, call `checkDuplicates` mutation. Store result as `duplicateFlags: boolean[]` in `ImportWizard` state.
 
 In `ImportWizard`:
+
 ```typescript
 const [duplicateFlags, setDuplicateFlags] = useState<boolean[]>([]);
 const checkDuplicatesMutation = useMutation(
@@ -413,6 +460,7 @@ const checkDuplicatesMutation = useMutation(
 ```
 
 In `MapStep.handleNext` callback (`onApply`), after `setRows`, trigger the check:
+
 ```typescript
 // In ImportWizard, pass onApply that also calls the mutation:
 async function handleApplyRows(mapped: ValidatedRow[]) {
@@ -459,12 +507,20 @@ interface PreviewStepProps {
 const validRows = rows.filter((r) => r.isValid);
 const totalIncome = validRows
    .filter((r) => r.type === "income")
-   .reduce((sum, r) => sum + (Number.parseFloat(parseAmount(r.amount) ?? "0")), 0);
+   .reduce(
+      (sum, r) => sum + Number.parseFloat(parseAmount(r.amount) ?? "0"),
+      0,
+   );
 const totalExpense = validRows
    .filter((r) => r.type === "expense")
-   .reduce((sum, r) => sum + (Number.parseFloat(parseAmount(r.amount) ?? "0")), 0);
+   .reduce(
+      (sum, r) => sum + Number.parseFloat(parseAmount(r.amount) ?? "0"),
+      0,
+   );
 
-const dates = validRows.map((r) => parseDate(r.date)).filter(Boolean) as string[];
+const dates = validRows
+   .map((r) => parseDate(r.date))
+   .filter(Boolean) as string[];
 const minDate = dates.length ? dates.reduce((a, b) => (a < b ? a : b)) : null;
 const maxDate = dates.length ? dates.reduce((a, b) => (a > b ? a : b)) : null;
 ```
@@ -487,7 +543,8 @@ const maxDate = dates.length ? dates.reduce((a, b) => (a > b ? a : b)) : null;
    </div>
    {minDate && maxDate && (
       <p className="text-xs text-muted-foreground ml-auto">
-         {dayjs(minDate).format("DD/MM/YYYY")} – {dayjs(maxDate).format("DD/MM/YYYY")}
+         {dayjs(minDate).format("DD/MM/YYYY")} –{" "}
+         {dayjs(maxDate).format("DD/MM/YYYY")}
       </p>
    )}
 </div>
@@ -498,34 +555,50 @@ const maxDate = dates.length ? dates.reduce((a, b) => (a > b ? a : b)) : null;
 In the table row render, check `duplicateFlags[i]`:
 
 ```tsx
-{previewRows.map((row, i) => (
-   <TableRow
-      className={row.isValid ? (duplicateFlags[i] ? "bg-yellow-500/5" : "") : "bg-destructive/5"}
-      key={`prev-${i + 1}`}
-   >
-      ...
-      <TableCell className="text-xs">
-         {!row.isValid ? (
-            <AlertTriangle className="size-3.5 text-destructive" />
-         ) : duplicateFlags[i] ? (
-            <AlertTriangle className="size-3.5 text-yellow-500" title="Possível duplicata" />
-         ) : (
-            <CheckCircle2 className="size-3.5 text-emerald-600" />
-         )}
-      </TableCell>
-   </TableRow>
-))}
+{
+   previewRows.map((row, i) => (
+      <TableRow
+         className={
+            row.isValid
+               ? duplicateFlags[i]
+                  ? "bg-yellow-500/5"
+                  : ""
+               : "bg-destructive/5"
+         }
+         key={`prev-${i + 1}`}
+      >
+         ...
+         <TableCell className="text-xs">
+            {!row.isValid ? (
+               <AlertTriangle className="size-3.5 text-destructive" />
+            ) : duplicateFlags[i] ? (
+               <AlertTriangle
+                  className="size-3.5 text-yellow-500"
+                  title="Possível duplicata"
+               />
+            ) : (
+               <CheckCircle2 className="size-3.5 text-emerald-600" />
+            )}
+         </TableCell>
+      </TableRow>
+   ));
+}
 ```
 
 **Step 6: Update duplicate badge counts**
 
 Add to badge row:
+
 ```tsx
 const duplicateCount = duplicateFlags.filter(Boolean).length;
 // ...
-{duplicateCount > 0 && (
-   <Badge variant="warning">{duplicateCount} possível(is) duplicata(s)</Badge>
-)}
+{
+   duplicateCount > 0 && (
+      <Badge variant="warning">
+         {duplicateCount} possível(is) duplicata(s)
+      </Badge>
+   );
+}
 ```
 
 Note: check if `"warning"` variant exists in your Badge component — if not use `"outline"` with a `className="text-yellow-600 border-yellow-300"`.
@@ -537,6 +610,7 @@ Note: check if `"warning"` variant exists in your Badge component — if not use
 ## Task 7: ConfirmStep — use bankAccountId from props, show duplicate warning
 
 **Files:**
+
 - Modify: `statement-import-credenza.tsx` — `ConfirmStepInner`
 
 **Step 1: Remove bank account query + selector**
@@ -558,20 +632,26 @@ const rowsToImport = validRows.filter((_, i) =>
 ```
 
 Add to the summary section:
+
 ```tsx
-{duplicateCount > 0 && (
-   <div className="flex items-center justify-between px-4 py-2.5">
-      <label htmlFor="skip-duplicates" className="text-sm text-muted-foreground cursor-pointer">
-         Ignorar possíveis duplicatas
-      </label>
-      <input
-         id="skip-duplicates"
-         type="checkbox"
-         checked={skipDuplicates}
-         onChange={(e) => setSkipDuplicates(e.target.checked)}
-      />
-   </div>
-)}
+{
+   duplicateCount > 0 && (
+      <div className="flex items-center justify-between px-4 py-2.5">
+         <label
+            htmlFor="skip-duplicates"
+            className="text-sm text-muted-foreground cursor-pointer"
+         >
+            Ignorar possíveis duplicatas
+         </label>
+         <input
+            id="skip-duplicates"
+            type="checkbox"
+            checked={skipDuplicates}
+            onChange={(e) => setSkipDuplicates(e.target.checked)}
+         />
+      </div>
+   );
+}
 ```
 
 Use the `Checkbox` component from `@packages/ui/components/checkbox` if available, not a raw `input`.

@@ -296,7 +296,7 @@ const context = createRequestContext({
 });
 
 const result = await agent.generate("Summarize this month's transactions", {
-   requestContext: context
+   requestContext: context,
 });
 ```
 
@@ -352,7 +352,10 @@ export async function createBankAccount(
 ) {
    const validated = validateInput(createBankAccountSchema, data);
    try {
-      const [account] = await db.insert(bankAccounts).values({ ...validated, teamId }).returning();
+      const [account] = await db
+         .insert(bankAccounts)
+         .values({ ...validated, teamId })
+         .returning();
       if (!account) throw AppError.database("Failed to create bank account");
       return account;
    } catch (err) {
@@ -662,17 +665,17 @@ Stage is resolved from PostHog's early access feature config at runtime (`featur
 
 ### Flag keys (from billing-overview.tsx)
 
-| Feature              | Flag key            | Stage |
-| -------------------- | ------------------- | ----- |
-| NF-e                 | `nfe`               | alpha |
-| Assinatura Digital   | `document-signing`  | alpha |
+| Feature            | Flag key           | Stage |
+| ------------------ | ------------------ | ----- |
+| NF-e               | `nfe`              | alpha |
+| Assinatura Digital | `document-signing` | alpha |
 
 ### Other early-access flag keys (from sidebar-nav-items.ts + early-access.ts)
 
-| Feature        | Flag key             | Where used |
-| -------------- | -------------------- | ---------- |
-| Contatos       | `contacts`           | Sidebar gating, onboarding enrollment |
-| Estoque        | `inventory`          | Sidebar gating, onboarding enrollment |
-| Serviços       | `services`           | Sidebar gating, onboarding enrollment |
-| Dashboards     | `advanced-analytics` | Sidebar gating, onboarding enrollment |
-| Dados          | `data-management`    | Sidebar gating, onboarding enrollment |
+| Feature    | Flag key             | Where used                            |
+| ---------- | -------------------- | ------------------------------------- |
+| Contatos   | `contacts`           | Sidebar gating, onboarding enrollment |
+| Estoque    | `inventory`          | Sidebar gating, onboarding enrollment |
+| Serviços   | `services`           | Sidebar gating, onboarding enrollment |
+| Dashboards | `advanced-analytics` | Sidebar gating, onboarding enrollment |
+| Dados      | `data-management`    | Sidebar gating, onboarding enrollment |

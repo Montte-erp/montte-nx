@@ -13,6 +13,7 @@
 ### Task 1: Create `useCsvFile`
 
 **Files:**
+
 - Create: `apps/web/src/hooks/use-csv-file.ts`
 
 ```typescript
@@ -41,7 +42,8 @@ export function useCsvFile() {
          reader.onload = (ev) => {
             try {
                const buffer = ev.target?.result;
-               if (!(buffer instanceof ArrayBuffer)) throw new Error("read error");
+               if (!(buffer instanceof ArrayBuffer))
+                  throw new Error("read error");
                resolve(parseCsvBuffer(buffer));
             } catch (err) {
                reject(err);
@@ -57,6 +59,7 @@ export function useCsvFile() {
 ```
 
 **Commit:**
+
 ```bash
 git add apps/web/src/hooks/use-csv-file.ts
 git commit -m "feat(hooks): add useCsvFile hook"
@@ -67,6 +70,7 @@ git commit -m "feat(hooks): add useCsvFile hook"
 ### Task 2: Create `useXlsxFile`
 
 **Files:**
+
 - Create: `apps/web/src/hooks/use-xlsx-file.ts`
 
 ```typescript
@@ -81,7 +85,10 @@ function parseXlsxBuffer(buffer: ArrayBuffer): XlsxData {
    const wb = xlsxRead(buffer, { type: "array" });
    const ws = wb.Sheets[wb.SheetNames[0]];
    if (!ws) throw new Error("Planilha vazia");
-   const data = xlsxUtils.sheet_to_json<unknown[]>(ws, { header: 1, defval: "" });
+   const data = xlsxUtils.sheet_to_json<unknown[]>(ws, {
+      header: 1,
+      defval: "",
+   });
    if (data.length < 2) throw new Error("Planilha sem dados");
    return {
       headers: (data[0] as unknown[]).map(String),
@@ -98,7 +105,8 @@ export function useXlsxFile() {
          reader.onload = (ev) => {
             try {
                const buffer = ev.target?.result;
-               if (!(buffer instanceof ArrayBuffer)) throw new Error("read error");
+               if (!(buffer instanceof ArrayBuffer))
+                  throw new Error("read error");
                resolve(parseXlsxBuffer(buffer));
             } catch (err) {
                reject(err);
@@ -114,6 +122,7 @@ export function useXlsxFile() {
 ```
 
 **Commit:**
+
 ```bash
 git add apps/web/src/hooks/use-xlsx-file.ts
 git commit -m "feat(hooks): add useXlsxFile hook"
@@ -124,29 +133,35 @@ git commit -m "feat(hooks): add useXlsxFile hook"
 ### Task 3: Refactor `useStatementImport` — CSV/XLSX hooks + localStorage + debounce
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/-transactions/use-statement-import.ts`
 
 #### 3a — Use `useCsvFile` / `useXlsxFile`
 
 Add imports:
+
 ```typescript
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 ```
 
 Inside `useStatementImport`:
+
 ```typescript
 const csv = useCsvFile();
 const xlsx = useXlsxFile();
 ```
 
 In `parseFile`, replace the inline parse calls:
+
 ```typescript
 // before
-const raw = ext === "xlsx" || ext === "xls" ? parseXlsx(buffer) : parseCsv(buffer);
+const raw =
+   ext === "xlsx" || ext === "xls" ? parseXlsx(buffer) : parseCsv(buffer);
 
 // after
-const raw = ext === "xlsx" || ext === "xls" ? xlsx.parse(buffer) : csv.parse(buffer);
+const raw =
+   ext === "xlsx" || ext === "xls" ? xlsx.parse(buffer) : csv.parse(buffer);
 ```
 
 Delete the now-unused module-level `parseCsv` and `parseXlsx` functions and their `@f-o-t/csv` / `xlsx` imports.
@@ -160,9 +175,12 @@ import { useLocalStorage } from "foxact/use-local-storage";
 ```
 
 Inside `useStatementImport` (the key can be a stable placeholder when no file is loaded):
+
 ```typescript
 const [, setSavedMapping] = useLocalStorage<ColumnMapping>(
-   rawData ? mappingStorageKey(rawData.headers) : "montte:import:mapping:__none__",
+   rawData
+      ? mappingStorageKey(rawData.headers)
+      : "montte:import:mapping:__none__",
    undefined,
    {
       serializer: JSON.stringify,
@@ -174,6 +192,7 @@ const [, setSavedMapping] = useLocalStorage<ColumnMapping>(
 > We only need the setter from this hook — the read happens directly from `localStorage` in `parseFile` (correct value, no stale closure). The setter handles SSR-safe writes and cross-tab sync.
 
 In `parseFile`, replace the raw `localStorage.getItem`:
+
 ```typescript
 // still reads directly — correct at call time
 const stored = localStorage.getItem(mappingStorageKey(raw.headers));
@@ -187,6 +206,7 @@ if (prior) {
 ```
 
 In `applyColumnMapping`, replace the raw `localStorage.setItem`:
+
 ```typescript
 // before
 localStorage.setItem(mappingStorageKey(rawData.headers), JSON.stringify(m));
@@ -196,6 +216,7 @@ setSavedMapping(m);
 ```
 
 In `resetMapping`, clear the stored value:
+
 ```typescript
 function resetMapping() {
    setSavedMappingApplied(false);
@@ -256,6 +277,7 @@ const applyRows = useCallback(
 ```
 
 **Commit:**
+
 ```bash
 git add apps/web/src/routes/_authenticated/\$slug/\$teamSlug/_dashboard/-transactions/use-statement-import.ts
 git commit -m "refactor(transactions): use shared CSV/XLSX hooks, foxact localStorage, debounced duplicate check"
@@ -266,6 +288,7 @@ git commit -m "refactor(transactions): use shared CSV/XLSX hooks, foxact localSt
 ### Task 4: Refactor `PreviewStep` — `useSet` + `useDebouncedState`
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/-transactions/statement-import-credenza.tsx`
 
 #### 4a — `useSet` for `selectedIndices`
@@ -279,15 +302,18 @@ import { useSet } from "foxact/use-set";
 ```
 
 In `PreviewStep`:
+
 ```typescript
 // before
 const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
 
 // after
-const [selectedIndices, addIndex, removeIndex, clearIndices, replaceIndices] = useSet<number>();
+const [selectedIndices, addIndex, removeIndex, clearIndices, replaceIndices] =
+   useSet<number>();
 ```
 
 Replace manual mutations:
+
 ```typescript
 // toggleSelectAll
 if (allSelected) {
@@ -326,13 +352,17 @@ const [bulkDate, setBulkDate] = useState<Date | undefined>(undefined);
 const [bulkCategoryId, setBulkCategoryId] = useState("");
 
 // after — instant setter for user input, debounced auto-reset
-const [bulkDate, setBulkDateImmediate, setBulkDate] = useDebouncedState<Date | undefined>(undefined, 300);
-const [bulkCategoryId, setCategoryIdImmediate, setBulkCategoryId] = useDebouncedState("", 300);
+const [bulkDate, setBulkDateImmediate, setBulkDate] = useDebouncedState<
+   Date | undefined
+>(undefined, 300);
+const [bulkCategoryId, setCategoryIdImmediate, setBulkCategoryId] =
+   useDebouncedState("", 300);
 ```
 
 > `useDebouncedState` returns `[debouncedValue, setImmediately, setDebounced]`. Use `setImmediately` for user selection, `setDebounced` for the auto-reset after applying.
 
 **Commit:**
+
 ```bash
 git add apps/web/src/routes/_authenticated/\$slug/\$teamSlug/_dashboard/-transactions/statement-import-credenza.tsx
 git commit -m "refactor(transactions): useSet + useDebouncedState in PreviewStep"

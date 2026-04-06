@@ -73,11 +73,21 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                         className="size-7 rounded-md flex items-center justify-center shrink-0"
                         style={{ backgroundColor: color ?? "#6366f1" }}
                      >
-                        {IconComponent && <IconComponent className="size-3.5 text-white" />}
+                        {IconComponent && (
+                           <IconComponent className="size-3.5 text-white" />
+                        )}
                      </span>
                   ) : null}
-                  <span className={row.depth > 0 ? "truncate" : "font-medium truncate"}>{name}</span>
-                  {isDefault && row.depth === 0 && <Badge variant="outline">Padrão</Badge>}
+                  <span
+                     className={
+                        row.depth > 0 ? "truncate" : "font-medium truncate"
+                     }
+                  >
+                     {name}
+                  </span>
+                  {isDefault && row.depth === 0 && (
+                     <Badge variant="outline">Padrão</Badge>
+                  )}
                </div>
             );
          },

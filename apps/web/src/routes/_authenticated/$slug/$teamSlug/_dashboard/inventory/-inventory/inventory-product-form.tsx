@@ -1,10 +1,11 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Input } from "@packages/ui/components/input";
 import { Label } from "@packages/ui/components/label";
 import { Textarea } from "@packages/ui/components/textarea";
@@ -80,17 +81,17 @@ export function InventoryProductForm({
    );
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>
                {mode === "create" ? "Novo produto" : "Editar produto"}
-            </DialogStackTitle>
-            <DialogStackDescription>
+            </CredenzaTitle>
+            <CredenzaDescription>
                Preencha as informações do produto.
-            </DialogStackDescription>
-         </DialogStackHeader>
-         <form className="h-full flex flex-col" onSubmit={handleSubmit}>
-            <div className="flex-1 overflow-y-auto px-4 py-4">
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <form onSubmit={handleSubmit}>
+            <CredenzaBody className="px-4">
                <div className="flex flex-col gap-4">
                   <div className="flex flex-col gap-2">
                      <Label htmlFor="name">Nome do produto</Label>
@@ -171,17 +172,17 @@ export function InventoryProductForm({
                      />
                   </div>
                </div>
-            </div>
+            </CredenzaBody>
 
-            <div className="border-t px-4 py-4">
+            <CredenzaFooter>
                <Button className="w-full" disabled={isPending} type="submit">
                   {isPending && (
                      <Loader2 className="size-4 mr-2 animate-spin" />
                   )}
                   {mode === "create" ? "Criar produto" : "Salvar alterações"}
                </Button>
-            </div>
+            </CredenzaFooter>
          </form>
-      </DialogStackContent>
+      </>
    );
 }

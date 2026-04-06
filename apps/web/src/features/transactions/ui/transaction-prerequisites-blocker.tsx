@@ -1,10 +1,11 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Landmark } from "lucide-react";
 
 interface TransactionPrerequisitesBlockerProps {
@@ -15,15 +16,15 @@ export function TransactionPrerequisitesBlocker({
    onAction,
 }: TransactionPrerequisitesBlockerProps) {
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Conta bancária necessária</DialogStackTitle>
-            <DialogStackDescription>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Conta bancária necessária</CredenzaTitle>
+            <CredenzaDescription>
                Para criar um lançamento, você precisa ter pelo menos uma conta
                bancária cadastrada.
-            </DialogStackDescription>
-         </DialogStackHeader>
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody className="px-4">
             <div className="flex flex-col items-center gap-4 py-4 text-center">
                <div className="rounded-full bg-muted p-4">
                   <Landmark className="size-8 text-muted-foreground" />
@@ -33,12 +34,12 @@ export function TransactionPrerequisitesBlocker({
                   lançamentos logo após.
                </p>
             </div>
-         </div>
-         <div className="border-t px-4 py-4">
+         </CredenzaBody>
+         <CredenzaFooter>
             <Button className="w-full" onClick={onAction}>
                Cadastrar conta bancária
             </Button>
-         </div>
-      </DialogStackContent>
+         </CredenzaFooter>
+      </>
    );
 }

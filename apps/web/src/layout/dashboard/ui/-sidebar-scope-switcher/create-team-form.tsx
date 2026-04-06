@@ -1,11 +1,12 @@
 import { Button } from "@packages/ui/components/button";
 import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { Skeleton } from "@packages/ui/components/skeleton";
@@ -17,7 +18,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
-import { closeDialogStack } from "@/hooks/use-dialog-stack";
+import { closeCredenza } from "@/hooks/use-credenza";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
 function CreateTeamSkeleton() {
@@ -67,7 +68,7 @@ const CreateTeamFormContent = () => {
             return;
          }
          toast.success("Espaço criado com sucesso");
-         closeDialogStack();
+         closeCredenza();
       },
       [],
    );
@@ -102,7 +103,7 @@ const CreateTeamFormContent = () => {
 
    return (
       <>
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+         <CredenzaBody className="px-4">
             <form
                className="grid gap-4"
                id="create-team-form"
@@ -172,10 +173,10 @@ const CreateTeamFormContent = () => {
                   }}
                />
             </form>
-         </div>
+         </CredenzaBody>
 
-         <div className="border-t px-4 py-4 flex items-center justify-end gap-2">
-            <Button onClick={closeDialogStack} type="button" variant="outline">
+         <CredenzaFooter>
+            <Button onClick={closeCredenza} type="button" variant="outline">
                Cancelar
             </Button>
             <form.Subscribe selector={(state) => state}>
@@ -197,20 +198,20 @@ const CreateTeamFormContent = () => {
                   </Button>
                )}
             </form.Subscribe>
-         </div>
+         </CredenzaFooter>
       </>
    );
 };
 
 export const CreateTeamForm: FC = () => {
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Criar espaço</DialogStackTitle>
-            <DialogStackDescription>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Criar espaço</CredenzaTitle>
+            <CredenzaDescription>
                Crie um novo espaço para organizar os membros da sua organização
-            </DialogStackDescription>
-         </DialogStackHeader>
+            </CredenzaDescription>
+         </CredenzaHeader>
          <ErrorBoundary
             FallbackComponent={createErrorFallback({
                errorTitle: "Erro ao carregar dados da organização",
@@ -220,6 +221,6 @@ export const CreateTeamForm: FC = () => {
                <CreateTeamFormContent />
             </Suspense>
          </ErrorBoundary>
-      </DialogStackContent>
+      </>
    );
 };

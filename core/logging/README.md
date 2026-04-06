@@ -4,17 +4,17 @@ Pino-based structured logging with OpenTelemetry integration.
 
 ## Exports
 
-| Export | Purpose |
-|--------|---------|
-| `.` | Logger factory and child logger creation |
-| `./server` | Server-side logger initialization |
-| `./worker` | Worker-side logger initialization |
-| `./root` | Root logger singleton |
-| `./types` | Logger type definitions |
-| `./otel` | OpenTelemetry transport configuration |
-| `./health` | Health check endpoint utilities |
+| Export          | Purpose                                      |
+| --------------- | -------------------------------------------- |
+| `.`             | Logger factory and child logger creation     |
+| `./server`      | Server-side logger initialization            |
+| `./worker`      | Worker-side logger initialization            |
+| `./root`        | Root logger singleton                        |
+| `./types`       | Logger type definitions                      |
+| `./otel`        | OpenTelemetry transport configuration        |
+| `./health`      | Health check endpoint utilities              |
 | `./orpc-plugin` | oRPC middleware for request/response logging |
-| `./errors` | Error handling and formatting utilities |
+| `./errors`      | Error handling and formatting utilities      |
 
 ## Usage
 

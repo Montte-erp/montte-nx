@@ -12,17 +12,18 @@
 
 ## What we're replacing
 
-| Current | Foxact equivalent | Files to delete after |
-|---|---|---|
-| `apps/web/src/hooks/use-local-storage.ts` | `foxact/use-local-storage` | ✅ delete |
-| `packages/ui/src/hooks/use-media-query.ts` | `foxact/use-media-query` | ✅ delete |
-| `packages/ui/src/hooks/use-debounce.ts` | `foxact/use-debounced-value` | ✅ delete |
-| `@uidotdev/usehooks` (useDebounce) | `foxact/use-debounced-value` | ✅ uninstall |
-| `useIsomorphicLayoutEffect` from `@dnd-kit/utilities` | `foxact/use-isomorphic-layout-effect` | — |
-| `navigator.clipboard` manual patterns | `foxact/use-clipboard` | — |
-| `createThreadRef.current = ...` stable handler pattern | `foxact/use-stable-handler` | — |
+| Current                                                | Foxact equivalent                     | Files to delete after |
+| ------------------------------------------------------ | ------------------------------------- | --------------------- |
+| `apps/web/src/hooks/use-local-storage.ts`              | `foxact/use-local-storage`            | ✅ delete             |
+| `packages/ui/src/hooks/use-media-query.ts`             | `foxact/use-media-query`              | ✅ delete             |
+| `packages/ui/src/hooks/use-debounce.ts`                | `foxact/use-debounced-value`          | ✅ delete             |
+| `@uidotdev/usehooks` (useDebounce)                     | `foxact/use-debounced-value`          | ✅ uninstall          |
+| `useIsomorphicLayoutEffect` from `@dnd-kit/utilities`  | `foxact/use-isomorphic-layout-effect` | —                     |
+| `navigator.clipboard` manual patterns                  | `foxact/use-clipboard`                | —                     |
+| `createThreadRef.current = ...` stable handler pattern | `foxact/use-stable-handler`           | —                     |
 
 **Keep unchanged:**
+
 - `packages/ui/src/hooks/use-mobile.ts` — project-specific wrapper, keep it wrapping foxact's `useMediaQuery`
 - `packages/ui/src/hooks/use-event-listener.ts` — foxact has no equivalent
 - `apps/web/src/hooks/use-standalone.ts` — keep, just update import inside
@@ -32,6 +33,7 @@
 ## Task 1: Install foxact, remove @uidotdev/usehooks
 
 **Files:**
+
 - Modify: `apps/web/package.json`
 - Modify: `packages/ui/package.json`
 - Modify: `bun.lock` (auto-updated)
@@ -55,6 +57,7 @@ bun remove @uidotdev/usehooks --filter @apps/web
 ```bash
 bun run typecheck 2>&1 | head -40
 ```
+
 Expected: errors only about missing hook replacements (not foxact itself).
 
 **Step 4: Commit**
@@ -69,6 +72,7 @@ git commit -m "build(deps): add foxact, remove @uidotdev/usehooks"
 ## Task 2: Migrate useDebounce (@uidotdev) → foxact/use-debounced-value
 
 **Files:**
+
 - Modify: `apps/web/src/features/analytics/hooks/use-insight-config.ts:7,50`
 
 **Step 1: Open the file and verify current usage**
@@ -80,11 +84,13 @@ Line 50: `const debouncedUpdates = useDebounce(pendingUpdates, 500);`
 **Step 2: Replace import**
 
 Old:
+
 ```typescript
 import { useDebounce } from "@uidotdev/usehooks";
 ```
 
 New:
+
 ```typescript
 import { useDebouncedValue } from "foxact/use-debounced-value";
 ```
@@ -92,11 +98,13 @@ import { useDebouncedValue } from "foxact/use-debounced-value";
 **Step 3: Replace usage**
 
 Old:
+
 ```typescript
 const debouncedUpdates = useDebounce(pendingUpdates, 500);
 ```
 
 New:
+
 ```typescript
 const debouncedUpdates = useDebouncedValue(pendingUpdates, 500);
 ```
@@ -106,6 +114,7 @@ const debouncedUpdates = useDebouncedValue(pendingUpdates, 500);
 ```bash
 bun run typecheck 2>&1 | grep use-insight-config
 ```
+
 Expected: no errors for this file.
 
 **Step 5: Commit**
@@ -120,6 +129,7 @@ git commit -m "refactor: migrate use-insight-config debounce to foxact"
 ## Task 3: Migrate packages/ui useDebounce hook → foxact/use-debounced-value
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/-onboarding/cnpj-step.tsx`
 - Delete: `packages/ui/src/hooks/use-debounce.ts`
 
@@ -134,21 +144,25 @@ grep -r "use-debounce" apps/web/src packages/ui/src --include="*.ts" --include="
 File: `apps/web/src/routes/_authenticated/-onboarding/cnpj-step.tsx`
 
 Old import:
+
 ```typescript
 import { useDebounce } from "@packages/ui/hooks/use-debounce";
 ```
 
 New import:
+
 ```typescript
 import { useDebouncedValue } from "foxact/use-debounced-value";
 ```
 
 Old usage (line ~62):
+
 ```typescript
 const debouncedDigits = useDebounce(rawValue, 400);
 ```
 
 New usage:
+
 ```typescript
 const debouncedDigits = useDebouncedValue(rawValue, 400);
 ```
@@ -164,6 +178,7 @@ rm packages/ui/src/hooks/use-debounce.ts
 ```bash
 grep -r "use-debounce\|useDebounce" apps/web/src packages/ui/src --include="*.ts" --include="*.tsx"
 ```
+
 Expected: no results.
 
 **Step 5: Typecheck**
@@ -171,6 +186,7 @@ Expected: no results.
 ```bash
 bun run typecheck 2>&1 | grep -E "use-debounce|cnpj"
 ```
+
 Expected: no errors.
 
 **Step 6: Commit**
@@ -187,6 +203,7 @@ git commit -m "refactor: replace local useDebounce with foxact/use-debounced-val
 **Context:** `useIsomorphicLayoutEffect` is currently imported from `@dnd-kit/utilities` in three places. foxact exports its own — this removes the accidental DnD coupling.
 
 **Files to update:**
+
 - `packages/ui/src/hooks/use-media-query.ts` (line 12)
 - `apps/web/src/hooks/use-local-storage.ts` (line 18)
 - `apps/web/src/hooks/use-standalone.ts` (line 12)
@@ -194,10 +211,13 @@ git commit -m "refactor: replace local useDebounce with foxact/use-debounced-val
 **Step 1: Update use-media-query.ts**
 
 Old:
+
 ```typescript
 import { useIsomorphicLayoutEffect } from "@dnd-kit/utilities";
 ```
+
 New:
+
 ```typescript
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 ```
@@ -215,6 +235,7 @@ Same swap.
 ```bash
 bun run typecheck 2>&1 | grep -E "use-media-query|use-local-storage|use-standalone"
 ```
+
 Expected: no errors.
 
 **Step 5: Commit**
@@ -231,6 +252,7 @@ git commit -m "refactor: replace @dnd-kit/utilities useIsomorphicLayoutEffect wi
 **Context:** `packages/ui/src/hooks/use-media-query.ts` is a custom SSR-safe wrapper. foxact's `useMediaQuery` is SSR-safe out of the box (uses `useSyncExternalStore`). We replace the wrapper and update all callsites to import from foxact directly. The `useSafeMediaQuery` alias is kept as a re-export briefly to ease migration, then deleted.
 
 **Files:**
+
 - Modify: `packages/ui/src/hooks/use-media-query.ts` → replace implementation, then delete
 - Modify: `packages/ui/src/hooks/use-mobile.ts`
 - Modify: `apps/web/src/hooks/use-standalone.ts`
@@ -245,12 +267,14 @@ grep -r "useSafeMediaQuery\|use-media-query" apps/web/src packages/ui/src --incl
 **Step 2: Update use-mobile.ts**
 
 Old:
+
 ```typescript
 import { useSafeMediaQuery } from "@packages/ui/hooks/use-media-query";
 export const useIsMobile = () => useSafeMediaQuery("(max-width: 767px)");
 ```
 
 New:
+
 ```typescript
 import { useMediaQuery } from "foxact/use-media-query";
 export const useIsMobile = () => useMediaQuery("(max-width: 767px)");
@@ -259,17 +283,23 @@ export const useIsMobile = () => useMediaQuery("(max-width: 767px)");
 **Step 3: Update use-standalone.ts**
 
 Old:
+
 ```typescript
 import { useSafeMediaQuery } from "@packages/ui/hooks/use-media-query";
 const isStandaloneMedia = useSafeMediaQuery("(display-mode: standalone)");
-const isWindowControlsOverlay = useSafeMediaQuery("(display-mode: window-controls-overlay)");
+const isWindowControlsOverlay = useSafeMediaQuery(
+   "(display-mode: window-controls-overlay)",
+);
 ```
 
 New:
+
 ```typescript
 import { useMediaQuery } from "foxact/use-media-query";
 const isStandaloneMedia = useMediaQuery("(display-mode: standalone)");
-const isWindowControlsOverlay = useMediaQuery("(display-mode: window-controls-overlay)");
+const isWindowControlsOverlay = useMediaQuery(
+   "(display-mode: window-controls-overlay)",
+);
 ```
 
 **Step 4: Update any remaining callsites found in Step 1**
@@ -287,6 +317,7 @@ rm packages/ui/src/hooks/use-media-query.ts
 ```bash
 grep -r "useSafeMediaQuery\|use-media-query" apps/web/src packages/ui/src --include="*.ts" --include="*.tsx"
 ```
+
 Expected: no results.
 
 **Step 7: Typecheck**
@@ -294,6 +325,7 @@ Expected: no results.
 ```bash
 bun run typecheck 2>&1 | grep -i media
 ```
+
 Expected: no errors.
 
 **Step 8: Commit**
@@ -310,6 +342,7 @@ git commit -m "refactor: replace useSafeMediaQuery wrapper with foxact/use-media
 **Context:** `apps/web/src/hooks/use-local-storage.ts` is a custom SSR-safe localStorage hook. foxact's `useLocalStorage` is SSR-safe and handles hydration. We replace all 3 callsites and delete the wrapper.
 
 **Files:**
+
 - Modify: `apps/web/src/routes/auth/callback.tsx:19-21`
 - Modify: `apps/web/src/layout/dashboard/ui/dashboard-layout.tsx:57-60`
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/home/-home/quick-start-checklist.tsx:34-37`
@@ -318,43 +351,63 @@ git commit -m "refactor: replace useSafeMediaQuery wrapper with foxact/use-media
 **Step 1: Update callback.tsx**
 
 Old:
+
 ```typescript
 import { useSafeLocalStorage } from "@/hooks/use-local-storage";
-const [pendingInvitation, setPendingInvitation] = useSafeLocalStorage<string | null>(PENDING_INVITATION_KEY, null);
+const [pendingInvitation, setPendingInvitation] = useSafeLocalStorage<
+   string | null
+>(PENDING_INVITATION_KEY, null);
 ```
 
 New:
+
 ```typescript
 import { useLocalStorage } from "foxact/use-local-storage";
-const [pendingInvitation, setPendingInvitation] = useLocalStorage<string | null>(PENDING_INVITATION_KEY, null);
+const [pendingInvitation, setPendingInvitation] = useLocalStorage<
+   string | null
+>(PENDING_INVITATION_KEY, null);
 ```
 
 **Step 2: Update dashboard-layout.tsx**
 
 Old:
+
 ```typescript
 import { useSafeLocalStorage } from "@/hooks/use-local-storage";
-const [sidebarCollapsed, setSidebarCollapsed] = useSafeLocalStorage<boolean>("montte:sidebar-collapsed", false);
+const [sidebarCollapsed, setSidebarCollapsed] = useSafeLocalStorage<boolean>(
+   "montte:sidebar-collapsed",
+   false,
+);
 ```
 
 New:
+
 ```typescript
 import { useLocalStorage } from "foxact/use-local-storage";
-const [sidebarCollapsed, setSidebarCollapsed] = useLocalStorage<boolean>("montte:sidebar-collapsed", false);
+const [sidebarCollapsed, setSidebarCollapsed] = useLocalStorage<boolean>(
+   "montte:sidebar-collapsed",
+   false,
+);
 ```
 
 **Step 3: Update quick-start-checklist.tsx**
 
 Old:
+
 ```typescript
 import { useSafeLocalStorage } from "@/hooks/use-local-storage";
-const [hiddenBySlug, setHiddenBySlug] = useSafeLocalStorage<Record<string, boolean>>("montte:checklist_hidden", {});
+const [hiddenBySlug, setHiddenBySlug] = useSafeLocalStorage<
+   Record<string, boolean>
+>("montte:checklist_hidden", {});
 ```
 
 New:
+
 ```typescript
 import { useLocalStorage } from "foxact/use-local-storage";
-const [hiddenBySlug, setHiddenBySlug] = useLocalStorage<Record<string, boolean>>("montte:checklist_hidden", {});
+const [hiddenBySlug, setHiddenBySlug] = useLocalStorage<
+   Record<string, boolean>
+>("montte:checklist_hidden", {});
 ```
 
 **Step 4: Delete the wrapper**
@@ -368,6 +421,7 @@ rm apps/web/src/hooks/use-local-storage.ts
 ```bash
 grep -r "useSafeLocalStorage\|use-local-storage" apps/web/src --include="*.ts" --include="*.tsx"
 ```
+
 Expected: no results.
 
 **Step 6: Typecheck**
@@ -375,6 +429,7 @@ Expected: no results.
 ```bash
 bun run typecheck 2>&1 | grep -i local-storage
 ```
+
 Expected: no errors.
 
 **Step 7: Commit**
@@ -389,27 +444,33 @@ git commit -m "refactor: replace useSafeLocalStorage wrapper with foxact/use-loc
 ## Task 7: Migrate navigator.clipboard patterns → foxact/use-clipboard
 
 **Files:**
+
 - Modify: `packages/ui/src/components/code-block.tsx:16-20`
 - Modify: `packages/ui/src/components/assistant-ui/markdown-text.tsx:54-71`
 
 **Step 1: Update code-block.tsx**
 
 Old (lines 16-20):
+
 ```typescript
 const [copied, setCopied] = useState(false);
 const handleCopy = useCallback(async () => {
-  await navigator.clipboard.writeText(code);
-  setCopied(true);
-  setTimeout(() => setCopied(false), 2000);
+   await navigator.clipboard.writeText(code);
+   setCopied(true);
+   setTimeout(() => setCopied(false), 2000);
 }, [code]);
 ```
 
 New:
+
 ```typescript
 import { useClipboard } from "foxact/use-clipboard";
 // ...
 const [copied, copyToClipboard] = useClipboard({ timeout: 2000 });
-const handleCopy = useCallback(() => copyToClipboard(code), [code, copyToClipboard]);
+const handleCopy = useCallback(
+   () => copyToClipboard(code),
+   [code, copyToClipboard],
+);
 ```
 
 Remove the `useState` for `copied` and the `setTimeout` — foxact handles the timeout internally. The `copied` boolean is now the first element of the tuple from `useClipboard`.
@@ -419,23 +480,27 @@ Remove the `useState` for `copied` and the `setTimeout` — foxact handles the t
 The local `useCopyToClipboard` inline hook (lines 54-71) can be deleted entirely. Replace with foxact:
 
 Old:
+
 ```typescript
 const useCopyToClipboard = ({ copiedDuration = 3000 } = {}) => {
-  const [isCopied, setIsCopied] = useState<boolean>(false);
-  const copyToClipboard = (value: string) => {
-    if (!value) return;
-    navigator.clipboard.writeText(value).then(() => {
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), copiedDuration);
-    });
-  };
-  return { isCopied, copyToClipboard };
+   const [isCopied, setIsCopied] = useState<boolean>(false);
+   const copyToClipboard = (value: string) => {
+      if (!value) return;
+      navigator.clipboard.writeText(value).then(() => {
+         setIsCopied(true);
+         setTimeout(() => setIsCopied(false), copiedDuration);
+      });
+   };
+   return { isCopied, copyToClipboard };
 };
 // usage inside component:
-const { isCopied, copyToClipboard } = useCopyToClipboard({ copiedDuration: 3000 });
+const { isCopied, copyToClipboard } = useCopyToClipboard({
+   copiedDuration: 3000,
+});
 ```
 
 New (at usage site):
+
 ```typescript
 import { useClipboard } from "foxact/use-clipboard";
 // inside component:
@@ -449,6 +514,7 @@ Delete the inline `useCopyToClipboard` function entirely.
 ```bash
 bun run typecheck 2>&1 | grep -E "code-block|markdown-text"
 ```
+
 Expected: no errors.
 
 **Step 4: Commit**
@@ -463,13 +529,16 @@ git commit -m "refactor: replace manual clipboard patterns with foxact/use-clipb
 ## Task 8: Migrate stable handler pattern → foxact/use-stable-handler
 
 **Context:** In `apps/web/src/routes/.../chat/index.tsx` there's a manual stable-handler pattern:
+
 ```typescript
 const createThreadRef = useRef(createThread.mutateAsync);
 createThreadRef.current = createThread.mutateAsync;
 ```
+
 This is exactly what `useStableHandler` does.
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/chat/index.tsx:48-52`
 
 **Step 1: Read the file to understand full context around lines 48-52**
@@ -477,12 +546,14 @@ This is exactly what `useStableHandler` does.
 **Step 2: Replace the pattern**
 
 Old:
+
 ```typescript
 const createThreadRef = useRef(createThread.mutateAsync);
 createThreadRef.current = createThread.mutateAsync;
 ```
 
 New:
+
 ```typescript
 import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
 
@@ -496,6 +567,7 @@ Update all references to `createThreadRef.current(...)` → `stableCreateThread(
 ```bash
 bun run typecheck 2>&1 | grep chat
 ```
+
 Expected: no errors.
 
 **Step 4: Commit**
@@ -514,6 +586,7 @@ git commit -m "refactor: replace manual stable-handler ref pattern with foxact/u
 ```bash
 grep -r "@uidotdev/usehooks" apps/ packages/ --include="*.ts" --include="*.tsx"
 ```
+
 Expected: no results.
 
 **Step 2: Check package.json entries**
@@ -521,6 +594,7 @@ Expected: no results.
 ```bash
 grep -r "@uidotdev" apps/ packages/ --include="package.json"
 ```
+
 Expected: no results (already removed in Task 1).
 
 **Step 3: Typecheck full project**
@@ -528,6 +602,7 @@ Expected: no results (already removed in Task 1).
 ```bash
 bun run typecheck
 ```
+
 Expected: no errors related to hook migrations.
 
 **Step 4: Run tests**
@@ -535,6 +610,7 @@ Expected: no errors related to hook migrations.
 ```bash
 bun run test
 ```
+
 Expected: all pass.
 
 **Step 5: Final commit if any leftover changes**
@@ -549,6 +625,7 @@ git commit -m "chore: finalize foxact migration, remove @uidotdev/usehooks"
 ## Summary of deleted files
 
 After completing all tasks:
+
 - `apps/web/src/hooks/use-local-storage.ts` — deleted ✅
 - `packages/ui/src/hooks/use-media-query.ts` — deleted ✅
 - `packages/ui/src/hooks/use-debounce.ts` — deleted ✅

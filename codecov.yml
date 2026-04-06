@@ -1,5 +1,5 @@
 ignore:
-  - "apps/web/src/layout/**"
-  - "apps/web/src/features/**"
-  - "apps/web/src/routes/**"
-  - "apps/web/src/components/**"
+   - "apps/web/src/layout/**"
+   - "apps/web/src/features/**"
+   - "apps/web/src/routes/**"
+   - "apps/web/src/components/**"

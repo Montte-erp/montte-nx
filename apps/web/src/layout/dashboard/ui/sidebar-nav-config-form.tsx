@@ -1,11 +1,11 @@
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { FeatureStageBadge } from "@packages/ui/components/feature-stage-badge";
 import { useMemo } from "react";
 import { useEarlyAccess } from "@/hooks/use-early-access";
@@ -155,20 +155,30 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
    };
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Personalizar barra lateral</DialogStackTitle>
-            <DialogStackDescription>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Personalizar barra lateral</CredenzaTitle>
+            <CredenzaDescription>
                Escolha quais itens exibir na navegação.
-            </DialogStackDescription>
-         </DialogStackHeader>
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody className="px-4">
             <p className="text-sm text-muted-foreground mb-6">
                Selecione os itens que deseja ver na barra lateral.
             </p>
             <div className="flex flex-col gap-4">
                {visibleLabeledNavGroups.map((group) =>
-                  renderSection(group.id, group.label!, group.items),
+                  renderSection(
+                     group.id,
+                     group.label!,
+                     group.items.flatMap((item) =>
+                        item.children
+                           ? item.children.filter((c) => c.configurable)
+                           : item.configurable
+                             ? [item]
+                             : [],
+                     ),
+                  ),
                )}
                {visibleMainEarlyAccessItems.length > 0 &&
                   renderSection(
@@ -182,7 +192,7 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
                   Fechar
                </Button>
             </div>
-         </div>
-      </DialogStackContent>
+         </CredenzaBody>
+      </>
    );
 }

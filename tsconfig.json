@@ -3,47 +3,47 @@
    "files": [],
    "exclude": [".worktrees", "node_modules", "dist"],
    "references": [
-    {
-      "path": "./core/transactional"
-    },
-    {
-      "path": "./packages/analytics"
-    },
-    {
-      "path": "./core/environment"
-    },
-    {
-      "path": "./packages/events"
-    },
-    {
-      "path": "./core/database"
-    },
-    {
-      "path": "./libraries/cli"
-    },
-    {
-      "path": "./core/logging"
-    },
-    {
-      "path": "./core/posthog"
-    },
-    {
-      "path": "./core/stripe"
-    },
-    {
-      "path": "./packages/ui"
-    },
-    {
-      "path": "./core/files"
-    },
-    {
-      "path": "./core/redis"
-    },
-    {
-      "path": "./core/utils"
-    },
-    {
-      "path": "./core/agents"
-    }
-  ]
+      {
+         "path": "./core/transactional"
+      },
+      {
+         "path": "./packages/analytics"
+      },
+      {
+         "path": "./core/environment"
+      },
+      {
+         "path": "./packages/events"
+      },
+      {
+         "path": "./core/database"
+      },
+      {
+         "path": "./libraries/cli"
+      },
+      {
+         "path": "./core/logging"
+      },
+      {
+         "path": "./core/posthog"
+      },
+      {
+         "path": "./core/stripe"
+      },
+      {
+         "path": "./packages/ui"
+      },
+      {
+         "path": "./core/files"
+      },
+      {
+         "path": "./core/redis"
+      },
+      {
+         "path": "./core/utils"
+      },
+      {
+         "path": "./core/agents"
+      }
+   ]
 }

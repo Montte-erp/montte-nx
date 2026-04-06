@@ -4,15 +4,15 @@ Drizzle ORM abstraction layer over PostgreSQL. Defines all domain schemas, relat
 
 ## Exports
 
-| Export | Purpose |
-|--------|---------|
-| `./client` | Database instance factory (`createDb()`) |
-| `./schema` | Aggregated schema exports |
-| `./schemas/*` | Individual table schemas (assets, bills, budgets, categories, contacts, credit-cards, dashboards, events, financial-goals, inventory, services, subscriptions, transactions, webhooks, etc.) |
-| `./repositories/*` | Data access layer (repository pattern) |
-| `./relations` | Schema relationship definitions |
-| `./helpers/*` | Database utilities |
-| `./default-insights` | Pre-configured insight definitions |
+| Export               | Purpose                                                                                                                                                                                      |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `./client`           | Database instance factory (`createDb()`)                                                                                                                                                     |
+| `./schema`           | Aggregated schema exports                                                                                                                                                                    |
+| `./schemas/*`        | Individual table schemas (assets, bills, budgets, categories, contacts, credit-cards, dashboards, events, financial-goals, inventory, services, subscriptions, transactions, webhooks, etc.) |
+| `./repositories/*`   | Data access layer (repository pattern)                                                                                                                                                       |
+| `./relations`        | Schema relationship definitions                                                                                                                                                              |
+| `./helpers/*`        | Database utilities                                                                                                                                                                           |
+| `./default-insights` | Pre-configured insight definitions                                                                                                                                                           |
 
 ## Usage
 

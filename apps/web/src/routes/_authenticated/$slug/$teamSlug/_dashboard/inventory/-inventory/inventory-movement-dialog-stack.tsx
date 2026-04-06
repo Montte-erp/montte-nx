@@ -1,10 +1,10 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Input } from "@packages/ui/components/input";
 import { Label } from "@packages/ui/components/label";
 import {
@@ -98,175 +98,180 @@ export function InventoryMovementDialogStack({
    );
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Movimentação de estoque</DialogStackTitle>
-            <DialogStackDescription>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Movimentação de estoque</CredenzaTitle>
+            <CredenzaDescription>
                Registre entradas e saídas do produto.
-            </DialogStackDescription>
-         </DialogStackHeader>
-         <Tabs defaultValue="purchase">
-            <TabsList className="w-full">
-               <TabsTrigger className="flex-1" value="purchase">
-                  Receber
-               </TabsTrigger>
-               <TabsTrigger className="flex-1" value="sale">
-                  Vender
-               </TabsTrigger>
-               <TabsTrigger className="flex-1" value="waste">
-                  Descartar
-               </TabsTrigger>
-            </TabsList>
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody className="px-4">
+            <Tabs defaultValue="purchase">
+               <TabsList className="w-full">
+                  <TabsTrigger className="flex-1" value="purchase">
+                     Receber
+                  </TabsTrigger>
+                  <TabsTrigger className="flex-1" value="sale">
+                     Vender
+                  </TabsTrigger>
+                  <TabsTrigger className="flex-1" value="waste">
+                     Descartar
+                  </TabsTrigger>
+               </TabsList>
 
-            <TabsContent value="purchase">
-               <form
-                  className="flex flex-col gap-4 pt-2"
-                  onSubmit={handlePurchase}
-               >
-                  <div className="flex flex-col gap-2">
-                     <Label>Quantidade ({product.purchaseUnit})</Label>
-                     <Input
-                        min="0.001"
-                        name="purchasedQty"
-                        placeholder="Ex: 10"
-                        required
-                        step="any"
-                        type="number"
-                     />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                     <Label>Custo total (R$)</Label>
-                     <Input
-                        min="0.01"
-                        name="totalAmount"
-                        placeholder="0.00"
-                        required
-                        step="0.01"
-                        type="number"
-                     />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                     <Label>Data</Label>
-                     <Input
-                        defaultValue={today}
-                        name="date"
-                        required
-                        type="date"
-                     />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                     <Label>Observações (opcional)</Label>
-                     <Input
-                        name="notes"
-                        placeholder="Ex: Entrega do fornecedor"
-                     />
-                  </div>
-                  <Button
-                     className="w-full"
-                     disabled={mutation.isPending}
-                     type="submit"
+               <TabsContent value="purchase">
+                  <form
+                     className="flex flex-col gap-4 pt-2"
+                     onSubmit={handlePurchase}
                   >
-                     {mutation.isPending && (
-                        <Loader2 className="size-4 mr-2 animate-spin" />
-                     )}
-                     Registrar recebimento
-                  </Button>
-               </form>
-            </TabsContent>
+                     <div className="flex flex-col gap-2">
+                        <Label>Quantidade ({product.purchaseUnit})</Label>
+                        <Input
+                           min="0.001"
+                           name="purchasedQty"
+                           placeholder="Ex: 10"
+                           required
+                           step="any"
+                           type="number"
+                        />
+                     </div>
+                     <div className="flex flex-col gap-2">
+                        <Label>Custo total (R$)</Label>
+                        <Input
+                           min="0.01"
+                           name="totalAmount"
+                           placeholder="0.00"
+                           required
+                           step="0.01"
+                           type="number"
+                        />
+                     </div>
+                     <div className="flex flex-col gap-2">
+                        <Label>Data</Label>
+                        <Input
+                           defaultValue={today}
+                           name="date"
+                           required
+                           type="date"
+                        />
+                     </div>
+                     <div className="flex flex-col gap-2">
+                        <Label>Observações (opcional)</Label>
+                        <Input
+                           name="notes"
+                           placeholder="Ex: Entrega do fornecedor"
+                        />
+                     </div>
+                     <Button
+                        className="w-full"
+                        disabled={mutation.isPending}
+                        type="submit"
+                     >
+                        {mutation.isPending && (
+                           <Loader2 className="size-4 mr-2 animate-spin" />
+                        )}
+                        Registrar recebimento
+                     </Button>
+                  </form>
+               </TabsContent>
 
-            <TabsContent value="sale">
-               <form className="flex flex-col gap-4 pt-2" onSubmit={handleSale}>
-                  <div className="flex flex-col gap-2">
-                     <Label>Quantidade ({product.baseUnit})</Label>
-                     <Input
-                        min="0.001"
-                        name="qty"
-                        placeholder="Ex: 3"
-                        required
-                        step="any"
-                        type="number"
-                     />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                     <Label>Preço por {product.baseUnit} (R$)</Label>
-                     <Input
-                        defaultValue={product.sellingPrice ?? ""}
-                        min="0.01"
-                        name="unitPrice"
-                        placeholder="0.00"
-                        step="0.01"
-                        type="number"
-                     />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                     <Label>Data</Label>
-                     <Input
-                        defaultValue={today}
-                        name="date"
-                        required
-                        type="date"
-                     />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                     <Label>Observações (opcional)</Label>
-                     <Input name="notes" />
-                  </div>
-                  <Button
-                     className="w-full"
-                     disabled={mutation.isPending}
-                     type="submit"
+               <TabsContent value="sale">
+                  <form
+                     className="flex flex-col gap-4 pt-2"
+                     onSubmit={handleSale}
                   >
-                     {mutation.isPending && (
-                        <Loader2 className="size-4 mr-2 animate-spin" />
-                     )}
-                     Registrar venda
-                  </Button>
-               </form>
-            </TabsContent>
+                     <div className="flex flex-col gap-2">
+                        <Label>Quantidade ({product.baseUnit})</Label>
+                        <Input
+                           min="0.001"
+                           name="qty"
+                           placeholder="Ex: 3"
+                           required
+                           step="any"
+                           type="number"
+                        />
+                     </div>
+                     <div className="flex flex-col gap-2">
+                        <Label>Preço por {product.baseUnit} (R$)</Label>
+                        <Input
+                           defaultValue={product.sellingPrice ?? ""}
+                           min="0.01"
+                           name="unitPrice"
+                           placeholder="0.00"
+                           step="0.01"
+                           type="number"
+                        />
+                     </div>
+                     <div className="flex flex-col gap-2">
+                        <Label>Data</Label>
+                        <Input
+                           defaultValue={today}
+                           name="date"
+                           required
+                           type="date"
+                        />
+                     </div>
+                     <div className="flex flex-col gap-2">
+                        <Label>Observações (opcional)</Label>
+                        <Input name="notes" />
+                     </div>
+                     <Button
+                        className="w-full"
+                        disabled={mutation.isPending}
+                        type="submit"
+                     >
+                        {mutation.isPending && (
+                           <Loader2 className="size-4 mr-2 animate-spin" />
+                        )}
+                        Registrar venda
+                     </Button>
+                  </form>
+               </TabsContent>
 
-            <TabsContent value="waste">
-               <form
-                  className="flex flex-col gap-4 pt-2"
-                  onSubmit={handleWaste}
-               >
-                  <div className="flex flex-col gap-2">
-                     <Label>Quantidade ({product.baseUnit})</Label>
-                     <Input
-                        min="0.001"
-                        name="qty"
-                        placeholder="Ex: 2"
-                        required
-                        step="any"
-                        type="number"
-                     />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                     <Label>Data</Label>
-                     <Input
-                        defaultValue={today}
-                        name="date"
-                        required
-                        type="date"
-                     />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                     <Label>Observações (opcional)</Label>
-                     <Input name="notes" placeholder="Ex: Vencido" />
-                  </div>
-                  <Button
-                     className="w-full"
-                     disabled={mutation.isPending}
-                     type="submit"
-                     variant="destructive"
+               <TabsContent value="waste">
+                  <form
+                     className="flex flex-col gap-4 pt-2"
+                     onSubmit={handleWaste}
                   >
-                     {mutation.isPending && (
-                        <Loader2 className="size-4 mr-2 animate-spin" />
-                     )}
-                     Registrar descarte
-                  </Button>
-               </form>
-            </TabsContent>
-         </Tabs>
-      </DialogStackContent>
+                     <div className="flex flex-col gap-2">
+                        <Label>Quantidade ({product.baseUnit})</Label>
+                        <Input
+                           min="0.001"
+                           name="qty"
+                           placeholder="Ex: 2"
+                           required
+                           step="any"
+                           type="number"
+                        />
+                     </div>
+                     <div className="flex flex-col gap-2">
+                        <Label>Data</Label>
+                        <Input
+                           defaultValue={today}
+                           name="date"
+                           required
+                           type="date"
+                        />
+                     </div>
+                     <div className="flex flex-col gap-2">
+                        <Label>Observações (opcional)</Label>
+                        <Input name="notes" placeholder="Ex: Vencido" />
+                     </div>
+                     <Button
+                        className="w-full"
+                        disabled={mutation.isPending}
+                        type="submit"
+                        variant="destructive"
+                     >
+                        {mutation.isPending && (
+                           <Loader2 className="size-4 mr-2 animate-spin" />
+                        )}
+                        Registrar descarte
+                     </Button>
+                  </form>
+               </TabsContent>
+            </Tabs>
+         </CredenzaBody>
+      </>
    );
 }

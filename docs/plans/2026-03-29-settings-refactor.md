@@ -13,6 +13,7 @@
 ### Task 1: Add stage badges to module nav items in the sidebar
 
 **Files:**
+
 - Modify: `apps/web/src/layout/dashboard/ui/settings-nav-items.ts`
 - Modify: `apps/web/src/layout/dashboard/ui/settings-sidebar.tsx`
 
@@ -89,6 +90,7 @@ git commit -m "feat(settings): add stage badges to module sidebar nav items"
 ### Task 2: Create DB schema for agent (Rubi IA) settings
 
 **Files:**
+
 - Create: `core/database/src/schemas/agents.ts`
 - Modify: `core/database/src/drizzle.config.ts` or wherever the schema glob is (check with `grep -rn "schemas" core/database/drizzle.config.ts`)
 
@@ -104,19 +106,36 @@ Understand how tables are discovered — usually a glob `"./src/schemas/*.ts"` o
 **Step 2: Create `core/database/src/schemas/agents.ts`**
 
 ```typescript
-import { boolean, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import {
+   boolean,
+   pgTable,
+   timestamp,
+   uuid,
+   varchar,
+} from "drizzle-orm/pg-core";
 
 export const agentSettings = pgTable("agent_settings", {
    teamId: uuid("team_id").primaryKey(),
-   modelId: varchar("model_id", { length: 255 }).notNull().default("openrouter/moonshotai/kimi-k2.5"),
+   modelId: varchar("model_id", { length: 255 })
+      .notNull()
+      .default("openrouter/moonshotai/kimi-k2.5"),
    language: varchar("language", { length: 10 }).notNull().default("pt-BR"),
    tone: varchar("tone", { length: 50 }).notNull().default("formal"),
-   dataSourceTransactions: boolean("data_source_transactions").notNull().default(true),
+   dataSourceTransactions: boolean("data_source_transactions")
+      .notNull()
+      .default(true),
    dataSourceContacts: boolean("data_source_contacts").notNull().default(true),
-   dataSourceInventory: boolean("data_source_inventory").notNull().default(true),
+   dataSourceInventory: boolean("data_source_inventory")
+      .notNull()
+      .default(true),
    dataSourceServices: boolean("data_source_services").notNull().default(true),
-   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+   createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+   updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
 });
 
 export type AgentSettings = typeof agentSettings.$inferSelect;
@@ -126,6 +145,7 @@ export type NewAgentSettings = typeof agentSettings.$inferInsert;
 **Step 3: Register schema if not auto-discovered by glob**
 
 If Drizzle uses explicit imports (not a glob), find the schema barrel file and add:
+
 ```typescript
 export * from "./agents";
 ```
@@ -152,6 +172,7 @@ git commit -m "feat(db): add agent_settings table for Rubi IA configuration"
 ### Task 3: Create repository functions for agent settings
 
 **Files:**
+
 - Create: `core/database/src/repositories/agent-settings-repository.ts`
 
 **Step 1: Look at an existing repository for exact import shape**
@@ -188,7 +209,10 @@ export async function getAgentSettings(db: DatabaseInstance, teamId: string) {
 export async function upsertAgentSettings(
    db: DatabaseInstance,
    teamId: string,
-   data: Omit<typeof agentSettings.$inferInsert, "teamId" | "createdAt" | "updatedAt">,
+   data: Omit<
+      typeof agentSettings.$inferInsert,
+      "teamId" | "createdAt" | "updatedAt"
+   >,
 ) {
    try {
       const [settings] = await db
@@ -220,6 +244,7 @@ git commit -m "feat(db): add agent settings repository functions"
 ### Task 4: Add getSettings / upsertSettings to agent oRPC router
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/orpc/router/agent.ts`
 - Modify: `apps/web/src/integrations/orpc/router/index.ts` (verify the router is exported)
 
@@ -242,7 +267,10 @@ Add the repository import and schema definition after the existing imports.
 **Step 3: Add to `agent.ts`**
 
 ```typescript
-import { getAgentSettings, upsertAgentSettings } from "@core/database/repositories/agent-settings-repository";
+import {
+   getAgentSettings,
+   upsertAgentSettings,
+} from "@core/database/repositories/agent-settings-repository";
 
 const agentSettingsSchema = z.object({
    modelId: z.string().min(1),
@@ -299,6 +327,7 @@ git commit -m "feat(orpc): add getSettings and upsertSettings to agent router"
 ### Task 4b: Write integration tests for agent settings procedures
 
 **Files:**
+
 - Modify: `apps/web/__tests__/integrations/orpc/router/agent.test.ts`
 
 **Step 1: Add `agent_settings` cleanup to `beforeEach`**
@@ -330,7 +359,10 @@ describe("getSettings", () => {
    it("returns settings after upsert", async () => {
       await call(
          agentRouter.upsertSettings,
-         { modelId: "openrouter/anthropic/claude-sonnet-4-5", language: "en-US" },
+         {
+            modelId: "openrouter/anthropic/claude-sonnet-4-5",
+            language: "en-US",
+         },
          { context: ctx },
       );
 
@@ -363,7 +395,11 @@ describe("upsertSettings", () => {
    });
 
    it("updates existing settings on second call", async () => {
-      await call(agentRouter.upsertSettings, { tone: "casual" }, { context: ctx });
+      await call(
+         agentRouter.upsertSettings,
+         { tone: "casual" },
+         { context: ctx },
+      );
 
       const updated = await call(
          agentRouter.upsertSettings,
@@ -397,8 +433,14 @@ let ctx2: ORPCContextWithAuth;
 
 beforeAll(async () => {
    const { createAuthenticatedContext } = await setupIntegrationTest();
-   ctx = await createAuthenticatedContext({ organizationId: "auto", teamId: "auto" });
-   ctx2 = await createAuthenticatedContext({ organizationId: "auto", teamId: "auto" });
+   ctx = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+   ctx2 = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
 });
 ```
 
@@ -422,6 +464,7 @@ git commit -m "test(agent): add integration tests for getSettings and upsertSett
 ### Task 5: Create Rubi IA settings page (ai-agents.tsx)
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents.tsx`
 
 **Step 1: Check available models list for Select options**
@@ -661,6 +704,7 @@ git commit -m "feat(settings): add Rubi IA settings page with model, language, t
 ### Task 6: Migrate Estoque settings form to TanStack Form + Zod
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/estoque.tsx`
 
 **Step 1: Add TanStack Form imports and Zod schema**
@@ -701,6 +745,7 @@ const form = useForm({
 **Step 3: Wrap in `<form>` and use `form.Field` for each Select**
 
 Each Select field becomes:
+
 ```tsx
 <form.Field name="purchaseBankAccountId">
    {(field) => (
@@ -715,7 +760,9 @@ Each Select field becomes:
             </SelectTrigger>
             <SelectContent>
                {bankAccounts.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                  <SelectItem key={a.id} value={a.id}>
+                     {a.name}
+                  </SelectItem>
                ))}
             </SelectContent>
          </Select>
@@ -740,6 +787,7 @@ git commit -m "refactor(settings): migrate estoque form to TanStack Form + Zod"
 ### Task 7: Build Financeiro settings form
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro.tsx`
 - Modify: `apps/web/src/integrations/orpc/router/` — check if a `financeiro` or general team settings router exists; if not, add procedures to `team.ts`
 - Possibly: `core/database/src/schemas/` — check if `financial_settings` table exists
@@ -752,6 +800,7 @@ grep -rn "getFinancialSettings\|financialSettings" apps/web/src/integrations/orp
 ```
 
 If none exists, follow the same pattern as Tasks 2–4 to create:
+
 - `financial_settings` table in `core/database/src/schemas/financial.ts` (or add to existing finance schema)
 - Repository in `core/database/src/repositories/financial-settings.ts`
 - Procedures `getSettings` / `upsertSettings` added to a relevant router (create `apps/web/src/integrations/orpc/router/financial.ts` if needed, and export from `index.ts`)
@@ -761,20 +810,38 @@ If none exists, follow the same pattern as Tasks 2–4 to create:
 ```typescript
 export const financialSettings = pgTable("financial_settings", {
    teamId: uuid("team_id").primaryKey(),
-   defaultCurrency: varchar("default_currency", { length: 3 }).notNull().default("BRL"),
-   fiscalYearStartMonth: integer("fiscal_year_start_month").notNull().default(1), // 1 = January
-   defaultPaymentDueDays: integer("default_payment_due_days").notNull().default(30),
-   autoCategorizationEnabled: boolean("auto_categorization_enabled").notNull().default(true),
-   defaultIncomeBankAccountId: uuid("default_income_bank_account_id").references(() => bankAccounts.id, { onDelete: "set null" }),
-   defaultExpenseBankAccountId: uuid("default_expense_bank_account_id").references(() => bankAccounts.id, { onDelete: "set null" }),
-   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+   defaultCurrency: varchar("default_currency", { length: 3 })
+      .notNull()
+      .default("BRL"),
+   fiscalYearStartMonth: integer("fiscal_year_start_month")
+      .notNull()
+      .default(1), // 1 = January
+   defaultPaymentDueDays: integer("default_payment_due_days")
+      .notNull()
+      .default(30),
+   autoCategorizationEnabled: boolean("auto_categorization_enabled")
+      .notNull()
+      .default(true),
+   defaultIncomeBankAccountId: uuid(
+      "default_income_bank_account_id",
+   ).references(() => bankAccounts.id, { onDelete: "set null" }),
+   defaultExpenseBankAccountId: uuid(
+      "default_expense_bank_account_id",
+   ).references(() => bankAccounts.id, { onDelete: "set null" }),
+   createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+   updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
 });
 ```
 
 **Step 3: Build the form page in `financeiro.tsx`**
 
 Fields to display:
+
 - **Moeda padrão** — Select: BRL, USD, EUR
 - **Início do ano fiscal** — Select: months (Janeiro–Dezembro, using dayjs locale names)
 - **Prazo padrão de vencimento** — Select: 7, 14, 30, 45, 60 days
@@ -806,6 +873,7 @@ git commit -m "feat(settings): implement Financeiro module settings with meaning
 ### Task 8: Build Contatos settings form
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos.tsx`
 - Same pattern: check for existing schema → create if needed → repository → oRPC procedures → form
 
@@ -821,12 +889,23 @@ grep -rn "getContactSettings\|upsertContactSettings" apps/web/src/integrations/o
 ```typescript
 export const contactSettings = pgTable("contact_settings", {
    teamId: uuid("team_id").primaryKey(),
-   defaultContactType: varchar("default_contact_type", { length: 10 }).notNull().default("pj"), // "pf" | "pj"
-   duplicateDetectionEnabled: boolean("duplicate_detection_enabled").notNull().default(true),
+   defaultContactType: varchar("default_contact_type", { length: 10 })
+      .notNull()
+      .default("pj"), // "pf" | "pj"
+   duplicateDetectionEnabled: boolean("duplicate_detection_enabled")
+      .notNull()
+      .default(true),
    requireTaxId: boolean("require_tax_id").notNull().default(false),
-   defaultTagId: uuid("default_tag_id").references(() => tags.id, { onDelete: "set null" }),
-   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+   defaultTagId: uuid("default_tag_id").references(() => tags.id, {
+      onDelete: "set null",
+   }),
+   createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+   updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
 });
 ```
 
@@ -835,6 +914,7 @@ export const contactSettings = pgTable("contact_settings", {
 **Step 3: Build the form page in `contatos.tsx`**
 
 Fields to display:
+
 - **Tipo de contato padrão** — Select: Pessoa Física (PF), Pessoa Jurídica (PJ)
 - **Detecção de duplicatas** — Switch toggle (quando ativo, alerta ao criar contato com mesmo CNPJ/CPF)
 - **CPF/CNPJ obrigatório** — Switch toggle
@@ -892,21 +972,21 @@ git commit -m "fix(settings): address typecheck errors from settings refactor"
 
 ### Quick reference
 
-| Need | foxact import |
-|------|--------------|
-| Stable callback (replaces `useCallback`) | `foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired` |
-| Per-component localStorage | `foxact/use-local-storage` |
-| Per-component sessionStorage | `foxact/use-session-storage` |
-| Shared localStorage (cross-component, reactive) | `foxact/create-local-storage-state` |
-| Media query / breakpoint | `foxact/use-media-query` |
-| SSR-safe layout effect | `foxact/use-isomorphic-layout-effect` |
-| Lazy singleton ref (replaces `useRef(new Foo())`) | `foxact/use-singleton` |
-| Clipboard | `foxact/use-clipboard` |
-| Empty stable function | `foxact/noop` |
-| Context guard | `foxact/invariant` |
-| Merge refs | `foxact/merge-refs` |
-| Open new tab | `foxact/open-new-tab` |
-| Debounce a value | `foxact/use-debounced-value` |
+| Need                                              | foxact import                                                                          |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Stable callback (replaces `useCallback`)          | `foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired` |
+| Per-component localStorage                        | `foxact/use-local-storage`                                                             |
+| Per-component sessionStorage                      | `foxact/use-session-storage`                                                           |
+| Shared localStorage (cross-component, reactive)   | `foxact/create-local-storage-state`                                                    |
+| Media query / breakpoint                          | `foxact/use-media-query`                                                               |
+| SSR-safe layout effect                            | `foxact/use-isomorphic-layout-effect`                                                  |
+| Lazy singleton ref (replaces `useRef(new Foo())`) | `foxact/use-singleton`                                                                 |
+| Clipboard                                         | `foxact/use-clipboard`                                                                 |
+| Empty stable function                             | `foxact/noop`                                                                          |
+| Context guard                                     | `foxact/invariant`                                                                     |
+| Merge refs                                        | `foxact/merge-refs`                                                                    |
+| Open new tab                                      | `foxact/open-new-tab`                                                                  |
+| Debounce a value                                  | `foxact/use-debounced-value`                                                           |
 
 ### Rules that override CLAUDE.md SSR-safe wrappers
 
@@ -934,10 +1014,15 @@ const isMobile = useMediaQuery("(max-width: 767px)");
 import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
 
 // ❌ Never
-const handleChange = useCallback((v: string) => mutation.mutate({ tone: v }), [mutation]);
+const handleChange = useCallback(
+   (v: string) => mutation.mutate({ tone: v }),
+   [mutation],
+);
 
 // ✅ Always
-const handleChange = useStableHandler((v: string) => mutation.mutate({ tone: v }));
+const handleChange = useStableHandler((v: string) =>
+   mutation.mutate({ tone: v }),
+);
 ```
 
 ### Banned patterns
