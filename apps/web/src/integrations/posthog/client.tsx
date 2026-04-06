@@ -1,6 +1,5 @@
 import { isClientProduction } from "@core/environment/helpers";
 import type { PublicEnv } from "@/integrations/public-env";
-import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
 
 export type EarlyAccessStage =
