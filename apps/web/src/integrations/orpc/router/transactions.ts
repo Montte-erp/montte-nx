@@ -1,5 +1,8 @@
 import { and, eq, inArray } from "drizzle-orm";
-import { ConditionGroup } from "@f-o-t/condition-evaluator";
+import {
+   ConditionGroup,
+   evaluateConditionGroup,
+} from "@f-o-t/condition-evaluator";
 import {
    createTransaction,
    createTransactionItems,
@@ -184,6 +187,7 @@ export const importStatement = withCreditEnforcement(
                   amount: z.string().regex(/^-?\d+(\.\d+)?$/),
                   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
                   description: z.string().max(1000).optional(),
+                  categoryId: z.string().uuid().optional(),
                   paymentMethod: z
                      .enum([
                         "pix",
@@ -218,6 +222,7 @@ export const importStatement = withCreditEnforcement(
          amount: t.amount,
          date: t.date,
          description: t.description ?? null,
+         categoryId: t.categoryId ?? null,
          paymentMethod: t.paymentMethod ?? null,
       }));
 
@@ -288,15 +293,65 @@ export const checkDuplicates = protectedProcedure
             ),
          );
 
-      const existingSet = new Set(
-         existing.map(
-            (r) => `${r.date}|${normalizeAmount(r.amount)}|${r.type}`,
-         ),
-      );
-
-      return input.transactions.map((t) =>
-         existingSet.has(`${t.date}|${normalizeAmount(t.amount)}|${t.type}`),
-      );
+      return input.transactions.map((t) => {
+         const normalizedAmt = normalizeAmount(t.amount);
+         return existing.some((ex) => {
+            const result = evaluateConditionGroup(
+               {
+                  id: "dup",
+                  operator: "AND",
+                  scoringMode: "weighted",
+                  threshold: 0.75,
+                  conditions: [
+                     {
+                        id: "date-group",
+                        operator: "AND",
+                        weight: 3,
+                        conditions: [
+                           {
+                              id: "date",
+                              type: "string",
+                              field: "date",
+                              operator: "eq",
+                              value: ex.date,
+                           },
+                        ],
+                     },
+                     {
+                        id: "amount-group",
+                        operator: "AND",
+                        weight: 3,
+                        conditions: [
+                           {
+                              id: "amount",
+                              type: "string",
+                              field: "amount",
+                              operator: "eq",
+                              value: normalizeAmount(ex.amount),
+                           },
+                        ],
+                     },
+                     {
+                        id: "type-group",
+                        operator: "AND",
+                        weight: 2,
+                        conditions: [
+                           {
+                              id: "type",
+                              type: "string",
+                              field: "type",
+                              operator: "eq",
+                              value: ex.type,
+                           },
+                        ],
+                     },
+                  ],
+               },
+               { data: { date: t.date, amount: normalizedAmt, type: t.type } },
+            );
+            return result.passed;
+         });
+      });
    });
 
 export const importBulk = protectedProcedure

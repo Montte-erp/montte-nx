@@ -363,6 +363,56 @@ Use `@maskito/core` + `@maskito/react` for all structured text inputs. Never bui
 - `inputMode="numeric"` on digit-only inputs.
 - For currency inputs, use `MoneyInput` from `@packages/ui/components/money-input`.
 
+---
+
+## F-O-T Libraries (`catalog:fot`)
+
+Use these libraries for their respective domains — never roll custom implementations.
+
+| Library | Use for |
+|---------|---------|
+| `@f-o-t/money` | All money operations: parsing, formatting, arithmetic, conversion |
+| `@f-o-t/csv` | CSV parsing (`parseOrThrow(content, { hasHeaders: true, trimFields: true })`) and generation (`generateFromObjects`) |
+| `@f-o-t/ofx` | OFX parsing (`parseBufferOrThrow(new Uint8Array(buffer))` — always use buffer, not string, for Brazilian bank encoding) and generation (`generateBankStatement`) |
+| `@f-o-t/condition-evaluator` | Rule/condition evaluation with weighted scoring (`evaluateConditionGroup` with `scoringMode: "weighted"`) |
+
+**Money usage:**
+```typescript
+import { of, format, parse, toMajorUnitsString } from "@f-o-t/money";
+
+// Parse any currency string (handles R$ 1.234,56 and 1500.00)
+const normalized = toMajorUnitsString(of(decimalStr, "BRL"));
+
+// Format for display
+format(of("1500.00", "BRL"), "pt-BR");  // "R$ 1.500,00"
+```
+
+**CSV parsing — always use `parseBufferOrThrow` with raw bytes (handles encoding automatically):**
+```typescript
+import { parseBufferOrThrow, generateFromObjects } from "@f-o-t/csv";
+reader.readAsArrayBuffer(file);  // NOT readAsText — let the library handle encoding
+const doc = parseBufferOrThrow(new Uint8Array(buffer), { hasHeaders: true, trimFields: true });
+// doc.headers → string[], doc.rows[n].fields → string[]
+```
+
+**OFX — always use ArrayBuffer:**
+```typescript
+import { parseBufferOrThrow, getTransactions } from "@f-o-t/ofx";
+reader.readAsArrayBuffer(file);  // NOT readAsText — handles Windows-1252 auto-detection
+const doc = parseBufferOrThrow(new Uint8Array(buffer));
+const txs = getTransactions(doc);  // OFXTransaction[]
+```
+
+**Condition evaluator — weights go on nested ConditionGroups, not individual conditions:**
+```typescript
+import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
+// weight is on ConditionGroup, not Condition — wrap each in a sub-group
+{
+  id: "amount-group", operator: "AND", weight: 3,
+  conditions: [{ id: "amount", type: "string", field: "amount", operator: "eq", value: "..." }],
+}
+```
+
 **Common masks:**
 | Field | Mask pattern |
 |-------|-------------|

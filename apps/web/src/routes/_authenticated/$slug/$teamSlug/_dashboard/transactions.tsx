@@ -74,6 +74,7 @@ function TransactionsPage() {
    const { openCredenza, closeCredenza } = useCredenza();
    const navigate = Route.useNavigate();
    const { slug, teamSlug } = Route.useParams();
+   const { currentTeam } = Route.useRouteContext();
    const { hasBankAccounts } = useTransactionPrerequisites();
    const [filters, setFilters] = useState<TransactionFilters>(DEFAULT_FILTERS);
    const { sorting, columnFilters } = Route.useSearch();
@@ -136,7 +137,12 @@ function TransactionsPage() {
          label: "Importar",
          onClick: () =>
             openCredenza({
-               children: <StatementImportCredenza onClose={closeCredenza} />,
+               children: (
+                  <StatementImportCredenza
+                     teamId={currentTeam.id}
+                     onClose={closeCredenza}
+                  />
+               ),
             }),
       },
       {

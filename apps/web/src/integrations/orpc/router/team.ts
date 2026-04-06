@@ -49,6 +49,7 @@ async function verifyTeamOwnership(
          allowedDomains: team.allowedDomains,
          createdAt: team.createdAt,
          updatedAt: team.updatedAt,
+         cnpjData: team.cnpjData,
       })
       .from(team)
       .where(and(eq(team.id, teamId), eq(team.organizationId, organizationId)))
@@ -168,7 +169,9 @@ export const addMember = protectedProcedure
       });
 
       if (!orgMember) {
-         throw WebAppError.badRequest("User must be an organization member first");
+         throw WebAppError.badRequest(
+            "User must be an organization member first",
+         );
       }
 
       // Check if already a team member

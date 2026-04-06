@@ -1,5 +1,6 @@
 import { generateFromObjects } from "@f-o-t/csv";
 import { generateBankStatement } from "@f-o-t/ofx";
+import { utils as xlsxUtils, write as xlsxWrite } from "xlsx";
 import { Button } from "@packages/ui/components/button";
 import {
    Choicebox,
@@ -20,7 +21,7 @@ import { DatePicker } from "@packages/ui/components/date-picker";
 import { Field, FieldGroup, FieldLabel } from "@packages/ui/components/field";
 import { Spinner } from "@packages/ui/components/spinner";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { Download, FileSpreadsheet, Landmark } from "lucide-react";
+import { Download, FileSpreadsheet, Landmark, Table2 } from "lucide-react";
 import { Suspense, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
@@ -31,7 +32,7 @@ interface TransactionExportCredenzaProps {
    onClose?: () => void;
 }
 
-type ExportFormat = "csv" | "ofx";
+type ExportFormat = "csv" | "xlsx" | "ofx";
 
 type BankAccountType =
    | "checking"
@@ -107,7 +108,9 @@ function ExportForm({
    );
 
    const canDownload =
-      format === "csv" || (format === "ofx" && selectedAccountId !== "");
+      format === "csv" ||
+      format === "xlsx" ||
+      (format === "ofx" && selectedAccountId !== "");
 
    async function fetchAllTransactions(
       from: string,
@@ -155,7 +158,24 @@ function ExportForm({
             const from = toDateString(periodFrom);
             const to = toDateString(periodTo);
 
-            if (format === "csv") {
+            const HEADERS = [
+               "data",
+               "nome",
+               "tipo",
+               "valor",
+               "descricao",
+               "conta",
+               "conta_destino",
+               "categoria",
+               "subcategoria",
+               "tags",
+               "forma_pagamento",
+               "parcelado",
+               "num_parcelas",
+               "contato",
+            ] as const;
+
+            if (format === "csv" || format === "xlsx") {
                const allTx = await fetchAllTransactions(from, to);
 
                const rows = allTx.map((tx) => ({
@@ -180,30 +200,31 @@ function ExportForm({
                   contato: tx.contactName ?? "",
                }));
 
-               const csv = generateFromObjects(rows, {
-                  headers: [
-                     "data",
-                     "nome",
-                     "tipo",
-                     "valor",
-                     "descricao",
-                     "conta",
-                     "conta_destino",
-                     "categoria",
-                     "subcategoria",
-                     "tags",
-                     "forma_pagamento",
-                     "parcelado",
-                     "num_parcelas",
-                     "contato",
-                  ],
-               });
-
-               const blob = new Blob([csv], {
-                  type: "text/csv;charset=utf-8;",
-               });
-               triggerDownload(blob, `transacoes_${from}_${to}.csv`);
-               toast.success("Exportação CSV concluída.");
+               if (format === "csv") {
+                  const csv = generateFromObjects(rows, {
+                     headers: [...HEADERS],
+                  });
+                  const blob = new Blob([csv], {
+                     type: "text/csv;charset=utf-8;",
+                  });
+                  triggerDownload(blob, `transacoes_${from}_${to}.csv`);
+                  toast.success("Exportação CSV concluída.");
+               } else {
+                  const ws = xlsxUtils.json_to_sheet(rows, {
+                     header: [...HEADERS],
+                  });
+                  const wb = xlsxUtils.book_new();
+                  xlsxUtils.book_append_sheet(wb, ws, "Transações");
+                  const data = xlsxWrite(wb, {
+                     type: "array",
+                     bookType: "xlsx",
+                  });
+                  const blob = new Blob([data], {
+                     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                  });
+                  triggerDownload(blob, `transacoes_${from}_${to}.xlsx`);
+                  toast.success("Exportação XLSX concluída.");
+               }
             } else {
                if (!selectedAccount) {
                   toast.error("Selecione uma conta para exportar OFX.");
@@ -278,7 +299,7 @@ function ExportForm({
                <Field>
                   <FieldLabel>Formato</FieldLabel>
                   <Choicebox
-                     className="grid grid-cols-2 gap-4"
+                     className="grid grid-cols-3 gap-2"
                      onValueChange={(v) => {
                         if (v) setFormat(v as ExportFormat);
                      }}
@@ -289,10 +310,21 @@ function ExportForm({
                         <ChoiceboxItemHeader>
                            <ChoiceboxItemTitle>CSV</ChoiceboxItemTitle>
                            <ChoiceboxItemDescription>
-                              Planilha compatível com Excel e Google Sheets
+                              Texto separado por vírgulas
                            </ChoiceboxItemDescription>
                         </ChoiceboxItemHeader>
                         <ChoiceboxIndicator id="format-csv" />
+                     </ChoiceboxItem>
+
+                     <ChoiceboxItem id="format-xlsx" value="xlsx">
+                        <Table2 className="size-5 text-muted-foreground" />
+                        <ChoiceboxItemHeader>
+                           <ChoiceboxItemTitle>XLSX</ChoiceboxItemTitle>
+                           <ChoiceboxItemDescription>
+                              Excel e Google Sheets
+                           </ChoiceboxItemDescription>
+                        </ChoiceboxItemHeader>
+                        <ChoiceboxIndicator id="format-xlsx" />
                      </ChoiceboxItem>
 
                      <ChoiceboxItem id="format-ofx" value="ofx">
@@ -300,8 +332,7 @@ function ExportForm({
                         <ChoiceboxItemHeader>
                            <ChoiceboxItemTitle>OFX</ChoiceboxItemTitle>
                            <ChoiceboxItemDescription>
-                              Extrato bancário para importação em outros
-                              sistemas
+                              Extrato para outros sistemas
                            </ChoiceboxItemDescription>
                         </ChoiceboxItemHeader>
                         <ChoiceboxIndicator id="format-ofx" />
@@ -352,7 +383,7 @@ function ExportForm({
 
                <div className="rounded-lg border bg-muted/20 p-3">
                   <p className="text-xs text-muted-foreground">
-                     {format === "csv" ? "CSV" : "OFX"} &middot;{" "}
+                     {format.toUpperCase()} &middot;{" "}
                      {dayjs(periodFrom).format("DD/MM/YYYY")} até{" "}
                      {dayjs(periodTo).format("DD/MM/YYYY")}
                      {format === "ofx" && selectedAccount
