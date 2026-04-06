@@ -14,7 +14,8 @@ export default mergeConfig(
             reporter: ["lcov", "text"],
             reportsDirectory: "./coverage",
             include: [
-               "src/**",
+               "src/integrations/orpc/**",
+               "src/lib/**",
                "../../core/database/src/**",
                "../../core/logging/src/**",
                "../../core/authentication/src/**",
