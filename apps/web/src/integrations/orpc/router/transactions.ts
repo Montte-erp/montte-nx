@@ -1,3 +1,4 @@
+import { and, eq, inArray } from "drizzle-orm";
 import { ConditionGroup } from "@f-o-t/condition-evaluator";
 import {
    createTransaction,
@@ -240,6 +241,62 @@ export const importStatement = withCreditEnforcement(
       } catch {}
 
       return { imported: rows.length };
+   });
+
+function normalizeAmount(amount: string): string {
+   return Number.parseFloat(amount).toFixed(2);
+}
+
+export const checkDuplicates = protectedProcedure
+   .input(
+      z.object({
+         bankAccountId: z.string().uuid(),
+         transactions: z
+            .array(
+               z.object({
+                  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+                  amount: z.string().regex(/^-?\d+(\.\d+)?$/),
+                  type: z.enum(["income", "expense"]),
+               }),
+            )
+            .min(1)
+            .max(1000),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      await ensureBankAccountOwnership(
+         context.db,
+         input.bankAccountId,
+         context.teamId,
+      );
+
+      const existing = await context.db
+         .select({
+            date: transactions.date,
+            amount: transactions.amount,
+            type: transactions.type,
+         })
+         .from(transactions)
+         .where(
+            and(
+               eq(transactions.bankAccountId, input.bankAccountId),
+               eq(transactions.teamId, context.teamId),
+               inArray(
+                  transactions.date,
+                  input.transactions.map((t) => t.date),
+               ),
+            ),
+         );
+
+      const existingSet = new Set(
+         existing.map(
+            (r) => `${r.date}|${normalizeAmount(r.amount)}|${r.type}`,
+         ),
+      );
+
+      return input.transactions.map((t) =>
+         existingSet.has(`${t.date}|${normalizeAmount(t.amount)}|${t.type}`),
+      );
    });
 
 export const importBulk = protectedProcedure
