@@ -1,4 +1,5 @@
 import { parseBufferOrThrow, generateFromObjects } from "@f-o-t/csv";
+import { useCallback, useMemo } from "react";
 
 export type CsvData = {
    headers: string[];
@@ -6,7 +7,7 @@ export type CsvData = {
 };
 
 export function useCsvFile() {
-   async function parse(file: File): Promise<CsvData> {
+   const parse = useCallback(async (file: File): Promise<CsvData> => {
       const doc = parseBufferOrThrow(new Uint8Array(await file.arrayBuffer()), {
          hasHeaders: true,
          trimFields: true,
@@ -15,13 +16,15 @@ export function useCsvFile() {
          headers: doc.headers ?? [],
          rows: doc.rows.map((r) => r.fields),
       };
-   }
+   }, []);
 
-   function generate(rows: Record<string, string>[], headers: string[]): Blob {
-      return new Blob([generateFromObjects(rows, { headers })], {
-         type: "text/csv;charset=utf-8;",
-      });
-   }
+   const generate = useCallback(
+      (rows: Record<string, string>[], headers: string[]): Blob =>
+         new Blob([generateFromObjects(rows, { headers })], {
+            type: "text/csv;charset=utf-8;",
+         }),
+      [],
+   );
 
-   return { parse, generate };
+   return useMemo(() => ({ parse, generate }), [parse, generate]);
 }

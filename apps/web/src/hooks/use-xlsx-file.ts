@@ -1,4 +1,5 @@
 import { read as xlsxRead, utils as xlsxUtils, write as xlsxWrite } from "xlsx";
+import { useCallback, useMemo } from "react";
 
 export type XlsxData = {
    headers: string[];
@@ -6,7 +7,7 @@ export type XlsxData = {
 };
 
 export function useXlsxFile() {
-   async function parse(file: File): Promise<XlsxData> {
+   const parse = useCallback(async (file: File): Promise<XlsxData> => {
       const wb = xlsxRead(new Uint8Array(await file.arrayBuffer()), {
          type: "array",
       });
@@ -23,16 +24,19 @@ export function useXlsxFile() {
             .filter((r) => r.some((c) => String(c).trim() !== ""))
             .map((r) => r.map(String)),
       };
-   }
+   }, []);
 
-   function generate(rows: Record<string, string>[], headers: string[]): Blob {
-      const ws = xlsxUtils.json_to_sheet(rows, { header: headers });
-      const wb = xlsxUtils.book_new();
-      xlsxUtils.book_append_sheet(wb, ws, "Modelo");
-      return new Blob([xlsxWrite(wb, { type: "array", bookType: "xlsx" })], {
-         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-   }
+   const generate = useCallback(
+      (rows: Record<string, string>[], headers: string[]): Blob => {
+         const ws = xlsxUtils.json_to_sheet(rows, { header: headers });
+         const wb = xlsxUtils.book_new();
+         xlsxUtils.book_append_sheet(wb, ws, "Modelo");
+         return new Blob([xlsxWrite(wb, { type: "array", bookType: "xlsx" })], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+         });
+      },
+      [],
+   );
 
-   return { parse, generate };
+   return useMemo(() => ({ parse, generate }), [parse, generate]);
 }
