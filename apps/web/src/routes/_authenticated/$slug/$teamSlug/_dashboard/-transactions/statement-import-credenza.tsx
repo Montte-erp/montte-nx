@@ -668,25 +668,27 @@ function PreviewStep({ methods, rows, duplicateFlags }: PreviewStepProps) {
             <div className="flex flex-col gap-4">
                <StepBar methods={methods} />
 
-               <div className="flex items-center gap-4 flex-wrap">
-                  <div className="flex items-center gap-2 rounded-md border px-3 py-1.5">
-                     <span className="text-xs text-muted-foreground">
-                        Entradas
-                     </span>
-                     <span className="text-xs font-semibold text-emerald-600">
-                        {formatMoney(String(totalIncome))}
-                     </span>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-md border px-3 py-1.5">
-                     <span className="text-xs text-muted-foreground">
-                        Saídas
-                     </span>
-                     <span className="text-xs font-semibold text-destructive">
-                        {formatMoney(String(totalExpense))}
-                     </span>
+               <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                     <div className="flex items-center gap-2 rounded-md border px-3 py-1.5">
+                        <span className="text-xs text-muted-foreground">
+                           Entradas
+                        </span>
+                        <span className="text-xs font-semibold text-emerald-600">
+                           {formatMoney(String(totalIncome))}
+                        </span>
+                     </div>
+                     <div className="flex items-center gap-2 rounded-md border px-3 py-1.5">
+                        <span className="text-xs text-muted-foreground">
+                           Saídas
+                        </span>
+                        <span className="text-xs font-semibold text-destructive">
+                           {formatMoney(String(totalExpense))}
+                        </span>
+                     </div>
                   </div>
                   {minDate && maxDate ? (
-                     <p className="text-xs text-muted-foreground ml-auto">
+                     <p className="text-xs text-muted-foreground">
                         {dayjs(minDate).format("DD/MM/YYYY")} –{" "}
                         {dayjs(maxDate).format("DD/MM/YYYY")}
                      </p>
@@ -793,7 +795,7 @@ function PreviewStep({ methods, rows, duplicateFlags }: PreviewStepProps) {
    );
 }
 
-interface ConfirmStepInnerProps {
+interface ConfirmStepProps {
    methods: StepperMethods;
    rows: ValidatedRow[];
    format: FileFormat;
@@ -802,14 +804,14 @@ interface ConfirmStepInnerProps {
    onClose?: () => void;
 }
 
-function ConfirmStepInner({
+function ConfirmStep({
    methods,
    rows,
    format,
    bankAccountId,
    duplicateFlags,
    onClose,
-}: ConfirmStepInnerProps) {
+}: ConfirmStepProps) {
    const duplicateCount = duplicateFlags.filter(Boolean).length;
    const [skipDuplicates, setSkipDuplicates] = useState(true);
 
@@ -945,26 +947,6 @@ function ConfirmStepInner({
    );
 }
 
-function ConfirmStep({
-   methods,
-   rows,
-   format,
-   bankAccountId,
-   duplicateFlags,
-   onClose,
-}: ConfirmStepInnerProps) {
-   return (
-      <ConfirmStepInner
-         bankAccountId={bankAccountId}
-         duplicateFlags={duplicateFlags}
-         format={format}
-         methods={methods}
-         rows={rows}
-         onClose={onClose}
-      />
-   );
-}
-
 function ImportWizard({
    methods,
    onClose,
@@ -1042,7 +1024,7 @@ function ImportWizard({
             setMapping((prev) => ({ ...prev, ...guessed }));
          }
       }
-      if (parsedRows.length > 0) setRows(parsedRows);
+      if (parsedRows.length > 0) void handleApplyRows(parsedRows);
    }
 
    return (
