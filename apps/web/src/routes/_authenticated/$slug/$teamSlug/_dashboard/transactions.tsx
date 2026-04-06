@@ -6,7 +6,7 @@ import type {
 } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Plus, Upload } from "lucide-react";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
 import type { PanelAction } from "@/features/context-panel/context-panel-store";
@@ -129,17 +129,6 @@ function TransactionsPage() {
          ),
       });
    }, [hasBankAccounts, openCredenza, closeCredenza, navigate, slug, teamSlug]);
-
-   useEffect(() => {
-      const handler = (e: Event) => {
-         const detail = (e as CustomEvent<{ itemId: string }>).detail;
-         if (detail.itemId === "transactions") {
-            handleCreate();
-         }
-      };
-      window.addEventListener("sidebar:quick-create", handler);
-      return () => window.removeEventListener("sidebar:quick-create", handler);
-   }, [handleCreate]);
 
    const panelActions: PanelAction[] = [
       {
