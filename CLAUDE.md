@@ -143,62 +143,6 @@ Zod schemas belong in the backend. Frontend only imports inferred types via `Inp
 - **Accessibility** — always set `id={field.name}`, `name={field.name}`, `aria-invalid={isInvalid}` on `<Input>`/`<PasswordInput>`/`<Textarea>`. Always set `htmlFor={field.name}` on `<FieldLabel>`.
 - **`children` prop** — always use `children={(field) => ...}` as an explicit JSX prop, not `{(field) => ...}` as JSX children.
 
-### Correct Pattern
-
-```tsx
-const formSchema = z.object({
-  name: z.string().min(1, "Campo obrigatório."),
-});
-
-function MyForm() {
-  const form = useForm({
-    defaultValues: { name: "" },
-    validators: { onSubmit: formSchema },
-    onSubmit: async ({ value }) => { /* ... */ },
-  });
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        form.handleSubmit();
-      }}
-    >
-      <FieldGroup>
-        <form.Field
-          name="name"
-          children={(field) => {
-            const isInvalid = field.state.meta.isTouched && field.state.meta.errors.length > 0;
-            return (
-              <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  aria-invalid={isInvalid}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            );
-          }}
-        />
-      </FieldGroup>
-
-      <form.Subscribe selector={(s) => [s.canSubmit, s.isSubmitting]}>
-        {([canSubmit, isSubmitting]) => (
-          <Button type="submit" disabled={!canSubmit || isSubmitting}>
-            Salvar
-          </Button>
-        )}
-      </form.Subscribe>
-    </form>
-  );
-}
-```
 
 ---
 
@@ -432,7 +376,7 @@ Use `@maskito/core` + `@maskito/react` for all structured text inputs. Never bui
 
 ## Foxact Hooks
 
-Standard hook library — SSR-safe. Import each hook from its own subpath. Never use `@uidotdev/usehooks` for browser-API hooks (server-unsafe).
+SSR-safe hook library — import each from its own subpath. Never use `@uidotdev/usehooks` (server-unsafe).
 
 | Need | Import |
 |------|--------|
@@ -440,27 +384,16 @@ Standard hook library — SSR-safe. Import each hook from its own subpath. Never
 | localStorage (fixed key, syncs tabs) | `foxact/create-local-storage-state` |
 | sessionStorage | `foxact/use-session-storage` |
 | Media queries | `foxact/use-media-query` |
-| Debounce | `foxact/use-debounced-value` |
-| Lazy singleton ref | `foxact/use-singleton` |
-| SSR-safe layout effect | `foxact/use-isomorphic-layout-effect` |
+| Debounce (derived values only) | `foxact/use-debounced-value` |
 | Context guard | `foxact/invariant` |
 | Merge refs | `foxact/merge-refs` |
-| Open new tab | `foxact/open-new-tab` |
-| Noop | `foxact/noop` |
+| SSR-safe layout effect | `foxact/use-isomorphic-layout-effect` |
 
 - All localStorage keys prefixed `montte:` (e.g. `montte:sidebar-collapsed`).
 - Use `useMediaQuery("(max-width: 767px)")` directly — no `useIsMobile` wrapper.
 - Context always created with `null` default so `invariant` guard is meaningful.
-- Prefer `createClientOnlyFn` / `createIsomorphicFn` from `@tanstack/react-start` for code that must run only on the client — avoids `typeof window === 'undefined'` guards.
-
----
-
-## Debouncing & Throttling (@tanstack/pacer)
-
-Use `useDebouncedCallback` from `@tanstack/react-pacer` for debouncing callbacks in React components.
-
-- Never use `foxact/use-debounced-value` for side effects — use `@tanstack/pacer` `useDebouncedCallback` instead.
-- `foxact/use-debounced-value` is for reactive derived values (UI display only).
+- Prefer `createClientOnlyFn` / `createIsomorphicFn` from `@tanstack/react-start` over `typeof window === 'undefined'` guards.
+- For debouncing callbacks (side effects), use `useDebouncedCallback` from `@tanstack/react-pacer` — not `foxact/use-debounced-value`.
 
 ---
 
@@ -497,12 +430,6 @@ npx vitest run apps/web/__tests__/integrations/orpc/router/transactions.test.ts
 - Hooks that wrap `useSuspenseQuery` or `usePostHog` — mocking 100% of behavior tests nothing
 - Singleton initialization — unless it has real config validation logic
 - File existence checks (`existsSync`)
-
-### Gaps to fill over time
-
-- Worker job logic (`apps/worker/src/jobs/`) — invoke jobs with real DB, assert DB state after
-- Analytics compute functions (`packages/analytics/src/compute-*.ts`) — pure financial math, high value
-- Missing router coverage: `chat`, `agent-settings`, `contact-settings`, `financial-settings`
 
 **⚠️ Gotcha — `member` and `team` tables have no `.defaultNow()` on `createdAt`.** Always provide `createdAt: new Date()` explicitly in test inserts.
 

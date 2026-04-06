@@ -11,11 +11,11 @@ import {
 } from "@packages/ui/components/choicebox";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { DatePicker } from "@packages/ui/components/date-picker";
 import { Field, FieldGroup, FieldLabel } from "@packages/ui/components/field";
 import { Spinner } from "@packages/ui/components/spinner";
@@ -25,7 +25,7 @@ import { Suspense, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
-interface TransactionExportDialogStackProps {
+interface TransactionExportCredenzaProps {
    dateFrom?: string;
    dateTo?: string;
    onClose?: () => void;
@@ -79,7 +79,7 @@ function ExportForm({
    dateFrom,
    dateTo,
    onClose,
-}: TransactionExportDialogStackProps) {
+}: TransactionExportCredenzaProps) {
    const defaultRange = getCurrentMonthRange();
 
    const [format, setFormat] = useState<ExportFormat>("csv");
@@ -265,15 +265,15 @@ function ExportForm({
    }
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Exportar Lançamentos</DialogStackTitle>
-            <DialogStackDescription>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Exportar Lançamentos</CredenzaTitle>
+            <CredenzaDescription>
                Selecione o formato e o período para exportar.
-            </DialogStackDescription>
-         </DialogStackHeader>
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+         <CredenzaBody>
             <FieldGroup>
                <Field>
                   <FieldLabel>Formato</FieldLabel>
@@ -360,59 +360,57 @@ function ExportForm({
                         : null}
                   </p>
                </div>
-            </FieldGroup>
-         </div>
 
-         <div className="border-t px-4 py-4">
-            <div className="flex gap-2">
-               <Button
-                  className="flex-1"
-                  onClick={onClose}
-                  type="button"
-                  variant="outline"
-               >
-                  Cancelar
-               </Button>
-               <Button
-                  className="flex-1"
-                  disabled={!canDownload || isPending}
-                  onClick={handleDownload}
-                  type="button"
-               >
-                  {isPending ? (
-                     <Spinner className="size-4 mr-2" />
-                  ) : (
-                     <Download className="size-4 mr-2" />
-                  )}
-                  Baixar
-               </Button>
-            </div>
-         </div>
-      </DialogStackContent>
+               <div className="flex gap-2">
+                  <Button
+                     className="flex-1"
+                     onClick={onClose}
+                     type="button"
+                     variant="outline"
+                  >
+                     Cancelar
+                  </Button>
+                  <Button
+                     className="flex-1"
+                     disabled={!canDownload || isPending}
+                     onClick={handleDownload}
+                     type="button"
+                  >
+                     {isPending ? (
+                        <Spinner className="size-4 mr-2" />
+                     ) : (
+                        <Download className="size-4 mr-2" />
+                     )}
+                     Baixar
+                  </Button>
+               </div>
+            </FieldGroup>
+         </CredenzaBody>
+      </>
    );
 }
 
-export function TransactionExportDialogStack({
+export function TransactionExportCredenza({
    dateFrom,
    dateTo,
    onClose,
-}: TransactionExportDialogStackProps) {
+}: TransactionExportCredenzaProps) {
    return (
       <Suspense
          fallback={
-            <DialogStackContent index={0}>
-               <DialogStackHeader>
-                  <DialogStackTitle>Exportar Lançamentos</DialogStackTitle>
-                  <DialogStackDescription>
+            <>
+               <CredenzaHeader>
+                  <CredenzaTitle>Exportar Lançamentos</CredenzaTitle>
+                  <CredenzaDescription>
                      Selecione o formato e o período para exportar.
-                  </DialogStackDescription>
-               </DialogStackHeader>
-               <div className="flex-1 overflow-y-auto px-4 py-4">
+                  </CredenzaDescription>
+               </CredenzaHeader>
+               <CredenzaBody>
                   <div className="flex items-center justify-center py-8">
                      <Spinner className="size-6" />
                   </div>
-               </div>
-            </DialogStackContent>
+               </CredenzaBody>
+            </>
          }
       >
          <ExportForm dateFrom={dateFrom} dateTo={dateTo} onClose={onClose} />
