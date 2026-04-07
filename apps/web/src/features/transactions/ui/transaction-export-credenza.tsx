@@ -145,6 +145,7 @@ function ExportForm({
                },
             }),
          );
+         if (next.data.length === 0) break;
          allTx = [...allTx, ...next.data];
          page++;
       }
@@ -264,9 +265,7 @@ function ExportForm({
                ofxContent = generateBankStatement({
                   bankId: "BR",
                   accountId: selectedAccount.id,
-                  accountType: mapAccountTypeToOFX(
-                     selectedAccount.type as BankAccountType,
-                  ),
+                  accountType: mapAccountTypeToOFX(selectedAccount.type),
                   currency: "BRL",
                   startDate,
                   endDate,
@@ -301,7 +300,8 @@ function ExportForm({
                   <Choicebox
                      className="grid grid-cols-3 gap-2"
                      onValueChange={(v) => {
-                        if (v) setFormat(v as ExportFormat);
+                        if (v === "csv" || v === "xlsx" || v === "ofx")
+                           setFormat(v);
                      }}
                      value={format}
                   >

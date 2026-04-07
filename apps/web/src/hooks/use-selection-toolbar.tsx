@@ -62,15 +62,18 @@ export function useSelectionToolbar(
       [],
    );
 
-   useIsomorphicLayoutEffect(
-      () => () => {
+   useIsomorphicLayoutEffect(() => {
+      toolbarStore.setState((s) => ({
+         ...s,
+         renderActions: stableRenderActions,
+      }));
+      return () => {
          toolbarStore.setState(() => ({
             selectedIndices: new Set<number>(),
             renderActions: null,
          }));
-      },
-      [],
-   );
+      };
+   }, [stableRenderActions]);
 
    function toggle(index: number) {
       if (selectedIndices.has(index)) removeFromSelection(index);
