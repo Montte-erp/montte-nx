@@ -6,6 +6,7 @@ import {
 import {
    createTransaction,
    createTransactionItems,
+   createInstallments as createInstallmentsRepo,
    deleteTransaction,
    ensureTransactionOwnership,
    getTransactionsSummary,
@@ -391,4 +392,48 @@ export const importBulk = protectedProcedure
          imported++;
       }
       return { imported, skipped: 0 };
+   });
+
+export const createInstallments = protectedProcedure
+   .input(
+      z.object({
+         teamId: z.string().uuid(),
+         name: z.string().min(1).max(200).nullable().optional(),
+         type: z.enum(["income", "expense"]),
+         amount: z
+            .string()
+            .refine(
+               (v) => !Number.isNaN(Number(v)) && Number(v) > 0,
+               "Valor deve ser um número válido maior que zero.",
+            ),
+         installmentCount: z.number().int().min(2).max(72),
+         startDate: z
+            .string()
+            .regex(
+               /^\d{4}-\d{2}-\d{2}$/,
+               "Data deve estar no formato YYYY-MM-DD.",
+            ),
+         bankAccountId: z.string().uuid().nullable().optional(),
+         creditCardId: z.string().uuid().nullable().optional(),
+         categoryId: z.string().uuid().nullable().optional(),
+         contactId: z.string().uuid().nullable().optional(),
+         paymentMethod: z
+            .enum([
+               "pix",
+               "credit_card",
+               "debit_card",
+               "boleto",
+               "cash",
+               "transfer",
+               "other",
+               "cheque",
+               "automatic_debit",
+            ])
+            .nullable()
+            .optional(),
+         description: z.string().max(500).nullable().optional(),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      return createInstallmentsRepo(context.db, input.teamId, input);
    });

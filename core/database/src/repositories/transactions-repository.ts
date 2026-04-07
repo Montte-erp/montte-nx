@@ -1,6 +1,7 @@
 import type { Condition, ConditionGroup } from "@f-o-t/condition-evaluator";
 import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
+import dayjs from "dayjs";
 import { of, toDecimal } from "@f-o-t/money";
 import {
    and,
@@ -590,4 +591,64 @@ export async function replaceTransactionItems(
       propagateError(err);
       throw AppError.database("Failed to replace transaction items");
    }
+}
+
+export async function createInstallments(
+   db: DatabaseInstance,
+   teamId: string,
+   data: {
+      name?: string | null;
+      type: "income" | "expense";
+      amount: string;
+      installmentCount: number;
+      startDate: string;
+      bankAccountId?: string | null;
+      creditCardId?: string | null;
+      categoryId?: string | null;
+      contactId?: string | null;
+      paymentMethod?:
+         | (typeof transactions.paymentMethod.enumValues)[number]
+         | null;
+      description?: string | null;
+   },
+) {
+   const groupId = crypto.randomUUID();
+   const perInstallment = (Number(data.amount) / data.installmentCount).toFixed(
+      2,
+   );
+   const today = new Date().toISOString().slice(0, 10);
+   const results = [];
+   for (let i = 0; i < data.installmentCount; i++) {
+      const date = dayjs(data.startDate).add(i, "month").format("YYYY-MM-DD");
+      const status = date > today ? "pending" : "confirmed";
+      try {
+         const [row] = await db
+            .insert(transactions)
+            .values({
+               teamId,
+               name: data.name ?? null,
+               type: data.type,
+               amount: perInstallment,
+               date,
+               bankAccountId: data.bankAccountId ?? null,
+               creditCardId: data.creditCardId ?? null,
+               categoryId: data.categoryId ?? null,
+               contactId: data.contactId ?? null,
+               paymentMethod: data.paymentMethod ?? null,
+               description: data.description ?? null,
+               isInstallment: true,
+               installmentCount: data.installmentCount,
+               installmentNumber: i + 1,
+               installmentGroupId: groupId,
+               status,
+            })
+            .returning();
+         if (!row) throw AppError.database("Failed to create installment");
+         results.push(row);
+      } catch (err) {
+         propagateError(err);
+         throw AppError.database("Failed to create installment");
+      }
+   }
+   return results;
 }
