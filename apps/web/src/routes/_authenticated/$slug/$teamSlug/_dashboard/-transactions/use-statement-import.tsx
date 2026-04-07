@@ -10,7 +10,7 @@ import { useDebouncedCallback } from "@tanstack/react-pacer";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { useLocalStorage } from "foxact/use-local-storage";
-import invariant from "foxact/invariant";
+import { invariant } from "foxact/invariant";
 import { createContext, useCallback, useContext, useState } from "react";
 import type { ReactNode } from "react";
 import { orpc } from "@/integrations/orpc/client";
