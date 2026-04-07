@@ -1,4 +1,5 @@
 import type { Attachment } from "@core/database/schemas/transactions";
+import { format, of } from "@f-o-t/money";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import type { ComboboxOption } from "@packages/ui/components/combobox";
@@ -38,6 +39,7 @@ import { Suspense, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { orpc } from "@/integrations/orpc/client";
+import { useActiveTeam } from "@/hooks/use-active-team";
 import type { TransactionRow } from "./transactions-columns";
 
 type TransactionType = "income" | "expense" | "transfer";
@@ -766,10 +768,38 @@ function TransactionDialogStackContent({
       }),
    );
 
+   const createRecurringMutation = useMutation(
+      orpc.recurringTransactions.create.mutationOptions({
+         onSuccess: () => {
+            toast.success("Recorrência criada com sucesso.");
+            onSuccess();
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao criar recorrência.");
+         },
+      }),
+   );
+
+   const createInstallmentsMutation = useMutation(
+      orpc.transactions.createInstallments.mutationOptions({
+         onSuccess: () => {
+            toast.success("Parcelas criadas com sucesso.");
+            onSuccess();
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao criar parcelas.");
+         },
+      }),
+   );
+
    const isPending =
       createMutation.isPending ||
       updateMutation.isPending ||
-      billCreateMutation.isPending;
+      billCreateMutation.isPending ||
+      createRecurringMutation.isPending ||
+      createInstallmentsMutation.isPending;
+
+   const { activeTeamId } = useActiveTeam();
 
    const emptyTagIds: string[] = [];
 
@@ -799,11 +829,86 @@ function TransactionDialogStackContent({
          isRecurring: false as boolean,
          recurringFrequency: null as string | null,
          recurringCount: null as number | null,
+         recurringNoEnd: true as boolean,
       },
       onSubmit: ({ value }) => {
          const dateStr = value.date
             ? dayjs(value.date).format("YYYY-MM-DD")
             : "";
+
+         if (
+            isCreate &&
+            value.isRecurring &&
+            value.recurringFrequency &&
+            activeTeamId
+         ) {
+            type RecurringFreq =
+               | "daily"
+               | "weekly"
+               | "biweekly"
+               | "monthly"
+               | "yearly";
+            const freq = value.recurringFrequency as RecurringFreq;
+            let endsAt: string | null = null;
+            if (!value.recurringNoEnd && value.recurringCount) {
+               const unitMap: Record<
+                  RecurringFreq,
+                  "day" | "week" | "month" | "year"
+               > = {
+                  daily: "day",
+                  weekly: "week",
+                  biweekly: "week",
+                  monthly: "month",
+                  yearly: "year",
+               };
+               const multiplier = freq === "biweekly" ? 2 : 1;
+               endsAt = dayjs(dateStr)
+                  .add(value.recurringCount * multiplier, unitMap[freq])
+                  .format("YYYY-MM-DD");
+            }
+            createRecurringMutation.mutate({
+               teamId: activeTeamId,
+               name: value.name?.trim() || null,
+               type: value.type as "income" | "expense",
+               amount: value.amount,
+               frequency: freq,
+               startDate: dateStr,
+               endsAt,
+               bankAccountId: value.bankAccountId || null,
+               creditCardId: value.creditCardId || null,
+               categoryId: value.categoryId || null,
+               contactId: value.contactId,
+               paymentMethod: (value.paymentMethod ||
+                  null) as PaymentMethod | null,
+               description: value.description || null,
+            });
+            return;
+         }
+
+         if (
+            isCreate &&
+            value.isInstallment &&
+            value.installmentCount &&
+            activeTeamId
+         ) {
+            createInstallmentsMutation.mutate({
+               teamId: activeTeamId,
+               name: value.name?.trim() || null,
+               type: value.type as "income" | "expense",
+               amount: value.amount,
+               installmentCount: value.installmentCount,
+               startDate: dateStr,
+               bankAccountId: value.bankAccountId || null,
+               creditCardId: value.creditCardId || null,
+               categoryId: value.categoryId || null,
+               contactId: value.contactId,
+               paymentMethod: (value.paymentMethod ||
+                  null) as PaymentMethod | null,
+               description: value.description || null,
+            });
+            return;
+         }
+
          const isTransfer = value.type === "transfer";
 
          if (isCreate && value.createAsBill && value.type === "expense") {
@@ -1790,41 +1895,68 @@ function TransactionDialogStackContent({
                            </div>
 
                            {isInstallment && (
-                              <form.Field
-                                 name="installmentCount"
-                                 children={(field) => (
-                                    <Field>
-                                       <FieldLabel htmlFor={field.name}>
-                                          Número de parcelas
-                                       </FieldLabel>
-                                       <Input
-                                          id={field.name}
-                                          name={field.name}
-                                          aria-invalid={
-                                             field.state.meta.isTouched &&
-                                             field.state.meta.errors.length > 0
-                                          }
-                                          max={72}
-                                          min={2}
-                                          onBlur={field.handleBlur}
-                                          onChange={(e) =>
-                                             field.handleChange(
-                                                e.target.value
-                                                   ? Number(e.target.value)
-                                                   : null,
-                                             )
-                                          }
-                                          placeholder="Ex: 3"
-                                          type="number"
-                                          value={field.state.value ?? ""}
-                                       />
-                                    </Field>
-                                 )}
-                              />
+                              <div className="flex flex-col gap-2">
+                                 <form.Field
+                                    name="installmentCount"
+                                    children={(field) => (
+                                       <Field>
+                                          <FieldLabel htmlFor={field.name}>
+                                             Número de parcelas
+                                          </FieldLabel>
+                                          <Input
+                                             id={field.name}
+                                             name={field.name}
+                                             aria-invalid={
+                                                field.state.meta.isTouched &&
+                                                field.state.meta.errors.length >
+                                                   0
+                                             }
+                                             max={72}
+                                             min={2}
+                                             onBlur={field.handleBlur}
+                                             onChange={(e) =>
+                                                field.handleChange(
+                                                   e.target.value
+                                                      ? Number(e.target.value)
+                                                      : null,
+                                                )
+                                             }
+                                             placeholder="Ex: 3"
+                                             type="number"
+                                             value={field.state.value ?? ""}
+                                          />
+                                       </Field>
+                                    )}
+                                 />
+                                 <form.Subscribe
+                                    selector={(s) => ({
+                                       amount: s.values.amount,
+                                       count: s.values.installmentCount,
+                                    })}
+                                 >
+                                    {({ amount, count }) => {
+                                       if (
+                                          !count ||
+                                          !amount ||
+                                          Number(amount) <= 0
+                                       )
+                                          return null;
+                                       const per = (
+                                          Number(amount) / count
+                                       ).toFixed(2);
+                                       return (
+                                          <p className="text-sm text-muted-foreground">
+                                             {count}x de{" "}
+                                             {format(of(per, "BRL"), "pt-BR")}
+                                          </p>
+                                       );
+                                    }}
+                                 </form.Subscribe>
+                              </div>
                            )}
 
                            {isRecurring && (
-                              <div className="grid grid-cols-2 gap-4">
+                              <div className="flex flex-col gap-4">
                                  <form.Field
                                     name="recurringFrequency"
                                     children={(field) => (
@@ -1860,37 +1992,74 @@ function TransactionDialogStackContent({
                                  />
 
                                  <form.Field
-                                    name="recurringCount"
+                                    name="recurringNoEnd"
                                     children={(field) => (
-                                       <Field>
-                                          <FieldLabel htmlFor={field.name}>
-                                             Repetições
-                                          </FieldLabel>
-                                          <Input
-                                             id={field.name}
-                                             name={field.name}
-                                             aria-invalid={
-                                                field.state.meta.isTouched &&
-                                                field.state.meta.errors.length >
-                                                   0
+                                       <div className="flex items-center gap-2">
+                                          <Checkbox
+                                             checked={field.state.value}
+                                             id="recurringNoEnd"
+                                             onCheckedChange={(v) =>
+                                                field.handleChange(!!v)
                                              }
-                                             max={120}
-                                             min={2}
-                                             onBlur={field.handleBlur}
-                                             onChange={(e) =>
-                                                field.handleChange(
-                                                   e.target.value
-                                                      ? Number(e.target.value)
-                                                      : null,
-                                                )
-                                             }
-                                             placeholder="Ex: 12"
-                                             type="number"
-                                             value={field.state.value ?? ""}
                                           />
-                                       </Field>
+                                          <label
+                                             className="text-sm cursor-pointer select-none"
+                                             htmlFor="recurringNoEnd"
+                                          >
+                                             Sem data de encerramento
+                                          </label>
+                                       </div>
                                     )}
                                  />
+
+                                 <form.Subscribe
+                                    selector={(s) => s.values.recurringNoEnd}
+                                 >
+                                    {(noEnd) =>
+                                       !noEnd ? (
+                                          <form.Field
+                                             name="recurringCount"
+                                             children={(field) => (
+                                                <Field>
+                                                   <FieldLabel
+                                                      htmlFor={field.name}
+                                                   >
+                                                      Número de repetições
+                                                   </FieldLabel>
+                                                   <Input
+                                                      id={field.name}
+                                                      name={field.name}
+                                                      aria-invalid={
+                                                         field.state.meta
+                                                            .isTouched &&
+                                                         field.state.meta.errors
+                                                            .length > 0
+                                                      }
+                                                      max={120}
+                                                      min={2}
+                                                      onBlur={field.handleBlur}
+                                                      onChange={(e) =>
+                                                         field.handleChange(
+                                                            e.target.value
+                                                               ? Number(
+                                                                    e.target
+                                                                       .value,
+                                                                 )
+                                                               : null,
+                                                         )
+                                                      }
+                                                      placeholder="Ex: 12"
+                                                      type="number"
+                                                      value={
+                                                         field.state.value ?? ""
+                                                      }
+                                                   />
+                                                </Field>
+                                             )}
+                                          />
+                                       ) : null
+                                    }
+                                 </form.Subscribe>
                               </div>
                            )}
                         </div>
