@@ -1,13 +1,11 @@
-import { skipToken, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import dayjs from "dayjs";
 import { orpc } from "@/integrations/orpc/client";
 
-export function useCnpj(teamId: string | null) {
+export function useCnpj(teamId: string) {
    const { data: teamData } = useSuspenseQuery(
-      teamId
-         ? orpc.team.get.queryOptions({ input: { teamId } })
-         : { queryKey: ["cnpj-skip"], queryFn: skipToken },
+      orpc.team.get.queryOptions({ input: { teamId } }),
    );
 
    const { minDate, minDateStr } = useMemo(() => {
