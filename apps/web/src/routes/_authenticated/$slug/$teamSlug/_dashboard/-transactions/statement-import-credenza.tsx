@@ -1105,11 +1105,111 @@ function PreviewStep({
                   </div>
                </div>
 
-               <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">
-                     {selectedIndices.size} de {validCount} selecionadas
-                  </p>
-               </div>
+               {selectedIndices.size > 0 && (
+                  <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2">
+                     <span className="text-xs font-medium tabular-nums shrink-0">
+                        {selectedIndices.size} de {validCount} selecionadas
+                     </span>
+                     <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 gap-2 px-2 text-xs"
+                        onClick={clearIndices}
+                     >
+                        <X className="size-3.5" />
+                        Limpar
+                     </Button>
+                     <div className="h-4 w-px bg-border" />
+                     <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                        onClick={() => {
+                           const toRemove = [...selectedIndices];
+                           for (const i of toRemove) removeIndex(i);
+                           clearIndices();
+                        }}
+                     >
+                        Ignorar selecionadas
+                     </Button>
+                     <Popover>
+                        <PopoverTrigger asChild>
+                           <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 px-2 text-xs"
+                           >
+                              Alterar data
+                           </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                           className="w-auto p-2 flex flex-col gap-2"
+                           align="start"
+                           side="top"
+                        >
+                           <bulkForm.Field name="date">
+                              {(field) => (
+                                 <DatePicker
+                                    date={field.state.value}
+                                    onSelect={(d) => field.handleChange(d)}
+                                    placeholder="Selecionar data"
+                                 />
+                              )}
+                           </bulkForm.Field>
+                           <Button
+                              type="button"
+                              size="sm"
+                              className="w-full"
+                              onClick={applyBulkDate}
+                           >
+                              Aplicar
+                           </Button>
+                        </PopoverContent>
+                     </Popover>
+                     <Popover>
+                        <PopoverTrigger asChild>
+                           <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 px-2 text-xs"
+                           >
+                              Alterar categoria
+                           </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                           className="w-56 p-2 flex flex-col gap-2"
+                           align="start"
+                           side="top"
+                        >
+                           <bulkForm.Field name="categoryId">
+                              {(field) => (
+                                 <Combobox
+                                    options={categoryOptions}
+                                    onValueChange={(v) => field.handleChange(v)}
+                                    value={field.state.value}
+                                    placeholder="Alterar categoria"
+                                    searchPlaceholder="Buscar categoria..."
+                                    emptyMessage="Nenhuma categoria"
+                                    className="w-full"
+                                 />
+                              )}
+                           </bulkForm.Field>
+                           <Button
+                              type="button"
+                              size="sm"
+                              className="w-full"
+                              onClick={applyBulkCategory}
+                           >
+                              Aplicar
+                           </Button>
+                        </PopoverContent>
+                     </Popover>
+                  </div>
+               )}
 
                <div className="flex gap-2">
                   <Button
