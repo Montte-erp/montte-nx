@@ -21,8 +21,9 @@ import { DatePicker } from "@packages/ui/components/date-picker";
 import { Field, FieldGroup, FieldLabel } from "@packages/ui/components/field";
 import { Spinner } from "@packages/ui/components/spinner";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { Download, FileSpreadsheet, Landmark, Table2 } from "lucide-react";
-import { Suspense, useState, useTransition } from "react";
+import { Suspense, useCallback, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -41,7 +42,61 @@ type BankAccountType =
    | "payment"
    | "cash";
 
-import dayjs from "dayjs";
+const TX_HEADERS = [
+   "data",
+   "nome",
+   "tipo",
+   "valor",
+   "descricao",
+   "conta",
+   "conta_destino",
+   "categoria",
+   "subcategoria",
+   "tags",
+   "forma_pagamento",
+   "parcelado",
+   "num_parcelas",
+   "contato",
+] as const;
+
+type TxRow = Record<(typeof TX_HEADERS)[number], string | number | boolean>;
+
+const FORMAT_OPTIONS: {
+   value: ExportFormat;
+   label: string;
+   description: string;
+   icon: React.ElementType;
+}[] = [
+   {
+      value: "csv",
+      label: "CSV",
+      description: "Texto separado por vírgulas",
+      icon: FileSpreadsheet,
+   },
+   {
+      value: "xlsx",
+      label: "XLSX",
+      description: "Excel e Google Sheets",
+      icon: Table2,
+   },
+   {
+      value: "ofx",
+      label: "OFX",
+      description: "Extrato para outros sistemas",
+      icon: Landmark,
+   },
+];
+
+const OFX_ACCOUNT_TYPE_MAP: Record<
+   BankAccountType,
+   "CHECKING" | "SAVINGS" | "MONEYMRKT"
+> = {
+   savings: "SAVINGS",
+   investment: "MONEYMRKT",
+   checking: "CHECKING",
+   payment: "CHECKING",
+   cash: "CHECKING",
+};
 
 function getCurrentMonthRange(): { from: string; to: string } {
    const now = dayjs();
@@ -68,12 +123,55 @@ function triggerDownload(blob: Blob, filename: string): void {
    URL.revokeObjectURL(url);
 }
 
-function mapAccountTypeToOFX(
-   type: BankAccountType,
-): "CHECKING" | "SAVINGS" | "MONEYMRKT" {
-   if (type === "savings") return "SAVINGS";
-   if (type === "investment") return "MONEYMRKT";
-   return "CHECKING";
+// biome-ignore lint/suspicious/noExplicitAny: transaction shape is runtime-typed
+function mapTxToRow(tx: any): TxRow {
+   return {
+      data: tx.date ?? "",
+      nome: tx.name ?? tx.description ?? "",
+      tipo:
+         tx.type === "income"
+            ? "receita"
+            : tx.type === "expense"
+              ? "despesa"
+              : "transferencia",
+      valor: tx.amount ?? "",
+      descricao: tx.description ?? "",
+      conta: tx.bankAccountName ?? "",
+      conta_destino: tx.destinationBankAccountId ?? "",
+      categoria: "",
+      subcategoria: "",
+      tags: Array.isArray(tx.tagIds) ? tx.tagIds.join(";") : "",
+      forma_pagamento: tx.paymentMethod ?? "",
+      parcelado: tx.isInstallment ? "Sim" : "Não",
+      num_parcelas: tx.installmentCount ?? "",
+      contato: tx.contactName ?? "",
+   };
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: transaction shape is runtime-typed
+function mapTxToOFX(tx: any) {
+   return {
+      type: tx.type === "income" ? ("CREDIT" as const) : ("DEBIT" as const),
+      datePosted: parseDateString(tx.date),
+      amount:
+         tx.type === "income"
+            ? Math.abs(Number(tx.amount))
+            : -Math.abs(Number(tx.amount)),
+      fitId: tx.id,
+      name: tx.name ?? tx.description ?? undefined,
+      memo: tx.description ?? undefined,
+   };
+}
+
+function ExportCredenzaHeader() {
+   return (
+      <CredenzaHeader>
+         <CredenzaTitle>Exportar Lançamentos</CredenzaTitle>
+         <CredenzaDescription>
+            Selecione o formato e o período para exportar.
+         </CredenzaDescription>
+      </CredenzaHeader>
+   );
 }
 
 function ExportForm({
@@ -98,200 +196,150 @@ function ExportForm({
       orpc.bankAccounts.getAll.queryOptions({}),
    );
 
-   const accountOptions = bankAccounts.map((acc) => ({
-      value: acc.id,
-      label: acc.name,
-   }));
+   const accountOptions = useMemo(
+      () => bankAccounts.map((acc) => ({ value: acc.id, label: acc.name })),
+      [bankAccounts],
+   );
 
-   const selectedAccount = bankAccounts.find(
-      (acc) => acc.id === selectedAccountId,
+   const selectedAccount = useMemo(
+      () => bankAccounts.find((acc) => acc.id === selectedAccountId),
+      [bankAccounts, selectedAccountId],
    );
 
    const canDownload =
-      format === "csv" ||
-      format === "xlsx" ||
-      (format === "ofx" && selectedAccountId !== "");
+      format === "csv" || format === "xlsx" || selectedAccountId !== "";
 
-   async function fetchAllTransactions(
-      from: string,
-      to: string,
-      bankAccountId?: string,
-   ) {
-      const firstPage = await queryClient.fetchQuery(
-         orpc.transactions.getAll.queryOptions({
-            input: {
-               dateFrom: from,
-               dateTo: to,
-               pageSize: 100,
-               page: 1,
-               ...(bankAccountId ? { bankAccountId } : {}),
-            },
-         }),
-      );
+   const fetchAllTransactions = useCallback(
+      async (from: string, to: string, bankAccountId?: string) => {
+         const baseInput = {
+            dateFrom: from,
+            dateTo: to,
+            pageSize: 100,
+            ...(bankAccountId ? { bankAccountId } : {}),
+         };
 
-      // biome-ignore lint/suspicious/noExplicitAny: listTransactions return type unknown at compile time
-      let allTx: any[] = firstPage.data;
-      let page = 2;
-
-      while (allTx.length < firstPage.total) {
-         const next = await queryClient.fetchQuery(
+         const firstPage = await queryClient.fetchQuery(
             orpc.transactions.getAll.queryOptions({
-               input: {
-                  dateFrom: from,
-                  dateTo: to,
-                  pageSize: 100,
-                  page,
-                  ...(bankAccountId ? { bankAccountId } : {}),
-               },
+               input: { ...baseInput, page: 1 },
             }),
          );
-         if (next.data.length === 0) break;
-         allTx = [...allTx, ...next.data];
-         page++;
-      }
 
-      return allTx;
-   }
+         // biome-ignore lint/suspicious/noExplicitAny: transaction shape is runtime-typed
+         let allTx: any[] = firstPage.data;
+         let page = 2;
 
-   function handleDownload() {
+         while (allTx.length < firstPage.total) {
+            const next = await queryClient.fetchQuery(
+               orpc.transactions.getAll.queryOptions({
+                  input: { ...baseInput, page },
+               }),
+            );
+            if (next.data.length === 0) break;
+            allTx = [...allTx, ...next.data];
+            page++;
+         }
+
+         return allTx;
+      },
+      [queryClient],
+   );
+
+   const handleFormatChange = useCallback((v: string) => {
+      if (v === "csv" || v === "xlsx" || v === "ofx") setFormat(v);
+   }, []);
+
+   const handleFromSelect = useCallback((d: Date | undefined) => {
+      if (d) setPeriodFrom(d);
+   }, []);
+
+   const handleToSelect = useCallback((d: Date | undefined) => {
+      if (d) setPeriodTo(d);
+   }, []);
+
+   const handleDownload = useCallback(() => {
       startTransition(async () => {
          try {
             const from = toDateString(periodFrom);
             const to = toDateString(periodTo);
-
-            const HEADERS = [
-               "data",
-               "nome",
-               "tipo",
-               "valor",
-               "descricao",
-               "conta",
-               "conta_destino",
-               "categoria",
-               "subcategoria",
-               "tags",
-               "forma_pagamento",
-               "parcelado",
-               "num_parcelas",
-               "contato",
-            ] as const;
+            const filename = `transacoes_${from}_${to}`;
 
             if (format === "csv" || format === "xlsx") {
                const allTx = await fetchAllTransactions(from, to);
-
-               const rows = allTx.map((tx) => ({
-                  data: tx.date ?? "",
-                  nome: tx.name ?? tx.description ?? "",
-                  tipo:
-                     tx.type === "income"
-                        ? "receita"
-                        : tx.type === "expense"
-                          ? "despesa"
-                          : "transferencia",
-                  valor: tx.amount ?? "",
-                  descricao: tx.description ?? "",
-                  conta: tx.bankAccountName ?? "",
-                  conta_destino: tx.destinationBankAccountId ?? "",
-                  categoria: "",
-                  subcategoria: "",
-                  tags: Array.isArray(tx.tagIds) ? tx.tagIds.join(";") : "",
-                  forma_pagamento: tx.paymentMethod ?? "",
-                  parcelado: tx.isInstallment ? "Sim" : "Não",
-                  num_parcelas: tx.installmentCount ?? "",
-                  contato: tx.contactName ?? "",
-               }));
+               const rows = allTx.map(mapTxToRow);
 
                if (format === "csv") {
                   const csv = generateFromObjects(rows, {
-                     headers: [...HEADERS],
+                     headers: [...TX_HEADERS],
                   });
-                  const blob = new Blob([csv], {
-                     type: "text/csv;charset=utf-8;",
-                  });
-                  triggerDownload(blob, `transacoes_${from}_${to}.csv`);
+                  triggerDownload(
+                     new Blob([csv], { type: "text/csv;charset=utf-8;" }),
+                     `${filename}.csv`,
+                  );
                   toast.success("Exportação CSV concluída.");
-               } else {
-                  const ws = xlsxUtils.json_to_sheet(rows, {
-                     header: [...HEADERS],
-                  });
-                  const wb = xlsxUtils.book_new();
-                  xlsxUtils.book_append_sheet(wb, ws, "Transações");
-                  const data = xlsxWrite(wb, {
-                     type: "array",
-                     bookType: "xlsx",
-                  });
-                  const blob = new Blob([data], {
-                     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                  });
-                  triggerDownload(blob, `transacoes_${from}_${to}.xlsx`);
-                  toast.success("Exportação XLSX concluída.");
-               }
-            } else {
-               if (!selectedAccount) {
-                  toast.error("Selecione uma conta para exportar OFX.");
                   return;
                }
 
-               const allTx = await fetchAllTransactions(
-                  from,
-                  to,
-                  selectedAccountId,
-               );
-
-               const txForAccount = allTx.filter(
-                  (tx) => tx.bankAccountId === selectedAccountId,
-               );
-
-               const ofxTransactions = txForAccount.map((tx) => ({
-                  type:
-                     tx.type === "income"
-                        ? ("CREDIT" as const)
-                        : ("DEBIT" as const),
-                  datePosted: parseDateString(tx.date),
-                  amount:
-                     tx.type === "income"
-                        ? Math.abs(Number(tx.amount))
-                        : -Math.abs(Number(tx.amount)),
-                  fitId: tx.id,
-                  name: tx.name ?? tx.description ?? undefined,
-                  memo: tx.description ?? undefined,
-               }));
-
-               const startDate = parseDateString(from);
-               const endDate = parseDateString(to);
-
-               let ofxContent: string;
-
-               ofxContent = generateBankStatement({
-                  bankId: "BR",
-                  accountId: selectedAccount.id,
-                  accountType: mapAccountTypeToOFX(selectedAccount.type),
-                  currency: "BRL",
-                  startDate,
-                  endDate,
-                  transactions: ofxTransactions,
+               const ws = xlsxUtils.json_to_sheet(rows, {
+                  header: [...TX_HEADERS],
                });
-
-               const blob = new Blob([ofxContent], {
-                  type: "application/x-ofx",
-               });
-               triggerDownload(blob, `transacoes_${from}_${to}.ofx`);
-               toast.success("Exportação OFX concluída.");
+               const wb = xlsxUtils.book_new();
+               xlsxUtils.book_append_sheet(wb, ws, "Transações");
+               const data = xlsxWrite(wb, { type: "array", bookType: "xlsx" });
+               triggerDownload(
+                  new Blob([data], {
+                     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                  }),
+                  `${filename}.xlsx`,
+               );
+               toast.success("Exportação XLSX concluída.");
+               return;
             }
+
+            if (!selectedAccount) {
+               toast.error("Selecione uma conta para exportar OFX.");
+               return;
+            }
+
+            const allTx = await fetchAllTransactions(
+               from,
+               to,
+               selectedAccountId,
+            );
+            const txForAccount = allTx.filter(
+               (tx) => tx.bankAccountId === selectedAccountId,
+            );
+
+            const ofxContent = generateBankStatement({
+               bankId: "BR",
+               accountId: selectedAccount.id,
+               accountType: OFX_ACCOUNT_TYPE_MAP[selectedAccount.type],
+               currency: "BRL",
+               startDate: parseDateString(from),
+               endDate: parseDateString(to),
+               transactions: txForAccount.map(mapTxToOFX),
+            });
+
+            triggerDownload(
+               new Blob([ofxContent], { type: "application/x-ofx" }),
+               `${filename}.ofx`,
+            );
+            toast.success("Exportação OFX concluída.");
          } catch {
             toast.error("Erro ao exportar lançamentos.");
          }
       });
-   }
+   }, [
+      format,
+      periodFrom,
+      periodTo,
+      selectedAccount,
+      selectedAccountId,
+      fetchAllTransactions,
+   ]);
 
    return (
       <>
-         <CredenzaHeader>
-            <CredenzaTitle>Exportar Lançamentos</CredenzaTitle>
-            <CredenzaDescription>
-               Selecione o formato e o período para exportar.
-            </CredenzaDescription>
-         </CredenzaHeader>
+         <ExportCredenzaHeader />
 
          <CredenzaBody>
             <FieldGroup>
@@ -299,44 +347,29 @@ function ExportForm({
                   <FieldLabel>Formato</FieldLabel>
                   <Choicebox
                      className="grid grid-cols-3 gap-2"
-                     onValueChange={(v) => {
-                        if (v === "csv" || v === "xlsx" || v === "ofx")
-                           setFormat(v);
-                     }}
+                     onValueChange={handleFormatChange}
                      value={format}
                   >
-                     <ChoiceboxItem id="format-csv" value="csv">
-                        <FileSpreadsheet className="size-5 text-muted-foreground" />
-                        <ChoiceboxItemHeader>
-                           <ChoiceboxItemTitle>CSV</ChoiceboxItemTitle>
-                           <ChoiceboxItemDescription>
-                              Texto separado por vírgulas
-                           </ChoiceboxItemDescription>
-                        </ChoiceboxItemHeader>
-                        <ChoiceboxIndicator id="format-csv" />
-                     </ChoiceboxItem>
-
-                     <ChoiceboxItem id="format-xlsx" value="xlsx">
-                        <Table2 className="size-5 text-muted-foreground" />
-                        <ChoiceboxItemHeader>
-                           <ChoiceboxItemTitle>XLSX</ChoiceboxItemTitle>
-                           <ChoiceboxItemDescription>
-                              Excel e Google Sheets
-                           </ChoiceboxItemDescription>
-                        </ChoiceboxItemHeader>
-                        <ChoiceboxIndicator id="format-xlsx" />
-                     </ChoiceboxItem>
-
-                     <ChoiceboxItem id="format-ofx" value="ofx">
-                        <Landmark className="size-5 text-muted-foreground" />
-                        <ChoiceboxItemHeader>
-                           <ChoiceboxItemTitle>OFX</ChoiceboxItemTitle>
-                           <ChoiceboxItemDescription>
-                              Extrato para outros sistemas
-                           </ChoiceboxItemDescription>
-                        </ChoiceboxItemHeader>
-                        <ChoiceboxIndicator id="format-ofx" />
-                     </ChoiceboxItem>
+                     {FORMAT_OPTIONS.map(
+                        ({ value, label, description, icon: Icon }) => (
+                           <ChoiceboxItem
+                              key={value}
+                              id={`format-${value}`}
+                              value={value}
+                           >
+                              <Icon className="size-5 text-muted-foreground" />
+                              <ChoiceboxItemHeader>
+                                 <ChoiceboxItemTitle>
+                                    {label}
+                                 </ChoiceboxItemTitle>
+                                 <ChoiceboxItemDescription>
+                                    {description}
+                                 </ChoiceboxItemDescription>
+                              </ChoiceboxItemHeader>
+                              <ChoiceboxIndicator id={`format-${value}`} />
+                           </ChoiceboxItem>
+                        ),
+                     )}
                   </Choicebox>
                </Field>
 
@@ -346,9 +379,7 @@ function ExportForm({
                      <DatePicker
                         className="w-full"
                         date={periodFrom}
-                        onSelect={(d) => {
-                           if (d) setPeriodFrom(d);
-                        }}
+                        onSelect={handleFromSelect}
                         placeholder="Selecione"
                      />
                   </Field>
@@ -358,9 +389,7 @@ function ExportForm({
                      <DatePicker
                         className="w-full"
                         date={periodTo}
-                        onSelect={(d) => {
-                           if (d) setPeriodTo(d);
-                        }}
+                        onSelect={handleToSelect}
                         placeholder="Selecione"
                      />
                   </Field>
@@ -430,15 +459,10 @@ export function TransactionExportCredenza({
       <Suspense
          fallback={
             <>
-               <CredenzaHeader>
-                  <CredenzaTitle>Exportar Lançamentos</CredenzaTitle>
-                  <CredenzaDescription>
-                     Selecione o formato e o período para exportar.
-                  </CredenzaDescription>
-               </CredenzaHeader>
+               <ExportCredenzaHeader />
                <CredenzaBody>
-                  <div className="flex items-center justify-center py-8">
-                     <Spinner className="size-6" />
+                  <div className="flex items-center justify-center py-4">
+                     <Spinner className="size-4" />
                   </div>
                </CredenzaBody>
             </>
