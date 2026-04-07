@@ -1,4 +1,4 @@
-import { of as moneyOf, toMajorUnitsString } from "@f-o-t/money";
+import { of as moneyOf, toMajorUnitsString, absolute } from "@f-o-t/money";
 import { parseBufferOrThrow as parseOfx, getTransactions } from "@f-o-t/ofx";
 import { useMutation } from "@tanstack/react-query";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
@@ -88,7 +88,7 @@ export function parseAmount(raw: string): string | null {
       normalized = cleaned;
    }
    try {
-      return toMajorUnitsString(moneyOf(normalized, "BRL")).replace("-", "");
+      return toMajorUnitsString(absolute(moneyOf(normalized, "BRL")));
    } catch {
       return null;
    }
@@ -284,7 +284,10 @@ export function useStatementImport({
    const [rows, setRows] = useState<ValidatedRow[]>([]);
    const [duplicateFlags, setDuplicateFlags] = useState<boolean[]>([]);
    const [format, setFormat] = useState<FileFormat>("csv");
-   const [bankAccountId, setBankAccountId] = useState("");
+   const [bankAccountId, setBankAccountId] = useLocalStorage<string>(
+      "montte:import:bankAccountId",
+      "",
+   );
    const [mapping, setMapping] = useState<ColumnMapping>(EMPTY_MAPPING);
    const [savedMappingApplied, setSavedMappingApplied] = useState(false);
 
