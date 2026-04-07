@@ -132,14 +132,14 @@ function CollapsibleNavItem({
    isItemActive,
    onMainItemClick,
 }: {
-   item: NavItemDef & { children: NavItemDef[] };
+   item: NavItemDef;
    slug: string;
    teamSlug?: string | null;
    isItemActive: (item: NavItemDef) => boolean;
    onMainItemClick: () => void;
 }) {
    const Icon = item.icon;
-   const anyChildActive = item.children.some(isItemActive);
+   const anyChildActive = (item.children ?? []).some(isItemActive);
 
    return (
       <Collapsible asChild className="group/collapsible" defaultOpen>
@@ -157,7 +157,7 @@ function CollapsibleNavItem({
             </CollapsibleTrigger>
             <CollapsibleContent>
                <SidebarMenuSub>
-                  {item.children.map((child) => (
+                  {(item.children ?? []).map((child) => (
                      <SidebarMenuSubItem key={child.id}>
                         <SidebarMenuSubButton
                            asChild

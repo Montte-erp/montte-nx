@@ -1316,10 +1316,10 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                   </Button>
                   <Button
                      className="flex-1"
-                     disabled={selectableIndices.length === 0}
+                     disabled={selectedIndices.size === 0}
                      onClick={() => {
-                        const confirmedSet = new Set(selectableIndices);
-                        const duplicateCount = selectableIndices.filter(
+                        const confirmedSet = new Set(selectedIndices);
+                        const duplicateCount = [...selectedIndices].filter(
                            (i) => duplicateFlags[i],
                         ).length;
                         if (duplicateCount > 0) {

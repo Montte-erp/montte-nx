@@ -214,6 +214,19 @@ export const importStatement = withCreditEnforcement(
          context.teamId,
       );
 
+      const uniqueCategoryIds = [
+         ...new Set(
+            input.transactions
+               .map((t) => t.categoryId)
+               .filter((id): id is string => !!id),
+         ),
+      ];
+      for (const categoryId of uniqueCategoryIds) {
+         await validateTransactionReferences(context.db, context.teamId, {
+            categoryId,
+         });
+      }
+
       const rows = input.transactions.map((t) => ({
          teamId: context.teamId,
          bankAccountId: input.bankAccountId,

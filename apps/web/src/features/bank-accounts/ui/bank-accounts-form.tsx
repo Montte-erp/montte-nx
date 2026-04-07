@@ -171,7 +171,7 @@ export function BankAccountForm({
    const { bankOptions } = useBrazilianBanks();
 
    const { activeTeamId } = useActiveTeam();
-   const { minDate } = useCnpj(activeTeamId ?? null);
+   const { minDate } = useCnpj(activeTeamId ?? "");
 
    const branchRef = useMaskito({ options: branchMaskOptions });
    const accountRef = useMaskito({ options: accountMaskOptions });
