@@ -1,11 +1,18 @@
-import { of as moneyOf, toMajorUnitsString, absolute } from "@f-o-t/money";
+import {
+   of as moneyOf,
+   toMajorUnitsString,
+   absolute,
+   format as moneyFormat,
+} from "@f-o-t/money";
 import { parseBufferOrThrow as parseOfx, getTransactions } from "@f-o-t/ofx";
 import { useMutation } from "@tanstack/react-query";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { useLocalStorage } from "foxact/use-local-storage";
-import { useCallback, useState } from "react";
+import invariant from "foxact/invariant";
+import { createContext, useCallback, useContext, useState } from "react";
+import type { ReactNode } from "react";
 import { orpc } from "@/integrations/orpc/client";
 import { useCnpj } from "@/hooks/use-cnpj";
 import { useCsvFile } from "@/hooks/use-csv-file";
@@ -52,6 +59,31 @@ export const FIELD_LABELS: Record<ColumnField, string> = {
    amount: "Valor *",
    description: "Descrição",
 };
+
+export const TEMPLATE_HEADERS = [
+   "data",
+   "nome",
+   "tipo",
+   "valor",
+   "descricao",
+] as const;
+
+export const TEMPLATE_ROWS = [
+   {
+      data: "15/01/2024",
+      nome: "Pagamento fornecedor",
+      tipo: "despesa",
+      valor: "1500.00",
+      descricao: "NF 123",
+   },
+   {
+      data: "20/01/2024",
+      nome: "Recebimento cliente",
+      tipo: "receita",
+      valor: "3200.00",
+      descricao: "Fatura 456",
+   },
+];
 
 const DATE_FORMATS = [
    "DD/MM/YYYY",
@@ -128,6 +160,15 @@ const EMPTY_MAPPING: ColumnMapping = {
    amount: "",
    description: "",
 };
+
+export function formatMoney(value: string): string {
+   const normalized = parseAmount(value) ?? value;
+   try {
+      return moneyFormat(moneyOf(normalized, "BRL"), "pt-BR");
+   } catch {
+      return value;
+   }
+}
 
 export function parseDate(raw: string): string | null {
    const dateOnly = raw
@@ -286,7 +327,84 @@ function parseOfxBuffer(
    });
 }
 
-export function useStatementImport({
+type ImportPayloadItem = {
+   name?: string;
+   type: "income" | "expense";
+   amount: string;
+   date: string;
+   description?: string;
+   categoryId?: string;
+};
+
+type StatementImportContextValue = {
+   rawData: RawData | null;
+   rows: ValidatedRow[];
+   setRows: (rows: ValidatedRow[]) => void;
+   duplicateFlags: boolean[];
+   format: FileFormat;
+   bankAccountId: string;
+   setBankAccountId: (id: string) => void;
+   mapping: ColumnMapping;
+   setMapping: (m: ColumnMapping) => void;
+   savedMappingApplied: boolean;
+   minImportDate: string | null;
+   confirmedIndices: Set<number>;
+   setConfirmedIndices: (s: Set<number>) => void;
+   parseFile: (file: File) => Promise<void>;
+   applyColumnMapping: (m: ColumnMapping) => Promise<void>;
+   resetMapping: () => void;
+   buildImportPayload: () => ImportPayloadItem[];
+};
+
+const StatementImportContext =
+   createContext<StatementImportContextValue | null>(null);
+
+export function useStatementImportContext(): StatementImportContextValue {
+   const ctx = useContext(StatementImportContext);
+   invariant(
+      ctx,
+      "useStatementImportContext must be used within StatementImportProvider",
+   );
+   return ctx;
+}
+
+export function StatementImportProvider({
+   teamId,
+   children,
+}: {
+   teamId: string;
+   children: ReactNode;
+}) {
+   const [confirmedIndices, setConfirmedIndices] = useState<Set<number>>(
+      new Set(),
+   );
+
+   const { buildImportPayload: buildPayload, ...rest } = useStatementImport({
+      teamId,
+      onInitSelection: setConfirmedIndices,
+   });
+
+   const buildImportPayload = useCallback(
+      () => buildPayload(confirmedIndices),
+      [buildPayload, confirmedIndices],
+   );
+
+   return (
+      // oxlint-ignore react/no-context-provider-as-value-passing-callback
+      <StatementImportContext.Provider
+         value={{
+            ...rest,
+            confirmedIndices,
+            setConfirmedIndices,
+            buildImportPayload,
+         }}
+      >
+         {children}
+      </StatementImportContext.Provider>
+   );
+}
+
+function useStatementImport({
    teamId,
    onInitSelection,
 }: {
@@ -431,7 +549,7 @@ export function useStatementImport({
    }, [setSavedMapping]);
 
    const buildImportPayload = useCallback(
-      (selectedIndices: Set<number>) =>
+      (selectedIndices: Set<number>): ImportPayloadItem[] =>
          rows
             .filter((_, i) => selectedIndices.has(i))
             .map((r) => ({

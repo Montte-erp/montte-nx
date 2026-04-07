@@ -1,5 +1,10 @@
 import { of as moneyOf, format as moneyFormat, sumOrZero } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
+import {
+   Announcement,
+   AnnouncementTag,
+   AnnouncementTitle,
+} from "@packages/ui/components/announcement";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
@@ -64,17 +69,17 @@ import { useCsvFile } from "@/hooks/use-csv-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { useFileDownload } from "@/hooks/use-file-download";
 import {
-   type ColumnMapping,
-   type FileFormat,
-   type RawData,
-   type ValidatedRow,
    COLUMN_FIELDS,
    FIELD_LABELS,
    REQUIRED_FIELDS,
+   TEMPLATE_HEADERS,
+   TEMPLATE_ROWS,
+   StatementImportProvider,
+   formatMoney,
    getSampleValues,
    parseAmount,
    parseDate,
-   useStatementImport,
+   useStatementImportContext,
 } from "./use-statement-import";
 
 const { Stepper, useStepper } = defineStepper(
@@ -85,40 +90,6 @@ const { Stepper, useStepper } = defineStepper(
 );
 
 type StepperMethods = ReturnType<typeof useStepper>;
-
-function formatMoney(value: string): string {
-   const normalized = parseAmount(value) ?? value;
-   try {
-      return moneyFormat(moneyOf(normalized, "BRL"), "pt-BR");
-   } catch {
-      return value;
-   }
-}
-
-const TEMPLATE_ROWS = [
-   {
-      data: "15/01/2024",
-      nome: "Pagamento fornecedor",
-      tipo: "despesa",
-      valor: "1500.00",
-      descricao: "NF 123",
-   },
-   {
-      data: "20/01/2024",
-      nome: "Recebimento cliente",
-      tipo: "receita",
-      valor: "3200.00",
-      descricao: "Fatura 456",
-   },
-];
-
-const TEMPLATE_HEADERS = [
-   "data",
-   "nome",
-   "tipo",
-   "valor",
-   "descricao",
-] as const;
 
 function TemplateCredenza({ onClose }: { onClose?: () => void }) {
    const csv = useCsvFile();
@@ -205,19 +176,12 @@ function StepBar({ methods }: { methods: StepperMethods }) {
    );
 }
 
-interface UploadStepProps {
-   methods: StepperMethods;
-   parseFile: (file: File) => Promise<void>;
-   bankAccountId: string;
-   onBankAccountChange: (id: string) => void;
-}
-
-function UploadStep({
-   methods,
-   parseFile,
-   bankAccountId,
-   onBankAccountChange,
-}: UploadStepProps) {
+function UploadStep({ methods }: { methods: StepperMethods }) {
+   const {
+      bankAccountId,
+      setBankAccountId: onBankAccountChange,
+      parseFile,
+   } = useStatementImportContext();
    const [isPending, startTransition] = useTransition();
    const [selectedFile, setSelectedFile] = useState<File | undefined>();
    const { openCredenza, closeCredenza } = useCredenza();
@@ -345,25 +309,17 @@ function UploadStep({
    );
 }
 
-interface MapStepProps {
-   methods: StepperMethods;
-   raw: RawData;
-   mapping: ColumnMapping;
-   savedMappingApplied: boolean;
-   onMappingChange: (m: ColumnMapping) => void;
-   onApplyColumnMapping: (m: ColumnMapping) => Promise<void>;
-   onDismissSavedMapping: () => void;
-}
+function MapStep({ methods }: { methods: StepperMethods }) {
+   const {
+      rawData: raw,
+      mapping,
+      setMapping: onMappingChange,
+      savedMappingApplied,
+      applyColumnMapping: onApplyColumnMapping,
+      resetMapping: onDismissSavedMapping,
+   } = useStatementImportContext();
 
-function MapStep({
-   methods,
-   raw,
-   mapping,
-   savedMappingApplied,
-   onMappingChange,
-   onApplyColumnMapping,
-   onDismissSavedMapping,
-}: MapStepProps) {
+   if (!raw) return null;
    const canProceed = REQUIRED_FIELDS.every((f) => mapping[f] !== "");
 
    async function handleNext() {
@@ -487,23 +443,14 @@ function MapStep({
    );
 }
 
-interface PreviewStepProps {
-   methods: StepperMethods;
-   rows: ValidatedRow[];
-   duplicateFlags: boolean[];
-   format: FileFormat;
-   onRowsChange: (rows: ValidatedRow[]) => void;
-   onSelectionReady: (indices: Set<number>) => void;
-}
-
-function PreviewStep({
-   methods,
-   rows,
-   duplicateFlags,
-   format,
-   onRowsChange,
-   onSelectionReady,
-}: PreviewStepProps) {
+function PreviewStep({ methods }: { methods: StepperMethods }) {
+   const {
+      rows,
+      setRows: onRowsChange,
+      duplicateFlags,
+      format,
+      setConfirmedIndices: onSelectionReady,
+   } = useStatementImportContext();
    type EditingCell = { type: "desc"; index: number; value: string } | null;
 
    const [filterDuplicates, setFilterDuplicates] = useState(false);
@@ -685,22 +632,25 @@ function PreviewStep({
                <StepBar methods={methods} />
 
                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 rounded-md border px-3 py-1.5">
-                     <span className="text-xs text-muted-foreground">
-                        Entradas
-                     </span>
-                     <span className="text-xs font-semibold text-emerald-600">
-                        {moneyFormat(totalIncome, "pt-BR")}
-                     </span>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-md border px-3 py-1.5">
-                     <span className="text-xs text-muted-foreground">
-                        Saídas
-                     </span>
-                     <span className="text-xs font-semibold text-destructive">
-                        {moneyFormat(totalExpense, "pt-BR")}
-                     </span>
-                  </div>
+                  {[
+                     {
+                        label: "Entradas",
+                        value: moneyFormat(totalIncome, "pt-BR"),
+                        className: "text-emerald-500",
+                     },
+                     {
+                        label: "Saídas",
+                        value: moneyFormat(totalExpense, "pt-BR"),
+                        className: "text-destructive",
+                     },
+                  ].map(({ label, value, className }) => (
+                     <Announcement key={label}>
+                        <AnnouncementTag>{label}</AnnouncementTag>
+                        <AnnouncementTitle>
+                           <span className={className}>{value}</span>
+                        </AnnouncementTitle>
+                     </Announcement>
+                  ))}
                   {minDate && maxDate ? (
                      <p className="text-xs text-muted-foreground">
                         {dayjs(minDate).format("DD/MM/YYYY")} –{" "}
@@ -1241,32 +1191,20 @@ function PreviewStep({
    );
 }
 
-interface ConfirmStepProps {
-   methods: StepperMethods;
-   rows: ValidatedRow[];
-   format: FileFormat;
-   bankAccountId: string;
-   selectedIndices: Set<number>;
-   buildImportPayload: () => Array<{
-      name?: string;
-      type: "income" | "expense";
-      amount: string;
-      date: string;
-      description?: string;
-      categoryId?: string;
-   }>;
-   onClose?: () => void;
-}
-
 function ConfirmStep({
    methods,
-   rows,
-   format,
-   bankAccountId,
-   selectedIndices,
-   buildImportPayload,
    onClose,
-}: ConfirmStepProps) {
+}: {
+   methods: StepperMethods;
+   onClose?: () => void;
+}) {
+   const {
+      rows,
+      format,
+      bankAccountId,
+      confirmedIndices: selectedIndices,
+      buildImportPayload,
+   } = useStatementImportContext();
    const selectedCount = selectedIndices.size;
    const invalidCount = rows.filter((r) => !r.isValid).length;
 
@@ -1367,36 +1305,12 @@ function ConfirmStep({
 
 function ImportWizard({
    methods,
-   teamId,
    onClose,
 }: {
    methods: StepperMethods;
-   teamId: string;
    onClose?: () => void;
 }) {
    const currentId = methods.state.current.data.id;
-   const [confirmedIndices, setConfirmedIndices] = useState<Set<number>>(
-      new Set(),
-   );
-   const {
-      rawData,
-      rows,
-      setRows,
-      duplicateFlags,
-      format,
-      bankAccountId,
-      setBankAccountId,
-      mapping,
-      setMapping,
-      savedMappingApplied,
-      parseFile,
-      applyColumnMapping,
-      resetMapping,
-      buildImportPayload,
-   } = useStatementImport({
-      teamId,
-      onInitSelection: (s) => setConfirmedIndices(s),
-   });
 
    return (
       <>
@@ -1408,51 +1322,35 @@ function ImportWizard({
             >
                <Suspense
                   fallback={
-                     <div className="flex items-center justify-center p-8">
-                        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                     <div className="flex items-center justify-center p-4">
+                        <Loader2 className="size-4 animate-spin text-muted-foreground" />
                      </div>
                   }
                >
-                  <UploadStep
-                     bankAccountId={bankAccountId}
-                     methods={methods}
-                     onBankAccountChange={setBankAccountId}
-                     parseFile={parseFile}
-                  />
+                  <UploadStep methods={methods} />
                </Suspense>
             </ErrorBoundary>
          )}
-         {currentId === "map" && rawData && (
-            <MapStep
-               mapping={mapping}
-               methods={methods}
-               raw={rawData}
-               savedMappingApplied={savedMappingApplied}
-               onApplyColumnMapping={applyColumnMapping}
-               onMappingChange={setMapping}
-               onDismissSavedMapping={resetMapping}
-            />
-         )}
+         {currentId === "map" && <MapStep methods={methods} />}
          {currentId === "preview" && (
-            <PreviewStep
-               duplicateFlags={duplicateFlags}
-               format={format}
-               methods={methods}
-               rows={rows}
-               onRowsChange={setRows}
-               onSelectionReady={setConfirmedIndices}
-            />
+            <ErrorBoundary
+               FallbackComponent={createErrorFallback({
+                  errorTitle: "Erro ao carregar categorias",
+               })}
+            >
+               <Suspense
+                  fallback={
+                     <div className="flex items-center justify-center p-4">
+                        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                     </div>
+                  }
+               >
+                  <PreviewStep methods={methods} />
+               </Suspense>
+            </ErrorBoundary>
          )}
          {currentId === "confirm" && (
-            <ConfirmStep
-               bankAccountId={bankAccountId}
-               buildImportPayload={() => buildImportPayload(confirmedIndices)}
-               format={format}
-               methods={methods}
-               rows={rows}
-               selectedIndices={confirmedIndices}
-               onClose={onClose}
-            />
+            <ConfirmStep methods={methods} onClose={onClose} />
          )}
       </>
    );
@@ -1466,10 +1364,12 @@ export function StatementImportCredenza({
    onClose?: () => void;
 }) {
    return (
-      <Stepper.Provider variant="line">
-         {({ methods }) => (
-            <ImportWizard methods={methods} teamId={teamId} onClose={onClose} />
-         )}
-      </Stepper.Provider>
+      <StatementImportProvider teamId={teamId}>
+         <Stepper.Provider variant="line">
+            {({ methods }) => (
+               <ImportWizard methods={methods} onClose={onClose} />
+            )}
+         </Stepper.Provider>
+      </StatementImportProvider>
    );
 }
