@@ -3,6 +3,15 @@ import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
+import {
+   Command,
+   CommandEmpty,
+   CommandGroup,
+   CommandInput,
+   CommandItem,
+   CommandList,
+} from "@packages/ui/components/command";
+import { Calendar } from "@packages/ui/components/calendar";
 import { Input } from "@packages/ui/components/input";
 import { Label } from "@packages/ui/components/label";
 import { Toggle } from "@packages/ui/components/toggle";
@@ -26,16 +35,13 @@ import {
 import { defineStepper } from "@packages/ui/components/stepper";
 import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import {
-   useSelectionToolbar,
-   SelectionActionButton,
-} from "@/hooks/use-selection-toolbar";
-import {
    Tooltip,
    TooltipContent,
    TooltipProvider,
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useForm } from "@tanstack/react-form";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import dayjs from "dayjs";
 import {
@@ -45,10 +51,10 @@ import {
    FileSpreadsheet,
    FileText,
    Loader2,
+   Sparkles,
    Table2,
    X,
 } from "lucide-react";
-import { useDebouncedState } from "foxact/use-debounced-state";
 import { Suspense, useRef, useState, useTransition } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
@@ -498,14 +504,17 @@ function PreviewStep({
    onRowsChange,
    onSelectionReady,
 }: PreviewStepProps) {
+   type EditingCell = { type: "desc"; index: number; value: string } | null;
+
    const [filterDuplicates, setFilterDuplicates] = useState(false);
-   const [editingDescIdx, setEditingDescIdx] = useState<number | null>(null);
-   const [editingDescValue, setEditingDescValue] = useState("");
-   const [bulkDate, , setBulkDate] = useDebouncedState<Date | undefined>(
-      undefined,
-      300,
-   );
-   const [bulkCategoryId, , setBulkCategoryId] = useDebouncedState("", 300);
+   const [editingCell, setEditingCell] = useState<EditingCell>(null);
+
+   const bulkForm = useForm({
+      defaultValues: {
+         date: undefined as Date | undefined,
+         categoryId: "",
+      },
+   });
 
    const { data: categories } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
@@ -518,51 +527,34 @@ function PreviewStep({
       label: c.name,
    }));
 
-   const {
-      selectedIndices,
-      toggle: toggleRow,
-      remove: removeIndex,
-      clear: clearIndices,
-      replace: replaceIndices,
-   } = useSelectionToolbar(({ selectedIndices: _sel, clear: _clearSel }) => (
-      <>
-         <Popover>
-            <PopoverTrigger asChild>
-               <SelectionActionButton>Alterar data</SelectionActionButton>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="center" side="top">
-               <DatePicker
-                  date={bulkDate}
-                  onSelect={(d) => {
-                     if (d) applyBulkDate(d);
-                  }}
-                  placeholder="Selecionar data"
-               />
-            </PopoverContent>
-         </Popover>
-         <Popover>
-            <PopoverTrigger asChild>
-               <SelectionActionButton>Alterar categoria</SelectionActionButton>
-            </PopoverTrigger>
-            <PopoverContent className="w-56 p-2" align="center" side="top">
-               <Combobox
-                  options={categoryOptions}
-                  onValueChange={(v) => {
-                     if (v) {
-                        applyBulkCategory(v);
-                        setBulkCategoryId("");
-                     }
-                  }}
-                  value={bulkCategoryId}
-                  placeholder="Alterar categoria"
-                  searchPlaceholder="Buscar categoria..."
-                  emptyMessage="Nenhuma categoria"
-                  className="w-full"
-               />
-            </PopoverContent>
-         </Popover>
-      </>
-   ));
+   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
+      new Set(),
+   );
+
+   function toggleRow(index: number) {
+      setSelectedIndices((prev) => {
+         const next = new Set(prev);
+         if (next.has(index)) next.delete(index);
+         else next.add(index);
+         return next;
+      });
+   }
+
+   function removeIndex(index: number) {
+      setSelectedIndices((prev) => {
+         const next = new Set(prev);
+         next.delete(index);
+         return next;
+      });
+   }
+
+   function clearIndices() {
+      setSelectedIndices(new Set());
+   }
+
+   function replaceIndices(next: Set<number>) {
+      setSelectedIndices(new Set(next));
+   }
 
    const validCount = rows.filter((r) => r.isValid).length;
 
@@ -627,30 +619,53 @@ function PreviewStep({
       removeIndex(index);
    }
 
-   function applyBulkDate(date: Date) {
+   function applyBulkDate() {
+      const date = bulkForm.getFieldValue("date");
+      if (!date) return;
       const dateStr = dayjs(date).format("YYYY-MM-DD");
       const updated = rows.map((r, i) =>
          selectedIndices.has(i) ? { ...r, date: dateStr } : r,
       );
       onRowsChange(updated);
-      setBulkDate(undefined);
+      bulkForm.setFieldValue("date", undefined);
    }
 
-   function applyBulkCategory(categoryId: string) {
+   function applyBulkCategory() {
+      const categoryId = bulkForm.getFieldValue("categoryId");
+      if (!categoryId) return;
       const updated = rows.map((r, i) =>
          selectedIndices.has(i) ? { ...r, categoryId } : r,
       );
       onRowsChange(updated);
-      setBulkCategoryId("");
+      bulkForm.setFieldValue("categoryId", "");
+   }
+
+   function autoCategorize() {
+      const updated = rows.map((r) => {
+         if (r.categoryId || !r.isValid) return r;
+         const text = (r.description || r.name || "").toLowerCase();
+         for (const cat of categories) {
+            const terms = [
+               cat.name.toLowerCase(),
+               ...(cat.keywords ?? []).map((k: string) => k.toLowerCase()),
+            ];
+            if (terms.some((t) => text.includes(t))) {
+               return { ...r, categoryId: cat.id };
+            }
+         }
+         return r;
+      });
+      onRowsChange(updated);
    }
 
    function commitDescEdit(originalIndex: number) {
-      if (editingDescIdx === null) return;
+      if (editingCell?.type !== "desc") return;
+      const editingDescValue = editingCell.value;
       const updated = rows.map((r, i) =>
          i === originalIndex ? { ...r, description: editingDescValue } : r,
       );
       onRowsChange(updated);
-      setEditingDescIdx(null);
+      setEditingCell(null);
    }
 
    const canEditDesc = format !== "ofx";
@@ -731,23 +746,35 @@ function PreviewStep({
                </div>
 
                <div className="rounded-lg border overflow-hidden">
-                  <div className="grid grid-cols-[2rem_6rem_1fr_4rem_6rem_5.5rem_2rem] items-center gap-2 border-b bg-muted/50 px-3 py-2">
+                  <div className="grid grid-cols-[2rem_6rem_1fr_4rem_1fr_6rem_2rem] items-center gap-2 border-b bg-muted/50 px-3 py-2">
                      <span />
                      <span className="text-xs font-medium text-muted-foreground">
                         Data
                      </span>
                      <span className="text-xs font-medium text-muted-foreground">
-                        {canEditDesc
-                           ? "Descrição (clique para editar)"
-                           : "Descrição"}
+                        Descrição
                      </span>
                      <span className="text-xs font-medium text-muted-foreground">
                         Tipo
                      </span>
+                     <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">
+                           Categoria
+                        </span>
+                        <TooltipProvider>
+                           <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-xs"
+                              className="text-muted-foreground hover:text-primary"
+                              tooltip="Categorização automática"
+                              onClick={autoCategorize}
+                           >
+                              <Sparkles className="size-3.5" />
+                           </Button>
+                        </TooltipProvider>
+                     </div>
                      <span className="text-xs font-medium text-muted-foreground">
-                        Categoria
-                     </span>
-                     <span className="text-xs font-medium text-muted-foreground text-right">
                         Valor
                      </span>
                      <span />
@@ -766,7 +793,8 @@ function PreviewStep({
                            const isSelected =
                               selectedIndices.has(originalIndex);
                            const isEditingDesc =
-                              editingDescIdx === originalIndex;
+                              editingCell?.type === "desc" &&
+                              editingCell.index === originalIndex;
                            const rowEl = (
                               <div
                                  key={
@@ -786,11 +814,8 @@ function PreviewStep({
                                     transform: `translateY(${virtualRow.start}px)`,
                                  }}
                                  className={[
-                                    "grid grid-cols-[2rem_6rem_1fr_4rem_6rem_5.5rem_2rem] items-center gap-2 border-b px-3 h-10",
+                                    "grid grid-cols-[2rem_6rem_1fr_4rem_1fr_6rem_2rem] items-center gap-2 border-b px-3 h-10",
                                     !row.isValid ? "opacity-40" : "",
-                                    isDuplicate && row.isValid
-                                       ? "border-l-2 border-yellow-400"
-                                       : "",
                                     isSelected ? "bg-primary/5" : "",
                                  ]
                                     .filter(Boolean)
@@ -804,22 +829,77 @@ function PreviewStep({
                                           toggleRow(originalIndex);
                                     }}
                                  />
-                                 <span className="text-xs tabular-nums">
-                                    {parseDate(row.date)
-                                       ? dayjs(parseDate(row.date)).format(
-                                            "DD/MM/YYYY",
-                                         )
-                                       : row.date || "—"}
-                                 </span>
+                                 {row.isValid ? (
+                                    <Popover>
+                                       <PopoverTrigger asChild>
+                                          <span className="text-xs tabular-nums cursor-pointer hover:underline hover:decoration-dotted">
+                                             {parseDate(row.date)
+                                                ? dayjs(
+                                                     parseDate(row.date),
+                                                  ).format("DD/MM/YYYY")
+                                                : row.date || "—"}
+                                          </span>
+                                       </PopoverTrigger>
+                                       <PopoverContent
+                                          className="w-auto p-0"
+                                          align="start"
+                                          side="bottom"
+                                       >
+                                          <Calendar
+                                             mode="single"
+                                             selected={
+                                                parseDate(row.date)
+                                                   ? dayjs(
+                                                        parseDate(row.date),
+                                                     ).toDate()
+                                                   : undefined
+                                             }
+                                             onSelect={(d) => {
+                                                if (!d) return;
+                                                const updated = rows.map(
+                                                   (r, i) =>
+                                                      i === originalIndex
+                                                         ? {
+                                                              ...r,
+                                                              date: dayjs(
+                                                                 d,
+                                                              ).format(
+                                                                 "YYYY-MM-DD",
+                                                              ),
+                                                           }
+                                                         : r,
+                                                );
+                                                onRowsChange(updated);
+                                             }}
+                                          />
+                                       </PopoverContent>
+                                    </Popover>
+                                 ) : (
+                                    <span className="text-xs tabular-nums">
+                                       {parseDate(row.date)
+                                          ? dayjs(parseDate(row.date)).format(
+                                               "DD/MM/YYYY",
+                                            )
+                                          : row.date || "—"}
+                                    </span>
+                                 )}
                                  {canEditDesc &&
                                  row.isValid &&
                                  isEditingDesc ? (
                                     <Input
                                        autoFocus
                                        className="text-xs h-7 py-0"
-                                       value={editingDescValue}
+                                       value={
+                                          editingCell?.type === "desc"
+                                             ? editingCell.value
+                                             : ""
+                                       }
                                        onChange={(e) =>
-                                          setEditingDescValue(e.target.value)
+                                          setEditingCell({
+                                             type: "desc",
+                                             index: originalIndex,
+                                             value: e.target.value,
+                                          })
                                        }
                                        onBlur={() =>
                                           commitDescEdit(originalIndex)
@@ -828,7 +908,7 @@ function PreviewStep({
                                           if (e.key === "Enter")
                                              commitDescEdit(originalIndex);
                                           if (e.key === "Escape")
-                                             setEditingDescIdx(null);
+                                             setEditingCell(null);
                                        }}
                                        onClick={(e) => e.stopPropagation()}
                                     />
@@ -852,14 +932,14 @@ function PreviewStep({
                                                    )
                                                       return;
                                                    e.stopPropagation();
-                                                   setEditingDescIdx(
-                                                      originalIndex,
-                                                   );
-                                                   setEditingDescValue(
-                                                      row.description ||
+                                                   setEditingCell({
+                                                      type: "desc",
+                                                      index: originalIndex,
+                                                      value:
+                                                         row.description ||
                                                          row.name ||
                                                          "",
-                                                   );
+                                                   });
                                                 }}
                                              >
                                                 {row.description ||
@@ -890,13 +970,70 @@ function PreviewStep({
                                        ? "Entrada"
                                        : "Saída"}
                                  </Badge>
-                                 <span className="text-xs text-muted-foreground truncate">
-                                    {row.categoryId
-                                       ? (categoryMap.get(row.categoryId) ??
-                                         "—")
-                                       : "—"}
-                                 </span>
-                                 <span className="text-xs text-right tabular-nums">
+                                 {row.isValid ? (
+                                    <Popover>
+                                       <PopoverTrigger asChild>
+                                          <span className="text-xs truncate cursor-pointer hover:underline hover:decoration-dotted">
+                                             {row.categoryId
+                                                ? (categoryMap.get(
+                                                     row.categoryId,
+                                                  ) ?? "—")
+                                                : "—"}
+                                          </span>
+                                       </PopoverTrigger>
+                                       <PopoverContent
+                                          className="w-48 p-0"
+                                          align="start"
+                                          side="bottom"
+                                       >
+                                          <Command>
+                                             <CommandInput placeholder="Buscar..." />
+                                             <CommandList>
+                                                <CommandEmpty>
+                                                   Nenhuma categoria
+                                                </CommandEmpty>
+                                                <CommandGroup>
+                                                   {categoryOptions.map(
+                                                      (opt) => (
+                                                         <CommandItem
+                                                            key={opt.value}
+                                                            value={opt.value}
+                                                            onSelect={(v) => {
+                                                               const updated =
+                                                                  rows.map(
+                                                                     (r, i) =>
+                                                                        i ===
+                                                                        originalIndex
+                                                                           ? {
+                                                                                ...r,
+                                                                                categoryId:
+                                                                                   v,
+                                                                             }
+                                                                           : r,
+                                                                  );
+                                                               onRowsChange(
+                                                                  updated,
+                                                               );
+                                                            }}
+                                                         >
+                                                            {opt.label}
+                                                         </CommandItem>
+                                                      ),
+                                                   )}
+                                                </CommandGroup>
+                                             </CommandList>
+                                          </Command>
+                                       </PopoverContent>
+                                    </Popover>
+                                 ) : (
+                                    <span className="text-xs truncate">
+                                       {row.categoryId
+                                          ? (categoryMap.get(row.categoryId) ??
+                                            "—")
+                                          : "—"}
+                                    </span>
+                                 )}
+                                 <span className="text-xs tabular-nums">
                                     {formatMoney(row.amount)}
                                  </span>
                                  <span className="flex items-center justify-end gap-1">
