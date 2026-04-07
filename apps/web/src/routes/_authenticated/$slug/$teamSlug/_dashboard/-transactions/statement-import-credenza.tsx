@@ -1316,9 +1316,27 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                   </Button>
                   <Button
                      className="flex-1"
-                     disabled={selectedIndices.size === 0}
+                     disabled={selectableIndices.length === 0}
                      onClick={() => {
-                        onSelectionReady(selectedIndices);
+                        const confirmedSet = new Set(selectableIndices);
+                        const duplicateCount = selectableIndices.filter(
+                           (i) => duplicateFlags[i],
+                        ).length;
+                        if (duplicateCount > 0) {
+                           openAlertDialog({
+                              title: `${duplicateCount} possível${duplicateCount === 1 ? "" : "is"} duplicata${duplicateCount === 1 ? "" : "s"} detectada${duplicateCount === 1 ? "" : "s"}`,
+                              description: `${duplicateCount === 1 ? "Um lançamento parece já existir" : `${duplicateCount} lançamentos parecem já existir`} na sua conta. Deseja importar mesmo assim?`,
+                              actionLabel: "Importar mesmo assim",
+                              cancelLabel: "Revisar",
+                              variant: "destructive",
+                              onAction: async () => {
+                                 onSelectionReady(confirmedSet);
+                                 methods.navigation.next();
+                              },
+                           });
+                           return;
+                        }
+                        onSelectionReady(confirmedSet);
                         methods.navigation.next();
                      }}
                      type="button"
