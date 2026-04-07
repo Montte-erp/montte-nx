@@ -1,9 +1,4 @@
-import {
-   of as moneyOf,
-   format as moneyFormat,
-   add as moneyAdd,
-   zero as moneyZero,
-} from "@f-o-t/money";
+import { of as moneyOf, format as moneyFormat, sumOrZero } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
@@ -563,24 +558,18 @@ function PreviewStep({
 
    const validCount = rows.filter((r) => r.isValid).length;
 
-   const totalIncome = rows
-      .filter((r) => r.isValid && r.type === "income")
-      .reduce((sum, r) => {
-         try {
-            return moneyAdd(sum, moneyOf(parseAmount(r.amount) ?? "0", "BRL"));
-         } catch {
-            return sum;
-         }
-      }, moneyZero("BRL"));
-   const totalExpense = rows
-      .filter((r) => r.isValid && r.type === "expense")
-      .reduce((sum, r) => {
-         try {
-            return moneyAdd(sum, moneyOf(parseAmount(r.amount) ?? "0", "BRL"));
-         } catch {
-            return sum;
-         }
-      }, moneyZero("BRL"));
+   const totalIncome = sumOrZero(
+      rows
+         .filter((r) => r.isValid && r.type === "income")
+         .map((r) => moneyOf(parseAmount(r.amount) ?? "0", "BRL")),
+      "BRL",
+   );
+   const totalExpense = sumOrZero(
+      rows
+         .filter((r) => r.isValid && r.type === "expense")
+         .map((r) => moneyOf(parseAmount(r.amount) ?? "0", "BRL")),
+      "BRL",
+   );
 
    const validDates = rows
       .filter((r) => r.isValid)
