@@ -652,3 +652,23 @@ export async function createInstallments(
    }
    return results;
 }
+
+export async function updateTransactionStatus(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+   status: "pending" | "confirmed",
+) {
+   try {
+      const [row] = await db
+         .update(transactions)
+         .set({ status, updatedAt: new Date() })
+         .where(and(eq(transactions.id, id), eq(transactions.teamId, teamId)))
+         .returning();
+      if (!row) throw AppError.notFound("Transação não encontrada.");
+      return row;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to update transaction status");
+   }
+}

@@ -1,3 +1,4 @@
+import { WebAppError } from "@core/logging/errors";
 import { and, eq, inArray } from "drizzle-orm";
 import {
    ConditionGroup,
@@ -14,6 +15,7 @@ import {
    listTransactions,
    replaceTransactionItems,
    updateTransaction,
+   updateTransactionStatus,
    validateTransactionReferences,
 } from "@core/database/repositories/transactions-repository";
 import { ensureBankAccountOwnership } from "@core/database/repositories/bank-accounts-repository";
@@ -436,4 +438,23 @@ export const createInstallments = protectedProcedure
    )
    .handler(async ({ context, input }) => {
       return createInstallmentsRepo(context.db, input.teamId, input);
+   });
+
+export const updateStatus = protectedProcedure
+   .input(
+      z.object({
+         id: z.string().uuid(),
+         teamId: z.string().uuid(),
+         status: z.enum(["pending", "confirmed"]),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      const result = await updateTransactionStatus(
+         context.db,
+         input.id,
+         input.teamId,
+         input.status,
+      );
+      if (!result) throw WebAppError.notFound("Transação não encontrada.");
+      return result;
    });

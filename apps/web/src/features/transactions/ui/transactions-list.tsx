@@ -136,6 +136,14 @@ export function TransactionsList({
    const transactionData = result.data;
    const totalPages = Math.ceil(result.total / filters.pageSize);
 
+   const updateStatusMutation = useMutation(
+      orpc.transactions.updateStatus.mutationOptions({
+         onError: (error) => {
+            toast.error(error.message || "Erro ao atualizar status.");
+         },
+      }),
+   );
+
    const deleteMutation = useMutation(
       orpc.transactions.remove.mutationOptions({
          onSuccess: () => {
@@ -374,8 +382,34 @@ export function TransactionsList({
                            <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Mais ações</DropdownMenuLabel>
                               <DropdownMenuSeparator />
+                              {tx.status === "pending" && (
+                                 <DropdownMenuItem
+                                    onSelect={() =>
+                                       updateStatusMutation.mutate({
+                                          id: tx.id,
+                                          teamId: tx.teamId,
+                                          status: "confirmed",
+                                       })
+                                    }
+                                 >
+                                    Efetivar
+                                 </DropdownMenuItem>
+                              )}
+                              {tx.status === "confirmed" && (
+                                 <DropdownMenuItem
+                                    onSelect={() =>
+                                       updateStatusMutation.mutate({
+                                          id: tx.id,
+                                          teamId: tx.teamId,
+                                          status: "pending",
+                                       })
+                                    }
+                                 >
+                                    Marcar como pendente
+                                 </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
-                                 onClick={() => handleRecurring(tx)}
+                                 onSelect={() => handleRecurring(tx)}
                               >
                                  <Repeat className="size-4" />
                                  Criar Lançamento Recorrente
