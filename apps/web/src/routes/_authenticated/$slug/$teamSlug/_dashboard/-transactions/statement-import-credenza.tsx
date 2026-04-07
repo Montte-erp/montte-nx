@@ -46,7 +46,7 @@ import {
    X,
 } from "lucide-react";
 import { useDebouncedState } from "foxact/use-debounced-state";
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useRef, useState, useTransition } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
@@ -207,7 +207,7 @@ function UploadStep({
    bankAccountId,
    onBankAccountChange,
 }: UploadStepProps) {
-   const [isParsing, setIsParsing] = useState(false);
+   const [isPending, startTransition] = useTransition();
    const [selectedFile, setSelectedFile] = useState<File | undefined>();
    const { openCredenza, closeCredenza } = useCredenza();
    const { data: bankAccounts } = useSuspenseQuery(
@@ -217,25 +217,24 @@ function UploadStep({
    async function handleFile(file: File) {
       if (!bankAccountId) return;
       setSelectedFile(file);
-      setIsParsing(true);
-      try {
-         await parseFile(file);
-         const ext = file.name.split(".").pop()?.toLowerCase();
-         if (ext === "ofx") {
-            methods.navigation.goTo("preview");
-         } else {
-            methods.navigation.next();
+      startTransition(async () => {
+         try {
+            await parseFile(file);
+            const ext = file.name.split(".").pop()?.toLowerCase();
+            if (ext === "ofx") {
+               methods.navigation.goTo("preview");
+            } else {
+               methods.navigation.next();
+            }
+         } catch {
+            const ext = file.name.split(".").pop()?.toLowerCase();
+            if (ext === "ofx") toast.error("Erro ao processar arquivo OFX.");
+            else if (ext === "xlsx" || ext === "xls")
+               toast.error("Erro ao processar planilha XLSX.");
+            else toast.error("Erro ao processar arquivo CSV.");
+            setSelectedFile(undefined);
          }
-      } catch {
-         const ext = file.name.split(".").pop()?.toLowerCase();
-         if (ext === "ofx") toast.error("Erro ao processar arquivo OFX.");
-         else if (ext === "xlsx" || ext === "xls")
-            toast.error("Erro ao processar planilha XLSX.");
-         else toast.error("Erro ao processar arquivo CSV.");
-         setSelectedFile(undefined);
-      } finally {
-         setIsParsing(false);
-      }
+      });
    }
 
    return (
@@ -274,7 +273,7 @@ function UploadStep({
                      "application/vnd.ms-excel": [".xls"],
                      "application/x-ofx": [".ofx"],
                   }}
-                  disabled={isParsing || !bankAccountId}
+                  disabled={isPending || !bankAccountId}
                   maxFiles={1}
                   onDrop={([file]) => {
                      if (file) void handleFile(file);
@@ -282,7 +281,7 @@ function UploadStep({
                   src={selectedFile ? [selectedFile] : undefined}
                >
                   <DropzoneEmptyState>
-                     {isParsing ? (
+                     {isPending ? (
                         <Loader2 className="size-8 text-primary animate-spin" />
                      ) : (
                         <>
@@ -316,9 +315,11 @@ function UploadStep({
                   <DropzoneContent />
                </Dropzone>
 
-               <button
+               <Button
                   type="button"
-                  className="text-xs text-muted-foreground underline underline-offset-2 self-start"
+                  variant="link"
+                  size="sm"
+                  className="self-start px-0 text-muted-foreground"
                   onClick={() =>
                      openCredenza({
                         children: <TemplateCredenza onClose={closeCredenza} />,
@@ -326,7 +327,7 @@ function UploadStep({
                   }
                >
                   Baixar modelo
-               </button>
+               </Button>
             </div>
          </CredenzaBody>
       </>
