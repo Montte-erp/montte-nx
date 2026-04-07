@@ -126,9 +126,10 @@ function TemplateCredenza({ onClose }: { onClose?: () => void }) {
          </CredenzaHeader>
          <CredenzaBody>
             <div className="flex flex-col gap-2">
-               <button
+               <Button
                   type="button"
-                  className="flex items-center gap-4 rounded-lg border bg-muted/20 px-4 py-3 text-left hover:bg-muted/40 transition-colors"
+                  variant="outline"
+                  className="flex items-center gap-4 w-full px-4 py-3 h-auto text-left justify-start"
                   onClick={() => {
                      download(
                         csv.generate(TEMPLATE_ROWS, [...TEMPLATE_HEADERS]),
@@ -145,10 +146,11 @@ function TemplateCredenza({ onClose }: { onClose?: () => void }) {
                      </span>
                   </div>
                   <Download className="size-4 text-muted-foreground shrink-0" />
-               </button>
-               <button
+               </Button>
+               <Button
                   type="button"
-                  className="flex items-center gap-4 rounded-lg border bg-muted/20 px-4 py-3 text-left hover:bg-muted/40 transition-colors"
+                  variant="outline"
+                  className="flex items-center gap-4 w-full px-4 py-3 h-auto text-left justify-start"
                   onClick={() => {
                      download(
                         xlsx.generate(TEMPLATE_ROWS, [...TEMPLATE_HEADERS]),
@@ -165,7 +167,7 @@ function TemplateCredenza({ onClose }: { onClose?: () => void }) {
                      </span>
                   </div>
                   <Download className="size-4 text-muted-foreground shrink-0" />
-               </button>
+               </Button>
             </div>
          </CredenzaBody>
       </>
@@ -378,13 +380,15 @@ function MapStep({
                      <p className="text-xs text-muted-foreground">
                         Mapeamento anterior aplicado
                      </p>
-                     <button
+                     <Button
                         type="button"
-                        className="text-xs text-muted-foreground hover:text-foreground"
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-muted-foreground h-auto py-0 px-1"
                         onClick={onDismissSavedMapping}
                      >
                         Redefinir
-                     </button>
+                     </Button>
                   </div>
                )}
 
