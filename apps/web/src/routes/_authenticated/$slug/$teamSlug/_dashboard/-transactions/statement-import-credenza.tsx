@@ -594,7 +594,7 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
 
    const [filterDuplicates, setFilterDuplicates] = useState(false);
    const [editingCell, setEditingCell] = useState<EditingCell>(null);
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openCredenza, closeTopCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
    const { data: categories } = useSuspenseQuery(
@@ -1268,9 +1268,9 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                                     selectedCount={selectedIndices.size}
                                     onApply={(date) => {
                                        applyBulkDate(date);
-                                       closeCredenza();
+                                       closeTopCredenza();
                                     }}
-                                    onCancel={closeCredenza}
+                                    onCancel={closeTopCredenza}
                                  />
                               ),
                            })
@@ -1292,9 +1292,9 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                                     categoryOptions={categoryOptions}
                                     onApply={(id) => {
                                        applyBulkCategory(id);
-                                       closeCredenza();
+                                       closeTopCredenza();
                                     }}
-                                    onCancel={closeCredenza}
+                                    onCancel={closeTopCredenza}
                                  />
                               ),
                            })
