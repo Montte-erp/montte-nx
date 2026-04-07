@@ -71,7 +71,7 @@ function makeRule(
       description: string | null;
       type: "income" | "expense" | "transfer";
       amount: string;
-      frequency: "daily" | "weekly" | "monthly";
+      frequency: "daily" | "weekly" | "biweekly" | "monthly" | "yearly";
       startDate: string;
       endsAt: string | null;
       windowMonths: number;
