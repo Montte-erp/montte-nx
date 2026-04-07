@@ -1,4 +1,6 @@
 import { WebAppError } from "@core/logging/errors";
+import { transactions } from "@core/database/schemas/transactions";
+import { and, eq, gte } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 import {
@@ -68,6 +70,55 @@ export const getAll = protectedProcedure
    .input(z.object({ teamId: z.string().uuid() }))
    .handler(async ({ context, input }) => {
       return getRecurringTransactionsByTeam(context.db, input.teamId);
+   });
+
+export const updateChain = protectedProcedure
+   .input(
+      z.object({
+         recurringTransactionId: z.string().uuid(),
+         teamId: z.string().uuid(),
+         fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+         name: z.string().min(1).max(200).nullable().optional(),
+         amount: z
+            .string()
+            .refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0)
+            .optional(),
+         categoryId: z.string().uuid().nullable().optional(),
+         description: z.string().max(500).nullable().optional(),
+         contactId: z.string().uuid().nullable().optional(),
+         bankAccountId: z.string().uuid().nullable().optional(),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      const { recurringTransactionId, teamId, fromDate, ...fields } = input;
+      const updated = await context.db
+         .update(transactions)
+         .set({
+            ...(fields.name !== undefined && { name: fields.name }),
+            ...(fields.amount !== undefined && { amount: fields.amount }),
+            ...(fields.categoryId !== undefined && {
+               categoryId: fields.categoryId,
+            }),
+            ...(fields.description !== undefined && {
+               description: fields.description,
+            }),
+            ...(fields.contactId !== undefined && {
+               contactId: fields.contactId,
+            }),
+            ...(fields.bankAccountId !== undefined && {
+               bankAccountId: fields.bankAccountId,
+            }),
+            updatedAt: new Date(),
+         })
+         .where(
+            and(
+               eq(transactions.recurringTransactionId, recurringTransactionId),
+               eq(transactions.teamId, teamId),
+               gte(transactions.date, fromDate),
+            ),
+         )
+         .returning();
+      return { updatedCount: updated.length };
    });
 
 export const remove = protectedProcedure

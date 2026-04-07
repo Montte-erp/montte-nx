@@ -721,6 +721,9 @@ function TransactionDialogStackContent({
 }: TransactionCredenzaProps) {
    const isCreate = mode === "create";
    const [secondaryForm, setSecondaryForm] = useState<SecondaryForm>(null);
+   const [recurringEditScope, setRecurringEditScope] = useState<
+      "single" | "chain" | null
+   >(null);
 
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
@@ -792,12 +795,25 @@ function TransactionDialogStackContent({
       }),
    );
 
+   const updateChainMutation = useMutation(
+      orpc.recurringTransactions.updateChain.mutationOptions({
+         onSuccess: () => {
+            toast.success("Recorrência atualizada com sucesso.");
+            onSuccess();
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao atualizar recorrência.");
+         },
+      }),
+   );
+
    const isPending =
       createMutation.isPending ||
       updateMutation.isPending ||
       billCreateMutation.isPending ||
       createRecurringMutation.isPending ||
-      createInstallmentsMutation.isPending;
+      createInstallmentsMutation.isPending ||
+      updateChainMutation.isPending;
 
    const { activeTeamId } = useActiveTeam();
 
@@ -835,6 +851,27 @@ function TransactionDialogStackContent({
          const dateStr = value.date
             ? dayjs(value.date).format("YYYY-MM-DD")
             : "";
+
+         if (
+            !isCreate &&
+            transaction &&
+            recurringEditScope === "chain" &&
+            transaction.recurringTransactionId &&
+            activeTeamId
+         ) {
+            updateChainMutation.mutate({
+               recurringTransactionId: transaction.recurringTransactionId,
+               teamId: activeTeamId,
+               fromDate: dayjs(transaction.date).format("YYYY-MM-DD"),
+               name: value.name?.trim() || null,
+               amount: value.amount,
+               categoryId: value.categoryId || null,
+               description: value.description || null,
+               contactId: value.contactId,
+               bankAccountId: value.bankAccountId || null,
+            });
+            return;
+         }
 
          if (
             isCreate &&
@@ -962,6 +999,39 @@ function TransactionDialogStackContent({
          }
       },
    });
+
+   if (
+      !isCreate &&
+      transaction?.recurringTransactionId &&
+      recurringEditScope === null
+   ) {
+      return (
+         <>
+            <CredenzaHeader>
+               <CredenzaTitle>Editar lançamento recorrente</CredenzaTitle>
+               <CredenzaDescription>
+                  Este lançamento faz parte de uma recorrência.
+               </CredenzaDescription>
+            </CredenzaHeader>
+            <CredenzaBody>
+               <div className="flex flex-col gap-4">
+                  <Button
+                     variant="outline"
+                     onClick={() => setRecurringEditScope("single")}
+                  >
+                     Apenas este lançamento
+                  </Button>
+                  <Button
+                     variant="outline"
+                     onClick={() => setRecurringEditScope("chain")}
+                  >
+                     Todos os lançamentos futuros desta recorrência
+                  </Button>
+               </div>
+            </CredenzaBody>
+         </>
+      );
+   }
 
    if (secondaryForm) {
       return (
