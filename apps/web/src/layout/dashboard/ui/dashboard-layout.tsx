@@ -23,7 +23,6 @@ import { orpc } from "@/integrations/orpc/client";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarSubPanel } from "./sidebar-sub-panel";
 
-
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
    const { activeOrganization } = useActiveOrganization();
    const { activeTeam, teams } = useActiveTeam();

@@ -40,9 +40,13 @@ import {
    TrendingUp,
 } from "lucide-react";
 import type { DataTableStoredState } from "@packages/ui/components/data-table";
-import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
+import type {
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { toast } from "sonner";
 import { BillFromTransactionDialogStack } from "@/features/bills/ui/bill-from-transaction-dialog-stack";
 import { BulkCategorizeForm } from "@/features/transactions/ui/bulk-categorize-form";
@@ -55,40 +59,37 @@ import {
    type TransactionRow,
 } from "@/features/transactions/ui/transactions-columns";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
-const [useTransactionsTableState] = createLocalStorageState<DataTableStoredState | null>(
-   "montte:datatable:transactions",
-   null,
-);
+const [useTransactionsTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:transactions",
+      null,
+   );
 
 interface TransactionsListProps {
    filters: TransactionFilters;
    onPageChange: (page: number) => void;
    onPageSizeChange: (size: number) => void;
+   sorting: SortingState;
+   onSortingChange: OnChangeFn<SortingState>;
+   columnFilters: ColumnFiltersState;
+   onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
 }
 
 export function TransactionsList({
    filters,
    onPageChange,
    onPageSizeChange,
+   sorting,
+   onSortingChange,
+   columnFilters,
+   onColumnFiltersChange,
 }: TransactionsListProps) {
-   const [sorting, setSorting] = useState<SortingState>([]);
-   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
    const [tableState, setTableState] = useTransactionsTableState();
 
-   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
-      (updater) => setSorting((prev) => (typeof updater === "function" ? updater(prev) : updater)),
-      [],
-   );
-
-   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
-      (updater) => setColumnFilters((prev) => (typeof updater === "function" ? updater(prev) : updater)),
-      [],
-   );
-
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const {
       rowSelection,
@@ -160,17 +161,17 @@ export function TransactionsList({
 
    const handleEdit = useCallback(
       (transaction: TransactionRow) => {
-         openDialogStack({
+         openCredenza({
             children: (
                <TransactionDialogStack
                   mode="edit"
-                  onSuccess={closeDialogStack}
+                  onSuccess={closeCredenza}
                   transaction={transaction}
                />
             ),
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
    );
 
    const handleDelete = useCallback(
@@ -192,13 +193,13 @@ export function TransactionsList({
 
    const handleRecurring = useCallback(
       (tx: TransactionRow) => {
-         openDialogStack({
+         openCredenza({
             children: (
                <BillFromTransactionDialogStack
                   bankAccountId={tx.bankAccountId}
                   categoryId={tx.categoryId}
                   mode="recurring"
-                  onSuccess={closeDialogStack}
+                  onSuccess={closeCredenza}
                   transactionAmount={tx.amount}
                   transactionDate={tx.date}
                   transactionId={tx.id}
@@ -208,7 +209,7 @@ export function TransactionsList({
             ),
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
    );
 
    const handleBulkDelete = useCallback(() => {
@@ -229,7 +230,7 @@ export function TransactionsList({
    }, [openAlertDialog, selectedCount, selectedIds, deleteMutation, onClear]);
 
    const handleBulkCategorize = useCallback(() => {
-      openDialogStack({
+      openCredenza({
          children: (
             <BulkCategorizeForm
                onApply={async (categoryId) => {
@@ -239,19 +240,19 @@ export function TransactionsList({
                      ),
                   );
                   onClear();
-                  closeDialogStack();
+                  closeCredenza();
                   toast.success(
                      `${selectedCount} ${selectedCount === 1 ? "lançamento categorizado" : "lançamentos categorizados"}.`,
                   );
                }}
-               onCancel={closeDialogStack}
+               onCancel={closeCredenza}
                selectedCount={selectedCount}
             />
          ),
       });
    }, [
-      openDialogStack,
-      closeDialogStack,
+      openCredenza,
+      closeCredenza,
       selectedCount,
       selectedIds,
       updateMutation,
@@ -259,7 +260,7 @@ export function TransactionsList({
    ]);
 
    const handleBulkMoveAccount = useCallback(() => {
-      openDialogStack({
+      openCredenza({
          children: (
             <BulkMoveAccountForm
                bankAccounts={bankAccounts}
@@ -274,19 +275,19 @@ export function TransactionsList({
                      ),
                   );
                   onClear();
-                  closeDialogStack();
+                  closeCredenza();
                   toast.success(
                      `${selectedCount} ${selectedCount === 1 ? "lançamento convertido" : "lançamentos convertidos"} em transferências.`,
                   );
                }}
-               onCancel={closeDialogStack}
+               onCancel={closeCredenza}
                selectedCount={selectedCount}
             />
          ),
       });
    }, [
-      openDialogStack,
-      closeDialogStack,
+      openCredenza,
+      closeCredenza,
       bankAccounts,
       selectedCount,
       selectedIds,
@@ -328,9 +329,9 @@ export function TransactionsList({
             columnFilters={columnFilters}
             data={transactionData}
             getRowId={(row) => row.id}
-            onColumnFiltersChange={handleColumnFiltersChange}
+            onColumnFiltersChange={onColumnFiltersChange}
             onRowSelectionChange={onRowSelectionChange}
-            onSortingChange={handleSortingChange}
+            onSortingChange={onSortingChange}
             onTableStateChange={setTableState}
             sorting={sorting}
             tableState={tableState}

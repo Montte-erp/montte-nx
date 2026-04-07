@@ -1,11 +1,12 @@
 import { Button } from "@packages/ui/components/button";
 import { Card, CardContent } from "@packages/ui/components/card";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Input } from "@packages/ui/components/input";
 import { Label } from "@packages/ui/components/label";
 import {
@@ -54,16 +55,16 @@ export function InviteMemberForm({
    const isValid = email.trim().length > 0 && email.includes("@");
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Convidar novo membro</DialogStackTitle>
-            <DialogStackDescription>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Convidar novo membro</CredenzaTitle>
+            <CredenzaDescription>
                Adicione um novo membro à organização enviando um convite por
                e-mail.
-            </DialogStackDescription>
-         </DialogStackHeader>
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+         <CredenzaBody className="px-4">
             <div className="flex flex-col gap-4">
                <div className="flex gap-2 items-end">
                   <div className="flex-1 flex flex-col gap-2">
@@ -119,9 +120,9 @@ export function InviteMemberForm({
                   </CardContent>
                </Card>
             </div>
-         </div>
+         </CredenzaBody>
 
-         <div className="border-t px-4 py-4">
+         <CredenzaFooter>
             <Button
                className="w-full"
                disabled={!isValid || isPending}
@@ -134,7 +135,7 @@ export function InviteMemberForm({
                )}
                Enviar convite
             </Button>
-         </div>
-      </DialogStackContent>
+         </CredenzaFooter>
+      </>
    );
 }

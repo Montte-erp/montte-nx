@@ -9,6 +9,7 @@ export type ContactRow = {
    phone: string | null;
    document: string | null;
    documentType: "cpf" | "cnpj" | null;
+   notes: string | null;
 };
 
 const TYPE_LABELS: Record<ContactRow["type"], string> = {

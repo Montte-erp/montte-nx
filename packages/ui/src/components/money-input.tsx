@@ -1,6 +1,8 @@
-"use client";
-
-import { formatAmount, fromMinorUnits } from "@f-o-t/money";
+import {
+   maskitoNumberOptionsGenerator,
+   maskitoParseNumber,
+} from "@maskito/kit";
+import { useMaskito } from "@maskito/react";
 import {
    InputGroup,
    InputGroupAddon,
@@ -8,7 +10,6 @@ import {
    InputGroupText,
 } from "@packages/ui/components/input-group";
 import * as React from "react";
-import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { mergeRefs } from "foxact/merge-refs";
 
 interface MoneyInputProps extends Omit<
@@ -20,21 +21,28 @@ interface MoneyInputProps extends Omit<
    placeholder?: string;
    className?: string;
    valueInCents?: boolean;
-   debounceMs?: number;
 }
 
-const MAX_CENTS = 999999999999;
+const maskOptions = maskitoNumberOptionsGenerator({
+   decimalSeparator: ",",
+   thousandSeparator: ".",
+   maximumFractionDigits: 2,
+   minimumFractionDigits: 2,
+   min: 0,
+});
 
-function formatCentsToDisplay(cents: number): string {
-   if (cents === 0) {
-      return "";
-   }
-
-   return formatAmount(fromMinorUnits(cents, "BRL"), "pt-BR");
-}
-
-function extractDigits(str: string): string {
-   return str.replace(/\D/g, "");
+function toDisplayValue(
+   value: number | string | undefined,
+   valueInCents: boolean,
+): string {
+   if (value === undefined || value === "" || value === 0) return "";
+   const num = typeof value === "string" ? Number.parseFloat(value) : value;
+   if (Number.isNaN(num) || num === 0) return "";
+   const decimal = valueInCents ? num / 100 : num;
+   return decimal
+      .toFixed(2)
+      .replace(".", ",")
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
@@ -45,152 +53,34 @@ export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
          placeholder = "0,00",
          className,
          valueInCents = true,
-         debounceMs = 0,
          ...props
       },
       ref,
    ) => {
-      const [rawCents, setRawCents] = React.useState<number>(0);
+      const maskRef = useMaskito({ options: maskOptions });
       const inputRef = React.useRef<HTMLInputElement | null>(null);
-      const isInternalChange = React.useRef(false);
 
-      const onChangeRef = React.useRef(onChange);
-      useIsomorphicLayoutEffect(() => {
-         onChangeRef.current = onChange;
-      });
-      const debounceTimerRef = React.useRef<NodeJS.Timeout | undefined>(
-         undefined,
-      );
-
-      const debouncedOnChange = React.useCallback(
-         (value: number | undefined) => {
-            if (debounceTimerRef.current)
-               clearTimeout(debounceTimerRef.current);
-            debounceTimerRef.current = setTimeout(
-               () => onChangeRef.current?.(value),
-               debounceMs,
-            );
-         },
-         [debounceMs],
-      );
-
-      const emitChange = React.useCallback(
-         (cents: number) => {
-            const finalValue = valueInCents ? cents : cents / 100;
-            if (debounceMs > 0) {
-               debouncedOnChange(cents === 0 ? undefined : finalValue);
-            } else {
-               onChange?.(cents === 0 ? undefined : finalValue);
-            }
-         },
-         [valueInCents, debounceMs, debouncedOnChange, onChange],
-      );
+      const displayValue = toDisplayValue(value, valueInCents);
 
       React.useEffect(() => {
-         if (isInternalChange.current) {
-            isInternalChange.current = false;
-            return;
-         }
-
-         if (value === undefined || value === "" || value === 0) {
-            setRawCents(0);
-            return;
-         }
-
-         const numValue =
-            typeof value === "string" ? Number.parseFloat(value) : value;
-
-         if (Number.isNaN(numValue)) {
-            setRawCents(0);
-            return;
-         }
-
-         const cents = valueInCents
-            ? Math.round(numValue)
-            : Math.round(numValue * 100);
-         setRawCents(cents);
-      }, [value, valueInCents]);
+         const el = inputRef.current;
+         if (!el) return;
+         if (document.activeElement === el) return;
+         el.value = displayValue;
+      }, [displayValue]);
 
       const handleInput = (e: React.FormEvent<HTMLInputElement>) => {
-         const input = e.target as HTMLInputElement;
-         const inputValue = input.value;
-
-         const digits = extractDigits(inputValue);
-
-         if (digits === "") {
-            isInternalChange.current = true;
-            setRawCents(0);
-            emitChange(0);
+         const el = e.target as HTMLInputElement;
+         if (document.activeElement !== el) return;
+         const raw = el.value;
+         const parsed = maskitoParseNumber(raw, { decimalSeparator: "," });
+         if (Number.isNaN(parsed)) {
+            onChange?.(undefined);
             return;
          }
-
-         let cents = Number.parseInt(digits, 10);
-
-         if (Number.isNaN(cents)) {
-            return;
-         }
-
-         if (cents > MAX_CENTS) {
-            cents = MAX_CENTS;
-         }
-
-         isInternalChange.current = true;
-         setRawCents(cents);
-         emitChange(cents);
+         const result = valueInCents ? Math.round(parsed * 100) : parsed;
+         onChange?.(result === 0 ? undefined : result);
       };
-
-      const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-         const allowedKeys = [
-            "Backspace",
-            "Delete",
-            "Tab",
-            "Escape",
-            "Enter",
-            "ArrowLeft",
-            "ArrowRight",
-            "ArrowUp",
-            "ArrowDown",
-            "Home",
-            "End",
-         ];
-
-         const isNumber = /^[0-9]$/.test(e.key);
-
-         if (
-            !isNumber &&
-            !allowedKeys.includes(e.key) &&
-            !e.ctrlKey &&
-            !e.metaKey
-         ) {
-            e.preventDefault();
-         }
-      };
-
-      const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-         e.preventDefault();
-         const pastedText = e.clipboardData.getData("text");
-         const digits = extractDigits(pastedText);
-
-         if (digits === "") {
-            return;
-         }
-
-         let cents = Number.parseInt(digits, 10);
-
-         if (Number.isNaN(cents)) {
-            return;
-         }
-
-         if (cents > MAX_CENTS) {
-            cents = MAX_CENTS;
-         }
-
-         isInternalChange.current = true;
-         setRawCents(cents);
-         emitChange(cents);
-      };
-
-      const displayValue = formatCentsToDisplay(rawCents);
 
       return (
          <InputGroup className={className}>
@@ -199,14 +89,12 @@ export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
             </InputGroupAddon>
             <InputGroupInput
                data-slot="input-group-control"
+               defaultValue={displayValue}
                inputMode="numeric"
                onInput={handleInput}
-               onKeyDown={handleKeyDown}
-               onPaste={handlePaste}
                placeholder={placeholder}
-               ref={mergeRefs(inputRef, ref)}
+               ref={mergeRefs(maskRef, inputRef, ref)}
                type="text"
-               value={displayValue}
                {...props}
             />
             <InputGroupAddon align="inline-end">

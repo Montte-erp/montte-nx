@@ -1,6 +1,7 @@
 import type { BudgetGoalWithProgress } from "@core/database/repositories/budget-goals-repository";
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
+import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import {
    DropdownMenu,
    DropdownMenuContent,
@@ -16,7 +17,9 @@ import {
 } from "@packages/ui/components/empty";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import type { ColumnFiltersState, SortingState } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
 import {
    ChevronLeft,
    ChevronRight,
@@ -34,8 +37,14 @@ import { DefaultHeader } from "@/components/default-header";
 import { BudgetGoalDialogStack } from "@/features/budget-goals/ui/budget-goal-dialog-stack";
 import { buildBudgetGoalColumns } from "@/features/budget-goals/ui/budget-goals-columns";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
+
+const [useGoalsTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:goals",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/goals",
@@ -195,7 +204,10 @@ interface GoalsListProps {
 }
 
 function GoalsList({ month, year }: GoalsListProps) {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const [sorting, setSorting] = useState<SortingState>([]);
+   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+   const [tableState, setTableState] = useGoalsTableState();
+   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
    const { data: goals } = useSuspenseQuery(
@@ -215,19 +227,19 @@ function GoalsList({ month, year }: GoalsListProps) {
 
    const handleEdit = useCallback(
       (goal: BudgetGoalWithProgress) => {
-         openDialogStack({
+         openCredenza({
             children: (
                <BudgetGoalDialogStack
                   goal={goal}
                   mode="edit"
                   month={goal.month}
-                  onSuccess={closeDialogStack}
+                  onSuccess={closeCredenza}
                   year={goal.year}
                />
             ),
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
    );
 
    const handleDelete = useCallback(
@@ -273,6 +285,12 @@ function GoalsList({ month, year }: GoalsListProps) {
             columns={columns}
             data={goals}
             getRowId={(row) => row.id}
+            sorting={sorting}
+            onSortingChange={setSorting}
+            columnFilters={columnFilters}
+            onColumnFiltersChange={setColumnFilters}
+            tableState={tableState}
+            onTableStateChange={setTableState}
             renderActions={({ row }) => (
                <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -310,7 +328,7 @@ function GoalsPage() {
       month: new Date().getMonth() + 1,
       year: new Date().getFullYear(),
    });
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
 
    const copyMutation = useMutation(
       orpc.budgetGoals.copyFromPreviousMonth.mutationOptions({
@@ -330,17 +348,17 @@ function GoalsPage() {
    );
 
    const handleCreate = useCallback(() => {
-      openDialogStack({
+      openCredenza({
          children: (
             <BudgetGoalDialogStack
                mode="create"
                month={monthYear.month}
-               onSuccess={closeDialogStack}
+               onSuccess={closeCredenza}
                year={monthYear.year}
             />
          ),
       });
-   }, [openDialogStack, closeDialogStack, monthYear]);
+   }, [openCredenza, closeCredenza, monthYear]);
 
    const handleCopyPreviousMonth = useCallback(() => {
       copyMutation.mutate({ month: monthYear.month, year: monthYear.year });

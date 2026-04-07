@@ -4,18 +4,18 @@ PostHog analytics client for server-side event tracking, feature flags, and erro
 
 ## Exports
 
-| Export | Purpose |
-|--------|---------|
+| Export     | Purpose                                               |
+| ---------- | ----------------------------------------------------- |
 | `./server` | PostHog client initialization and analytics functions |
 
 ## Usage
 
 ```typescript
 import {
-  captureServerEvent,
-  isFeatureEnabled,
-  identifyUser,
-  captureError,
+   captureServerEvent,
+   isFeatureEnabled,
+   identifyUser,
+   captureError,
 } from "@core/posthog/server";
 ```
 

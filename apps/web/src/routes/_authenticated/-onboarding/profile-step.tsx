@@ -92,11 +92,12 @@ export const ProfileStep = forwardRef<StepHandle, ProfileStepProps>(
 
             <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
                <FieldGroup>
-                  <form.Field name="userName">
-                     {(field) => {
+                  <form.Field
+                     name="userName"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
                               <FieldLabel htmlFor={field.name}>
@@ -122,7 +123,7 @@ export const ProfileStep = forwardRef<StepHandle, ProfileStepProps>(
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
                </FieldGroup>
             </form>
          </div>

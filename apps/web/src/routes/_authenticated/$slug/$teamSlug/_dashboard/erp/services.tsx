@@ -1,6 +1,7 @@
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
+import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import {
    Empty,
    EmptyDescription,
@@ -19,7 +20,9 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { TooltipProvider } from "@packages/ui/components/tooltip";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import type { ColumnFiltersState, SortingState } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
 import {
    Briefcase,
    Download,
@@ -45,7 +48,7 @@ import {
 import { ServiceForm } from "@/features/services/ui/services-form";
 import { exportServicesCsv } from "@/features/services/utils/export-services-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
 const SERVICES_BANNER: EarlyAccessBannerTemplate = {
@@ -66,6 +69,12 @@ const TYPE_FILTER_OPTIONS = [
    { value: "product", label: "Produto" },
    { value: "subscription", label: "Assinatura" },
 ];
+
+const [useServicesTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:services",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/erp/services",
@@ -167,11 +176,14 @@ function ServiceFilters({
 // =============================================================================
 
 function ServicesList({ filters }: { filters: FiltersState }) {
+   const [sorting, setSorting] = useState<SortingState>([]);
+   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+   const [tableState, setTableState] = useServicesTableState();
    const { data: servicesList } = useSuspenseQuery(
       orpc.services.getAll.queryOptions({}),
    );
 
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
    const deleteMutation = useMutation(
@@ -199,17 +211,17 @@ function ServicesList({ filters }: { filters: FiltersState }) {
 
    const handleEdit = useCallback(
       (row: ServiceRow) => {
-         openDialogStack({
+         openCredenza({
             children: (
                <ServiceForm
                   mode="edit"
-                  onSuccess={closeDialogStack}
+                  onSuccess={closeCredenza}
                   service={row}
                />
             ),
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
    );
 
    const handleDelete = useCallback(
@@ -256,6 +268,12 @@ function ServicesList({ filters }: { filters: FiltersState }) {
                columns={columns}
                data={filtered}
                getRowId={(row) => row.id}
+               sorting={sorting}
+               onSortingChange={setSorting}
+               columnFilters={columnFilters}
+               onColumnFiltersChange={setColumnFilters}
+               tableState={tableState}
+               onTableStateChange={setTableState}
                renderActions={({ row }) => (
                   <>
                      <Button
@@ -286,7 +304,7 @@ function ServicesList({ filters }: { filters: FiltersState }) {
 // =============================================================================
 
 function ServicesPage() {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
 
    const [filters, setFilters] = useState<FiltersState>({
       search: "",
@@ -304,16 +322,16 @@ function ServicesPage() {
    );
 
    const handleCreate = useCallback(() => {
-      openDialogStack({
-         children: <ServiceForm mode="create" onSuccess={closeDialogStack} />,
+      openCredenza({
+         children: <ServiceForm mode="create" onSuccess={closeCredenza} />,
       });
-   }, [openDialogStack, closeDialogStack]);
+   }, [openCredenza, closeCredenza]);
 
    const handleImport = useCallback(() => {
-      openDialogStack({
+      openCredenza({
          children: <ServiceImportDialogStack />,
       });
-   }, [openDialogStack]);
+   }, [openCredenza]);
 
    const handleExport = useCallback(() => {
       if (servicesList && servicesList.length > 0) {

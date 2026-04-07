@@ -10,6 +10,7 @@
 ## Getting Started
 
 1. **Clone & install:**
+
    ```bash
    git clone https://github.com/Montte-erp/montte-nx.git
    cd montte-nx
@@ -17,17 +18,21 @@
    ```
 
 2. **Set up environment:**
+
    ```bash
    bun run scripts/env-setup.ts run
    ```
+
    This generates the `.env` files under `apps/web/` from the template.
 
 3. **Push the database schema:**
+
    ```bash
    bun run db:push
    ```
 
 4. **Start development:**
+
    ```bash
    bun dev        # Web app only (seeds event catalog first)
    bun dev:all    # Web + server + worker
@@ -68,6 +73,7 @@ Nx monorepo — see [README.md](README.md) for the full structure.
 **Commits:** Conventional format: `type(scope): description`
 
 Run all checks before opening a PR:
+
 ```bash
 bun run format && bun run check && bun run typecheck && bun run test
 ```

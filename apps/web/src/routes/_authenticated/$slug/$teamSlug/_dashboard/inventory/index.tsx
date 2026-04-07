@@ -1,5 +1,8 @@
 import { Button } from "@packages/ui/components/button";
-import { DataTable, type DataTableStoredState } from "@packages/ui/components/data-table";
+import {
+   DataTable,
+   type DataTableStoredState,
+} from "@packages/ui/components/data-table";
 import {
    DropdownMenu,
    DropdownMenuContent,
@@ -15,7 +18,11 @@ import {
    EmptyTitle,
 } from "@packages/ui/components/empty";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
+import type {
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
@@ -44,7 +51,7 @@ import {
 } from "./-inventory/inventory-product-columns";
 import { InventoryProductForm } from "./-inventory/inventory-product-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
 const searchSchema = z.object({
@@ -58,10 +65,11 @@ const searchSchema = z.object({
       .default([]),
 });
 
-const [useInventoryTableState] = createLocalStorageState<DataTableStoredState | null>(
-   "montte:datatable:inventory",
-   null,
-);
+const [useInventoryTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:inventory",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/inventory/",
@@ -115,24 +123,39 @@ function InventoryList() {
       orpc.inventory.getProducts.queryOptions({}),
    );
 
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
       (updater) => {
-         const next = typeof updater === "function" ? updater(sorting) : updater;
-         navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, sorting: next }), replace: true });
+         const next =
+            typeof updater === "function" ? updater(sorting) : updater;
+         navigate({
+            search: (prev: z.infer<typeof searchSchema>) => ({
+               ...prev,
+               sorting: next,
+            }),
+            replace: true,
+         });
       },
       [navigate, sorting],
    );
 
-   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
-      (updater) => {
-         const next = typeof updater === "function" ? updater(columnFilters) : updater;
-         navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, columnFilters: next }), replace: true });
-      },
-      [navigate, columnFilters],
-   );
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
+      useCallback(
+         (updater) => {
+            const next =
+               typeof updater === "function" ? updater(columnFilters) : updater;
+            navigate({
+               search: (prev: z.infer<typeof searchSchema>) => ({
+                  ...prev,
+                  columnFilters: next,
+               }),
+               replace: true,
+            });
+         },
+         [navigate, columnFilters],
+      );
 
    const archiveMutation = useMutation(
       orpc.inventory.archiveProduct.mutationOptions({
@@ -143,30 +166,30 @@ function InventoryList() {
 
    const handleMovement = useCallback(
       (product: InventoryProductRow) => {
-         openDialogStack({
+         openCredenza({
             children: (
                <InventoryMovementDialogStack
-                  onSuccess={closeDialogStack}
+                  onSuccess={closeCredenza}
                   product={product}
                />
             ),
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
    );
 
    const handleHistory = useCallback(
       (product: InventoryProductRow) => {
-         openDialogStack({
+         openCredenza({
             children: <InventoryHistorySheet product={product} />,
          });
       },
-      [openDialogStack],
+      [openCredenza],
    );
 
    const handleEdit = useCallback(
       (product: InventoryProductRow) => {
-         openDialogStack({
+         openCredenza({
             children: (
                <InventoryProductForm
                   defaultValues={{
@@ -179,12 +202,12 @@ function InventoryList() {
                      sellingPrice: product.sellingPrice,
                   }}
                   mode="edit"
-                  onSuccess={closeDialogStack}
+                  onSuccess={closeCredenza}
                />
             ),
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
    );
 
    const handleArchive = useCallback(
@@ -274,15 +297,15 @@ function InventoryList() {
 // =============================================================================
 
 function InventoryPage() {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
 
    const handleCreate = useCallback(() => {
-      openDialogStack({
+      openCredenza({
          children: (
-            <InventoryProductForm mode="create" onSuccess={closeDialogStack} />
+            <InventoryProductForm mode="create" onSuccess={closeCredenza} />
          ),
       });
-   }, [openDialogStack, closeDialogStack]);
+   }, [openCredenza, closeCredenza]);
 
    return (
       <main className="flex flex-col gap-4">

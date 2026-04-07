@@ -4,14 +4,14 @@ Full authentication and authorization layer built on Better Auth. Handles user m
 
 ## Exports
 
-| Export | Purpose |
-|--------|---------|
-| `./server` | Better Auth instance factory with all plugins |
-| `./client` | Client-side auth SDK with React hooks |
-| `./helpers` | Auth utility functions |
-| `./api-key-config` | API key configuration for SDK consumers |
-| `./cache` | Session caching layer (Redis-backed) |
-| `./redis-connection` | Redis connection wrapper for auth |
+| Export               | Purpose                                       |
+| -------------------- | --------------------------------------------- |
+| `./server`           | Better Auth instance factory with all plugins |
+| `./client`           | Client-side auth SDK with React hooks         |
+| `./helpers`          | Auth utility functions                        |
+| `./api-key-config`   | API key configuration for SDK consumers       |
+| `./cache`            | Session caching layer (Redis-backed)          |
+| `./redis-connection` | Redis connection wrapper for auth             |
 
 ## Capabilities
 

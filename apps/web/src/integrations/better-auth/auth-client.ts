@@ -13,7 +13,6 @@ import type { AuthInstance } from "@core/authentication/server";
 import { toast } from "sonner";
 import { invalidateAllQueries } from "./query-bridge";
 
-
 export const authClient = createBetterAuthClient({
    baseURL: "",
    fetchOptions: {

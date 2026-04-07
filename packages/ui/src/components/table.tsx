@@ -20,11 +20,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
 
 function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
    return (
-      <thead
-         className={cn(className)}
-         data-slot="table-header"
-         {...props}
-      />
+      <thead className={cn(className)} data-slot="table-header" {...props} />
    );
 }
 

@@ -5,11 +5,12 @@ import {
    type ComboboxOption,
 } from "@packages/ui/components/combobox";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import {
    Field,
    FieldError,
@@ -185,70 +186,43 @@ export function BudgetGoalDialogStack({
    });
 
    return (
-      <DialogStackContent index={0}>
-         <form
-            onSubmit={(e) => {
-               e.preventDefault();
-               e.stopPropagation();
-               form.handleSubmit();
-            }}
-         >
-            <DialogStackHeader>
-               <DialogStackTitle>
-                  {isCreate ? "Nova Meta" : "Editar Meta"}
-               </DialogStackTitle>
-               <DialogStackDescription>
-                  {isCreate
-                     ? "Defina um limite de gastos para uma categoria ou subcategoria."
-                     : "Atualize o limite e as configurações de alerta desta meta."}
-               </DialogStackDescription>
-            </DialogStackHeader>
+      <form
+         onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+         }}
+      >
+         <CredenzaHeader>
+            <CredenzaTitle>
+               {isCreate ? "Nova Meta" : "Editar Meta"}
+            </CredenzaTitle>
+            <CredenzaDescription>
+               {isCreate
+                  ? "Defina um limite de gastos para uma categoria ou subcategoria."
+                  : "Atualize o limite e as configurações de alerta desta meta."}
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4">
-               <FieldGroup>
-                  {isCreate && (
-                     <div className="grid grid-cols-2 gap-4">
-                        <form.Field name="limitAmount">
-                           {(field) => {
-                              const isInvalid =
-                                 field.state.meta.isTouched &&
-                                 !field.state.meta.isValid;
-                              return (
-                                 <Field data-invalid={isInvalid}>
-                                    <FieldLabel>Limite (R$)</FieldLabel>
-                                    <Input
-                                       min="0.01"
-                                       onBlur={field.handleBlur}
-                                       onChange={(e) =>
-                                          field.handleChange(e.target.value)
-                                       }
-                                       placeholder="0,00"
-                                       step="0.01"
-                                       type="number"
-                                       value={field.state.value}
-                                    />
-                                    {isInvalid && (
-                                       <FieldError
-                                          errors={field.state.meta.errors}
-                                       />
-                                    )}
-                                 </Field>
-                              );
-                           }}
-                        </form.Field>
-                     </div>
-                  )}
-
-                  {!isCreate && (
-                     <form.Field name="limitAmount">
-                        {(field) => {
+         <CredenzaBody className="px-4">
+            <FieldGroup>
+               {isCreate && (
+                  <div className="grid grid-cols-2 gap-4">
+                     <form.Field
+                        name="limitAmount"
+                        children={(field) => {
                            const isInvalid =
                               field.state.meta.isTouched &&
-                              !field.state.meta.isValid;
+                              field.state.meta.errors.length > 0;
                            return (
                               <Field data-invalid={isInvalid}>
-                                 <FieldLabel>Limite (R$)</FieldLabel>
+                                 <FieldLabel htmlFor={field.name}>
+                                    Limite (R$)
+                                 </FieldLabel>
                                  <Input
+                                    id={field.name}
+                                    name={field.name}
+                                    aria-invalid={isInvalid}
                                     min="0.01"
                                     onBlur={field.handleBlur}
                                     onChange={(e) =>
@@ -267,146 +241,181 @@ export function BudgetGoalDialogStack({
                               </Field>
                            );
                         }}
-                     </form.Field>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-4">
-                     <form.Field name="categoryId">
-                        {(field) => {
-                           const isInvalid =
-                              field.state.meta.isTouched &&
-                              !field.state.meta.isValid;
-
-                           const categoryOptions: ComboboxOption[] =
-                              expenseCategories.map((c) => ({
-                                 value: c.id,
-                                 label: c.name,
-                              }));
-
-                           return (
-                              <Field
-                                 className="col-span-2"
-                                 data-invalid={isInvalid}
-                              >
-                                 <FieldLabel>Categoria</FieldLabel>
-                                 <Combobox
-                                    className="w-full justify-between"
-                                    disabled={!isCreate}
-                                    emptyMessage="Nenhuma categoria encontrada."
-                                    onBlur={field.handleBlur}
-                                    onValueChange={field.handleChange}
-                                    options={categoryOptions}
-                                    placeholder="Selecione uma categoria"
-                                    renderOption={(option) => {
-                                       const cat = expenseCategories.find(
-                                          (c) => c.id === option.value,
-                                       );
-                                       const Icon = cat?.icon
-                                          ? ICON_MAP.get(cat.icon)
-                                          : undefined;
-                                       return (
-                                          <span className="flex items-center gap-2">
-                                             {Icon && (
-                                                <Icon className="size-4" />
-                                             )}
-                                             {option.label}
-                                          </span>
-                                       );
-                                    }}
-                                    searchPlaceholder="Buscar categoria..."
-                                    value={field.state.value}
-                                 />
-                                 {isInvalid && (
-                                    <FieldError
-                                       errors={field.state.meta.errors}
-                                    />
-                                 )}
-                              </Field>
-                           );
-                        }}
-                     </form.Field>
+                     />
                   </div>
+               )}
 
-                  <form.Field name="alertEnabled">
-                     {(alertEnabledField) => (
-                        <Field>
-                           <div className="flex items-center justify-between gap-2">
-                              <FieldLabel className="mb-0">
-                                 Ativar alerta
+               {!isCreate && (
+                  <form.Field
+                     name="limitAmount"
+                     children={(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           field.state.meta.errors.length > 0;
+                        return (
+                           <Field data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>
+                                 Limite (R$)
                               </FieldLabel>
-                              <Switch
-                                 checked={alertEnabledField.state.value}
-                                 onCheckedChange={
-                                    alertEnabledField.handleChange
+                              <Input
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
+                                 min="0.01"
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
                                  }
+                                 placeholder="0,00"
+                                 step="0.01"
+                                 type="number"
+                                 value={field.state.value}
                               />
-                           </div>
+                              {isInvalid && (
+                                 <FieldError errors={field.state.meta.errors} />
+                              )}
+                           </Field>
+                        );
+                     }}
+                  />
+               )}
 
-                           {alertEnabledField.state.value && (
-                              <form.Field name="alertThreshold">
-                                 {(field) => {
-                                    const isInvalid =
-                                       field.state.meta.isTouched &&
-                                       !field.state.meta.isValid;
+               <div className="grid grid-cols-2 gap-4">
+                  <form.Field
+                     name="categoryId"
+                     children={(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           field.state.meta.errors.length > 0;
+
+                        const categoryOptions: ComboboxOption[] =
+                           expenseCategories.map((c) => ({
+                              value: c.id,
+                              label: c.name,
+                           }));
+
+                        return (
+                           <Field
+                              className="col-span-2"
+                              data-invalid={isInvalid}
+                           >
+                              <FieldLabel>Categoria</FieldLabel>
+                              <Combobox
+                                 className="w-full justify-between"
+                                 disabled={!isCreate}
+                                 emptyMessage="Nenhuma categoria encontrada."
+                                 onBlur={field.handleBlur}
+                                 onValueChange={field.handleChange}
+                                 options={categoryOptions}
+                                 placeholder="Selecione uma categoria"
+                                 renderOption={(option) => {
+                                    const cat = expenseCategories.find(
+                                       (c) => c.id === option.value,
+                                    );
+                                    const Icon = cat?.icon
+                                       ? ICON_MAP.get(cat.icon)
+                                       : undefined;
                                     return (
-                                       <div className="mt-2">
-                                          <FieldLabel>
-                                             Alertar quando atingir{" "}
-                                             {field.state.value}% do limite
-                                          </FieldLabel>
-                                          <Input
-                                             className="mt-1.5"
-                                             max="100"
-                                             min="1"
-                                             onBlur={field.handleBlur}
-                                             onChange={(e) =>
-                                                field.handleChange(
-                                                   Number(e.target.value),
-                                                )
-                                             }
-                                             type="number"
-                                             value={field.state.value}
-                                          />
-                                          {isInvalid && (
-                                             <FieldError
-                                                errors={field.state.meta.errors}
-                                             />
-                                          )}
-                                       </div>
+                                       <span className="flex items-center gap-2">
+                                          {Icon && <Icon className="size-4" />}
+                                          {option.label}
+                                       </span>
                                     );
                                  }}
-                              </form.Field>
-                           )}
-                        </Field>
-                     )}
-                  </form.Field>
-               </FieldGroup>
-            </div>
+                                 searchPlaceholder="Buscar categoria..."
+                                 value={field.state.value}
+                              />
+                              {isInvalid && (
+                                 <FieldError errors={field.state.meta.errors} />
+                              )}
+                           </Field>
+                        );
+                     }}
+                  />
+               </div>
 
-            <div className="border-t px-4 py-4">
-               <form.Subscribe selector={(state) => state}>
-                  {(state) => (
-                     <Button
-                        className="w-full"
-                        disabled={
-                           !state.canSubmit ||
-                           state.isSubmitting ||
-                           createMutation.isPending ||
-                           updateMutation.isPending
-                        }
-                        type="submit"
-                     >
-                        {(state.isSubmitting ||
-                           createMutation.isPending ||
-                           updateMutation.isPending) && (
-                           <Spinner className="size-4 mr-2" />
+               <form.Field
+                  name="alertEnabled"
+                  children={(alertEnabledField) => (
+                     <Field>
+                        <div className="flex items-center justify-between gap-2">
+                           <FieldLabel className="mb-0">
+                              Ativar alerta
+                           </FieldLabel>
+                           <Switch
+                              checked={alertEnabledField.state.value}
+                              onCheckedChange={alertEnabledField.handleChange}
+                           />
+                        </div>
+
+                        {alertEnabledField.state.value && (
+                           <form.Field
+                              name="alertThreshold"
+                              children={(field) => {
+                                 const isInvalid =
+                                    field.state.meta.isTouched &&
+                                    field.state.meta.errors.length > 0;
+                                 return (
+                                    <div className="mt-2">
+                                       <FieldLabel htmlFor={field.name}>
+                                          Alertar quando atingir{" "}
+                                          {field.state.value}% do limite
+                                       </FieldLabel>
+                                       <Input
+                                          id={field.name}
+                                          name={field.name}
+                                          aria-invalid={isInvalid}
+                                          className="mt-1.5"
+                                          max="100"
+                                          min="1"
+                                          onBlur={field.handleBlur}
+                                          onChange={(e) =>
+                                             field.handleChange(
+                                                Number(e.target.value),
+                                             )
+                                          }
+                                          type="number"
+                                          value={field.state.value}
+                                       />
+                                       {isInvalid && (
+                                          <FieldError
+                                             errors={field.state.meta.errors}
+                                          />
+                                       )}
+                                    </div>
+                                 );
+                              }}
+                           />
                         )}
-                        {isCreate ? "Criar meta" : "Salvar alterações"}
-                     </Button>
+                     </Field>
                   )}
-               </form.Subscribe>
-            </div>
-         </form>
-      </DialogStackContent>
+               />
+            </FieldGroup>
+         </CredenzaBody>
+
+         <CredenzaFooter>
+            <form.Subscribe selector={(state) => state}>
+               {(state) => (
+                  <Button
+                     className="w-full"
+                     disabled={
+                        !state.canSubmit ||
+                        state.isSubmitting ||
+                        createMutation.isPending ||
+                        updateMutation.isPending
+                     }
+                     type="submit"
+                  >
+                     {(state.isSubmitting ||
+                        createMutation.isPending ||
+                        updateMutation.isPending) && (
+                        <Spinner className="size-4 mr-2" />
+                     )}
+                     {isCreate ? "Criar meta" : "Salvar alterações"}
+                  </Button>
+               )}
+            </form.Subscribe>
+         </CredenzaFooter>
+      </form>
    );
 }

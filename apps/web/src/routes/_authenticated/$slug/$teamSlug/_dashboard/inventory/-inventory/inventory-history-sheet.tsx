@@ -1,10 +1,10 @@
 import { Badge } from "@packages/ui/components/badge";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
@@ -78,24 +78,29 @@ interface InventoryHistorySheetProps {
 
 export function InventoryHistorySheet({ product }: InventoryHistorySheetProps) {
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Histórico de {product.name}</DialogStackTitle>
-            <DialogStackDescription>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Histórico de {product.name}</CredenzaTitle>
+            <CredenzaDescription>
                Veja todas as movimentações deste produto.
-            </DialogStackDescription>
-         </DialogStackHeader>
-         <Suspense
-            fallback={
-               <div className="flex flex-col gap-4">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                     <Skeleton className="h-12 w-full" key={`skel-${i + 1}`} />
-                  ))}
-               </div>
-            }
-         >
-            <HistoryList product={product} />
-         </Suspense>
-      </DialogStackContent>
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody className="px-4">
+            <Suspense
+               fallback={
+                  <div className="flex flex-col gap-4">
+                     {Array.from({ length: 4 }).map((_, i) => (
+                        <Skeleton
+                           className="h-12 w-full"
+                           key={`skel-${i + 1}`}
+                        />
+                     ))}
+                  </div>
+               }
+            >
+               <HistoryList product={product} />
+            </Suspense>
+         </CredenzaBody>
+      </>
    );
 }

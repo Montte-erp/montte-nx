@@ -11,22 +11,29 @@ import {
    CardTitle,
 } from "@packages/ui/components/card";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
-import { DataTable, type DataTableStoredState } from "@packages/ui/components/data-table";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
+import {
+   DataTable,
+   type DataTableStoredState,
+} from "@packages/ui/components/data-table";
 import {
    useMutation,
    useSuspenseQuery,
    useQueryClient,
 } from "@tanstack/react-query";
-import type { ColumnDef, ColumnFiltersState, SortingState } from "@tanstack/react-table";
+import type {
+   ColumnDef,
+   ColumnFiltersState,
+   SortingState,
+} from "@tanstack/react-table";
 import { BarChart3, CheckCircle2, Plus } from "lucide-react";
 import { noop } from "foxact/noop";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 import { DashboardGrid } from "./dashboard-grid";
 import { DashboardTile } from "./dashboard-tile";
@@ -121,7 +128,9 @@ function AddInsightCredenza({
    const [currentPage, setCurrentPage] = useState(1);
    const [sorting, setSorting] = useState<SortingState>([]);
    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-   const [tableState, setTableState] = useState<DataTableStoredState | null>(null);
+   const [tableState, setTableState] = useState<DataTableStoredState | null>(
+      null,
+   );
    const { data: insights } = useSuspenseQuery(
       orpc.insights.list.queryOptions({}),
    );
@@ -139,14 +148,14 @@ function AddInsightCredenza({
    );
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Adicionar insight</DialogStackTitle>
-            <DialogStackDescription>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Adicionar insight</CredenzaTitle>
+            <CredenzaDescription>
                Selecione um insight para adicionar ao dashboard.
-            </DialogStackDescription>
-         </DialogStackHeader>
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody className="px-4">
             {allInsights.length === 0 ? (
                <div className="flex flex-col items-center justify-center gap-4 py-8 text-muted-foreground">
                   <BarChart3 className="size-8" />
@@ -175,8 +184,8 @@ function AddInsightCredenza({
                   }}
                />
             )}
-         </div>
-      </DialogStackContent>
+         </CredenzaBody>
+      </>
    );
 }
 
@@ -190,7 +199,7 @@ export function EditableDashboardGrid({
    onSaveError,
 }: EditableDashboardGridProps) {
    const queryClient = useQueryClient();
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
 
    const [localTiles, setLocalTiles] = useState<DashboardTileType[]>(
       dashboard.tiles,
@@ -220,7 +229,9 @@ export function EditableDashboardGrid({
       }),
    );
 
-   const stableOnSaveComplete = useCallback(onSaveComplete ?? noop, [onSaveComplete]);
+   const stableOnSaveComplete = useCallback(onSaveComplete ?? noop, [
+      onSaveComplete,
+   ]);
    const stableOnSaveError = useCallback(onSaveError ?? noop, [onSaveError]);
 
    const handleReorder = useCallback((reordered: DashboardTileType[]) => {
@@ -269,14 +280,14 @@ export function EditableDashboardGrid({
                order: prev.length,
             },
          ]);
-         closeDialogStack();
+         closeCredenza();
       },
-      [closeDialogStack],
+      [closeCredenza],
    );
 
    const handleOpenAddInsight = useCallback(() => {
       const existingIds = new Set(localTiles.map((t) => t.insightId));
-      openDialogStack({
+      openCredenza({
          children: (
             <AddInsightCredenza
                existingInsightIds={existingIds}
@@ -284,7 +295,7 @@ export function EditableDashboardGrid({
             />
          ),
       });
-   }, [localTiles, openDialogStack, handleAddInsight]);
+   }, [localTiles, openCredenza, handleAddInsight]);
 
    const handleSave = useCallback(() => {
       saveMutate(

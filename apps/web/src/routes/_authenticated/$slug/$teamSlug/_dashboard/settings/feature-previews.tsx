@@ -151,8 +151,7 @@ const COMING_SOON_CATEGORIES: ComingSoonCategory[] = [
          {
             flagKey: "ai-bot-whatsapp",
             name: "AI Bot WhatsApp",
-            description:
-               "Auto-resposta a contatos via Evolution API com IA.",
+            description: "Auto-resposta a contatos via Evolution API com IA.",
             icon: Bot,
          },
       ],
@@ -165,8 +164,7 @@ const COMING_SOON_CATEGORIES: ComingSoonCategory[] = [
          {
             flagKey: "workflows",
             name: "Workflows",
-            description:
-               "Builder visual de automações com React Flow.",
+            description: "Builder visual de automações com React Flow.",
             icon: Workflow,
          },
          {
@@ -186,7 +184,8 @@ const COMING_SOON_CATEGORIES: ComingSoonCategory[] = [
          {
             flagKey: "previsao-receita",
             name: "Previsão de Receita",
-            description: "IA prediz o MRR do próximo mês com base no histórico.",
+            description:
+               "IA prediz o MRR do próximo mês com base no histórico.",
             icon: Sparkles,
          },
       ],
@@ -212,7 +211,8 @@ const COMING_SOON_CATEGORIES: ComingSoonCategory[] = [
          {
             flagKey: "portal-membro",
             name: "Portal do Membro",
-            description: "Self-service para reservas e visualização de faturas.",
+            description:
+               "Self-service para reservas e visualização de faturas.",
             icon: Users,
          },
       ],
@@ -231,8 +231,7 @@ const COMING_SOON_CATEGORIES: ComingSoonCategory[] = [
          {
             flagKey: "zapsign",
             name: "ZapSign",
-            description:
-               "Assinatura eletrônica com chave própria do usuário.",
+            description: "Assinatura eletrônica com chave própria do usuário.",
             icon: FileText,
          },
          {
@@ -257,14 +256,14 @@ const COMING_SOON_CATEGORIES: ComingSoonCategory[] = [
          {
             flagKey: "payment-orchestrator",
             name: "Payment Orchestrator",
-            description:
-               "Smart routing entre múltiplos gateways de pagamento.",
+            description: "Smart routing entre múltiplos gateways de pagamento.",
             icon: Workflow,
          },
          {
             flagKey: "subscription-engine",
             name: "Subscription Engine",
-            description: "Ciclo de billing, proration e renovações automáticas.",
+            description:
+               "Ciclo de billing, proration e renovações automáticas.",
             icon: RefreshCw,
          },
       ],

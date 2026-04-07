@@ -23,7 +23,7 @@ services:
          retries: 3
 
    montte-db:
-      image: docker.io/pgvector/pgvector:pg15
+      image: docker.io/paradedb/paradedb:latest
       command: postgres -c wal_level=logical
       environment:
          POSTGRES_USER: postgres

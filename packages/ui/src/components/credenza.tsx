@@ -86,9 +86,24 @@ const CredenzaClose = ({ className, children, ...props }: CredenzaProps) => {
    );
 };
 
-const CredenzaContent = ({ className, children, ...props }: CredenzaProps) => {
+const CredenzaContent = ({
+   className,
+   children,
+   onInteractOutside,
+   ...props
+}: CredenzaProps & { onInteractOutside?: (e: Event) => void }) => {
    const { isDesktop } = useCredenzaContext();
    const CredenzaContent = isDesktop ? DialogContent : DrawerContent;
+
+   function handleInteractOutside(e: Event) {
+      const originalTarget = (e as CustomEvent).detail?.originalEvent?.target;
+      const target = (originalTarget ?? e.target) as HTMLElement | null;
+      if (target?.closest("[data-selection-toolbar]")) {
+         e.preventDefault();
+         return;
+      }
+      onInteractOutside?.(e);
+   }
 
    return (
       <CredenzaContent
@@ -97,6 +112,7 @@ const CredenzaContent = ({ className, children, ...props }: CredenzaProps) => {
             isDesktop ? "max-h-[85vh] flex flex-col" : "max-h-[90vh]",
             className,
          )}
+         onInteractOutside={handleInteractOutside}
          {...props}
       >
          {children}

@@ -2,12 +2,20 @@
 
 import { FeatureStageBadge } from "@packages/ui/components/feature-stage-badge";
 import {
+   Collapsible,
+   CollapsibleContent,
+   CollapsibleTrigger,
+} from "@packages/ui/components/collapsible";
+import {
    SidebarGroup,
    SidebarGroupContent,
    SidebarGroupLabel,
    SidebarMenu,
    SidebarMenuButton,
    SidebarMenuItem,
+   SidebarMenuSub,
+   SidebarMenuSubButton,
+   SidebarMenuSubItem,
    useSidebarManager,
 } from "@packages/ui/components/sidebar";
 import {
@@ -18,8 +26,7 @@ import {
 } from "@tanstack/react-router";
 import { ChevronRight, Settings2 } from "lucide-react";
 import { useCallback } from "react";
-import { useAccountType } from "@/hooks/use-account-type";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 import { useFinanceNavPreferences } from "@/layout/dashboard/hooks/use-finance-nav-preferences";
 import type { SubSidebarSection } from "@/layout/dashboard/hooks/use-sidebar-nav";
@@ -52,11 +59,9 @@ function NavItem({
 }) {
    const Icon = item.icon;
    const { getFeatureStage } = useEarlyAccess();
-   const { accountType } = useAccountType();
    const stage = item.earlyAccessFlag
       ? getFeatureStage(item.earlyAccessFlag)
       : null;
-   const resolvedLabel = item.labelOverrides?.[accountType] ?? item.label;
 
    const handleClick = useCallback(
       (e: React.MouseEvent) => {
@@ -79,7 +84,7 @@ function NavItem({
                   ? {
                        children: (
                           <span className="flex items-center gap-1.5">
-                             {resolvedLabel}
+                             {item.label}
                              <FeatureStageBadge isTooltip stage={stage} />
                           </span>
                        ),
@@ -90,7 +95,7 @@ function NavItem({
             {item.subPanel ? (
                <>
                   <Icon />
-                  <span>{resolvedLabel}</span>
+                  <span>{item.label}</span>
                   {stage && (
                      <FeatureStageBadge
                         className="ml-auto group-data-[collapsible=icon]:hidden"
@@ -106,7 +111,7 @@ function NavItem({
                   to={item.route}
                >
                   <Icon />
-                  <span>{resolvedLabel}</span>
+                  <span>{item.label}</span>
                   {stage && (
                      <FeatureStageBadge
                         className="ml-auto group-data-[collapsible=icon]:hidden"
@@ -117,6 +122,61 @@ function NavItem({
             )}
          </SidebarMenuButton>
       </SidebarMenuItem>
+   );
+}
+
+function CollapsibleNavItem({
+   item,
+   slug,
+   teamSlug,
+   isItemActive,
+   onMainItemClick,
+}: {
+   item: NavItemDef;
+   slug: string;
+   teamSlug?: string | null;
+   isItemActive: (item: NavItemDef) => boolean;
+   onMainItemClick: () => void;
+}) {
+   const Icon = item.icon;
+   const anyChildActive = (item.children ?? []).some(isItemActive);
+
+   return (
+      <Collapsible asChild className="group/collapsible" defaultOpen>
+         <SidebarMenuItem>
+            <CollapsibleTrigger asChild>
+               <SidebarMenuButton
+                  isActive={anyChildActive}
+                  tooltip={item.label}
+               >
+                  <Icon />
+                  <span>{item.label}</span>
+                  <span className="flex-1" />
+                  <ChevronRight className="size-3.5 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
+               </SidebarMenuButton>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+               <SidebarMenuSub>
+                  {(item.children ?? []).map((child) => (
+                     <SidebarMenuSubItem key={child.id}>
+                        <SidebarMenuSubButton
+                           asChild
+                           isActive={isItemActive(child)}
+                        >
+                           <Link
+                              onClick={onMainItemClick}
+                              params={{ slug, teamSlug: teamSlug ?? "" }}
+                              to={child.route}
+                           >
+                              <span>{child.label}</span>
+                           </Link>
+                        </SidebarMenuSubButton>
+                     </SidebarMenuSubItem>
+                  ))}
+               </SidebarMenuSub>
+            </CollapsibleContent>
+         </SidebarMenuItem>
+      </Collapsible>
    );
 }
 
@@ -249,8 +309,6 @@ function NavGroup({
    const visibleItems = group.items
       .filter((item) => {
          if (!item.earlyAccessFlag) return true;
-         // Labeled groups (finance, erp) use the finance nav preferences hook,
-         // falling back to enrollment so existing enrolled users aren't affected.
          if (group.label)
             return isWanted(item.id) || isEnrolled(item.earlyAccessFlag);
          return isEnrolled(item.earlyAccessFlag);
@@ -277,17 +335,28 @@ function NavGroup({
          )}
          <SidebarGroupContent>
             <SidebarMenu>
-               {visibleItems.map((item) => (
-                  <NavItem
-                     isActive={isItemActive(item)}
-                     item={item}
-                     key={item.id}
-                     onMainItemClick={onMainItemClick}
-                     onSubPanelToggle={onSubPanelToggle}
-                     slug={slug}
-                     teamSlug={teamSlug}
-                  />
-               ))}
+               {visibleItems.map((item) =>
+                  item.children ? (
+                     <CollapsibleNavItem
+                        isItemActive={isItemActive}
+                        item={item}
+                        key={item.id}
+                        onMainItemClick={onMainItemClick}
+                        slug={slug}
+                        teamSlug={teamSlug}
+                     />
+                  ) : (
+                     <NavItem
+                        isActive={isItemActive(item)}
+                        item={item}
+                        key={item.id}
+                        onMainItemClick={onMainItemClick}
+                        onSubPanelToggle={onSubPanelToggle}
+                        slug={slug}
+                        teamSlug={teamSlug}
+                     />
+                  ),
+               )}
             </SidebarMenu>
          </SidebarGroupContent>
       </SidebarGroup>
@@ -302,13 +371,13 @@ export function SidebarNav() {
       handleMainItemClick,
       isItemActive,
    } = useNavHandlers();
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
 
    const handleConfigure = useCallback(() => {
-      openDialogStack({
-         children: <SidebarNavConfigForm onClose={closeDialogStack} />,
+      openCredenza({
+         children: <SidebarNavConfigForm onClose={closeCredenza} />,
       });
-   }, [openDialogStack, closeDialogStack]);
+   }, [openCredenza, closeCredenza]);
 
    return (
       <>

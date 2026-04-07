@@ -1,10 +1,10 @@
 import { Badge } from "@packages/ui/components/badge";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import {
    Item,
    ItemActions,
@@ -21,7 +21,7 @@ import { ArrowRight, CheckCircle2, Monitor, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { closeDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
 interface SessionDetailsFormProps {
@@ -42,12 +42,13 @@ export function SessionDetailsForm({
 }: SessionDetailsFormProps) {
    const queryClient = useQueryClient();
    const { openAlertDialog } = useAlertDialog();
+   const { closeCredenza } = useCredenza();
 
    const revokeSessionMutation = useMutation(
       orpc.session.revokeSessionByToken.mutationOptions({
          onSuccess: () => {
             toast.success("Sessão encerrada");
-            closeDialogStack();
+            closeCredenza();
             queryClient.invalidateQueries({
                queryKey: orpc.session.listSessions.queryKey({}),
             });
@@ -103,66 +104,66 @@ export function SessionDetailsForm({
    }, [session, currentSessionId]);
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Detalhes da Sessão</DialogStackTitle>
-            <DialogStackDescription>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Detalhes da Sessão</CredenzaTitle>
+            <CredenzaDescription>
                Informações sobre esta sessão
-            </DialogStackDescription>
-         </DialogStackHeader>
-         <ItemGroup>
-            {sessionDetails.map((detail) => (
-               <Item key={detail.title}>
-                  {detail.showIcon && (
-                     <ItemMedia variant="icon">
-                        <Monitor className="size-4" />
-                     </ItemMedia>
-                  )}
-                  <ItemContent>
-                     <ItemTitle>
-                        {detail.title}
-                        {detail.isCurrent && (
-                           <Badge className="ml-2">
-                              <CheckCircle2 className="w-4 h-4 mr-1" />
-                              Sessão atual
-                           </Badge>
-                        )}
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody>
+            <ItemGroup>
+               {sessionDetails.map((detail) => (
+                  <Item key={detail.title}>
+                     {detail.showIcon && (
+                        <ItemMedia variant="icon">
+                           <Monitor className="size-4" />
+                        </ItemMedia>
+                     )}
+                     <ItemContent>
+                        <ItemTitle>
+                           {detail.title}
+                           {detail.isCurrent && (
+                              <Badge className="ml-2">
+                                 <CheckCircle2 className="w-4 h-4 mr-1" />
+                                 Sessão atual
+                              </Badge>
+                           )}
+                        </ItemTitle>
+                        <ItemDescription>{detail.value}</ItemDescription>
+                     </ItemContent>
+                  </Item>
+               ))}
+            </ItemGroup>
+            <Separator />
+            <CredenzaHeader>
+               <CredenzaTitle>Ações</CredenzaTitle>
+               <CredenzaDescription>Gerencie esta sessão</CredenzaDescription>
+            </CredenzaHeader>
+            <ItemGroup className="px-4">
+               <Item
+                  aria-label="Encerrar Esta Sessão"
+                  className="cursor-pointer"
+                  onClick={handleRevokeClick}
+                  variant="outline"
+               >
+                  <ItemMedia variant="icon">
+                     <Trash2 className="w-4 h-4 text-destructive" />
+                  </ItemMedia>
+                  <ItemContent className="gap-1">
+                     <ItemTitle className="text-destructive">
+                        Encerrar Esta Sessão
                      </ItemTitle>
-                     <ItemDescription>{detail.value}</ItemDescription>
+                     <ItemDescription>
+                        Você será desconectado do sistema
+                     </ItemDescription>
                   </ItemContent>
+                  <ItemActions>
+                     <ArrowRight className="size-4 text-destructive" />
+                  </ItemActions>
                </Item>
-            ))}
-         </ItemGroup>
-         <Separator />
-         <DialogStackHeader>
-            <DialogStackTitle>Ações</DialogStackTitle>
-            <DialogStackDescription>
-               Gerencie esta sessão
-            </DialogStackDescription>
-         </DialogStackHeader>
-         <ItemGroup className="px-4">
-            <Item
-               aria-label="Encerrar Esta Sessão"
-               className="cursor-pointer"
-               onClick={handleRevokeClick}
-               variant="outline"
-            >
-               <ItemMedia variant="icon">
-                  <Trash2 className="w-4 h-4 text-destructive" />
-               </ItemMedia>
-               <ItemContent className="gap-1">
-                  <ItemTitle className="text-destructive">
-                     Encerrar Esta Sessão
-                  </ItemTitle>
-                  <ItemDescription>
-                     Você será desconectado do sistema
-                  </ItemDescription>
-               </ItemContent>
-               <ItemActions>
-                  <ArrowRight className="size-4 text-destructive" />
-               </ItemActions>
-            </Item>
-         </ItemGroup>
-      </DialogStackContent>
+            </ItemGroup>
+         </CredenzaBody>
+      </>
    );
 }

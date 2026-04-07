@@ -1,27 +1,47 @@
 import { Button } from "@packages/ui/components/button";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import type {
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
+import { createFileRoute } from "@tanstack/react-router";
 import { Download, Plus, Upload } from "lucide-react";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
+import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
 import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import { useTransactionPrerequisites } from "@/features/transactions/hooks/use-transaction-prerequisites";
 import { TransactionDialogStack } from "@/features/transactions/ui/transaction-dialog-stack";
-import { TransactionExportDialogStack } from "@/features/transactions/ui/transaction-export-dialog-stack";
+import { TransactionExportCredenza } from "@/features/transactions/ui/transaction-export-credenza";
 import {
    DEFAULT_FILTERS,
    TransactionFilterBar,
    type TransactionFilters,
 } from "@/features/transactions/ui/transaction-filter-bar";
-import { TransactionImportDialogStack } from "@/features/transactions/ui/transaction-import-dialog-stack";
+import { StatementImportCredenza } from "./-transactions/statement-import-credenza";
 import { TransactionPrerequisitesBlocker } from "@/features/transactions/ui/transaction-prerequisites-blocker";
 import { TransactionsList } from "@/features/transactions/ui/transactions-list";
 import { TransactionsSkeleton } from "@/features/transactions/ui/transactions-skeleton";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
+
+const transactionsSearchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .optional()
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .optional()
+      .default([]),
+});
+
+type TransactionsSearch = z.infer<typeof transactionsSearchSchema>;
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/transactions",
 )({
+   validateSearch: transactionsSearchSchema,
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(
          orpc.bankAccounts.getAll.queryOptions({}),
@@ -51,19 +71,49 @@ export const Route = createFileRoute(
 });
 
 function TransactionsPage() {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
-   const navigate = useNavigate();
+   const { openCredenza, closeCredenza } = useCredenza();
+   const navigate = Route.useNavigate();
    const { slug, teamSlug } = Route.useParams();
+   const { currentTeam } = Route.useRouteContext();
    const { hasBankAccounts } = useTransactionPrerequisites();
    const [filters, setFilters] = useState<TransactionFilters>(DEFAULT_FILTERS);
+   const { sorting, columnFilters } = Route.useSearch();
+
+   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
+      (updater) => {
+         const next =
+            typeof updater === "function" ? updater(sorting) : updater;
+         navigate({
+            search: (prev: TransactionsSearch) => ({ ...prev, sorting: next }),
+            replace: true,
+         });
+      },
+      [sorting, navigate],
+   );
+
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
+      useCallback(
+         (updater) => {
+            const next =
+               typeof updater === "function" ? updater(columnFilters) : updater;
+            navigate({
+               search: (prev: TransactionsSearch) => ({
+                  ...prev,
+                  columnFilters: next,
+               }),
+               replace: true,
+            });
+         },
+         [columnFilters, navigate],
+      );
 
    const handleCreate = useCallback(() => {
       if (!hasBankAccounts) {
-         openDialogStack({
+         openCredenza({
             children: (
                <TransactionPrerequisitesBlocker
                   onAction={() => {
-                     closeDialogStack();
+                     closeCredenza();
                      navigate({
                         to: "/$slug/$teamSlug/bank-accounts",
                         params: { slug, teamSlug },
@@ -74,42 +124,24 @@ function TransactionsPage() {
          });
          return;
       }
-      openDialogStack({
+      openCredenza({
          children: (
-            <TransactionDialogStack
-               mode="create"
-               onSuccess={closeDialogStack}
-            />
+            <TransactionDialogStack mode="create" onSuccess={closeCredenza} />
          ),
       });
-   }, [
-      hasBankAccounts,
-      openDialogStack,
-      closeDialogStack,
-      navigate,
-      slug,
-      teamSlug,
-   ]);
-
-   useEffect(() => {
-      const handler = (e: Event) => {
-         const detail = (e as CustomEvent<{ itemId: string }>).detail;
-         if (detail.itemId === "transactions") {
-            handleCreate();
-         }
-      };
-      window.addEventListener("sidebar:quick-create", handler);
-      return () => window.removeEventListener("sidebar:quick-create", handler);
-   }, [handleCreate]);
+   }, [hasBankAccounts, openCredenza, closeCredenza, navigate, slug, teamSlug]);
 
    const panelActions: PanelAction[] = [
       {
          icon: Upload,
          label: "Importar",
          onClick: () =>
-            openDialogStack({
+            openCredenza({
                children: (
-                  <TransactionImportDialogStack onClose={closeDialogStack} />
+                  <StatementImportCredenza
+                     teamId={currentTeam.id}
+                     onClose={closeCredenza}
+                  />
                ),
             }),
       },
@@ -117,12 +149,12 @@ function TransactionsPage() {
          icon: Download,
          label: "Exportar",
          onClick: () =>
-            openDialogStack({
+            openCredenza({
                children: (
-                  <TransactionExportDialogStack
+                  <TransactionExportCredenza
                      dateFrom={filters.dateFrom}
                      dateTo={filters.dateTo}
-                     onClose={closeDialogStack}
+                     onClose={closeCredenza}
                   />
                ),
             }),
@@ -147,11 +179,15 @@ function TransactionsPage() {
          <TransactionFilterBar filters={filters} onFiltersChange={setFilters} />
          <Suspense fallback={<TransactionsSkeleton />}>
             <TransactionsList
+               columnFilters={columnFilters}
                filters={filters}
+               onColumnFiltersChange={handleColumnFiltersChange}
                onPageChange={(page) => setFilters((f) => ({ ...f, page }))}
                onPageSizeChange={(pageSize) =>
                   setFilters((f) => ({ ...f, pageSize, page: 1 }))
                }
+               onSortingChange={handleSortingChange}
+               sorting={sorting}
             />
          </Suspense>
       </main>

@@ -83,8 +83,9 @@ function EstoqueSettingsForm() {
             </div>
 
             <div className="flex flex-col gap-4">
-               <form.Field name="purchaseBankAccountId">
-                  {(field) => (
+               <form.Field
+                  name="purchaseBankAccountId"
+                  children={(field) => (
                      <div className="flex flex-col gap-2">
                         <Label htmlFor={field.name}>
                            Conta bancária padrão (compras)
@@ -106,10 +107,11 @@ function EstoqueSettingsForm() {
                         </Select>
                      </div>
                   )}
-               </form.Field>
+               />
 
-               <form.Field name="purchaseCreditCardId">
-                  {(field) => (
+               <form.Field
+                  name="purchaseCreditCardId"
+                  children={(field) => (
                      <div className="flex flex-col gap-2">
                         <Label htmlFor={field.name}>
                            Cartão de crédito padrão (compras)
@@ -131,10 +133,11 @@ function EstoqueSettingsForm() {
                         </Select>
                      </div>
                   )}
-               </form.Field>
+               />
 
-               <form.Field name="purchaseCategoryId">
-                  {(field) => (
+               <form.Field
+                  name="purchaseCategoryId"
+                  children={(field) => (
                      <div className="flex flex-col gap-2">
                         <Label htmlFor={field.name}>
                            Categoria para compras
@@ -156,10 +159,11 @@ function EstoqueSettingsForm() {
                         </Select>
                      </div>
                   )}
-               </form.Field>
+               />
 
-               <form.Field name="saleCategoryId">
-                  {(field) => (
+               <form.Field
+                  name="saleCategoryId"
+                  children={(field) => (
                      <div className="flex flex-col gap-2">
                         <Label htmlFor={field.name}>
                            Categoria para vendas
@@ -181,10 +185,11 @@ function EstoqueSettingsForm() {
                         </Select>
                      </div>
                   )}
-               </form.Field>
+               />
 
-               <form.Field name="wasteCategoryId">
-                  {(field) => (
+               <form.Field
+                  name="wasteCategoryId"
+                  children={(field) => (
                      <div className="flex flex-col gap-2">
                         <Label htmlFor={field.name}>
                            Categoria para descartes
@@ -206,7 +211,7 @@ function EstoqueSettingsForm() {
                         </Select>
                      </div>
                   )}
-               </form.Field>
+               />
             </div>
 
             <form.Subscribe selector={(s) => s.isSubmitting}>

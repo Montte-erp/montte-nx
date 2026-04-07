@@ -11,15 +11,12 @@ import {
    FieldLabel,
 } from "@packages/ui/components/field";
 import {
-   DialogStackContext,
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackFooter,
-   DialogStackHeader,
-   DialogStackNext,
-   DialogStackPrevious,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Input } from "@packages/ui/components/input";
 import { MoneyInput } from "@packages/ui/components/money-input";
 import {
@@ -37,10 +34,9 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { ChevronLeft, Plus } from "lucide-react";
-import { Suspense, useContext, useState } from "react";
+import { Suspense, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { useAccountType } from "@/hooks/use-account-type";
 import { orpc } from "@/integrations/orpc/client";
 import type { TransactionRow } from "./transactions-columns";
 
@@ -93,9 +89,6 @@ function TagCombobox({
    onChange: (ids: string[]) => void;
 }) {
    const { data: tags } = useSuspenseQuery(orpc.tags.getAll.queryOptions({}));
-   const { isBusiness } = useAccountType();
-
-   const label = isBusiness ? "centro de custo" : "tag";
 
    return (
       <div className="flex flex-col gap-2">
@@ -130,7 +123,7 @@ function TagCombobox({
             })}
          </div>
          <p className="text-xs text-muted-foreground">
-            Use o botão + para criar {label}s
+            Use o botão + para criar centros de custos
          </p>
       </div>
    );
@@ -190,36 +183,38 @@ function NovaConta({
    });
 
    return (
-      <div className="flex flex-col gap-4">
-         <DialogStackHeader>
+      <form
+         onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+         }}
+      >
+         <CredenzaHeader>
             <div className="flex items-center gap-2">
-               <DialogStackPrevious asChild>
-                  <button onClick={onBack} type="button">
-                     <ChevronLeft className="size-4" />
-                  </button>
-               </DialogStackPrevious>
-               <DialogStackTitle>Nova Conta</DialogStackTitle>
+               <button onClick={onBack} type="button">
+                  <ChevronLeft className="size-4" />
+               </button>
+               <CredenzaTitle>Nova Conta</CredenzaTitle>
             </div>
-         </DialogStackHeader>
-         <form
-            onSubmit={(e) => {
-               e.preventDefault();
-               e.stopPropagation();
-               form.handleSubmit();
-            }}
-         >
+         </CredenzaHeader>
+         <CredenzaBody className="px-4">
             <FieldGroup>
                <form.Field
                   name="name"
                   validators={{ onBlur: requiredStringSchema }}
-               >
-                  {(field) => (
+                  children={(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
                            Nome <span className="text-destructive">*</span>
                         </FieldLabel>
                         <Input
                            id={field.name}
+                           name={field.name}
+                           aria-invalid={
+                              field.state.meta.isTouched &&
+                              field.state.meta.errors.length > 0
+                           }
                            onBlur={field.handleBlur}
                            onChange={(e) => field.handleChange(e.target.value)}
                            placeholder="Ex: Nubank, Bradesco"
@@ -228,9 +223,10 @@ function NovaConta({
                         <FieldError errors={field.state.meta.errors} />
                      </Field>
                   )}
-               </form.Field>
-               <form.Field name="accountType">
-                  {(field) => (
+               />
+               <form.Field
+                  name="accountType"
+                  children={(field) => (
                      <Field>
                         <FieldLabel>Tipo de conta</FieldLabel>
                         <Select
@@ -254,26 +250,26 @@ function NovaConta({
                         </Select>
                      </Field>
                   )}
-               </form.Field>
+               />
             </FieldGroup>
-            <DialogStackFooter>
-               <form.Subscribe selector={(s) => ({ canSubmit: s.canSubmit })}>
-                  {({ canSubmit }) => (
-                     <Button
-                        className="w-full"
-                        disabled={!canSubmit || mutation.isPending}
-                        type="submit"
-                     >
-                        {mutation.isPending ? (
-                           <Spinner className="size-4 mr-2" />
-                        ) : null}
-                        Criar conta
-                     </Button>
-                  )}
-               </form.Subscribe>
-            </DialogStackFooter>
-         </form>
-      </div>
+         </CredenzaBody>
+         <CredenzaFooter>
+            <form.Subscribe selector={(s) => ({ canSubmit: s.canSubmit })}>
+               {({ canSubmit }) => (
+                  <Button
+                     className="w-full"
+                     disabled={!canSubmit || mutation.isPending}
+                     type="submit"
+                  >
+                     {mutation.isPending ? (
+                        <Spinner className="size-4 mr-2" />
+                     ) : null}
+                     Criar conta
+                  </Button>
+               )}
+            </form.Subscribe>
+         </CredenzaFooter>
+      </form>
    );
 }
 
@@ -318,36 +314,38 @@ function NovoCartao({
    });
 
    return (
-      <div className="flex flex-col gap-4">
-         <DialogStackHeader>
+      <form
+         onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+         }}
+      >
+         <CredenzaHeader>
             <div className="flex items-center gap-2">
-               <DialogStackPrevious asChild>
-                  <button onClick={onBack} type="button">
-                     <ChevronLeft className="size-4" />
-                  </button>
-               </DialogStackPrevious>
-               <DialogStackTitle>Novo Cartão</DialogStackTitle>
+               <button onClick={onBack} type="button">
+                  <ChevronLeft className="size-4" />
+               </button>
+               <CredenzaTitle>Novo Cartão</CredenzaTitle>
             </div>
-         </DialogStackHeader>
-         <form
-            onSubmit={(e) => {
-               e.preventDefault();
-               e.stopPropagation();
-               form.handleSubmit();
-            }}
-         >
+         </CredenzaHeader>
+         <CredenzaBody className="px-4">
             <FieldGroup>
                <form.Field
                   name="name"
                   validators={{ onBlur: requiredStringSchema }}
-               >
-                  {(field) => (
+                  children={(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
                            Nome <span className="text-destructive">*</span>
                         </FieldLabel>
                         <Input
                            id={field.name}
+                           name={field.name}
+                           aria-invalid={
+                              field.state.meta.isTouched &&
+                              field.state.meta.errors.length > 0
+                           }
                            onBlur={field.handleBlur}
                            onChange={(e) => field.handleChange(e.target.value)}
                            placeholder="Ex: Nubank, Visa"
@@ -356,12 +354,11 @@ function NovoCartao({
                         <FieldError errors={field.state.meta.errors} />
                      </Field>
                   )}
-               </form.Field>
+               />
                <form.Field
                   name="bankAccountId"
                   validators={{ onBlur: bankAccountIdSchema }}
-               >
-                  {(field) => (
+                  children={(field) => (
                      <Field>
                         <FieldLabel>
                            Conta vinculada{" "}
@@ -382,16 +379,21 @@ function NovoCartao({
                         <FieldError errors={field.state.meta.errors} />
                      </Field>
                   )}
-               </form.Field>
+               />
                <div className="grid grid-cols-2 gap-4">
                   <form.Field
                      name="closingDay"
                      validators={{ onBlur: daySchema }}
-                  >
-                     {(field) => (
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Dia de fechamento</FieldLabel>
                            <Input
+                              id={field.name}
+                              name={field.name}
+                              aria-invalid={
+                                 field.state.meta.isTouched &&
+                                 field.state.meta.errors.length > 0
+                              }
                               max={31}
                               min={1}
                               onBlur={field.handleBlur}
@@ -404,12 +406,20 @@ function NovoCartao({
                            <FieldError errors={field.state.meta.errors} />
                         </Field>
                      )}
-                  </form.Field>
-                  <form.Field name="dueDay" validators={{ onBlur: daySchema }}>
-                     {(field) => (
+                  />
+                  <form.Field
+                     name="dueDay"
+                     validators={{ onBlur: daySchema }}
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Dia de vencimento</FieldLabel>
                            <Input
+                              id={field.name}
+                              name={field.name}
+                              aria-invalid={
+                                 field.state.meta.isTouched &&
+                                 field.state.meta.errors.length > 0
+                              }
                               max={31}
                               min={1}
                               onBlur={field.handleBlur}
@@ -422,27 +432,27 @@ function NovoCartao({
                            <FieldError errors={field.state.meta.errors} />
                         </Field>
                      )}
-                  </form.Field>
+                  />
                </div>
             </FieldGroup>
-            <DialogStackFooter>
-               <form.Subscribe selector={(s) => ({ canSubmit: s.canSubmit })}>
-                  {({ canSubmit }) => (
-                     <Button
-                        className="w-full"
-                        disabled={!canSubmit || mutation.isPending}
-                        type="submit"
-                     >
-                        {mutation.isPending ? (
-                           <Spinner className="size-4 mr-2" />
-                        ) : null}
-                        Criar cartão
-                     </Button>
-                  )}
-               </form.Subscribe>
-            </DialogStackFooter>
-         </form>
-      </div>
+         </CredenzaBody>
+         <CredenzaFooter>
+            <form.Subscribe selector={(s) => ({ canSubmit: s.canSubmit })}>
+               {({ canSubmit }) => (
+                  <Button
+                     className="w-full"
+                     disabled={!canSubmit || mutation.isPending}
+                     type="submit"
+                  >
+                     {mutation.isPending ? (
+                        <Spinner className="size-4 mr-2" />
+                     ) : null}
+                     Criar cartão
+                  </Button>
+               )}
+            </form.Subscribe>
+         </CredenzaFooter>
+      </form>
    );
 }
 
@@ -468,36 +478,38 @@ function NovoContato({
    });
 
    return (
-      <div className="flex flex-col gap-4">
-         <DialogStackHeader>
+      <form
+         onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+         }}
+      >
+         <CredenzaHeader>
             <div className="flex items-center gap-2">
-               <DialogStackPrevious asChild>
-                  <button onClick={onBack} type="button">
-                     <ChevronLeft className="size-4" />
-                  </button>
-               </DialogStackPrevious>
-               <DialogStackTitle>Novo Contato</DialogStackTitle>
+               <button onClick={onBack} type="button">
+                  <ChevronLeft className="size-4" />
+               </button>
+               <CredenzaTitle>Novo Contato</CredenzaTitle>
             </div>
-         </DialogStackHeader>
-         <form
-            onSubmit={(e) => {
-               e.preventDefault();
-               e.stopPropagation();
-               form.handleSubmit();
-            }}
-         >
+         </CredenzaHeader>
+         <CredenzaBody className="px-4">
             <FieldGroup>
                <form.Field
                   name="name"
                   validators={{ onBlur: requiredStringSchema }}
-               >
-                  {(field) => (
+                  children={(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
                            Nome <span className="text-destructive">*</span>
                         </FieldLabel>
                         <Input
                            id={field.name}
+                           name={field.name}
+                           aria-invalid={
+                              field.state.meta.isTouched &&
+                              field.state.meta.errors.length > 0
+                           }
                            onBlur={field.handleBlur}
                            onChange={(e) => field.handleChange(e.target.value)}
                            placeholder="Ex: João Silva"
@@ -506,26 +518,26 @@ function NovoContato({
                         <FieldError errors={field.state.meta.errors} />
                      </Field>
                   )}
-               </form.Field>
+               />
             </FieldGroup>
-            <DialogStackFooter>
-               <form.Subscribe selector={(s) => ({ canSubmit: s.canSubmit })}>
-                  {({ canSubmit }) => (
-                     <Button
-                        className="w-full"
-                        disabled={!canSubmit || mutation.isPending}
-                        type="submit"
-                     >
-                        {mutation.isPending ? (
-                           <Spinner className="size-4 mr-2" />
-                        ) : null}
-                        Criar contato
-                     </Button>
-                  )}
-               </form.Subscribe>
-            </DialogStackFooter>
-         </form>
-      </div>
+         </CredenzaBody>
+         <CredenzaFooter>
+            <form.Subscribe selector={(s) => ({ canSubmit: s.canSubmit })}>
+               {({ canSubmit }) => (
+                  <Button
+                     className="w-full"
+                     disabled={!canSubmit || mutation.isPending}
+                     type="submit"
+                  >
+                     {mutation.isPending ? (
+                        <Spinner className="size-4 mr-2" />
+                     ) : null}
+                     Criar contato
+                  </Button>
+               )}
+            </form.Subscribe>
+         </CredenzaFooter>
+      </form>
    );
 }
 
@@ -553,36 +565,38 @@ function NovaCategoria({
    });
 
    return (
-      <div className="flex flex-col gap-4">
-         <DialogStackHeader>
+      <form
+         onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+         }}
+      >
+         <CredenzaHeader>
             <div className="flex items-center gap-2">
-               <DialogStackPrevious asChild>
-                  <button onClick={onBack} type="button">
-                     <ChevronLeft className="size-4" />
-                  </button>
-               </DialogStackPrevious>
-               <DialogStackTitle>Nova Categoria</DialogStackTitle>
+               <button onClick={onBack} type="button">
+                  <ChevronLeft className="size-4" />
+               </button>
+               <CredenzaTitle>Nova Categoria</CredenzaTitle>
             </div>
-         </DialogStackHeader>
-         <form
-            onSubmit={(e) => {
-               e.preventDefault();
-               e.stopPropagation();
-               form.handleSubmit();
-            }}
-         >
+         </CredenzaHeader>
+         <CredenzaBody className="px-4">
             <FieldGroup>
                <form.Field
                   name="name"
                   validators={{ onBlur: requiredStringSchema }}
-               >
-                  {(field) => (
+                  children={(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
                            Nome <span className="text-destructive">*</span>
                         </FieldLabel>
                         <Input
                            id={field.name}
+                           name={field.name}
+                           aria-invalid={
+                              field.state.meta.isTouched &&
+                              field.state.meta.errors.length > 0
+                           }
                            onBlur={field.handleBlur}
                            onChange={(e) => field.handleChange(e.target.value)}
                            placeholder="Ex: Alimentação, Transporte"
@@ -591,26 +605,26 @@ function NovaCategoria({
                         <FieldError errors={field.state.meta.errors} />
                      </Field>
                   )}
-               </form.Field>
+               />
             </FieldGroup>
-            <DialogStackFooter>
-               <form.Subscribe selector={(s) => ({ canSubmit: s.canSubmit })}>
-                  {({ canSubmit }) => (
-                     <Button
-                        className="w-full"
-                        disabled={!canSubmit || mutation.isPending}
-                        type="submit"
-                     >
-                        {mutation.isPending ? (
-                           <Spinner className="size-4 mr-2" />
-                        ) : null}
-                        Criar categoria
-                     </Button>
-                  )}
-               </form.Subscribe>
-            </DialogStackFooter>
-         </form>
-      </div>
+         </CredenzaBody>
+         <CredenzaFooter>
+            <form.Subscribe selector={(s) => ({ canSubmit: s.canSubmit })}>
+               {({ canSubmit }) => (
+                  <Button
+                     className="w-full"
+                     disabled={!canSubmit || mutation.isPending}
+                     type="submit"
+                  >
+                     {mutation.isPending ? (
+                        <Spinner className="size-4 mr-2" />
+                     ) : null}
+                     Criar categoria
+                  </Button>
+               )}
+            </form.Subscribe>
+         </CredenzaFooter>
+      </form>
    );
 }
 
@@ -621,12 +635,10 @@ function NovaTag({
    onSuccess: (id: string) => void;
    onBack: () => void;
 }) {
-   const { isBusiness } = useAccountType();
-   const label = isBusiness ? "Centro de Custo" : "Tag";
    const mutation = useMutation(
       orpc.tags.create.mutationOptions({
          onSuccess: (data) => {
-            toast.success(`${label} criada.`);
+            toast.success("Centro de Custo criada.");
             onSuccess(data.id);
          },
       }),
@@ -637,64 +649,66 @@ function NovaTag({
    });
 
    return (
-      <div className="flex flex-col gap-4">
-         <DialogStackHeader>
+      <form
+         onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+         }}
+      >
+         <CredenzaHeader>
             <div className="flex items-center gap-2">
-               <DialogStackPrevious asChild>
-                  <button onClick={onBack} type="button">
-                     <ChevronLeft className="size-4" />
-                  </button>
-               </DialogStackPrevious>
-               <DialogStackTitle>Nova {label}</DialogStackTitle>
+               <button onClick={onBack} type="button">
+                  <ChevronLeft className="size-4" />
+               </button>
+               <CredenzaTitle>Novo Centro de Custo</CredenzaTitle>
             </div>
-         </DialogStackHeader>
-         <form
-            onSubmit={(e) => {
-               e.preventDefault();
-               e.stopPropagation();
-               form.handleSubmit();
-            }}
-         >
+         </CredenzaHeader>
+         <CredenzaBody className="px-4">
             <FieldGroup>
                <form.Field
                   name="name"
                   validators={{ onBlur: requiredStringSchema }}
-               >
-                  {(field) => (
+                  children={(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
                            Nome <span className="text-destructive">*</span>
                         </FieldLabel>
                         <Input
                            id={field.name}
+                           name={field.name}
+                           aria-invalid={
+                              field.state.meta.isTouched &&
+                              field.state.meta.errors.length > 0
+                           }
                            onBlur={field.handleBlur}
                            onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder={`Ex: Marketing, Pessoal`}
+                           placeholder="Ex: Marketing, Pessoal"
                            value={field.state.value}
                         />
                         <FieldError errors={field.state.meta.errors} />
                      </Field>
                   )}
-               </form.Field>
+               />
             </FieldGroup>
-            <DialogStackFooter>
-               <form.Subscribe selector={(s) => ({ canSubmit: s.canSubmit })}>
-                  {({ canSubmit }) => (
-                     <Button
-                        className="w-full"
-                        disabled={!canSubmit || mutation.isPending}
-                        type="submit"
-                     >
-                        {mutation.isPending ? (
-                           <Spinner className="size-4 mr-2" />
-                        ) : null}
-                        Criar {label.toLowerCase()}
-                     </Button>
-                  )}
-               </form.Subscribe>
-            </DialogStackFooter>
-         </form>
-      </div>
+         </CredenzaBody>
+         <CredenzaFooter>
+            <form.Subscribe selector={(s) => ({ canSubmit: s.canSubmit })}>
+               {({ canSubmit }) => (
+                  <Button
+                     className="w-full"
+                     disabled={!canSubmit || mutation.isPending}
+                     type="submit"
+                  >
+                     {mutation.isPending ? (
+                        <Spinner className="size-4 mr-2" />
+                     ) : null}
+                     Criar centro de custo
+                  </Button>
+               )}
+            </form.Subscribe>
+         </CredenzaFooter>
+      </form>
    );
 }
 
@@ -704,9 +718,7 @@ function TransactionDialogStackContent({
    onSuccess,
 }: TransactionCredenzaProps) {
    const isCreate = mode === "create";
-   const { isBusiness } = useAccountType();
    const [secondaryForm, setSecondaryForm] = useState<SecondaryForm>(null);
-   const { setActiveIndex } = useContext(DialogStackContext);
 
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
@@ -846,1220 +858,1121 @@ function TransactionDialogStackContent({
       },
    });
 
+   if (secondaryForm) {
+      return (
+         <>
+            {secondaryForm.type === "bankAccount" && (
+               <NovaConta
+                  onBack={() => setSecondaryForm(null)}
+                  onSuccess={(id) => {
+                     form.setFieldValue("bankAccountId", id);
+                     setSecondaryForm(null);
+                  }}
+               />
+            )}
+            {secondaryForm.type === "creditCard" && (
+               <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+                  <NovoCartao
+                     onBack={() => setSecondaryForm(null)}
+                     onSuccess={(id) => {
+                        form.setFieldValue("creditCardId", id);
+                        setSecondaryForm(null);
+                     }}
+                  />
+               </Suspense>
+            )}
+            {secondaryForm.type === "contact" && (
+               <NovoContato
+                  onBack={() => setSecondaryForm(null)}
+                  onSuccess={(id) => {
+                     form.setFieldValue("contactId", id);
+                     setSecondaryForm(null);
+                  }}
+               />
+            )}
+            {secondaryForm.type === "category" && (
+               <NovaCategoria
+                  onBack={() => setSecondaryForm(null)}
+                  onSuccess={(id) => {
+                     form.setFieldValue("categoryId", id);
+                     setSecondaryForm(null);
+                  }}
+                  transactionType={secondaryForm.transactionType}
+               />
+            )}
+            {secondaryForm.type === "tag" && (
+               <NovaTag
+                  onBack={() => setSecondaryForm(null)}
+                  onSuccess={(id) => {
+                     form.setFieldValue("tagIds", [
+                        ...form.getFieldValue("tagIds"),
+                        id,
+                     ]);
+                     form.setFieldMeta("tagIds", (prev) => ({
+                        ...prev,
+                        isTouched: true,
+                     }));
+                     setSecondaryForm(null);
+                  }}
+               />
+            )}
+         </>
+      );
+   }
+
    return (
-      <>
-         <DialogStackContent index={0}>
-            <DialogStackHeader>
-               <DialogStackTitle>
-                  {isCreate ? "Novo Lançamento" : "Editar Lançamento"}
-               </DialogStackTitle>
-               <DialogStackDescription>
-                  {isCreate
-                     ? "Registre um novo lançamento financeiro."
-                     : "Atualize os dados do lançamento."}
-               </DialogStackDescription>
-            </DialogStackHeader>
+      <form
+         onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+         }}
+      >
+         <CredenzaHeader>
+            <CredenzaTitle>
+               {isCreate ? "Novo Lançamento" : "Editar Lançamento"}
+            </CredenzaTitle>
+            <CredenzaDescription>
+               {isCreate
+                  ? "Registre um novo lançamento financeiro."
+                  : "Atualize os dados do lançamento."}
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody className="px-4">
+            <FieldGroup>
+               <div className="grid grid-cols-[3fr_2fr] gap-4">
+                  <form.Field
+                     name="name"
+                     children={(field) => (
+                        <Field>
+                           <FieldLabel htmlFor={field.name}>
+                              Nome <span className="text-destructive">*</span>
+                           </FieldLabel>
+                           <Input
+                              id={field.name}
+                              name={field.name}
+                              aria-invalid={
+                                 field.state.meta.isTouched &&
+                                 field.state.meta.errors.length > 0
+                              }
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              placeholder="Ex: Almoço, Salário"
+                              value={field.state.value}
+                           />
+                        </Field>
+                     )}
+                  />
 
-            <form
-               className="flex flex-1 flex-col overflow-hidden"
-               onSubmit={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  form.handleSubmit();
-               }}
-            >
-               <div className="flex-1 overflow-y-auto px-4 py-4">
-                  <FieldGroup>
-                     <div className="grid grid-cols-[3fr_2fr] gap-4">
-                        <form.Field name="name">
-                           {(field) => (
-                              <Field>
-                                 <FieldLabel htmlFor={field.name}>
-                                    Nome{" "}
-                                    <span className="text-destructive">*</span>
-                                 </FieldLabel>
-                                 <Input
-                                    id={field.name}
-                                    onBlur={field.handleBlur}
-                                    onChange={(e) =>
-                                       field.handleChange(e.target.value)
-                                    }
-                                    placeholder="Ex: Almoço, Salário"
-                                    value={field.state.value}
-                                 />
-                              </Field>
-                           )}
-                        </form.Field>
-
-                        <form.Field name="type">
-                           {(field) => (
-                              <Field>
-                                 <FieldLabel>
-                                    Tipo{" "}
-                                    <span className="text-destructive">*</span>
-                                 </FieldLabel>
-                                 <Select
-                                    onValueChange={(v) => {
-                                       field.handleChange(v as TransactionType);
-                                       if (v === "transfer") {
+                  <form.Field
+                     name="type"
+                     children={(field) => (
+                        <Field>
+                           <FieldLabel>
+                              Tipo <span className="text-destructive">*</span>
+                           </FieldLabel>
+                           <Select
+                              onValueChange={(v) => {
+                                 field.handleChange(v as TransactionType);
+                                 if (v === "transfer") {
+                                    form.setFieldValue("categoryId", "");
+                                    form.setFieldValue("subcategoryId", "");
+                                    form.setFieldValue("paymentMethod", "");
+                                    form.setFieldValue("isInstallment", false);
+                                    form.setFieldValue(
+                                       "installmentCount",
+                                       null,
+                                    );
+                                    form.setFieldValue("isRecurring", false);
+                                    form.setFieldValue(
+                                       "recurringFrequency",
+                                       null,
+                                    );
+                                    form.setFieldValue("recurringCount", null);
+                                    form.setFieldValue("creditCardId", "");
+                                    form.setFieldValue("contactId", null);
+                                 } else {
+                                    const currentCatId =
+                                       form.getFieldValue("categoryId");
+                                    if (currentCatId) {
+                                       const cat = categories.find(
+                                          (c) => c.id === currentCatId,
+                                       );
+                                       if (cat?.type && cat.type !== v) {
                                           form.setFieldValue("categoryId", "");
                                           form.setFieldValue(
                                              "subcategoryId",
                                              "",
                                           );
-                                          form.setFieldValue(
-                                             "paymentMethod",
-                                             "",
-                                          );
-                                          form.setFieldValue(
-                                             "isInstallment",
-                                             false,
-                                          );
-                                          form.setFieldValue(
-                                             "installmentCount",
-                                             null,
-                                          );
-                                          form.setFieldValue(
-                                             "isRecurring",
-                                             false,
-                                          );
-                                          form.setFieldValue(
-                                             "recurringFrequency",
-                                             null,
-                                          );
-                                          form.setFieldValue(
-                                             "recurringCount",
-                                             null,
-                                          );
-                                          form.setFieldValue(
-                                             "creditCardId",
-                                             "",
-                                          );
-                                          form.setFieldValue("contactId", null);
-                                       } else {
-                                          const currentCatId =
-                                             form.getFieldValue("categoryId");
-                                          if (currentCatId) {
-                                             const cat = categories.find(
-                                                (c) => c.id === currentCatId,
-                                             );
-                                             if (cat?.type && cat.type !== v) {
-                                                form.setFieldValue(
-                                                   "categoryId",
-                                                   "",
-                                                );
-                                                form.setFieldValue(
-                                                   "subcategoryId",
-                                                   "",
-                                                );
-                                             }
-                                          }
                                        }
-                                    }}
-                                    value={field.state.value}
-                                 >
-                                    <SelectTrigger>
-                                       <SelectValue placeholder="Tipo" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                       <SelectItem value="income">
-                                          Receita
-                                       </SelectItem>
-                                       <SelectItem value="expense">
-                                          Despesa
-                                       </SelectItem>
-                                       <SelectItem value="transfer">
-                                          Transferência
-                                       </SelectItem>
-                                    </SelectContent>
-                                 </Select>
-                              </Field>
-                           )}
-                        </form.Field>
-                     </div>
+                                    }
+                                 }
+                              }}
+                              value={field.state.value}
+                           >
+                              <SelectTrigger>
+                                 <SelectValue placeholder="Tipo" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 <SelectItem value="income">Receita</SelectItem>
+                                 <SelectItem value="expense">
+                                    Despesa
+                                 </SelectItem>
+                                 <SelectItem value="transfer">
+                                    Transferência
+                                 </SelectItem>
+                              </SelectContent>
+                           </Select>
+                        </Field>
+                     )}
+                  />
+               </div>
 
-                     <form.Subscribe
-                        selector={(s) => ({
-                           type: s.values.type,
-                           bankAccountId: s.values.bankAccountId,
-                           categoryId: s.values.categoryId,
-                        })}
-                     >
-                        {({ type, bankAccountId, categoryId }) => {
-                           const isTransfer = type === "transfer";
-                           const selectedSubcategories = categories.filter(
-                              (c) => c.parentId === categoryId,
-                           );
+               <form.Subscribe
+                  selector={(s) => ({
+                     type: s.values.type,
+                     bankAccountId: s.values.bankAccountId,
+                     categoryId: s.values.categoryId,
+                  })}
+               >
+                  {({ type, bankAccountId, categoryId }) => {
+                     const isTransfer = type === "transfer";
+                     const selectedSubcategories = categories.filter(
+                        (c) => c.parentId === categoryId,
+                     );
 
-                           return (
+                     return (
+                        <>
+                           {isTransfer ? (
                               <>
-                                 {isTransfer ? (
-                                    <>
-                                       <div className="grid grid-cols-2 gap-4">
-                                          <form.Field
-                                             name="date"
-                                             validators={{
-                                                onSubmit: requiredDateSchema,
-                                             }}
-                                          >
-                                             {(field) => {
-                                                const isInvalid =
-                                                   field.state.meta.isTouched &&
-                                                   !field.state.meta.isValid;
-                                                return (
-                                                   <Field
-                                                      data-invalid={isInvalid}
-                                                   >
-                                                      <FieldLabel>
-                                                         Data{" "}
-                                                         <span className="text-destructive">
-                                                            *
-                                                         </span>
-                                                      </FieldLabel>
-                                                      <DatePicker
-                                                         className="w-full"
-                                                         date={
-                                                            field.state.value
-                                                         }
-                                                         onSelect={(d) =>
-                                                            field.handleChange(
-                                                               d as Date,
-                                                            )
-                                                         }
-                                                         placeholder="Selecione"
-                                                      />
-                                                      {isInvalid && (
-                                                         <FieldError
-                                                            errors={
-                                                               field.state.meta
-                                                                  .errors
-                                                            }
-                                                         />
-                                                      )}
-                                                   </Field>
-                                                );
-                                             }}
-                                          </form.Field>
-
-                                          <form.Field
-                                             name="amount"
-                                             validators={{
-                                                onBlur: amountSchema,
-                                                onSubmit: amountSchema,
-                                             }}
-                                          >
-                                             {(field) => {
-                                                const isInvalid =
-                                                   field.state.meta.isTouched &&
-                                                   !field.state.meta.isValid;
-                                                return (
-                                                   <Field
-                                                      data-invalid={isInvalid}
-                                                   >
-                                                      <FieldLabel>
-                                                         Valor{" "}
-                                                         <span className="text-destructive">
-                                                            *
-                                                         </span>
-                                                      </FieldLabel>
-                                                      <MoneyInput
-                                                         disabled={isPending}
-                                                         onChange={(value) =>
-                                                            field.handleChange(
-                                                               String(
-                                                                  value ?? 0,
-                                                               ),
-                                                            )
-                                                         }
-                                                         value={
-                                                            field.state.value
-                                                         }
-                                                         valueInCents={false}
-                                                      />
-                                                      {isInvalid && (
-                                                         <FieldError
-                                                            errors={
-                                                               field.state.meta
-                                                                  .errors
-                                                            }
-                                                         />
-                                                      )}
-                                                   </Field>
-                                                );
-                                             }}
-                                          </form.Field>
-                                       </div>
-
-                                       <div className="grid grid-cols-2 gap-4">
-                                          <form.Field
-                                             name="bankAccountId"
-                                             validators={{
-                                                onSubmit: requiredStringSchema,
-                                             }}
-                                          >
-                                             {(field) => {
-                                                const isInvalid =
-                                                   field.state.meta.isTouched &&
-                                                   !field.state.meta.isValid;
-                                                return (
-                                                   <Field
-                                                      data-invalid={isInvalid}
-                                                   >
-                                                      <div className="flex items-center justify-between">
-                                                         <FieldLabel>
-                                                            Conta de Origem{" "}
-                                                            <span className="text-destructive">
-                                                               *
-                                                            </span>
-                                                         </FieldLabel>
-                                                         <DialogStackNext
-                                                            asChild
-                                                         >
-                                                            <button
-                                                               className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-                                                               onClick={() =>
-                                                                  setSecondaryForm(
-                                                                     {
-                                                                        type: "bankAccount",
-                                                                     },
-                                                                  )
-                                                               }
-                                                               type="button"
-                                                            >
-                                                               <Plus className="size-3" />{" "}
-                                                               Nova
-                                                            </button>
-                                                         </DialogStackNext>
-                                                      </div>
-                                                      <Combobox
-                                                         className="w-full"
-                                                         emptyMessage="Nenhuma conta cadastrada."
-                                                         onValueChange={(v) => {
-                                                            field.handleChange(
-                                                               v,
-                                                            );
-                                                            if (
-                                                               v ===
-                                                               form.getFieldValue(
-                                                                  "destinationBankAccountId",
-                                                               )
-                                                            ) {
-                                                               form.setFieldValue(
-                                                                  "destinationBankAccountId",
-                                                                  "",
-                                                               );
-                                                            }
-                                                         }}
-                                                         options={bankAccounts.map(
-                                                            (account) => ({
-                                                               value: account.id,
-                                                               label: account.name,
-                                                            }),
-                                                         )}
-                                                         placeholder="Selecione a conta..."
-                                                         searchPlaceholder="Buscar conta..."
-                                                         value={
-                                                            field.state.value
-                                                         }
-                                                      />
-                                                      {isInvalid && (
-                                                         <FieldError
-                                                            errors={
-                                                               field.state.meta
-                                                                  .errors
-                                                            }
-                                                         />
-                                                      )}
-                                                   </Field>
-                                                );
-                                             }}
-                                          </form.Field>
-
-                                          <form.Field
-                                             name="destinationBankAccountId"
-                                             validators={{
-                                                onSubmit: requiredStringSchema,
-                                             }}
-                                          >
-                                             {(field) => {
-                                                const isInvalid =
-                                                   field.state.meta.isTouched &&
-                                                   !field.state.meta.isValid;
-                                                return (
-                                                   <Field
-                                                      data-invalid={isInvalid}
-                                                   >
-                                                      <div className="flex items-center justify-between">
-                                                         <FieldLabel>
-                                                            Conta de Destino{" "}
-                                                            <span className="text-destructive">
-                                                               *
-                                                            </span>
-                                                         </FieldLabel>
-                                                         <DialogStackNext
-                                                            asChild
-                                                         >
-                                                            <button
-                                                               className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-                                                               onClick={() =>
-                                                                  setSecondaryForm(
-                                                                     {
-                                                                        type: "bankAccount",
-                                                                     },
-                                                                  )
-                                                               }
-                                                               type="button"
-                                                            >
-                                                               <Plus className="size-3" />{" "}
-                                                               Nova
-                                                            </button>
-                                                         </DialogStackNext>
-                                                      </div>
-                                                      <Combobox
-                                                         className="w-full"
-                                                         emptyMessage="Nenhuma conta cadastrada."
-                                                         onValueChange={
-                                                            field.handleChange
-                                                         }
-                                                         options={bankAccounts
-                                                            .filter(
-                                                               (a) =>
-                                                                  a.id !==
-                                                                  bankAccountId,
-                                                            )
-                                                            .map((account) => ({
-                                                               value: account.id,
-                                                               label: account.name,
-                                                            }))}
-                                                         placeholder="Selecione a conta..."
-                                                         searchPlaceholder="Buscar conta..."
-                                                         value={
-                                                            field.state.value
-                                                         }
-                                                      />
-                                                      {isInvalid && (
-                                                         <FieldError
-                                                            errors={
-                                                               field.state.meta
-                                                                  .errors
-                                                            }
-                                                         />
-                                                      )}
-                                                   </Field>
-                                                );
-                                             }}
-                                          </form.Field>
-                                       </div>
-                                    </>
-                                 ) : (
-                                    <>
-                                       <div className="grid grid-cols-3 gap-4">
-                                          <form.Field
-                                             name="date"
-                                             validators={{
-                                                onSubmit: requiredDateSchema,
-                                             }}
-                                          >
-                                             {(field) => {
-                                                const isInvalid =
-                                                   field.state.meta.isTouched &&
-                                                   !field.state.meta.isValid;
-                                                return (
-                                                   <Field
-                                                      data-invalid={isInvalid}
-                                                   >
-                                                      <FieldLabel>
-                                                         Data{" "}
-                                                         <span className="text-destructive">
-                                                            *
-                                                         </span>
-                                                      </FieldLabel>
-                                                      <DatePicker
-                                                         className="w-full"
-                                                         date={
-                                                            field.state.value
-                                                         }
-                                                         onSelect={(d) =>
-                                                            field.handleChange(
-                                                               d as Date,
-                                                            )
-                                                         }
-                                                         placeholder="Selecione"
-                                                      />
-                                                      {isInvalid && (
-                                                         <FieldError
-                                                            errors={
-                                                               field.state.meta
-                                                                  .errors
-                                                            }
-                                                         />
-                                                      )}
-                                                   </Field>
-                                                );
-                                             }}
-                                          </form.Field>
-
-                                          <form.Field
-                                             name="amount"
-                                             validators={{
-                                                onBlur: amountSchema,
-                                                onSubmit: amountSchema,
-                                             }}
-                                          >
-                                             {(field) => {
-                                                const isInvalid =
-                                                   field.state.meta.isTouched &&
-                                                   !field.state.meta.isValid;
-                                                return (
-                                                   <Field
-                                                      data-invalid={isInvalid}
-                                                   >
-                                                      <FieldLabel>
-                                                         Valor{" "}
-                                                         <span className="text-destructive">
-                                                            *
-                                                         </span>
-                                                      </FieldLabel>
-                                                      <MoneyInput
-                                                         disabled={isPending}
-                                                         onChange={(value) =>
-                                                            field.handleChange(
-                                                               String(
-                                                                  value ?? 0,
-                                                               ),
-                                                            )
-                                                         }
-                                                         value={
-                                                            field.state.value
-                                                         }
-                                                         valueInCents={false}
-                                                      />
-                                                      {isInvalid && (
-                                                         <FieldError
-                                                            errors={
-                                                               field.state.meta
-                                                                  .errors
-                                                            }
-                                                         />
-                                                      )}
-                                                   </Field>
-                                                );
-                                             }}
-                                          </form.Field>
-
-                                          <form.Field
-                                             name="bankAccountId"
-                                             validators={{
-                                                onSubmit: requiredStringSchema,
-                                             }}
-                                          >
-                                             {(field) => {
-                                                const isInvalid =
-                                                   field.state.meta.isTouched &&
-                                                   !field.state.meta.isValid;
-                                                return (
-                                                   <Field
-                                                      data-invalid={isInvalid}
-                                                   >
-                                                      <div className="flex items-center justify-between">
-                                                         <FieldLabel>
-                                                            Conta{" "}
-                                                            <span className="text-destructive">
-                                                               *
-                                                            </span>
-                                                         </FieldLabel>
-                                                         <DialogStackNext
-                                                            asChild
-                                                         >
-                                                            <button
-                                                               className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-                                                               onClick={() =>
-                                                                  setSecondaryForm(
-                                                                     {
-                                                                        type: "bankAccount",
-                                                                     },
-                                                                  )
-                                                               }
-                                                               type="button"
-                                                            >
-                                                               <Plus className="size-3" />{" "}
-                                                               Nova
-                                                            </button>
-                                                         </DialogStackNext>
-                                                      </div>
-                                                      <Combobox
-                                                         className="w-full"
-                                                         emptyMessage="Nenhuma conta cadastrada."
-                                                         onValueChange={
-                                                            field.handleChange
-                                                         }
-                                                         options={bankAccounts.map(
-                                                            (account) => ({
-                                                               value: account.id,
-                                                               label: account.name,
-                                                            }),
-                                                         )}
-                                                         placeholder="Selecione a conta..."
-                                                         searchPlaceholder="Buscar conta..."
-                                                         value={
-                                                            field.state.value
-                                                         }
-                                                      />
-                                                      {isInvalid && (
-                                                         <FieldError
-                                                            errors={
-                                                               field.state.meta
-                                                                  .errors
-                                                            }
-                                                         />
-                                                      )}
-                                                   </Field>
-                                                );
-                                             }}
-                                          </form.Field>
-                                       </div>
-                                    </>
-                                 )}
-
-                                 {type === "expense" && (
-                                    <form.Field name="creditCardId">
-                                       {(field) => (
-                                          <Field>
-                                             <div className="flex items-center justify-between">
+                                 <div className="grid grid-cols-2 gap-4">
+                                    <form.Field
+                                       name="date"
+                                       validators={{
+                                          onSubmit: requiredDateSchema,
+                                       }}
+                                       children={(field) => {
+                                          const isInvalid =
+                                             field.state.meta.isTouched &&
+                                             field.state.meta.errors.length > 0;
+                                          return (
+                                             <Field data-invalid={isInvalid}>
                                                 <FieldLabel>
-                                                   Cartão de Crédito
+                                                   Data{" "}
+                                                   <span className="text-destructive">
+                                                      *
+                                                   </span>
                                                 </FieldLabel>
-                                                <DialogStackNext asChild>
+                                                <DatePicker
+                                                   className="w-full"
+                                                   date={field.state.value}
+                                                   onSelect={(d) =>
+                                                      field.handleChange(
+                                                         d as Date,
+                                                      )
+                                                   }
+                                                   placeholder="Selecione"
+                                                />
+                                                {isInvalid && (
+                                                   <FieldError
+                                                      errors={
+                                                         field.state.meta.errors
+                                                      }
+                                                   />
+                                                )}
+                                             </Field>
+                                          );
+                                       }}
+                                    />
+
+                                    <form.Field
+                                       name="amount"
+                                       validators={{
+                                          onBlur: amountSchema,
+                                          onSubmit: amountSchema,
+                                       }}
+                                       children={(field) => {
+                                          const isInvalid =
+                                             field.state.meta.isTouched &&
+                                             field.state.meta.errors.length > 0;
+                                          return (
+                                             <Field data-invalid={isInvalid}>
+                                                <FieldLabel>
+                                                   Valor{" "}
+                                                   <span className="text-destructive">
+                                                      *
+                                                   </span>
+                                                </FieldLabel>
+                                                <MoneyInput
+                                                   disabled={isPending}
+                                                   onChange={(value) =>
+                                                      field.handleChange(
+                                                         String(value ?? 0),
+                                                      )
+                                                   }
+                                                   value={field.state.value}
+                                                   valueInCents={false}
+                                                />
+                                                {isInvalid && (
+                                                   <FieldError
+                                                      errors={
+                                                         field.state.meta.errors
+                                                      }
+                                                   />
+                                                )}
+                                             </Field>
+                                          );
+                                       }}
+                                    />
+                                 </div>
+
+                                 <div className="grid grid-cols-2 gap-4">
+                                    <form.Field
+                                       name="bankAccountId"
+                                       validators={{
+                                          onSubmit: requiredStringSchema,
+                                       }}
+                                       children={(field) => {
+                                          const isInvalid =
+                                             field.state.meta.isTouched &&
+                                             field.state.meta.errors.length > 0;
+                                          return (
+                                             <Field data-invalid={isInvalid}>
+                                                <div className="flex items-center justify-between">
+                                                   <FieldLabel>
+                                                      Conta de Origem{" "}
+                                                      <span className="text-destructive">
+                                                         *
+                                                      </span>
+                                                   </FieldLabel>
                                                    <button
                                                       className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                                       onClick={() =>
                                                          setSecondaryForm({
-                                                            type: "creditCard",
+                                                            type: "bankAccount",
                                                          })
                                                       }
                                                       type="button"
                                                    >
                                                       <Plus className="size-3" />{" "}
-                                                      Novo
+                                                      Nova
                                                    </button>
-                                                </DialogStackNext>
-                                             </div>
-                                             <Combobox
-                                                className="w-full"
-                                                emptyMessage="Nenhum cartão cadastrado."
-                                                onValueChange={(v) =>
-                                                   field.handleChange(v || "")
-                                                }
-                                                options={creditCards.map(
-                                                   (c) => ({
-                                                      value: c.id,
-                                                      label: c.name,
-                                                   }),
-                                                )}
-                                                placeholder="Selecionar cartão (opcional)..."
-                                                searchPlaceholder="Buscar cartão..."
-                                                value={field.state.value}
-                                             />
-                                          </Field>
-                                       )}
-                                    </form.Field>
-                                 )}
-
-                                 {!isTransfer && (
-                                    <>
-                                       <div className="grid grid-cols-2 gap-4">
-                                          <form.Field
-                                             name="categoryId"
-                                             validators={{
-                                                onSubmit: ({ value }) =>
-                                                   !value
-                                                      ? "Categoria é obrigatória."
-                                                      : undefined,
-                                             }}
-                                          >
-                                             {(field) => (
-                                                <Field>
-                                                   <div className="flex items-center justify-between">
-                                                      <FieldLabel>
-                                                         Categoria
-                                                      </FieldLabel>
-                                                      <DialogStackNext asChild>
-                                                         <button
-                                                            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-                                                            onClick={() =>
-                                                               setSecondaryForm(
-                                                                  {
-                                                                     type: "category",
-                                                                     transactionType:
-                                                                        type ===
-                                                                           "income" ||
-                                                                        type ===
-                                                                           "expense"
-                                                                           ? type
-                                                                           : "expense",
-                                                                  },
-                                                               )
-                                                            }
-                                                            type="button"
-                                                         >
-                                                            <Plus className="size-3" />{" "}
-                                                            Nova
-                                                         </button>
-                                                      </DialogStackNext>
-                                                   </div>
-                                                   <Combobox
-                                                      className="w-full"
-                                                      emptyMessage="Nenhuma categoria cadastrada."
-                                                      onValueChange={(v) => {
-                                                         field.handleChange(v);
+                                                </div>
+                                                <Combobox
+                                                   className="w-full"
+                                                   emptyMessage="Nenhuma conta cadastrada."
+                                                   onValueChange={(v) => {
+                                                      field.handleChange(v);
+                                                      if (
+                                                         v ===
+                                                         form.getFieldValue(
+                                                            "destinationBankAccountId",
+                                                         )
+                                                      ) {
                                                          form.setFieldValue(
-                                                            "subcategoryId",
+                                                            "destinationBankAccountId",
                                                             "",
                                                          );
-                                                      }}
-                                                      options={categories
-                                                         .filter(
-                                                            (cat) =>
-                                                               !cat.parentId &&
-                                                               (!cat.type ||
-                                                                  cat.type ===
-                                                                     type),
-                                                         )
-                                                         .map((cat) => ({
-                                                            value: cat.id,
-                                                            label: cat.name,
-                                                         }))}
-                                                      placeholder="Selecione a categoria..."
-                                                      searchPlaceholder="Buscar categoria..."
-                                                      value={field.state.value}
-                                                   />
+                                                      }
+                                                   }}
+                                                   options={bankAccounts.map(
+                                                      (account) => ({
+                                                         value: account.id,
+                                                         label: account.name,
+                                                      }),
+                                                   )}
+                                                   placeholder="Selecione a conta..."
+                                                   searchPlaceholder="Buscar conta..."
+                                                   value={field.state.value}
+                                                />
+                                                {isInvalid && (
                                                    <FieldError
                                                       errors={
-                                                         field.state.meta
-                                                            .errors as (
-                                                            | {
-                                                                 message?: string;
-                                                              }
-                                                            | undefined
-                                                         )[]
+                                                         field.state.meta.errors
                                                       }
                                                    />
-                                                </Field>
-                                             )}
-                                          </form.Field>
+                                                )}
+                                             </Field>
+                                          );
+                                       }}
+                                    />
 
-                                          <form.Field name="paymentMethod">
-                                             {(field) => (
-                                                <Field>
+                                    <form.Field
+                                       name="destinationBankAccountId"
+                                       validators={{
+                                          onSubmit: requiredStringSchema,
+                                       }}
+                                       children={(field) => {
+                                          const isInvalid =
+                                             field.state.meta.isTouched &&
+                                             field.state.meta.errors.length > 0;
+                                          return (
+                                             <Field data-invalid={isInvalid}>
+                                                <div className="flex items-center justify-between">
                                                    <FieldLabel>
-                                                      Forma de pagamento
+                                                      Conta de Destino{" "}
+                                                      <span className="text-destructive">
+                                                         *
+                                                      </span>
                                                    </FieldLabel>
-                                                   <Select
-                                                      onValueChange={(v) =>
-                                                         field.handleChange(
-                                                            v as PaymentMethod,
-                                                         )
+                                                   <button
+                                                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                                                      onClick={() =>
+                                                         setSecondaryForm({
+                                                            type: "bankAccount",
+                                                         })
                                                       }
-                                                      value={field.state.value}
+                                                      type="button"
                                                    >
-                                                      <SelectTrigger>
-                                                         <SelectValue placeholder="Selecione (opcional)" />
-                                                      </SelectTrigger>
-                                                      <SelectContent>
-                                                         <SelectItem value="pix">
-                                                            Pix
-                                                         </SelectItem>
-                                                         <SelectItem value="credit_card">
-                                                            Cartão
-                                                         </SelectItem>
-                                                         <SelectItem value="boleto">
-                                                            Boleto
-                                                         </SelectItem>
-                                                         <SelectItem value="cash">
-                                                            Dinheiro
-                                                         </SelectItem>
-                                                         <SelectItem value="transfer">
-                                                            Transferência
-                                                         </SelectItem>
-                                                         <SelectItem value="cheque">
-                                                            Cheque
-                                                         </SelectItem>
-                                                         <SelectItem value="automatic_debit">
-                                                            Débito Automático
-                                                         </SelectItem>
-                                                      </SelectContent>
-                                                   </Select>
-                                                </Field>
-                                             )}
-                                          </form.Field>
-                                       </div>
-
-                                       {categoryId && (
-                                          <form.Field name="subcategoryId">
-                                             {(field) => (
-                                                <Field>
-                                                   <FieldLabel>
-                                                      Subcategoria
-                                                   </FieldLabel>
-                                                   <Combobox
-                                                      className="w-full"
-                                                      emptyMessage="Nenhuma subcategoria."
-                                                      onValueChange={
-                                                         field.handleChange
+                                                      <Plus className="size-3" />{" "}
+                                                      Nova
+                                                   </button>
+                                                </div>
+                                                <Combobox
+                                                   className="w-full"
+                                                   emptyMessage="Nenhuma conta cadastrada."
+                                                   onValueChange={
+                                                      field.handleChange
+                                                   }
+                                                   options={bankAccounts
+                                                      .filter(
+                                                         (a) =>
+                                                            a.id !==
+                                                            bankAccountId,
+                                                      )
+                                                      .map((account) => ({
+                                                         value: account.id,
+                                                         label: account.name,
+                                                      }))}
+                                                   placeholder="Selecione a conta..."
+                                                   searchPlaceholder="Buscar conta..."
+                                                   value={field.state.value}
+                                                />
+                                                {isInvalid && (
+                                                   <FieldError
+                                                      errors={
+                                                         field.state.meta.errors
                                                       }
-                                                      options={selectedSubcategories.map(
-                                                         (s) => ({
-                                                            value: s.id,
-                                                            label: s.name,
-                                                         }),
-                                                      )}
-                                                      placeholder="Selecione a subcategoria..."
-                                                      searchPlaceholder="Buscar subcategoria..."
-                                                      value={field.state.value}
                                                    />
-                                                </Field>
-                                             )}
-                                          </form.Field>
-                                       )}
-                                    </>
-                                 )}
+                                                )}
+                                             </Field>
+                                          );
+                                       }}
+                                    />
+                                 </div>
                               </>
-                           );
-                        }}
-                     </form.Subscribe>
+                           ) : (
+                              <>
+                                 <div className="grid grid-cols-3 gap-4">
+                                    <form.Field
+                                       name="date"
+                                       validators={{
+                                          onSubmit: requiredDateSchema,
+                                       }}
+                                       children={(field) => {
+                                          const isInvalid =
+                                             field.state.meta.isTouched &&
+                                             field.state.meta.errors.length > 0;
+                                          return (
+                                             <Field data-invalid={isInvalid}>
+                                                <FieldLabel>
+                                                   Data{" "}
+                                                   <span className="text-destructive">
+                                                      *
+                                                   </span>
+                                                </FieldLabel>
+                                                <DatePicker
+                                                   className="w-full"
+                                                   date={field.state.value}
+                                                   onSelect={(d) =>
+                                                      field.handleChange(
+                                                         d as Date,
+                                                      )
+                                                   }
+                                                   placeholder="Selecione"
+                                                />
+                                                {isInvalid && (
+                                                   <FieldError
+                                                      errors={
+                                                         field.state.meta.errors
+                                                      }
+                                                   />
+                                                )}
+                                             </Field>
+                                          );
+                                       }}
+                                    />
 
-                     <form.Subscribe selector={(s) => s.values.type}>
-                        {(type) => (
-                           <div className="grid grid-cols-2 gap-4">
-                              <form.Field name="tagIds">
-                                 {(field) => (
+                                    <form.Field
+                                       name="amount"
+                                       validators={{
+                                          onBlur: amountSchema,
+                                          onSubmit: amountSchema,
+                                       }}
+                                       children={(field) => {
+                                          const isInvalid =
+                                             field.state.meta.isTouched &&
+                                             field.state.meta.errors.length > 0;
+                                          return (
+                                             <Field data-invalid={isInvalid}>
+                                                <FieldLabel>
+                                                   Valor{" "}
+                                                   <span className="text-destructive">
+                                                      *
+                                                   </span>
+                                                </FieldLabel>
+                                                <MoneyInput
+                                                   disabled={isPending}
+                                                   onChange={(value) =>
+                                                      field.handleChange(
+                                                         String(value ?? 0),
+                                                      )
+                                                   }
+                                                   value={field.state.value}
+                                                   valueInCents={false}
+                                                />
+                                                {isInvalid && (
+                                                   <FieldError
+                                                      errors={
+                                                         field.state.meta.errors
+                                                      }
+                                                   />
+                                                )}
+                                             </Field>
+                                          );
+                                       }}
+                                    />
+
+                                    <form.Field
+                                       name="bankAccountId"
+                                       validators={{
+                                          onSubmit: requiredStringSchema,
+                                       }}
+                                       children={(field) => {
+                                          const isInvalid =
+                                             field.state.meta.isTouched &&
+                                             field.state.meta.errors.length > 0;
+                                          return (
+                                             <Field data-invalid={isInvalid}>
+                                                <div className="flex items-center justify-between">
+                                                   <FieldLabel>
+                                                      Conta{" "}
+                                                      <span className="text-destructive">
+                                                         *
+                                                      </span>
+                                                   </FieldLabel>
+                                                   <button
+                                                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                                                      onClick={() =>
+                                                         setSecondaryForm({
+                                                            type: "bankAccount",
+                                                         })
+                                                      }
+                                                      type="button"
+                                                   >
+                                                      <Plus className="size-3" />{" "}
+                                                      Nova
+                                                   </button>
+                                                </div>
+                                                <Combobox
+                                                   className="w-full"
+                                                   emptyMessage="Nenhuma conta cadastrada."
+                                                   onValueChange={
+                                                      field.handleChange
+                                                   }
+                                                   options={bankAccounts.map(
+                                                      (account) => ({
+                                                         value: account.id,
+                                                         label: account.name,
+                                                      }),
+                                                   )}
+                                                   placeholder="Selecione a conta..."
+                                                   searchPlaceholder="Buscar conta..."
+                                                   value={field.state.value}
+                                                />
+                                                {isInvalid && (
+                                                   <FieldError
+                                                      errors={
+                                                         field.state.meta.errors
+                                                      }
+                                                   />
+                                                )}
+                                             </Field>
+                                          );
+                                       }}
+                                    />
+                                 </div>
+                              </>
+                           )}
+
+                           {type === "expense" && (
+                              <form.Field
+                                 name="creditCardId"
+                                 children={(field) => (
                                     <Field>
                                        <div className="flex items-center justify-between">
                                           <FieldLabel>
-                                             {isBusiness
-                                                ? "Centros de Custo"
-                                                : "Tags"}
+                                             Cartão de Crédito
                                           </FieldLabel>
-                                          <DialogStackNext asChild>
-                                             <button
-                                                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-                                                onClick={() =>
-                                                   setSecondaryForm({
-                                                      type: "tag",
-                                                   })
-                                                }
-                                                type="button"
-                                             >
-                                                <Plus className="size-3" /> Nova
-                                             </button>
-                                          </DialogStackNext>
+                                          <button
+                                             className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                                             onClick={() =>
+                                                setSecondaryForm({
+                                                   type: "creditCard",
+                                                })
+                                             }
+                                             type="button"
+                                          >
+                                             <Plus className="size-3" /> Novo
+                                          </button>
                                        </div>
-                                       <Suspense
-                                          fallback={
-                                             <p className="text-sm text-muted-foreground">
-                                                {isBusiness
-                                                   ? "Carregando centros de custo..."
-                                                   : "Carregando tags..."}
-                                             </p>
+                                       <Combobox
+                                          className="w-full"
+                                          emptyMessage="Nenhum cartão cadastrado."
+                                          onValueChange={(v) =>
+                                             field.handleChange(v || "")
                                           }
-                                       >
-                                          <TagCombobox
-                                             onChange={field.handleChange}
-                                             selectedIds={field.state.value}
-                                          />
-                                       </Suspense>
+                                          options={creditCards.map((c) => ({
+                                             value: c.id,
+                                             label: c.name,
+                                          }))}
+                                          placeholder="Selecionar cartão (opcional)..."
+                                          searchPlaceholder="Buscar cartão..."
+                                          value={field.state.value}
+                                       />
                                     </Field>
                                  )}
-                              </form.Field>
+                              />
+                           )}
 
-                              {type !== "transfer" ? (
-                                 <form.Field name="contactId">
-                                    {(field) => (
-                                       <Field>
-                                          <div className="flex items-center justify-between">
-                                             <FieldLabel>Contato</FieldLabel>
-                                             <DialogStackNext asChild>
+                           {!isTransfer && (
+                              <>
+                                 <div className="grid grid-cols-2 gap-4">
+                                    <form.Field
+                                       name="categoryId"
+                                       validators={{
+                                          onSubmit: ({ value }) =>
+                                             !value
+                                                ? "Categoria é obrigatória."
+                                                : undefined,
+                                       }}
+                                       children={(field) => (
+                                          <Field>
+                                             <div className="flex items-center justify-between">
+                                                <FieldLabel>
+                                                   Categoria
+                                                </FieldLabel>
                                                 <button
                                                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                                    onClick={() =>
                                                       setSecondaryForm({
-                                                         type: "contact",
+                                                         type: "category",
+                                                         transactionType:
+                                                            type === "income" ||
+                                                            type === "expense"
+                                                               ? type
+                                                               : "expense",
                                                       })
                                                    }
                                                    type="button"
                                                 >
                                                    <Plus className="size-3" />{" "}
-                                                   Novo
+                                                   Nova
                                                 </button>
-                                             </DialogStackNext>
-                                          </div>
-                                          <Suspense
-                                             fallback={
-                                                <Skeleton className="h-9 w-full" />
-                                             }
-                                          >
-                                             <ContactCombobox
-                                                onChange={field.handleChange}
+                                             </div>
+                                             <Combobox
+                                                className="w-full"
+                                                emptyMessage="Nenhuma categoria cadastrada."
+                                                onValueChange={(v) => {
+                                                   field.handleChange(v);
+                                                   form.setFieldValue(
+                                                      "subcategoryId",
+                                                      "",
+                                                   );
+                                                }}
+                                                options={categories
+                                                   .filter(
+                                                      (cat) =>
+                                                         !cat.parentId &&
+                                                         (!cat.type ||
+                                                            cat.type === type),
+                                                   )
+                                                   .map((cat) => ({
+                                                      value: cat.id,
+                                                      label: cat.name,
+                                                   }))}
+                                                placeholder="Selecione a categoria..."
+                                                searchPlaceholder="Buscar categoria..."
                                                 value={field.state.value}
                                              />
-                                          </Suspense>
-                                       </Field>
-                                    )}
-                                 </form.Field>
-                              ) : null}
-                           </div>
-                        )}
-                     </form.Subscribe>
-
-                     <form.Field name="description">
-                        {(field) => (
-                           <Field>
-                              <FieldLabel>Observações</FieldLabel>
-                              <Textarea
-                                 onBlur={field.handleBlur}
-                                 onChange={(e) =>
-                                    field.handleChange(e.target.value)
-                                 }
-                                 placeholder="Observações sobre o lançamento (opcional)"
-                                 rows={3}
-                                 value={field.state.value}
-                              />
-                           </Field>
-                        )}
-                     </form.Field>
-
-                     <form.Subscribe
-                        selector={(s) => ({
-                           type: s.values.type,
-                           isInstallment: s.values.isInstallment,
-                           isRecurring: s.values.isRecurring,
-                        })}
-                     >
-                        {({ type, isInstallment, isRecurring }) =>
-                           type !== "transfer" ? (
-                              <div className="flex flex-col gap-4">
-                                 <div className="grid grid-cols-2 gap-4">
-                                    <form.Field name="isInstallment">
-                                       {(field) => (
-                                          <div className="flex items-center justify-between rounded-lg border p-3">
-                                             <label
-                                                className="text-sm font-medium cursor-pointer select-none"
-                                                htmlFor="isInstallment"
-                                             >
-                                                Parcelado
-                                             </label>
-                                             <Switch
-                                                checked={field.state.value}
-                                                id="isInstallment"
-                                                onCheckedChange={(v) => {
-                                                   field.handleChange(v);
-                                                   if (!v)
-                                                      form.setFieldValue(
-                                                         "installmentCount",
-                                                         null,
-                                                      );
-                                                   if (v) {
-                                                      form.setFieldValue(
-                                                         "isRecurring",
-                                                         false,
-                                                      );
-                                                      form.setFieldValue(
-                                                         "recurringFrequency",
-                                                         null,
-                                                      );
-                                                   }
-                                                }}
-                                             />
-                                          </div>
-                                       )}
-                                    </form.Field>
-
-                                    <form.Field name="isRecurring">
-                                       {(field) => (
-                                          <div className="flex items-center justify-between rounded-lg border p-3">
-                                             <label
-                                                className="text-sm font-medium cursor-pointer select-none"
-                                                htmlFor="isRecurring"
-                                             >
-                                                Recorrente
-                                             </label>
-                                             <Switch
-                                                checked={field.state.value}
-                                                id="isRecurring"
-                                                onCheckedChange={(v) => {
-                                                   field.handleChange(v);
-                                                   if (!v)
-                                                      form.setFieldValue(
-                                                         "recurringFrequency",
-                                                         null,
-                                                      );
-                                                   if (v) {
-                                                      form.setFieldValue(
-                                                         "isInstallment",
-                                                         false,
-                                                      );
-                                                      form.setFieldValue(
-                                                         "installmentCount",
-                                                         null,
-                                                      );
-                                                   }
-                                                }}
-                                             />
-                                          </div>
-                                       )}
-                                    </form.Field>
-                                 </div>
-
-                                 {isInstallment && (
-                                    <form.Field name="installmentCount">
-                                       {(field) => (
-                                          <Field>
-                                             <FieldLabel>
-                                                Número de parcelas
-                                             </FieldLabel>
-                                             <Input
-                                                id={field.name}
-                                                max={72}
-                                                min={2}
-                                                onBlur={field.handleBlur}
-                                                onChange={(e) =>
-                                                   field.handleChange(
-                                                      e.target.value
-                                                         ? Number(
-                                                              e.target.value,
-                                                           )
-                                                         : null,
-                                                   )
+                                             <FieldError
+                                                errors={
+                                                   field.state.meta.errors as (
+                                                      | {
+                                                           message?: string;
+                                                        }
+                                                      | undefined
+                                                   )[]
                                                 }
-                                                placeholder="Ex: 3"
-                                                type="number"
-                                                value={field.state.value ?? ""}
                                              />
                                           </Field>
                                        )}
-                                    </form.Field>
+                                    />
+
+                                    <form.Field
+                                       name="paymentMethod"
+                                       children={(field) => (
+                                          <Field>
+                                             <FieldLabel>
+                                                Forma de pagamento
+                                             </FieldLabel>
+                                             <Select
+                                                onValueChange={(v) =>
+                                                   field.handleChange(
+                                                      v as PaymentMethod,
+                                                   )
+                                                }
+                                                value={field.state.value}
+                                             >
+                                                <SelectTrigger>
+                                                   <SelectValue placeholder="Selecione (opcional)" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                   <SelectItem value="pix">
+                                                      Pix
+                                                   </SelectItem>
+                                                   <SelectItem value="credit_card">
+                                                      Cartão
+                                                   </SelectItem>
+                                                   <SelectItem value="boleto">
+                                                      Boleto
+                                                   </SelectItem>
+                                                   <SelectItem value="cash">
+                                                      Dinheiro
+                                                   </SelectItem>
+                                                   <SelectItem value="transfer">
+                                                      Transferência
+                                                   </SelectItem>
+                                                   <SelectItem value="cheque">
+                                                      Cheque
+                                                   </SelectItem>
+                                                   <SelectItem value="automatic_debit">
+                                                      Débito Automático
+                                                   </SelectItem>
+                                                </SelectContent>
+                                             </Select>
+                                          </Field>
+                                       )}
+                                    />
+                                 </div>
+
+                                 {categoryId && (
+                                    <form.Field
+                                       name="subcategoryId"
+                                       children={(field) => (
+                                          <Field>
+                                             <FieldLabel>
+                                                Subcategoria
+                                             </FieldLabel>
+                                             <Combobox
+                                                className="w-full"
+                                                emptyMessage="Nenhuma subcategoria."
+                                                onValueChange={
+                                                   field.handleChange
+                                                }
+                                                options={selectedSubcategories.map(
+                                                   (s) => ({
+                                                      value: s.id,
+                                                      label: s.name,
+                                                   }),
+                                                )}
+                                                placeholder="Selecione a subcategoria..."
+                                                searchPlaceholder="Buscar subcategoria..."
+                                                value={field.state.value}
+                                             />
+                                          </Field>
+                                       )}
+                                    />
                                  )}
+                              </>
+                           )}
+                        </>
+                     );
+                  }}
+               </form.Subscribe>
 
-                                 {isRecurring && (
-                                    <div className="grid grid-cols-2 gap-4">
-                                       <form.Field name="recurringFrequency">
-                                          {(field) => (
-                                             <Field>
-                                                <FieldLabel>
-                                                   Frequência
-                                                </FieldLabel>
-                                                <Select
-                                                   onValueChange={
-                                                      field.handleChange
-                                                   }
-                                                   value={
-                                                      field.state.value ?? ""
-                                                   }
-                                                >
-                                                   <SelectTrigger>
-                                                      <SelectValue placeholder="Selecione a frequência" />
-                                                   </SelectTrigger>
-                                                   <SelectContent>
-                                                      <SelectItem value="daily">
-                                                         Diária
-                                                      </SelectItem>
-                                                      <SelectItem value="weekly">
-                                                         Semanal
-                                                      </SelectItem>
-                                                      <SelectItem value="biweekly">
-                                                         Quinzenal
-                                                      </SelectItem>
-                                                      <SelectItem value="monthly">
-                                                         Mensal
-                                                      </SelectItem>
-                                                      <SelectItem value="yearly">
-                                                         Anual
-                                                      </SelectItem>
-                                                   </SelectContent>
-                                                </Select>
-                                             </Field>
-                                          )}
-                                       </form.Field>
+               <form.Subscribe selector={(s) => s.values.type}>
+                  {(type) => (
+                     <div className="grid grid-cols-2 gap-4">
+                        <form.Field
+                           name="tagIds"
+                           children={(field) => (
+                              <Field>
+                                 <div className="flex items-center justify-between">
+                                    <FieldLabel>Centros de Custo</FieldLabel>
+                                    <button
+                                       className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                                       onClick={() =>
+                                          setSecondaryForm({
+                                             type: "tag",
+                                          })
+                                       }
+                                       type="button"
+                                    >
+                                       <Plus className="size-3" /> Nova
+                                    </button>
+                                 </div>
+                                 <Suspense
+                                    fallback={
+                                       <p className="text-sm text-muted-foreground">
+                                          Carregando centros de custo...
+                                       </p>
+                                    }
+                                 >
+                                    <TagCombobox
+                                       onChange={field.handleChange}
+                                       selectedIds={field.state.value}
+                                    />
+                                 </Suspense>
+                              </Field>
+                           )}
+                        />
 
-                                       <form.Field name="recurringCount">
-                                          {(field) => (
-                                             <Field>
-                                                <FieldLabel>
-                                                   Repetições
-                                                </FieldLabel>
-                                                <Input
-                                                   id={field.name}
-                                                   max={120}
-                                                   min={2}
-                                                   onBlur={field.handleBlur}
-                                                   onChange={(e) =>
-                                                      field.handleChange(
-                                                         e.target.value
-                                                            ? Number(
-                                                                 e.target.value,
-                                                              )
-                                                            : null,
-                                                      )
-                                                   }
-                                                   placeholder="Ex: 12"
-                                                   type="number"
-                                                   value={
-                                                      field.state.value ?? ""
-                                                   }
-                                                />
-                                             </Field>
-                                          )}
-                                       </form.Field>
+                        {type !== "transfer" ? (
+                           <form.Field
+                              name="contactId"
+                              children={(field) => (
+                                 <Field>
+                                    <div className="flex items-center justify-between">
+                                       <FieldLabel>Contato</FieldLabel>
+                                       <button
+                                          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                                          onClick={() =>
+                                             setSecondaryForm({
+                                                type: "contact",
+                                             })
+                                          }
+                                          type="button"
+                                       >
+                                          <Plus className="size-3" /> Novo
+                                       </button>
+                                    </div>
+                                    <Suspense
+                                       fallback={
+                                          <Skeleton className="h-9 w-full" />
+                                       }
+                                    >
+                                       <ContactCombobox
+                                          onChange={field.handleChange}
+                                          value={field.state.value}
+                                       />
+                                    </Suspense>
+                                 </Field>
+                              )}
+                           />
+                        ) : null}
+                     </div>
+                  )}
+               </form.Subscribe>
+
+               <form.Field
+                  name="description"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
+                     return (
+                        <Field>
+                           <FieldLabel htmlFor={field.name}>
+                              Observações
+                           </FieldLabel>
+                           <Textarea
+                              id={field.name}
+                              name={field.name}
+                              aria-invalid={isInvalid}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              placeholder="Observações sobre o lançamento (opcional)"
+                              rows={3}
+                              value={field.state.value}
+                           />
+                        </Field>
+                     );
+                  }}
+               />
+
+               <form.Subscribe
+                  selector={(s) => ({
+                     type: s.values.type,
+                     isInstallment: s.values.isInstallment,
+                     isRecurring: s.values.isRecurring,
+                  })}
+               >
+                  {({ type, isInstallment, isRecurring }) =>
+                     type !== "transfer" ? (
+                        <div className="flex flex-col gap-4">
+                           <div className="grid grid-cols-2 gap-4">
+                              <form.Field
+                                 name="isInstallment"
+                                 children={(field) => (
+                                    <div className="flex items-center justify-between rounded-lg border p-3">
+                                       <label
+                                          className="text-sm font-medium cursor-pointer select-none"
+                                          htmlFor="isInstallment"
+                                       >
+                                          Parcelado
+                                       </label>
+                                       <Switch
+                                          checked={field.state.value}
+                                          id="isInstallment"
+                                          onCheckedChange={(v) => {
+                                             field.handleChange(v);
+                                             if (!v)
+                                                form.setFieldValue(
+                                                   "installmentCount",
+                                                   null,
+                                                );
+                                             if (v) {
+                                                form.setFieldValue(
+                                                   "isRecurring",
+                                                   false,
+                                                );
+                                                form.setFieldValue(
+                                                   "recurringFrequency",
+                                                   null,
+                                                );
+                                             }
+                                          }}
+                                       />
                                     </div>
                                  )}
+                              />
+
+                              <form.Field
+                                 name="isRecurring"
+                                 children={(field) => (
+                                    <div className="flex items-center justify-between rounded-lg border p-3">
+                                       <label
+                                          className="text-sm font-medium cursor-pointer select-none"
+                                          htmlFor="isRecurring"
+                                       >
+                                          Recorrente
+                                       </label>
+                                       <Switch
+                                          checked={field.state.value}
+                                          id="isRecurring"
+                                          onCheckedChange={(v) => {
+                                             field.handleChange(v);
+                                             if (!v)
+                                                form.setFieldValue(
+                                                   "recurringFrequency",
+                                                   null,
+                                                );
+                                             if (v) {
+                                                form.setFieldValue(
+                                                   "isInstallment",
+                                                   false,
+                                                );
+                                                form.setFieldValue(
+                                                   "installmentCount",
+                                                   null,
+                                                );
+                                             }
+                                          }}
+                                       />
+                                    </div>
+                                 )}
+                              />
+                           </div>
+
+                           {isInstallment && (
+                              <form.Field
+                                 name="installmentCount"
+                                 children={(field) => (
+                                    <Field>
+                                       <FieldLabel htmlFor={field.name}>
+                                          Número de parcelas
+                                       </FieldLabel>
+                                       <Input
+                                          id={field.name}
+                                          name={field.name}
+                                          aria-invalid={
+                                             field.state.meta.isTouched &&
+                                             field.state.meta.errors.length > 0
+                                          }
+                                          max={72}
+                                          min={2}
+                                          onBlur={field.handleBlur}
+                                          onChange={(e) =>
+                                             field.handleChange(
+                                                e.target.value
+                                                   ? Number(e.target.value)
+                                                   : null,
+                                             )
+                                          }
+                                          placeholder="Ex: 3"
+                                          type="number"
+                                          value={field.state.value ?? ""}
+                                       />
+                                    </Field>
+                                 )}
+                              />
+                           )}
+
+                           {isRecurring && (
+                              <div className="grid grid-cols-2 gap-4">
+                                 <form.Field
+                                    name="recurringFrequency"
+                                    children={(field) => (
+                                       <Field>
+                                          <FieldLabel>Frequência</FieldLabel>
+                                          <Select
+                                             onValueChange={field.handleChange}
+                                             value={field.state.value ?? ""}
+                                          >
+                                             <SelectTrigger>
+                                                <SelectValue placeholder="Selecione a frequência" />
+                                             </SelectTrigger>
+                                             <SelectContent>
+                                                <SelectItem value="daily">
+                                                   Diária
+                                                </SelectItem>
+                                                <SelectItem value="weekly">
+                                                   Semanal
+                                                </SelectItem>
+                                                <SelectItem value="biweekly">
+                                                   Quinzenal
+                                                </SelectItem>
+                                                <SelectItem value="monthly">
+                                                   Mensal
+                                                </SelectItem>
+                                                <SelectItem value="yearly">
+                                                   Anual
+                                                </SelectItem>
+                                             </SelectContent>
+                                          </Select>
+                                       </Field>
+                                    )}
+                                 />
+
+                                 <form.Field
+                                    name="recurringCount"
+                                    children={(field) => (
+                                       <Field>
+                                          <FieldLabel htmlFor={field.name}>
+                                             Repetições
+                                          </FieldLabel>
+                                          <Input
+                                             id={field.name}
+                                             name={field.name}
+                                             aria-invalid={
+                                                field.state.meta.isTouched &&
+                                                field.state.meta.errors.length >
+                                                   0
+                                             }
+                                             max={120}
+                                             min={2}
+                                             onBlur={field.handleBlur}
+                                             onChange={(e) =>
+                                                field.handleChange(
+                                                   e.target.value
+                                                      ? Number(e.target.value)
+                                                      : null,
+                                                )
+                                             }
+                                             placeholder="Ex: 12"
+                                             type="number"
+                                             value={field.state.value ?? ""}
+                                          />
+                                       </Field>
+                                    )}
+                                 />
                               </div>
-                           ) : null
-                        }
-                     </form.Subscribe>
+                           )}
+                        </div>
+                     ) : null
+                  }
+               </form.Subscribe>
 
-                     {isCreate && (
-                        <form.Subscribe
-                           selector={(s) => ({
-                              date: s.values.date,
-                              type: s.values.type,
-                           })}
-                        >
-                           {({ date, type }) => {
-                              const isFuture = date && date > new Date();
-                              return (
-                                 <>
-                                    {isFuture && (
-                                       <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-sm text-amber-700 dark:text-amber-300">
-                                          Este lançamento é no futuro. Considere
-                                          registrá-la como conta a pagar.
-                                       </div>
-                                    )}
-
-                                    {type === "expense" && (
-                                       <form.Field name="createAsBill">
-                                          {(field) => (
-                                             <Field>
-                                                <div className="flex items-center gap-2">
-                                                   <Checkbox
-                                                      checked={
-                                                         field.state.value
-                                                      }
-                                                      id="createAsBill"
-                                                      onCheckedChange={(v) =>
-                                                         field.handleChange(!!v)
-                                                      }
-                                                   />
-                                                   <label
-                                                      className="text-sm cursor-pointer select-none"
-                                                      htmlFor="createAsBill"
-                                                   >
-                                                      Registrar como conta a
-                                                      pagar (não pago ainda)
-                                                   </label>
-                                                </div>
-                                             </Field>
-                                          )}
-                                       </form.Field>
-                                    )}
-                                 </>
-                              );
-                           }}
-                        </form.Subscribe>
-                     )}
-                  </FieldGroup>
-               </div>
-
-               <div className="border-t px-4 py-4">
-                  <form.Subscribe selector={(state) => state}>
-                     {(formState) => {
-                        const createAsBill =
-                           isCreate &&
-                           formState.values.createAsBill &&
-                           formState.values.type === "expense";
+               {isCreate && (
+                  <form.Subscribe
+                     selector={(s) => ({
+                        date: s.values.date,
+                        type: s.values.type,
+                     })}
+                  >
+                     {({ date, type }) => {
+                        const isFuture = date && date > new Date();
                         return (
-                           <Button
-                              className="w-full"
-                              disabled={!formState.canSubmit || isPending}
-                              type="submit"
-                           >
-                              {isPending ? (
-                                 <Spinner className="size-4 mr-2" />
-                              ) : null}
-                              {createAsBill
-                                 ? "Criar conta a pagar"
-                                 : isCreate
-                                   ? "Criar lançamento"
-                                   : "Salvar alterações"}
-                           </Button>
+                           <>
+                              {isFuture && (
+                                 <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-sm text-amber-700 dark:text-amber-300">
+                                    Este lançamento é no futuro. Considere
+                                    registrá-la como conta a pagar.
+                                 </div>
+                              )}
+
+                              {type === "expense" && (
+                                 <form.Field
+                                    name="createAsBill"
+                                    children={(field) => (
+                                       <Field>
+                                          <div className="flex items-center gap-2">
+                                             <Checkbox
+                                                checked={field.state.value}
+                                                id="createAsBill"
+                                                onCheckedChange={(v) =>
+                                                   field.handleChange(!!v)
+                                                }
+                                             />
+                                             <label
+                                                className="text-sm cursor-pointer select-none"
+                                                htmlFor="createAsBill"
+                                             >
+                                                Registrar como conta a pagar
+                                                (não pago ainda)
+                                             </label>
+                                          </div>
+                                       </Field>
+                                    )}
+                                 />
+                              )}
+                           </>
                         );
                      }}
                   </form.Subscribe>
-               </div>
-            </form>
-         </DialogStackContent>
-
-         <DialogStackContent index={1}>
-            <div className="flex flex-col h-full">
-               {secondaryForm?.type === "bankAccount" && (
-                  <NovaConta
-                     onBack={() => setSecondaryForm(null)}
-                     onSuccess={(id) => {
-                        form.setFieldValue("bankAccountId", id);
-                        setSecondaryForm(null);
-                        setActiveIndex(0);
-                     }}
-                  />
                )}
-               {secondaryForm?.type === "creditCard" && (
-                  <Suspense fallback={<Skeleton className="h-40 w-full" />}>
-                     <NovoCartao
-                        onBack={() => setSecondaryForm(null)}
-                        onSuccess={(id) => {
-                           form.setFieldValue("creditCardId", id);
-                           setSecondaryForm(null);
-                           setActiveIndex(0);
-                        }}
-                     />
-                  </Suspense>
-               )}
-               {secondaryForm?.type === "contact" && (
-                  <NovoContato
-                     onBack={() => setSecondaryForm(null)}
-                     onSuccess={(id) => {
-                        form.setFieldValue("contactId", id);
-                        setSecondaryForm(null);
-                        setActiveIndex(0);
-                     }}
-                  />
-               )}
-               {secondaryForm?.type === "category" && (
-                  <NovaCategoria
-                     onBack={() => setSecondaryForm(null)}
-                     onSuccess={(id) => {
-                        form.setFieldValue("categoryId", id);
-                        setSecondaryForm(null);
-                        setActiveIndex(0);
-                     }}
-                     transactionType={secondaryForm.transactionType}
-                  />
-               )}
-               {secondaryForm?.type === "tag" && (
-                  <NovaTag
-                     onBack={() => setSecondaryForm(null)}
-                     onSuccess={(id) => {
-                        form.setFieldValue("tagIds", [
-                           ...form.getFieldValue("tagIds"),
-                           id,
-                        ]);
-                        form.setFieldMeta("tagIds", (prev) => ({ ...prev, isTouched: true }));
-                        setSecondaryForm(null);
-                        setActiveIndex(0);
-                     }}
-                  />
-               )}
-            </div>
-         </DialogStackContent>
-      </>
+            </FieldGroup>
+         </CredenzaBody>
+         <CredenzaFooter>
+            <form.Subscribe selector={(state) => state}>
+               {(formState) => {
+                  const createAsBill =
+                     isCreate &&
+                     formState.values.createAsBill &&
+                     formState.values.type === "expense";
+                  return (
+                     <Button
+                        className="w-full"
+                        disabled={!formState.canSubmit || isPending}
+                        type="submit"
+                     >
+                        {isPending ? <Spinner className="size-4 mr-2" /> : null}
+                        {createAsBill
+                           ? "Criar conta a pagar"
+                           : isCreate
+                             ? "Criar lançamento"
+                             : "Salvar alterações"}
+                     </Button>
+                  );
+               }}
+            </form.Subscribe>
+         </CredenzaFooter>
+      </form>
    );
 }
 

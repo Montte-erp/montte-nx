@@ -4,10 +4,10 @@ MinIO S3-compatible file storage singleton with presigned URL generation.
 
 ## Exports
 
-| Export               | Purpose                                              |
-| -------------------- | ---------------------------------------------------- |
+| Export               | Purpose                                                                             |
+| -------------------- | ----------------------------------------------------------------------------------- |
 | `./client`           | `minioClient` singleton, `uploadFile()`, `getFile()`, `listFiles()`, presigned URLs |
-| `./text-file-helper` | Utilities for reading/writing text files              |
+| `./text-file-helper` | Utilities for reading/writing text files                                            |
 
 ## Usage
 

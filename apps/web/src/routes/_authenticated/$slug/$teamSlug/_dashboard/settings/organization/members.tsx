@@ -1,5 +1,8 @@
 import { Button } from "@packages/ui/components/button";
-import { DataTable, type DataTableStoredState } from "@packages/ui/components/data-table";
+import {
+   DataTable,
+   type DataTableStoredState,
+} from "@packages/ui/components/data-table";
 import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Input } from "@packages/ui/components/input";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
@@ -12,13 +15,17 @@ import {
 } from "./-members/members-columns";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
-import type { OnChangeFn, SortingState, ColumnFiltersState } from "@tanstack/react-table";
+import type {
+   OnChangeFn,
+   SortingState,
+   ColumnFiltersState,
+} from "@tanstack/react-table";
 import { ShieldCheck, Search, UserPlus } from "lucide-react";
 import { Suspense, useMemo, useState, useTransition } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
 import { z } from "zod";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -33,10 +40,11 @@ const searchSchema = z.object({
       .default([]),
 });
 
-const [useMembersTableState] = createLocalStorageState<DataTableStoredState | null>(
-   "montte:datatable:members",
-   null,
-);
+const [useMembersTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:members",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members",
@@ -51,7 +59,7 @@ function MembersContent() {
    const [tableState, setTableState] = useMembersTableState();
 
    const queryClient = useQueryClient();
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
    const [searchFilter, setSearchFilter] = useState("");
    const [isPending, startTransition] = useTransition();
 
@@ -87,7 +95,13 @@ function MembersContent() {
 
    const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
       const next = typeof updater === "function" ? updater(sorting) : updater;
-      navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, sorting: next }), replace: true });
+      navigate({
+         search: (prev: z.infer<typeof searchSchema>) => ({
+            ...prev,
+            sorting: next,
+         }),
+         replace: true,
+      });
    };
 
    const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = (
@@ -95,7 +109,13 @@ function MembersContent() {
    ) => {
       const next =
          typeof updater === "function" ? updater(columnFilters) : updater;
-      navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, columnFilters: next }), replace: true });
+      navigate({
+         search: (prev: z.infer<typeof searchSchema>) => ({
+            ...prev,
+            columnFilters: next,
+         }),
+         replace: true,
+      });
    };
 
    function handleUpdateRole(member: MemberRow, newRole: string) {
@@ -117,10 +137,10 @@ function MembersContent() {
    }
 
    function handleOpenInviteCredenza() {
-      openDialogStack({
+      openCredenza({
          children: (
             <InviteMemberForm
-               onSuccess={closeDialogStack}
+               onSuccess={closeCredenza}
                organizationId={organizationId}
             />
          ),

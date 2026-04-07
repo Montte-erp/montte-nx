@@ -1,11 +1,12 @@
 import dayjs from "dayjs";
 import { Button } from "@packages/ui/components/button";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import {
    Field,
    FieldError,
@@ -20,11 +21,14 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
+import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
+import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import { BillInstallmentPreview } from "./bill-installment-preview";
@@ -162,13 +166,13 @@ function BillFromTransactionDialogStackInner({
          : "Criar Transação Recorrente";
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>{title}</DialogStackTitle>
-            <DialogStackDescription>{transactionName}</DialogStackDescription>
-         </DialogStackHeader>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>{title}</CredenzaTitle>
+            <CredenzaDescription>{transactionName}</CredenzaDescription>
+         </CredenzaHeader>
 
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+         <CredenzaBody className="px-4">
             <form
                id="bill-from-transaction-form"
                onSubmit={(e) => {
@@ -178,15 +182,19 @@ function BillFromTransactionDialogStackInner({
                }}
             >
                <FieldGroup>
-                  <form.Field name="name">
-                     {(field) => {
+                  <form.Field
+                     name="name"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
-                              <FieldLabel>Nome</FieldLabel>
+                              <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
                               <Input
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
                                  onBlur={field.handleBlur}
                                  onChange={(e) =>
                                     field.handleChange(e.target.value)
@@ -199,30 +207,45 @@ function BillFromTransactionDialogStackInner({
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
                   {mode === "installment" && (
                      <>
-                        <form.Field name="installmentCount">
-                           {(field) => (
-                              <Field>
-                                 <FieldLabel>Número de parcelas</FieldLabel>
-                                 <Input
-                                    min={2}
-                                    onBlur={field.handleBlur}
-                                    onChange={(e) =>
-                                       field.handleChange(
-                                          Number.parseInt(e.target.value, 10) ||
-                                             2,
-                                       )
-                                    }
-                                    type="number"
-                                    value={field.state.value}
-                                 />
-                                 <FieldError errors={field.state.meta.errors} />
-                              </Field>
-                           )}
-                        </form.Field>
+                        <form.Field
+                           name="installmentCount"
+                           children={(field) => {
+                              const isInvalid =
+                                 field.state.meta.isTouched &&
+                                 field.state.meta.errors.length > 0;
+                              return (
+                                 <Field data-invalid={isInvalid}>
+                                    <FieldLabel htmlFor={field.name}>
+                                       Número de parcelas
+                                    </FieldLabel>
+                                    <Input
+                                       id={field.name}
+                                       name={field.name}
+                                       aria-invalid={isInvalid}
+                                       min={2}
+                                       onBlur={field.handleBlur}
+                                       onChange={(e) =>
+                                          field.handleChange(
+                                             Number.parseInt(
+                                                e.target.value,
+                                                10,
+                                             ) || 2,
+                                          )
+                                       }
+                                       type="number"
+                                       value={field.state.value}
+                                    />
+                                    <FieldError
+                                       errors={field.state.meta.errors}
+                                    />
+                                 </Field>
+                              );
+                           }}
+                        />
 
                         {previewItems.length > 0 && (
                            <BillInstallmentPreview items={previewItems} />
@@ -232,8 +255,9 @@ function BillFromTransactionDialogStackInner({
 
                   {mode === "recurring" && (
                      <>
-                        <form.Field name="frequency">
-                           {(field) => (
+                        <form.Field
+                           name="frequency"
+                           children={(field) => (
                               <Field>
                                  <FieldLabel>Frequência</FieldLabel>
                                  <Select
@@ -258,38 +282,51 @@ function BillFromTransactionDialogStackInner({
                                  </Select>
                               </Field>
                            )}
-                        </form.Field>
+                        />
 
-                        <form.Field name="windowMonths">
-                           {(field) => (
-                              <Field>
-                                 <FieldLabel>
-                                    Gerar contas para quantos meses?
-                                 </FieldLabel>
-                                 <Input
-                                    max={12}
-                                    min={1}
-                                    onBlur={field.handleBlur}
-                                    onChange={(e) =>
-                                       field.handleChange(
-                                          Number.parseInt(e.target.value, 10) ||
-                                             1,
-                                       )
-                                    }
-                                    type="number"
-                                    value={field.state.value}
-                                 />
-                                 <FieldError errors={field.state.meta.errors} />
-                              </Field>
-                           )}
-                        </form.Field>
+                        <form.Field
+                           name="windowMonths"
+                           children={(field) => {
+                              const isInvalid =
+                                 field.state.meta.isTouched &&
+                                 field.state.meta.errors.length > 0;
+                              return (
+                                 <Field data-invalid={isInvalid}>
+                                    <FieldLabel htmlFor={field.name}>
+                                       Gerar contas para quantos meses?
+                                    </FieldLabel>
+                                    <Input
+                                       id={field.name}
+                                       name={field.name}
+                                       aria-invalid={isInvalid}
+                                       max={12}
+                                       min={1}
+                                       onBlur={field.handleBlur}
+                                       onChange={(e) =>
+                                          field.handleChange(
+                                             Number.parseInt(
+                                                e.target.value,
+                                                10,
+                                             ) || 1,
+                                          )
+                                       }
+                                       type="number"
+                                       value={field.state.value}
+                                    />
+                                    <FieldError
+                                       errors={field.state.meta.errors}
+                                    />
+                                 </Field>
+                              );
+                           }}
+                        />
                      </>
                   )}
                </FieldGroup>
             </form>
-         </div>
+         </CredenzaBody>
 
-         <div className="border-t px-4 py-4">
+         <CredenzaFooter>
             <form.Subscribe selector={(state) => state}>
                {(state) => (
                   <Button
@@ -309,8 +346,19 @@ function BillFromTransactionDialogStackInner({
                   </Button>
                )}
             </form.Subscribe>
-         </div>
-      </DialogStackContent>
+         </CredenzaFooter>
+      </>
+   );
+}
+
+function BillFromTransactionDialogSkeleton() {
+   return (
+      <div className="flex flex-col gap-4 p-4">
+         <Skeleton className="h-4 w-32" />
+         <Skeleton className="h-10 w-full" />
+         <Skeleton className="h-4 w-24" />
+         <Skeleton className="h-10 w-full" />
+      </div>
    );
 }
 
@@ -318,8 +366,14 @@ export function BillFromTransactionDialogStack(
    props: BillFromTransactionDialogStackProps,
 ) {
    return (
-      <Suspense fallback={null}>
-         <BillFromTransactionDialogStackInner {...props} />
-      </Suspense>
+      <ErrorBoundary
+         FallbackComponent={createErrorFallback({
+            errorTitle: "Erro ao carregar transação",
+         })}
+      >
+         <Suspense fallback={<BillFromTransactionDialogSkeleton />}>
+            <BillFromTransactionDialogStackInner {...props} />
+         </Suspense>
+      </ErrorBoundary>
    );
 }

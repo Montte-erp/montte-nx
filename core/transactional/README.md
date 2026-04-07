@@ -4,19 +4,19 @@ Transactional email system using Resend + React Email. Handles authentication em
 
 ## Exports
 
-| Export | Purpose |
-|--------|---------|
+| Export     | Purpose                 |
+| ---------- | ----------------------- |
 | `./client` | Email sending functions |
-| `./utils` | Resend client factory |
+| `./utils`  | Resend client factory   |
 
 ## Email Templates
 
-| Function | Purpose |
-|----------|---------|
-| `sendMagicLinkEmail()` | Passwordless sign-in links |
-| `sendEmailOTP()` | One-time passwords (sign-in, verification, password reset, email change) |
-| `sendOrganizationInvitation()` | Team invitation emails |
-| `sendBudgetAlert()` | Budget threshold notification emails |
+| Function                       | Purpose                                                                  |
+| ------------------------------ | ------------------------------------------------------------------------ |
+| `sendMagicLinkEmail()`         | Passwordless sign-in links                                               |
+| `sendEmailOTP()`               | One-time passwords (sign-in, verification, password reset, email change) |
+| `sendOrganizationInvitation()` | Team invitation emails                                                   |
+| `sendBudgetAlert()`            | Budget threshold notification emails                                     |
 
 ## Usage
 

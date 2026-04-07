@@ -6,8 +6,7 @@ import { protectedProcedure } from "../server";
 
 const getMemory = async () => {
    const memory = await mastra.getAgent("rubiAgent").getMemory();
-   if (!memory)
-      throw WebAppError.internal("Memory not configured");
+   if (!memory) throw WebAppError.internal("Memory not configured");
    return memory;
 };
 

@@ -30,8 +30,7 @@ export function useEventListener<K extends keyof WindowEventMap>(
               ? defaultTarget.current
               : defaultTarget;
       if (!el) return;
-      const listener = (e: Event) =>
-         handlerRef.current(e as WindowEventMap[K]);
+      const listener = (e: Event) => handlerRef.current(e as WindowEventMap[K]);
       el.addEventListener(eventName, listener, options);
       return () => el.removeEventListener(eventName, listener, options);
    }, [eventName, defaultTarget, options]);

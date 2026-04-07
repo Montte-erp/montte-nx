@@ -11,6 +11,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";
+import { GlobalSelectionToolbar } from "@/hooks/use-selection-toolbar";
 import { GlobalSurveyModal } from "@/hooks/use-survey-modal";
 import { GlobalDialogStack } from "@/hooks/use-dialog-stack";
 import { getPublicEnv } from "@/integrations/public-env";
@@ -79,6 +80,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   <GlobalAlertDialog />
                   <ClientOnly>
                      <GlobalCredenza />
+                     <GlobalSelectionToolbar />
                   </ClientOnly>
                   <GlobalSurveyModal />
                   <GlobalDialogStack />

@@ -1,6 +1,9 @@
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
-import { DataTable, type DataTableStoredState } from "@packages/ui/components/data-table";
+import {
+   DataTable,
+   type DataTableStoredState,
+} from "@packages/ui/components/data-table";
 import {
    Empty,
    EmptyContent,
@@ -9,8 +12,21 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import type { ColumnDef, ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
-import { GitBranch, Lightbulb, Pencil, Plus, RotateCcw, Trash2, TrendingUp } from "lucide-react";
+import type {
+   ColumnDef,
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
+import {
+   GitBranch,
+   Lightbulb,
+   Pencil,
+   Plus,
+   RotateCcw,
+   Trash2,
+   TrendingUp,
+} from "lucide-react";
 
 export interface InsightRow {
    id: string;
@@ -124,7 +140,8 @@ export function InsightsTable({
                </EmptyMedia>
                <EmptyTitle>Nenhum insight ainda</EmptyTitle>
                <EmptyDescription>
-                  Crie seu primeiro insight para visualizar dados de eventos, funis de conversão ou retenção de usuários.
+                  Crie seu primeiro insight para visualizar dados de eventos,
+                  funis de conversão ou retenção de usuários.
                </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
@@ -161,7 +178,9 @@ export function InsightsTable({
                   </Button>
                   <Button
                      className="text-destructive hover:text-destructive"
-                     onClick={() => onDelete({ id: insight.id, name: insight.name })}
+                     onClick={() =>
+                        onDelete({ id: insight.id, name: insight.name })
+                     }
                      tooltip="Excluir"
                      variant="outline"
                   >

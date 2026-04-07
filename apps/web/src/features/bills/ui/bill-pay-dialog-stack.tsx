@@ -1,10 +1,11 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { DatePicker } from "@packages/ui/components/date-picker";
 import {
    Field,
@@ -20,11 +21,14 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
+import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
+import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { BillRow } from "./bills-columns";
@@ -82,12 +86,12 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
    const isPayable = bill.type === "payable";
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>{title}</DialogStackTitle>
-            <DialogStackDescription>{bill.name}</DialogStackDescription>
-         </DialogStackHeader>
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>{title}</CredenzaTitle>
+            <CredenzaDescription>{bill.name}</CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody className="px-4">
             <form
                id="bill-pay-form"
                onSubmit={(e) => {
@@ -97,8 +101,9 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
                }}
             >
                <FieldGroup>
-                  <form.Field name="paymentType">
-                     {(field) => (
+                  <form.Field
+                     name="paymentType"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>
                               {isPayable
@@ -133,7 +138,7 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
                            </Select>
                         </Field>
                      )}
-                  </form.Field>
+                  />
                   <form.Field
                      name="amount"
                      validators={{
@@ -150,8 +155,7 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
                            return undefined;
                         },
                      }}
-                  >
-                     {(field) => (
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Valor</FieldLabel>
                            <form.Subscribe
@@ -185,9 +189,10 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
                            />
                         </Field>
                      )}
-                  </form.Field>
-                  <form.Field name="date">
-                     {(field) => (
+                  />
+                  <form.Field
+                     name="date"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Data do Pagamento</FieldLabel>
                            <DatePicker
@@ -204,10 +209,11 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
                            />
                         </Field>
                      )}
-                  </form.Field>
+                  />
                   {accounts.length > 0 && (
-                     <form.Field name="bankAccountId">
-                        {(field) => (
+                     <form.Field
+                        name="bankAccountId"
+                        children={(field) => (
                            <Field>
                               <FieldLabel>Conta Bancária</FieldLabel>
                               <Select
@@ -227,12 +233,12 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
                               </Select>
                            </Field>
                         )}
-                     </form.Field>
+                     />
                   )}
                </FieldGroup>
             </form>
-         </div>
-         <div className="border-t px-4 py-4">
+         </CredenzaBody>
+         <CredenzaFooter>
             <form.Subscribe selector={(state) => state}>
                {(state) => (
                   <Button
@@ -247,15 +253,33 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
                   </Button>
                )}
             </form.Subscribe>
-         </div>
-      </DialogStackContent>
+         </CredenzaFooter>
+      </>
+   );
+}
+
+function BillPayDialogSkeleton() {
+   return (
+      <div className="flex flex-col gap-4 p-4">
+         <Skeleton className="h-4 w-32" />
+         <Skeleton className="h-10 w-full" />
+         <Skeleton className="h-4 w-24" />
+         <Skeleton className="h-10 w-full" />
+         <Skeleton className="h-10 w-full" />
+      </div>
    );
 }
 
 export function BillPayDialogStack(props: BillPayDialogStackProps) {
    return (
-      <Suspense fallback={null}>
-         <BillPayDialogStackInner {...props} />
-      </Suspense>
+      <ErrorBoundary
+         FallbackComponent={createErrorFallback({
+            errorTitle: "Erro ao carregar conta",
+         })}
+      >
+         <Suspense fallback={<BillPayDialogSkeleton />}>
+            <BillPayDialogStackInner {...props} />
+         </Suspense>
+      </ErrorBoundary>
    );
 }

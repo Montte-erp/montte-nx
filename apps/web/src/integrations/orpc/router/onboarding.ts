@@ -3,6 +3,7 @@ import {
    createDefaultDashboard,
    createDefaultInsights,
 } from "@packages/analytics/seed-defaults";
+import { seedEmpresarialCategories } from "@core/database/repositories/categories-repository";
 import { getInsightById } from "@core/database/repositories/insight-repository";
 import {
    getOnboardingCounts,
@@ -81,6 +82,9 @@ async function runOnboardingCompletion({
 }) {
    logger.info("Inserting teamMember");
    await insertTeamMember(db, teamId, userId);
+
+   logger.info("Seeding empresarial categories");
+   await seedEmpresarialCategories(db, teamId);
 
    logger.info("Updating team");
    await markTeamOnboardingComplete(db, teamId, {
@@ -287,10 +291,55 @@ export const getOnboardingStatus = protectedProcedure.handler(
             onboardingProducts: currentTeam.onboardingProducts ?? null,
             tasks: Object.keys(tasks).length > 0 ? tasks : null,
             name: currentTeam.name,
+            cnpjData: currentTeam.cnpjData
+               ? cnpjDataSchema.parse(currentTeam.cnpjData)
+               : null,
          },
       };
    },
 );
+
+export const fetchCnpjData = authenticatedProcedure
+   .input(
+      z.object({
+         cnpj: z.string().regex(/^\d{14}$/, "CNPJ deve conter 14 dígitos"),
+      }),
+   )
+   .handler(async ({ input }) => {
+      let res: Response;
+      try {
+         res = await fetch(
+            `https://brasilapi.com.br/api/cnpj/v1/${input.cnpj}`,
+            { signal: AbortSignal.timeout(5000) },
+         );
+      } catch {
+         throw WebAppError.internal(
+            "Não foi possível consultar o CNPJ. Tente novamente.",
+         );
+      }
+      if (!res.ok)
+         throw WebAppError.notFound("CNPJ não encontrado ou inválido.");
+      let rawData: unknown;
+      try {
+         rawData = await res.json();
+      } catch {
+         throw WebAppError.internal(
+            "Não foi possível consultar o CNPJ. Tente novamente.",
+         );
+      }
+      const parsed = cnpjDataSchema.safeParse(rawData);
+      if (!parsed.success)
+         throw WebAppError.internal(
+            "Não foi possível consultar o CNPJ. Tente novamente.",
+         );
+      const data = parsed.data;
+      if (data.descricao_situacao_cadastral !== "ATIVA") {
+         throw WebAppError.badRequest(
+            "Este CNPJ não está ativo na Receita Federal.",
+         );
+      }
+      return data;
+   });
 
 export const fixOnboarding = authenticatedProcedure
    .input(z.object({ organizationId: z.string().uuid() }))

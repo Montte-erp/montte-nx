@@ -229,12 +229,6 @@ export function createAuth(deps: CreateAuthDeps) {
             schema: {
                organization: {
                   additionalFields: {
-                     context: {
-                        defaultValue: "personal",
-                        input: true,
-                        required: false,
-                        type: "string",
-                     },
                      description: {
                         defaultValue: "",
                         input: true,

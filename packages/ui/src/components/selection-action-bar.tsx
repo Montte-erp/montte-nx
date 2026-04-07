@@ -26,8 +26,9 @@ function SelectionActionBar({
 
    return (
       <div
+         data-selection-toolbar
          className={cn(
-            "fixed bottom-4 left-1/2 -translate-x-1/2 z-50",
+            "fixed bottom-4 left-1/2 -translate-x-1/2 z-[60]",
             "flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3",
             "bg-background border border-border",
             "rounded-lg shadow-lg",

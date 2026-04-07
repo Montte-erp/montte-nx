@@ -89,8 +89,9 @@ function FinanceiroSettingsForm() {
             </div>
 
             <div className="flex flex-col gap-4">
-               <form.Field name="defaultCurrency">
-                  {(field) => (
+               <form.Field
+                  name="defaultCurrency"
+                  children={(field) => (
                      <div className="flex flex-col gap-2">
                         <Label htmlFor={field.name}>Moeda padrão</Label>
                         <Select
@@ -110,10 +111,11 @@ function FinanceiroSettingsForm() {
                         </Select>
                      </div>
                   )}
-               </form.Field>
+               />
 
-               <form.Field name="fiscalYearStartMonth">
-                  {(field) => (
+               <form.Field
+                  name="fiscalYearStartMonth"
+                  children={(field) => (
                      <div className="flex flex-col gap-2">
                         <Label htmlFor={field.name}>Início do ano fiscal</Label>
                         <Select
@@ -136,10 +138,11 @@ function FinanceiroSettingsForm() {
                         </Select>
                      </div>
                   )}
-               </form.Field>
+               />
 
-               <form.Field name="defaultPaymentDueDays">
-                  {(field) => (
+               <form.Field
+                  name="defaultPaymentDueDays"
+                  children={(field) => (
                      <div className="flex flex-col gap-2">
                         <Label htmlFor={field.name}>
                            Prazo padrão de vencimento
@@ -161,10 +164,11 @@ function FinanceiroSettingsForm() {
                         </Select>
                      </div>
                   )}
-               </form.Field>
+               />
 
-               <form.Field name="autoCategorizationEnabled">
-                  {(field) => (
+               <form.Field
+                  name="autoCategorizationEnabled"
+                  children={(field) => (
                      <div className="flex items-center justify-between">
                         <Label htmlFor={field.name}>
                            Categorização automática
@@ -176,10 +180,11 @@ function FinanceiroSettingsForm() {
                         />
                      </div>
                   )}
-               </form.Field>
+               />
 
-               <form.Field name="defaultIncomeBankAccountId">
-                  {(field) => (
+               <form.Field
+                  name="defaultIncomeBankAccountId"
+                  children={(field) => (
                      <div className="flex flex-col gap-2">
                         <Label htmlFor={field.name}>
                            Conta padrão para receitas
@@ -201,10 +206,11 @@ function FinanceiroSettingsForm() {
                         </Select>
                      </div>
                   )}
-               </form.Field>
+               />
 
-               <form.Field name="defaultExpenseBankAccountId">
-                  {(field) => (
+               <form.Field
+                  name="defaultExpenseBankAccountId"
+                  children={(field) => (
                      <div className="flex flex-col gap-2">
                         <Label htmlFor={field.name}>
                            Conta padrão para despesas
@@ -226,7 +232,7 @@ function FinanceiroSettingsForm() {
                         </Select>
                      </div>
                   )}
-               </form.Field>
+               />
             </div>
 
             <form.Subscribe selector={(s) => s.isSubmitting}>

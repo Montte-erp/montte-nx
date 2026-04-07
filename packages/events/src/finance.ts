@@ -9,6 +9,7 @@ export const FINANCE_EVENTS = {
    "finance.tag_created": "finance.tag_created",
    "finance.budget_alert_triggered": "finance.budget_alert_triggered",
    "finance.recurring_processed": "finance.recurring_processed",
+   "finance.statement_imported": "finance.statement_imported",
 } as const;
 
 export type FinanceEventName =
@@ -165,6 +166,28 @@ export function emitFinanceRecurringProcessed(
    return emit({
       ...ctx,
       eventName: FINANCE_EVENTS["finance.recurring_processed"],
+      eventCategory: EVENT_CATEGORIES.finance,
+      properties,
+   });
+}
+
+export const financeStatementImportedSchema = z.object({
+   bankAccountId: z.string().uuid(),
+   format: z.enum(["csv", "xlsx", "ofx"]),
+   rowCount: z.number().int().nonnegative(),
+});
+export type FinanceStatementImportedEvent = z.infer<
+   typeof financeStatementImportedSchema
+>;
+
+export function emitFinanceStatementImported(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: FinanceStatementImportedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: FINANCE_EVENTS["finance.statement_imported"],
       eventCategory: EVENT_CATEGORIES.finance,
       properties,
    });

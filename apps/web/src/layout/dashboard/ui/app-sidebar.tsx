@@ -15,7 +15,13 @@ import {
    useSidebar,
 } from "@packages/ui/components/sidebar";
 import { Link } from "@tanstack/react-router";
-import { Bug, MessageSquarePlus, PanelLeftClose, Settings, Sparkles } from "lucide-react";
+import {
+   Bug,
+   MessageSquarePlus,
+   PanelLeftClose,
+   Settings,
+   Sparkles,
+} from "lucide-react";
 import type * as React from "react";
 import { useState } from "react";
 import { POSTHOG_SURVEYS } from "@core/posthog/config";
@@ -46,7 +52,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
    );
 }
 
-
 function SidebarFeedbackButton() {
    const { openSurveyModal } = useSurveyModal();
    const [open, setOpen] = useState(false);
@@ -68,7 +73,9 @@ function SidebarFeedbackButton() {
             <PopoverContent align="start" className="w-auto p-1" side="right">
                <Button
                   className="w-full justify-start gap-2"
-                  onClick={() => handleSelect(POSTHOG_SURVEYS.featureRequest.id)}
+                  onClick={() =>
+                     handleSelect(POSTHOG_SURVEYS.featureRequest.id)
+                  }
                   variant="ghost"
                >
                   <Sparkles className="size-4" />

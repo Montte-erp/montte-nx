@@ -20,11 +20,13 @@ type PostHogSurvey = {
 const SURVEY_META: Record<string, { title: string; description: string }> = {
    "Bug Report": {
       title: "Reportar um problema",
-      description: "Descreva o que aconteceu para que possamos corrigir o mais rápido possível.",
+      description:
+         "Descreva o que aconteceu para que possamos corrigir o mais rápido possível.",
    },
    "Feature Request": {
       title: "Sugestão de funcionalidade",
-      description: "Compartilhe sua ideia. Toda sugestão é analisada pela nossa equipe.",
+      description:
+         "Compartilhe sua ideia. Toda sugestão é analisada pela nossa equipe.",
    },
    "Feature Feedback": {
       title: "Avalie esta funcionalidade",
@@ -32,11 +34,13 @@ const SURVEY_META: Record<string, { title: string; description: string }> = {
    },
    "Sugestão de Integração": {
       title: "Sugerir integração",
-      description: "Conte-nos quais ferramentas você usa e qual integração faria mais diferença na sua operação.",
+      description:
+         "Conte-nos quais ferramentas você usa e qual integração faria mais diferença na sua operação.",
    },
    "Satisfação Mensal": {
       title: "Como está sendo sua experiência?",
-      description: "Leva menos de 1 minuto. Sua opinião nos ajuda a construir um produto melhor para você.",
+      description:
+         "Leva menos de 1 minuto. Sua opinião nos ajuda a construir um produto melhor para você.",
    },
 };
 
@@ -50,7 +54,13 @@ type SurveyModalContentProps = {
    extraPayload?: Record<string, unknown>;
 };
 
-export function SurveyModalContent({ surveyId, onClose, title, description, extraPayload }: SurveyModalContentProps) {
+export function SurveyModalContent({
+   surveyId,
+   onClose,
+   title,
+   description,
+   extraPayload,
+}: SurveyModalContentProps) {
    const [survey, setSurvey] = useState<PostHogSurvey | null>(null);
    const [surveyNotFound, setSurveyNotFound] = useState(false);
    const [responses, setResponses] = useState<Responses>({});
@@ -62,7 +72,9 @@ export function SurveyModalContent({ surveyId, onClose, title, description, extr
 
       posthog.getSurveys((surveys) => {
          if (cancelled) return;
-         const found = surveys.find((s) => s.id === surveyId) as PostHogSurvey | undefined;
+         const found = surveys.find((s) => s.id === surveyId) as
+            | PostHogSurvey
+            | undefined;
          if (found) {
             setSurvey(found);
             surveyShownRef.current = true;
@@ -80,14 +92,19 @@ export function SurveyModalContent({ surveyId, onClose, title, description, extr
       };
    }, [surveyId]);
 
-   const handleChange = (questionId: string, value: string | string[] | number) => {
+   const handleChange = (
+      questionId: string,
+      value: string | string[] | number,
+   ) => {
       setResponses((prev) => ({ ...prev, [questionId]: value }));
    };
 
    const handleSubmit = () => {
       if (!survey) return;
 
-      const responsePayload: Record<string, unknown> = { $survey_id: survey.id };
+      const responsePayload: Record<string, unknown> = {
+         $survey_id: survey.id,
+      };
       for (const question of survey.questions) {
          const val = responses[question.id];
          if (val !== undefined && val !== null && val !== "") {

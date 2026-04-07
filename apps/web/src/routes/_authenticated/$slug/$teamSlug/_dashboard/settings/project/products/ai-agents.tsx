@@ -77,11 +77,14 @@ function AiAgentsSettingsForm() {
       },
    });
 
-   const handleSubmit = useCallback((e: React.FormEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      form.handleSubmit();
-   }, [form]);
+   const handleSubmit = useCallback(
+      (e: React.FormEvent) => {
+         e.preventDefault();
+         e.stopPropagation();
+         form.handleSubmit();
+      },
+      [form],
+   );
 
    return (
       <div className="flex flex-col gap-4 max-w-lg">
@@ -94,8 +97,9 @@ function AiAgentsSettingsForm() {
          </div>
 
          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <form.Field name="modelId">
-               {(field) => (
+            <form.Field
+               name="modelId"
+               children={(field) => (
                   <div className="flex flex-col gap-2">
                      <Label htmlFor={field.name}>Modelo</Label>
                      <Select
@@ -118,10 +122,11 @@ function AiAgentsSettingsForm() {
                      </Select>
                   </div>
                )}
-            </form.Field>
+            />
 
-            <form.Field name="language">
-               {(field) => (
+            <form.Field
+               name="language"
+               children={(field) => (
                   <div className="flex flex-col gap-2">
                      <Label htmlFor={field.name}>Idioma</Label>
                      <Select
@@ -141,10 +146,11 @@ function AiAgentsSettingsForm() {
                      </Select>
                   </div>
                )}
-            </form.Field>
+            />
 
-            <form.Field name="tone">
-               {(field) => (
+            <form.Field
+               name="tone"
+               children={(field) => (
                   <div className="flex flex-col gap-2">
                      <Label htmlFor={field.name}>Tom</Label>
                      <Select
@@ -166,7 +172,7 @@ function AiAgentsSettingsForm() {
                      </Select>
                   </div>
                )}
-            </form.Field>
+            />
 
             <Separator />
 
@@ -177,8 +183,9 @@ function AiAgentsSettingsForm() {
                </p>
             </div>
 
-            <form.Field name="dataSourceTransactions">
-               {(field) => (
+            <form.Field
+               name="dataSourceTransactions"
+               children={(field) => (
                   <div className="flex items-center justify-between">
                      <Label htmlFor={field.name}>Transações financeiras</Label>
                      <Switch
@@ -188,10 +195,11 @@ function AiAgentsSettingsForm() {
                      />
                   </div>
                )}
-            </form.Field>
+            />
 
-            <form.Field name="dataSourceContacts">
-               {(field) => (
+            <form.Field
+               name="dataSourceContacts"
+               children={(field) => (
                   <div className="flex items-center justify-between">
                      <Label htmlFor={field.name}>Contatos</Label>
                      <Switch
@@ -201,10 +209,11 @@ function AiAgentsSettingsForm() {
                      />
                   </div>
                )}
-            </form.Field>
+            />
 
-            <form.Field name="dataSourceInventory">
-               {(field) => (
+            <form.Field
+               name="dataSourceInventory"
+               children={(field) => (
                   <div className="flex items-center justify-between">
                      <Label htmlFor={field.name}>Estoque</Label>
                      <Switch
@@ -214,10 +223,11 @@ function AiAgentsSettingsForm() {
                      />
                   </div>
                )}
-            </form.Field>
+            />
 
-            <form.Field name="dataSourceServices">
-               {(field) => (
+            <form.Field
+               name="dataSourceServices"
+               children={(field) => (
                   <div className="flex items-center justify-between">
                      <Label htmlFor={field.name}>Serviços</Label>
                      <Switch
@@ -227,7 +237,7 @@ function AiAgentsSettingsForm() {
                      />
                   </div>
                )}
-            </form.Field>
+            />
 
             <form.Subscribe>
                {(formState) => (

@@ -20,6 +20,7 @@ export const FREE_TIER_LIMITS: Record<string, number> = {
    "inventory.item_created": 50,
    "service.created": 20,
    "finance.recurring_processed": 200,
+   "finance.statement_imported": 10,
 };
 
 export const EVENT_PRICES: Record<string, string> = {
@@ -29,6 +30,7 @@ export const EVENT_PRICES: Record<string, string> = {
    "inventory.item_created": "0.010000",
    "service.created": "0.010000",
    "finance.recurring_processed": "0.002000",
+   "finance.statement_imported": "0.020000",
 };
 
 export const STRIPE_METER_EVENTS: Record<string, string> = {
@@ -38,4 +40,5 @@ export const STRIPE_METER_EVENTS: Record<string, string> = {
    "inventory.item_created": "inventory_creates",
    "service.created": "service_creates",
    "finance.recurring_processed": "finance_recurring_processed",
+   "finance.statement_imported": "finance_statement_imports",
 };

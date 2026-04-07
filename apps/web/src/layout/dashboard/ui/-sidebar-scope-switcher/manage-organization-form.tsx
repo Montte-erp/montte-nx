@@ -1,10 +1,11 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import {
    Dropzone,
    DropzoneContent,
@@ -20,7 +21,7 @@ import { useCallback, useMemo, useTransition } from "react";
 import { toast } from "sonner";
 import { useFileUpload } from "@/features/file-upload/lib/use-file-upload";
 import { useSetActiveOrganization } from "./use-set-active-organization";
-import { closeDialogStack } from "@/hooks/use-dialog-stack";
+import { closeCredenza } from "@/hooks/use-credenza";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
 type Organization = {
@@ -89,7 +90,7 @@ export function ManageOrganizationForm({
             });
          }
          fileUpload.clearFile();
-         closeDialogStack();
+         closeCredenza();
       },
       [fileUpload, setActiveOrganization],
    );
@@ -110,7 +111,7 @@ export function ManageOrganizationForm({
          }
          toast.success("Organization updated successfully");
          fileUpload.clearFile();
-         closeDialogStack();
+         closeCredenza();
       },
       [fileUpload],
    );
@@ -151,15 +152,12 @@ export function ManageOrganizationForm({
    });
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>{modeTexts.title}</DialogStackTitle>
-            <DialogStackDescription>
-               {modeTexts.description}
-            </DialogStackDescription>
-         </DialogStackHeader>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>{modeTexts.title}</CredenzaTitle>
+            <CredenzaDescription>{modeTexts.description}</CredenzaDescription>
+         </CredenzaHeader>
          <form
-            className="h-full flex flex-col"
             onSubmit={(e) => {
                e.preventDefault();
                e.stopPropagation();
@@ -168,10 +166,11 @@ export function ManageOrganizationForm({
                });
             }}
          >
-            <div className="flex-1 overflow-y-auto px-4 py-4">
+            <CredenzaBody className="px-4">
                <div className="grid gap-4">
-                  <form.Field name="logo">
-                     {(field) => {
+                  <form.Field
+                     name="logo"
+                     children={(field) => {
                         const currentLogoFile = field.state.value;
                         const displayImage = fileUpload.filePreview;
 
@@ -179,7 +178,7 @@ export function ManageOrganizationForm({
                            <Field
                               data-invalid={
                                  field.state.meta.isTouched &&
-                                 !field.state.meta.isValid
+                                 field.state.meta.errors.length > 0
                               }
                            >
                               <FieldLabel>Organization Logo</FieldLabel>
@@ -230,7 +229,7 @@ export function ManageOrganizationForm({
                                  </p>
                               )}
                               {field.state.meta.isTouched &&
-                                 !field.state.meta.isValid && (
+                                 field.state.meta.errors.length > 0 && (
                                     <FieldError
                                        errors={field.state.meta.errors}
                                     />
@@ -238,13 +237,14 @@ export function ManageOrganizationForm({
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
-                  <form.Field name="name">
-                     {(field) => {
+                  <form.Field
+                     name="name"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
 
                         return (
                            <Field data-invalid={isInvalid}>
@@ -268,13 +268,14 @@ export function ManageOrganizationForm({
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
-                  <form.Field name="description">
-                     {(field) => {
+                  <form.Field
+                     name="description"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
 
                         return (
                            <Field data-invalid={isInvalid}>
@@ -300,11 +301,11 @@ export function ManageOrganizationForm({
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
                </div>
-            </div>
+            </CredenzaBody>
 
-            <div className="border-t px-4 py-4">
+            <CredenzaFooter>
                <form.Subscribe selector={(state) => state}>
                   {(state) => (
                      <Button
@@ -322,8 +323,8 @@ export function ManageOrganizationForm({
                      </Button>
                   )}
                </form.Subscribe>
-            </div>
+            </CredenzaFooter>
          </form>
-      </DialogStackContent>
+      </>
    );
 }

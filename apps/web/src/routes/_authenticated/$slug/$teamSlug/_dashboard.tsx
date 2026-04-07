@@ -18,19 +18,16 @@ export const Route = createFileRoute(
          throw redirect({ to: "/onboarding" });
       }
    },
-   onEnter: async ({ context }) => {
-      const userId = context.session.user.id
-      const organizationId = context.session.session?.activeOrganizationId;
-      if (userId) {
-         posthog.identify(userId, {
-            email: userId ?? undefined,
-            name: userId ?? undefined,
-         });
-         if (organizationId) {
-            posthog.group("organization", organizationId);
-         }
+   onEnter: ({ context }) => {
+      const { user, session } = context.session;
+      posthog.identify(user.id, {
+         email: user.email ?? undefined,
+         name: user.name ?? undefined,
+      });
+      const organizationId = session?.activeOrganizationId;
+      if (organizationId) {
+         posthog.group("organization", organizationId);
       }
-
    },
    component: DashboardLayoutRoute,
 });

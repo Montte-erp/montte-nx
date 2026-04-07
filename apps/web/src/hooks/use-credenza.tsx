@@ -1,20 +1,26 @@
-import {
-   Credenza,
-   CredenzaContent,
-} from "@packages/ui/components/credenza";
+import { Credenza, CredenzaContent } from "@packages/ui/components/credenza";
 import { Store, useStore } from "@tanstack/react-store";
 import type React from "react";
 
-const credenzaStore = new Store<{ stack: React.ReactNode[] }>({
+type CredenzaOptions = { children: React.ReactNode; className?: string };
+
+const credenzaStore = new Store<{ stack: CredenzaOptions[] }>({
    stack: [],
 });
 
+export const closeCredenza = () =>
+   credenzaStore.setState(() => ({ stack: [] }));
+
+export const openCredenza = (options: {
+   children: React.ReactNode;
+   className?: string;
+}) => credenzaStore.setState((s) => ({ stack: [...s.stack, options] }));
+
 export const useCredenza = () => ({
-   closeCredenza: () => credenzaStore.setState(() => ({ stack: [] })),
+   closeCredenza,
    closeTopCredenza: () =>
       credenzaStore.setState((s) => ({ stack: s.stack.slice(0, -1) })),
-   openCredenza: (options: { children: React.ReactNode }) =>
-      credenzaStore.setState((s) => ({ stack: [...s.stack, options.children] })),
+   openCredenza,
 });
 
 export function GlobalCredenza() {
@@ -22,7 +28,7 @@ export function GlobalCredenza() {
 
    return (
       <>
-         {stack.map((children, i) => (
+         {stack.map(({ children, className }, i) => (
             <Credenza
                key={`credenza-${i + 1}`}
                onOpenChange={(open) => {
@@ -34,7 +40,9 @@ export function GlobalCredenza() {
                }}
                open
             >
-               <CredenzaContent>{children}</CredenzaContent>
+               <CredenzaContent className={className}>
+                  {children}
+               </CredenzaContent>
             </Credenza>
          ))}
       </>

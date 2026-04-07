@@ -4,14 +4,14 @@ Event catalog, emission, credit tracking, webhook delivery, and analytics integr
 
 ## Exports
 
-| Export                     | Purpose                                           |
-| -------------------------- | ------------------------------------------------- |
-| `./catalog`                | Event definitions and metadata                    |
-| `./emit`                   | `emitEvent()`, `emitEventBatch()`, webhook queue init |
-| `./credits`                | Credit budgeting and enforcement                  |
-| `./utils`                  | Event pricing and utility functions               |
-| `./finance`, `./ai`, etc.  | Domain-specific event categories                  |
-| `./queues/*`               | BullMQ queue abstractions (webhook delivery, budget alerts) |
+| Export                    | Purpose                                                     |
+| ------------------------- | ----------------------------------------------------------- |
+| `./catalog`               | Event definitions and metadata                              |
+| `./emit`                  | `emitEvent()`, `emitEventBatch()`, webhook queue init       |
+| `./credits`               | Credit budgeting and enforcement                            |
+| `./utils`                 | Event pricing and utility functions                         |
+| `./finance`, `./ai`, etc. | Domain-specific event categories                            |
+| `./queues/*`              | BullMQ queue abstractions (webhook delivery, budget alerts) |
 
 ## Usage
 
@@ -19,10 +19,10 @@ Event catalog, emission, credit tracking, webhook delivery, and analytics integr
 import { emitEvent } from "@packages/events/emit";
 
 await emitEvent({
-  event: "transaction.created",
-  organizationId,
-  teamId,
-  properties: { amount, currency },
+   event: "transaction.created",
+   organizationId,
+   teamId,
+   properties: { amount, currency },
 });
 ```
 

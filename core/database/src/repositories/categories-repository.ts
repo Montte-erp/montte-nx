@@ -11,19 +11,38 @@ import {
 } from "@core/database/schemas/categories";
 import { transactions } from "@core/database/schemas/transactions";
 
-export const DEFAULT_CATEGORIES: Array<{
+type CategorySeed = {
    name: string;
    type: "income" | "expense";
-}> = [
-   { name: "Alimentação", type: "expense" },
-   { name: "Casa", type: "expense" },
-   { name: "Educação", type: "expense" },
-   { name: "Lazer", type: "expense" },
-   { name: "Saúde", type: "expense" },
-   { name: "Transporte", type: "expense" },
-   { name: "Viagem", type: "expense" },
-   { name: "Salário", type: "income" },
-   { name: "Investimento", type: "income" },
+   children?: Array<{ name: string }>;
+};
+
+const EMPRESARIAL_CATEGORIES: CategorySeed[] = [
+   {
+      name: "Vendas",
+      type: "income",
+      children: [{ name: "Produtos" }, { name: "Serviços" }],
+   },
+   { name: "Outras Receitas", type: "income" },
+   {
+      name: "Custos",
+      type: "expense",
+      children: [{ name: "CMV" }, { name: "Serviços de Terceiros" }],
+   },
+   {
+      name: "Despesas Operacionais",
+      type: "expense",
+      children: [
+         { name: "Administrativo" },
+         { name: "Comercial" },
+         { name: "Marketing" },
+      ],
+   },
+   { name: "Pessoal", type: "expense" },
+   { name: "Impostos", type: "expense" },
+   { name: "Tarifas Bancárias", type: "expense" },
+   { name: "Tecnologia", type: "expense" },
+   { name: "Transferências", type: "expense" },
 ];
 
 export async function createCategory(
@@ -70,22 +89,40 @@ export async function createCategory(
    }
 }
 
-export async function seedDefaultCategories(
+export async function seedEmpresarialCategories(
    db: DatabaseInstance,
    teamId: string,
 ) {
    try {
-      const values = DEFAULT_CATEGORIES.map((cat) => ({
-         teamId,
-         name: cat.name,
-         type: cat.type as "income" | "expense",
-         level: 1,
-         isDefault: true,
-      }));
-      await db.insert(categories).values(values).onConflictDoNothing();
+      for (const root of EMPRESARIAL_CATEGORIES) {
+         const [parent] = await db
+            .insert(categories)
+            .values({
+               teamId,
+               name: root.name,
+               type: root.type,
+               level: 1,
+               isDefault: true,
+            })
+            .returning();
+         if (!parent) throw AppError.database("Failed to seed category");
+
+         if (root.children?.length) {
+            await db.insert(categories).values(
+               root.children.map((child) => ({
+                  teamId,
+                  name: child.name,
+                  type: root.type,
+                  parentId: parent.id,
+                  level: 2,
+                  isDefault: true,
+               })),
+            );
+         }
+      }
    } catch (err) {
       propagateError(err);
-      throw AppError.database("Failed to seed default categories");
+      throw AppError.database("Failed to seed empresarial categories");
    }
 }
 
@@ -272,7 +309,9 @@ export async function bulkDeleteCategories(
             and(inArray(fields.id, ids), eq(fields.teamId, teamId)),
       });
       if (existing.length !== ids.length) {
-         throw AppError.notFound("Uma ou mais categorias não foram encontradas.");
+         throw AppError.notFound(
+            "Uma ou mais categorias não foram encontradas.",
+         );
       }
       const defaultOne = existing.find((c) => c.isDefault);
       if (defaultOne) {

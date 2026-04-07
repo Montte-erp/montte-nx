@@ -1,10 +1,11 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import {
    Select,
    SelectContent,
@@ -243,10 +244,10 @@ export function CategoryImportDialogStack({
    }, [mapped, importMutation]);
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Importar Categorias</DialogStackTitle>
-            <DialogStackDescription>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Importar Categorias</CredenzaTitle>
+            <CredenzaDescription>
                {step === "upload" &&
                   "Faça upload de um arquivo CSV com suas categorias."}
                {step === "mapping" &&
@@ -254,10 +255,10 @@ export function CategoryImportDialogStack({
                {step === "preview" &&
                   "Revise as categorias que serão importadas."}
                {step === "confirm" && "Confirme a importação."}
-            </DialogStackDescription>
-         </DialogStackHeader>
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+         <CredenzaBody className="px-4">
             {step === "upload" && (
                <label className="flex flex-col items-center gap-4 rounded-lg border-2 border-dashed p-8 cursor-pointer hover:border-primary transition-colors">
                   <Upload className="size-8 text-muted-foreground" />
@@ -353,9 +354,9 @@ export function CategoryImportDialogStack({
                   )}
                </div>
             )}
-         </div>
+         </CredenzaBody>
 
-         <div className="border-t px-4 py-4">
+         <CredenzaFooter>
             {step === "mapping" && (
                <div className="flex gap-2 w-full">
                   <Button
@@ -391,7 +392,7 @@ export function CategoryImportDialogStack({
                   </Button>
                </div>
             )}
-         </div>
-      </DialogStackContent>
+         </CredenzaFooter>
+      </>
    );
 }

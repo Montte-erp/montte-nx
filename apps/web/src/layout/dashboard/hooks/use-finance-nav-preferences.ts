@@ -14,14 +14,17 @@ export function useFinanceNavPreferences() {
       [wantedItems],
    );
 
-   const toggleItem = useCallback((itemId: string) => {
-      setWantedItems((prev) => {
-         const current = prev ?? [];
-         return current.includes(itemId)
-            ? current.filter((id) => id !== itemId)
-            : [...current, itemId];
-      });
-   }, [setWantedItems]);
+   const toggleItem = useCallback(
+      (itemId: string) => {
+         setWantedItems((prev) => {
+            const current = prev ?? [];
+            return current.includes(itemId)
+               ? current.filter((id) => id !== itemId)
+               : [...current, itemId];
+         });
+      },
+      [setWantedItems],
+   );
 
    return { wantedItems, isWanted, toggleItem };
 }
