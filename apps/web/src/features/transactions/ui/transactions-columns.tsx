@@ -30,13 +30,37 @@ export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
          accessorKey: "name",
          header: "Nome",
          cell: ({ row }) => {
-            const { name } = row.original;
+            const {
+               name,
+               recurringTransactionId,
+               isInstallment,
+               installmentNumber,
+               installmentCount,
+               status,
+            } = row.original;
             if (!name)
                return <span className="text-sm text-muted-foreground">—</span>;
             return (
-               <span className="text-sm font-medium truncate max-w-[200px] block">
-                  {name}
-               </span>
+               <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium truncate max-w-[200px]">
+                     {name}
+                  </span>
+                  {recurringTransactionId && (
+                     <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300">
+                        Recorrente
+                     </span>
+                  )}
+                  {isInstallment && installmentNumber && (
+                     <span className="inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 text-xs font-medium text-purple-700 dark:text-purple-300">
+                        {installmentNumber}/{installmentCount}
+                     </span>
+                  )}
+                  {status === "pending" && (
+                     <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+                        Pendente
+                     </span>
+                  )}
+               </div>
             );
          },
       },
