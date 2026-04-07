@@ -1,6 +1,7 @@
 import { Store, useStore } from "@tanstack/react-store";
-import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import type React from "react";
+import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
+import { useCallback, useRef } from "react";
 import {
    SelectionActionBar,
    SelectionActionButton,
@@ -52,16 +53,24 @@ export function useSelectionToolbar(
    }) => React.ReactNode,
 ) {
    const selectedIndices = useStore(toolbarStore, (s) => s.selectedIndices);
+   const renderActionsRef = useRef(renderActions);
+   renderActionsRef.current = renderActions;
 
-   useIsomorphicLayoutEffect(() => {
-      toolbarStore.setState((s) => ({ ...s, renderActions }));
-      return () => {
+   const stableRenderActions = useCallback(
+      (ctx: { selectedIndices: Set<number>; clear: () => void }) =>
+         renderActionsRef.current(ctx),
+      [],
+   );
+
+   useIsomorphicLayoutEffect(
+      () => () => {
          toolbarStore.setState(() => ({
             selectedIndices: new Set<number>(),
             renderActions: null,
          }));
-      };
-   }, []);
+      },
+      [],
+   );
 
    function toggle(index: number) {
       if (selectedIndices.has(index)) removeFromSelection(index);
