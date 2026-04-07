@@ -953,17 +953,20 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                                              }
                                              onSelect={(d) => {
                                                 if (!d) return;
+                                                const newDate =
+                                                   dayjs(d).format(
+                                                      "YYYY-MM-DD",
+                                                   );
                                                 const updated = rows.map(
                                                    (r, i) =>
                                                       i === originalIndex
-                                                         ? {
-                                                              ...r,
-                                                              date: dayjs(
-                                                                 d,
-                                                              ).format(
-                                                                 "YYYY-MM-DD",
-                                                              ),
-                                                           }
+                                                         ? validateRow(
+                                                              {
+                                                                 ...r,
+                                                                 date: newDate,
+                                                              },
+                                                              minImportDate,
+                                                           )
                                                          : r,
                                                 );
                                                 onRowsChange(updated);
