@@ -6,6 +6,14 @@ import {
    AnnouncementTitle,
 } from "@packages/ui/components/announcement";
 import { Button } from "@packages/ui/components/button";
+import {
+   Choicebox,
+   ChoiceboxItem,
+   ChoiceboxItemHeader,
+   ChoiceboxItemTitle,
+   ChoiceboxItemDescription,
+   ChoiceboxIndicator,
+} from "@packages/ui/components/choicebox";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
@@ -23,6 +31,7 @@ import { Toggle } from "@packages/ui/components/toggle";
 import {
    CredenzaBody,
    CredenzaDescription,
+   CredenzaFooter,
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
@@ -46,18 +55,17 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { useForm } from "@tanstack/react-form";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import dayjs from "dayjs";
 import {
    AlertTriangle,
    ChevronRight,
-   Download,
    FileSpreadsheet,
    FileText,
    Loader2,
    Sparkles,
    Table2,
+   Undo2,
    X,
 } from "lucide-react";
 import { Suspense, useRef, useState, useTransition } from "react";
@@ -65,6 +73,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import { useCredenza } from "@/hooks/use-credenza";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { useFileDownload } from "@/hooks/use-file-download";
@@ -91,10 +100,31 @@ const { Stepper, useStepper } = defineStepper(
 
 type StepperMethods = ReturnType<typeof useStepper>;
 
+const TEMPLATE_OPTIONS = [
+   {
+      value: "csv" as const,
+      label: "CSV",
+      description: "Compatível com qualquer planilha ou editor de texto",
+      icon: FileSpreadsheet,
+      iconClass: "text-emerald-600",
+      filename: "modelo-importacao.csv",
+   },
+   {
+      value: "xlsx" as const,
+      label: "XLSX",
+      description: "Excel e Google Sheets — com formatação de colunas",
+      icon: Table2,
+      iconClass: "text-green-600",
+      filename: "modelo-importacao.xlsx",
+   },
+] as const;
+
 function TemplateCredenza({ onClose }: { onClose?: () => void }) {
    const csv = useCsvFile();
    const xlsx = useXlsxFile();
    const { download } = useFileDownload();
+
+   const generators = { csv, xlsx } as const;
 
    return (
       <>
@@ -105,50 +135,50 @@ function TemplateCredenza({ onClose }: { onClose?: () => void }) {
             </CredenzaDescription>
          </CredenzaHeader>
          <CredenzaBody>
-            <div className="flex flex-col gap-2">
-               <Button
-                  type="button"
-                  variant="outline"
-                  className="flex items-center gap-4 w-full px-4 py-3 h-auto text-left justify-start"
-                  onClick={() => {
-                     download(
-                        csv.generate(TEMPLATE_ROWS, [...TEMPLATE_HEADERS]),
-                        "modelo-importacao.csv",
-                     );
-                     onClose?.();
-                  }}
-               >
-                  <FileSpreadsheet className="size-5 text-emerald-600 shrink-0" />
-                  <div className="flex flex-col gap-0.5 flex-1">
-                     <span className="text-sm font-medium">CSV</span>
-                     <span className="text-xs text-muted-foreground">
-                        Compatível com qualquer planilha ou editor de texto
-                     </span>
-                  </div>
-                  <Download className="size-4 text-muted-foreground shrink-0" />
-               </Button>
-               <Button
-                  type="button"
-                  variant="outline"
-                  className="flex items-center gap-4 w-full px-4 py-3 h-auto text-left justify-start"
-                  onClick={() => {
-                     download(
-                        xlsx.generate(TEMPLATE_ROWS, [...TEMPLATE_HEADERS]),
-                        "modelo-importacao.xlsx",
-                     );
-                     onClose?.();
-                  }}
-               >
-                  <Table2 className="size-5 text-green-600 shrink-0" />
-                  <div className="flex flex-col gap-0.5 flex-1">
-                     <span className="text-sm font-medium">XLSX</span>
-                     <span className="text-xs text-muted-foreground">
-                        Excel e Google Sheets — com formatação de colunas
-                     </span>
-                  </div>
-                  <Download className="size-4 text-muted-foreground shrink-0" />
-               </Button>
-            </div>
+            <Choicebox className="grid grid-cols-2 gap-2">
+               {TEMPLATE_OPTIONS.map(
+                  ({
+                     value,
+                     label,
+                     description,
+                     icon: Icon,
+                     iconClass,
+                     filename,
+                  }) => (
+                     <ChoiceboxItem
+                        key={value}
+                        value={value}
+                        id={`template-${value}`}
+                     >
+                        <ChoiceboxIndicator
+                           id={`template-${value}`}
+                           className="sr-only"
+                        />
+                        <button
+                           type="button"
+                           className="flex flex-col gap-2 w-full cursor-pointer"
+                           onClick={() => {
+                              download(
+                                 generators[value].generate(TEMPLATE_ROWS, [
+                                    ...TEMPLATE_HEADERS,
+                                 ]),
+                                 filename,
+                              );
+                              onClose?.();
+                           }}
+                        >
+                           <Icon className={`size-5 shrink-0 ${iconClass}`} />
+                           <ChoiceboxItemHeader>
+                              <ChoiceboxItemTitle>{label}</ChoiceboxItemTitle>
+                              <ChoiceboxItemDescription>
+                                 {description}
+                              </ChoiceboxItemDescription>
+                           </ChoiceboxItemHeader>
+                        </button>
+                     </ChoiceboxItem>
+                  ),
+               )}
+            </Choicebox>
          </CredenzaBody>
       </>
    );
@@ -443,6 +473,115 @@ function MapStep({ methods }: { methods: StepperMethods }) {
    );
 }
 
+function BulkDateCredenza({
+   selectedCount,
+   onApply,
+   onCancel,
+}: {
+   selectedCount: number;
+   onApply: (date: Date) => void;
+   onCancel: () => void;
+}) {
+   const [date, setDate] = useState<Date | undefined>();
+
+   return (
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Alterar data</CredenzaTitle>
+            <CredenzaDescription>
+               Aplicar data a {selectedCount}{" "}
+               {selectedCount === 1 ? "lançamento" : "lançamentos"}
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody className="px-4">
+            <DatePicker
+               date={date}
+               onSelect={setDate}
+               placeholder="Selecionar data"
+            />
+         </CredenzaBody>
+         <CredenzaFooter className="grid grid-cols-2 gap-2">
+            <Button
+               className="w-full"
+               onClick={onCancel}
+               variant="outline"
+               type="button"
+            >
+               Cancelar
+            </Button>
+            <Button
+               className="w-full"
+               disabled={!date}
+               type="button"
+               onClick={() => {
+                  if (!date) return;
+                  onApply(date);
+               }}
+            >
+               Aplicar
+            </Button>
+         </CredenzaFooter>
+      </>
+   );
+}
+
+function BulkCategoryCredenza({
+   selectedCount,
+   categoryOptions,
+   onApply,
+   onCancel,
+}: {
+   selectedCount: number;
+   categoryOptions: { value: string; label: string }[];
+   onApply: (categoryId: string) => void;
+   onCancel: () => void;
+}) {
+   const [categoryId, setCategoryId] = useState("");
+
+   return (
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Alterar categoria</CredenzaTitle>
+            <CredenzaDescription>
+               Aplicar categoria a {selectedCount}{" "}
+               {selectedCount === 1 ? "lançamento" : "lançamentos"}
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody className="px-4">
+            <Combobox
+               options={categoryOptions}
+               onValueChange={setCategoryId}
+               value={categoryId}
+               placeholder="Selecionar categoria..."
+               searchPlaceholder="Buscar categoria..."
+               emptyMessage="Nenhuma categoria encontrada."
+            />
+         </CredenzaBody>
+         <CredenzaFooter className="grid grid-cols-2 gap-2">
+            <Button
+               className="w-full"
+               onClick={onCancel}
+               variant="outline"
+               type="button"
+            >
+               Cancelar
+            </Button>
+            <Button
+               className="w-full"
+               disabled={!categoryId}
+               type="button"
+               onClick={() => {
+                  if (!categoryId) return;
+                  onApply(categoryId);
+               }}
+            >
+               Aplicar
+            </Button>
+         </CredenzaFooter>
+      </>
+   );
+}
+
 function PreviewStep({ methods }: { methods: StepperMethods }) {
    const {
       rows,
@@ -455,13 +594,8 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
 
    const [filterDuplicates, setFilterDuplicates] = useState(false);
    const [editingCell, setEditingCell] = useState<EditingCell>(null);
-
-   const bulkForm = useForm({
-      defaultValues: {
-         date: undefined as Date | undefined,
-         categoryId: "",
-      },
-   });
+   const { openCredenza, closeCredenza } = useCredenza();
+   const { openAlertDialog } = useAlertDialog();
 
    const { data: categories } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
@@ -477,6 +611,7 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
    const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
       new Set(),
    );
+   const [ignoredIndices, setIgnoredIndices] = useState<Set<number>>(new Set());
 
    function toggleRow(index: number) {
       setSelectedIndices((prev) => {
@@ -487,20 +622,34 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
       });
    }
 
-   function removeIndex(index: number) {
-      setSelectedIndices((prev) => {
-         const next = new Set(prev);
-         next.delete(index);
-         return next;
-      });
-   }
-
    function clearIndices() {
       setSelectedIndices(new Set());
    }
 
    function replaceIndices(next: Set<number>) {
       setSelectedIndices(new Set(next));
+   }
+
+   function ignoreIndices(indices: Iterable<number>) {
+      const arr = [...indices];
+      setIgnoredIndices((prev) => {
+         const next = new Set(prev);
+         for (const i of arr) next.add(i);
+         return next;
+      });
+      setSelectedIndices((prev) => {
+         const next = new Set(prev);
+         for (const i of arr) next.delete(i);
+         return next;
+      });
+   }
+
+   function unignoreIndex(index: number) {
+      setIgnoredIndices((prev) => {
+         const next = new Set(prev);
+         next.delete(index);
+         return next;
+      });
    }
 
    const validCount = rows.filter((r) => r.isValid).length;
@@ -545,7 +694,7 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
 
    const selectableIndices = rows
       .map((r, i) => ({ r, i }))
-      .filter(({ r }) => r.isValid)
+      .filter(({ r, i }) => r.isValid && !ignoredIndices.has(i))
       .map(({ i }) => i);
 
    const allSelected =
@@ -563,28 +712,22 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
    }
 
    function ignoreRow(index: number) {
-      removeIndex(index);
+      ignoreIndices([index]);
    }
 
-   function applyBulkDate() {
-      const date = bulkForm.getFieldValue("date");
-      if (!date) return;
+   function applyBulkDate(date: Date) {
       const dateStr = dayjs(date).format("YYYY-MM-DD");
       const updated = rows.map((r, i) =>
          selectedIndices.has(i) ? { ...r, date: dateStr } : r,
       );
       onRowsChange(updated);
-      bulkForm.setFieldValue("date", undefined);
    }
 
-   function applyBulkCategory() {
-      const categoryId = bulkForm.getFieldValue("categoryId");
-      if (!categoryId) return;
+   function applyBulkCategory(categoryId: string) {
       const updated = rows.map((r, i) =>
          selectedIndices.has(i) ? { ...r, categoryId } : r,
       );
       onRowsChange(updated);
-      bulkForm.setFieldValue("categoryId", "");
    }
 
    function autoCategorize() {
@@ -742,6 +885,7 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                            const isDuplicate = duplicateFlags[originalIndex];
                            const isSelected =
                               selectedIndices.has(originalIndex);
+                           const isIgnored = ignoredIndices.has(originalIndex);
                            const isEditingDesc =
                               editingCell?.type === "desc" &&
                               editingCell.index === originalIndex;
@@ -765,7 +909,10 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                                  }}
                                  className={[
                                     "grid grid-cols-[2rem_6rem_1fr_4rem_1fr_6rem_2rem] items-center gap-2 border-b px-3 h-10",
-                                    !row.isValid ? "opacity-40" : "",
+                                    !row.isValid || isIgnored
+                                       ? "opacity-40"
+                                       : "",
+                                    isIgnored ? "bg-muted/60 line-through" : "",
                                     isSelected ? "bg-primary/5" : "",
                                  ]
                                     .filter(Boolean)
@@ -773,9 +920,9 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                               >
                                  <Checkbox
                                     checked={isSelected}
-                                    disabled={!row.isValid}
+                                    disabled={!row.isValid || isIgnored}
                                     onCheckedChange={() => {
-                                       if (row.isValid)
+                                       if (row.isValid && !isIgnored)
                                           toggleRow(originalIndex);
                                     }}
                                  />
@@ -989,6 +1136,22 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                                  <span className="flex items-center justify-end gap-1">
                                     {!row.isValid ? (
                                        <AlertTriangle className="size-3.5 text-destructive" />
+                                    ) : isIgnored ? (
+                                       <TooltipProvider>
+                                          <Button
+                                             type="button"
+                                             variant="ghost"
+                                             size="icon-xs"
+                                             className="text-muted-foreground hover:text-foreground shrink-0"
+                                             tooltip="Desfazer"
+                                             onClick={(e) => {
+                                                e.stopPropagation();
+                                                unignoreIndex(originalIndex);
+                                             }}
+                                          >
+                                             <Undo2 className="size-3.5" />
+                                          </Button>
+                                       </TooltipProvider>
                                     ) : (
                                        <>
                                           {isDuplicate && (
@@ -1077,87 +1240,68 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                         size="sm"
                         className="h-7 px-2 text-xs text-destructive hover:text-destructive"
                         onClick={() => {
-                           const toRemove = [...selectedIndices];
-                           for (const i of toRemove) removeIndex(i);
-                           clearIndices();
+                           openAlertDialog({
+                              title: `Ignorar ${selectedIndices.size} transaç${selectedIndices.size === 1 ? "ão" : "ões"}`,
+                              description:
+                                 "As transações selecionadas serão marcadas como ignoradas e não serão importadas.",
+                              actionLabel: "Ignorar",
+                              cancelLabel: "Cancelar",
+                              variant: "destructive",
+                              onAction: async () => {
+                                 ignoreIndices(selectedIndices);
+                              },
+                           });
                         }}
                      >
                         Ignorar selecionadas
                      </Button>
-                     <Popover>
-                        <PopoverTrigger asChild>
-                           <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-7 px-2 text-xs"
-                           >
-                              Alterar data
-                           </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                           className="w-auto p-2 flex flex-col gap-2"
-                           align="start"
-                           side="top"
-                        >
-                           <bulkForm.Field name="date">
-                              {(field) => (
-                                 <DatePicker
-                                    date={field.state.value}
-                                    onSelect={(d) => field.handleChange(d)}
-                                    placeholder="Selecionar data"
+                     <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() =>
+                           openCredenza({
+                              className: "sm:max-w-sm",
+                              children: (
+                                 <BulkDateCredenza
+                                    selectedCount={selectedIndices.size}
+                                    onApply={(date) => {
+                                       applyBulkDate(date);
+                                       closeCredenza();
+                                    }}
+                                    onCancel={closeCredenza}
                                  />
-                              )}
-                           </bulkForm.Field>
-                           <Button
-                              type="button"
-                              size="sm"
-                              className="w-full"
-                              onClick={applyBulkDate}
-                           >
-                              Aplicar
-                           </Button>
-                        </PopoverContent>
-                     </Popover>
-                     <Popover>
-                        <PopoverTrigger asChild>
-                           <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-7 px-2 text-xs"
-                           >
-                              Alterar categoria
-                           </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                           className="w-56 p-2 flex flex-col gap-2"
-                           align="start"
-                           side="top"
-                        >
-                           <bulkForm.Field name="categoryId">
-                              {(field) => (
-                                 <Combobox
-                                    options={categoryOptions}
-                                    onValueChange={(v) => field.handleChange(v)}
-                                    value={field.state.value}
-                                    placeholder="Alterar categoria"
-                                    searchPlaceholder="Buscar categoria..."
-                                    emptyMessage="Nenhuma categoria"
-                                    className="w-full"
+                              ),
+                           })
+                        }
+                     >
+                        Alterar data
+                     </Button>
+                     <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() =>
+                           openCredenza({
+                              className: "sm:max-w-sm",
+                              children: (
+                                 <BulkCategoryCredenza
+                                    selectedCount={selectedIndices.size}
+                                    categoryOptions={categoryOptions}
+                                    onApply={(id) => {
+                                       applyBulkCategory(id);
+                                       closeCredenza();
+                                    }}
+                                    onCancel={closeCredenza}
                                  />
-                              )}
-                           </bulkForm.Field>
-                           <Button
-                              type="button"
-                              size="sm"
-                              className="w-full"
-                              onClick={applyBulkCategory}
-                           >
-                              Aplicar
-                           </Button>
-                        </PopoverContent>
-                     </Popover>
+                              ),
+                           })
+                        }
+                     >
+                        Alterar categoria
+                     </Button>
                   </div>
                )}
 
