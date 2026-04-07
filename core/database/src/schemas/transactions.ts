@@ -52,7 +52,7 @@ export const transactionTypeEnum = pgEnum("transaction_type", [
 
 export const transactionRecurrenceFrequencyEnum = pgEnum(
    "transaction_recurrence_frequency",
-   ["daily", "weekly", "monthly"],
+   ["daily", "weekly", "biweekly", "monthly", "yearly"],
 );
 
 export const transactions = pgTable(

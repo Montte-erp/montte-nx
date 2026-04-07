@@ -20,7 +20,7 @@ const createRecurringTransactionInputSchema = z.object({
    categoryId: z.string().uuid().nullable().optional(),
    contactId: z.string().uuid().nullable().optional(),
    paymentMethod: z.string().nullable().optional(),
-   frequency: z.enum(["daily", "weekly", "monthly"]),
+   frequency: z.enum(["daily", "weekly", "biweekly", "monthly", "yearly"]),
    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
    endsAt: z
       .string()

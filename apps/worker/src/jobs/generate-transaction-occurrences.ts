@@ -15,7 +15,7 @@ const logger = getLogger().child({ module: "job:recurring-transactions" });
 
 function computeNextDate(
    from: string,
-   frequency: "daily" | "weekly" | "monthly",
+   frequency: "daily" | "weekly" | "biweekly" | "monthly" | "yearly",
 ): string {
    const d = dayjs(from);
    switch (frequency) {
@@ -23,8 +23,12 @@ function computeNextDate(
          return d.add(1, "day").format("YYYY-MM-DD");
       case "weekly":
          return d.add(7, "day").format("YYYY-MM-DD");
+      case "biweekly":
+         return d.add(14, "day").format("YYYY-MM-DD");
       case "monthly":
          return d.add(1, "month").format("YYYY-MM-DD");
+      case "yearly":
+         return d.add(1, "year").format("YYYY-MM-DD");
    }
 }
 

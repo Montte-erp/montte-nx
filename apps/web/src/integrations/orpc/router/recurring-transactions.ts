@@ -46,7 +46,13 @@ export const create = protectedProcedure
             ])
             .nullable()
             .optional(),
-         frequency: z.enum(["daily", "weekly", "monthly"]),
+         frequency: z.enum([
+            "daily",
+            "weekly",
+            "biweekly",
+            "monthly",
+            "yearly",
+         ]),
          startDate: z
             .string()
             .regex(ISO_DATE_REGEX, "Data deve estar no formato YYYY-MM-DD."),
