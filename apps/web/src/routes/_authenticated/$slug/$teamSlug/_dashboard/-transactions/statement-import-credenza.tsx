@@ -3,6 +3,9 @@ import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
+import { Input } from "@packages/ui/components/input";
+import { Label } from "@packages/ui/components/label";
+import { Toggle } from "@packages/ui/components/toggle";
 import {
    CredenzaBody,
    CredenzaDescription,
@@ -700,38 +703,30 @@ function PreviewStep({
                         onCheckedChange={toggleSelectAll}
                         id="select-all"
                      />
-                     <label
+                     <Label
                         htmlFor="select-all"
                         className="text-xs text-muted-foreground cursor-pointer"
                      >
                         Selecionar todas válidas
-                     </label>
+                     </Label>
                   </div>
                   <div className="flex items-center gap-2">
-                     <button
-                        type="button"
-                        onClick={() => setFilterDuplicates(false)}
-                        className={[
-                           "rounded-full px-3 py-1 text-xs transition-colors",
-                           !filterDuplicates
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-muted-foreground hover:bg-muted/80",
-                        ].join(" ")}
+                     <Toggle
+                        size="sm"
+                        pressed={!filterDuplicates}
+                        onPressedChange={() => setFilterDuplicates(false)}
+                        className="rounded-full text-xs"
                      >
                         Todas
-                     </button>
-                     <button
-                        type="button"
-                        onClick={() => setFilterDuplicates(true)}
-                        className={[
-                           "rounded-full px-3 py-1 text-xs transition-colors",
-                           filterDuplicates
-                              ? "bg-yellow-500 text-white"
-                              : "bg-muted text-muted-foreground hover:bg-muted/80",
-                        ].join(" ")}
+                     </Toggle>
+                     <Toggle
+                        size="sm"
+                        pressed={filterDuplicates}
+                        onPressedChange={() => setFilterDuplicates(true)}
+                        className="rounded-full text-xs data-[state=on]:bg-yellow-500 data-[state=on]:text-white"
                      >
                         Duplicatas
-                     </button>
+                     </Toggle>
                   </div>
                </div>
 
@@ -819,9 +814,9 @@ function PreviewStep({
                                  {canEditDesc &&
                                  row.isValid &&
                                  isEditingDesc ? (
-                                    <input
+                                    <Input
                                        autoFocus
-                                       className="text-xs border rounded px-1 py-0.5 w-full bg-background"
+                                       className="text-xs h-7 py-0"
                                        value={editingDescValue}
                                        onChange={(e) =>
                                           setEditingDescValue(e.target.value)
