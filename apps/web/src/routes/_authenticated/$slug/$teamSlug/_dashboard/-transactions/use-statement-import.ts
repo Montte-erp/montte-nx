@@ -4,8 +4,8 @@ import { useMutation } from "@tanstack/react-query";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { useCallback, useState } from "react";
 import { useLocalStorage } from "foxact/use-local-storage";
+import { useCallback, useState } from "react";
 import { orpc } from "@/integrations/orpc/client";
 import { useCnpj } from "@/hooks/use-cnpj";
 import { useCsvFile } from "@/hooks/use-csv-file";
@@ -61,50 +61,23 @@ const DATE_FORMATS = [
    "YYYYMMDD",
 ] as const;
 
-export function parseDate(raw: string): string | null {
-   const dateOnly = raw
-      .trim()
-      .replace(/\s*às\s*\d{1,2}:\d{2}(:\d{2})?/i, "")
-      .replace(/\s+\d{1,2}:\d{2}(:\d{2})?$/, "")
-      .replace(/T\d{2}:\d{2}.*$/, "")
-      .trim();
-   for (const fmt of DATE_FORMATS) {
-      const d = dayjs(dateOnly, fmt, true);
-      if (d.isValid()) return d.format("YYYY-MM-DD");
-   }
-   return null;
-}
-
-export function parseAmount(raw: string): string | null {
-   const cleaned = raw.replace(/R\$\s*/g, "").trim();
-   const hasComma = cleaned.includes(",");
-   const hasDot = cleaned.includes(".");
-   let normalized: string;
-   if (hasComma && hasDot) {
-      normalized = cleaned.replace(/\./g, "").replace(",", ".");
-   } else if (hasComma) {
-      normalized = cleaned.replace(",", ".");
-   } else {
-      normalized = cleaned;
-   }
-   try {
-      return toMajorUnitsString(absolute(moneyOf(normalized, "BRL")));
-   } catch {
-      return null;
-   }
-}
-
 const OFX_INCOME_TYPES = new Set(["CREDIT", "INT", "DIV", "DIRECTDEP"]);
 
-function inferTypeFromOfx(
-   trnType: string,
-   trnAmt: number,
-): "income" | "expense" {
-   if (trnAmt > 0) return "income";
-   if (trnAmt < 0) return "expense";
-   if (OFX_INCOME_TYPES.has(trnType)) return "income";
-   return "expense";
-}
+const INCOME_TYPE_KEYWORDS = new Set([
+   "receita",
+   "income",
+   "crédito",
+   "credito",
+   "credit",
+]);
+
+const EXPENSE_TYPE_KEYWORDS = new Set([
+   "despesa",
+   "expense",
+   "débito",
+   "debito",
+   "debit",
+]);
 
 const INCOME_NAME_PATTERNS = [
    "recebido",
@@ -140,6 +113,65 @@ const EXPENSE_NAME_PATTERNS = [
    "boleto",
 ];
 
+const COLUMN_PATTERNS: Record<ColumnField, string[]> = {
+   date: ["data", "date", "dt", "data_lancamento"],
+   name: ["nome", "name", "historico", "memo", "descricao"],
+   type: ["tipo", "type", "natureza", "operacao"],
+   amount: ["valor", "value", "amount", "montante", "vlr"],
+   description: ["descricao", "description", "obs", "complemento"],
+};
+
+const EMPTY_MAPPING: ColumnMapping = {
+   date: "",
+   name: "",
+   type: "",
+   amount: "",
+   description: "",
+};
+
+export function parseDate(raw: string): string | null {
+   const dateOnly = raw
+      .trim()
+      .replace(/\s*às\s*\d{1,2}:\d{2}(:\d{2})?/i, "")
+      .replace(/\s+\d{1,2}:\d{2}(:\d{2})?$/, "")
+      .replace(/T\d{2}:\d{2}.*$/, "")
+      .trim();
+   for (const fmt of DATE_FORMATS) {
+      const d = dayjs(dateOnly, fmt, true);
+      if (d.isValid()) return d.format("YYYY-MM-DD");
+   }
+   return null;
+}
+
+export function parseAmount(raw: string): string | null {
+   const cleaned = raw.replace(/R\$\s*/g, "").trim();
+   const hasComma = cleaned.includes(",");
+   const hasDot = cleaned.includes(".");
+   let normalized: string;
+   if (hasComma && hasDot) {
+      normalized = cleaned.replace(/\./g, "").replace(",", ".");
+   } else if (hasComma) {
+      normalized = cleaned.replace(",", ".");
+   } else {
+      normalized = cleaned;
+   }
+   try {
+      return toMajorUnitsString(absolute(moneyOf(normalized, "BRL")));
+   } catch {
+      return null;
+   }
+}
+
+function inferTypeFromOfx(
+   trnType: string,
+   trnAmt: number,
+): "income" | "expense" {
+   if (trnAmt > 0) return "income";
+   if (trnAmt < 0) return "expense";
+   if (OFX_INCOME_TYPES.has(trnType)) return "income";
+   return "expense";
+}
+
 function inferTypeFromName(name: string): "income" | "expense" | null {
    const n = name.toLowerCase();
    if (INCOME_NAME_PATTERNS.some((p) => n.includes(p))) return "income";
@@ -149,10 +181,8 @@ function inferTypeFromName(name: string): "income" | "expense" | null {
 
 function inferType(raw: string, amount: number): "income" | "expense" {
    const t = raw.toLowerCase().trim();
-   if (["receita", "income", "crédito", "credito", "credit"].includes(t))
-      return "income";
-   if (["despesa", "expense", "débito", "debito", "debit"].includes(t))
-      return "expense";
+   if (INCOME_TYPE_KEYWORDS.has(t)) return "income";
+   if (EXPENSE_TYPE_KEYWORDS.has(t)) return "expense";
    if (amount < 0) return "expense";
    return "expense";
 }
@@ -221,21 +251,14 @@ function applyMappingToRow(
 
 function guessColumns(headers: string[]): Partial<ColumnMapping> {
    const lower = headers.map((h) => h.toLowerCase().trim());
-   const patterns: Record<ColumnField, string[]> = {
-      date: ["data", "date", "dt", "data_lancamento"],
-      name: ["nome", "name", "historico", "memo", "descricao"],
-      type: ["tipo", "type", "natureza", "operacao"],
-      amount: ["valor", "value", "amount", "montante", "vlr"],
-      description: ["descricao", "description", "obs", "complemento"],
-   };
-   const mapping: Partial<ColumnMapping> = {};
-   for (const field of COLUMN_FIELDS) {
-      const idx = lower.findIndex((h) =>
-         patterns[field].some((c) => h.includes(c)),
-      );
-      if (idx !== -1) mapping[field] = headers[idx];
-   }
-   return mapping;
+   return Object.fromEntries(
+      COLUMN_FIELDS.flatMap((field) => {
+         const idx = lower.findIndex((h) =>
+            COLUMN_PATTERNS[field].some((p) => h.includes(p)),
+         );
+         return idx !== -1 ? [[field, headers[idx]]] : [];
+      }),
+   ) as Partial<ColumnMapping>;
 }
 
 function parseOfxBuffer(
@@ -262,14 +285,6 @@ function parseOfxBuffer(
       return validateRow(parsed, minImportDate);
    });
 }
-
-const EMPTY_MAPPING: ColumnMapping = {
-   date: "",
-   name: "",
-   type: "",
-   amount: "",
-   description: "",
-};
 
 export function useStatementImport({
    teamId,
@@ -308,13 +323,15 @@ export function useStatementImport({
       },
    );
 
-   function initSelection(mapped: ValidatedRow[], flags: boolean[]) {
-      const sel = new Set<number>();
-      mapped.forEach((r, i) => {
-         if (r.isValid && !flags[i]) sel.add(i);
-      });
-      onInitSelection?.(sel);
-   }
+   const initSelection = useCallback(
+      (mapped: ValidatedRow[], flags: boolean[]) => {
+         const sel = new Set(
+            mapped.flatMap((r, i) => (r.isValid && !flags[i] ? [i] : [])),
+         );
+         onInitSelection?.(sel);
+      },
+      [onInitSelection],
+   );
 
    const debouncedCheckDuplicates = useDebouncedCallback(
       async (mapped: ValidatedRow[]) => {
@@ -355,72 +372,78 @@ export function useStatementImport({
       [debouncedCheckDuplicates],
    );
 
-   async function parseFile(file: File): Promise<void> {
-      const ext = file.name.split(".").pop()?.toLowerCase();
+   const parseFile = useCallback(
+      async (file: File): Promise<void> => {
+         const ext = file.name.split(".").pop()?.toLowerCase();
 
-      if (ext === "ofx") {
-         const buffer = await file.arrayBuffer();
-         const parsed = parseOfxBuffer(buffer, minImportDate);
-         setFormat("ofx");
-         await applyRows(parsed);
-         return;
-      }
-
-      const raw =
-         ext === "xlsx" || ext === "xls"
-            ? await xlsx.parse(file)
-            : await csv.parse(file);
-
-      setFormat(ext === "xlsx" || ext === "xls" ? "xlsx" : "csv");
-      setRawData(raw);
-
-      const saved = localStorage.getItem(mappingStorageKey(raw.headers));
-      if (saved) {
-         try {
-            const parsed: ColumnMapping = JSON.parse(saved);
-            setMapping((prev) => ({ ...prev, ...parsed }));
-            setSavedMappingApplied(true);
-         } catch {
-            setMapping((prev) => ({
-               ...prev,
-               ...guessColumns(raw.headers),
-            }));
+         if (ext === "ofx") {
+            const buffer = await file.arrayBuffer();
+            setFormat("ofx");
+            await applyRows(parseOfxBuffer(buffer, minImportDate));
+            return;
          }
-      } else {
-         setMapping((prev) => ({
-            ...prev,
-            ...guessColumns(raw.headers),
-         }));
-      }
-   }
 
-   async function applyColumnMapping(m: ColumnMapping) {
-      if (!rawData) return;
-      setSavedMapping(m);
-      const mapped = rawData.rows.map((r) =>
-         validateRow(applyMappingToRow(r, rawData.headers, m), minImportDate),
-      );
-      await applyRows(mapped);
-   }
+         const isXlsx = ext === "xlsx" || ext === "xls";
+         const raw = isXlsx ? await xlsx.parse(file) : await csv.parse(file);
 
-   function resetMapping() {
+         setFormat(isXlsx ? "xlsx" : "csv");
+         setRawData(raw);
+
+         const saved = localStorage.getItem(mappingStorageKey(raw.headers));
+         if (saved) {
+            try {
+               const parsed: ColumnMapping = JSON.parse(saved);
+               setMapping((prev) => ({ ...prev, ...parsed }));
+               setSavedMappingApplied(true);
+            } catch {
+               setMapping((prev) => ({
+                  ...prev,
+                  ...guessColumns(raw.headers),
+               }));
+            }
+            return;
+         }
+
+         setMapping((prev) => ({ ...prev, ...guessColumns(raw.headers) }));
+      },
+      [applyRows, csv, minImportDate, xlsx],
+   );
+
+   const applyColumnMapping = useCallback(
+      async (m: ColumnMapping) => {
+         if (!rawData) return;
+         setSavedMapping(m);
+         const mapped = rawData.rows.map((r) =>
+            validateRow(
+               applyMappingToRow(r, rawData.headers, m),
+               minImportDate,
+            ),
+         );
+         await applyRows(mapped);
+      },
+      [rawData, setSavedMapping, minImportDate, applyRows],
+   );
+
+   const resetMapping = useCallback(() => {
       setSavedMappingApplied(false);
       setMapping(EMPTY_MAPPING);
       setSavedMapping(null);
-   }
+   }, [setSavedMapping]);
 
-   function buildImportPayload(selectedIndices: Set<number>) {
-      return rows
-         .filter((_, i) => selectedIndices.has(i))
-         .map((r) => ({
-            name: r.name || undefined,
-            type: r.type,
-            amount: parseAmount(r.amount) ?? r.amount,
-            date: parseDate(r.date) ?? r.date,
-            description: r.description || undefined,
-            categoryId: r.categoryId || undefined,
-         }));
-   }
+   const buildImportPayload = useCallback(
+      (selectedIndices: Set<number>) =>
+         rows
+            .filter((_, i) => selectedIndices.has(i))
+            .map((r) => ({
+               name: r.name || undefined,
+               type: r.type,
+               amount: parseAmount(r.amount) ?? r.amount,
+               date: parseDate(r.date) ?? r.date,
+               description: r.description || undefined,
+               categoryId: r.categoryId || undefined,
+            })),
+      [rows],
+   );
 
    return {
       rawData,
