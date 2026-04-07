@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockHget = vi.fn<(key: string, field: string) => Promise<string | null>>();
-const mockHincrby = vi.fn<(key: string, field: string, increment: number) => Promise<number>>();
+const mockHget =
+   vi.fn<(key: string, field: string) => Promise<string | null>>();
+const mockHincrby =
+   vi.fn<(key: string, field: string, increment: number) => Promise<number>>();
 const mockPexpire = vi.fn<(key: string, ms: number) => Promise<number>>();
 const mockPttl = vi.fn<(key: string) => Promise<number>>();
 const mockHgetall = vi.fn<(key: string) => Promise<Record<string, string>>>();
@@ -105,14 +107,21 @@ describe("incrementUsage", () => {
    it("increments the hash field", async () => {
       mockHincrby.mockResolvedValue(5);
       await incrementUsage("org-1", "ai.chat_message", mockRedis);
-      expect(mockHincrby).toHaveBeenCalledWith("usage:org-1", "ai.chat_message", 1);
+      expect(mockHincrby).toHaveBeenCalledWith(
+         "usage:org-1",
+         "ai.chat_message",
+         1,
+      );
    });
 
    it("sets TTL on first increment", async () => {
       mockHincrby.mockResolvedValue(1);
       mockPttl.mockResolvedValue(-1);
       await incrementUsage("org-1", "ai.chat_message", mockRedis);
-      expect(mockPexpire).toHaveBeenCalledWith("usage:org-1", expect.any(Number));
+      expect(mockPexpire).toHaveBeenCalledWith(
+         "usage:org-1",
+         expect.any(Number),
+      );
    });
 
    it("does not set TTL on subsequent increments", async () => {
@@ -138,21 +147,36 @@ describe("enforceCreditBudget", () => {
    it("does not throw when within free tier", async () => {
       mockHget.mockResolvedValue("10");
       await expect(
-         enforceCreditBudget("org-1", "finance.transaction_created", mockRedis, null),
+         enforceCreditBudget(
+            "org-1",
+            "finance.transaction_created",
+            mockRedis,
+            null,
+         ),
       ).resolves.not.toThrow();
    });
 
    it("does not throw when over free tier but stripe customer exists", async () => {
       mockHget.mockResolvedValue("600");
       await expect(
-         enforceCreditBudget("org-1", "finance.transaction_created", mockRedis, "cus_123"),
+         enforceCreditBudget(
+            "org-1",
+            "finance.transaction_created",
+            mockRedis,
+            "cus_123",
+         ),
       ).resolves.not.toThrow();
    });
 
    it("throws when over free tier and no stripe customer", async () => {
       mockHget.mockResolvedValue("600");
       await expect(
-         enforceCreditBudget("org-1", "finance.transaction_created", mockRedis, null),
+         enforceCreditBudget(
+            "org-1",
+            "finance.transaction_created",
+            mockRedis,
+            null,
+         ),
       ).rejects.toThrow();
    });
 

@@ -48,7 +48,7 @@ import {
 import { ServiceForm } from "@/features/services/ui/services-form";
 import { exportServicesCsv } from "@/features/services/utils/export-services-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
 const SERVICES_BANNER: EarlyAccessBannerTemplate = {
@@ -183,7 +183,7 @@ function ServicesList({ filters }: { filters: FiltersState }) {
       orpc.services.getAll.queryOptions({}),
    );
 
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
    const deleteMutation = useMutation(
@@ -211,17 +211,17 @@ function ServicesList({ filters }: { filters: FiltersState }) {
 
    const handleEdit = useCallback(
       (row: ServiceRow) => {
-         openDialogStack({
+         openCredenza({
             children: (
                <ServiceForm
                   mode="edit"
-                  onSuccess={closeDialogStack}
+                  onSuccess={closeCredenza}
                   service={row}
                />
             ),
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
    );
 
    const handleDelete = useCallback(
@@ -304,7 +304,7 @@ function ServicesList({ filters }: { filters: FiltersState }) {
 // =============================================================================
 
 function ServicesPage() {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
 
    const [filters, setFilters] = useState<FiltersState>({
       search: "",
@@ -322,16 +322,16 @@ function ServicesPage() {
    );
 
    const handleCreate = useCallback(() => {
-      openDialogStack({
-         children: <ServiceForm mode="create" onSuccess={closeDialogStack} />,
+      openCredenza({
+         children: <ServiceForm mode="create" onSuccess={closeCredenza} />,
       });
-   }, [openDialogStack, closeDialogStack]);
+   }, [openCredenza, closeCredenza]);
 
    const handleImport = useCallback(() => {
-      openDialogStack({
+      openCredenza({
          children: <ServiceImportDialogStack />,
       });
-   }, [openDialogStack]);
+   }, [openCredenza]);
 
    const handleExport = useCallback(() => {
       if (servicesList && servicesList.length > 0) {

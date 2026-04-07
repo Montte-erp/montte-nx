@@ -7,11 +7,12 @@ import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import {
    Dropzone,
    DropzoneContent,
@@ -132,7 +133,7 @@ const FIELD_LABELS: Record<keyof ColumnMapping, string> = {
    conta_destino: "Conta destino",
    categoria: "Categoria",
    subcategoria: "Subcategoria",
-   tags: "Tags",
+   tags: "Centros de Custo",
    forma_pagamento: "Forma de pagamento",
    parcelado: "Parcelado",
    num_parcelas: "Nº de parcelas",
@@ -400,15 +401,15 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
    }
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Importar Lançamentos</DialogStackTitle>
-            <DialogStackDescription>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Importar Lançamentos</CredenzaTitle>
+            <CredenzaDescription>
                Importe seus lançamentos via arquivo CSV ou OFX
-            </DialogStackDescription>
-         </DialogStackHeader>
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+         <CredenzaBody className="px-4">
             <div className="flex flex-col gap-4 w-full overflow-auto">
                <StepIndicator methods={methods} />
 
@@ -472,9 +473,9 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                   </div>
                </div>
             </div>
-         </div>
+         </CredenzaBody>
 
-         <div className="border-t px-4 py-4">
+         <CredenzaFooter>
             <Button
                className="w-full"
                onClick={handleTemplateDownload}
@@ -485,8 +486,8 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                <FileSpreadsheet className="size-4 mr-2" />
                Baixar modelo CSV
             </Button>
-         </div>
-      </DialogStackContent>
+         </CredenzaFooter>
+      </>
    );
 }
 
@@ -534,15 +535,15 @@ function ColumnMappingStep({
    ).filter((f) => !REQUIRED_FIELDS.includes(f));
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Mapear Colunas</DialogStackTitle>
-            <DialogStackDescription>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Mapear Colunas</CredenzaTitle>
+            <CredenzaDescription>
                Relacione as colunas do seu arquivo com os campos do sistema
-            </DialogStackDescription>
-         </DialogStackHeader>
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+         <CredenzaBody className="px-4">
             <div className="flex flex-col gap-4">
                <StepIndicator methods={methods} />
 
@@ -635,9 +636,9 @@ function ColumnMappingStep({
                   </div>
                </div>
             </div>
-         </div>
+         </CredenzaBody>
 
-         <div className="border-t px-4 py-4">
+         <CredenzaFooter>
             <div className="flex gap-2">
                <Button
                   className="flex-none"
@@ -657,8 +658,8 @@ function ColumnMappingStep({
                   <ChevronRight className="size-4 ml-1" />
                </Button>
             </div>
-         </div>
-      </DialogStackContent>
+         </CredenzaFooter>
+      </>
    );
 }
 
@@ -828,15 +829,15 @@ function PreviewStep({
 
    return (
       <TooltipProvider>
-         <DialogStackContent index={0}>
-            <DialogStackHeader>
-               <DialogStackTitle>Prévia dos Lançamentos</DialogStackTitle>
-               <DialogStackDescription>
+         <>
+            <CredenzaHeader>
+               <CredenzaTitle>Prévia dos Lançamentos</CredenzaTitle>
+               <CredenzaDescription>
                   {rows.length} lançamento(s) encontrada(s) no arquivo
-               </DialogStackDescription>
-            </DialogStackHeader>
+               </CredenzaDescription>
+            </CredenzaHeader>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4">
+            <CredenzaBody className="px-4">
                <div className="flex flex-col gap-2 w-full">
                   <StepIndicator methods={methods} />
 
@@ -1092,9 +1093,9 @@ function PreviewStep({
                      </div>
                   )}
                </div>
-            </div>
+            </CredenzaBody>
 
-            <div className="border-t px-4 py-4">
+            <CredenzaFooter>
                <div className="flex gap-2">
                   <Button
                      className="flex-none"
@@ -1116,8 +1117,8 @@ function PreviewStep({
                      <ChevronRight className="ml-1 size-4" />
                   </Button>
                </div>
-            </div>
-         </DialogStackContent>
+            </CredenzaFooter>
+         </>
       </TooltipProvider>
    );
 }
@@ -1239,15 +1240,15 @@ function ConfirmStep({
    const isLoading = isPending || importMutation.isPending;
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Confirmar Importação</DialogStackTitle>
-            <DialogStackDescription>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Confirmar Importação</CredenzaTitle>
+            <CredenzaDescription>
                Revise o resumo antes de importar
-            </DialogStackDescription>
-         </DialogStackHeader>
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+         <CredenzaBody className="px-4">
             <div className="flex flex-col gap-4">
                <StepIndicator methods={methods} />
 
@@ -1355,9 +1356,9 @@ function ConfirmStep({
                   </div>
                )}
             </div>
-         </div>
+         </CredenzaBody>
 
-         <div className="border-t px-4 py-4">
+         <CredenzaFooter>
             <div className="flex gap-2">
                <Button
                   className="flex-none"
@@ -1384,26 +1385,26 @@ function ConfirmStep({
                   Importar {visibleRows.length} lançamento(s)
                </Button>
             </div>
-         </div>
-      </DialogStackContent>
+         </CredenzaFooter>
+      </>
    );
 }
 
 function StepLoadingFallback({ title }: { title: string }) {
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>{title}</DialogStackTitle>
-            <DialogStackDescription>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>{title}</CredenzaTitle>
+            <CredenzaDescription>
                Aguarde enquanto processamos...
-            </DialogStackDescription>
-         </DialogStackHeader>
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody className="px-4">
             <div className="flex items-center justify-center py-12">
                <Loader2 className="size-6 animate-spin text-muted-foreground" />
             </div>
-         </div>
-      </DialogStackContent>
+         </CredenzaBody>
+      </>
    );
 }
 

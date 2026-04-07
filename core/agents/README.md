@@ -4,11 +4,11 @@ Mastra-powered AI agent framework with multi-model support and custom request co
 
 ## Exports
 
-| Export      | Purpose                                                       |
-| ----------- | ------------------------------------------------------------- |
-| `.`         | `mastra` singleton, `createRequestContext()`, agent registration |
-| `./models`  | Model ID types and configuration                              |
-| `./utils`   | Agent utility functions                                       |
+| Export     | Purpose                                                          |
+| ---------- | ---------------------------------------------------------------- |
+| `.`        | `mastra` singleton, `createRequestContext()`, agent registration |
+| `./models` | Model ID types and configuration                                 |
+| `./utils`  | Agent utility functions                                          |
 
 ## Usage
 
@@ -17,16 +17,16 @@ import { mastra, createRequestContext } from "@packages/agents";
 
 const agent = mastra.getAgent("rubiAgent");
 const context = createRequestContext({
-  userId: "user-id",
-  brandId: "brand-id",
-  writerId: "writer-id",
-  model: "openrouter/moonshotai/kimi-k2.5",
-  language: "pt-BR",
-  writerInstructions: [],
+   userId: "user-id",
+   brandId: "brand-id",
+   writerId: "writer-id",
+   model: "openrouter/moonshotai/kimi-k2.5",
+   language: "pt-BR",
+   writerInstructions: [],
 });
 
 const result = await agent.generate("Write about TypeScript", {
-  requestContext: context,
+   requestContext: context,
 });
 ```
 

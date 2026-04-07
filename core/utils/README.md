@@ -4,17 +4,17 @@ Shared utility functions used across the entire monorepo. Zero external dependen
 
 ## Modules
 
-| Export | Purpose |
-|--------|---------|
-| `./array` | Array utilities (Fisher-Yates shuffle) |
-| `./date` | Date formatting, relative time, timezone support |
-| `./diff` | Diff and change detection |
-| `./file` | File utilities |
-| `./number` | Number formatting and manipulation |
-| `./object` | Object utilities |
-| `./permissions` | Permission checking |
-| `./sanitization` | Data sanitization |
-| `./text` | Text normalization, slugs, word count, readability scoring |
+| Export           | Purpose                                                    |
+| ---------------- | ---------------------------------------------------------- |
+| `./array`        | Array utilities (Fisher-Yates shuffle)                     |
+| `./date`         | Date formatting, relative time, timezone support           |
+| `./diff`         | Diff and change detection                                  |
+| `./file`         | File utilities                                             |
+| `./number`       | Number formatting and manipulation                         |
+| `./object`       | Object utilities                                           |
+| `./permissions`  | Permission checking                                        |
+| `./sanitization` | Data sanitization                                          |
+| `./text`         | Text normalization, slugs, word count, readability scoring |
 
 ## Usage
 

@@ -124,111 +124,114 @@ export const getPaymentStatus = protectedProcedure.handler(
    },
 );
 
-export const getMeterUsage = protectedProcedure.handler(
-   async ({ context }) => {
-      const { db, stripeClient, userId } = context;
+export const getMeterUsage = protectedProcedure.handler(async ({ context }) => {
+   const { db, stripeClient, userId } = context;
 
-      if (!stripeClient) {
-         return buildUsageFallback();
-      }
+   if (!stripeClient) {
+      return buildUsageFallback();
+   }
 
-      const userRecord = await db.query.user.findFirst({
-         where: (fields, { eq }) => eq(fields.id, userId),
-      });
+   const userRecord = await db.query.user.findFirst({
+      where: (fields, { eq }) => eq(fields.id, userId),
+   });
 
-      if (!userRecord?.stripeCustomerId) {
-         return buildUsageFallback();
-      }
+   if (!userRecord?.stripeCustomerId) {
+      return buildUsageFallback();
+   }
 
-      try {
-         const now = Math.floor(Date.now() / 1000);
-         const startOfMonth = Math.floor(
-            new Date(
-               new Date().getFullYear(),
-               new Date().getMonth(),
-               1,
-            ).getTime() / 1000,
-         );
+   try {
+      const now = Math.floor(Date.now() / 1000);
+      const startOfMonth = Math.floor(
+         new Date(
+            new Date().getFullYear(),
+            new Date().getMonth(),
+            1,
+         ).getTime() / 1000,
+      );
 
-         const meters = await stripeClient.billing.meters.list({ limit: 100 });
-         const meterByEventName = new Map(
-            meters.data.map((m) => [m.event_name, m.id]),
-         );
+      const meters = await stripeClient.billing.meters.list({ limit: 100 });
+      const meterByEventName = new Map(
+         meters.data.map((m) => [m.event_name, m.id]),
+      );
 
-         const entries = Object.entries(STRIPE_METER_EVENTS);
-         const concurrency = 5;
-         const results: Array<{
-            eventName: string;
-            used: number;
-            freeTierLimit: number;
-            pricePerEvent: string;
-         }> = [];
-         for (let i = 0; i < entries.length; i += concurrency) {
-            const batch = entries.slice(i, i + concurrency);
-            const batchResults = await Promise.allSettled(
-               batch.map(async ([eventName, meterEventName]) => {
-                  const meterId = meterByEventName.get(meterEventName);
-                  if (!meterId) {
-                     return {
-                        eventName,
-                        used: 0,
-                        freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
-                        pricePerEvent: EVENT_PRICES[eventName] ?? "0",
-                     };
-                  }
-                  const summary =
-                     await stripeClient.billing.meters.listEventSummaries(
-                        meterId,
-                        {
-                           customer: userRecord.stripeCustomerId!,
-                           start_time: startOfMonth,
-                           end_time: now,
-                           value_grouping_window: "day",
-                           limit: 31,
-                        },
-                     );
-                  const used = summary.data.reduce(
-                     (sum, s) => sum + s.aggregated_value,
-                     0,
-                  );
+      const entries = Object.entries(STRIPE_METER_EVENTS);
+      const concurrency = 5;
+      const results: Array<{
+         eventName: string;
+         used: number;
+         freeTierLimit: number;
+         pricePerEvent: string;
+      }> = [];
+      for (let i = 0; i < entries.length; i += concurrency) {
+         const batch = entries.slice(i, i + concurrency);
+         const batchResults = await Promise.allSettled(
+            batch.map(async ([eventName, meterEventName]) => {
+               const meterId = meterByEventName.get(meterEventName);
+               if (!meterId) {
                   return {
-                     eventName,
-                     used,
-                     freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
-                     pricePerEvent: EVENT_PRICES[eventName] ?? "0",
-                  };
-               }),
-            );
-            for (const [j, result] of batchResults.entries()) {
-               const eventName = batch[j]![0];
-               if (result.status === "rejected") {
-                  results.push({
                      eventName,
                      used: 0,
                      freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
                      pricePerEvent: EVENT_PRICES[eventName] ?? "0",
-                  });
-               } else {
-                  results.push(result.value);
+                  };
                }
+               const summary =
+                  await stripeClient.billing.meters.listEventSummaries(
+                     meterId,
+                     {
+                        customer: userRecord.stripeCustomerId!,
+                        start_time: startOfMonth,
+                        end_time: now,
+                        value_grouping_window: "day",
+                        limit: 31,
+                     },
+                  );
+               const used = summary.data.reduce(
+                  (sum, s) => sum + s.aggregated_value,
+                  0,
+               );
+               return {
+                  eventName,
+                  used,
+                  freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
+                  pricePerEvent: EVENT_PRICES[eventName] ?? "0",
+               };
+            }),
+         );
+         for (const [j, result] of batchResults.entries()) {
+            const eventName = batch[j]![0];
+            if (result.status === "rejected") {
+               results.push({
+                  eventName,
+                  used: 0,
+                  freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
+                  pricePerEvent: EVENT_PRICES[eventName] ?? "0",
+               });
+            } else {
+               results.push(result.value);
             }
          }
+      }
 
-         return results;
+      return results;
+   } catch {
+      throw WebAppError.internal("Failed to fetch meter usage");
+   }
+});
+
+export const getEventCatalog = protectedProcedure.handler(
+   async ({ context }) => {
+      const { db } = context;
+      try {
+         return await db
+            .select()
+            .from(eventCatalog)
+            .orderBy(eventCatalog.category, eventCatalog.displayName);
       } catch {
-         throw WebAppError.internal("Failed to fetch meter usage");
+         throw WebAppError.internal("Failed to fetch event catalog");
       }
    },
 );
-
-export const getEventCatalog = protectedProcedure.handler(async ({ context }) => {
-   const { db } = context;
-   try {
-      return await db.select().from(eventCatalog).orderBy(eventCatalog.category, eventCatalog.displayName);
-   } catch {
-      throw WebAppError.internal("Failed to fetch event catalog");
-   }
-});
 
 function buildUsageFallback() {
    return Object.keys(FREE_TIER_LIMITS).map((eventName) => ({

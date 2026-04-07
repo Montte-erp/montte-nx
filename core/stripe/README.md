@@ -4,10 +4,10 @@ Stripe API client wrapper for payment processing and subscription management.
 
 ## Exports
 
-| Export | Purpose |
-|--------|---------|
-| `.` | Stripe client factory (`getStripeClient()`) |
-| `./constants` | Stripe-related constants |
+| Export        | Purpose                                     |
+| ------------- | ------------------------------------------- |
+| `.`           | Stripe client factory (`getStripeClient()`) |
+| `./constants` | Stripe-related constants                    |
 
 ## Usage
 

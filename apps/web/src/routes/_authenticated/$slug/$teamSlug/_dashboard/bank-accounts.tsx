@@ -10,7 +10,11 @@ import {
 } from "@packages/ui/components/empty";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
+import type {
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Landmark, Pencil, Plus, Trash2 } from "lucide-react";
@@ -37,15 +41,18 @@ const bankAccountsSearchSchema = z.object({
       .array(z.object({ id: z.string(), value: z.unknown() }))
       .optional()
       .default([]),
-   type: z.enum(["checking", "savings", "investment", "payment", "cash"]).optional(),
+   type: z
+      .enum(["checking", "savings", "investment", "payment", "cash"])
+      .optional(),
 });
 
 export type BankAccountsSearch = z.infer<typeof bankAccountsSearchSchema>;
 
-const [useBankAccountsTableState] = createLocalStorageState<DataTableStoredState | null>(
-   "montte:datatable:bank-accounts",
-   null,
-);
+const [useBankAccountsTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:bank-accounts",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts",
@@ -89,19 +96,33 @@ function BankAccountsList({ navigate }: BankAccountsListProps) {
 
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
       (updater) => {
-         const next = typeof updater === "function" ? updater(sorting as SortingState) : updater;
-         navigate({ search: (prev: BankAccountsSearch) => ({ ...prev, sorting: next }) });
+         const next =
+            typeof updater === "function"
+               ? updater(sorting as SortingState)
+               : updater;
+         navigate({
+            search: (prev: BankAccountsSearch) => ({ ...prev, sorting: next }),
+         });
       },
       [sorting, navigate],
    );
 
-   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
-      (updater) => {
-         const next = typeof updater === "function" ? updater(columnFilters as ColumnFiltersState) : updater;
-         navigate({ search: (prev: BankAccountsSearch) => ({ ...prev, columnFilters: next }) });
-      },
-      [columnFilters, navigate],
-   );
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
+      useCallback(
+         (updater) => {
+            const next =
+               typeof updater === "function"
+                  ? updater(columnFilters as ColumnFiltersState)
+                  : updater;
+            navigate({
+               search: (prev: BankAccountsSearch) => ({
+                  ...prev,
+                  columnFilters: next,
+               }),
+            });
+         },
+         [columnFilters, navigate],
+      );
 
    const { data: accounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
@@ -214,9 +235,7 @@ function BankAccountsPage() {
 
    const handleCreate = useCallback(() => {
       openCredenza({
-         children: (
-            <BankAccountForm mode="create" onSuccess={closeCredenza} />
-         ),
+         children: <BankAccountForm mode="create" onSuccess={closeCredenza} />,
       });
    }, [openCredenza, closeCredenza]);
 

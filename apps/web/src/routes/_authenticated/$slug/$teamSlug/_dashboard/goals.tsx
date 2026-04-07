@@ -37,7 +37,7 @@ import { DefaultHeader } from "@/components/default-header";
 import { BudgetGoalDialogStack } from "@/features/budget-goals/ui/budget-goal-dialog-stack";
 import { buildBudgetGoalColumns } from "@/features/budget-goals/ui/budget-goals-columns";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
 const [useGoalsTableState] =
@@ -207,7 +207,7 @@ function GoalsList({ month, year }: GoalsListProps) {
    const [sorting, setSorting] = useState<SortingState>([]);
    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
    const [tableState, setTableState] = useGoalsTableState();
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
    const { data: goals } = useSuspenseQuery(
@@ -227,19 +227,19 @@ function GoalsList({ month, year }: GoalsListProps) {
 
    const handleEdit = useCallback(
       (goal: BudgetGoalWithProgress) => {
-         openDialogStack({
+         openCredenza({
             children: (
                <BudgetGoalDialogStack
                   goal={goal}
                   mode="edit"
                   month={goal.month}
-                  onSuccess={closeDialogStack}
+                  onSuccess={closeCredenza}
                   year={goal.year}
                />
             ),
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
    );
 
    const handleDelete = useCallback(
@@ -328,7 +328,7 @@ function GoalsPage() {
       month: new Date().getMonth() + 1,
       year: new Date().getFullYear(),
    });
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
 
    const copyMutation = useMutation(
       orpc.budgetGoals.copyFromPreviousMonth.mutationOptions({
@@ -348,17 +348,17 @@ function GoalsPage() {
    );
 
    const handleCreate = useCallback(() => {
-      openDialogStack({
+      openCredenza({
          children: (
             <BudgetGoalDialogStack
                mode="create"
                month={monthYear.month}
-               onSuccess={closeDialogStack}
+               onSuccess={closeCredenza}
                year={monthYear.year}
             />
          ),
       });
-   }, [openDialogStack, closeDialogStack, monthYear]);
+   }, [openCredenza, closeCredenza, monthYear]);
 
    const handleCopyPreviousMonth = useCallback(() => {
       copyMutation.mutate({ month: monthYear.month, year: monthYear.year });

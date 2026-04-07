@@ -5,11 +5,12 @@ import {
 } from "@packages/ui/components/avatar";
 import { Button } from "@packages/ui/components/button";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import {
    DropdownMenu,
    DropdownMenuContent,
@@ -49,7 +50,7 @@ import { useSetActiveOrganization } from "./-sidebar-scope-switcher/use-set-acti
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
@@ -136,7 +137,7 @@ function SidebarScopeSwitcherContent() {
    const { activeOrganization, projectLimit, projectCount } =
       useActiveOrganization();
    const { activeTeam, teams } = useActiveTeam();
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const { setActiveOrganization } = useSetActiveOrganization();
    const [isPending, startTransition] = useTransition();
@@ -220,49 +221,47 @@ function SidebarScopeSwitcherContent() {
          e?.stopPropagation();
 
          if (projectLimit !== null && teams.length >= projectLimit) {
-            openDialogStack({
+            openCredenza({
                children: (
-                  <DialogStackContent index={0}>
-                     <DialogStackHeader>
-                        <DialogStackTitle>Limite de espaços</DialogStackTitle>
-                        <DialogStackDescription>
+                  <>
+                     <CredenzaHeader>
+                        <CredenzaTitle>Limite de espaços</CredenzaTitle>
+                        <CredenzaDescription>
                            Você está usando {projectCount} de {projectLimit}{" "}
                            espaços
-                        </DialogStackDescription>
-                     </DialogStackHeader>
-                     <div className="flex-1 overflow-y-auto px-4 py-4">
+                        </CredenzaDescription>
+                     </CredenzaHeader>
+                     <CredenzaBody className="px-4">
                         <p className="text-sm text-muted-foreground">
                            Faça upgrade para o add-on Boost para criar espaços
                            ilimitados
                         </p>
-                     </div>
-                     <div className="border-t px-4 py-4">
-                        <div className="flex gap-2">
-                           <Button onClick={closeDialogStack} variant="outline">
-                              Cancelar
-                           </Button>
-                           <Button asChild>
-                              <Link
-                                 onClick={closeDialogStack}
-                                 params={{ slug, teamSlug }}
-                                 to="/$slug/$teamSlug/billing"
-                              >
-                                 Ver planos
-                              </Link>
-                           </Button>
-                        </div>
-                     </div>
-                  </DialogStackContent>
+                     </CredenzaBody>
+                     <CredenzaFooter>
+                        <Button onClick={closeCredenza} variant="outline">
+                           Cancelar
+                        </Button>
+                        <Button asChild>
+                           <Link
+                              onClick={closeCredenza}
+                              params={{ slug, teamSlug }}
+                              to="/$slug/$teamSlug/billing"
+                           >
+                              Ver planos
+                           </Link>
+                        </Button>
+                     </CredenzaFooter>
+                  </>
                ),
             });
             return;
          }
 
-         openDialogStack({ children: <CreateTeamForm /> });
+         openCredenza({ children: <CreateTeamForm /> });
       },
       [
-         openDialogStack,
-         closeDialogStack,
+         openCredenza,
+         closeCredenza,
          projectLimit,
          projectCount,
          teams.length,
@@ -274,9 +273,9 @@ function SidebarScopeSwitcherContent() {
    const handleNewOrganization = useCallback(
       (e?: React.MouseEvent) => {
          e?.stopPropagation();
-         openDialogStack({ children: <ManageOrganizationForm /> });
+         openCredenza({ children: <ManageOrganizationForm /> });
       },
-      [openDialogStack],
+      [openCredenza],
    );
 
    const handleLogout = useCallback(async () => {

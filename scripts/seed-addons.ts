@@ -91,7 +91,9 @@ async function runSeed(
    console.log(
       colors.cyan(`   Addons:            ${addonNames.join(", ") || "all"}`),
    );
-   console.log(colors.cyan(`   Mode:              ${dryRun ? "DRY RUN" : "LIVE"}`));
+   console.log(
+      colors.cyan(`   Mode:              ${dryRun ? "DRY RUN" : "LIVE"}`),
+   );
    console.log(colors.cyan("-".repeat(50)));
 
    loadEnv(env);
@@ -105,7 +107,9 @@ async function runSeed(
 
    if (!org) {
       console.error(
-         colors.red(`❌ Organization with slug "${organizationSlug}" not found`),
+         colors.red(
+            `❌ Organization with slug "${organizationSlug}" not found`,
+         ),
       );
       process.exit(1);
    }
@@ -133,7 +137,9 @@ async function runSeed(
             `  ${addon.plan.padEnd(12)} ${addon.displayName} — R$ ${(addon.monthlyPriceCents / 100).toFixed(2)}/mês`,
          );
       }
-      console.log(colors.yellow("\n⚠️  DRY RUN completed - no data was modified"));
+      console.log(
+         colors.yellow("\n⚠️  DRY RUN completed - no data was modified"),
+      );
       return;
    }
 
@@ -143,21 +149,29 @@ async function runSeed(
    for (const addon of toSeed) {
       const existing = await db.query.subscription.findFirst({
          where: (fields, { and, eq }) =>
-            and(
-               eq(fields.referenceId, org.id),
-               eq(fields.plan, addon.plan),
-            ),
+            and(eq(fields.referenceId, org.id), eq(fields.plan, addon.plan)),
       });
 
       if (existing) {
          await db
             .update(subscription)
-            .set({ status: "active", periodStart: now, periodEnd, cancelAtPeriodEnd: false })
+            .set({
+               status: "active",
+               periodStart: now,
+               periodEnd,
+               cancelAtPeriodEnd: false,
+            })
             .where(eq(subscription.id, existing.id));
          if (existing.status !== "active") {
-            console.log(colors.yellow(`  ⚠️  Reactivated previously ${existing.status} addon: ${addon.plan}`));
+            console.log(
+               colors.yellow(
+                  `  ⚠️  Reactivated previously ${existing.status} addon: ${addon.plan}`,
+               ),
+            );
          } else {
-            console.log(colors.green(`  ✅ Updated existing addon: ${addon.plan}`));
+            console.log(
+               colors.green(`  ✅ Updated existing addon: ${addon.plan}`),
+            );
          }
       } else {
          await db.insert(subscription).values({
@@ -198,7 +212,9 @@ async function checkAddons(env: string, organizationSlug: string) {
 
    if (rows.length === 0) {
       console.log(
-         colors.yellow(`⚠️  No addon subscriptions found for "${organizationSlug}"`),
+         colors.yellow(
+            `⚠️  No addon subscriptions found for "${organizationSlug}"`,
+         ),
       );
       return;
    }
@@ -211,38 +227,54 @@ async function checkAddons(env: string, organizationSlug: string) {
          row.status === "active"
             ? colors.green(row.status)
             : colors.yellow(row.status ?? "unknown");
-      console.log(`  ${row.plan.padEnd(14)} status=${status}  expires=${row.periodEnd?.toISOString() ?? "—"}`);
+      console.log(
+         `  ${row.plan.padEnd(14)} status=${status}  expires=${row.periodEnd?.toISOString() ?? "—"}`,
+      );
    }
 }
 
 const cli = cac("seed-addons");
 
-cli
-   .command("run")
-   .option("-e, --env <environment>", "Environment to use", { default: "local" })
+cli.command("run")
+   .option("-e, --env <environment>", "Environment to use", {
+      default: "local",
+   })
    .option("-o, --org <slug>", "Organization slug to seed addons for", {
       default: "local",
    })
-   .option("-a, --addons <names>", "Comma-separated addon names (boost,scale,enterprise)", {
-      default: "",
-   })
+   .option(
+      "-a, --addons <names>",
+      "Comma-separated addon names (boost,scale,enterprise)",
+      {
+         default: "",
+      },
+   )
    .option("--dry-run", "Preview changes without modifying data")
    .action(async (options) => {
       const addonNames = options.addons
-         ? (options.addons as string).split(",").map((s: string) => s.trim()).filter(Boolean)
+         ? (options.addons as string)
+              .split(",")
+              .map((s: string) => s.trim())
+              .filter(Boolean)
          : [];
-      await runSeed(options.env, Boolean(options.dryRun), options.org, addonNames).catch(
-         (error) => {
-            console.error(colors.red("Seed failed:"), error);
-            process.exit(1);
-         },
-      );
+      await runSeed(
+         options.env,
+         Boolean(options.dryRun),
+         options.org,
+         addonNames,
+      ).catch((error) => {
+         console.error(colors.red("Seed failed:"), error);
+         process.exit(1);
+      });
    });
 
-cli
-   .command("check")
-   .option("-e, --env <environment>", "Environment to use", { default: "local" })
-   .option("-o, --org <slug>", "Organization slug to check", { default: "local" })
+cli.command("check")
+   .option("-e, --env <environment>", "Environment to use", {
+      default: "local",
+   })
+   .option("-o, --org <slug>", "Organization slug to check", {
+      default: "local",
+   })
    .action(async (options) => {
       await checkAddons(options.env, options.org);
    });

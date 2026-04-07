@@ -27,10 +27,7 @@ const EMPRESARIAL_CATEGORIES: CategorySeed[] = [
    {
       name: "Custos",
       type: "expense",
-      children: [
-         { name: "CMV" },
-         { name: "Serviços de Terceiros" },
-      ],
+      children: [{ name: "CMV" }, { name: "Serviços de Terceiros" }],
    },
    {
       name: "Despesas Operacionais",
@@ -312,7 +309,9 @@ export async function bulkDeleteCategories(
             and(inArray(fields.id, ids), eq(fields.teamId, teamId)),
       });
       if (existing.length !== ids.length) {
-         throw AppError.notFound("Uma ou mais categorias não foram encontradas.");
+         throw AppError.notFound(
+            "Uma ou mais categorias não foram encontradas.",
+         );
       }
       const defaultOne = existing.find((c) => c.isDefault);
       if (defaultOne) {

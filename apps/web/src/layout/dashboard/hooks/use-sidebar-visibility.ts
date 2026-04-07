@@ -14,14 +14,17 @@ export function useSidebarVisibility() {
       [hiddenItems],
    );
 
-   const toggleItem = useCallback((itemId: string) => {
-      setHiddenItems((prev) => {
-         const current = prev ?? [];
-         return current.includes(itemId)
-            ? current.filter((id) => id !== itemId)
-            : [...current, itemId];
-      });
-   }, [setHiddenItems]);
+   const toggleItem = useCallback(
+      (itemId: string) => {
+         setHiddenItems((prev) => {
+            const current = prev ?? [];
+            return current.includes(itemId)
+               ? current.filter((id) => id !== itemId)
+               : [...current, itemId];
+         });
+      },
+      [setHiddenItems],
+   );
 
    return { hiddenItems, isVisible, toggleItem };
 }

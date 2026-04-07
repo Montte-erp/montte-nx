@@ -1,10 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import Stripe from "stripe";
-import {
-   EVENT_PRICES,
-   STRIPE_METER_EVENTS,
-} from "@core/stripe/constants";
+import { EVENT_PRICES, STRIPE_METER_EVENTS } from "@core/stripe/constants";
 import { of, toMinorUnitsString } from "@f-o-t/money";
 import chalk from "chalk";
 import { cac } from "cac";
@@ -66,12 +63,14 @@ interface MeterSetupEntry {
 }
 
 function buildEntries(): MeterSetupEntry[] {
-   return Object.entries(STRIPE_METER_EVENTS).map(([eventName, meterEventName]) => ({
-      eventName,
-      meterEventName,
-      displayName: DISPLAY_NAMES[eventName] ?? eventName,
-      pricePerEvent: EVENT_PRICES[eventName] ?? "0",
-   }));
+   return Object.entries(STRIPE_METER_EVENTS).map(
+      ([eventName, meterEventName]) => ({
+         eventName,
+         meterEventName,
+         displayName: DISPLAY_NAMES[eventName] ?? eventName,
+         pricePerEvent: EVENT_PRICES[eventName] ?? "0",
+      }),
+   );
 }
 
 async function runSetup(env: string, dryRun: boolean) {
@@ -87,13 +86,17 @@ async function runSetup(env: string, dryRun: boolean) {
    const entries = buildEntries();
 
    if (dryRun) {
-      console.log(`\nWould create ${entries.length} meters + ${entries.length} products + ${entries.length} prices:\n`);
+      console.log(
+         `\nWould create ${entries.length} meters + ${entries.length} products + ${entries.length} prices:\n`,
+      );
       for (const e of entries) {
          console.log(
             `  ${e.meterEventName.padEnd(35)} R$ ${Number(e.pricePerEvent).toFixed(6)}/event  — ${e.displayName}`,
          );
       }
-      console.log(colors.yellow("\n⚠️  DRY RUN completed - no data was modified"));
+      console.log(
+         colors.yellow("\n⚠️  DRY RUN completed - no data was modified"),
+      );
       return;
    }
 
@@ -158,7 +161,9 @@ async function runSetup(env: string, dryRun: boolean) {
                product: productId,
                currency: "brl",
                billing_scheme: "per_unit",
-               unit_amount_decimal: toMinorUnitsString(of(entry.pricePerEvent, "BRL")),
+               unit_amount_decimal: toMinorUnitsString(
+                  of(entry.pricePerEvent, "BRL"),
+               ),
                recurring: {
                   interval: "month",
                   usage_type: "metered",
@@ -170,7 +175,11 @@ async function runSetup(env: string, dryRun: boolean) {
 
          console.log();
       } catch (error) {
-         console.log(colors.red(`FAILED — ${error instanceof Error ? error.message : String(error)}`));
+         console.log(
+            colors.red(
+               `FAILED — ${error instanceof Error ? error.message : String(error)}`,
+            ),
+         );
          failed++;
       }
    }
@@ -179,7 +188,9 @@ async function runSetup(env: string, dryRun: boolean) {
    console.log(`  Created: ${created}  Skipped: ${skipped}  Failed: ${failed}`);
 
    if (failed > 0) {
-      console.log(colors.red(`\n❌ ${failed} entries failed. Re-run to retry.`));
+      console.log(
+         colors.red(`\n❌ ${failed} entries failed. Re-run to retry.`),
+      );
       process.exit(1);
    }
 
@@ -201,17 +212,25 @@ async function checkSetup(env: string) {
    const extra = [...meterNames].filter((n) => !expectedNames.has(n));
 
    if (missing.length > 0) {
-      console.log(colors.red(`❌ ${missing.length} meter(s) missing from Stripe:`));
+      console.log(
+         colors.red(`❌ ${missing.length} meter(s) missing from Stripe:`),
+      );
       for (const name of missing) console.log(colors.red(`   - ${name}`));
    }
 
    if (extra.length > 0) {
-      console.log(colors.yellow(`⚠️  ${extra.length} meter(s) in Stripe not in code (stale):`));
+      console.log(
+         colors.yellow(
+            `⚠️  ${extra.length} meter(s) in Stripe not in code (stale):`,
+         ),
+      );
       for (const name of extra) console.log(colors.yellow(`   - ${name}`));
    }
 
    if (missing.length === 0 && extra.length === 0) {
-      console.log(colors.green(`✅ All ${expectedNames.size} meters present in Stripe`));
+      console.log(
+         colors.green(`✅ All ${expectedNames.size} meters present in Stripe`),
+      );
       return;
    }
 
@@ -221,9 +240,10 @@ async function checkSetup(env: string) {
 
 const cli = cac("setup-stripe");
 
-cli
-   .command("run")
-   .option("-e, --env <environment>", "Environment to use", { default: "local" })
+cli.command("run")
+   .option("-e, --env <environment>", "Environment to use", {
+      default: "local",
+   })
    .option("--dry-run", "Preview changes without modifying data")
    .action(async (options) => {
       await runSetup(options.env, Boolean(options.dryRun)).catch((error) => {
@@ -232,9 +252,10 @@ cli
       });
    });
 
-cli
-   .command("check")
-   .option("-e, --env <environment>", "Environment to use", { default: "local" })
+cli.command("check")
+   .option("-e, --env <environment>", "Environment to use", {
+      default: "local",
+   })
    .action(async (options) => {
       await checkSetup(options.env).catch((error) => {
          console.error(colors.red("Check failed:"), error);

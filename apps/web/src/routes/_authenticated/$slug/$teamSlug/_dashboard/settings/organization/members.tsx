@@ -25,7 +25,7 @@ import { Suspense, useMemo, useState, useTransition } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
 import { z } from "zod";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -59,7 +59,7 @@ function MembersContent() {
    const [tableState, setTableState] = useMembersTableState();
 
    const queryClient = useQueryClient();
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
    const [searchFilter, setSearchFilter] = useState("");
    const [isPending, startTransition] = useTransition();
 
@@ -137,10 +137,10 @@ function MembersContent() {
    }
 
    function handleOpenInviteCredenza() {
-      openDialogStack({
+      openCredenza({
          children: (
             <InviteMemberForm
-               onSuccess={closeDialogStack}
+               onSuccess={closeCredenza}
                organizationId={organizationId}
             />
          ),

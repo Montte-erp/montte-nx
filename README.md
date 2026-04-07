@@ -70,19 +70,19 @@ Usage-based billing powered by Stripe meter events. Each billable event (AI chat
 
 Built as an **Nx** monorepo with **Bun**.
 
-| Category      | Technology                                                                            |
-| :------------ | :------------------------------------------------------------------------------------ |
+| Category      | Technology                                                                           |
+| :------------ | :----------------------------------------------------------------------------------- |
 | **Frontend**  | React 19, Vite, TypeScript, TanStack Router, TanStack Query, shadcn/ui, Tailwind CSS |
-| **AI**        | Mastra (Agent orchestration)                                                          |
+| **AI**        | Mastra (Agent orchestration)                                                         |
 | **Backend**   | oRPC (type-safe API), ElysiaJS (SDK server), Drizzle ORM, PostgreSQL                 |
-| **Auth**      | Better Auth                                                                           |
-| **Jobs**      | BullMQ, Redis                                                                         |
-| **Storage**   | MinIO (S3-compatible)                                                                 |
-| **Security**  | Arcjet (Rate limiting & bot detection)                                                |
-| **Analytics** | PostHog                                                                               |
-| **Email**     | Resend (React Email templates)                                                        |
-| **Payments**  | Stripe                                                                                |
-| **Tooling**   | Nx, oxlint, oxfmt                                                                     |
+| **Auth**      | Better Auth                                                                          |
+| **Jobs**      | BullMQ, Redis                                                                        |
+| **Storage**   | MinIO (S3-compatible)                                                                |
+| **Security**  | Arcjet (Rate limiting & bot detection)                                               |
+| **Analytics** | PostHog                                                                              |
+| **Email**     | Resend (React Email templates)                                                       |
+| **Payments**  | Stripe                                                                               |
+| **Tooling**   | Nx, oxlint, oxfmt                                                                    |
 
 ---
 

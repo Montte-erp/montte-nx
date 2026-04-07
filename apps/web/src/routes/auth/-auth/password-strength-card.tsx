@@ -14,7 +14,10 @@ const CRITERIA: Criterion[] = [
 
 type StrengthLevel = "fraca" | "razoavel" | "boa" | "forte";
 
-function getStrength(password: string): { level: StrengthLevel; score: number } {
+function getStrength(password: string): {
+   level: StrengthLevel;
+   score: number;
+} {
    const score = CRITERIA.filter((c) => c.test(password)).length;
    if (score <= 1) return { level: "fraca", score };
    if (score === 2) return { level: "razoavel", score };
@@ -22,7 +25,10 @@ function getStrength(password: string): { level: StrengthLevel; score: number } 
    return { level: "forte", score };
 }
 
-const STRENGTH_CONFIG: Record<StrengthLevel, { label: string; color: string; bars: number }> = {
+const STRENGTH_CONFIG: Record<
+   StrengthLevel,
+   { label: string; color: string; bars: number }
+> = {
    fraca: { label: "Senha fraca", color: "bg-destructive", bars: 1 },
    razoavel: { label: "Senha razoável", color: "bg-orange-500", bars: 2 },
    boa: { label: "Senha boa", color: "bg-yellow-500", bars: 3 },
@@ -52,13 +58,18 @@ export function PasswordStrengthCard({ password }: { password: string }) {
             {CRITERIA.map((criterion) => {
                const passes = criterion.test(password);
                return (
-                  <div key={criterion.label} className="flex items-center gap-2">
+                  <div
+                     key={criterion.label}
+                     className="flex items-center gap-2"
+                  >
                      {passes ? (
                         <Check className="size-3 text-green-500 shrink-0" />
                      ) : (
                         <X className="size-3 text-muted-foreground shrink-0" />
                      )}
-                     <span className={`text-xs ${passes ? "text-foreground" : "text-muted-foreground"}`}>
+                     <span
+                        className={`text-xs ${passes ? "text-foreground" : "text-muted-foreground"}`}
+                     >
                         {criterion.label}
                      </span>
                   </div>

@@ -4,8 +4,8 @@ Redis connection singleton for caching, sessions, and real-time operations.
 
 ## Exports
 
-| Export | Purpose |
-|--------|---------|
+| Export         | Purpose                                     |
+| -------------- | ------------------------------------------- |
 | `./connection` | Redis client factory and singleton instance |
 
 ## Usage

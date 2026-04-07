@@ -291,10 +291,9 @@ export const getOnboardingStatus = protectedProcedure.handler(
             onboardingProducts: currentTeam.onboardingProducts ?? null,
             tasks: Object.keys(tasks).length > 0 ? tasks : null,
             name: currentTeam.name,
-            cnpjData:
-               (currentTeam.cnpjData as {
-                  data_inicio_atividade?: string;
-               } | null) ?? null,
+            cnpjData: currentTeam.cnpjData
+               ? cnpjDataSchema.parse(currentTeam.cnpjData)
+               : null,
          },
       };
    },

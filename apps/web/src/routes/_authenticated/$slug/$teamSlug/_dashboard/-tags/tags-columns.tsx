@@ -19,7 +19,9 @@ export function buildTagColumns(): ColumnDef<TagRow>[] {
                   style={{ backgroundColor: row.original.color }}
                />
                <div className="flex flex-col min-w-0">
-                  <span className="font-medium truncate">{row.original.name}</span>
+                  <span className="font-medium truncate">
+                     {row.original.name}
+                  </span>
                   {row.original.description && (
                      <span className="text-xs text-muted-foreground truncate">
                         {row.original.description}

@@ -1,7 +1,4 @@
-import {
-   Dialog,
-   DialogContent,
-} from "@packages/ui/components/dialog";
+import { Dialog, DialogContent } from "@packages/ui/components/dialog";
 import { Store, useStore } from "@tanstack/react-store";
 import { SurveyModalContent } from "@/features/feedback/ui/survey-modal-content";
 
@@ -46,7 +43,12 @@ export function GlobalSurveyModal() {
    const close = () => surveyModalStore.setState(() => initialState);
 
    return (
-      <Dialog onOpenChange={(open) => { if (!open) close(); }} open={state.isOpen}>
+      <Dialog
+         onOpenChange={(open) => {
+            if (!open) close();
+         }}
+         open={state.isOpen}
+      >
          <DialogContent className="max-w-lg">
             {state.surveyId && (
                <SurveyModalContent

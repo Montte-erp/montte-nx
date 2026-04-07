@@ -1,6 +1,14 @@
 import { call } from "@orpc/server";
 import { sql } from "drizzle-orm";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+   afterAll,
+   beforeAll,
+   beforeEach,
+   describe,
+   expect,
+   it,
+   vi,
+} from "vitest";
 
 vi.mock("@core/database/client", async () => {
    const { setupIntegrationDb } =

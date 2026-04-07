@@ -36,7 +36,7 @@ import {
 import { Suspense, useRef } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 import { InsightEditDialogStack } from "./insight-edit-dialog-stack";
 import { InsightPreview } from "./insight-preview";
@@ -297,7 +297,7 @@ export function DashboardTile({
    globalDateRange,
 }: DashboardTileProps) {
    const queryClient = useQueryClient();
-   const { openDialogStack } = useDialogStack();
+   const { openCredenza } = useCredenza();
    const {
       attributes,
       listeners,
@@ -399,7 +399,7 @@ export function DashboardTile({
                            {insightId && (
                               <DropdownMenuItem
                                  onClick={() =>
-                                    openDialogStack({
+                                    openCredenza({
                                        children: (
                                           <InsightEditDialogStack
                                              insightId={insightId}

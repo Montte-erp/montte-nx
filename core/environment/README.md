@@ -4,12 +4,12 @@ Centralized, Zod-validated environment variable configuration for all runtime co
 
 ## Exports
 
-| Export | Context |
-|--------|---------|
-| `./server` | Server-side env vars (DATABASE_URL, auth secrets, API keys, etc.) |
-| `./client` | Client-side env vars (VITE_POSTHOG_HOST, VITE_POSTHOG_KEY) |
-| `./worker` | Worker-specific env vars (concurrency, queue config) |
-| `./helpers` | Environment utility functions |
+| Export      | Context                                                           |
+| ----------- | ----------------------------------------------------------------- |
+| `./server`  | Server-side env vars (DATABASE_URL, auth secrets, API keys, etc.) |
+| `./client`  | Client-side env vars (VITE_POSTHOG_HOST, VITE_POSTHOG_KEY)        |
+| `./worker`  | Worker-specific env vars (concurrency, queue config)              |
+| `./helpers` | Environment utility functions                                     |
 
 ## Usage
 

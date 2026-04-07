@@ -1,10 +1,11 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import {
    Field,
    FieldError,
@@ -174,189 +175,119 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
 
    return (
       <form
-         className="h-full flex flex-col"
          onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
             form.handleSubmit();
          }}
       >
-         <DialogStackContent index={0}>
-            <DialogStackHeader>
-               <DialogStackTitle>
-                  {isCreate ? "Novo Contato" : "Editar Contato"}
-               </DialogStackTitle>
-               <DialogStackDescription>
-                  {isCreate
-                     ? "Cadastre um cliente ou fornecedor."
-                     : "Atualize as informações do contato."}
-               </DialogStackDescription>
-            </DialogStackHeader>
+         <CredenzaHeader>
+            <CredenzaTitle>
+               {isCreate ? "Novo Contato" : "Editar Contato"}
+            </CredenzaTitle>
+            <CredenzaDescription>
+               {isCreate
+                  ? "Cadastre um cliente ou fornecedor."
+                  : "Atualize as informações do contato."}
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4">
-               <FieldGroup>
-                  <form.Field
-                     name="name"
-                     children={(field) => {
-                        const isInvalid =
-                           field.state.meta.isTouched &&
-                           field.state.meta.errors.length > 0;
-                        return (
-                           <Field data-invalid={isInvalid}>
-                              <FieldLabel htmlFor={field.name}>
-                                 Nome *
-                              </FieldLabel>
-                              <Input
-                                 id={field.name}
-                                 name={field.name}
-                                 aria-invalid={isInvalid}
-                                 onBlur={field.handleBlur}
-                                 onChange={(e) =>
-                                    field.handleChange(e.target.value)
-                                 }
-                                 placeholder="Ex: Empresa XYZ"
-                                 value={field.state.value}
-                              />
-                              {isInvalid && (
-                                 <FieldError errors={field.state.meta.errors} />
-                              )}
-                           </Field>
-                        );
-                     }}
-                  />
+         <CredenzaBody className="px-4">
+            <FieldGroup>
+               <form.Field
+                  name="name"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel htmlFor={field.name}>Nome *</FieldLabel>
+                           <Input
+                              id={field.name}
+                              name={field.name}
+                              aria-invalid={isInvalid}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              placeholder="Ex: Empresa XYZ"
+                              value={field.state.value}
+                           />
+                           {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                           )}
+                        </Field>
+                     );
+                  }}
+               />
 
+               <form.Field
+                  name="type"
+                  children={(field) => (
+                     <Field>
+                        <FieldLabel>Tipo *</FieldLabel>
+                        <Select
+                           onValueChange={(v) =>
+                              field.handleChange(v as ContactRow["type"])
+                           }
+                           value={field.state.value}
+                        >
+                           <SelectTrigger>
+                              <SelectValue placeholder="Selecione o tipo" />
+                           </SelectTrigger>
+                           <SelectContent>
+                              <SelectItem value="cliente">Cliente</SelectItem>
+                              <SelectItem value="fornecedor">
+                                 Fornecedor
+                              </SelectItem>
+                              <SelectItem value="ambos">Ambos</SelectItem>
+                           </SelectContent>
+                        </Select>
+                     </Field>
+                  )}
+               />
+
+               <div className="grid grid-cols-3 gap-2">
                   <form.Field
-                     name="type"
+                     name="documentType"
                      children={(field) => (
                         <Field>
-                           <FieldLabel>Tipo *</FieldLabel>
+                           <FieldLabel>Tipo Doc.</FieldLabel>
                            <Select
                               onValueChange={(v) =>
-                                 field.handleChange(v as ContactRow["type"])
+                                 field.handleChange(v as "" | "cpf" | "cnpj")
                               }
                               value={field.state.value}
                            >
                               <SelectTrigger>
-                                 <SelectValue placeholder="Selecione o tipo" />
+                                 <SelectValue placeholder="—" />
                               </SelectTrigger>
                               <SelectContent>
-                                 <SelectItem value="cliente">
-                                    Cliente
-                                 </SelectItem>
-                                 <SelectItem value="fornecedor">
-                                    Fornecedor
-                                 </SelectItem>
-                                 <SelectItem value="ambos">Ambos</SelectItem>
+                                 <SelectItem value="cpf">CPF</SelectItem>
+                                 <SelectItem value="cnpj">CNPJ</SelectItem>
                               </SelectContent>
                            </Select>
                         </Field>
                      )}
                   />
 
-                  <div className="grid grid-cols-3 gap-2">
-                     <form.Field
-                        name="documentType"
-                        children={(field) => (
-                           <Field>
-                              <FieldLabel>Tipo Doc.</FieldLabel>
-                              <Select
-                                 onValueChange={(v) =>
-                                    field.handleChange(v as "" | "cpf" | "cnpj")
-                                 }
-                                 value={field.state.value}
-                              >
-                                 <SelectTrigger>
-                                    <SelectValue placeholder="—" />
-                                 </SelectTrigger>
-                                 <SelectContent>
-                                    <SelectItem value="cpf">CPF</SelectItem>
-                                    <SelectItem value="cnpj">CNPJ</SelectItem>
-                                 </SelectContent>
-                              </Select>
-                           </Field>
-                        )}
-                     />
-
-                     <form.Field
-                        name="document"
-                        children={(field) => {
-                           const isInvalid =
-                              field.state.meta.isTouched &&
-                              field.state.meta.errors.length > 0;
-                           return (
-                              <Field
-                                 className="col-span-2"
-                                 data-invalid={isInvalid}
-                              >
-                                 <FieldLabel htmlFor={field.name}>
-                                    Número
-                                 </FieldLabel>
-                                 <Input
-                                    ref={documentRef}
-                                    aria-invalid={isInvalid}
-                                    defaultValue={field.state.value}
-                                    id={field.name}
-                                    inputMode="numeric"
-                                    name={field.name}
-                                    onBlur={field.handleBlur}
-                                    onInput={(e) =>
-                                       field.handleChange(
-                                          (e.target as HTMLInputElement).value,
-                                       )
-                                    }
-                                    placeholder={
-                                       docType === "cnpj"
-                                          ? "00.000.000/0000-00"
-                                          : "000.000.000-00"
-                                    }
-                                 />
-                              </Field>
-                           );
-                        }}
-                     />
-                  </div>
-
                   <form.Field
-                     name="email"
+                     name="document"
                      children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
                         return (
-                           <Field data-invalid={isInvalid}>
+                           <Field
+                              className="col-span-2"
+                              data-invalid={isInvalid}
+                           >
                               <FieldLabel htmlFor={field.name}>
-                                 Email
+                                 Número
                               </FieldLabel>
                               <Input
-                                 id={field.name}
-                                 name={field.name}
-                                 aria-invalid={isInvalid}
-                                 onBlur={field.handleBlur}
-                                 onChange={(e) =>
-                                    field.handleChange(e.target.value)
-                                 }
-                                 placeholder="contato@empresa.com"
-                                 type="email"
-                                 value={field.state.value}
-                              />
-                           </Field>
-                        );
-                     }}
-                  />
-
-                  <form.Field
-                     name="phone"
-                     children={(field) => {
-                        const isInvalid =
-                           field.state.meta.isTouched &&
-                           field.state.meta.errors.length > 0;
-                        return (
-                           <Field data-invalid={isInvalid}>
-                              <FieldLabel htmlFor={field.name}>
-                                 Telefone
-                              </FieldLabel>
-                              <Input
-                                 ref={phoneRef}
+                                 ref={documentRef}
                                  aria-invalid={isInvalid}
                                  defaultValue={field.state.value}
                                  id={field.name}
@@ -368,62 +299,123 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                                        (e.target as HTMLInputElement).value,
                                     )
                                  }
-                                 placeholder="(11) 99999-9999"
-                              />
-                           </Field>
-                        );
-                     }}
-                  />
-
-                  <form.Field
-                     name="notes"
-                     children={(field) => {
-                        const isInvalid =
-                           field.state.meta.isTouched &&
-                           field.state.meta.errors.length > 0;
-                        return (
-                           <Field data-invalid={isInvalid}>
-                              <FieldLabel htmlFor={field.name}>
-                                 Observações
-                              </FieldLabel>
-                              <Textarea
-                                 id={field.name}
-                                 name={field.name}
-                                 aria-invalid={isInvalid}
-                                 onBlur={field.handleBlur}
-                                 onChange={(e) =>
-                                    field.handleChange(e.target.value)
+                                 placeholder={
+                                    docType === "cnpj"
+                                       ? "00.000.000/0000-00"
+                                       : "000.000.000-00"
                                  }
-                                 placeholder="Informações adicionais..."
-                                 rows={3}
-                                 value={field.state.value}
                               />
                            </Field>
                         );
                      }}
                   />
-               </FieldGroup>
-            </div>
+               </div>
 
-            <div className="border-t px-4 py-4">
-               <form.Subscribe selector={(state) => state}>
-                  {(state) => (
-                     <Button
-                        className="w-full gap-2"
-                        disabled={
-                           !state.canSubmit || state.isSubmitting || isPending
-                        }
-                        type="submit"
-                     >
-                        {(state.isSubmitting || isPending) && (
-                           <Spinner className="size-4" />
-                        )}
-                        {isCreate ? "Criar contato" : "Salvar alterações"}
-                     </Button>
-                  )}
-               </form.Subscribe>
-            </div>
-         </DialogStackContent>
+               <form.Field
+                  name="email"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                           <Input
+                              id={field.name}
+                              name={field.name}
+                              aria-invalid={isInvalid}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              placeholder="contato@empresa.com"
+                              type="email"
+                              value={field.state.value}
+                           />
+                        </Field>
+                     );
+                  }}
+               />
+
+               <form.Field
+                  name="phone"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel htmlFor={field.name}>
+                              Telefone
+                           </FieldLabel>
+                           <Input
+                              ref={phoneRef}
+                              aria-invalid={isInvalid}
+                              defaultValue={field.state.value}
+                              id={field.name}
+                              inputMode="numeric"
+                              name={field.name}
+                              onBlur={field.handleBlur}
+                              onInput={(e) =>
+                                 field.handleChange(
+                                    (e.target as HTMLInputElement).value,
+                                 )
+                              }
+                              placeholder="(11) 99999-9999"
+                           />
+                        </Field>
+                     );
+                  }}
+               />
+
+               <form.Field
+                  name="notes"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel htmlFor={field.name}>
+                              Observações
+                           </FieldLabel>
+                           <Textarea
+                              id={field.name}
+                              name={field.name}
+                              aria-invalid={isInvalid}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              placeholder="Informações adicionais..."
+                              rows={3}
+                              value={field.state.value}
+                           />
+                        </Field>
+                     );
+                  }}
+               />
+            </FieldGroup>
+         </CredenzaBody>
+
+         <CredenzaFooter>
+            <form.Subscribe selector={(state) => state}>
+               {(state) => (
+                  <Button
+                     className="w-full gap-2"
+                     disabled={
+                        !state.canSubmit || state.isSubmitting || isPending
+                     }
+                     type="submit"
+                  >
+                     {(state.isSubmitting || isPending) && (
+                        <Spinner className="size-4" />
+                     )}
+                     {isCreate ? "Criar contato" : "Salvar alterações"}
+                  </Button>
+               )}
+            </form.Subscribe>
+         </CredenzaFooter>
       </form>
    );
 }

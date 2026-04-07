@@ -1,3 +1,4 @@
+import { cnpjDataSchema } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
 import { WebAppError } from "@core/logging/errors";
 import { team, teamMember } from "@core/database/schemas/auth";
@@ -49,6 +50,7 @@ async function verifyTeamOwnership(
          allowedDomains: team.allowedDomains,
          createdAt: team.createdAt,
          updatedAt: team.updatedAt,
+         cnpjData: team.cnpjData,
       })
       .from(team)
       .where(and(eq(team.id, teamId), eq(team.organizationId, organizationId)))
@@ -58,7 +60,10 @@ async function verifyTeamOwnership(
       throw WebAppError.notFound("Team not found");
    }
 
-   return result;
+   return {
+      ...result,
+      cnpjData: result.cnpjData ? cnpjDataSchema.parse(result.cnpjData) : null,
+   };
 }
 
 // =============================================================================
@@ -168,7 +173,9 @@ export const addMember = protectedProcedure
       });
 
       if (!orgMember) {
-         throw WebAppError.badRequest("User must be an organization member first");
+         throw WebAppError.badRequest(
+            "User must be an organization member first",
+         );
       }
 
       // Check if already a team member

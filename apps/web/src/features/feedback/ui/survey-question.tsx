@@ -27,7 +27,10 @@ const SEVERITY_COLORS: Record<string, { idle: string; active: string }> = {
 };
 
 const CHOICE_COLORS = [
-   { idle: "border-border", active: "bg-primary text-primary-foreground border-primary" },
+   {
+      idle: "border-border",
+      active: "bg-primary text-primary-foreground border-primary",
+   },
 ];
 
 export type SurveyQuestion = {
@@ -49,9 +52,17 @@ type SurveyQuestionProps = {
    onChange: (value: string | string[] | number) => void;
 };
 
-export function SurveyQuestion({ question, value, onChange }: SurveyQuestionProps) {
+export function SurveyQuestion({
+   question,
+   value,
+   onChange,
+}: SurveyQuestionProps) {
    useEffect(() => {
-      if (question.type === "rating" && question.display !== "emoji" && value === null) {
+      if (
+         question.type === "rating" &&
+         question.display !== "emoji" &&
+         value === null
+      ) {
          onChange(1);
       }
    }, []);
@@ -61,11 +72,15 @@ export function SurveyQuestion({ question, value, onChange }: SurveyQuestionProp
          <Label className="text-sm font-medium leading-snug">
             {question.question}
             {question.optional && (
-               <span className="ml-1 text-muted-foreground font-normal">(opcional)</span>
+               <span className="ml-1 text-muted-foreground font-normal">
+                  (opcional)
+               </span>
             )}
          </Label>
          {question.description && (
-            <p className="text-xs text-muted-foreground">{question.description}</p>
+            <p className="text-xs text-muted-foreground">
+               {question.description}
+            </p>
          )}
          {question.type === "open" && (
             <Textarea
@@ -79,14 +94,19 @@ export function SurveyQuestion({ question, value, onChange }: SurveyQuestionProp
             <div className="flex flex-wrap gap-2">
                {question.choices.map((choice, i) => {
                   const isSelected = value === choice;
-                  const severityColor = SEVERITY_COLORS[choice] ?? CHOICE_COLORS[i % CHOICE_COLORS.length];
+                  const severityColor =
+                     SEVERITY_COLORS[choice] ??
+                     CHOICE_COLORS[i % CHOICE_COLORS.length];
                   return (
                      <button
                         className={cn(
                            "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
                            isSelected
                               ? severityColor.active
-                              : cn("hover:bg-accent hover:text-accent-foreground", severityColor.idle),
+                              : cn(
+                                   "hover:bg-accent hover:text-accent-foreground",
+                                   severityColor.idle,
+                                ),
                         )}
                         key={choice}
                         onClick={() => onChange(choice)}
@@ -101,7 +121,8 @@ export function SurveyQuestion({ question, value, onChange }: SurveyQuestionProp
          {question.type === "multiple_choice" && question.choices && (
             <div className="flex flex-col gap-2">
                {question.choices.map((choice) => {
-                  const selected = Array.isArray(value) && value.includes(choice);
+                  const selected =
+                     Array.isArray(value) && value.includes(choice);
                   return (
                      <div className="flex items-center gap-2" key={choice}>
                         <Checkbox

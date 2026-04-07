@@ -159,16 +159,19 @@ describe("getInvoices", () => {
             ),
          );
 
-      mockStripeClient.invoices.list.mockRejectedValueOnce(new Error("stripe error"));
+      mockStripeClient.invoices.list.mockRejectedValueOnce(
+         new Error("stripe error"),
+      );
 
       await expect(
-         call(billingRouter.getInvoices, undefined, { context: withStripe(ctx) }),
+         call(billingRouter.getInvoices, undefined, {
+            context: withStripe(ctx),
+         }),
       ).rejects.toSatisfy(
          (e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR",
       );
    });
 });
-
 
 describe("getUpcomingInvoice", () => {
    it("throws when stripeClient is not configured", async () => {
@@ -378,10 +381,7 @@ describe("getMeterUsage", () => {
          data: [{ id: "meter_tx", event_name: "finance_transactions" }],
       });
       mockStripeClient.billing.meters.listEventSummaries.mockResolvedValueOnce({
-         data: [
-            { aggregated_value: 300 },
-            { aggregated_value: 150 },
-         ],
+         data: [{ aggregated_value: 300 }, { aggregated_value: 150 }],
       });
 
       const stripeCtx = withStripe(ctx);
@@ -389,7 +389,9 @@ describe("getMeterUsage", () => {
          context: stripeCtx,
       });
 
-      const txItem = result.find((r) => r.eventName === "finance.transaction_created");
+      const txItem = result.find(
+         (r) => r.eventName === "finance.transaction_created",
+      );
       expect(txItem?.used).toBe(450);
    });
 

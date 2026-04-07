@@ -6,7 +6,7 @@ import { useCallback } from "react";
 import { BankAccountForm } from "@/features/bank-accounts/ui/bank-accounts-form";
 import { CategoryForm } from "@/features/categories/ui/categories-form";
 import { TransactionDialogStack } from "@/features/transactions/ui/transaction-dialog-stack";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import type { TaskDefinition } from "./task-definitions";
 
 interface QuickStartTaskProps {
@@ -24,34 +24,32 @@ export function QuickStartTask({
    isAutoDetected,
    onComplete,
 }: QuickStartTaskProps) {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
 
    const handleClick = useCallback(() => {
       if (isLocked || isCompleted) return;
 
       if (task.id === "connect_bank_account") {
-         openDialogStack({
+         openCredenza({
             children: (
-               <BankAccountForm mode="create" onSuccess={closeDialogStack} />
+               <BankAccountForm mode="create" onSuccess={closeCredenza} />
             ),
          });
       } else if (task.id === "create_category") {
-         openDialogStack({
-            children: (
-               <CategoryForm mode="create" onSuccess={closeDialogStack} />
-            ),
+         openCredenza({
+            children: <CategoryForm mode="create" onSuccess={closeCredenza} />,
          });
       } else if (task.id === "add_transaction") {
-         openDialogStack({
+         openCredenza({
             children: (
                <TransactionDialogStack
                   mode="create"
-                  onSuccess={closeDialogStack}
+                  onSuccess={closeCredenza}
                />
             ),
          });
       }
-   }, [isLocked, isCompleted, task.id, openDialogStack, closeDialogStack]);
+   }, [isLocked, isCompleted, task.id, openCredenza, closeCredenza]);
 
    const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {

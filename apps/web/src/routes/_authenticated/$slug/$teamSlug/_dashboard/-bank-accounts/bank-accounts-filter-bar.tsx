@@ -32,7 +32,10 @@ export function BankAccountsFilterBar({ type }: BankAccountsFilterBarProps) {
                from="/$slug/$teamSlug/bank-accounts"
                key={opt.label}
                preload="intent"
-               search={(prev: BankAccountsSearch) => ({ ...prev, type: opt.value })}
+               search={(prev: BankAccountsSearch) => ({
+                  ...prev,
+                  type: opt.value,
+               })}
             >
                {opt.label}
             </Link>

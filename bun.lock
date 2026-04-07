@@ -106,6 +106,7 @@
         "@tanstack/react-start": "catalog:tanstack",
         "@tanstack/react-store": "catalog:tanstack",
         "@tanstack/react-table": "catalog:tanstack",
+        "@tanstack/react-virtual": "catalog:tanstack",
         "@tanstack/router-plugin": "catalog:tanstack",
         "@tanstack/store": "catalog:tanstack",
         "ai": "^6.0.97",

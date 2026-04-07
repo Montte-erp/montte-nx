@@ -43,7 +43,7 @@ import {
    useRevokeOtherSessions,
 } from "@/features/settings/hooks/use-session-actions";
 import { SessionDetailsForm } from "@/features/settings/ui/session-details-form";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -167,12 +167,12 @@ function SessionsSection({
    sessions,
    currentSessionId,
    currentSessionLoginMethod,
-   openDialogStack,
+   openCredenza,
 }: {
    sessions: SessionType[];
    currentSessionId: string | undefined;
    currentSessionLoginMethod: string | null;
-   openDialogStack: (options: { children: React.ReactNode }) => void;
+   openCredenza: (options: { children: React.ReactNode }) => void;
 }) {
    return (
       <section className="space-y-3">
@@ -251,7 +251,7 @@ function SessionsSection({
                            <ItemActions>
                               <Button
                                  onClick={() =>
-                                    openDialogStack({
+                                    openCredenza({
                                        children: (
                                           <SessionDetailsForm
                                              currentSessionId={
@@ -348,7 +348,7 @@ function SecurityActionsSection({
 // ============================================
 
 function SecuritySectionContent() {
-   const { openDialogStack } = useDialogStack();
+   const { openCredenza } = useCredenza();
    const { data: sessions } = useSuspenseQuery(
       orpc.session.listSessions.queryOptions({}),
    );
@@ -381,7 +381,7 @@ function SecuritySectionContent() {
             <SessionsSection
                currentSessionId={currentSessionId}
                currentSessionLoginMethod={currentSessionLoginMethod}
-               openDialogStack={openDialogStack}
+               openCredenza={openCredenza}
                sessions={sessions as SessionType[]}
             />
 

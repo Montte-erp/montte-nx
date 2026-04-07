@@ -1,11 +1,12 @@
 import dayjs from "dayjs";
 import { Button } from "@packages/ui/components/button";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import {
    Field,
    FieldError,
@@ -165,13 +166,13 @@ function BillFromTransactionDialogStackInner({
          : "Criar Transação Recorrente";
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>{title}</DialogStackTitle>
-            <DialogStackDescription>{transactionName}</DialogStackDescription>
-         </DialogStackHeader>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>{title}</CredenzaTitle>
+            <CredenzaDescription>{transactionName}</CredenzaDescription>
+         </CredenzaHeader>
 
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+         <CredenzaBody className="px-4">
             <form
                id="bill-from-transaction-form"
                onSubmit={(e) => {
@@ -323,9 +324,9 @@ function BillFromTransactionDialogStackInner({
                   )}
                </FieldGroup>
             </form>
-         </div>
+         </CredenzaBody>
 
-         <div className="border-t px-4 py-4">
+         <CredenzaFooter>
             <form.Subscribe selector={(state) => state}>
                {(state) => (
                   <Button
@@ -345,8 +346,8 @@ function BillFromTransactionDialogStackInner({
                   </Button>
                )}
             </form.Subscribe>
-         </div>
-      </DialogStackContent>
+         </CredenzaFooter>
+      </>
    );
 }
 

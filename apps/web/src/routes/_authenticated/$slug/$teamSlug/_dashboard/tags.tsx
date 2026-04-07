@@ -15,7 +15,11 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
+import type {
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Archive, Pencil, Plus, Tag, Trash2 } from "lucide-react";
@@ -42,10 +46,11 @@ const tagsSearchSchema = z.object({
 
 export type TagsSearch = z.infer<typeof tagsSearchSchema>;
 
-const [useTagsTableState] = createLocalStorageState<DataTableStoredState | null>(
-   "montte:datatable:tags",
-   null,
-);
+const [useTagsTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:tags",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/tags",
@@ -85,19 +90,26 @@ function TagsList({ navigate }: TagsListProps) {
 
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
       (updater) => {
-         const next = typeof updater === "function" ? updater(sorting) : updater;
-         navigate({ search: (prev: TagsSearch) => ({ ...prev, sorting: next }) });
+         const next =
+            typeof updater === "function" ? updater(sorting) : updater;
+         navigate({
+            search: (prev: TagsSearch) => ({ ...prev, sorting: next }),
+         });
       },
       [sorting, navigate],
    );
 
-   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
-      (updater) => {
-         const next = typeof updater === "function" ? updater(columnFilters) : updater;
-         navigate({ search: (prev: TagsSearch) => ({ ...prev, columnFilters: next }) });
-      },
-      [columnFilters, navigate],
-   );
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
+      useCallback(
+         (updater) => {
+            const next =
+               typeof updater === "function" ? updater(columnFilters) : updater;
+            navigate({
+               search: (prev: TagsSearch) => ({ ...prev, columnFilters: next }),
+            });
+         },
+         [columnFilters, navigate],
+      );
 
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
@@ -133,7 +145,8 @@ function TagsList({ navigate }: TagsListProps) {
    const archiveMutation = useMutation(
       orpc.tags.archive.mutationOptions({
          onSuccess: () => toast.success("Centro de custo arquivado."),
-         onError: (e) => toast.error(e.message || "Erro ao arquivar centro de custo."),
+         onError: (e) =>
+            toast.error(e.message || "Erro ao arquivar centro de custo."),
       }),
    );
 
@@ -144,7 +157,12 @@ function TagsList({ navigate }: TagsListProps) {
                <TagForm
                   mode="edit"
                   onSuccess={closeCredenza}
-                  tag={{ id: tag.id, name: tag.name, color: tag.color, description: tag.description }}
+                  tag={{
+                     id: tag.id,
+                     name: tag.name,
+                     color: tag.color,
+                     description: tag.description,
+                  }}
                />
             ),
          });
@@ -179,7 +197,8 @@ function TagsList({ navigate }: TagsListProps) {
       if (selectedIds.length === 0) return;
       openAlertDialog({
          title: `Excluir ${selectedIds.length} ${selectedIds.length === 1 ? "centro de custo" : "centros de custo"}`,
-         description: "Tem certeza que deseja excluir os centros de custo selecionados? Esta ação não pode ser desfeita.",
+         description:
+            "Tem certeza que deseja excluir os centros de custo selecionados? Esta ação não pode ser desfeita.",
          actionLabel: "Excluir",
          cancelLabel: "Cancelar",
          variant: "destructive",

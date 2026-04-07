@@ -188,7 +188,6 @@ function getDaysRemaining(): number {
    );
 }
 
-
 function CurrentBillHeader({ monthToDate }: { monthToDate: number }) {
    return (
       <div>
@@ -428,8 +427,13 @@ function AddonsSection({ hasPaymentMethod }: { hasPaymentMethod: boolean }) {
 }
 
 function OverviewProductCard({ category }: { category: CategorySummary }) {
-   const icon = CATEGORY_ICONS[category.category] ?? <HelpCircle className="size-5" />;
-   const freeTier = category.events.reduce((sum, e) => sum + e.freeTierLimit, 0);
+   const icon = CATEGORY_ICONS[category.category] ?? (
+      <HelpCircle className="size-5" />
+   );
+   const freeTier = category.events.reduce(
+      (sum, e) => sum + e.freeTierLimit,
+      0,
+   );
 
    return (
       <Card>
@@ -682,7 +686,9 @@ export function BillingOverview() {
          <CurrentBillHeader monthToDate={monthToDate} />
          <BillingPeriodSection />
          <AddCardBanner />
-         {paymentStatus !== undefined && <AddonsSection hasPaymentMethod={hasPaymentMethod} />}
+         {paymentStatus !== undefined && (
+            <AddonsSection hasPaymentMethod={hasPaymentMethod} />
+         )}
 
          <div>
             <h2 className="text-lg font-semibold mb-4">Produtos</h2>

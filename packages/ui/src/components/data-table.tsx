@@ -382,18 +382,23 @@ export function DataTable<TData, TValue>({
    getSubRows,
 }: DataTableProps<TData, TValue>) {
    const [internalSorting, setInternalSorting] = useState<SortingState>([]);
-   const [internalColumnFilters, setInternalColumnFilters] = useState<ColumnFiltersState>([]);
+   const [internalColumnFilters, setInternalColumnFilters] =
+      useState<ColumnFiltersState>([]);
    const [expanded, setExpanded] = useState<ExpandedState>(true);
    const [internalRowSelection, setInternalRowSelection] =
       useState<RowSelectionState>({});
 
    const effectiveSorting = sorting ?? internalSorting;
    const effectiveColumnFilters = columnFilters ?? internalColumnFilters;
-   const effectiveOnSortingChange: OnChangeFn<SortingState> = onSortingChange ?? setInternalSorting;
-   const effectiveOnColumnFiltersChange: OnChangeFn<ColumnFiltersState> = onColumnFiltersChange ?? setInternalColumnFilters;
+   const effectiveOnSortingChange: OnChangeFn<SortingState> =
+      onSortingChange ?? setInternalSorting;
+   const effectiveOnColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
+      onColumnFiltersChange ?? setInternalColumnFilters;
 
    const isControlled = controlledRowSelection !== undefined;
-   const rowSelection = isControlled ? controlledRowSelection : internalRowSelection;
+   const rowSelection = isControlled
+      ? controlledRowSelection
+      : internalRowSelection;
 
    const onRowSelectionChangeRef = useRef(onRowSelectionChange);
    useIsomorphicLayoutEffect(() => {
@@ -484,7 +489,9 @@ export function DataTable<TData, TValue>({
          .map((c) => getColumnDefId(c))
          .filter(Boolean);
       if (tableState?.columnOrder) {
-         return tableState.columnOrder.filter((id) => draggableIds.includes(id));
+         return tableState.columnOrder.filter((id) =>
+            draggableIds.includes(id),
+         );
       }
       return draggableIds;
    });
@@ -624,7 +631,10 @@ export function DataTable<TData, TValue>({
                </Button>
             ) : (
                <span className="px-2 text-xs font-medium">
-                  {flexRender(header.column.columnDef.header, header.getContext())}
+                  {flexRender(
+                     header.column.columnDef.header,
+                     header.getContext(),
+                  )}
                </span>
             );
 
@@ -641,7 +651,11 @@ export function DataTable<TData, TValue>({
          }
 
          return (
-            <TableHead key={header.id} colSpan={header.colSpan} className="text-xs font-medium">
+            <TableHead
+               key={header.id}
+               colSpan={header.colSpan}
+               className="text-xs font-medium"
+            >
                {content}
             </TableHead>
          );
@@ -686,21 +700,22 @@ export function DataTable<TData, TValue>({
       const selectionCell = (
          <TableCell className="w-[40px] px-2">
             <div className="flex items-center gap-1">
-               {getSubRows && (
-                  row.getCanExpand() ? (
+               {getSubRows &&
+                  (row.getCanExpand() ? (
                      <button
                         className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
                         onClick={() => row.toggleExpanded()}
                         type="button"
                      >
-                        {row.getIsExpanded()
-                           ? <ChevronDown className="size-3.5" />
-                           : <ChevronRight className="size-3.5" />}
+                        {row.getIsExpanded() ? (
+                           <ChevronDown className="size-3.5" />
+                        ) : (
+                           <ChevronRight className="size-3.5" />
+                        )}
                      </button>
                   ) : (
                      <span className="size-3.5 shrink-0" />
-                  )
-               )}
+                  ))}
                <Checkbox
                   aria-label="Select row"
                   checked={row.getIsSelected()}
@@ -795,7 +810,10 @@ export function DataTable<TData, TValue>({
                <Table className="border-separate border-spacing-0">
                   <TableHeader>
                      {table.getHeaderGroups().map((headerGroup) => (
-                        <TableRow key={headerGroup.id} className="bg-muted/50 hover:bg-muted/50">
+                        <TableRow
+                           key={headerGroup.id}
+                           className="bg-muted/50 hover:bg-muted/50"
+                        >
                            {renderHeaderCells(headerGroup)}
                         </TableRow>
                      ))}
