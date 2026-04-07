@@ -194,9 +194,11 @@ export async function createTransaction(
 ) {
    try {
       const validated = validateInput(createTransactionSchema, data);
+      const today = new Date().toISOString().slice(0, 10);
+      const status = validated.date > today ? "pending" : "confirmed";
       const [transaction] = await db
          .insert(transactions)
-         .values({ ...validated, teamId })
+         .values({ ...validated, teamId, status })
          .returning();
 
       if (tagIds && tagIds.length > 0 && transaction) {

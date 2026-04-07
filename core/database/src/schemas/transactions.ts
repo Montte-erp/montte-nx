@@ -55,6 +55,11 @@ export const transactionRecurrenceFrequencyEnum = pgEnum(
    ["daily", "weekly", "biweekly", "monthly", "yearly"],
 );
 
+export const transactionStatusEnum = pgEnum("transaction_status", [
+   "pending",
+   "confirmed",
+]);
+
 export const transactions = pgTable(
    "transactions",
    {
@@ -101,6 +106,7 @@ export const transactions = pgTable(
          () => recurringTransactions.id,
          { onDelete: "set null" },
       ),
+      status: transactionStatusEnum("status").default("confirmed").notNull(),
    },
    (table) => [
       index("transactions_team_id_idx").on(table.teamId),
