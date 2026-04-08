@@ -3,6 +3,7 @@ export interface HyprPayListResult<T> {
    total: number;
    page: number;
    limit: number;
+   pages: number;
 }
 
 export interface CreateCustomerInput {

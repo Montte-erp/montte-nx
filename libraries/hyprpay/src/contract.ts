@@ -18,6 +18,7 @@ const listResultSchema = z.object({
    total: z.number(),
    page: z.number(),
    limit: z.number(),
+   pages: z.number(),
 });
 
 export const hyprpayContract = {

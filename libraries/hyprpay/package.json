@@ -56,6 +56,7 @@
    "dependencies": {
       "@orpc/client": "catalog:orpc",
       "@orpc/contract": "catalog:orpc",
+      "neverthrow": "^8.1.1",
       "zod": "4.3.6"
    },
    "devDependencies": {
