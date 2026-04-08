@@ -3,28 +3,44 @@
    "version": "0.1.0",
    "private": false,
    "description": "Montte CLI — manage your finances from the terminal",
+   "keywords": [
+      "tanstack-intent"
+   ],
    "bin": {
-      "montte": "./dist/index.js"
+      "montte": "./dist/esm/index.js"
    },
    "files": [
-      "dist"
+      "dist",
+      "skills"
    ],
    "type": "module",
    "exports": {
       ".": {
-         "types": "./dist/index.d.ts",
-         "default": "./dist/index.js"
+         "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+         },
+         "require": {
+            "types": "./dist/cjs/index.d.cts",
+            "default": "./dist/cjs/index.cjs"
+         }
       },
       "./contract": {
-         "types": "./dist/contract/index.d.ts",
-         "default": "./dist/contract/index.js"
+         "import": {
+            "types": "./dist/esm/contract/index.d.ts",
+            "default": "./dist/esm/contract/index.js"
+         },
+         "require": {
+            "types": "./dist/cjs/contract/index.d.cts",
+            "default": "./dist/cjs/contract/index.cjs"
+         }
       }
    },
    "publishConfig": {
       "access": "public"
    },
    "scripts": {
-      "build": "tsc --build",
+      "build": "vite build",
       "test": "vitest run",
       "test:watch": "vitest",
       "typecheck": "tsgo"
@@ -36,10 +52,13 @@
       "zod": "4.3.6"
    },
    "devDependencies": {
+      "@tanstack/intent": "latest",
+      "@tanstack/vite-config": "latest",
       "@tooling/typescript": "workspace:*",
       "@types/bun": "latest",
       "@vitest/coverage-v8": "catalog:testing",
       "typescript": "catalog:development",
+      "vite": "catalog:vite",
       "vitest": "catalog:testing"
    }
 }
