@@ -4,8 +4,6 @@ import {
    date,
    index,
    numeric,
-   pgEnum,
-   pgTable,
    text,
    timestamp,
    uuid,
@@ -14,14 +12,15 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { contacts, serviceSourceEnum } from "@core/database/schemas/contacts";
 import { serviceVariants } from "@core/database/schemas/services";
+import { crmSchema } from "@core/database/schemas/crm-schema";
 
-export const billingCycleEnum = pgEnum("billing_cycle", [
+export const billingCycleEnum = crmSchema.enum("billing_cycle", [
    "hourly",
    "monthly",
    "annual",
    "one_time",
 ]);
-export const subscriptionStatusEnum = pgEnum("subscription_status", [
+export const subscriptionStatusEnum = crmSchema.enum("subscription_status", [
    "active",
    "completed",
    "cancelled",
@@ -30,7 +29,7 @@ export type BillingCycle = (typeof billingCycleEnum.enumValues)[number];
 export type SubscriptionStatus =
    (typeof subscriptionStatusEnum.enumValues)[number];
 
-export const contactSubscriptions = pgTable(
+export const contactSubscriptions = crmSchema.table(
    "contact_subscriptions",
    {
       id: uuid("id")

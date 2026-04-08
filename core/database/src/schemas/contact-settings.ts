@@ -1,13 +1,8 @@
-import {
-   boolean,
-   pgTable,
-   timestamp,
-   uuid,
-   varchar,
-} from "drizzle-orm/pg-core";
+import { boolean, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { tags } from "@core/database/schemas/tags";
+import { crmSchema } from "@core/database/schemas/crm-schema";
 
-export const contactSettings = pgTable("contact_settings", {
+export const contactSettings = crmSchema.table("contact_settings", {
    teamId: uuid("team_id").primaryKey(),
    defaultContactType: varchar("default_contact_type", { length: 10 })
       .notNull()

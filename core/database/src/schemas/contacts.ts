@@ -2,8 +2,6 @@ import { sql } from "drizzle-orm";
 import {
    boolean,
    index,
-   pgEnum,
-   pgTable,
    text,
    timestamp,
    uniqueIndex,
@@ -11,21 +9,25 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-export const serviceSourceEnum = pgEnum("service_source", ["manual", "asaas"]);
+import { crmSchema } from "@core/database/schemas/crm-schema";
+export const serviceSourceEnum = crmSchema.enum("service_source", [
+   "manual",
+   "asaas",
+]);
 export type ServiceSource = (typeof serviceSourceEnum.enumValues)[number];
 
-export const contactTypeEnum = pgEnum("contact_type", [
+export const contactTypeEnum = crmSchema.enum("contact_type", [
    "cliente",
    "fornecedor",
    "ambos",
 ]);
 
-export const contactDocumentTypeEnum = pgEnum("contact_document_type", [
+export const contactDocumentTypeEnum = crmSchema.enum("contact_document_type", [
    "cpf",
    "cnpj",
 ]);
 
-export const contacts = pgTable(
+export const contacts = crmSchema.table(
    "contacts",
    {
       id: uuid("id")

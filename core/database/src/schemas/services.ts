@@ -4,7 +4,6 @@ import {
    index,
    integer,
    numeric,
-   pgTable,
    text,
    timestamp,
    uuid,
@@ -14,8 +13,9 @@ import { z } from "zod";
 import { categories } from "@core/database/schemas/categories";
 import { billingCycleEnum } from "@core/database/schemas/subscriptions";
 import { tags } from "@core/database/schemas/tags";
+import { crmSchema } from "@core/database/schemas/crm-schema";
 
-export const services = pgTable(
+export const services = crmSchema.table(
    "services",
    {
       id: uuid("id")
@@ -43,7 +43,7 @@ export const services = pgTable(
    (table) => [index("services_team_id_idx").on(table.teamId)],
 );
 
-export const serviceVariants = pgTable(
+export const serviceVariants = crmSchema.table(
    "service_variants",
    {
       id: uuid("id")
@@ -71,7 +71,7 @@ export const serviceVariants = pgTable(
    ],
 );
 
-export const resources = pgTable(
+export const resources = crmSchema.table(
    "resources",
    {
       id: uuid("id")

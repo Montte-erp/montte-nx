@@ -2,7 +2,6 @@ import { sql } from "drizzle-orm";
 import {
    boolean,
    index,
-   pgTable,
    text,
    timestamp,
    uniqueIndex,
@@ -10,8 +9,9 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { crmSchema } from "@core/database/schemas/crm-schema";
 
-export const tags = pgTable(
+export const tags = crmSchema.table(
    "tags",
    {
       id: uuid("id")
