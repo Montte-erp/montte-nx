@@ -3,12 +3,11 @@ import {
    date,
    index,
    numeric,
-   pgEnum,
-   pgTable,
    text,
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
+import { inventorySchema } from "@core/database/schemas/inventory-schema";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
@@ -17,13 +16,12 @@ import { contacts } from "@core/database/schemas/contacts";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { transactions } from "@core/database/schemas/transactions";
 
-export const inventoryMovementTypeEnum = pgEnum("inventory_movement_type", [
-   "purchase",
-   "sale",
-   "waste",
-]);
+export const inventoryMovementTypeEnum = inventorySchema.enum(
+   "inventory_movement_type",
+   ["purchase", "sale", "waste"],
+);
 
-export const inventoryProducts = pgTable(
+export const inventoryProducts = inventorySchema.table(
    "inventory_products",
    {
       id: uuid("id")
@@ -59,7 +57,7 @@ export const inventoryProducts = pgTable(
    (table) => [index("inventory_products_team_id_idx").on(table.teamId)],
 );
 
-export const inventoryMovements = pgTable(
+export const inventoryMovements = inventorySchema.table(
    "inventory_movements",
    {
       id: uuid("id")
@@ -91,7 +89,7 @@ export const inventoryMovements = pgTable(
    ],
 );
 
-export const inventorySettings = pgTable("inventory_settings", {
+export const inventorySettings = inventorySchema.table("inventory_settings", {
    teamId: uuid("team_id").primaryKey(),
    purchaseBankAccountId: uuid("purchase_bank_account_id").references(
       () => bankAccounts.id,
