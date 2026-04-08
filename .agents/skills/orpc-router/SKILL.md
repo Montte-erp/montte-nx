@@ -1,6 +1,6 @@
 ---
 name: orpc-router
-description: Use when writing a new oRPC procedure, adding a handler, creating a router file, or asked to "add endpoint", "write a route", or "new procedure" in the contentta project.
+description: Use when writing a new oRPC procedure, adding a handler, creating a router file, or asked to "add endpoint", "write a route", or "new procedure" in the montte project.
 ---
 
 # oRPC Router Writing Guide

@@ -1,8 +1,10 @@
 import { spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { Client } from "pg";
 import chalk from "chalk";
 import { cac } from "cac";
+import { config as loadDotenv } from "dotenv";
 
 const colors = {
    blue: chalk.blue,
@@ -19,7 +21,8 @@ function getPackageDirectory(packageName: string) {
    return path.join("core", packageName);
 }
 
-function getEnvFilePath(packageDir: string, env: string) {
+function getEnvFilePath(_packageDir: string, env: string) {
+   const webDir = path.join(process.cwd(), "apps", "web");
    const possibleFiles = [
       `.env.${env}.local`,
       `.env.${env}`,
@@ -28,14 +31,39 @@ function getEnvFilePath(packageDir: string, env: string) {
    ];
 
    for (const file of possibleFiles) {
-      const filePath = path.join(packageDir, file);
+      const filePath = path.join(webDir, file);
 
       if (fs.existsSync(filePath)) {
          return filePath;
       }
    }
 
-   throw new Error(`No environment file found for ${env} in ${packageDir}`);
+   throw new Error(`No environment file found for ${env} in apps/web`);
+}
+
+const REQUIRED_SCHEMAS = ["auth", "finance", "crm", "inventory", "platform"];
+
+async function ensureSchemas(envFile: string): Promise<void> {
+   loadDotenv({ path: envFile });
+   const databaseUrl = process.env.DATABASE_URL;
+
+   if (!databaseUrl) {
+      throw new Error("DATABASE_URL is not set");
+   }
+
+   const client = new Client({ connectionString: databaseUrl });
+   await client.connect();
+
+   try {
+      for (const schema of REQUIRED_SCHEMAS) {
+         await client.query(`CREATE SCHEMA IF NOT EXISTS "${schema}"`);
+      }
+      console.log(
+         colors.green(`✅ Schemas ensured: ${REQUIRED_SCHEMAS.join(", ")}`),
+      );
+   } finally {
+      await client.end();
+   }
 }
 
 function runCommand(
@@ -96,6 +124,11 @@ async function runOnPackages(action: string, env: string, packages: string[]) {
       try {
          const envFile = getEnvFilePath(packageDir, env);
          console.log(colors.magenta(`📦 Processing package: ${packageName}`));
+
+         if (action === "push") {
+            await ensureSchemas(envFile);
+         }
+
          await runCommand(`drizzle-kit ${action}`, packageDir, envFile);
          console.log(
             colors.green(`✅ ${packageName} ${action} completed successfully`),

@@ -376,9 +376,10 @@ startTransition(async () => { await authClient.method(...); });
 
 | Hook             | Use For                                         |
 | ---------------- | ----------------------------------------------- |
-| `useSheet`       | Creating/editing records (side panel)           |
-| `useCredenza`    | Selecting agents, export formats (modal/drawer) |
+| `useCredenza`    | All modals and overlays — creating/editing records, selecting agents, export formats, any overlay UI |
 | `useAlertDialog` | Destructive confirmations                       |
+
+> **Note:** `useSheet` is NOT used in this project. Always use `useCredenza`.
 
 ---
 
