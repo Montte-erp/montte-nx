@@ -11,6 +11,16 @@ const contractFiles = await Array.fromAsync(
 
 const builds: Parameters<typeof build>[0][] = [];
 
+const betterAuthExternals = [
+   "better-auth",
+   "better-auth/client",
+   "neverthrow",
+   "@orpc/client",
+   "@orpc/client/fetch",
+   "@orpc/contract",
+   "zod",
+];
+
 if (betterAuthFiles.length > 0) {
    builds.push(
       {
@@ -18,7 +28,8 @@ if (betterAuthFiles.length > 0) {
          outdir: "dist/esm/better-auth",
          format: "esm",
          sourcemap: true,
-         bundle: false,
+         bundle: true,
+         external: betterAuthExternals,
       },
       {
          entryPoints: betterAuthFiles,
@@ -26,7 +37,8 @@ if (betterAuthFiles.length > 0) {
          format: "cjs",
          outExtension: { ".js": ".cjs" },
          sourcemap: true,
-         bundle: false,
+         bundle: true,
+         external: betterAuthExternals,
       },
    );
 }

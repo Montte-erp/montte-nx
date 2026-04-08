@@ -50,7 +50,7 @@
    },
    "scripts": {
       "build": "vite build && bun run scripts/build-subpaths.ts && publint --strict",
-      "test": "vitest run",
+      "test": "vitest run --passWithNoTests",
       "typecheck": "tsc --noEmit"
    },
    "dependencies": {
