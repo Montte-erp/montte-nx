@@ -1,9 +1,16 @@
 ---
-name: hyprpay
-description: HyprPay SDK (@montte/hyprpay) — how to sync customer lifecycle with Montte. Use when working with createHyprPayClient, customers.create/get/update/list, or the better-auth plugin.
-metadata:
-  sources:
-    - README.md
+name: "@montte/hyprpay/overview"
+description: >
+  Use when integrating @montte/hyprpay SDK to sync customer lifecycle with Montte.
+  Covers createHyprPayClient setup, customers.create/get/update/list, HyprPayError handling,
+  and the better-auth plugin for automatic customer creation on signup.
+type: core
+library: "@montte/hyprpay"
+library_version: "0.1.0"
+sources:
+  - "Montte-erp/montte-nx:libraries/hyprpay/src/index.ts"
+  - "Montte-erp/montte-nx:libraries/hyprpay/src/client.ts"
+  - "Montte-erp/montte-nx:libraries/hyprpay/src/errors.ts"
 ---
 
 # HyprPay SDK

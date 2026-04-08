@@ -3,25 +3,33 @@
    "version": "0.1.0",
    "private": false,
    "description": "HyprPay SDK — sincronize o ciclo de vida de clientes com o Montte",
+   "keywords": [
+      "tanstack-intent"
+   ],
+   "files": [
+      "dist",
+      "skills",
+      "!skills/_artifacts"
+   ],
    "type": "module",
    "exports": {
       ".": {
          "import": {
-            "types": "./dist/esm/index.d.ts",
+            "types": "./dist/esm/src/index.d.ts",
             "default": "./dist/esm/index.js"
          },
          "require": {
-            "types": "./dist/cjs/index.d.cts",
+            "types": "./dist/cjs/src/index.d.cts",
             "default": "./dist/cjs/index.cjs"
          }
       },
       "./better-auth": {
          "import": {
-            "types": "./dist/esm/better-auth/index.d.ts",
+            "types": "./dist/esm/src/better-auth/index.d.ts",
             "default": "./dist/esm/better-auth/index.js"
          },
          "require": {
-            "types": "./dist/cjs/better-auth/index.d.cts",
+            "types": "./dist/cjs/src/better-auth/index.d.cts",
             "default": "./dist/cjs/better-auth/index.cjs"
          }
       },
@@ -31,7 +39,7 @@
       "access": "public"
    },
    "scripts": {
-      "build": "vite build",
+      "build": "vite build && bun run scripts/build-subpaths.ts && publint --strict",
       "test": "vitest run",
       "typecheck": "tsc --noEmit"
    },
@@ -41,6 +49,8 @@
    "devDependencies": {
       "@tanstack/vite-config": "0.5.2",
       "@types/bun": "latest",
+      "esbuild": "^0.25.4",
+      "publint": "latest",
       "typescript": "catalog:development",
       "vite": "catalog:vite",
       "vitest": "catalog:testing"
