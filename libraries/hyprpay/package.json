@@ -1,0 +1,48 @@
+{
+   "name": "@montte/hyprpay",
+   "version": "0.1.0",
+   "private": false,
+   "description": "HyprPay SDK — sincronize o ciclo de vida de clientes com o Montte",
+   "type": "module",
+   "exports": {
+      ".": {
+         "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+         },
+         "require": {
+            "types": "./dist/cjs/index.d.cts",
+            "default": "./dist/cjs/index.cjs"
+         }
+      },
+      "./better-auth": {
+         "import": {
+            "types": "./dist/esm/better-auth/index.d.ts",
+            "default": "./dist/esm/better-auth/index.js"
+         },
+         "require": {
+            "types": "./dist/cjs/better-auth/index.d.cts",
+            "default": "./dist/cjs/better-auth/index.cjs"
+         }
+      },
+      "./package.json": "./package.json"
+   },
+   "publishConfig": {
+      "access": "public"
+   },
+   "scripts": {
+      "build": "vite build",
+      "test": "vitest run",
+      "typecheck": "tsc --noEmit"
+   },
+   "dependencies": {
+      "zod": "4.3.6"
+   },
+   "devDependencies": {
+      "@tanstack/vite-config": "0.5.2",
+      "@types/bun": "latest",
+      "typescript": "catalog:development",
+      "vite": "catalog:vite",
+      "vitest": "catalog:testing"
+   }
+}
