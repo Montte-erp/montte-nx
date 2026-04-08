@@ -1,13 +1,7 @@
-import {
-   boolean,
-   pgTable,
-   text,
-   timestamp,
-   uuid,
-   varchar,
-} from "drizzle-orm/pg-core";
+import { boolean, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { platformSchema } from "@core/database/schemas/platform-schema";
 
-export const agentSettings = pgTable("agent_settings", {
+export const agentSettings = platformSchema.table("agent_settings", {
    teamId: uuid("team_id").primaryKey(),
    modelId: text("model_id")
       .notNull()

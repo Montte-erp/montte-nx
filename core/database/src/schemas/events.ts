@@ -4,14 +4,14 @@ import {
    decimal,
    index,
    jsonb,
-   pgTable,
    text,
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
+import { platformSchema } from "@core/database/schemas/platform-schema";
 import { organization, team, user } from "@core/database/schemas/auth";
 
-export const events = pgTable(
+export const events = platformSchema.table(
    "events",
    {
       id: uuid("id")

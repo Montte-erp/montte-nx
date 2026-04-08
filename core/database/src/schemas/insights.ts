@@ -1,12 +1,6 @@
 import { sql } from "drizzle-orm";
-import {
-   index,
-   jsonb,
-   pgTable,
-   text,
-   timestamp,
-   uuid,
-} from "drizzle-orm/pg-core";
+import { index, jsonb, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { platformSchema } from "@core/database/schemas/platform-schema";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { organization, team, user } from "@core/database/schemas/auth";
@@ -17,7 +11,7 @@ export const insightSizeEnum = ["sm", "md", "lg", "full"] as const;
 export const insightConfigSchema = z.record(z.string(), z.unknown());
 export type InsightConfig = z.infer<typeof insightConfigSchema>;
 
-export const insights = pgTable(
+export const insights = platformSchema.table(
    "insights",
    {
       id: uuid("id")

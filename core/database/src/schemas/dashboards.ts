@@ -4,12 +4,12 @@ import {
    boolean,
    index,
    jsonb,
-   pgTable,
    text,
    timestamp,
    uniqueIndex,
    uuid,
 } from "drizzle-orm/pg-core";
+import { platformSchema } from "@core/database/schemas/platform-schema";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { organization, team, user } from "@core/database/schemas/auth";
@@ -35,7 +35,7 @@ export const DashboardFilterSchema = Condition;
 
 export type DashboardFilter = z.infer<typeof DashboardFilterSchema>;
 
-export const dashboards = pgTable(
+export const dashboards = platformSchema.table(
    "dashboards",
    {
       id: uuid("id")

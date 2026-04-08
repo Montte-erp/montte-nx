@@ -3,13 +3,13 @@ import {
    boolean,
    decimal,
    integer,
-   pgTable,
    text,
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
+import { platformSchema } from "@core/database/schemas/platform-schema";
 
-export const eventCatalog = pgTable("event_catalog", {
+export const eventCatalog = platformSchema.table("event_catalog", {
    id: uuid("id")
       .default(sql`pg_catalog.gen_random_uuid()`)
       .primaryKey(),
