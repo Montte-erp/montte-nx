@@ -1,7 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Trash2 } from "lucide-react";
-import { Badge } from "@packages/ui/components/badge";
+
 import { Button } from "@packages/ui/components/button";
 import type { Outputs } from "@/integrations/orpc/client";
 
@@ -26,9 +26,9 @@ export function buildApiKeysColumns(
          header: "Chave",
          cell: ({ row }) =>
             row.original.start ? (
-               <Badge variant="outline" className="font-mono text-xs">
+               <code className="font-mono text-xs text-muted-foreground">
                   {row.original.start}***
-               </Badge>
+               </code>
             ) : null,
       },
       {

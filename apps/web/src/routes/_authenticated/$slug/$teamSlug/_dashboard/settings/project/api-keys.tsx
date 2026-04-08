@@ -106,10 +106,10 @@ function ApiKeysContent() {
       <div className="flex flex-col gap-4">
          <div className="flex items-center justify-between">
             <div>
-               <h2 className="text-lg font-semibold">
-                  Chaves de API — HyprPay
-               </h2>
-               <p className="text-sm text-muted-foreground">
+               <h1 className="text-2xl font-semibold font-serif">
+                  Chaves de API
+               </h1>
+               <p className="text-sm text-muted-foreground mt-1">
                   Use estas chaves para autenticar o SDK{" "}
                   <code className="font-mono text-xs">@montte/hyprpay</code>{" "}
                   neste espaço.
