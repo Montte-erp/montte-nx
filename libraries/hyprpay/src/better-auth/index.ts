@@ -81,11 +81,5 @@ export function hyprpayClient(): BetterAuthClientPlugin {
    return {
       id: "hyprpay",
       $InferServerPlugin: {} as ReturnType<typeof hyprpay>,
-      getActions: ($fetch) => ({
-         hyprpay: {
-            getCustomer: () =>
-               $fetch<HyprPayCustomer>("/hyprpay/customer", { method: "GET" }),
-         },
-      }),
    };
 }
