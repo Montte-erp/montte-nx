@@ -1,82 +1,98 @@
 # @montte/hyprpay
 
-SDK TypeScript para sincronizar o ciclo de vida de clientes com o Montte (HyprPay).
+SDK TypeScript para o HyprPay — gerencie o ciclo de vida de clientes com um cliente type-safe e baseado em resultados. Inclui plugin para [Better Auth](https://better-auth.com) com criação automática de clientes no signup.
 
 ## Instalação
 
 ```bash
 npm install @montte/hyprpay
+# ou
+bun add @montte/hyprpay
 ```
 
-## Quickstart
+## Uso
 
-1. Acesse **Montte → Configurações → Chaves de API** e gere uma chave para o seu espaço.
-
-2. Configure o cliente:
+### Cliente
 
 ```typescript
 import { createHyprPayClient } from "@montte/hyprpay";
 
-const hyprpay = createHyprPayClient({
-  apiKey: process.env.MONTTE_API_KEY,
+const client = createHyprPayClient({
+  apiKey: process.env.HYPRPAY_API_KEY!,
 });
+```
 
-await hyprpay.customers.create({
+Todos os métodos retornam `ResultAsync` do [neverthrow](https://github.com/supermacro/neverthrow) — erros são tipados e nunca lançados.
+
+### Clientes
+
+```typescript
+// Criar
+const result = await client.customers.create({
   name: "Maria Silva",
-  email: "maria@exemplo.com",
-  externalId: user.id, // ID do usuário no seu sistema
+  email: "maria@example.com",
+  phone: "11999999999",
+  document: "12345678901",
+  externalId: "user_abc123",       // ID do usuário no seu sistema
+});
+
+if (result.isErr()) {
+  console.error(result.error.code); // "BAD_REQUEST" | "CONFLICT" | ...
+} else {
+  console.log(result.value.id);
+}
+
+// Buscar por ID externo
+const customer = await client.customers.get("user_abc123");
+
+// Listar
+const listResult = await client.customers.list({ page: 1, limit: 20 });
+const { items, total, pages } = listResult.unwrapOr({
+  items: [], total: 0, page: 1, limit: 20, pages: 0,
+});
+
+// Atualizar
+const updated = await client.customers.update("user_abc123", {
+  name: "Maria Santos",
+  email: null,       // passe null para limpar o campo
 });
 ```
 
-## API
-
-### `customers.create(input)`
-
-Cria um cliente no Montte.
+### Tratamento de Erros
 
 ```typescript
-const customer = await hyprpay.customers.create({
-  name: "Maria Silva",       // obrigatório
-  email: "maria@ex.com",     // opcional
-  phone: "11999999999",      // opcional
-  document: "12345678901",   // opcional
-  externalId: user.id,       // recomendado — necessário para .get() e .update()
-});
+import { HyprPayError } from "@montte/hyprpay";
+
+const result = await client.customers.get("id-desconhecido");
+
+result.match(
+  (customer) => console.log(customer),
+  (error) => {
+    if (error.code === "NOT_FOUND") {
+      // tratar 404
+    }
+    console.error(error.code, error.statusCode, error.message);
+  }
+);
 ```
 
-### `customers.get(externalId)`
+| Code | Status | Quando ocorre |
+|------|--------|---------------|
+| `UNAUTHORIZED` | 401 | Chave inválida ou ausente |
+| `FORBIDDEN` | 403 | Sem permissão |
+| `NOT_FOUND` | 404 | Cliente não encontrado |
+| `BAD_REQUEST` | 400 | Dados inválidos |
+| `CONFLICT` | 409 | Cliente já existe |
+| `TOO_MANY_REQUESTS` | 429 | Rate limit excedido |
+| `INTERNAL_ERROR` | 500 | Erro interno do servidor |
+| `NETWORK_ERROR` | 0 | Falha de rede |
+| `TIMEOUT` | 0 | Timeout na requisição |
 
-Busca um cliente pelo ID externo (ID do seu sistema).
+## Plugin Better Auth
 
-```typescript
-const customer = await hyprpay.customers.get(user.id);
-```
+Cria clientes no HyprPay automaticamente no signup.
 
-### `customers.update(externalId, data)`
-
-Atualiza um cliente.
-
-```typescript
-await hyprpay.customers.update(user.id, {
-  email: "novo@email.com",
-  phone: null, // aceita null para limpar o campo
-});
-```
-
-### `customers.list(options?)`
-
-Lista clientes com paginação.
-
-```typescript
-const { items, total, page, limit } = await hyprpay.customers.list({
-  page: 1,   // padrão: 1
-  limit: 20, // padrão: 20, máximo: 100
-});
-```
-
-## Plugin better-auth
-
-Cria clientes automaticamente no signup.
+### Servidor
 
 ```typescript
 import { betterAuth } from "better-auth";
@@ -85,56 +101,57 @@ import { hyprpay } from "@montte/hyprpay/better-auth";
 export const auth = betterAuth({
   plugins: [
     hyprpay({
-      apiKey: process.env.MONTTE_API_KEY,
+      apiKey: process.env.HYPRPAY_API_KEY!,
       createCustomerOnSignUp: true,
+
+      // opcional: customize os dados enviados ao HyprPay
       customerData: (user) => ({
         name: user.name,
         email: user.email,
         externalId: user.id,
       }),
+
+      // opcional: execute lógica após o cliente ser criado
       onCustomerCreate: async (customer, user) => {
-        console.log("Customer created:", customer.id);
+        console.log(`Cliente HyprPay ${customer.id} criado para ${user.email}`);
       },
     }),
   ],
 });
 ```
 
-## Erros
+O plugin intercepta `/sign-up/email`, `/sign-up/email-otp` e `/sign-in/magic-link`. Falhas na criação do cliente são logadas mas nunca bloqueiam o fluxo de autenticação.
 
-Todos os erros são instâncias de `HyprPayError` com `code` e `statusCode` tipados:
+### Cliente
 
 ```typescript
-import { HyprPayError } from "@montte/hyprpay";
+import { createAuthClient } from "better-auth/client";
+import { hyprpayClient } from "@montte/hyprpay/better-auth";
 
-try {
-  await hyprpay.customers.get("id-desconhecido");
-} catch (err) {
-  if (err instanceof HyprPayError) {
-    err.code;       // "NOT_FOUND" | "UNAUTHORIZED" | "FORBIDDEN" | ...
-    err.statusCode; // 404
-  }
-}
+export const authClient = createAuthClient({
+  plugins: [hyprpayClient()],
+});
 ```
 
-| Code | Status | Quando ocorre |
-|------|--------|---------------|
-| `UNAUTHORIZED` | 401 | Chave inválida ou ausente |
-| `FORBIDDEN` | 403 | Chave sem `teamId` no metadata |
-| `NOT_FOUND` | 404 | Cliente não encontrado |
-| `CONFLICT` | 409 | Nome de cliente já existe no espaço |
-| `TOO_MANY_REQUESTS` | 429 | Rate limit excedido |
-| `INTERNAL_ERROR` | 500 | Erro interno do servidor |
-| `NETWORK_ERROR` | 0 | Falha de rede |
-| `TIMEOUT` | 0 | Timeout após `timeoutMs` ms |
-
-## Configuração avançada
+## Tipos
 
 ```typescript
-const hyprpay = createHyprPayClient({
-  apiKey: process.env.MONTTE_API_KEY,
-  baseUrl: "https://api.montte.com.br", // padrão
-  timeoutMs: 10_000,                     // padrão: 10s
-  retries: 2,                            // padrão: 2 tentativas em erros 5xx
+import type {
+  HyprPayClient,
+  HyprPayClientConfig,
+  HyprPayCustomer,
+  HyprPayListResult,
+  CreateCustomerInput,
+  UpdateCustomerInput,
+  ListCustomersInput,
+} from "@montte/hyprpay";
+```
+
+## URL Base Customizada
+
+```typescript
+const client = createHyprPayClient({
+  apiKey: process.env.HYPRPAY_API_KEY!,
+  baseUrl: "https://sua-instancia.example.com",
 });
 ```
