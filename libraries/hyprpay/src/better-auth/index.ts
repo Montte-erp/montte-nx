@@ -59,7 +59,16 @@ export function hyprpay(options: HyprPayPluginOptions): BetterAuthPlugin {
                   const input = mapper(user);
                   const result = await sdkClient.customers.create(input);
                   if (result.isOk()) {
-                     await options.onCustomerCreate?.(result.value, user);
+                     try {
+                        await options.onCustomerCreate?.(result.value, user);
+                     } catch (err) {
+                        console.error("[hyprpay] onCustomerCreate threw", err);
+                     }
+                  } else {
+                     console.error(
+                        "[hyprpay] customer creation failed",
+                        result.error,
+                     );
                   }
                },
             },
