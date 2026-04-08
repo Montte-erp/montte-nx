@@ -1,6 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
-   pgTable,
+   pgSchema,
    text,
    timestamp,
    boolean,
@@ -11,7 +11,9 @@ import {
    uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-export const user = pgTable("user", {
+export const authSchema = pgSchema("auth");
+
+export const user = authSchema.table("user", {
    id: uuid("id")
       .default(sql`pg_catalog.gen_random_uuid()`)
       .primaryKey(),
@@ -28,7 +30,7 @@ export const user = pgTable("user", {
    stripeCustomerId: text("stripe_customer_id"),
 });
 
-export const session = pgTable(
+export const session = authSchema.table(
    "session",
    {
       id: uuid("id")
@@ -51,7 +53,7 @@ export const session = pgTable(
    (table) => [index("session_userId_idx").on(table.userId)],
 );
 
-export const account = pgTable(
+export const account = authSchema.table(
    "account",
    {
       id: uuid("id")
@@ -77,7 +79,7 @@ export const account = pgTable(
    (table) => [index("account_userId_idx").on(table.userId)],
 );
 
-export const organization = pgTable(
+export const organization = authSchema.table(
    "organization",
    {
       id: uuid("id")
@@ -95,7 +97,7 @@ export const organization = pgTable(
    (table) => [uniqueIndex("organization_slug_uidx").on(table.slug)],
 );
 
-export const team = pgTable(
+export const team = authSchema.table(
    "team",
    {
       id: uuid("id")
@@ -121,7 +123,7 @@ export const team = pgTable(
    (table) => [index("team_organizationId_idx").on(table.organizationId)],
 );
 
-export const teamMember = pgTable(
+export const teamMember = authSchema.table(
    "team_member",
    {
       id: uuid("id")
@@ -141,7 +143,7 @@ export const teamMember = pgTable(
    ],
 );
 
-export const member = pgTable(
+export const member = authSchema.table(
    "member",
    {
       id: uuid("id")
@@ -162,7 +164,7 @@ export const member = pgTable(
    ],
 );
 
-export const invitation = pgTable(
+export const invitation = authSchema.table(
    "invitation",
    {
       id: uuid("id")
@@ -187,7 +189,7 @@ export const invitation = pgTable(
    ],
 );
 
-export const twoFactor = pgTable(
+export const twoFactor = authSchema.table(
    "two_factor",
    {
       id: uuid("id")
@@ -205,7 +207,7 @@ export const twoFactor = pgTable(
    ],
 );
 
-export const apikey = pgTable(
+export const apikey = authSchema.table(
    "apikey",
    {
       id: uuid("id")
@@ -240,7 +242,7 @@ export const apikey = pgTable(
    ],
 );
 
-export const subscription = pgTable("subscription", {
+export const subscription = authSchema.table("subscription", {
    id: uuid("id")
       .default(sql`pg_catalog.gen_random_uuid()`)
       .primaryKey(),
