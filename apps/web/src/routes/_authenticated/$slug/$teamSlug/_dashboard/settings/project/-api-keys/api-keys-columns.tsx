@@ -52,6 +52,7 @@ export function buildApiKeysColumns(
             <Button
                size="sm"
                variant="ghost"
+               aria-label="Revogar chave"
                onClick={() => onRevoke(row.original.id)}
                disabled={isPending}
             >
