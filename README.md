@@ -17,21 +17,15 @@
 ### Setup
 
 ```bash
-# 1. Install dependencies
+git clone https://github.com/Montte-erp/montte-nx.git
+cd montte-nx
 bun install
-
-# 2. Run guided setup (creates .env.local, starts containers, pushes DB schema, seeds catalog)
-bun setup
-```
-
-After `bun setup` completes:
-
-```bash
 bun dev
 ```
 
-> **First run**: `bun setup` will create `apps/web/.env.local` from the example file and stop.
-> Fill in your values, then run `bun setup` again to complete setup.
+`bun dev` handles everything on first run — creates `apps/web/.env.local`, starts containers, pushes the DB schema, seeds the event catalog, and starts the app at `http://localhost:3000`.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for staging setup and all available commands.
 
 ---
 
