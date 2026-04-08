@@ -1,6 +1,14 @@
 ---
-title: Montte CLI — Transactions
-description: List, get, create, summarize, and remove financial transactions via the Montte CLI
+name: "@montte/cli/transactions"
+description: >
+  Use when listing, filtering, creating, summarizing, or deleting financial
+  transactions via the montte CLI. Covers all options for date ranges, types,
+  account/category filters, and pagination.
+type: sub-skill
+library: "@montte/cli"
+library_version: "0.1.0"
+sources:
+  - "Montte-erp/montte-nx:libraries/cli/src/commands/transactions.ts"
 ---
 
 # Transactions

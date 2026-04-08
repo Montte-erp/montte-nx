@@ -1,6 +1,13 @@
 ---
-title: Montte CLI — Categories
-description: List, create, archive, and remove transaction categories via the Montte CLI
+name: "@montte/cli/categories"
+description: >
+  Use when managing transaction categories via the montte CLI: listing by type,
+  creating parent or subcategories, archiving (soft delete), or permanently removing.
+type: sub-skill
+library: "@montte/cli"
+library_version: "0.1.0"
+sources:
+  - "Montte-erp/montte-nx:libraries/cli/src/commands/categories.ts"
 ---
 
 # Categories

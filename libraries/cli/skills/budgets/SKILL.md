@@ -1,6 +1,13 @@
 ---
-title: Montte CLI — Budget Goals
-description: List, get, create, and remove monthly budget goals via the Montte CLI
+name: "@montte/cli/budgets"
+description: >
+  Use when creating or checking monthly budget goals per category via the montte CLI.
+  Covers listing progress (percent used), alert thresholds, and removing goals.
+type: sub-skill
+library: "@montte/cli"
+library_version: "0.1.0"
+sources:
+  - "Montte-erp/montte-nx:libraries/cli/src/commands/budgets.ts"
 ---
 
 # Budget Goals

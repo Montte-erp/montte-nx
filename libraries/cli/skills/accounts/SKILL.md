@@ -1,6 +1,14 @@
 ---
-title: Montte CLI — Bank Accounts
-description: List, get, and create bank accounts via the Montte CLI
+name: "@montte/cli/accounts"
+description: >
+  Use when listing, inspecting, or creating bank accounts via the montte CLI.
+  Covers account types (checking, savings, investment, payment, cash) and
+  initial balance setup.
+type: sub-skill
+library: "@montte/cli"
+library_version: "0.1.0"
+sources:
+  - "Montte-erp/montte-nx:libraries/cli/src/commands/accounts.ts"
 ---
 
 # Bank Accounts

@@ -1,6 +1,14 @@
 ---
-title: Montte CLI — Overview
-description: How to install, authenticate, and use the Montte CLI to manage finances from the terminal
+name: "@montte/cli/overview"
+description: >
+  Use when an agent needs to install, set up, or run any montte CLI command.
+  Covers authentication, global flags, and available command groups.
+type: core
+library: "@montte/cli"
+library_version: "0.1.0"
+sources:
+  - "Montte-erp/montte-nx:libraries/cli/src/index.ts"
+  - "Montte-erp/montte-nx:libraries/cli/src/config.ts"
 ---
 
 # Montte CLI

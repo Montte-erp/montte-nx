@@ -11,7 +11,8 @@
    },
    "files": [
       "dist",
-      "skills"
+      "skills",
+      "!skills/_artifacts"
    ],
    "type": "module",
    "exports": {

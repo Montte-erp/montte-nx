@@ -1,6 +1,14 @@
 ---
-title: Montte CLI — Authentication
-description: Login, logout, and credential management for the Montte CLI
+name: "@montte/cli/auth"
+description: >
+  Use when authenticating the CLI, managing API keys, or handling
+  "Not logged in" errors. Covers login, logout, whoami, and env var auth.
+type: sub-skill
+library: "@montte/cli"
+library_version: "0.1.0"
+sources:
+  - "Montte-erp/montte-nx:libraries/cli/src/config.ts"
+  - "Montte-erp/montte-nx:libraries/cli/src/commands/auth.ts"
 ---
 
 # Authentication
