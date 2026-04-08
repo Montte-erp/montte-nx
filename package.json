@@ -230,7 +230,7 @@
       "db:push:prod": "bun run scripts/ensure-schemas.ts --env production && nx run core/database:db-push-prod",
       "db:studio:local": "nx run core/database:db-studio-local",
       "db:studio:prod": "nx run core/database:db-studio-prod",
-      "dev": "bun run scripts/check-env.ts && cd apps/web && bun run container-start && cd ../.. && bun run scripts/seed-event-catalog.ts run --env local && nx run-many -t dev --parallel=3 -p web",
+      "dev": "bun run scripts/dev-init.ts && nx run-many -t dev --parallel=3 -p web",
       "dev:staging": "bun run scripts/check-env.ts --env staging && nx run-many -t dev:staging --parallel=3 -p web",
       "setup": "bun run scripts/setup.ts",
       "dev:all": "bun run scripts/seed-event-catalog.ts run --env local && bun run scripts/seed-addons.ts run --env local && bun run scripts/setup-stripe.ts run --env local && nx run-many -t dev --parallel=6",
