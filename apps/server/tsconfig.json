@@ -21,7 +21,14 @@
          "@packages/analytics/*": ["../../packages/analytics/src/*"],
          "@packages/events/*": ["../../packages/events/src/*"],
          "@packages/ui/*": ["../../packages/ui/src/*"],
-         "@montte/cli/*": ["../../libraries/cli/src/*"]
+         "@montte/cli/*": ["../../libraries/cli/src/*"],
+         "@montte/hyprpay": ["../../libraries/hyprpay/src/index.ts"],
+         "@montte/hyprpay/contract": [
+            "../../libraries/hyprpay/src/contract.ts"
+         ],
+         "@montte/hyprpay/better-auth": [
+            "../../libraries/hyprpay/src/better-auth/index.ts"
+         ]
       }
    },
    "include": ["src"],
