@@ -30,7 +30,7 @@ services:
          POSTGRES_PASSWORD: password
          POSTGRES_DB: montte
       volumes:
-         - montte_pgdata:/var/lib/postgresql/data
+         - montte_pgdata:/var/lib/postgresql
       ports:
          - "5433:5432"
       healthcheck:
