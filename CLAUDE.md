@@ -549,3 +549,90 @@ Procedures: `apps/web/src/integrations/orpc/router/onboarding.ts`.
 ## Billing Model
 
 100% usage-based via Stripe meter events. Free tier per event (Redis counters, monthly TTL). Usage above free tier → Stripe meter events. Optional addon subscriptions (Boost, Scale, Enterprise). Redis tracks real-time; materialized views reconcile hourly (worker cron).
+
+---
+
+## TanStack Intent (Agent Skills)
+
+Ships versioned AI agent skills alongside the `@montte/cli` npm package so tools like Claude Code and Cursor can auto-discover correct CLI usage from `node_modules`.
+
+**Setup in `package.json`:**
+```json
+{
+  "keywords": ["tanstack-intent"],
+  "files": ["dist", "skills", "!skills/_artifacts"]
+}
+```
+
+**Skill file structure** — `skills/<domain>/SKILL.md`:
+```yaml
+---
+name: "@montte/cli/<domain>"
+description: >
+  Use when <specific triggering condition — what the agent is doing, not a summary>.
+type: core | sub-skill | framework | lifecycle | composition | security
+library: "@montte/cli"
+library_version: "0.1.0"
+sources:
+  - "Montte-erp/montte-nx:libraries/cli/src/<file>.ts"
+---
+```
+
+**Rules:**
+- `name` must match the directory slug (e.g. `@montte/cli/auth` for `skills/auth/SKILL.md`)
+- `description` is used by agents to decide whether to load the skill — write it as a triggering condition ("use when..."), never a summary
+- Max 500 lines per SKILL.md
+- `sources` enables staleness detection in CI: run `npx @tanstack/intent@latest stale` after modifying source files
+- `skills/_artifacts/` is generated locally by the registry tool — never commit it, exclude from npm `files`
+
+**Validate before publishing:**
+```bash
+npx @tanstack/intent@latest validate
+```
+
+---
+
+## TanStack Config (`@tanstack/vite-config`)
+
+Used in `libraries/cli` to produce dual ESM+CJS output for npm publishing.
+
+**`vite.config.ts`** — single entry only:
+```ts
+import { tanstackViteConfig } from "@tanstack/vite-config";
+export default tanstackViteConfig({ entry: "./src/index.ts", srcDir: "./src" });
+```
+
+**Multi-entry limitation:** `tanstackViteConfig` only accepts one `entry` string. You cannot override `build.lib.entry` via `mergeConfig` — the internal plugin's `config` hook resets it at build time. For additional entries (e.g. a `./contract` subpath), use a separate esbuild script run after the main build:
+```ts
+// scripts/build-contract.ts
+import { build } from "esbuild";
+await Promise.all([
+  build({ entryPoints: [...], outdir: "dist/esm/contract", format: "esm", bundle: false }),
+  build({ entryPoints: [...], outdir: "dist/cjs/contract", format: "cjs", outExtension: { ".js": ".cjs" }, bundle: false }),
+]);
+```
+
+**Build script:**
+```json
+"build": "vite build && bun run scripts/build-contract.ts && publint --strict"
+```
+
+**`package.json` exports map** — matches `dist/esm/` + `dist/cjs/` output:
+```json
+{
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/esm/index.d.ts", "default": "./dist/esm/index.js" },
+      "require": { "types": "./dist/cjs/index.d.cts", "default": "./dist/cjs/index.cjs" }
+    },
+    "./package.json": "./package.json"
+  }
+}
+```
+
+**`publint --strict`** validates the exports map on every build — fix all errors before publishing.
+
+**Notes:**
+- `moduleResolution: "bundler"` is required in `tsconfig.json` (already set in `@tooling/typescript/base.json`)
+- Include `vite.config.ts` in `tsconfig.json` `include` array
+- `@tanstack/vite-config` is being sunset in favor of `tsdown` — acceptable for current use, but new packages should consider `tsdown` instead
