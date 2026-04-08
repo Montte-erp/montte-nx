@@ -1,15 +1,3 @@
-export interface HyprPayCustomer {
-   id: string;
-   teamId: string;
-   name: string;
-   email: string | null;
-   phone: string | null;
-   document: string | null;
-   externalId: string | null;
-   createdAt: string;
-   updatedAt: string;
-}
-
 export interface HyprPayListResult<T> {
    items: T[];
    total: number;

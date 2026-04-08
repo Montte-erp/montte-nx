@@ -2,8 +2,8 @@ export { createHyprPayClient } from "./client";
 export type { HyprPayClient, HyprPayClientConfig } from "./client";
 export { HyprPayError } from "./errors";
 export type { HyprPayErrorCode } from "./errors";
+export type { HyprPayCustomerFromContract as HyprPayCustomer } from "./contract";
 export type {
-   HyprPayCustomer,
    HyprPayListResult,
    CreateCustomerInput,
    UpdateCustomerInput,

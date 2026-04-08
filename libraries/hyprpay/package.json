@@ -54,6 +54,7 @@
       "typecheck": "tsc --noEmit"
    },
    "dependencies": {
+      "@orpc/client": "catalog:orpc",
       "@orpc/contract": "catalog:orpc",
       "zod": "4.3.6"
    },

@@ -1,7 +1,7 @@
 import type { BetterAuthPlugin } from "better-auth";
 import type { BetterAuthClientPlugin } from "better-auth/client";
 import { createHyprPayClient } from "../client";
-import type { HyprPayCustomer } from "../types";
+import type { HyprPayCustomerFromContract as HyprPayCustomer } from "../contract";
 
 interface HyprPayPluginOptions {
    apiKey: string;
