@@ -44,5 +44,10 @@
       "typescript": "catalog:development",
       "vite": "catalog:vite",
       "vitest": "catalog:testing"
+   },
+   "intent": {
+      "skills": [
+         "./skills/hyprpay/SKILL.md"
+      ]
    }
 }
