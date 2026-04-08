@@ -6,6 +6,7 @@ import {
    CreditCard,
    DollarSign,
    FlaskConical,
+   KeyRound,
    Network,
    Package,
    Palette,
@@ -86,6 +87,12 @@ export const settingsNavSections: SettingsNavSection[] = [
             title: "Integrações",
             href: "/$slug/$teamSlug/settings/project/integrations",
             icon: Network,
+         },
+         {
+            id: "project-api-keys",
+            title: "Chaves de API",
+            href: "/$slug/$teamSlug/settings/project/api-keys",
+            icon: KeyRound,
          },
          {
             id: "project-danger-zone",
