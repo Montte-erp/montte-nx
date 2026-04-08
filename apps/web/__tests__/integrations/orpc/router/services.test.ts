@@ -60,10 +60,10 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-   await ctx.db.execute(sql`DELETE FROM contact_subscriptions`);
-   await ctx.db.execute(sql`DELETE FROM service_variants`);
-   await ctx.db.execute(sql`DELETE FROM services`);
-   await ctx.db.execute(sql`DELETE FROM contacts`);
+   await ctx.db.execute(sql`DELETE FROM crm.contact_subscriptions`);
+   await ctx.db.execute(sql`DELETE FROM crm.service_variants`);
+   await ctx.db.execute(sql`DELETE FROM crm.services`);
+   await ctx.db.execute(sql`DELETE FROM crm.contacts`);
 });
 
 describe("create", () => {

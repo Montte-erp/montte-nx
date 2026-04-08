@@ -77,7 +77,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-   await ctx.db.execute(sql`DELETE FROM insights`);
+   await ctx.db.execute(sql`DELETE FROM platform.insights`);
 });
 
 describe("create", () => {

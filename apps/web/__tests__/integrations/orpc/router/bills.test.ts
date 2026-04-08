@@ -56,9 +56,9 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-   await ctx.db.execute(sql`DELETE FROM bills`);
-   await ctx.db.execute(sql`DELETE FROM transactions`);
-   await ctx.db.execute(sql`DELETE FROM bank_accounts`);
+   await ctx.db.execute(sql`DELETE FROM finance.bills`);
+   await ctx.db.execute(sql`DELETE FROM finance.transactions`);
+   await ctx.db.execute(sql`DELETE FROM finance.bank_accounts`);
 });
 
 const billInput = {

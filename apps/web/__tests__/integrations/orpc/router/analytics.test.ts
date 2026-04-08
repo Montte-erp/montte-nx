@@ -53,11 +53,11 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-   await ctx.db.execute(sql`DELETE FROM insights`);
-   await ctx.db.execute(sql`DELETE FROM dashboards`);
-   await ctx.db.execute(sql`DELETE FROM transactions`);
-   await ctx.db.execute(sql`DELETE FROM bank_accounts`);
-   await ctx.db.execute(sql`DELETE FROM categories`);
+   await ctx.db.execute(sql`DELETE FROM platform.insights`);
+   await ctx.db.execute(sql`DELETE FROM platform.dashboards`);
+   await ctx.db.execute(sql`DELETE FROM finance.transactions`);
+   await ctx.db.execute(sql`DELETE FROM finance.bank_accounts`);
+   await ctx.db.execute(sql`DELETE FROM finance.categories`);
 });
 
 describe("query", () => {

@@ -11,7 +11,12 @@ export async function setupTestDb() {
       schema,
    }) as unknown as DatabaseInstance;
 
-   const { apply } = await pushSchema(schema, db as any, ["public"]);
+   const { apply } = await pushSchema(schema, db as any, [
+      "finance",
+      "crm",
+      "inventory",
+      "platform",
+   ]);
    await apply();
 
    return {

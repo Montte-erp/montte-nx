@@ -57,9 +57,9 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-   await ctx.db.execute(sql`DELETE FROM transaction_tags`);
-   await ctx.db.execute(sql`DELETE FROM transactions`);
-   await ctx.db.execute(sql`DELETE FROM tags`);
+   await ctx.db.execute(sql`DELETE FROM finance.transaction_tags`);
+   await ctx.db.execute(sql`DELETE FROM finance.transactions`);
+   await ctx.db.execute(sql`DELETE FROM crm.tags`);
 });
 
 describe("create", () => {

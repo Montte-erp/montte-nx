@@ -13,13 +13,13 @@ beforeAll(async () => {
 
    // pushSchema may not create materialized views — create it manually
    await testDb.db.execute(sql`
-		CREATE MATERIALIZED VIEW IF NOT EXISTS credit_card_statement_totals AS
+		CREATE MATERIALIZED VIEW IF NOT EXISTS finance.credit_card_statement_totals AS
 		SELECT
 			credit_card_id,
 			statement_period,
 			COALESCE(SUM(amount::numeric), 0) AS total_purchases,
 			COUNT(*)::int AS transaction_count
-		FROM transactions
+		FROM finance.transactions
 		WHERE credit_card_id IS NOT NULL
 		GROUP BY credit_card_id, statement_period
 	`);

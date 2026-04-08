@@ -88,6 +88,7 @@ import {
    getSampleValues,
    parseAmount,
    parseDate,
+   validateRow,
    useStatementImportContext,
 } from "./use-statement-import";
 
@@ -589,6 +590,7 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
       duplicateFlags,
       format,
       setConfirmedIndices: onSelectionReady,
+      minImportDate,
    } = useStatementImportContext();
    type EditingCell = { type: "desc"; index: number; value: string } | null;
 

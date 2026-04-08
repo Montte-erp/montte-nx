@@ -42,6 +42,7 @@
         "@core/transactional": "workspace:*",
         "@elysiajs/cors": "catalog:server",
         "@montte/cli": "workspace:*",
+        "@montte/hyprpay": "workspace:*",
         "@orpc/server": "catalog:orpc",
         "@packages/events": "workspace:*",
         "elysia": "catalog:server",
@@ -382,6 +383,25 @@
         "@tooling/typescript": "workspace:*",
         "@types/bun": "latest",
         "@vitest/coverage-v8": "catalog:testing",
+        "publint": "latest",
+        "typescript": "catalog:development",
+        "vite": "catalog:vite",
+        "vitest": "catalog:testing",
+      },
+    },
+    "libraries/hyprpay": {
+      "name": "@montte/hyprpay",
+      "version": "0.1.0",
+      "dependencies": {
+        "@orpc/client": "catalog:orpc",
+        "@orpc/contract": "catalog:orpc",
+        "neverthrow": "^8.1.1",
+        "zod": "4.3.6",
+      },
+      "devDependencies": {
+        "@tanstack/vite-config": "0.5.2",
+        "@types/bun": "latest",
+        "esbuild": "^0.25.4",
         "publint": "latest",
         "typescript": "catalog:development",
         "vite": "catalog:vite",
@@ -1241,6 +1261,8 @@
     "@mongodb-js/saslprep": ["@mongodb-js/saslprep@1.4.6", "", { "dependencies": { "sparse-bitfield": "^3.0.3" } }, "sha512-y+x3H1xBZd38n10NZF/rEBlvDOOMQ6LKUTHqr8R9VkJ+mmQOYtJFxIlkkK8fZrtOiL6VixbOBWMbZGBdal3Z1g=="],
 
     "@montte/cli": ["@montte/cli@workspace:libraries/cli"],
+
+    "@montte/hyprpay": ["@montte/hyprpay@workspace:libraries/hyprpay"],
 
     "@mrleebo/prisma-ast": ["@mrleebo/prisma-ast@0.13.1", "", { "dependencies": { "chevrotain": "^10.5.0", "lilconfig": "^2.1.0" } }, "sha512-XyroGQXcHrZdvmrGJvsA9KNeOOgGMg1Vg9OlheUsBOSKznLMDl+YChxbkboRHvtFYJEMRYmlV3uoo/njCw05iw=="],
 
@@ -3341,6 +3363,8 @@
     "native-promise-only": ["native-promise-only@0.8.1", "", {}, "sha512-zkVhZUA3y8mbz652WrL5x0fB0ehrBkulWT3TomAQ9iDtyXZvzKeEA6GPxAItBYeNYl5yngKRX612qHOhvMkDeg=="],
 
     "negotiator": ["negotiator@0.6.3", "", {}, "sha512-+EUsqGPLsM+j/zdChZjsnX51g4XrHFOIXwfnCVPGlQk/k5giakcKsuxCObBRu6DSm9opw/O6slWbJdghQM4bBg=="],
+
+    "neverthrow": ["neverthrow@8.2.0", "", { "optionalDependencies": { "@rollup/rollup-linux-x64-gnu": "^4.24.0" } }, "sha512-kOCT/1MCPAxY5iUV3wytNFUMUolzuwd/VF/1KCx7kf6CutrOsTie+84zTGTpgQycjvfLdBBdvBvFLqFD2c0wkQ=="],
 
     "nf3": ["nf3@0.3.11", "", {}, "sha512-ObKp/SA3f1g1f/OMeDlRWaZmqGgk7A0NnDIbeO7c/MV4r/quMlpP/BsqMGuTi3lUlXbC1On8YH7ICM2u2bIAOw=="],
 

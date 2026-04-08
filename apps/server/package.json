@@ -21,6 +21,7 @@
       "@core/transactional": "workspace:*",
       "@elysiajs/cors": "catalog:server",
       "@montte/cli": "workspace:*",
+      "@montte/hyprpay": "workspace:*",
       "@orpc/server": "catalog:orpc",
       "@packages/events": "workspace:*",
       "elysia": "catalog:server"

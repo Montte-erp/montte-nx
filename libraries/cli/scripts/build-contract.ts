@@ -1,9 +1,17 @@
 import { build } from "esbuild";
-import { glob } from "node:fs/promises";
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
 
-const contractFiles = await Array.fromAsync(
-   glob("src/contract/**/*.ts", { cwd: process.cwd() }),
-);
+function collectTs(dir: string): string[] {
+   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) return collectTs(full);
+      if (entry.name.endsWith(".ts")) return [full];
+      return [];
+   });
+}
+
+const contractFiles = collectTs("src/contract");
 
 await Promise.all([
    build({

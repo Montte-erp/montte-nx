@@ -58,10 +58,10 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-   await ctx.db.execute(sql`DELETE FROM credit_card_statements`);
-   await ctx.db.execute(sql`DELETE FROM credit_cards`);
-   await ctx.db.execute(sql`DELETE FROM transactions`);
-   await ctx.db.execute(sql`DELETE FROM bank_accounts`);
+   await ctx.db.execute(sql`DELETE FROM finance.credit_card_statements`);
+   await ctx.db.execute(sql`DELETE FROM finance.credit_cards`);
+   await ctx.db.execute(sql`DELETE FROM finance.transactions`);
+   await ctx.db.execute(sql`DELETE FROM finance.bank_accounts`);
 
    const ba = await call(
       bankAccountsRouter.create,

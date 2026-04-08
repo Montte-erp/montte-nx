@@ -228,7 +228,10 @@ function inferType(raw: string, amount: number): "income" | "expense" {
    return "expense";
 }
 
-function validateRow(row: ParsedRow, minDate?: string | null): ValidatedRow {
+export function validateRow(
+   row: ParsedRow,
+   minDate?: string | null,
+): ValidatedRow {
    const errors: string[] = [];
    const parsedDate = parseDate(row.date);
    if (!parsedDate) errors.push("Data inválida");
