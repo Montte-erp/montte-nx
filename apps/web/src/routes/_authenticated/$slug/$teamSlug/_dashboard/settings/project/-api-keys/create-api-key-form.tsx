@@ -77,6 +77,7 @@ export function CreateApiKeyForm({
                <Button
                   size="sm"
                   variant="ghost"
+                  aria-label="Copiar chave de API"
                   onClick={() => handleCopy(createdKey)}
                >
                   <Copy className="size-4" />
@@ -113,6 +114,7 @@ export function CreateApiKeyForm({
                         onInput={(e) =>
                            field.handleChange(e.currentTarget.value)
                         }
+                        onBlur={() => field.handleBlur()}
                      />
                   </div>
                );
