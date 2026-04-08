@@ -389,9 +389,24 @@ async function runSeed(env: string, dryRun: boolean) {
 
    const db = createDb({ databaseUrl });
 
-   const deleted = await db
-      .delete(eventCatalog)
-      .returning({ id: eventCatalog.id });
+   let deleted: Array<{ id: string }>;
+
+   try {
+      deleted = await db
+         .delete(eventCatalog)
+         .returning({ id: eventCatalog.id });
+   } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      if (message.includes("relation") && message.includes("does not exist")) {
+         throw new Error(
+            "Table platform.event_catalog does not exist. Run 'bun run db:push' first.",
+         );
+      }
+
+      throw error;
+   }
+
    console.log(`Deleted ${deleted.length} existing catalog entries.`);
 
    const inserted = await db

@@ -3,7 +3,7 @@ name: data-table-pattern
 description: Use when building, updating, or reviewing any data table in the contentta project. Triggers on DataTable usage, table actions, table columns, expandable rows, renderSubComponent, or any list view with tabular data.
 ---
 
-# Contentta Data Table Pattern
+# Montte Data Table Pattern
 
 ## Overview
 

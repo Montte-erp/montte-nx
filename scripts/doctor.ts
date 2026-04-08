@@ -11,21 +11,6 @@ const colors = {
    red: chalk.red,
 };
 
-function listEnvDirectories() {
-   const directoryGroups = ["apps", "packages", "core"];
-
-   return directoryGroups.flatMap((group) => {
-      if (!fs.existsSync(group)) {
-         return [];
-      }
-
-      return fs
-         .readdirSync(group, { withFileTypes: true })
-         .filter((entry) => entry.isDirectory())
-         .map((entry) => path.join(group, entry.name));
-   });
-}
-
 const checks = [
    {
       fn: () => {
@@ -58,28 +43,43 @@ const checks = [
    {
       fn: () => {
          try {
-            return execSync("podman --version").toString().trim();
-         } catch (error) {
-            console.error(error);
-            throw new Error(
-               "Podman is not installed or not in PATH. Please install it to run local dependencies.",
-            );
+            const version = execSync("docker --version").toString().trim();
+            return `docker (${version})`;
+         } catch {
+            try {
+               const version = execSync("podman --version").toString().trim();
+               return `podman (${version})`;
+            } catch {
+               throw new Error(
+                  "Neither docker nor podman found in PATH. Please install one to run local dependencies.",
+               );
+            }
          }
       },
-      name: "Podman",
+      name: "Container Runtime",
    },
    {
       fn: () => {
          try {
-            return execSync("podman-compose version").toString().trim();
-         } catch (error) {
-            console.error(error);
-            throw new Error(
-               "Podman Compose is not available. Please ensure you have podman-compose installed.",
-            );
+            execSync("docker compose version", { stdio: "pipe" });
+            return "docker compose (plugin)";
+         } catch {
+            try {
+               execSync("docker-compose --version", { stdio: "pipe" });
+               return "docker-compose";
+            } catch {
+               try {
+                  execSync("podman-compose version", { stdio: "pipe" });
+                  return "podman-compose";
+               } catch {
+                  throw new Error(
+                     "No compose tool found. Install docker compose plugin, docker-compose, or podman-compose.",
+                  );
+               }
+            }
          }
       },
-      name: "Podman Compose",
+      name: "Compose Tool",
    },
    {
       fn: () => {
@@ -95,60 +95,17 @@ const checks = [
    },
    {
       fn: () => {
-         const missingEnv: string[] = [];
-         const missingLocal: string[] = [];
-         const missingProduction: string[] = [];
+         const envLocalPath = path.join("apps", "web", ".env.local");
 
-         for (const dir of listEnvDirectories()) {
-            const dirName = path.basename(dir);
-            const hasExample = fs.existsSync(path.join(dir, ".env.example"));
-
-            if (!hasExample) {
-               continue;
-            }
-
-            if (!fs.existsSync(path.join(dir, ".env"))) {
-               missingEnv.push(dirName);
-            }
-
-            if (dir === path.join("core", "database")) {
-               if (!fs.existsSync(path.join(dir, ".env.local"))) {
-                  missingLocal.push(dirName);
-               }
-
-               if (!fs.existsSync(path.join(dir, ".env.production"))) {
-                  missingProduction.push(dirName);
-               }
-            }
-         }
-
-         const issues: string[] = [];
-
-         if (missingEnv.length > 0) {
-            issues.push(`Missing .env files in: ${missingEnv.join(", ")}`);
-         }
-
-         if (missingLocal.length > 0) {
-            issues.push(
-               `Missing .env.local files (core/database only): ${missingLocal.join(", ")}`,
-            );
-         }
-
-         if (missingProduction.length > 0) {
-            issues.push(
-               `Missing .env.production files (core/database only): ${missingProduction.join(", ")}`,
-            );
-         }
-
-         if (issues.length > 0) {
+         if (!fs.existsSync(envLocalPath)) {
             throw new Error(
-               `${issues.join(". ")}. Run 'bun run scripts/env-setup.ts setup' to create missing environment files.`,
+               "apps/web/.env.local not found. Copy apps/web/.env.example and fill in your values.",
             );
          }
 
-         return "All environment files found";
+         return "apps/web/.env.local found";
       },
-      name: "Environment Files",
+      name: "Environment File",
    },
    {
       fn: () => {
@@ -173,7 +130,7 @@ const checks = [
 ];
 
 async function runDoctor() {
-   console.log(colors.blue.bold("🩺 Running Contentta Environment Doctor..."));
+   console.log(colors.blue.bold("🩺 Running Montte Environment Doctor..."));
    console.log("-".repeat(40));
 
    let allGood = true;

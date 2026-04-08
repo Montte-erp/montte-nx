@@ -19,7 +19,8 @@ function getPackageDirectory(packageName: string) {
    return path.join("core", packageName);
 }
 
-function getEnvFilePath(packageDir: string, env: string) {
+function getEnvFilePath(_packageDir: string, env: string) {
+   const webDir = path.join(process.cwd(), "apps", "web");
    const possibleFiles = [
       `.env.${env}.local`,
       `.env.${env}`,
@@ -28,14 +29,14 @@ function getEnvFilePath(packageDir: string, env: string) {
    ];
 
    for (const file of possibleFiles) {
-      const filePath = path.join(packageDir, file);
+      const filePath = path.join(webDir, file);
 
       if (fs.existsSync(filePath)) {
          return filePath;
       }
    }
 
-   throw new Error(`No environment file found for ${env} in ${packageDir}`);
+   throw new Error(`No environment file found for ${env} in apps/web`);
 }
 
 function runCommand(
