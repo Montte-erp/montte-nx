@@ -56,12 +56,10 @@ export function hyprpay(options: HyprPayPluginOptions): BetterAuthPlugin {
                   const user = body?.user;
                   if (!user?.id) return;
 
-                  try {
-                     const input = mapper(user);
-                     const customer = await sdkClient.customers.create(input);
-                     await options.onCustomerCreate?.(customer, user);
-                  } catch {
-                     // Non-blocking — never fail signup because of HyprPay
+                  const input = mapper(user);
+                  const result = await sdkClient.customers.create(input);
+                  if (result.isOk()) {
+                     await options.onCustomerCreate?.(result.value, user);
                   }
                },
             },

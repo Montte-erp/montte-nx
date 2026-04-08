@@ -9,3 +9,5 @@ export type {
    UpdateCustomerInput,
    ListCustomersInput,
 } from "./types";
+export type { Result, ResultAsync } from "neverthrow";
+export { ok, err, okAsync, errAsync } from "neverthrow";
