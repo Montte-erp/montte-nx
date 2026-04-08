@@ -1,14 +1,14 @@
 import {
    boolean,
    integer,
-   pgTable,
    timestamp,
    uuid,
    varchar,
 } from "drizzle-orm/pg-core";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { financeSchema } from "@core/database/schemas/finance-schema";
 
-export const financialSettings = pgTable("financial_settings", {
+export const financialSettings = financeSchema.table("financial_settings", {
    teamId: uuid("team_id").primaryKey(),
    defaultCurrency: varchar("default_currency", { length: 3 })
       .notNull()

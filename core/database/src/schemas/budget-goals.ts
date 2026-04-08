@@ -3,7 +3,6 @@ import {
    index,
    integer,
    numeric,
-   pgTable,
    timestamp,
    uniqueIndex,
    uuid,
@@ -11,8 +10,9 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { categories } from "@core/database/schemas/categories";
+import { financeSchema } from "@core/database/schemas/finance-schema";
 
-export const budgetGoals = pgTable(
+export const budgetGoals = financeSchema.table(
    "budget_goals",
    {
       id: uuid("id")

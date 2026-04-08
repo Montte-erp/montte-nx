@@ -3,8 +3,6 @@ import {
    boolean,
    index,
    integer,
-   pgEnum,
-   pgTable,
    text,
    timestamp,
    uniqueIndex,
@@ -12,10 +10,14 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { financeSchema } from "@core/database/schemas/finance-schema";
 
-export const categoryTypeEnum = pgEnum("category_type", ["income", "expense"]);
+export const categoryTypeEnum = financeSchema.enum("category_type", [
+   "income",
+   "expense",
+]);
 
-export const categories = pgTable(
+export const categories = financeSchema.table(
    "categories",
    {
       id: uuid("id")

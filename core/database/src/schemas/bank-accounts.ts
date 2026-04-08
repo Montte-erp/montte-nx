@@ -3,16 +3,15 @@ import {
    date,
    index,
    numeric,
-   pgEnum,
-   pgTable,
    text,
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { financeSchema } from "@core/database/schemas/finance-schema";
 
-export const bankAccountTypeEnum = pgEnum("bank_account_type", [
+export const bankAccountTypeEnum = financeSchema.enum("bank_account_type", [
    "checking",
    "savings",
    "investment",
@@ -20,12 +19,12 @@ export const bankAccountTypeEnum = pgEnum("bank_account_type", [
    "cash",
 ]);
 
-export const bankAccountStatusEnum = pgEnum("bank_account_status", [
+export const bankAccountStatusEnum = financeSchema.enum("bank_account_status", [
    "active",
    "archived",
 ]);
 
-export const bankAccounts = pgTable(
+export const bankAccounts = financeSchema.table(
    "bank_accounts",
    {
       id: uuid("id")

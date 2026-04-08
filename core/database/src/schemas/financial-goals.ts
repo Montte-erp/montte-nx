@@ -5,8 +5,6 @@ import {
    index,
    integer,
    numeric,
-   pgEnum,
-   pgTable,
    text,
    timestamp,
    uuid,
@@ -15,14 +13,15 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { categories } from "@core/database/schemas/categories";
 import { transactions } from "@core/database/schemas/transactions";
+import { financeSchema } from "@core/database/schemas/finance-schema";
 
-export const goalMovementTypeEnum = pgEnum("goal_movement_type", [
+export const goalMovementTypeEnum = financeSchema.enum("goal_movement_type", [
    "deposit",
    "withdrawal",
 ]);
 export type GoalMovementType = (typeof goalMovementTypeEnum.enumValues)[number];
 
-export const financialGoals = pgTable(
+export const financialGoals = financeSchema.table(
    "financial_goals",
    {
       id: uuid("id")
@@ -62,7 +61,7 @@ export const financialGoals = pgTable(
    ],
 );
 
-export const financialGoalMovements = pgTable(
+export const financialGoalMovements = financeSchema.table(
    "financial_goal_movements",
    {
       id: uuid("id")
