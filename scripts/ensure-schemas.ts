@@ -33,7 +33,7 @@ function getEnvFilePath(env: string) {
 async function run(env: string) {
    const envFile = getEnvFilePath(env);
    console.log(colors.cyan(`   Loading env from: ${envFile}`));
-   loadDotenv({ path: envFile });
+   loadDotenv({ path: envFile, override: true });
 
    const databaseUrl = process.env.DATABASE_URL;
 
