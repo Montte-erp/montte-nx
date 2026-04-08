@@ -3,8 +3,9 @@
    "private": true,
    "type": "module",
    "scripts": {
-      "container-start": "if command -v podman-compose > /dev/null 2>&1; then podman ps -q --filter 'label=com.docker.compose.project=web' 2>/dev/null | grep -q . && echo 'Containers already running, skipping.' || podman-compose up -d; else docker ps -q --filter 'label=com.docker.compose.project=web' 2>/dev/null | grep -q . && echo 'Containers already running, skipping.' || docker-compose up -d; fi",
+      "container-start": "if docker compose version > /dev/null 2>&1; then docker compose ps -q 2>/dev/null | grep -q . && echo 'Containers already running, skipping.' || docker compose up -d; elif command -v docker-compose > /dev/null 2>&1; then docker-compose ps -q 2>/dev/null | grep -q . && echo 'Containers already running, skipping.' || docker-compose up -d; elif command -v podman-compose > /dev/null 2>&1; then podman ps -q --filter 'label=com.docker.compose.project=web' 2>/dev/null | grep -q . && echo 'Containers already running, skipping.' || podman-compose up -d; else echo 'ERROR: No container runtime found. Install Docker or Podman.' && exit 1; fi",
       "dev": "vite dev --port 3000",
+      "dev:staging": "vite dev --port 3000 --mode staging",
       "build": "NODE_ENV=production vite build",
       "start": "bun .output/server/index.mjs",
       "preview": "bun --bun vite preview",

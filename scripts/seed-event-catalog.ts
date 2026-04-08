@@ -3,11 +3,14 @@ import * as path from "node:path";
 import { createDb } from "@core/database/client";
 import { eventCatalog } from "@core/database/schemas/event-catalog";
 import { EVENT_CATEGORIES } from "@packages/events/catalog";
+import { AI_EVENTS } from "@packages/events/ai";
 import { CONTACT_EVENTS } from "@packages/events/contact";
 import { DASHBOARD_EVENTS } from "@packages/events/dashboard";
+import { DOCUMENT_EVENTS } from "@packages/events/document";
 import { FINANCE_EVENTS } from "@packages/events/finance";
 import { INSIGHT_EVENTS } from "@packages/events/insight";
 import { INVENTORY_EVENTS } from "@packages/events/inventory";
+import { NFE_EVENTS } from "@packages/events/nfe";
 import { SERVICE_EVENTS } from "@packages/events/service";
 import { WEBHOOK_EVENTS } from "@packages/events/webhook";
 import chalk from "chalk";
@@ -241,6 +244,51 @@ const EVENT_PRICING: EventPricing[] = [
       description: "Registrada quando um serviço é deletado.",
       isBillable: false,
    },
+   {
+      eventName: AI_EVENTS["ai.chat_message"],
+      category: EVENT_CATEGORIES.ai,
+      pricePerEvent: "0.020000",
+      freeTierLimit: 50,
+      displayName: "Mensagem de Chat IA",
+      description: "Registrada quando uma mensagem é enviada ao chat de IA.",
+      isBillable: true,
+   },
+   {
+      eventName: AI_EVENTS["ai.agent_action"],
+      category: EVENT_CATEGORIES.ai,
+      pricePerEvent: "0.040000",
+      freeTierLimit: 20,
+      displayName: "Ação de Agente IA",
+      description: "Registrada quando um agente de IA executa uma ação.",
+      isBillable: true,
+   },
+   {
+      eventName: DOCUMENT_EVENTS["document.signed"],
+      category: EVENT_CATEGORIES.document,
+      pricePerEvent: "0.050000",
+      freeTierLimit: 10,
+      displayName: "Documento Assinado",
+      description: "Registrada quando um documento é assinado digitalmente.",
+      isBillable: true,
+   },
+   {
+      eventName: NFE_EVENTS["nfe.emitted"],
+      category: EVENT_CATEGORIES.nfe,
+      pricePerEvent: "0.020000",
+      freeTierLimit: 20,
+      displayName: "NF-e Emitida",
+      description: "Registrada quando uma nota fiscal eletrônica é emitida.",
+      isBillable: true,
+   },
+   {
+      eventName: NFE_EVENTS["nfe.cancelled"],
+      category: EVENT_CATEGORIES.nfe,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "NF-e Cancelada",
+      description: "Registrada quando uma nota fiscal eletrônica é cancelada.",
+      isBillable: false,
+   },
 ];
 
 const colors = {
@@ -287,7 +335,7 @@ function getEnvFilePath(env: string) {
 function loadEnv(env: string) {
    const envFile = getEnvFilePath(env);
    console.log(colors.cyan(`   Loading env from: ${envFile}`));
-   config({ path: envFile });
+   config({ path: envFile, override: true });
 }
 
 function requireDatabaseUrl() {
@@ -341,9 +389,33 @@ async function runSeed(env: string, dryRun: boolean) {
 
    const db = createDb({ databaseUrl });
 
-   const deleted = await db
-      .delete(eventCatalog)
-      .returning({ id: eventCatalog.id });
+   let deleted: Array<{ id: string }>;
+
+   try {
+      deleted = await db
+         .delete(eventCatalog)
+         .returning({ id: eventCatalog.id });
+   } catch (error) {
+      const cause = error instanceof Error ? error.cause : undefined;
+      const rootMessage =
+         cause instanceof Error
+            ? cause.message
+            : error instanceof Error
+              ? error.message
+              : String(error);
+
+      if (
+         rootMessage.includes("relation") &&
+         rootMessage.includes("does not exist")
+      ) {
+         throw new Error(
+            "Table platform.event_catalog does not exist. Run 'bun run db:push' first.",
+         );
+      }
+
+      throw error;
+   }
+
    console.log(`Deleted ${deleted.length} existing catalog entries.`);
 
    const inserted = await db

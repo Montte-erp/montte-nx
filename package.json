@@ -4,7 +4,7 @@
    "license": "Apache-2.0",
    "repository": {
       "type": "git",
-      "url": "https://github.com/F-O-T/contentta-nx.git"
+      "url": "https://github.com/Montte-erp/montte-nx.git"
    },
    "workspaces": {
       "catalogs": {
@@ -226,11 +226,13 @@
       "check-boundaries": "bun run tooling/boundary/check-boundaries.ts",
       "clean": "bun run scripts/clean.ts clean",
       "clean:cache": "bun run scripts/clean.ts cache",
-      "db:push": "nx run core/database:db-push-local",
-      "db:push:prod": "nx run core/database:db-push-prod",
+      "db:push": "bun run scripts/ensure-schemas.ts && nx run core/database:db-push-local",
+      "db:push:prod": "bun run scripts/ensure-schemas.ts --env production && nx run core/database:db-push-prod",
       "db:studio:local": "nx run core/database:db-studio-local",
       "db:studio:prod": "nx run core/database:db-studio-prod",
-      "dev": "cd apps/web && bun run container-start && cd ../.. && bun run scripts/seed-event-catalog.ts run --env local &&  nx run-many -t dev --parallel=3 -p web",
+      "dev": "bun run scripts/dev-init.ts && nx run-many -t dev --parallel=3 -p web",
+      "dev:staging": "bun run scripts/check-env.ts --env staging && nx run-many -t dev:staging --parallel=3 -p web",
+      "setup": "bun run scripts/setup.ts",
       "dev:all": "bun run scripts/seed-event-catalog.ts run --env local && bun run scripts/seed-addons.ts run --env local && bun run scripts/setup-stripe.ts run --env local && nx run-many -t dev --parallel=6",
       "dev:mastra": "nx run-many -t dev --parallel=1 -p agents",
       "dev:server": "nx run-many -t dev --parallel=1 -p server ",

@@ -67,7 +67,7 @@ function getEnvFilePath(env: string) {
 function loadEnv(env: string) {
    const envFile = getEnvFilePath(env);
    console.log(colors.cyan(`   Loading env from: ${envFile}`));
-   config({ path: envFile });
+   config({ path: envFile, override: true });
 }
 
 function requireDatabaseUrl() {

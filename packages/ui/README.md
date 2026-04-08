@@ -23,4 +23,4 @@ import { useIsMobile } from "@packages/ui/hooks/use-mobile";
 
 ## How It Works
 
-Provides the full design system for the Contentta frontend. Components are built on Radix UI with Tailwind CSS styling and CVA variants. Includes SSR-safe wrappers for browser APIs, data visualization (Recharts), markdown rendering, motion animations, and responsive patterns.
+Provides the full design system for the Montte frontend. Components are built on Radix UI with Tailwind CSS styling and CVA variants. Includes SSR-safe wrappers for browser APIs, data visualization (Recharts), markdown rendering, motion animations, and responsive patterns.
