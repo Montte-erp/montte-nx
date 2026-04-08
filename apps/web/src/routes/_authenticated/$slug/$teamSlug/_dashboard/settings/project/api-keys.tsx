@@ -1,8 +1,8 @@
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
-import { KeyRound, Plus } from "lucide-react";
-import { Suspense, useCallback, useMemo, useTransition } from "react";
+import { KeyRound, Plus, Trash2 } from "lucide-react";
+import { Suspense, useMemo } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -19,6 +19,7 @@ import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Button } from "@packages/ui/components/button";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { buildApiKeysColumns } from "./-api-keys/api-keys-columns";
 import { CreateApiKeyForm } from "./-api-keys/create-api-key-form";
@@ -59,7 +60,7 @@ function ApiKeysContent() {
    const { data: session } = authClient.useSession();
    const queryClient = useQueryClient();
    const { openCredenza, closeCredenza } = useCredenza();
-   const [isPending, startTransition] = useTransition();
+   const { openAlertDialog } = useAlertDialog();
    const [tableState, setTableState] = useTableState();
 
    const { data: keys } = useSuspenseQuery(orpc.apiKeys.list.queryOptions());
@@ -67,9 +68,14 @@ function ApiKeysContent() {
    const organizationId = session?.session.activeOrganizationId ?? "";
    const teamId = session?.session.activeTeamId ?? "";
 
-   const handleRevoke = useCallback(
-      (keyId: string) => {
-         startTransition(async () => {
+   function handleRevoke(keyId: string, keyName: string) {
+      openAlertDialog({
+         title: "Revogar chave de API",
+         description: `Tem certeza que deseja revogar a chave "${keyName}"? Esta ação não pode ser desfeita.`,
+         actionLabel: "Revogar",
+         cancelLabel: "Cancelar",
+         variant: "destructive",
+         onAction: async () => {
             const result = await authClient.apiKey.delete({ keyId });
             if (result.error) {
                toast.error("Erro ao revogar chave");
@@ -79,10 +85,9 @@ function ApiKeysContent() {
                orpc.apiKeys.list.queryOptions(),
             );
             toast.success("Chave revogada");
-         });
-      },
-      [queryClient],
-   );
+         },
+      });
+   }
 
    function handleOpenCreate() {
       if (!organizationId || !teamId) return;
@@ -97,19 +102,16 @@ function ApiKeysContent() {
       });
    }
 
-   const columns = useMemo(
-      () => buildApiKeysColumns(handleRevoke, isPending),
-      [handleRevoke, isPending],
-   );
+   const columns = useMemo(() => buildApiKeysColumns(), []);
 
    return (
       <div className="flex flex-col gap-4">
          <div className="flex items-center justify-between">
             <div>
-               <h1 className="text-2xl font-semibold font-serif">
+               <h1 className="font-serif text-2xl font-semibold">
                   Chaves de API
                </h1>
-               <p className="text-sm text-muted-foreground mt-1">
+               <p className="mt-1 text-sm text-muted-foreground">
                   Use estas chaves para autenticar o SDK{" "}
                   <code className="font-mono text-xs">@montte/hyprpay</code>{" "}
                   neste espaço.
@@ -167,6 +169,21 @@ function ApiKeysContent() {
                }}
                tableState={tableState}
                onTableStateChange={setTableState}
+               renderActions={({ row }) => (
+                  <Button
+                     className="text-destructive hover:text-destructive"
+                     onClick={() =>
+                        handleRevoke(
+                           row.original.id,
+                           row.original.name ?? "Sem nome",
+                        )
+                     }
+                     tooltip="Revogar"
+                     variant="outline"
+                  >
+                     <Trash2 className="size-4" />
+                  </Button>
+               )}
             />
          )}
       </div>

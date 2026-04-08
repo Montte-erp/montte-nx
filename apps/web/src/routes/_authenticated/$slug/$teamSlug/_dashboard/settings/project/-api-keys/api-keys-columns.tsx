@@ -1,16 +1,10 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { Trash2 } from "lucide-react";
-
-import { Button } from "@packages/ui/components/button";
 import type { Outputs } from "@/integrations/orpc/client";
 
 type ApiKeyRow = Outputs["apiKeys"]["list"][number];
 
-export function buildApiKeysColumns(
-   onRevoke: (keyId: string) => void,
-   isPending: boolean,
-): ColumnDef<ApiKeyRow>[] {
+export function buildApiKeysColumns(): ColumnDef<ApiKeyRow>[] {
    return [
       {
          accessorKey: "name",
@@ -38,21 +32,6 @@ export function buildApiKeysColumns(
             <span className="text-sm text-muted-foreground">
                {dayjs(row.original.createdAt).format("DD/MM/YYYY")}
             </span>
-         ),
-      },
-      {
-         id: "actions",
-         header: "",
-         cell: ({ row }) => (
-            <Button
-               size="sm"
-               variant="ghost"
-               aria-label="Revogar chave"
-               onClick={() => onRevoke(row.original.id)}
-               disabled={isPending}
-            >
-               <Trash2 className="size-4 text-destructive" />
-            </Button>
          ),
       },
    ];
