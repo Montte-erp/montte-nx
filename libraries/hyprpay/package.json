@@ -33,6 +33,16 @@
             "default": "./dist/cjs/better-auth/index.cjs"
          }
       },
+      "./contract": {
+         "import": {
+            "types": "./dist/esm/src/contract.d.ts",
+            "default": "./dist/esm/contract.js"
+         },
+         "require": {
+            "types": "./dist/cjs/src/contract.d.cts",
+            "default": "./dist/cjs/contract.cjs"
+         }
+      },
       "./package.json": "./package.json"
    },
    "publishConfig": {
@@ -44,6 +54,7 @@
       "typecheck": "tsc --noEmit"
    },
    "dependencies": {
+      "@orpc/contract": "catalog:orpc",
       "zod": "4.3.6"
    },
    "devDependencies": {
