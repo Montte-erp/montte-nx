@@ -32,7 +32,7 @@ services:
       volumes:
          - montte_pgdata:/var/lib/postgresql
       ports:
-         - "5433:5432"
+         - "5432:5432"
       healthcheck:
          test: ["CMD-SHELL", "pg_isready -U postgres -d montte"]
          interval: 10s

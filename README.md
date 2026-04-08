@@ -7,6 +7,34 @@
 
 ---
 
+## Getting Started
+
+### Prerequisites
+
+- [Bun](https://bun.sh/) ≥ 1.0
+- [Docker](https://docs.docker.com/get-docker/) or [Podman](https://podman.io/) with Compose
+
+### Setup
+
+```bash
+# 1. Install dependencies
+bun install
+
+# 2. Run guided setup (creates .env.local, starts containers, pushes DB schema, seeds catalog)
+bun setup
+```
+
+After `bun setup` completes:
+
+```bash
+bun dev
+```
+
+> **First run**: `bun setup` will create `apps/web/.env.local` from the example file and stop.
+> Fill in your values, then run `bun setup` again to complete setup.
+
+---
+
 ## Key Features
 
 ### Financial Management
