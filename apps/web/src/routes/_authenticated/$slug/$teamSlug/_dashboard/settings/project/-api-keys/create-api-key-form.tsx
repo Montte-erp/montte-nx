@@ -1,6 +1,5 @@
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Copy, KeyRound } from "lucide-react";
@@ -21,6 +20,7 @@ import { orpc } from "@/integrations/orpc/client";
 
 const createKeySchema = z.object({
    name: z.string().min(1, "Nome obrigatório"),
+   createdKey: z.string(),
 });
 
 const { Stepper, useStepper } = defineStepper(
@@ -53,34 +53,28 @@ function CreateApiKeyFormInner({
    methods,
 }: CreateApiKeyFormProps & { methods: StepperMethods }) {
    const queryClient = useQueryClient();
-   const [isPending, startTransition] = useTransition();
-   const [createdKey, setCreatedKey] = useState<string | null>(null);
 
    const form = useForm({
-      defaultValues: { name: "" },
+      defaultValues: { name: "", createdKey: "" },
       validators: { onSubmit: createKeySchema },
-      onSubmit: ({ value }) => {
-         startTransition(async () => {
-            const result = await authClient.apiKey.create({
-               name: value.name,
-               metadata: {
-                  organizationId,
-                  teamId,
-                  plan: "metered",
-                  sdkMode: "static",
-                  apiKeyType: "private",
-               },
-            });
-            if (result.error) {
-               toast.error("Erro ao criar chave de API");
-               return;
-            }
-            setCreatedKey(result.data?.key ?? null);
-            await queryClient.invalidateQueries(
-               orpc.apiKeys.list.queryOptions(),
-            );
-            methods.navigation.next();
+      onSubmit: async ({ value }) => {
+         const result = await authClient.apiKey.create({
+            name: value.name,
+            metadata: {
+               organizationId,
+               teamId,
+               plan: "metered",
+               sdkMode: "static",
+               apiKeyType: "private",
+            },
          });
+         if (result.error) {
+            toast.error("Erro ao criar chave de API");
+            return;
+         }
+         form.setFieldValue("createdKey", result.data?.key ?? "");
+         await queryClient.invalidateQueries(orpc.apiKeys.list.queryOptions());
+         methods.navigation.next();
       },
    });
 
@@ -164,13 +158,15 @@ function CreateApiKeyFormInner({
                      </div>
                      <div className="flex items-center gap-2 rounded-md border px-4 py-2">
                         <code className="flex-1 break-all font-mono text-xs">
-                           {createdKey}
+                           {form.getFieldValue("createdKey")}
                         </code>
                         <Button
                            size="sm"
                            variant="ghost"
                            aria-label="Copiar chave de API"
-                           onClick={() => handleCopy(createdKey ?? "")}
+                           onClick={() =>
+                              handleCopy(form.getFieldValue("createdKey"))
+                           }
                         >
                            <Copy className="size-4" />
                         </Button>
@@ -184,11 +180,11 @@ function CreateApiKeyFormInner({
             {methods.state.current.data.id === "form" ? (
                <Button
                   className="w-full"
-                  disabled={isPending}
+                  disabled={form.state.isSubmitting}
                   form="create-api-key-form"
                   type="submit"
                >
-                  {isPending ? (
+                  {form.state.isSubmitting ? (
                      <Spinner className="size-4 mr-2" />
                   ) : (
                      <KeyRound className="size-4 mr-2" />
