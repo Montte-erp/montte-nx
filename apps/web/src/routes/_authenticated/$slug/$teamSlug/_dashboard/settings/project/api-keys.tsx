@@ -1,9 +1,8 @@
-import type { ColumnFiltersState, SortingState } from "@tanstack/react-table";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { KeyRound, Plus } from "lucide-react";
-import { Suspense, useTransition } from "react";
+import { Suspense, useCallback, useMemo, useTransition } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -40,11 +39,6 @@ export const Route = createFileRoute(
    component: ApiKeysPage,
 });
 
-type ApiKeysSearch = {
-   sorting: SortingState;
-   columnFilters: ColumnFiltersState;
-};
-
 const [useTableState] = createLocalStorageState<DataTableStoredState | null>(
    "montte:datatable:api-keys",
    null,
@@ -73,19 +67,25 @@ function ApiKeysContent() {
    const organizationId = session?.session.activeOrganizationId ?? "";
    const teamId = session?.session.activeTeamId ?? "";
 
-   function handleRevoke(keyId: string) {
-      startTransition(async () => {
-         const result = await authClient.apiKey.delete({ keyId });
-         if (result.error) {
-            toast.error("Erro ao revogar chave");
-            return;
-         }
-         await queryClient.invalidateQueries(orpc.apiKeys.list.queryOptions());
-         toast.success("Chave revogada");
-      });
-   }
+   const handleRevoke = useCallback(
+      (keyId: string) => {
+         startTransition(async () => {
+            const result = await authClient.apiKey.delete({ keyId });
+            if (result.error) {
+               toast.error("Erro ao revogar chave");
+               return;
+            }
+            await queryClient.invalidateQueries(
+               orpc.apiKeys.list.queryOptions(),
+            );
+            toast.success("Chave revogada");
+         });
+      },
+      [queryClient],
+   );
 
    function handleOpenCreate() {
+      if (!organizationId || !teamId) return;
       openCredenza({
          children: (
             <CreateApiKeyForm
@@ -97,7 +97,10 @@ function ApiKeysContent() {
       });
    }
 
-   const columns = buildApiKeysColumns(handleRevoke, isPending);
+   const columns = useMemo(
+      () => buildApiKeysColumns(handleRevoke, isPending),
+      [handleRevoke, isPending],
+   );
 
    return (
       <div className="flex flex-col gap-4">
@@ -143,7 +146,7 @@ function ApiKeysContent() {
                   const next =
                      typeof updater === "function" ? updater(sorting) : updater;
                   navigate({
-                     search: (prev: ApiKeysSearch) => ({
+                     search: (prev: typeof Route.types.fullSearchSchema) => ({
                         ...prev,
                         sorting: next,
                      }),
@@ -156,7 +159,7 @@ function ApiKeysContent() {
                         ? updater(columnFilters)
                         : updater;
                   navigate({
-                     search: (prev: ApiKeysSearch) => ({
+                     search: (prev: typeof Route.types.fullSearchSchema) => ({
                         ...prev,
                         columnFilters: next,
                      }),
