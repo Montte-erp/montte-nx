@@ -104,7 +104,7 @@ export function CategoryFilterBar({
                   onMouseEnter={() =>
                      router.preloadRoute({
                         to: ".",
-                        search: (prev) => ({
+                        search: (prev: CategoriesSearch) => ({
                            ...prev,
                            includeArchived: !includeArchived,
                         }),

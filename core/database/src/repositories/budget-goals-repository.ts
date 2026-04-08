@@ -156,7 +156,7 @@ async function computeSpentAmount(
             sql`EXTRACT(MONTH FROM ${transactions.date}) = ${month}`,
             sql`EXTRACT(YEAR FROM ${transactions.date}) = ${year}`,
             sql`${transactions.categoryId} IN (
-					SELECT id FROM categories WHERE id = ${categoryId} OR parent_id = ${categoryId}
+					SELECT id FROM finance.categories WHERE id = ${categoryId} OR parent_id = ${categoryId}
 				)`,
          ),
       );
