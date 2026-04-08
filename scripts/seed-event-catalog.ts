@@ -396,9 +396,18 @@ async function runSeed(env: string, dryRun: boolean) {
          .delete(eventCatalog)
          .returning({ id: eventCatalog.id });
    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const cause = error instanceof Error ? error.cause : undefined;
+      const rootMessage =
+         cause instanceof Error
+            ? cause.message
+            : error instanceof Error
+              ? error.message
+              : String(error);
 
-      if (message.includes("relation") && message.includes("does not exist")) {
+      if (
+         rootMessage.includes("relation") &&
+         rootMessage.includes("does not exist")
+      ) {
          throw new Error(
             "Table platform.event_catalog does not exist. Run 'bun run db:push' first.",
          );
