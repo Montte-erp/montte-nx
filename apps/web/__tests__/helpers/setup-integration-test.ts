@@ -30,7 +30,7 @@ export async function setupIntegrationDb(): Promise<DatabaseInstance> {
    const { apply } = await pushSchema(
       schema,
       db as unknown as Parameters<typeof pushSchema>[1],
-      ["public"],
+      ["public", "auth", "platform", "finance", "crm", "inventory"],
    );
    await apply();
 

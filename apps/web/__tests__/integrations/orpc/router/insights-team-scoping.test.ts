@@ -77,7 +77,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-   await ctxTeamA.db.execute(sql`DELETE FROM insights`);
+   await ctxTeamA.db.execute(sql`DELETE FROM platform.insights`);
 });
 
 describe("Insights Team Scoping", () => {

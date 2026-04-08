@@ -56,7 +56,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
    await ctx.db.execute(
-      sql`DELETE FROM agent_settings WHERE team_id IN (${ctx.session!.session.activeTeamId}, ${ctx2.session!.session.activeTeamId})`,
+      sql`DELETE FROM platform.agent_settings WHERE team_id IN (${ctx.session!.session.activeTeamId}, ${ctx2.session!.session.activeTeamId})`,
    );
 });
 

@@ -60,7 +60,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-   await ctx.db.execute(sql`DELETE FROM dashboards`);
+   await ctx.db.execute(sql`DELETE FROM platform.dashboards`);
 });
 
 describe("create", () => {

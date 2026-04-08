@@ -76,9 +76,9 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-   await ctx.db.execute(sql`DELETE FROM budget_goals`);
-   await ctx.db.execute(sql`DELETE FROM transactions`);
-   await ctx.db.execute(sql`DELETE FROM categories`);
+   await ctx.db.execute(sql`DELETE FROM finance.budget_goals`);
+   await ctx.db.execute(sql`DELETE FROM finance.transactions`);
+   await ctx.db.execute(sql`DELETE FROM finance.categories`);
 
    const cat = await createExpenseCategory(ctx);
    expenseCategoryId = cat.id;

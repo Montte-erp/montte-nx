@@ -55,9 +55,9 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-   await ctx.db.execute(sql`DELETE FROM inventory_movements`);
-   await ctx.db.execute(sql`DELETE FROM inventory_products`);
-   await ctx.db.execute(sql`DELETE FROM inventory_settings`);
+   await ctx.db.execute(sql`DELETE FROM inventory.inventory_movements`);
+   await ctx.db.execute(sql`DELETE FROM inventory.inventory_products`);
+   await ctx.db.execute(sql`DELETE FROM inventory.inventory_settings`);
 });
 
 describe("createProduct", () => {

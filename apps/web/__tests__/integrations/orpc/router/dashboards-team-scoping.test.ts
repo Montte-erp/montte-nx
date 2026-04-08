@@ -60,7 +60,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-   await ctxTeamA.db.execute(sql`DELETE FROM dashboards`);
+   await ctxTeamA.db.execute(sql`DELETE FROM platform.dashboards`);
 });
 
 describe("Dashboards Team Scoping", () => {
