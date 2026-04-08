@@ -116,6 +116,11 @@ export function CreateApiKeyForm({
                         }
                         onBlur={() => field.handleBlur()}
                      />
+                     {isInvalid && (
+                        <span className="text-sm text-destructive">
+                           {String(field.state.meta.errors[0])}
+                        </span>
+                     )}
                   </div>
                );
             }}

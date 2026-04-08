@@ -3,14 +3,9 @@ import dayjs from "dayjs";
 import { Trash2 } from "lucide-react";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import type { Outputs } from "@/integrations/orpc/client";
 
-export type ApiKeyRow = {
-   id: string;
-   name: string | null;
-   createdAt: Date;
-   prefix: string | null;
-   start: string | null;
-};
+type ApiKeyRow = Outputs["apiKeys"]["list"][number];
 
 export function buildApiKeysColumns(
    onRevoke: (keyId: string) => void,
