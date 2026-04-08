@@ -5,36 +5,34 @@ import {
    index,
    integer,
    numeric,
-   pgEnum,
-   pgTable,
    text,
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
+import { financeSchema } from "@core/database/schemas/finance-schema";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
 import { contacts } from "@core/database/schemas/contacts";
 import { transactions } from "@core/database/schemas/transactions";
 import { z } from "zod";
 
-export const billTypeEnum = pgEnum("bill_type", ["payable", "receivable"]);
+export const billTypeEnum = financeSchema.enum("bill_type", [
+   "payable",
+   "receivable",
+]);
 
-export const billStatusEnum = pgEnum("bill_status", [
+export const billStatusEnum = financeSchema.enum("bill_status", [
    "pending",
    "paid",
    "cancelled",
 ]);
 
-export const recurrenceFrequencyEnum = pgEnum("recurrence_frequency", [
-   "daily",
-   "weekly",
-   "biweekly",
-   "monthly",
-   "quarterly",
-   "yearly",
-]);
+export const recurrenceFrequencyEnum = financeSchema.enum(
+   "recurrence_frequency",
+   ["daily", "weekly", "biweekly", "monthly", "quarterly", "yearly"],
+);
 
-export const recurrenceSettings = pgTable(
+export const recurrenceSettings = financeSchema.table(
    "recurrence_settings",
    {
       id: uuid("id")
@@ -55,7 +53,7 @@ export const recurrenceSettings = pgTable(
    (table) => [index("recurrence_settings_team_id_idx").on(table.teamId)],
 );
 
-export const bills = pgTable(
+export const bills = financeSchema.table(
    "bills",
    {
       id: uuid("id")

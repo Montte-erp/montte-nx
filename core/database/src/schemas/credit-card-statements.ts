@@ -2,13 +2,12 @@ import { sql } from "drizzle-orm";
 import {
    date,
    index,
-   pgEnum,
-   pgTable,
    text,
    timestamp,
    uniqueIndex,
    uuid,
 } from "drizzle-orm/pg-core";
+import { financeSchema } from "@core/database/schemas/finance-schema";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { bills } from "@core/database/schemas/bills";
@@ -19,7 +18,7 @@ import { transactions } from "@core/database/schemas/transactions";
 // Enums
 // =============================================================================
 
-export const creditCardStatementStatusEnum = pgEnum(
+export const creditCardStatementStatusEnum = financeSchema.enum(
    "credit_card_statement_status",
    ["open", "paid"],
 );
@@ -28,7 +27,7 @@ export const creditCardStatementStatusEnum = pgEnum(
 // Table
 // =============================================================================
 
-export const creditCardStatements = pgTable(
+export const creditCardStatements = financeSchema.table(
    "credit_card_statements",
    {
       id: uuid("id")

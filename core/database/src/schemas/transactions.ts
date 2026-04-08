@@ -7,13 +7,12 @@ import {
    integer,
    jsonb,
    numeric,
-   pgEnum,
-   pgTable,
    primaryKey,
    text,
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
+import { financeSchema } from "@core/database/schemas/finance-schema";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
 import { contacts } from "@core/database/schemas/contacts";
@@ -31,7 +30,7 @@ export const attachmentSchema = z.object({
 
 export type Attachment = z.infer<typeof attachmentSchema>;
 
-export const paymentMethodEnum = pgEnum("payment_method", [
+export const paymentMethodEnum = financeSchema.enum("payment_method", [
    "pix",
    "credit_card",
    "debit_card",
@@ -43,13 +42,13 @@ export const paymentMethodEnum = pgEnum("payment_method", [
    "automatic_debit",
 ]);
 
-export const transactionTypeEnum = pgEnum("transaction_type", [
+export const transactionTypeEnum = financeSchema.enum("transaction_type", [
    "income",
    "expense",
    "transfer",
 ]);
 
-export const transactions = pgTable(
+export const transactions = financeSchema.table(
    "transactions",
    {
       id: uuid("id")
@@ -106,7 +105,7 @@ export const transactions = pgTable(
    ],
 );
 
-export const transactionTags = pgTable(
+export const transactionTags = financeSchema.table(
    "transaction_tags",
    {
       transactionId: uuid("transaction_id")
@@ -119,7 +118,7 @@ export const transactionTags = pgTable(
    (table) => [primaryKey({ columns: [table.transactionId, table.tagId] })],
 );
 
-export const transactionItems = pgTable("transaction_items", {
+export const transactionItems = financeSchema.table("transaction_items", {
    id: uuid("id")
       .default(sql`pg_catalog.gen_random_uuid()`)
       .primaryKey(),

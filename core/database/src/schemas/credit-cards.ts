@@ -3,23 +3,22 @@ import {
    index,
    integer,
    numeric,
-   pgEnum,
-   pgTable,
    text,
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
+import { financeSchema } from "@core/database/schemas/finance-schema";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 
-export const creditCardStatusEnum = pgEnum("credit_card_status", [
+export const creditCardStatusEnum = financeSchema.enum("credit_card_status", [
    "active",
    "blocked",
    "cancelled",
 ]);
 
-export const creditCardBrandEnum = pgEnum("credit_card_brand", [
+export const creditCardBrandEnum = financeSchema.enum("credit_card_brand", [
    "visa",
    "mastercard",
    "elo",
@@ -28,7 +27,7 @@ export const creditCardBrandEnum = pgEnum("credit_card_brand", [
    "other",
 ]);
 
-export const creditCards = pgTable(
+export const creditCards = financeSchema.table(
    "credit_cards",
    {
       id: uuid("id")
