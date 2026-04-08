@@ -16,7 +16,7 @@ import {
    EmptyTitle,
 } from "@packages/ui/components/empty";
 import { createErrorFallback } from "@packages/ui/components/error-fallback";
-import { FieldLabel } from "@packages/ui/components/field-label";
+import { FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
@@ -46,7 +46,7 @@ function ApiKeysContent() {
 
    const { data: keysData, refetch } = useSuspenseQuery({
       queryKey: ["api-keys", teamId],
-      queryFn: () => authClient.apiKey.listApiKeys(),
+      queryFn: () => authClient.apiKey.list(),
    });
 
    const [createdKey, setCreatedKey] = useState<string | null>(null);
@@ -58,7 +58,7 @@ function ApiKeysContent() {
       onSubmit: ({ value }) => {
          if (!organizationId || !teamId) return;
          startTransition(async () => {
-            const result = await authClient.apiKey.createApiKey({
+            const result = await authClient.apiKey.create({
                name: value.name,
                metadata: {
                   organizationId,
@@ -82,9 +82,10 @@ function ApiKeysContent() {
       },
    });
 
-   const teamKeys = (keysData?.data ?? []).filter(
-      (k) => k.metadata?.teamId === teamId,
-   );
+   const keysResult = keysData?.data;
+   const allKeys =
+      keysResult && !Array.isArray(keysResult) ? keysResult.apiKeys : [];
+   const teamKeys = allKeys.filter((k) => k.metadata?.teamId === teamId);
 
    function handleCopy(value: string) {
       navigator.clipboard.writeText(value);
@@ -93,7 +94,7 @@ function ApiKeysContent() {
 
    function handleRevoke(keyId: string) {
       startTransition(async () => {
-         const result = await authClient.apiKey.deleteApiKey({ keyId });
+         const result = await authClient.apiKey.delete({ keyId });
          if (result.error) {
             toast.error("Erro ao revogar chave");
             return;
