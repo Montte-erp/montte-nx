@@ -1,6 +1,6 @@
 import { boolean, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { tags } from "@core/database/schemas/tags";
-import { crmSchema } from "@core/database/schemas/crm-schema";
+import { crmSchema } from "@core/database/schemas/schemas";
 
 export const contactSettings = crmSchema.table("contact_settings", {
    teamId: uuid("team_id").primaryKey(),

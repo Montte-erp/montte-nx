@@ -22,7 +22,10 @@ export * from "@core/database/schemas/tags";
 export * from "@core/database/schemas/transactions";
 export * from "@core/database/schemas/webhooks";
 export * from "@core/database/relations";
-export { financeSchema } from "@core/database/schemas/finance-schema";
-export { crmSchema } from "@core/database/schemas/crm-schema";
-export { inventorySchema } from "@core/database/schemas/inventory-schema";
-export { platformSchema } from "@core/database/schemas/platform-schema";
+export {
+   authSchema,
+   financeSchema,
+   crmSchema,
+   inventorySchema,
+   platformSchema,
+} from "@core/database/schemas/schemas";

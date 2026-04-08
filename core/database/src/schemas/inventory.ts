@@ -7,7 +7,7 @@ import {
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
-import { inventorySchema } from "@core/database/schemas/inventory-schema";
+import { inventorySchema } from "@core/database/schemas/schemas";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";

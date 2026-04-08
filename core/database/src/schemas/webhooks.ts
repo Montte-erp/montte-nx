@@ -8,7 +8,7 @@ import {
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
-import { platformSchema } from "@core/database/schemas/platform-schema";
+import { platformSchema } from "@core/database/schemas/schemas";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { organization, team } from "@core/database/schemas/auth";

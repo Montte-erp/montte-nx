@@ -9,7 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { crmSchema } from "@core/database/schemas/crm-schema";
+import { crmSchema } from "@core/database/schemas/schemas";
 
 export const tags = crmSchema.table(
    "tags",

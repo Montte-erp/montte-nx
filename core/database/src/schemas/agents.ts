@@ -1,5 +1,5 @@
 import { boolean, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
-import { platformSchema } from "@core/database/schemas/platform-schema";
+import { platformSchema } from "@core/database/schemas/schemas";
 
 export const agentSettings = platformSchema.table("agent_settings", {
    teamId: uuid("team_id").primaryKey(),

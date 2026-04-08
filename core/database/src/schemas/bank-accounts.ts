@@ -9,7 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { financeSchema } from "@core/database/schemas/finance-schema";
+import { financeSchema } from "@core/database/schemas/schemas";
 
 export const bankAccountTypeEnum = financeSchema.enum("bank_account_type", [
    "checking",

@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { financeSchema } from "@core/database/schemas/finance-schema";
+import { financeSchema } from "@core/database/schemas/schemas";
 import { transactions } from "@core/database/schemas/transactions";
 
 export const creditCardStatementTotals = financeSchema

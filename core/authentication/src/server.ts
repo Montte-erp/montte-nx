@@ -118,6 +118,7 @@ export function createAuth(deps: CreateAuthDeps) {
 
       database: drizzleAdapter(db, {
          provider: "pg",
+         transaction: true,
          schema,
       }),
 

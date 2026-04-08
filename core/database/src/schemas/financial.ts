@@ -6,7 +6,7 @@ import {
    varchar,
 } from "drizzle-orm/pg-core";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
-import { financeSchema } from "@core/database/schemas/finance-schema";
+import { financeSchema } from "@core/database/schemas/schemas";
 
 export const financialSettings = financeSchema.table("financial_settings", {
    teamId: uuid("team_id").primaryKey(),
