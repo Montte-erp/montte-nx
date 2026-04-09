@@ -22,6 +22,10 @@ import { PostHogWrapper } from "@/integrations/posthog/client";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import type { RouterContext } from "../integrations/tanstack-query/root-provider";
 
+const getPublicEnvFn = createServerFn({ method: "GET" }).handler(() => {
+   return getPublicEnv();
+});
+
 const getThemeFromCookie = createServerFn({ method: "GET" }).handler(() => {
    const request = getRequest();
    const cookieHeader = request?.headers.get("cookie") ?? "";
@@ -37,8 +41,11 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       await context.queryClient
          .ensureQueryData(context.orpc.session.getSession.queryOptions())
          .catch(() => null);
-      const theme = await getThemeFromCookie();
-      return { publicEnv: getPublicEnv(), theme };
+      const [publicEnv, theme] = await Promise.all([
+         getPublicEnvFn(),
+         getThemeFromCookie(),
+      ]);
+      return { publicEnv, theme };
    },
    head: () => ({
       meta: [
