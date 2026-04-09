@@ -47,6 +47,7 @@ import { exportCategoriesCsv } from "./-categories/export-categories-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
+import { QueryBoundary } from "@/components/query-boundary";
 
 const categoriesSearchSchema = z.object({
    sorting: z
@@ -501,9 +502,12 @@ function CategoriesPage() {
             search={search}
             type={type}
          />
-         <Suspense fallback={<CategoriesSkeleton />}>
+         <QueryBoundary
+            fallback={<CategoriesSkeleton />}
+            errorTitle="Erro ao carregar categorias"
+         >
             <CategoriesList navigate={navigate} />
-         </Suspense>
+         </QueryBoundary>
       </main>
    );
 }

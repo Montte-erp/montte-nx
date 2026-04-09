@@ -29,11 +29,11 @@ export const Route = createFileRoute(
    validateSearch: z.object({
       sorting: z
          .array(z.object({ id: z.string(), desc: z.boolean() }))
-         .optional()
+         .catch([])
          .default([]),
       columnFilters: z
          .array(z.object({ id: z.string(), value: z.unknown() }))
-         .optional()
+         .catch([])
          .default([]),
    }),
    head: () => ({

@@ -120,6 +120,19 @@ function CreditCardsList() {
       }),
    );
 
+   const bulkDeleteMutation = useMutation(
+      orpc.creditCards.bulkRemove.mutationOptions({
+         onSuccess: ({ deleted }) => {
+            toast.success(
+               `${deleted} ${deleted === 1 ? "cartão excluído" : "cartões excluídos"} com sucesso.`,
+            );
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao excluir cartões.");
+         },
+      }),
+   );
+
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
       (updater) => {
          const next =
@@ -203,13 +216,17 @@ function CreditCardsList() {
          cancelLabel: "Cancelar",
          variant: "destructive",
          onAction: async () => {
-            await Promise.all(
-               selectedIds.map((id) => deleteMutation.mutateAsync({ id })),
-            );
+            await bulkDeleteMutation.mutateAsync({ ids: selectedIds });
             onClear();
          },
       });
-   }, [openAlertDialog, selectedCount, selectedIds, deleteMutation, onClear]);
+   }, [
+      openAlertDialog,
+      selectedCount,
+      selectedIds,
+      bulkDeleteMutation,
+      onClear,
+   ]);
 
    const columns = buildCreditCardColumns();
 
@@ -299,8 +316,11 @@ function CreditCardsPage() {
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
-               <Button onClick={handleCreate}>
-                  <Plus className="size-4 mr-1" />
+               <Button
+                  className="flex items-center gap-2"
+                  onClick={handleCreate}
+               >
+                  <Plus className="size-4" />
                   Novo Cartão
                </Button>
             }

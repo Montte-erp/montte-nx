@@ -62,9 +62,7 @@ function formatDate(date: Date | string | null): string {
    });
 }
 
-// ============================================
 // Display Name Section
-// ============================================
 
 function DisplayNameSection({
    organizationId,
@@ -121,9 +119,7 @@ function DisplayNameSection({
    );
 }
 
-// ============================================
 // Logo Section
-// ============================================
 
 function LogoSection({
    organizationId: _organizationId,
@@ -243,9 +239,7 @@ function LogoSection({
    );
 }
 
-// ============================================
 // Organization Details Section
-// ============================================
 
 function OrganizationDetailsSection({
    slug,
@@ -325,9 +319,7 @@ function OrganizationDetailsSection({
    );
 }
 
-// ============================================
 // Skeleton
-// ============================================
 
 function OrganizationGeneralSkeleton() {
    return (
@@ -358,9 +350,7 @@ function OrganizationGeneralSkeleton() {
    );
 }
 
-// ============================================
 // Error Fallback
-// ============================================
 
 function OrganizationGeneralErrorFallback({
    resetErrorBoundary,
@@ -385,9 +375,7 @@ function OrganizationGeneralErrorFallback({
    );
 }
 
-// ============================================
 // Main Content
-// ============================================
 
 function OrganizationGeneralContent() {
    const { data: activeOrganization } = useSuspenseQuery(
@@ -433,9 +421,7 @@ function OrganizationGeneralContent() {
    );
 }
 
-// ============================================
 // Page
-// ============================================
 
 function OrganizationGeneralPage() {
    return (

@@ -154,9 +154,7 @@ function SecuritySectionSkeleton() {
    );
 }
 
-// ============================================
 // Sessions Card Component
-// ============================================
 
 type SessionType = {
    id: string;
@@ -283,9 +281,7 @@ function SessionsSection({
    );
 }
 
-// ============================================
 // Security Actions Section Component
-// ============================================
 
 function SecurityActionsSection({
    sessionsCount,
@@ -347,9 +343,7 @@ function SecurityActionsSection({
    );
 }
 
-// ============================================
 // Main Content Component
-// ============================================
 
 function SecuritySectionContent() {
    const { openCredenza } = useCredenza();
