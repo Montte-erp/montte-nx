@@ -49,8 +49,8 @@ import { Textarea } from "@packages/ui/components/textarea";
 import { cn } from "@packages/ui/lib/utils";
 import { useMaskito } from "@maskito/react";
 import type { MaskitoOptions } from "@maskito/core";
+import { ORPCError } from "@orpc/client";
 import { useForm } from "@tanstack/react-form";
-import { useMutation } from "@tanstack/react-query";
 import Color from "color";
 import dayjs from "dayjs";
 import {
@@ -176,29 +176,7 @@ export function BankAccountForm({
    const branchRef = useMaskito({ options: branchMaskOptions });
    const accountRef = useMaskito({ options: accountMaskOptions });
 
-   const createMutation = useMutation(
-      orpc.bankAccounts.create.mutationOptions({
-         onSuccess: () => {
-            toast.success("Conta bancária criada com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao criar conta bancária.");
-         },
-      }),
-   );
-
-   const updateMutation = useMutation(
-      orpc.bankAccounts.update.mutationOptions({
-         onSuccess: () => {
-            toast.success("Conta bancária atualizada com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao atualizar conta bancária.");
-         },
-      }),
-   );
+   const accountTypeDefault: BankAccountType = account?.type ?? "checking";
 
    const form = useForm({
       defaultValues: {
@@ -208,41 +186,63 @@ export function BankAccountForm({
             ? dayjs(account.initialBalanceDate).format("YYYY-MM-DD")
             : dayjs().format("YYYY-MM-DD"),
          name: account?.name ?? "",
-         type: (account?.type ?? "checking") as BankAccountType,
+         type: accountTypeDefault,
          bankCode: account?.bankCode ?? "",
          nickname: account?.nickname ?? "",
          branch: account?.branch ?? "",
          accountNumber: account?.accountNumber ?? "",
          notes: account?.notes ?? "",
       },
-      onSubmit: async ({ value }) => {
-         const selectedBank = bankOptions.find(
-            (b) => b.value === value.bankCode,
-         );
-         const resolvedName =
-            value.type === "cash"
-               ? "Caixa Físico"
-               : (value.nickname || selectedBank?.label || value.name).trim();
+      validators: {
+         onSubmitAsync: async ({ value }) => {
+            const selectedBank = bankOptions.find(
+               (b) => b.value === value.bankCode,
+            );
+            const resolvedName =
+               value.type === "cash"
+                  ? "Caixa Físico"
+                  : (
+                       value.nickname ||
+                       selectedBank?.label ||
+                       value.name
+                    ).trim();
 
-         const payload = {
-            color: value.color,
-            initialBalance: value.initialBalance,
-            initialBalanceDate: value.initialBalanceDate || undefined,
-            name: resolvedName,
-            type: value.type,
-            bankCode: value.bankCode || null,
-            bankName: selectedBank?.label || null,
-            nickname: value.nickname || null,
-            branch: value.branch || null,
-            accountNumber: value.accountNumber || null,
-            notes: value.notes || null,
-         };
+            const payload = {
+               color: value.color,
+               initialBalance: value.initialBalance,
+               initialBalanceDate: value.initialBalanceDate || undefined,
+               name: resolvedName,
+               type: value.type,
+               bankCode: value.bankCode || null,
+               bankName: selectedBank?.label || null,
+               nickname: value.nickname || null,
+               branch: value.branch || null,
+               accountNumber: value.accountNumber || null,
+               notes: value.notes || null,
+            };
 
-         if (isCreate) {
-            createMutation.mutate(payload);
-         } else if (account) {
-            updateMutation.mutate({ id: account.id, ...payload });
-         }
+            try {
+               if (isCreate) {
+                  await orpc.bankAccounts.create.call(payload);
+                  toast.success("Conta bancária criada com sucesso.");
+               } else if (account) {
+                  await orpc.bankAccounts.update.call({
+                     id: account.id,
+                     ...payload,
+                  });
+                  toast.success("Conta bancária atualizada com sucesso.");
+               }
+               onSuccess();
+               return null;
+            } catch (err) {
+               if (err instanceof ORPCError && err.code === "CONFLICT") {
+                  return { form: "Já existe uma conta com esses dados." };
+               }
+               return {
+                  form: err instanceof Error ? err.message : "Erro inesperado.",
+               };
+            }
+         },
       },
    });
 
@@ -725,24 +725,34 @@ export function BankAccountForm({
             </FieldGroup>
          </CredenzaBody>
 
-         <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
+         <CredenzaFooter className="flex flex-col gap-2">
+            <form.Subscribe
+               selector={(state) =>
+                  state.errors.flatMap((e) => {
+                     if (!e) return [];
+                     if (typeof e === "string") return [e];
+                     if ("form" in e && typeof e.form === "string")
+                        return [e.form];
+                     return [];
+                  })
+               }
+            >
+               {(messages) =>
+                  messages.length > 0 && <FieldError errors={messages} />
+               }
+            </form.Subscribe>
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
                   <Button
                      className="w-full gap-2"
-                     disabled={
-                        !state.canSubmit ||
-                        state.isSubmitting ||
-                        createMutation.isPending ||
-                        updateMutation.isPending
-                     }
+                     disabled={!canSubmit}
                      type="submit"
                   >
-                     {(state.isSubmitting ||
-                        createMutation.isPending ||
-                        updateMutation.isPending) && (
-                        <Spinner className="size-4" />
-                     )}
+                     {isSubmitting && <Spinner className="size-4" />}
                      {isCreate ? "Criar conta" : "Salvar alterações"}
                   </Button>
                )}
