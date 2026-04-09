@@ -4,8 +4,8 @@ import type {
    KpiConfig,
    TimeSeriesConfig,
 } from "@packages/analytics/types";
-import { useDebouncedValue } from "foxact/use-debounced-value";
-import { useCallback, useEffect, useState } from "react";
+import { useDebouncedCallback } from "@tanstack/react-pacer";
+import { useCallback, useState } from "react";
 
 export type InsightType = "kpi" | "time_series" | "breakdown";
 
@@ -44,17 +44,13 @@ const DEFAULT_BREAKDOWN_CONFIG: BreakdownConfig = {
 export function useInsightConfig(initialType: InsightType = "kpi") {
    const [type, setType] = useState<InsightType>(initialType);
    const [config, setConfig] = useState<InsightConfig>(DEFAULT_KPI_CONFIG);
-   const [pendingUpdates, setPendingUpdates] = useState<Partial<InsightConfig>>(
-      {},
-   );
-   const debouncedUpdates = useDebouncedValue(pendingUpdates, 500);
 
-   useEffect(() => {
-      if (Object.keys(debouncedUpdates).length > 0) {
-         setConfig((c) => ({ ...c, ...debouncedUpdates }) as InsightConfig);
-         setPendingUpdates({});
-      }
-   }, [debouncedUpdates]);
+   const debouncedSetConfig = useDebouncedCallback(
+      (updates: Partial<InsightConfig>) => {
+         setConfig((c) => ({ ...c, ...updates }) as InsightConfig);
+      },
+      { wait: 500 },
+   );
 
    const handleTypeChange = useCallback((newType: InsightType) => {
       setType(newType);
@@ -71,9 +67,12 @@ export function useInsightConfig(initialType: InsightType = "kpi") {
       }
    }, []);
 
-   const updateConfig = useCallback((updates: Partial<InsightConfig>) => {
-      setPendingUpdates((prev) => ({ ...prev, ...updates }));
-   }, []);
+   const updateConfig = useCallback(
+      (updates: Partial<InsightConfig>) => {
+         debouncedSetConfig(updates);
+      },
+      [debouncedSetConfig],
+   );
 
    const updateConfigImmediate = useCallback(
       (updates: Partial<InsightConfig>) => {
