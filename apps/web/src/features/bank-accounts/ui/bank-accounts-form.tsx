@@ -49,8 +49,19 @@ import { Textarea } from "@packages/ui/components/textarea";
 import { cn } from "@packages/ui/lib/utils";
 import { useMaskito } from "@maskito/react";
 import type { MaskitoOptions } from "@maskito/core";
+import {
+   AlertDialog,
+   AlertDialogAction,
+   AlertDialogCancel,
+   AlertDialogContent,
+   AlertDialogDescription,
+   AlertDialogFooter,
+   AlertDialogHeader,
+   AlertDialogTitle,
+} from "@packages/ui/components/alert-dialog";
 import { ORPCError } from "@orpc/client";
 import { useForm } from "@tanstack/react-form";
+import { useBlocker } from "@tanstack/react-router";
 import Color from "color";
 import dayjs from "dayjs";
 import {
@@ -246,518 +257,565 @@ export function BankAccountForm({
       },
    });
 
+   const blocker = useBlocker({
+      withResolver: true,
+      shouldBlockFn: () =>
+         form.store.state.isDirty && !form.store.state.isSubmitted,
+      disabled: isCreate,
+   });
+
    return (
-      <form
-         className="h-full flex flex-col"
-         onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            form.handleSubmit();
-         }}
-      >
-         <CredenzaHeader>
-            <CredenzaTitle>
-               {isCreate ? "Nova Conta Bancária" : "Editar Conta Bancária"}
-            </CredenzaTitle>
-            <CredenzaDescription>
-               {isCreate
-                  ? "Preencha os dados da nova conta bancária."
-                  : "Atualize as informações da conta bancária."}
-            </CredenzaDescription>
-         </CredenzaHeader>
+      <>
+         {blocker.status === "blocked" && (
+            <AlertDialog open>
+               <AlertDialogContent>
+                  <AlertDialogHeader>
+                     <AlertDialogTitle>Descartar alterações?</AlertDialogTitle>
+                     <AlertDialogDescription>
+                        Você tem alterações não salvas. Tem certeza que deseja
+                        sair sem salvar?
+                     </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                     <AlertDialogCancel onClick={() => blocker.reset()}>
+                        Continuar editando
+                     </AlertDialogCancel>
+                     <AlertDialogAction onClick={() => blocker.proceed()}>
+                        Descartar alterações
+                     </AlertDialogAction>
+                  </AlertDialogFooter>
+               </AlertDialogContent>
+            </AlertDialog>
+         )}
+         <form
+            className="h-full flex flex-col"
+            onSubmit={(e) => {
+               e.preventDefault();
+               e.stopPropagation();
+               form.handleSubmit();
+            }}
+         >
+            <CredenzaHeader>
+               <CredenzaTitle>
+                  {isCreate ? "Nova Conta Bancária" : "Editar Conta Bancária"}
+               </CredenzaTitle>
+               <CredenzaDescription>
+                  {isCreate
+                     ? "Preencha os dados da nova conta bancária."
+                     : "Atualize as informações da conta bancária."}
+               </CredenzaDescription>
+            </CredenzaHeader>
 
-         <CredenzaBody>
-            <FieldGroup>
-               <div className="grid grid-cols-2 gap-4">
-                  <form.Field
-                     name="type"
-                     children={(field) => {
-                        const selected = TYPE_OPTIONS.find(
-                           (o) => o.value === field.state.value,
-                        );
-                        return (
-                           <Field>
-                              <FieldLabel>Tipo de conta</FieldLabel>
-                              <Popover
-                                 onOpenChange={setTypeOpen}
-                                 open={typeOpen}
-                              >
-                                 <PopoverTrigger asChild>
-                                    <Button
-                                       aria-expanded={typeOpen}
-                                       className="w-full justify-between"
-                                       onBlur={field.handleBlur}
-                                       role="combobox"
-                                       type="button"
-                                       variant="outline"
-                                    >
-                                       <span className="flex items-center gap-2">
-                                          {selected?.icon}
-                                          {selected?.label ??
-                                             "Selecione o tipo"}
-                                       </span>
-                                       <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
-                                    </Button>
-                                 </PopoverTrigger>
-                                 <PopoverContent
-                                    align="start"
-                                    className="p-0 w-[var(--radix-popover-trigger-width)]"
-                                 >
-                                    <Command>
-                                       <CommandList>
-                                          <CommandEmpty>
-                                             Nenhum tipo encontrado.
-                                          </CommandEmpty>
-                                          <CommandGroup>
-                                             {TYPE_OPTIONS.map((opt) => (
-                                                <CommandItem
-                                                   key={opt.value}
-                                                   onSelect={() => {
-                                                      field.handleChange(
-                                                         opt.value,
-                                                      );
-                                                      setTypeOpen(false);
-                                                   }}
-                                                   value={opt.value}
-                                                >
-                                                   <span className="flex items-center gap-2 flex-1">
-                                                      {opt.icon}
-                                                      {opt.label}
-                                                   </span>
-                                                   <CheckIcon
-                                                      className={cn(
-                                                         "size-4 shrink-0",
-                                                         field.state.value ===
-                                                            opt.value
-                                                            ? "opacity-100"
-                                                            : "opacity-0",
-                                                      )}
-                                                   />
-                                                </CommandItem>
-                                             ))}
-                                          </CommandGroup>
-                                       </CommandList>
-                                    </Command>
-                                 </PopoverContent>
-                              </Popover>
-                           </Field>
-                        );
-                     }}
-                  />
-
-                  <form.Field
-                     name="color"
-                     children={(field) => (
-                        <Field>
-                           <FieldLabel>Cor</FieldLabel>
-                           <Popover>
-                              <PopoverTrigger asChild>
-                                 <Button
-                                    className="w-full justify-start gap-2"
-                                    type="button"
-                                    variant="outline"
-                                 >
-                                    <div
-                                       className="size-4 rounded border border-border shrink-0"
-                                       style={{
-                                          backgroundColor: field.state.value,
-                                       }}
-                                    />
-                                    <span className="font-mono text-xs">
-                                       {field.state.value}
-                                    </span>
-                                 </Button>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                 align="end"
-                                 className="rounded-md border bg-background"
-                              >
-                                 <ColorPicker
-                                    className="flex flex-col gap-4"
-                                    onChange={(rgba) => {
-                                       if (Array.isArray(rgba)) {
-                                          field.handleChange(
-                                             Color.rgb(
-                                                rgba[0],
-                                                rgba[1],
-                                                rgba[2],
-                                             ).hex(),
-                                          );
-                                       }
-                                    }}
-                                    value={field.state.value || "#000000"}
-                                 >
-                                    <div className="h-24">
-                                       <ColorPickerSelection />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                       <ColorPickerEyeDropper />
-                                       <div className="grid w-full gap-2">
-                                          <ColorPickerHue />
-                                          <ColorPickerAlpha />
-                                       </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                       <ColorPickerOutput />
-                                       <ColorPickerFormat />
-                                    </div>
-                                 </ColorPicker>
-                              </PopoverContent>
-                           </Popover>
-                        </Field>
-                     )}
-                  />
-               </div>
-
-               <form.Subscribe selector={(s) => s.values.type}>
-                  {(type) =>
-                     type !== "cash" ? (
-                        <>
-                           <div className="grid grid-cols-2 gap-4">
-                              <form.Field
-                                 name="bankCode"
-                                 children={(field) => {
-                                    const isInvalid =
-                                       field.state.meta.isTouched &&
-                                       field.state.meta.errors.length > 0;
-                                    return (
-                                       <Field data-invalid={isInvalid}>
-                                          <FieldLabel>Banco</FieldLabel>
-                                          <Combobox
-                                             className="w-full"
-                                             emptyMessage="Nenhum banco encontrado."
-                                             onBlur={field.handleBlur}
-                                             onValueChange={(v) =>
-                                                field.handleChange(v)
-                                             }
-                                             options={bankOptions}
-                                             placeholder="Selecionar..."
-                                             searchPlaceholder="Pesquisar"
-                                             value={field.state.value}
-                                          />
-                                          {isInvalid && (
-                                             <FieldError
-                                                errors={field.state.meta.errors}
-                                             />
-                                          )}
-                                       </Field>
-                                    );
-                                 }}
-                              />
-
-                              <form.Field
-                                 name="nickname"
-                                 children={(field) => {
-                                    const isInvalid =
-                                       field.state.meta.isTouched &&
-                                       field.state.meta.errors.length > 0;
-                                    return (
-                                       <Field data-invalid={isInvalid}>
-                                          <FieldLabel htmlFor={field.name}>
-                                             Apelido
-                                          </FieldLabel>
-                                          <Input
-                                             id={field.name}
-                                             name={field.name}
-                                             aria-invalid={isInvalid}
-                                             onBlur={field.handleBlur}
-                                             onChange={(e) =>
-                                                field.handleChange(
-                                                   e.target.value,
-                                                )
-                                             }
-                                             placeholder="Ex: Conta principal"
-                                             value={field.state.value}
-                                          />
-                                          {isInvalid && (
-                                             <FieldError
-                                                errors={field.state.meta.errors}
-                                             />
-                                          )}
-                                       </Field>
-                                    );
-                                 }}
-                              />
-                           </div>
-
-                           <div className="grid grid-cols-2 gap-4">
-                              <form.Field
-                                 name="branch"
-                                 children={(field) => {
-                                    const isInvalid =
-                                       field.state.meta.isTouched &&
-                                       field.state.meta.errors.length > 0;
-                                    return (
-                                       <Field data-invalid={isInvalid}>
-                                          <FieldLabel htmlFor={field.name}>
-                                             Agência
-                                          </FieldLabel>
-                                          <Input
-                                             ref={branchRef}
-                                             aria-invalid={isInvalid}
-                                             defaultValue={field.state.value}
-                                             id={field.name}
-                                             inputMode="numeric"
-                                             name={field.name}
-                                             onBlur={field.handleBlur}
-                                             onInput={(e) =>
-                                                field.handleChange(
-                                                   (
-                                                      e.target as HTMLInputElement
-                                                   ).value,
-                                                )
-                                             }
-                                             placeholder="00000"
-                                          />
-                                          {isInvalid && (
-                                             <FieldError
-                                                errors={field.state.meta.errors}
-                                             />
-                                          )}
-                                       </Field>
-                                    );
-                                 }}
-                              />
-
-                              <form.Field
-                                 name="accountNumber"
-                                 children={(field) => {
-                                    const isInvalid =
-                                       field.state.meta.isTouched &&
-                                       field.state.meta.errors.length > 0;
-                                    return (
-                                       <Field data-invalid={isInvalid}>
-                                          <FieldLabel htmlFor={field.name}>
-                                             Conta
-                                          </FieldLabel>
-                                          <Input
-                                             ref={accountRef}
-                                             aria-invalid={isInvalid}
-                                             defaultValue={field.state.value}
-                                             id={field.name}
-                                             inputMode="numeric"
-                                             name={field.name}
-                                             onBlur={field.handleBlur}
-                                             onInput={(e) =>
-                                                field.handleChange(
-                                                   (
-                                                      e.target as HTMLInputElement
-                                                   ).value,
-                                                )
-                                             }
-                                             placeholder="000000000000-0"
-                                          />
-                                          {isInvalid && (
-                                             <FieldError
-                                                errors={field.state.meta.errors}
-                                             />
-                                          )}
-                                       </Field>
-                                    );
-                                 }}
-                              />
-                           </div>
-                        </>
-                     ) : null
-                  }
-               </form.Subscribe>
-
-               {isCreate && (
+            <CredenzaBody>
+               <FieldGroup>
                   <div className="grid grid-cols-2 gap-4">
                      <form.Field
-                        name="initialBalance"
+                        name="type"
                         children={(field) => {
-                           const isInvalid =
-                              field.state.meta.isTouched &&
-                              field.state.meta.errors.length > 0;
-                           return (
-                              <Field data-invalid={isInvalid}>
-                                 <FieldLabel>Saldo inicial</FieldLabel>
-                                 <MoneyInput
-                                    onChange={(v) =>
-                                       field.handleChange(String(v ?? 0))
-                                    }
-                                    value={field.state.value}
-                                    valueInCents={false}
-                                 />
-                                 {isInvalid && (
-                                    <FieldError
-                                       errors={field.state.meta.errors}
-                                    />
-                                 )}
-                              </Field>
+                           const selected = TYPE_OPTIONS.find(
+                              (o) => o.value === field.state.value,
                            );
-                        }}
-                     />
-
-                     <form.Field
-                        name="initialBalanceDate"
-                        children={(field) => {
-                           const selectedDate = toDate(field.state.value);
                            return (
                               <Field>
-                                 <FieldLabel>Data do saldo inicial</FieldLabel>
+                                 <FieldLabel>Tipo de conta</FieldLabel>
                                  <Popover
-                                    open={dateOpen}
-                                    onOpenChange={setDateOpen}
+                                    onOpenChange={setTypeOpen}
+                                    open={typeOpen}
                                  >
                                     <PopoverTrigger asChild>
                                        <Button
-                                          className={cn(
-                                             "w-full justify-start gap-2 font-normal",
-                                             !selectedDate &&
-                                                "text-muted-foreground",
-                                          )}
+                                          aria-expanded={typeOpen}
+                                          className="w-full justify-between"
+                                          onBlur={field.handleBlur}
+                                          role="combobox"
                                           type="button"
                                           variant="outline"
                                        >
-                                          <CalendarIcon className="size-4 shrink-0" />
-                                          {selectedDate
-                                             ? dayjs(selectedDate).format(
-                                                  "DD/MM/YYYY",
-                                               )
-                                             : "Selecionar data"}
+                                          <span className="flex items-center gap-2">
+                                             {selected?.icon}
+                                             {selected?.label ??
+                                                "Selecione o tipo"}
+                                          </span>
+                                          <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
                                        </Button>
                                     </PopoverTrigger>
                                     <PopoverContent
                                        align="start"
-                                       className="w-auto p-0"
+                                       className="p-0 w-[var(--radix-popover-trigger-width)]"
                                     >
-                                       <Calendar
-                                          captionLayout="dropdown"
-                                          components={{
-                                             MonthCaption: (props) => (
-                                                <>{props.children}</>
-                                             ),
-                                             DropdownNav: (props) => (
-                                                <div className="flex w-full items-center gap-2">
-                                                   {props.children}
-                                                </div>
-                                             ),
-                                             Dropdown: (props) => (
-                                                <Select
-                                                   onValueChange={(value) => {
-                                                      if (props.onChange) {
-                                                         const ev = {
-                                                            target: {
-                                                               value: String(
-                                                                  value,
-                                                               ),
-                                                            },
-                                                         } as React.ChangeEvent<HTMLSelectElement>;
-                                                         props.onChange(ev);
-                                                      }
-                                                   }}
-                                                   value={String(props.value)}
-                                                >
-                                                   <SelectTrigger className="first:flex-1 last:shrink-0">
-                                                      <SelectValue />
-                                                   </SelectTrigger>
-                                                   <SelectContent>
-                                                      {props.options?.map(
-                                                         (option) => (
-                                                            <SelectItem
-                                                               disabled={
-                                                                  option.disabled
-                                                               }
-                                                               key={
-                                                                  option.value
-                                                               }
-                                                               value={String(
-                                                                  option.value,
-                                                               )}
-                                                            >
-                                                               {option.label}
-                                                            </SelectItem>
-                                                         ),
-                                                      )}
-                                                   </SelectContent>
-                                                </Select>
-                                             ),
-                                          }}
-                                          fromDate={minDate}
-                                          toDate={new Date()}
-                                          hideNavigation
-                                          mode="single"
-                                          selected={selectedDate}
-                                          onSelect={(date) => {
-                                             field.handleChange(
-                                                date
-                                                   ? dayjs(date).format(
-                                                        "YYYY-MM-DD",
-                                                     )
-                                                   : "",
-                                             );
-                                             setDateOpen(false);
-                                          }}
-                                       />
+                                       <Command>
+                                          <CommandList>
+                                             <CommandEmpty>
+                                                Nenhum tipo encontrado.
+                                             </CommandEmpty>
+                                             <CommandGroup>
+                                                {TYPE_OPTIONS.map((opt) => (
+                                                   <CommandItem
+                                                      key={opt.value}
+                                                      onSelect={() => {
+                                                         field.handleChange(
+                                                            opt.value,
+                                                         );
+                                                         setTypeOpen(false);
+                                                      }}
+                                                      value={opt.value}
+                                                   >
+                                                      <span className="flex items-center gap-2 flex-1">
+                                                         {opt.icon}
+                                                         {opt.label}
+                                                      </span>
+                                                      <CheckIcon
+                                                         className={cn(
+                                                            "size-4 shrink-0",
+                                                            field.state
+                                                               .value ===
+                                                               opt.value
+                                                               ? "opacity-100"
+                                                               : "opacity-0",
+                                                         )}
+                                                      />
+                                                   </CommandItem>
+                                                ))}
+                                             </CommandGroup>
+                                          </CommandList>
+                                       </Command>
                                     </PopoverContent>
                                  </Popover>
                               </Field>
                            );
                         }}
                      />
+
+                     <form.Field
+                        name="color"
+                        children={(field) => (
+                           <Field>
+                              <FieldLabel>Cor</FieldLabel>
+                              <Popover>
+                                 <PopoverTrigger asChild>
+                                    <Button
+                                       className="w-full justify-start gap-2"
+                                       type="button"
+                                       variant="outline"
+                                    >
+                                       <div
+                                          className="size-4 rounded border border-border shrink-0"
+                                          style={{
+                                             backgroundColor: field.state.value,
+                                          }}
+                                       />
+                                       <span className="font-mono text-xs">
+                                          {field.state.value}
+                                       </span>
+                                    </Button>
+                                 </PopoverTrigger>
+                                 <PopoverContent
+                                    align="end"
+                                    className="rounded-md border bg-background"
+                                 >
+                                    <ColorPicker
+                                       className="flex flex-col gap-4"
+                                       onChange={(rgba) => {
+                                          if (Array.isArray(rgba)) {
+                                             field.handleChange(
+                                                Color.rgb(
+                                                   rgba[0],
+                                                   rgba[1],
+                                                   rgba[2],
+                                                ).hex(),
+                                             );
+                                          }
+                                       }}
+                                       value={field.state.value || "#000000"}
+                                    >
+                                       <div className="h-24">
+                                          <ColorPickerSelection />
+                                       </div>
+                                       <div className="flex items-center gap-4">
+                                          <ColorPickerEyeDropper />
+                                          <div className="grid w-full gap-2">
+                                             <ColorPickerHue />
+                                             <ColorPickerAlpha />
+                                          </div>
+                                       </div>
+                                       <div className="flex items-center gap-2">
+                                          <ColorPickerOutput />
+                                          <ColorPickerFormat />
+                                       </div>
+                                    </ColorPicker>
+                                 </PopoverContent>
+                              </Popover>
+                           </Field>
+                        )}
+                     />
                   </div>
-               )}
 
-               <form.Field
-                  name="notes"
-                  children={(field) => (
-                     <Field>
-                        <FieldLabel htmlFor={field.name}>
-                           Observações{" "}
-                           <span className="text-muted-foreground font-normal">
-                              (opcional)
-                           </span>
-                        </FieldLabel>
-                        <Textarea
-                           id={field.name}
-                           name={field.name}
-                           onBlur={field.handleBlur}
-                           onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder="Informações adicionais sobre a conta..."
-                           rows={2}
-                           value={field.state.value}
+                  <form.Subscribe selector={(s) => s.values.type}>
+                     {(type) =>
+                        type !== "cash" ? (
+                           <>
+                              <div className="grid grid-cols-2 gap-4">
+                                 <form.Field
+                                    name="bankCode"
+                                    children={(field) => {
+                                       const isInvalid =
+                                          field.state.meta.isTouched &&
+                                          field.state.meta.errors.length > 0;
+                                       return (
+                                          <Field data-invalid={isInvalid}>
+                                             <FieldLabel>Banco</FieldLabel>
+                                             <Combobox
+                                                className="w-full"
+                                                emptyMessage="Nenhum banco encontrado."
+                                                onBlur={field.handleBlur}
+                                                onValueChange={(v) =>
+                                                   field.handleChange(v)
+                                                }
+                                                options={bankOptions}
+                                                placeholder="Selecionar..."
+                                                searchPlaceholder="Pesquisar"
+                                                value={field.state.value}
+                                             />
+                                             {isInvalid && (
+                                                <FieldError
+                                                   errors={
+                                                      field.state.meta.errors
+                                                   }
+                                                />
+                                             )}
+                                          </Field>
+                                       );
+                                    }}
+                                 />
+
+                                 <form.Field
+                                    name="nickname"
+                                    children={(field) => {
+                                       const isInvalid =
+                                          field.state.meta.isTouched &&
+                                          field.state.meta.errors.length > 0;
+                                       return (
+                                          <Field data-invalid={isInvalid}>
+                                             <FieldLabel htmlFor={field.name}>
+                                                Apelido
+                                             </FieldLabel>
+                                             <Input
+                                                id={field.name}
+                                                name={field.name}
+                                                aria-invalid={isInvalid}
+                                                onBlur={field.handleBlur}
+                                                onChange={(e) =>
+                                                   field.handleChange(
+                                                      e.target.value,
+                                                   )
+                                                }
+                                                placeholder="Ex: Conta principal"
+                                                value={field.state.value}
+                                             />
+                                             {isInvalid && (
+                                                <FieldError
+                                                   errors={
+                                                      field.state.meta.errors
+                                                   }
+                                                />
+                                             )}
+                                          </Field>
+                                       );
+                                    }}
+                                 />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4">
+                                 <form.Field
+                                    name="branch"
+                                    children={(field) => {
+                                       const isInvalid =
+                                          field.state.meta.isTouched &&
+                                          field.state.meta.errors.length > 0;
+                                       return (
+                                          <Field data-invalid={isInvalid}>
+                                             <FieldLabel htmlFor={field.name}>
+                                                Agência
+                                             </FieldLabel>
+                                             <Input
+                                                ref={branchRef}
+                                                aria-invalid={isInvalid}
+                                                defaultValue={field.state.value}
+                                                id={field.name}
+                                                inputMode="numeric"
+                                                name={field.name}
+                                                onBlur={field.handleBlur}
+                                                onInput={(e) =>
+                                                   field.handleChange(
+                                                      (
+                                                         e.target as HTMLInputElement
+                                                      ).value,
+                                                   )
+                                                }
+                                                placeholder="00000"
+                                             />
+                                             {isInvalid && (
+                                                <FieldError
+                                                   errors={
+                                                      field.state.meta.errors
+                                                   }
+                                                />
+                                             )}
+                                          </Field>
+                                       );
+                                    }}
+                                 />
+
+                                 <form.Field
+                                    name="accountNumber"
+                                    children={(field) => {
+                                       const isInvalid =
+                                          field.state.meta.isTouched &&
+                                          field.state.meta.errors.length > 0;
+                                       return (
+                                          <Field data-invalid={isInvalid}>
+                                             <FieldLabel htmlFor={field.name}>
+                                                Conta
+                                             </FieldLabel>
+                                             <Input
+                                                ref={accountRef}
+                                                aria-invalid={isInvalid}
+                                                defaultValue={field.state.value}
+                                                id={field.name}
+                                                inputMode="numeric"
+                                                name={field.name}
+                                                onBlur={field.handleBlur}
+                                                onInput={(e) =>
+                                                   field.handleChange(
+                                                      (
+                                                         e.target as HTMLInputElement
+                                                      ).value,
+                                                   )
+                                                }
+                                                placeholder="000000000000-0"
+                                             />
+                                             {isInvalid && (
+                                                <FieldError
+                                                   errors={
+                                                      field.state.meta.errors
+                                                   }
+                                                />
+                                             )}
+                                          </Field>
+                                       );
+                                    }}
+                                 />
+                              </div>
+                           </>
+                        ) : null
+                     }
+                  </form.Subscribe>
+
+                  {isCreate && (
+                     <div className="grid grid-cols-2 gap-4">
+                        <form.Field
+                           name="initialBalance"
+                           children={(field) => {
+                              const isInvalid =
+                                 field.state.meta.isTouched &&
+                                 field.state.meta.errors.length > 0;
+                              return (
+                                 <Field data-invalid={isInvalid}>
+                                    <FieldLabel>Saldo inicial</FieldLabel>
+                                    <MoneyInput
+                                       onChange={(v) =>
+                                          field.handleChange(String(v ?? 0))
+                                       }
+                                       value={field.state.value}
+                                       valueInCents={false}
+                                    />
+                                    {isInvalid && (
+                                       <FieldError
+                                          errors={field.state.meta.errors}
+                                       />
+                                    )}
+                                 </Field>
+                              );
+                           }}
                         />
-                     </Field>
-                  )}
-               />
-            </FieldGroup>
-         </CredenzaBody>
 
-         <CredenzaFooter className="flex flex-col gap-2">
-            <form.Subscribe
-               selector={(state) =>
-                  state.errors.flatMap((e) => {
-                     if (!e) return [];
-                     if (typeof e === "string") return [e];
-                     if ("form" in e && typeof e.form === "string")
-                        return [e.form];
-                     return [];
-                  })
-               }
-            >
-               {(messages) =>
-                  messages.length > 0 && <FieldError errors={messages} />
-               }
-            </form.Subscribe>
-            <form.Subscribe
-               selector={(state) =>
-                  [state.canSubmit, state.isSubmitting] as const
-               }
-            >
-               {([canSubmit, isSubmitting]) => (
-                  <Button
-                     className="w-full gap-2"
-                     disabled={!canSubmit}
-                     type="submit"
-                  >
-                     {isSubmitting && <Spinner className="size-4" />}
-                     {isCreate ? "Criar conta" : "Salvar alterações"}
-                  </Button>
-               )}
-            </form.Subscribe>
-         </CredenzaFooter>
-      </form>
+                        <form.Field
+                           name="initialBalanceDate"
+                           children={(field) => {
+                              const selectedDate = toDate(field.state.value);
+                              return (
+                                 <Field>
+                                    <FieldLabel>
+                                       Data do saldo inicial
+                                    </FieldLabel>
+                                    <Popover
+                                       open={dateOpen}
+                                       onOpenChange={setDateOpen}
+                                    >
+                                       <PopoverTrigger asChild>
+                                          <Button
+                                             className={cn(
+                                                "w-full justify-start gap-2 font-normal",
+                                                !selectedDate &&
+                                                   "text-muted-foreground",
+                                             )}
+                                             type="button"
+                                             variant="outline"
+                                          >
+                                             <CalendarIcon className="size-4 shrink-0" />
+                                             {selectedDate
+                                                ? dayjs(selectedDate).format(
+                                                     "DD/MM/YYYY",
+                                                  )
+                                                : "Selecionar data"}
+                                          </Button>
+                                       </PopoverTrigger>
+                                       <PopoverContent
+                                          align="start"
+                                          className="w-auto p-0"
+                                       >
+                                          <Calendar
+                                             captionLayout="dropdown"
+                                             components={{
+                                                MonthCaption: (props) => (
+                                                   <>{props.children}</>
+                                                ),
+                                                DropdownNav: (props) => (
+                                                   <div className="flex w-full items-center gap-2">
+                                                      {props.children}
+                                                   </div>
+                                                ),
+                                                Dropdown: (props) => (
+                                                   <Select
+                                                      onValueChange={(
+                                                         value,
+                                                      ) => {
+                                                         if (props.onChange) {
+                                                            const ev = {
+                                                               target: {
+                                                                  value: String(
+                                                                     value,
+                                                                  ),
+                                                               },
+                                                            } as React.ChangeEvent<HTMLSelectElement>;
+                                                            props.onChange(ev);
+                                                         }
+                                                      }}
+                                                      value={String(
+                                                         props.value,
+                                                      )}
+                                                   >
+                                                      <SelectTrigger className="first:flex-1 last:shrink-0">
+                                                         <SelectValue />
+                                                      </SelectTrigger>
+                                                      <SelectContent>
+                                                         {props.options?.map(
+                                                            (option) => (
+                                                               <SelectItem
+                                                                  disabled={
+                                                                     option.disabled
+                                                                  }
+                                                                  key={
+                                                                     option.value
+                                                                  }
+                                                                  value={String(
+                                                                     option.value,
+                                                                  )}
+                                                               >
+                                                                  {option.label}
+                                                               </SelectItem>
+                                                            ),
+                                                         )}
+                                                      </SelectContent>
+                                                   </Select>
+                                                ),
+                                             }}
+                                             fromDate={minDate}
+                                             toDate={new Date()}
+                                             hideNavigation
+                                             mode="single"
+                                             selected={selectedDate}
+                                             onSelect={(date) => {
+                                                field.handleChange(
+                                                   date
+                                                      ? dayjs(date).format(
+                                                           "YYYY-MM-DD",
+                                                        )
+                                                      : "",
+                                                );
+                                                setDateOpen(false);
+                                             }}
+                                          />
+                                       </PopoverContent>
+                                    </Popover>
+                                 </Field>
+                              );
+                           }}
+                        />
+                     </div>
+                  )}
+
+                  <form.Field
+                     name="notes"
+                     children={(field) => (
+                        <Field>
+                           <FieldLabel htmlFor={field.name}>
+                              Observações{" "}
+                              <span className="text-muted-foreground font-normal">
+                                 (opcional)
+                              </span>
+                           </FieldLabel>
+                           <Textarea
+                              id={field.name}
+                              name={field.name}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              placeholder="Informações adicionais sobre a conta..."
+                              rows={2}
+                              value={field.state.value}
+                           />
+                        </Field>
+                     )}
+                  />
+               </FieldGroup>
+            </CredenzaBody>
+
+            <CredenzaFooter className="flex flex-col gap-2">
+               <form.Subscribe
+                  selector={(state) =>
+                     state.errors.flatMap((e) => {
+                        if (!e) return [];
+                        if (typeof e === "string") return [e];
+                        if ("form" in e && typeof e.form === "string")
+                           return [e.form];
+                        return [];
+                     })
+                  }
+               >
+                  {(messages) =>
+                     messages.length > 0 && <FieldError errors={messages} />
+                  }
+               </form.Subscribe>
+               <form.Subscribe
+                  selector={(state) =>
+                     [state.canSubmit, state.isSubmitting] as const
+                  }
+               >
+                  {([canSubmit, isSubmitting]) => (
+                     <Button
+                        className="w-full gap-2"
+                        disabled={!canSubmit}
+                        type="submit"
+                     >
+                        {isSubmitting && <Spinner className="size-4" />}
+                        {isCreate ? "Criar conta" : "Salvar alterações"}
+                     </Button>
+                  )}
+               </form.Subscribe>
+            </CredenzaFooter>
+         </form>
+      </>
    );
 }
