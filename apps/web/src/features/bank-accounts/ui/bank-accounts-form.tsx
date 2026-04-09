@@ -51,6 +51,8 @@ import { useMaskito } from "@maskito/react";
 import type { MaskitoOptions } from "@maskito/core";
 import { ORPCError } from "@orpc/client";
 import { useForm } from "@tanstack/react-form";
+import { useMutation } from "@tanstack/react-query";
+import { fromPromise } from "neverthrow";
 import { useBlocker } from "@tanstack/react-router";
 import Color from "color";
 import dayjs from "dayjs";
@@ -169,6 +171,13 @@ export function BankAccountForm({
 }: BankAccountFormProps) {
    const isCreate = mode === "create";
    const [typeOpen, setTypeOpen] = useState(false);
+
+   const createMutation = useMutation(
+      orpc.bankAccounts.create.mutationOptions(),
+   );
+   const updateMutation = useMutation(
+      orpc.bankAccounts.update.mutationOptions(),
+   );
    const [dateOpen, setDateOpen] = useState(false);
    const { bankOptions } = useBrazilianBanks();
 
@@ -223,27 +232,35 @@ export function BankAccountForm({
                notes: value.notes || null,
             };
 
-            try {
-               if (isCreate) {
-                  await orpc.bankAccounts.create.call(payload);
-                  toast.success("Conta bancária criada com sucesso.");
-               } else if (account) {
-                  await orpc.bankAccounts.update.call({
-                     id: account.id,
-                     ...payload,
-                  });
-                  toast.success("Conta bancária atualizada com sucesso.");
-               }
-               onSuccess();
-               return null;
-            } catch (err) {
+            const promise = isCreate
+               ? createMutation.mutateAsync(payload)
+               : account
+                 ? updateMutation.mutateAsync({ id: account.id, ...payload })
+                 : null;
+
+            if (!promise) return null;
+
+            const result = await fromPromise(promise, (e) => e);
+
+            if (result.isErr()) {
+               const err = result.error;
                if (err instanceof ORPCError && err.code === "CONFLICT") {
-                  return { form: "Já existe uma conta com esses dados." };
+                  return {
+                     fields: {
+                        nickname: "Já existe uma conta com esse apelido.",
+                     },
+                  };
                }
-               return {
-                  form: err instanceof Error ? err.message : "Erro inesperado.",
-               };
+               return err instanceof Error ? err.message : "Erro inesperado.";
             }
+
+            toast.success(
+               isCreate
+                  ? "Conta bancária criada com sucesso."
+                  : "Conta bancária atualizada com sucesso.",
+            );
+            onSuccess();
+            return null;
          },
       },
    });
@@ -473,7 +490,6 @@ export function BankAccountForm({
                                  name="nickname"
                                  children={(field) => {
                                     const isInvalid =
-                                       field.state.meta.isTouched &&
                                        field.state.meta.errors.length > 0;
                                     return (
                                        <Field data-invalid={isInvalid}>
@@ -750,21 +766,6 @@ export function BankAccountForm({
          </CredenzaBody>
 
          <CredenzaFooter className="flex flex-col gap-2">
-            <form.Subscribe
-               selector={(state) =>
-                  state.errors.flatMap((e) => {
-                     if (!e) return [];
-                     if (typeof e === "string") return [e];
-                     if ("form" in e && typeof e.form === "string")
-                        return [e.form];
-                     return [];
-                  })
-               }
-            >
-               {(messages) =>
-                  messages.length > 0 && <FieldError errors={messages} />
-               }
-            </form.Subscribe>
             <form.Subscribe
                selector={(state) =>
                   [state.canSubmit, state.isSubmitting] as const

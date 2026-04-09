@@ -26,6 +26,8 @@ import type { MaskitoOptions } from "@maskito/core";
 import { useMaskito } from "@maskito/react";
 import { ORPCError } from "@orpc/client";
 import { useForm } from "@tanstack/react-form";
+import { useMutation } from "@tanstack/react-query";
+import { fromPromise } from "neverthrow";
 import { useStore } from "@tanstack/react-store";
 import { useBlocker } from "@tanstack/react-router";
 import { useMemo } from "react";
@@ -109,6 +111,9 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
 
    const documentTypeDefault: "" | "cpf" | "cnpj" = contact?.documentType ?? "";
 
+   const createMutation = useMutation(orpc.contacts.create.mutationOptions());
+   const updateMutation = useMutation(orpc.contacts.update.mutationOptions());
+
    const form = useForm({
       defaultValues: {
          name: contact?.name ?? "",
@@ -131,29 +136,31 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                   value.documentType === "" ? null : value.documentType,
                notes: value.notes?.trim() || null,
             };
-            try {
-               if (isCreate) {
-                  await orpc.contacts.create.call(payload);
-                  toast.success("Contato criado com sucesso.");
-               } else if (contact) {
-                  await orpc.contacts.update.call({
-                     id: contact.id,
-                     ...payload,
-                  });
-                  toast.success("Contato atualizado com sucesso.");
-               }
-               onSuccess();
-               return null;
-            } catch (err) {
+            const promise = isCreate
+               ? createMutation.mutateAsync(payload)
+               : contact
+                 ? updateMutation.mutateAsync({ id: contact.id, ...payload })
+                 : null;
+
+            if (!promise) return null;
+
+            const result = await fromPromise(promise, (e) => e);
+
+            if (result.isErr()) {
+               const err = result.error;
                if (err instanceof ORPCError && err.code === "CONFLICT") {
-                  return {
-                     fields: { document: "CNPJ/CPF já cadastrado." },
-                  };
+                  return { fields: { document: "CNPJ/CPF já cadastrado." } };
                }
-               return {
-                  form: err instanceof Error ? err.message : "Erro inesperado.",
-               };
+               return err instanceof Error ? err.message : "Erro inesperado.";
             }
+
+            toast.success(
+               isCreate
+                  ? "Contato criado com sucesso."
+                  : "Contato atualizado com sucesso.",
+            );
+            onSuccess();
+            return null;
          },
       },
    });
@@ -304,9 +311,7 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                   <form.Field
                      name="document"
                      children={(field) => {
-                        const isInvalid =
-                           field.state.meta.isTouched &&
-                           field.state.meta.errors.length > 0;
+                        const isInvalid = field.state.meta.errors.length > 0;
                         return (
                            <Field
                               className="col-span-2"
@@ -431,21 +436,6 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
          </CredenzaBody>
 
          <CredenzaFooter className="flex flex-col gap-2">
-            <form.Subscribe
-               selector={(state) =>
-                  state.errors.flatMap((e) => {
-                     if (!e) return [];
-                     if (typeof e === "string") return [e];
-                     if ("form" in e && typeof e.form === "string")
-                        return [e.form];
-                     return [];
-                  })
-               }
-            >
-               {(messages) =>
-                  messages.length > 0 && <FieldError errors={messages} />
-               }
-            </form.Subscribe>
             <form.Subscribe
                selector={(state) =>
                   [state.canSubmit, state.isSubmitting] as const

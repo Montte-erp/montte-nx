@@ -168,17 +168,32 @@ Zod schemas belong in the backend. Frontend only imports inferred types via `Inp
 - **`isInvalid` check** — `field.state.meta.isTouched && field.state.meta.errors.length > 0`.
 - **Accessibility** — always set `id`, `name`, `aria-invalid` on inputs; `htmlFor` on `<FieldLabel>`.
 - **`children` prop** — always use `children={(field) => ...}` as explicit JSX prop.
-- **Server validation via `onSubmitAsync`** — use `validators: { onSubmitAsync }` with `useMutation` defined outside the form. Call `mutation.mutateAsync({...})` inside the async validator. Return `{ form: "error" }` or `{ fields: { fieldName: "error" } }` or `null`. Catch `ORPCError` from `@orpc/client` for typed error codes (e.g. `err.code === "CONFLICT"`).
-- **Form-level error display** — use `form.Subscribe` reading from `state.errorMap.onSubmit`:
+- **`onSubmitAsync` — only when inline field errors matter** — use only for forms where a server conflict maps to a specific visible field (e.g. duplicate CPF/CNPJ on contacts, duplicate apelido on bank accounts). For generic CRUD forms, use plain `onSubmit` + `toast.error`. Define mutations with `useMutation` outside the form; call `mutateAsync` inside the validator. Use `fromPromise` from `neverthrow` instead of try/catch:
   ```tsx
-  selector={(state) =>
-     typeof state.errorMap.onSubmit === "object" &&
-     state.errorMap.onSubmit !== null &&
-     "form" in state.errorMap.onSubmit
-        ? String(state.errorMap.onSubmit.form)
-        : null
-  }
+  import { fromPromise } from "neverthrow";
+
+  const createMutation = useMutation(orpc.x.create.mutationOptions());
+
+  const form = useForm({
+    validators: {
+      onSubmitAsync: async ({ value }) => {
+        const result = await fromPromise(createMutation.mutateAsync(value), (e) => e);
+        if (result.isErr()) {
+          const err = result.error;
+          if (err instanceof ORPCError && err.code === "CONFLICT") {
+            return { fields: { fieldName: "Já existe um registro com esse valor." } };
+          }
+          return err instanceof Error ? err.message : "Erro inesperado.";
+        }
+        toast.success("Criado com sucesso.");
+        onSuccess();
+        return null;
+      },
+    },
+  });
   ```
+- **Field error from server** — return `{ fields: { fieldName: "message" } }` from `onSubmitAsync`; TanStack Form injects into `field.state.meta.errors`. Set `isInvalid = field.state.meta.errors.length > 0` (drop `isTouched` check) so the error shows immediately without prior user interaction.
+- **No footer error display** — don't render a footer error paragraph. Errors go on the field they belong to. Generic errors (non-CONFLICT) return a plain string which TanStack Form stores in `state.errorMap.onSubmit` — but prefer `toast.error` for those instead.
 - **Multi-step forms with nested components** — use a local React context so step components defined outside the parent can access the form without prop drilling:
   ```tsx
   const FormCtx = createContext<FormApi | null>(null);

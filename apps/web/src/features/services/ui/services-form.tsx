@@ -471,18 +471,20 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
 
          <CredenzaFooter className="flex flex-col gap-2">
             <form.Subscribe
-               selector={(state) =>
-                  typeof state.errorMap.onSubmit === "object" &&
-                  state.errorMap.onSubmit !== null &&
-                  "form" in state.errorMap.onSubmit
-                     ? String(state.errorMap.onSubmit.form)
-                     : null
+               selector={(state): string[] =>
+                  state.errors.flatMap((e) => {
+                     if (!e) return [];
+                     if (typeof e === "string") return [e];
+                     if ("form" in e && typeof e.form === "string")
+                        return [e.form];
+                     return [];
+                  })
                }
             >
-               {(formError) =>
-                  formError && (
+               {(errors) =>
+                  errors.length > 0 && (
                      <p className="text-sm text-destructive text-center">
-                        {formError}
+                        {errors.join(", ")}
                      </p>
                   )
                }

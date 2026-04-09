@@ -221,23 +221,19 @@ function ForgotPasswordPage() {
    const router = useRouter();
 
    const handleSendOtp = useCallback(async (email: string) => {
+      let success = false;
       await authClient.emailOtp.sendVerificationOtp(
+         { email, type: "forget-password" },
          {
-            email,
-            type: "forget-password",
-         },
-         {
-            onError: ({ error }) => {
-               toast.error(error.message);
-            },
-            onRequest: () => {
-               toast.loading("Processando...");
-            },
+            onError: ({ error }) => toast.error(error.message),
+            onRequest: () => toast.loading("Processando..."),
             onSuccess: () => {
                toast.success("Codigo enviado!");
+               success = true;
             },
          },
       );
+      return success;
    }, []);
 
    const handleResetPassword = useCallback(
@@ -371,8 +367,9 @@ function ForgotPasswordPage() {
                                     <Button
                                        disabled={!emailValid}
                                        onClick={async () => {
-                                          await handleSendOtp(emailValue);
-                                          methods.navigation.next();
+                                          const sent =
+                                             await handleSendOtp(emailValue);
+                                          if (sent) methods.navigation.next();
                                        }}
                                        type="button"
                                     >
