@@ -20,7 +20,11 @@ import { Separator } from "@packages/ui/components/separator";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import {
+   skipToken,
+   useMutation,
+   useSuspenseQuery,
+} from "@tanstack/react-query";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { useTransition } from "react";
 import { toast } from "sonner";
@@ -65,11 +69,12 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
 
    const { data: tags } = useSuspenseQuery(orpc.tags.getAll.queryOptions({}));
 
-   const { data: existingVariants } = useQuery(
-      orpc.services.getVariants.queryOptions({
-         input: { serviceId: service?.id ?? "" },
-         enabled: !isCreate && !!service?.id,
-      }),
+   const { data: existingVariants } = useSuspenseQuery(
+      !isCreate && service?.id
+         ? orpc.services.getVariants.queryOptions({
+              input: { serviceId: service.id },
+           })
+         : { queryKey: ["disabled-variants", service?.id], queryFn: skipToken },
    );
 
    const createMutation = useMutation(

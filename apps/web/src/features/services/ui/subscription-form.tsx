@@ -25,7 +25,11 @@ import {
 } from "@packages/ui/components/select";
 import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import {
+   skipToken,
+   useMutation,
+   useSuspenseQuery,
+} from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -84,12 +88,13 @@ export function SubscriptionForm({
    const [selectedVariantId, setSelectedVariantId] = useState("");
    const [negotiatedPrice, setNegotiatedPrice] = useState("0");
 
-   const { data: variants = [] } = useQuery({
-      ...orpc.services.getVariants.queryOptions({
-         input: { serviceId: selectedServiceId },
-      }),
-      enabled: !!selectedServiceId,
-   });
+   const { data: variants = [] } = useSuspenseQuery(
+      selectedServiceId
+         ? orpc.services.getVariants.queryOptions({
+              input: { serviceId: selectedServiceId },
+           })
+         : { queryKey: ["disabled-variants"], queryFn: skipToken },
+   );
 
    const selectedVariant = useMemo(
       () => variants.find((v) => v.id === selectedVariantId) ?? null,

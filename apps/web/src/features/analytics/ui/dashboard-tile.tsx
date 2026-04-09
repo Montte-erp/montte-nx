@@ -18,7 +18,7 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { cn } from "@packages/ui/lib/utils";
 import {
-   useQuery,
+   skipToken,
    useQueryClient,
    useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -198,12 +198,11 @@ function useInsightMetadata(
    insightId?: string,
    globalDateRange?: DashboardDateRange,
 ) {
-   const { data: insight } = useQuery({
-      ...orpc.insights.getById.queryOptions({
-         input: { id: insightId ?? "" },
-      }),
-      enabled: !!insightId && !insightName,
-   });
+   const { data: insight } = useSuspenseQuery(
+      insightId && !insightName
+         ? orpc.insights.getById.queryOptions({ input: { id: insightId } })
+         : { queryKey: ["disabled-insight", insightId], queryFn: skipToken },
+   );
 
    const name = insightName || insight?.name || "";
    const description = insight?.description || "";
