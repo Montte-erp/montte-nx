@@ -34,6 +34,7 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
 import Color from "color";
+import { fromPromise } from "neverthrow";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -80,36 +81,39 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
       },
       validators: {
          onSubmitAsync: async ({ value }) => {
-            try {
-               if (isCreate) {
-                  await createMutation.mutateAsync({
-                     name: value.name.trim(),
-                     color: value.color,
-                     creditLimit: value.creditLimit,
-                     closingDay: value.closingDay,
-                     dueDay: value.dueDay,
-                     bankAccountId: value.bankAccountId || "",
-                  });
-                  toast.success("Cartão de crédito criado com sucesso.");
-               } else if (card) {
-                  await updateMutation.mutateAsync({
-                     id: card.id,
-                     name: value.name.trim(),
-                     color: value.color,
-                     creditLimit: value.creditLimit,
-                     closingDay: value.closingDay,
-                     dueDay: value.dueDay,
-                     bankAccountId: value.bankAccountId || undefined,
-                  });
-                  toast.success("Cartão de crédito atualizado com sucesso.");
-               }
-               onSuccess();
-               return null;
-            } catch (err) {
-               return {
-                  form: err instanceof Error ? err.message : "Erro inesperado.",
-               };
+            const promise = isCreate
+               ? createMutation.mutateAsync({
+                    name: value.name.trim(),
+                    color: value.color,
+                    creditLimit: value.creditLimit,
+                    closingDay: value.closingDay,
+                    dueDay: value.dueDay,
+                    bankAccountId: value.bankAccountId || "",
+                 })
+               : card
+                 ? updateMutation.mutateAsync({
+                      id: card.id,
+                      name: value.name.trim(),
+                      color: value.color,
+                      creditLimit: value.creditLimit,
+                      closingDay: value.closingDay,
+                      dueDay: value.dueDay,
+                      bankAccountId: value.bankAccountId || undefined,
+                   })
+                 : null;
+            if (!promise) return null;
+            const result = await fromPromise(promise, (e) => e);
+            if (result.isErr()) {
+               const err = result.error;
+               return err instanceof Error ? err.message : "Erro inesperado.";
             }
+            toast.success(
+               isCreate
+                  ? "Cartão de crédito criado com sucesso."
+                  : "Cartão de crédito atualizado com sucesso.",
+            );
+            onSuccess();
+            return null;
          },
       },
    });
@@ -366,25 +370,6 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
          </CredenzaBody>
 
          <CredenzaFooter className="flex flex-col gap-2">
-            <form.Subscribe
-               selector={(state): string[] =>
-                  state.errors.flatMap((e) => {
-                     if (!e) return [];
-                     if (typeof e === "string") return [e];
-                     if ("form" in e && typeof e.form === "string")
-                        return [e.form];
-                     return [];
-                  })
-               }
-            >
-               {(errors) =>
-                  errors.length > 0 && (
-                     <p className="text-sm text-destructive text-center">
-                        {errors.join(", ")}
-                     </p>
-                  )
-               }
-            </form.Subscribe>
             <form.Subscribe
                selector={(state) =>
                   [state.canSubmit, state.isSubmitting] as const

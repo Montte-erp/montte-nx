@@ -27,7 +27,8 @@ import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { useMemo, useState, useTransition } from "react";
+import { Suspense, useMemo, useState, useTransition } from "react";
+import { Skeleton } from "@packages/ui/components/skeleton";
 import { toast } from "sonner";
 import type { AnyFieldMeta } from "@tanstack/react-form";
 import type { Outputs } from "@/integrations/orpc/client";
@@ -214,14 +215,18 @@ export function SubscriptionForm({
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
                         return (
-                           <VariantSelectField
-                              errors={field.state.meta.errors}
-                              isInvalid={isInvalid}
-                              onValueChange={(v) => field.handleChange(v)}
-                              onVariantChange={setSelectedVariant}
-                              serviceId={selectedServiceId}
-                              value={field.state.value}
-                           />
+                           <Suspense
+                              fallback={<Skeleton className="h-10 w-full" />}
+                           >
+                              <VariantSelectField
+                                 errors={field.state.meta.errors}
+                                 isInvalid={isInvalid}
+                                 onValueChange={(v) => field.handleChange(v)}
+                                 onVariantChange={setSelectedVariant}
+                                 serviceId={selectedServiceId}
+                                 value={field.state.value}
+                              />
+                           </Suspense>
                         );
                      }}
                   />

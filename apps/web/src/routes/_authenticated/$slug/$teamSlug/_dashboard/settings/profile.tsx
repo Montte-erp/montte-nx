@@ -153,10 +153,12 @@ function AvatarUploadSection({
                disabled={isPending || presignedUpload.isUploading}
                onClick={handleSave}
             >
-               {(isPending || presignedUpload.isUploading) && (
-                  <Loader2 className="size-4 mr-2 animate-spin" />
-               )}
-               Salvar foto
+               <span className="flex items-center gap-2">
+                  {(isPending || presignedUpload.isUploading) && (
+                     <Loader2 className="size-4 animate-spin" />
+                  )}
+                  Salvar foto
+               </span>
             </Button>
          )}
          {(fileUpload.error || presignedUpload.error) && (
@@ -300,10 +302,12 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
                         disabled={password.length === 0 || isPending}
                         onClick={handleEnable}
                      >
-                        {isPending && (
-                           <Loader2 className="size-4 mr-2 animate-spin" />
-                        )}
-                        Continuar
+                        <span className="flex items-center gap-2">
+                           {isPending && (
+                              <Loader2 className="size-4 animate-spin" />
+                           )}
+                           Continuar
+                        </span>
                      </Button>
                      <Button onClick={resetState} variant="outline">
                         Cancelar
@@ -349,10 +353,12 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
                         disabled={totpCode.length !== 6 || isPending}
                         onClick={handleVerify}
                      >
-                        {isPending && (
-                           <Loader2 className="size-4 mr-2 animate-spin" />
-                        )}
-                        Verificar
+                        <span className="flex items-center gap-2">
+                           {isPending && (
+                              <Loader2 className="size-4 animate-spin" />
+                           )}
+                           Verificar
+                        </span>
                      </Button>
                      <Button onClick={resetState} variant="outline">
                         Cancelar
@@ -406,10 +412,12 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
                         onClick={handleDisable}
                         variant="destructive"
                      >
-                        {isPending && (
-                           <Loader2 className="size-4 mr-2 animate-spin" />
-                        )}
-                        Desativar
+                        <span className="flex items-center gap-2">
+                           {isPending && (
+                              <Loader2 className="size-4 animate-spin" />
+                           )}
+                           Desativar
+                        </span>
                      </Button>
                      <Button onClick={resetState} variant="outline">
                         Cancelar
@@ -584,10 +592,12 @@ function ProfileNameSection({ currentName }: { currentName: string }) {
                      disabled={!isDirty || !canSubmit || isPending}
                      type="submit"
                   >
-                     {isPending && (
-                        <Loader2 className="size-4 mr-2 animate-spin" />
-                     )}
-                     Salvar nome
+                     <span className="flex items-center gap-2">
+                        {isPending && (
+                           <Loader2 className="size-4 animate-spin" />
+                        )}
+                        Salvar nome
+                     </span>
                   </Button>
                )}
             </form.Subscribe>
@@ -654,10 +664,10 @@ function ProfileEmailSection({
                      <FieldLabel htmlFor="profile-email">Email</FieldLabel>
                      {emailVerified && (
                         <Badge
-                           className="bg-green-500/10 text-green-500 hover:bg-green-500/20"
+                           className="bg-green-500/10 text-green-500 hover:bg-green-500/20 flex items-center gap-1"
                            variant="outline"
                         >
-                           <ShieldCheck className="size-3 mr-1" />
+                           <ShieldCheck className="size-3" />
                            Verificado
                         </Badge>
                      )}
@@ -675,8 +685,10 @@ function ProfileEmailSection({
                </Field>
             </FieldGroup>
             <Button disabled={!hasChanged || isPending} onClick={handleSave}>
-               {isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
-               Salvar email
+               <span className="flex items-center gap-2">
+                  {isPending && <Loader2 className="size-4 animate-spin" />}
+                  Salvar email
+               </span>
             </Button>
          </div>
       </section>
@@ -874,10 +886,12 @@ function ProfilePasswordSection({ hasPassword }: { hasPassword: boolean }) {
             <form.Subscribe selector={(state) => state.canSubmit}>
                {(canSubmit) => (
                   <Button disabled={!canSubmit || isPending} type="submit">
-                     {isPending && (
-                        <Loader2 className="size-4 mr-2 animate-spin" />
-                     )}
-                     {hasPassword ? "Alterar senha" : "Definir senha"}
+                     <span className="flex items-center gap-2">
+                        {isPending && (
+                           <Loader2 className="size-4 animate-spin" />
+                        )}
+                        {hasPassword ? "Alterar senha" : "Definir senha"}
+                     </span>
                   </Button>
                )}
             </form.Subscribe>
