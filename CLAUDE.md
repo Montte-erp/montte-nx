@@ -146,7 +146,28 @@ export const bulkRemove = protectedProcedure
 - **Never `useQuery + enabled`** — use the child component pattern instead (see below).
 - **Never `skipToken + useSuspenseQuery`** — `UseSuspenseQueryOptions` does not support `skipToken`. Use child component pattern.
 - **`useSuspenseQueries`** for 2+ independent queries in the same component — prevents React from suspending sequentially (waterfall).
-- **`select`** — when a component only needs one field from a large query response; prevents re-renders when unrelated fields change.
+- **`select` aggressively** — whenever a component needs only part of a query response, use `select` to derive the exact shape needed. This eliminates `useState` for derived values, prevents re-renders from unrelated field changes, and removes the need for intermediate variables or `useMemo`. Prefer `select` over storing values in separate state:
+  ```tsx
+  // ❌ Redundant state derived from query
+  const { data: service } = useSuspenseQuery(orpc.services.getById.queryOptions({ input: { id } }));
+  const [price, setPrice] = useState(service.basePrice);
+
+  // ✅ select gives you exactly what you need — no extra state
+  const { data: price } = useSuspenseQuery({
+     ...orpc.services.getById.queryOptions({ input: { id } }),
+     select: (s) => s.basePrice,
+  });
+  ```
+- **URL search params over `useState` for any shareable UI state** — filters, sort, pagination, selected tab, open/closed panels, active IDs — anything that benefits from being bookmarkable or surviving a refresh belongs in `validateSearch`. Use `navigate({ search: (prev) => ({ ...prev, key: value }), replace: true })` to update. This eliminates entire classes of local state and keeps components stateless:
+  ```tsx
+  // ❌ Local state lost on refresh, not shareable
+  const [activeTab, setActiveTab] = useState("overview");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // ✅ URL params — survives refresh, shareable, drives loaders
+  const { activeTab, selectedId } = Route.useSearch();
+  navigate({ search: (prev) => ({ ...prev, activeTab: "details" }), replace: true });
+  ```
 - **`orpc.procedure.mutationKey()` / `orpc.procedure.queryKey()`** — always use oRPC-generated keys; never define manual string arrays.
 
 **Type inference** — never define manual interfaces for router data:
@@ -294,7 +315,7 @@ orpc.procedure.queryOptions({ input: condition ? { id } : skipToken })
 - **Early returns over if/else** — always guard and return early; never use `else` after a `return`.
 - **Minimize `useEffect`** — derive state, use event handlers. Only for external system sync.
 - **Dates** — always `dayjs`. Never raw `Date` math or manual string formatting.
-- **URL search params over local state** — filters, sort, pagination live in `validateSearch` on the route.
+- **URL search params over local state** — filters, sort, pagination, active tabs, selected IDs live in `validateSearch` on the route. See oRPC + TanStack Query section for the full pattern.
 - **Files:** kebab-case. **Components:** PascalCase `[Feature][Action][Type]`. **Hooks:** `use[Feature][Action]`.
 - **oxlint suppression:** `// oxlint-ignore <rule-name>` above the triggering line.
 - **Array index keys:** `` key={`step-${index + 1}`} `` over suppressing `noArrayIndexKey`.

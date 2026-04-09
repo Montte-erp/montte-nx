@@ -27,6 +27,7 @@ import {
 } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
 import { PlusCircle, Trash2 } from "lucide-react";
+import { fromPromise } from "neverthrow";
 import { toast } from "sonner";
 import { QueryBoundary } from "@/components/query-boundary";
 import { orpc } from "@/integrations/orpc/client";
@@ -121,48 +122,69 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
             const categoryId = value.categoryId.trim() || undefined;
             const tagId = value.tagId.trim() || undefined;
 
-            try {
-               if (isCreate) {
-                  const created = await createMutation.mutateAsync({
+            if (isCreate) {
+               const createResult = await fromPromise(
+                  createMutation.mutateAsync({
                      name: value.name.trim(),
                      description: value.description.trim() || undefined,
                      basePrice: value.basePrice,
                      categoryId,
                      tagId,
-                  });
-
-                  if (value.variants.length > 0) {
-                     await Promise.all(
-                        value.variants.map((v) =>
-                           createVariantMutation.mutateAsync({
-                              serviceId: created.id,
-                              name: v.name.trim(),
-                              basePrice: v.basePrice,
-                              billingCycle: v.billingCycle,
-                           }),
-                        ),
+                  }),
+                  (e) => e,
+               );
+               if (createResult.isErr()) {
+                  const err = createResult.error;
+                  return err instanceof Error
+                     ? err.message
+                     : "Erro inesperado.";
+               }
+               if (value.variants.length > 0) {
+                  const results = await Promise.allSettled(
+                     value.variants.map((v) =>
+                        createVariantMutation.mutateAsync({
+                           serviceId: createResult.value.id,
+                           name: v.name.trim(),
+                           basePrice: v.basePrice,
+                           billingCycle: v.billingCycle,
+                        }),
+                     ),
+                  );
+                  const failed = results.filter(
+                     (r) => r.status === "rejected",
+                  ).length;
+                  if (failed > 0) {
+                     toast.warning(
+                        `Serviço criado, mas ${failed} variante(s) falharam.`,
                      );
+                  } else {
+                     toast.success("Serviço criado.");
                   }
-
+               } else {
                   toast.success("Serviço criado.");
-               } else if (service) {
-                  await updateMutation.mutateAsync({
+               }
+            } else if (service) {
+               const updateResult = await fromPromise(
+                  updateMutation.mutateAsync({
                      id: service.id,
                      name: value.name.trim(),
                      description: value.description.trim() || undefined,
                      basePrice: value.basePrice,
                      categoryId,
                      tagId,
-                  });
-                  toast.success("Serviço atualizado.");
+                  }),
+                  (e) => e,
+               );
+               if (updateResult.isErr()) {
+                  const err = updateResult.error;
+                  return err instanceof Error
+                     ? err.message
+                     : "Erro inesperado.";
                }
-               onSuccess();
-               return null;
-            } catch (err) {
-               return {
-                  form: err instanceof Error ? err.message : "Erro inesperado.",
-               };
+               toast.success("Serviço atualizado.");
             }
+            onSuccess();
+            return null;
          },
       },
    });
@@ -474,25 +496,6 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
          </CredenzaBody>
 
          <CredenzaFooter className="flex flex-col gap-2">
-            <form.Subscribe
-               selector={(state): string[] =>
-                  state.errors.flatMap((e) => {
-                     if (!e) return [];
-                     if (typeof e === "string") return [e];
-                     if ("form" in e && typeof e.form === "string")
-                        return [e.form];
-                     return [];
-                  })
-               }
-            >
-               {(errors) =>
-                  errors.length > 0 && (
-                     <p className="text-sm text-destructive text-center">
-                        {errors.join(", ")}
-                     </p>
-                  )
-               }
-            </form.Subscribe>
             <form.Subscribe
                selector={(state) =>
                   [state.canSubmit, state.isSubmitting] as const

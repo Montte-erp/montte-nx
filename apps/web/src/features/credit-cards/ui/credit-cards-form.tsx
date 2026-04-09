@@ -29,7 +29,6 @@ import {
    PopoverContent,
    PopoverTrigger,
 } from "@packages/ui/components/popover";
-import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
@@ -370,18 +369,13 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
          </CredenzaBody>
 
          <CredenzaFooter className="flex flex-col gap-2">
-            <form.Subscribe
-               selector={(state) =>
-                  [state.canSubmit, state.isSubmitting] as const
-               }
-            >
-               {([canSubmit, isSubmitting]) => (
+            <form.Subscribe selector={(state) => state.canSubmit}>
+               {(canSubmit) => (
                   <Button
                      className="w-full gap-2"
-                     disabled={!canSubmit || isSubmitting}
+                     disabled={!canSubmit}
                      type="submit"
                   >
-                     {isSubmitting && <Spinner className="size-4" />}
                      {isCreate ? "Criar cartão" : "Salvar alterações"}
                   </Button>
                )}

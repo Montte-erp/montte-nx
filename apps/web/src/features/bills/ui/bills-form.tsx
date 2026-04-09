@@ -63,18 +63,24 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
          description: "",
       },
       onSubmit: async ({ value }) => {
-         await updateMutation.mutateAsync({
-            id: bill.id,
-            type: value.type,
-            name: value.name.trim(),
-            amount: value.amount,
-            dueDate: value.dueDate,
-            bankAccountId: value.bankAccountId || null,
-            categoryId: value.categoryId || null,
-            description: value.description?.trim() || null,
-         });
-         toast.success("Conta atualizada com sucesso.");
-         onSuccess();
+         try {
+            await updateMutation.mutateAsync({
+               id: bill.id,
+               type: value.type,
+               name: value.name.trim(),
+               amount: value.amount,
+               dueDate: value.dueDate,
+               bankAccountId: value.bankAccountId || null,
+               categoryId: value.categoryId || null,
+               description: value.description?.trim() || null,
+            });
+            toast.success("Conta atualizada com sucesso.");
+            onSuccess();
+         } catch (err) {
+            toast.error(
+               err instanceof Error ? err.message : "Erro ao atualizar conta.",
+            );
+         }
       },
    });
 

@@ -21,7 +21,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Pencil, Plus, Trash2, Users } from "lucide-react";
 
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import {
@@ -54,7 +54,12 @@ const [useContactsTableState] =
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/contacts",
 )({
-   validateSearch: tableSearchSchema,
+   validateSearch: tableSearchSchema.extend({
+      typeFilter: z
+         .enum(["all", "cliente", "fornecedor", "ambos"])
+         .catch("all")
+         .default("all"),
+   }),
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(orpc.contacts.getAll.queryOptions({}));
    },
@@ -98,13 +103,9 @@ const TYPE_FILTER_LABELS: Record<TypeFilter, string> = {
    ambos: "Ambos",
 };
 
-interface ContactsListProps {
-   typeFilter: TypeFilter;
-}
-
-function ContactsList({ typeFilter }: ContactsListProps) {
+function ContactsList() {
    const navigate = Route.useNavigate();
-   const { sorting, columnFilters } = Route.useSearch();
+   const { sorting, columnFilters, typeFilter } = Route.useSearch();
    const [tableState, setTableState] = useContactsTableState();
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
@@ -284,7 +285,8 @@ function ContactsList({ typeFilter }: ContactsListProps) {
 
 function ContactsPage() {
    const { openCredenza, closeCredenza } = useCredenza();
-   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+   const { typeFilter } = Route.useSearch();
+   const navigate = Route.useNavigate();
 
    const handleCreate = useCallback(() => {
       openCredenza({
@@ -310,7 +312,15 @@ function ContactsPage() {
             {(Object.keys(TYPE_FILTER_LABELS) as TypeFilter[]).map((key) => (
                <Button
                   key={key}
-                  onClick={() => setTypeFilter(key)}
+                  onClick={() =>
+                     navigate({
+                        search: (prev) => ({
+                           ...prev,
+                           typeFilter: key as TypeFilter,
+                        }),
+                        replace: true,
+                     })
+                  }
                   variant={typeFilter === key ? "default" : "outline"}
                >
                   {TYPE_FILTER_LABELS[key]}
@@ -319,7 +329,7 @@ function ContactsPage() {
          </div>
 
          <Suspense fallback={<ContactsSkeleton />}>
-            <ContactsList typeFilter={typeFilter} />
+            <ContactsList />
          </Suspense>
       </main>
    );
