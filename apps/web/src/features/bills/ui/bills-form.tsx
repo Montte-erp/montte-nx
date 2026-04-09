@@ -120,11 +120,11 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                         <Field data-invalid={isInvalid}>
                            <FieldLabel>Tipo</FieldLabel>
                            <Select
-                              onValueChange={(v) =>
-                                 field.handleChange(
-                                    v as "payable" | "receivable",
-                                 )
-                              }
+                              onValueChange={(v) => {
+                                 if (v === "payable" || v === "receivable") {
+                                    field.handleChange(v);
+                                 }
+                              }}
                               value={field.state.value}
                            >
                               <SelectTrigger>
