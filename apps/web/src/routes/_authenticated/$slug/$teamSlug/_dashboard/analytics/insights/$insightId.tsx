@@ -1,23 +1,22 @@
-import type { InsightConfig } from "@packages/analytics/types";
+import { insightConfigSchema } from "@packages/analytics/types";
 import {
    ContextPanel,
    ContextPanelContent,
    ContextPanelHeader,
    ContextPanelTitle,
 } from "@packages/ui/components/context-panel";
+import { Skeleton } from "@packages/ui/components/skeleton";
 import {
    useMutation,
    useQueryClient,
    useSuspenseQuery,
 } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Clock, Copy, RefreshCw, Tag, Trash2, TrendingUp } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import {
-   type InsightType,
-   useInsightConfig,
-} from "@/features/analytics/hooks/use-insight-config";
+import { z } from "zod";
+import { useInsightConfig } from "@/features/analytics/hooks/use-insight-config";
 import { InsightBuilder } from "@/features/analytics/ui/insight-builder";
 import {
    EarlyAccessBanner,
@@ -45,9 +44,26 @@ const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
    ],
 };
 
+const insightSearchSchema = z.object({
+   type: z
+      .enum(["kpi", "time_series", "breakdown"])
+      .catch("kpi")
+      .default("kpi"),
+});
+
+function InsightSkeleton() {
+   return (
+      <div className="flex flex-col gap-4">
+         <Skeleton className="h-12 w-full" />
+         <Skeleton className="h-64 w-full" />
+      </div>
+   );
+}
+
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId",
 )({
+   validateSearch: insightSearchSchema,
    loader: ({ context, params }) => {
       context.queryClient.prefetchQuery(
          orpc.insights.getById.queryOptions({
@@ -55,42 +71,49 @@ export const Route = createFileRoute(
          }),
       );
    },
+   pendingMs: 300,
+   pendingComponent: InsightSkeleton,
    head: () => ({
       meta: [{ title: "Insight — Montte" }],
    }),
    component: EditInsightPage,
 });
 
+const TYPE_LABELS: Record<string, string> = {
+   kpi: "KPI",
+   time_series: "Série Temporal",
+   breakdown: "Distribuição",
+};
+
 function EditInsightPage() {
    const { insightId, slug, teamSlug } = Route.useParams();
-   const navigate = useNavigate();
+   const navigate = Route.useNavigate();
    const queryClient = useQueryClient();
    const { openAlertDialog } = useAlertDialog();
 
    const { data: insight } = useSuspenseQuery(
-      orpc.insights.getById.queryOptions({
-         input: { id: insightId },
-      }),
+      orpc.insights.getById.queryOptions({ input: { id: insightId } }),
    );
 
-   const { type, config, setType, updateConfigImmediate } = useInsightConfig();
-   const [insightName, setInsightName] = useState("");
-   const [insightDescription, setInsightDescription] = useState("");
-   const [initialized, setInitialized] = useState(false);
+   const parsed = insightConfigSchema.safeParse(insight.config);
 
-   // Populate the builder with the loaded insight data
-   useEffect(() => {
-      if (insight && !initialized) {
-         setInsightName(insight.name);
-         setInsightDescription(insight.description ?? "");
-         const insightConfig = insight.config as InsightConfig;
-         setType(insightConfig.type as InsightType);
-         queueMicrotask(() => {
-            updateConfigImmediate(insightConfig);
+   const { type, config, setType, updateConfigImmediate } = useInsightConfig(
+      parsed.success ? parsed.data : undefined,
+   );
+
+   const [name, setName] = useState(insight.name);
+   const [description, setDescription] = useState(insight.description ?? "");
+
+   const handleTypeChange = useCallback(
+      (newType: "kpi" | "time_series" | "breakdown") => {
+         setType(newType);
+         navigate({
+            search: (prev) => ({ ...prev, type: newType }),
+            replace: true,
          });
-         setInitialized(true);
-      }
-   }, [insight, initialized, setType, updateConfigImmediate]);
+      },
+      [setType, navigate],
+   );
 
    const updateMutation = useMutation(
       orpc.insights.update.mutationOptions({
@@ -148,17 +171,17 @@ function EditInsightPage() {
    );
 
    const handleSave = useCallback(() => {
-      if (!insightName.trim()) {
+      if (!name.trim()) {
          toast.error("O nome do insight é obrigatório");
          return;
       }
       updateMutation.mutate({
          id: insightId,
-         name: insightName.trim(),
-         description: insightDescription.trim() || undefined,
-         config: config as InsightConfig,
+         name: name.trim(),
+         description: description.trim() || undefined,
+         config,
       });
-   }, [insightId, insightName, insightDescription, config, updateMutation]);
+   }, [insightId, name, description, config, updateMutation]);
 
    const handleDelete = useCallback(() => {
       openAlertDialog({
@@ -171,19 +194,20 @@ function EditInsightPage() {
    }, [insightId, deleteMutation, openAlertDialog]);
 
    const handleDuplicate = useCallback(() => {
-      if (!insight) return;
+      if (!parsed.success) return;
       duplicateMutation.mutate({
          name: `${insight.name} (cópia)`,
          description: insight.description ?? undefined,
-         type: insight.type as "kpi" | "time_series" | "breakdown",
-         config: insight.config as InsightConfig,
+         type: parsed.data.type,
+         config: parsed.data,
       });
-   }, [insight, duplicateMutation]);
+   }, [insight.name, insight.description, parsed, duplicateMutation]);
 
    const handleRefresh = useCallback(() => {
+      if (!parsed.success) return;
       queryClient.invalidateQueries({
          queryKey: orpc.analytics.query.queryKey({
-            input: { config: insight?.config as InsightConfig },
+            input: { config: parsed.data },
          }),
       });
       queryClient.invalidateQueries({
@@ -191,65 +215,51 @@ function EditInsightPage() {
             input: { id: insightId },
          }).queryKey,
       });
-   }, [queryClient, insight?.config, insightId]);
-
-   const TYPE_LABELS: Record<string, string> = {
-      trends: "Tendências",
-      funnels: "Funis",
-      retention: "Retenção",
-   };
+   }, [queryClient, parsed, insightId]);
 
    useContextPanelInfo(
-      insight ? (
-         <ContextPanel>
-            <ContextPanelHeader>
-               <ContextPanelTitle>
-                  {insightName || insight.name}
-               </ContextPanelTitle>
-            </ContextPanelHeader>
-            <ContextPanelContent>
-               <ContextPanelMeta
-                  icon={Tag}
-                  label="Tipo"
-                  value={TYPE_LABELS[insight.type] ?? insight.type}
-               />
-               <ContextPanelMeta
-                  icon={Clock}
-                  label="Calculado"
-                  value={
-                     insight.lastComputedAt
-                        ? new Date(insight.lastComputedAt).toLocaleDateString(
-                             "pt-BR",
-                             {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                             },
-                          )
-                        : "—"
-                  }
-               />
-               <ContextPanelDivider />
-               <ContextPanelAction
-                  icon={Copy}
-                  label="Duplicar insight"
-                  onClick={handleDuplicate}
-               />
-               <ContextPanelAction
-                  icon={RefreshCw}
-                  label="Atualizar resultados"
-                  onClick={handleRefresh}
-               />
-               <ContextPanelDivider />
-               <ContextPanelAction
-                  icon={Trash2}
-                  label="Excluir insight"
-                  onClick={handleDelete}
-                  variant="destructive"
-               />
-            </ContextPanelContent>
-         </ContextPanel>
-      ) : null,
+      <ContextPanel>
+         <ContextPanelHeader>
+            <ContextPanelTitle>{name || insight.name}</ContextPanelTitle>
+         </ContextPanelHeader>
+         <ContextPanelContent>
+            <ContextPanelMeta
+               icon={Tag}
+               label="Tipo"
+               value={TYPE_LABELS[type] ?? type}
+            />
+            <ContextPanelMeta
+               icon={Clock}
+               label="Calculado"
+               value={
+                  insight.lastComputedAt
+                     ? new Date(insight.lastComputedAt).toLocaleDateString(
+                          "pt-BR",
+                          { day: "2-digit", month: "short", year: "numeric" },
+                       )
+                     : "—"
+               }
+            />
+            <ContextPanelDivider />
+            <ContextPanelAction
+               icon={Copy}
+               label="Duplicar insight"
+               onClick={handleDuplicate}
+            />
+            <ContextPanelAction
+               icon={RefreshCw}
+               label="Atualizar resultados"
+               onClick={handleRefresh}
+            />
+            <ContextPanelDivider />
+            <ContextPanelAction
+               icon={Trash2}
+               label="Excluir insight"
+               onClick={handleDelete}
+               variant="destructive"
+            />
+         </ContextPanelContent>
+      </ContextPanel>,
    );
 
    return (
@@ -257,18 +267,18 @@ function EditInsightPage() {
          <EarlyAccessBanner template={ANALYTICS_BANNER} />
          <InsightBuilder
             config={config}
-            description={insightDescription}
+            description={description}
             isSaving={updateMutation.isPending}
             lastComputedAt={insight.lastComputedAt}
-            name={insightName}
+            name={name}
             onConfigUpdate={updateConfigImmediate}
             onDelete={handleDelete}
-            onDescriptionChange={setInsightDescription}
+            onDescriptionChange={setDescription}
             onDuplicate={handleDuplicate}
-            onNameChange={setInsightName}
+            onNameChange={setName}
             onRefresh={handleRefresh}
             onSave={handleSave}
-            onTypeChange={setType}
+            onTypeChange={handleTypeChange}
             type={type}
          />
       </>
