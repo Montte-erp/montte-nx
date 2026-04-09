@@ -46,7 +46,7 @@ import type {
    SortingState,
 } from "@tanstack/react-table";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { BillFromTransactionDialogStack } from "@/features/bills/ui/bill-from-transaction-dialog-stack";
 import { BulkCategorizeForm } from "@/features/transactions/ui/bulk-categorize-form";
@@ -295,7 +295,7 @@ export function TransactionsList({
       onClear,
    ]);
 
-   const columns = buildTransactionColumns();
+   const columns = useMemo(() => buildTransactionColumns(), []);
 
    if (transactionData.length === 0 && filters.page === 1) {
       return (

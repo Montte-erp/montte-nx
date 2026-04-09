@@ -36,7 +36,7 @@ import {
    Target,
    Trash2,
 } from "lucide-react";
-import { Suspense, useCallback } from "react";
+import { Suspense, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import { BudgetGoalDialogStack } from "@/features/budget-goals/ui/budget-goal-dialog-stack";
@@ -317,7 +317,7 @@ function GoalsList() {
       [openAlertDialog, deleteMutation],
    );
 
-   const columns = buildBudgetGoalColumns();
+   const columns = useMemo(() => buildBudgetGoalColumns(), []);
 
    if (goals.length === 0) {
       return (

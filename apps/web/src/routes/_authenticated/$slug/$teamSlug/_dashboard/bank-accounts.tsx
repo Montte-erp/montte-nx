@@ -18,7 +18,7 @@ import type {
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Landmark, Pencil, Plus, Trash2 } from "lucide-react";
-import { Suspense, useCallback } from "react";
+import { Suspense, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
@@ -168,7 +168,7 @@ function BankAccountsList({ navigate }: BankAccountsListProps) {
    );
 
    const filtered = type ? accounts.filter((a) => a.type === type) : accounts;
-   const columns = buildBankAccountColumns();
+   const columns = useMemo(() => buildBankAccountColumns(), []);
 
    if (filtered.length === 0) {
       return (
