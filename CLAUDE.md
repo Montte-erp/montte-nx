@@ -136,17 +136,16 @@ export const bulkRemove = protectedProcedure
 | ---- | ---- |
 | Single query (default) | `useSuspenseQuery` |
 | Multiple independent queries in same component | `useSuspenseQueries` — avoids waterfall |
-| Conditional query (depends on user input/state) | `useSuspenseQuery` + `skipToken` |
-| Paginated query (no flicker on page change) | `useSuspenseQuery` + `placeholderData: keepPreviousData` |
+| Conditional query (depends on user input/state) | Child component pattern — see below |
 | Subscribe to partial query data | `useSuspenseQuery` + `select` option |
 | Prefetch before render | `queryClient.prefetchQuery` in route loader |
 | Track mutation state cross-component | `useMutationState` + `orpc.procedure.mutationKey()` |
 
 **Key rules:**
-- **Never `useQuery`** — always `useSuspenseQuery`. Exception: only when rendering outside a `<Suspense>` and a loading state is intentional (rare).
-- **Never `useQuery + enabled`** — use `skipToken + useSuspenseQuery` instead.
+- **Never `useQuery`** — always `useSuspenseQuery`. No exceptions.
+- **Never `useQuery + enabled`** — use the child component pattern instead (see below).
+- **Never `skipToken + useSuspenseQuery`** — `UseSuspenseQueryOptions` does not support `skipToken`. Use child component pattern.
 - **`useSuspenseQueries`** for 2+ independent queries in the same component — prevents React from suspending sequentially (waterfall).
-- **`placeholderData: keepPreviousData`** is mandatory on all queries with `page`/`pageSize` input — prevents content from disappearing while navigating pages.
 - **`select`** — when a component only needs one field from a large query response; prevents re-renders when unrelated fields change.
 - **`orpc.procedure.mutationKey()` / `orpc.procedure.queryKey()`** — always use oRPC-generated keys; never define manual string arrays.
 
@@ -165,7 +164,7 @@ Zod schemas belong in the backend. Frontend only imports inferred types via `Inp
 ## TanStack Form Pattern
 
 - **Schema at module level** — never define `z.object({...})` inside a component.
-- **`isInvalid` check** — `field.state.meta.isTouched && field.state.meta.errors.length > 0`.
+- **`isInvalid` check** — `field.state.meta.isTouched && field.state.meta.errors.length > 0` for client-validated fields. For fields that receive server errors via `onSubmitAsync` (e.g. the conflict field), drop `isTouched`: `field.state.meta.errors.length > 0` — so the injected error shows immediately without prior interaction.
 - **Accessibility** — always set `id`, `name`, `aria-invalid` on inputs; `htmlFor` on `<FieldLabel>`.
 - **`children` prop** — always use `children={(field) => ...}` as explicit JSX prop.
 - **`onSubmitAsync` — only when inline field errors matter** — use only for forms where a server conflict maps to a specific visible field (e.g. duplicate CPF/CNPJ on contacts, duplicate apelido on bank accounts). For generic CRUD forms, use plain `onSubmit` + `toast.error`. Define mutations with `useMutation` outside the form; call `mutateAsync` inside the validator. Use `fromPromise` from `neverthrow` instead of try/catch:
@@ -194,9 +193,14 @@ Zod schemas belong in the backend. Frontend only imports inferred types via `Inp
   ```
 - **Field error from server** — return `{ fields: { fieldName: "message" } }` from `onSubmitAsync`; TanStack Form injects into `field.state.meta.errors`. Set `isInvalid = field.state.meta.errors.length > 0` (drop `isTouched` check) so the error shows immediately without prior user interaction.
 - **No footer error display** — don't render a footer error paragraph. Errors go on the field they belong to. Generic errors (non-CONFLICT) return a plain string which TanStack Form stores in `state.errorMap.onSubmit` — but prefer `toast.error` for those instead.
-- **Multi-step forms with nested components** — use a local React context so step components defined outside the parent can access the form without prop drilling:
+- **Multi-step forms with nested components** — use a local React context so step components defined outside the parent can access the form without prop drilling. To type the context, use a factory function (never `ReturnType<typeof useForm<T>>` — TypeScript does not allow generic type arguments on `typeof` references):
   ```tsx
-  const FormCtx = createContext<FormApi | null>(null);
+  function createMyForm() {
+    return useForm({ defaultValues: { ... }, validators: { ... } });
+  }
+  type MyFormApi = ReturnType<typeof createMyForm>;
+
+  const FormCtx = createContext<MyFormApi | null>(null);
   function useMyForm() {
      const f = useContext(FormCtx);
      if (!f) throw new Error("...");
@@ -206,11 +210,24 @@ Zod schemas belong in the backend. Frontend only imports inferred types via `Inp
   // Parent wraps: <FormCtx.Provider value={form}>...</FormCtx.Provider>
   ```
 - **Selective `form.Subscribe`** — always use a specific selector, never `selector={(state) => state}`. For submit buttons use `[state.canSubmit, state.isSubmitting] as const` and destructure.
-- **Navigation guard** — add `useBlocker` from `@tanstack/react-router` to edit forms. Use `withResolver: true` and `shouldBlockFn`. Render a pt-BR AlertDialog when `blocker.status === "blocked"`:
+- **Navigation guard** — add `useBlocker` from `@tanstack/react-router` to edit forms. Use `withResolver: true` and `shouldBlockFn`. Always use optional chaining on `blocker.proceed?.()` and `blocker.reset?.()` — they are only defined when the blocker is in `"blocked"` state (TS2722 otherwise). Use `useAlertDialog` to prompt the user:
   ```tsx
   const blocker = useBlocker({
      withResolver: true,
-     shouldBlockFn: () => form.store.state.isDirty && !form.store.state.isSubmitted,
+     shouldBlockFn: () => {
+       if (form.store.state.isDirty && !form.store.state.isSubmitted) {
+         openAlertDialog({
+           title: "Descartar alterações?",
+           description: "Você tem alterações não salvas. Tem certeza que deseja sair sem salvar?",
+           actionLabel: "Descartar alterações",
+           cancelLabel: "Continuar editando",
+           onAction: () => blocker.proceed?.(),
+           onCancel: () => blocker.reset?.(),
+         });
+         return true;
+       }
+       return false;
+     },
      disabled: isCreate, // skip for create-only forms
   });
   ```
@@ -236,21 +253,27 @@ const [{ data: session }, { data: teams }] = useSuspenseQueries({
 });
 ```
 
-**Conditional queries** — replace `useQuery + enabled` with `skipToken + useSuspenseQuery`:
+**Conditional queries** — extract a child component that calls `useSuspenseQuery` unconditionally; the parent renders it only when the input is ready:
 ```tsx
-const { data } = useSuspenseQuery(
-   condition
-      ? orpc.procedure.queryOptions({ input: { id } })
-      : { queryKey: ["disabled-key"], queryFn: skipToken },
-);
-```
+function ItemDetails({ id }: { id: string }) {
+   const { data } = useSuspenseQuery(
+      orpc.procedure.queryOptions({ input: { id } }),
+   );
+   return <div>{data.name}</div>;
+}
 
-**Paginated queries** — add `placeholderData: keepPreviousData` to prevent flicker when navigating pages:
+// Parent:
+{selectedId && (
+   <Suspense fallback={<Skeleton />}>
+      <ItemDetails id={selectedId} />
+   </Suspense>
+)}
+```
+Never use `skipToken` with `useSuspenseQuery` — it is not supported in TanStack Query v5.
+
+**`skipToken` with oRPC** — only valid inside `queryOptions` as the `input` value when using `useQuery` (rare):
 ```tsx
-const { data } = useSuspenseQuery({
-   ...orpc.procedure.queryOptions({ input: { page, pageSize } }),
-   placeholderData: keepPreviousData,
-});
+orpc.procedure.queryOptions({ input: condition ? { id } : skipToken })
 ```
 
 **Empty states** — always use `Empty`/`EmptyHeader`/`EmptyMedia`/`EmptyTitle`/`EmptyDescription`/`EmptyContent` from `@packages/ui/components/empty`. Never build custom empty states with raw divs.
