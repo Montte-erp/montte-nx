@@ -1,5 +1,5 @@
 import { Button } from "@packages/ui/components/button";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
+import { createErrorFallback } from "@/components/query-boundary";
 import {
    CredenzaBody,
    CredenzaDescription,

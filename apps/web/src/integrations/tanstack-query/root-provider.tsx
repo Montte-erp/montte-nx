@@ -5,10 +5,13 @@ import {
 } from "@tanstack/react-query";
 import { setQueryClient } from "../better-auth/query-bridge";
 import { orpc } from "../orpc/client";
+import { getPublicEnv } from "@/integrations/public-env";
+import type { PublicEnv } from "@/integrations/public-env";
 
 export type RouterContext = {
    queryClient: QueryClient;
    orpc: typeof orpc;
+   publicEnv: PublicEnv | undefined;
 };
 
 export function getContext(): RouterContext {
@@ -37,6 +40,7 @@ export function getContext(): RouterContext {
    return {
       queryClient,
       orpc,
+      publicEnv: typeof document === "undefined" ? getPublicEnv() : undefined,
    };
 }
 

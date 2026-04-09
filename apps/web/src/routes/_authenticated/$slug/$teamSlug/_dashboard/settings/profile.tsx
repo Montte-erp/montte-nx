@@ -11,7 +11,7 @@ import {
    DropzoneContent,
    DropzoneEmptyState,
 } from "@packages/ui/components/dropzone";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
+import { createErrorFallback } from "@/components/query-boundary";
 import {
    Field,
    FieldError,
@@ -30,8 +30,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Loader2, ShieldCheck, User } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import type React from "react";
-import { Suspense, useCallback, useState, useTransition } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { useCallback, useState, useTransition } from "react";
+import type { FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useFileUpload } from "@/features/file-upload/lib/use-file-upload";
@@ -39,6 +39,7 @@ import { usePresignedUpload } from "@/features/file-upload/lib/use-presigned-upl
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
+import { QueryBoundary } from "@/components/query-boundary";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/profile",
@@ -49,9 +50,7 @@ export const Route = createFileRoute(
    component: ProfilePage,
 });
 
-// ============================================
 // Avatar Upload Section
-// ============================================
 
 function AvatarUploadSection({
    currentImage,
@@ -101,7 +100,7 @@ function AvatarUploadSection({
    };
 
    return (
-      <section className="space-y-3">
+      <section className="flex flex-col gap-4">
          <div>
             <h2 className="text-lg font-medium">Foto de perfil</h2>
             <p className="text-sm text-muted-foreground">
@@ -169,9 +168,7 @@ function AvatarUploadSection({
    );
 }
 
-// ============================================
 // Two-Factor Authentication Section
-// ============================================
 
 type TwoFactorStep =
    | "idle"
@@ -238,7 +235,7 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
    };
 
    return (
-      <section className="space-y-3">
+      <section className="flex flex-col gap-4">
          <div>
             <h2 className="text-lg font-medium">
                Autenticação de dois fatores
@@ -249,7 +246,7 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
             </p>
          </div>
 
-         <div className="max-w-md space-y-4">
+         <div className="max-w-md flex flex-col gap-4">
             {step === "idle" && (
                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -285,11 +282,11 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
             )}
 
             {step === "enabling-confirm" && (
-               <div className="space-y-3">
+               <div className="flex flex-col gap-4">
                   <p className="text-sm text-muted-foreground">
                      Confirme sua senha para continuar.
                   </p>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label htmlFor="2fa-enable-password">Senha</Label>
                      <PasswordInput
                         id="2fa-enable-password"
@@ -316,12 +313,12 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
             )}
 
             {step === "show-qr" && (
-               <div className="space-y-4">
-                  <div className="space-y-2">
+               <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
                      <p className="text-sm font-medium">
                         1. Escaneie o QR code com seu aplicativo autenticador
                      </p>
-                     <div className="space-y-2 rounded-lg border p-4 bg-muted/30">
+                     <div className="flex flex-col gap-2 rounded-lg border p-4 bg-muted/30">
                         <div className="inline-flex rounded-lg bg-white p-3">
                            <QRCodeSVG size={180} value={totpUri} />
                         </div>
@@ -334,7 +331,7 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
                         </code>
                      </div>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label htmlFor="totp-code">
                         2. Digite o código gerado pelo aplicativo
                      </Label>
@@ -365,8 +362,8 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
             )}
 
             {step === "show-backup-codes" && (
-               <div className="space-y-3">
-                  <div className="p-4 border rounded-lg space-y-2 bg-muted/30">
+               <div className="flex flex-col gap-4">
+                  <div className="p-4 border rounded-lg flex flex-col gap-2 bg-muted/30">
                      <p className="text-sm font-medium">
                         2FA ativado! Guarde seus códigos de backup
                      </p>
@@ -390,11 +387,11 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
             )}
 
             {step === "disabling-confirm" && (
-               <div className="space-y-3">
+               <div className="flex flex-col gap-4">
                   <p className="text-sm text-muted-foreground">
                      Confirme sua senha para desativar o 2FA.
                   </p>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label htmlFor="2fa-disable-password">Senha</Label>
                      <PasswordInput
                         id="2fa-disable-password"
@@ -425,18 +422,16 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
    );
 }
 
-// ============================================
 // Skeleton
-// ============================================
 
 function ProfileSectionSkeleton() {
    return (
-      <div className="space-y-8">
+      <div className="flex flex-col gap-4">
          <div>
             <Skeleton className="h-8 w-24" />
             <Skeleton className="h-4 w-64 mt-1" />
          </div>
-         <div className="space-y-3">
+         <div className="flex flex-col gap-4">
             <Skeleton className="h-6 w-36" />
             <div className="flex items-start gap-4">
                <Skeleton className="size-16 rounded-lg" />
@@ -444,13 +439,13 @@ function ProfileSectionSkeleton() {
             </div>
          </div>
          <Skeleton className="h-px w-full" />
-         <div className="space-y-3">
+         <div className="flex flex-col gap-4">
             <Skeleton className="h-6 w-40" />
             <Skeleton className="h-10 w-80" />
             <Skeleton className="h-8 w-32" />
          </div>
          <Skeleton className="h-px w-full" />
-         <div className="space-y-3">
+         <div className="flex flex-col gap-4">
             <Skeleton className="h-6 w-24" />
             <Skeleton className="h-10 w-full max-w-md" />
             <Skeleton className="h-10 w-full max-w-md" />
@@ -458,12 +453,12 @@ function ProfileSectionSkeleton() {
             <Skeleton className="h-8 w-32" />
          </div>
          <Skeleton className="h-px w-full" />
-         <div className="space-y-3">
+         <div className="flex flex-col gap-4">
             <Skeleton className="h-6 w-24" />
             <Skeleton className="h-14 w-full max-w-md" />
          </div>
          <Skeleton className="h-px w-full" />
-         <div className="space-y-3">
+         <div className="flex flex-col gap-4">
             <Skeleton className="h-6 w-40" />
             <div className="grid gap-4 sm:grid-cols-2">
                <Skeleton className="h-14 w-full" />
@@ -471,13 +466,13 @@ function ProfileSectionSkeleton() {
             </div>
          </div>
          <Skeleton className="h-px w-full" />
-         <div className="space-y-3">
+         <div className="flex flex-col gap-4">
             <Skeleton className="h-6 w-56" />
             <Skeleton className="h-4 w-80" />
             <Skeleton className="h-10 w-full max-w-md" />
          </div>
          <Skeleton className="h-px w-full" />
-         <div className="space-y-3">
+         <div className="flex flex-col gap-4">
             <Skeleton className="h-6 w-28" />
             <Skeleton className="h-4 w-80" />
             <Skeleton className="h-8 w-40" />
@@ -486,13 +481,11 @@ function ProfileSectionSkeleton() {
    );
 }
 
-// ============================================
 // Error Fallback
-// ============================================
 
 function ProfileSectionErrorFallback(props: FallbackProps) {
    return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-4">
          <div>
             <h1 className="text-2xl font-semibold font-serif">Perfil</h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -512,9 +505,7 @@ function ProfileSectionErrorFallback(props: FallbackProps) {
    );
 }
 
-// ============================================
 // Profile Name Section
-// ============================================
 
 const nameSchema = z.object({
    name: z.string().min(1, "Nome é obrigatório"),
@@ -548,14 +539,14 @@ function ProfileNameSection({ currentName }: { currentName: string }) {
    );
 
    return (
-      <section className="space-y-3">
+      <section className="flex flex-col gap-4">
          <div>
             <h2 className="text-lg font-medium">Nome de exibição</h2>
             <p className="text-sm text-muted-foreground">
                O nome que aparecerá no seu perfil e em suas publicações.
             </p>
          </div>
-         <form className="max-w-md space-y-3" onSubmit={handleSubmit}>
+         <form className="max-w-md flex flex-col gap-4" onSubmit={handleSubmit}>
             <FieldGroup>
                <form.Field
                   name="name"
@@ -605,9 +596,7 @@ function ProfileNameSection({ currentName }: { currentName: string }) {
    );
 }
 
-// ============================================
 // Profile Email Section
-// ============================================
 
 function ProfileEmailSection({
    currentEmail,
@@ -651,14 +640,14 @@ function ProfileEmailSection({
    };
 
    return (
-      <section className="space-y-3">
+      <section className="flex flex-col gap-4">
          <div>
             <h2 className="text-lg font-medium">Email</h2>
             <p className="text-sm text-muted-foreground">
                Seu endereço de email para login e notificações.
             </p>
          </div>
-         <div className="max-w-md space-y-3">
+         <div className="max-w-md flex flex-col gap-4">
             <FieldGroup>
                <Field data-invalid={email !== currentEmail && !isValidEmail}>
                   <div className="flex items-center gap-2">
@@ -694,9 +683,7 @@ function ProfileEmailSection({
    );
 }
 
-// ============================================
 // Profile Password Section
-// ============================================
 
 function ProfilePasswordSection({ hasPassword }: { hasPassword: boolean }) {
    const [isPending, startTransition] = useTransition();
@@ -783,7 +770,7 @@ function ProfilePasswordSection({ hasPassword }: { hasPassword: boolean }) {
    );
 
    return (
-      <section className="space-y-3">
+      <section className="flex flex-col gap-4">
          <div>
             <h2 className="text-lg font-medium">Senha</h2>
             <p className="text-sm text-muted-foreground">
@@ -792,7 +779,7 @@ function ProfilePasswordSection({ hasPassword }: { hasPassword: boolean }) {
                   : "Defina uma senha para acessar sua conta além do magic link."}
             </p>
          </div>
-         <form className="max-w-md space-y-3" onSubmit={handleSubmit}>
+         <form className="max-w-md flex flex-col gap-4" onSubmit={handleSubmit}>
             <FieldGroup>
                {hasPassword && (
                   <form.Field
@@ -902,9 +889,7 @@ function ProfilePasswordSection({ hasPassword }: { hasPassword: boolean }) {
    );
 }
 
-// ============================================
 // Main Content Component
-// ============================================
 
 function ProfileSectionContent() {
    const { data: session } = useSuspenseQuery(
@@ -929,7 +914,7 @@ function ProfileSectionContent() {
    }
 
    return (
-      <div className="space-y-8">
+      <div className="flex flex-col gap-4">
          <div>
             <h1 className="text-2xl font-semibold font-serif">Perfil</h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -966,10 +951,11 @@ function ProfileSectionContent() {
 
 function ProfilePage() {
    return (
-      <ErrorBoundary FallbackComponent={ProfileSectionErrorFallback}>
-         <Suspense fallback={<ProfileSectionSkeleton />}>
-            <ProfileSectionContent />
-         </Suspense>
-      </ErrorBoundary>
+      <QueryBoundary
+         fallback={<ProfileSectionSkeleton />}
+         errorFallback={ProfileSectionErrorFallback}
+      >
+         <ProfileSectionContent />
+      </QueryBoundary>
    );
 }

@@ -1,9 +1,7 @@
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Suspense } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { QueryBoundary } from "@/components/query-boundary";
 import { DashboardView } from "@/features/analytics/ui/dashboard-view";
 import { QuickStartChecklist } from "./-home/quick-start-checklist";
 import { orpc } from "@/integrations/orpc/client";
@@ -23,16 +21,6 @@ export const Route = createFileRoute(
    }),
    component: HomePage,
 });
-
-// Error & Loading States
-
-function HomePageErrorFallback(props: FallbackProps) {
-   return createErrorFallback({
-      errorDescription: "Não foi possível carregar o dashboard",
-      errorTitle: "Erro ao carregar dashboard",
-      retryText: "Tentar novamente",
-   })(props);
-}
 
 function HomePageSkeleton() {
    return (
@@ -77,10 +65,13 @@ function HomePageContent() {
 
 function HomePage() {
    return (
-      <ErrorBoundary FallbackComponent={HomePageErrorFallback}>
-         <Suspense fallback={<HomePageSkeleton />}>
-            <HomePageContent />
-         </Suspense>
-      </ErrorBoundary>
+      <QueryBoundary
+         fallback={<HomePageSkeleton />}
+         errorTitle="Erro ao carregar dashboard"
+         errorDescription="Não foi possível carregar o dashboard"
+         retryText="Tentar novamente"
+      >
+         <HomePageContent />
+      </QueryBoundary>
    );
 }

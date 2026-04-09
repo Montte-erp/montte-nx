@@ -1,5 +1,5 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateCreditCardInput,
@@ -85,6 +85,34 @@ export async function deleteCreditCard(db: DatabaseInstance, id: string) {
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to delete credit card");
+   }
+}
+
+export async function bulkDeleteCreditCards(
+   db: DatabaseInstance,
+   ids: string[],
+   teamId: string,
+) {
+   try {
+      const cards = await db.query.creditCards.findMany({
+         where: (fields, { and, inArray }) =>
+            and(inArray(fields.id, ids), eq(fields.teamId, teamId)),
+      });
+      if (cards.length !== ids.length) {
+         throw AppError.notFound("Um ou mais cartões não encontrados.");
+      }
+      for (const card of cards) {
+         const hasOpen = await creditCardHasOpenStatements(db, card.id);
+         if (hasOpen) {
+            throw AppError.conflict(
+               `Cartão "${card.name}" possui faturas abertas e não pode ser excluído.`,
+            );
+         }
+      }
+      await db.delete(creditCards).where(inArray(creditCards.id, ids));
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to bulk delete credit cards");
    }
 }
 

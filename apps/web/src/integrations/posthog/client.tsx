@@ -33,8 +33,8 @@ export function normalizeEarlyAccessStage(
 
 function getReactPosthogConfig(env: PublicEnv) {
    return {
-      api_host: env.VITE_POSTHOG_HOST,
-      api_key: env.VITE_POSTHOG_KEY,
+      api_host: env.POSTHOG_HOST,
+      api_key: env.POSTHOG_KEY,
       autocapture: true,
       capture_pageview: true,
       capture_pageleave: true,
@@ -52,11 +52,12 @@ export function PostHogWrapper({
    env,
 }: {
    children: React.ReactNode;
-   env: PublicEnv;
+   env: PublicEnv | undefined;
 }) {
+   if (!env) return <>{children}</>;
    return (
       <PostHogProvider
-         apiKey={env.VITE_POSTHOG_KEY}
+         apiKey={env.POSTHOG_KEY}
          options={getReactPosthogConfig(env)}
       >
          {children}

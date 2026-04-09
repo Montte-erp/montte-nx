@@ -5,7 +5,7 @@ import {
    CardHeader,
    CardTitle,
 } from "@packages/ui/components/card";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
+import { createErrorFallback } from "@/components/query-boundary";
 import { Separator } from "@packages/ui/components/separator";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import {
@@ -15,9 +15,9 @@ import {
    TabsTrigger,
 } from "@packages/ui/components/tabs";
 import { createFileRoute } from "@tanstack/react-router";
+import { QueryBoundary } from "@/components/query-boundary";
 import { CreditCard } from "lucide-react";
-import { Suspense } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import type { FallbackProps } from "react-error-boundary";
 import { BillingOverview } from "@/features/billing/ui/billing-overview";
 import { BillingSpend } from "@/features/billing/ui/billing-spend";
 import { BillingUsage } from "@/features/billing/ui/billing-usage";
@@ -68,9 +68,9 @@ function BillingSectionErrorFallback(props: FallbackProps) {
 
 function BillingSectionSkeleton() {
    return (
-      <div className="space-y-6">
-         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-2">
+      <div className="flex flex-col gap-4">
+         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex flex-col gap-2">
                <Skeleton className="h-4 w-24" />
                <Skeleton className="h-10 w-40" />
             </div>
@@ -78,7 +78,7 @@ function BillingSectionSkeleton() {
          </div>
          <Skeleton className="h-5 w-96" />
          <Skeleton className="h-9 w-56" />
-         <div className="space-y-4">
+         <div className="flex flex-col gap-4">
             <Skeleton className="h-6 w-24" />
             {Array.from({ length: 3 }).map((_, i) => (
                <Skeleton
@@ -93,7 +93,7 @@ function BillingSectionSkeleton() {
 
 function BillingPage() {
    return (
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
          <Tabs defaultValue="overview">
             <TabsList variant="line">
                <TabsTrigger value="overview">Geral</TabsTrigger>
@@ -102,31 +102,33 @@ function BillingPage() {
             </TabsList>
             <Separator />
 
-            <TabsContent className="space-y-4" value="overview">
-               <ErrorBoundary FallbackComponent={BillingSectionErrorFallback}>
-                  <Suspense fallback={<BillingSectionSkeleton />}>
-                     <BillingOverview />
-                  </Suspense>
-               </ErrorBoundary>
+            <TabsContent className="flex flex-col gap-4" value="overview">
+               <QueryBoundary
+                  fallback={<BillingSectionSkeleton />}
+                  errorFallback={BillingSectionErrorFallback}
+               >
+                  <BillingOverview />
+               </QueryBoundary>
             </TabsContent>
 
-            <TabsContent className="space-y-4" value="usage">
-               <ErrorBoundary FallbackComponent={BillingSectionErrorFallback}>
-                  <Suspense fallback={<BillingSectionSkeleton />}>
-                     <EarlyAccessBanner template={earlyAccessTemplate} />
-                     <BillingUsage />
-                  </Suspense>
-               </ErrorBoundary>
+            <TabsContent className="flex flex-col gap-4" value="usage">
+               <QueryBoundary
+                  fallback={<BillingSectionSkeleton />}
+                  errorFallback={BillingSectionErrorFallback}
+               >
+                  <EarlyAccessBanner template={earlyAccessTemplate} />
+                  <BillingUsage />
+               </QueryBoundary>
             </TabsContent>
 
-            <TabsContent className="space-y-4" value="spend">
-               <ErrorBoundary FallbackComponent={BillingSectionErrorFallback}>
-                  <Suspense fallback={<BillingSectionSkeleton />}>
-                     <EarlyAccessBanner template={earlyAccessTemplate} />
-
-                     <BillingSpend />
-                  </Suspense>
-               </ErrorBoundary>
+            <TabsContent className="flex flex-col gap-4" value="spend">
+               <QueryBoundary
+                  fallback={<BillingSectionSkeleton />}
+                  errorFallback={BillingSectionErrorFallback}
+               >
+                  <EarlyAccessBanner template={earlyAccessTemplate} />
+                  <BillingSpend />
+               </QueryBoundary>
             </TabsContent>
          </Tabs>
       </div>

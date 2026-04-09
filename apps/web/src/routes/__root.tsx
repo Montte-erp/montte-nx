@@ -1,5 +1,6 @@
 import { Toaster } from "@packages/ui/components/sonner";
 import { ThemeProvider } from "@packages/ui/lib/theme-provider";
+import type { Theme } from "@packages/ui/lib/theme-provider";
 import appCss from "@tooling/css/globals.css?url";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import {
@@ -8,23 +9,36 @@ import {
    HeadContent,
    Scripts,
 } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";
 import { GlobalSelectionToolbar } from "@/hooks/use-selection-toolbar";
 import { GlobalSurveyModal } from "@/hooks/use-survey-modal";
 import { GlobalDialogStack } from "@/hooks/use-dialog-stack";
-import { getPublicEnv } from "@/integrations/public-env";
 import { PostHogWrapper } from "@/integrations/posthog/client";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import type { RouterContext } from "../integrations/tanstack-query/root-provider";
 
+const getThemeFromCookie = createServerFn({ method: "GET" }).handler(() => {
+   const request = getRequest();
+   const cookieHeader = request?.headers.get("cookie") ?? "";
+   const match = cookieHeader.match(/(?:^|;\s*)theme=(\w+)/);
+   const theme = match?.[1];
+   if (theme === "dark" || theme === "light" || theme === "system")
+      return theme as Theme;
+   return "system" as Theme;
+});
+
 export const Route = createRootRouteWithContext<RouterContext>()({
+   staleTime: Infinity,
    loader: async ({ context }) => {
       await context.queryClient
          .ensureQueryData(context.orpc.session.getSession.queryOptions())
          .catch(() => null);
-      return { publicEnv: getPublicEnv() };
+      const theme = await getThemeFromCookie();
+      return { theme };
    },
    head: () => ({
       meta: [
@@ -57,22 +71,22 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-   const { publicEnv } = Route.useLoaderData();
+   const { theme } = Route.useLoaderData();
+   const { publicEnv } = Route.useRouteContext();
    return (
-      <html lang="pt-BR" suppressHydrationWarning>
+      <html
+         lang="pt-BR"
+         suppressHydrationWarning
+         className={theme !== "system" ? theme : undefined}
+      >
          <head>
             <HeadContent />
-            <script
-               dangerouslySetInnerHTML={{
-                  __html: `window.__env = ${JSON.stringify(publicEnv).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/\//g, "\\u002f")}`,
-               }}
-            />
          </head>
          <body>
             <PostHogWrapper env={publicEnv}>
                <ThemeProvider
                   attribute="class"
-                  defaultTheme="system"
+                  defaultTheme={theme}
                   enableSystem
                >
                   {children}
@@ -84,20 +98,22 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   </ClientOnly>
                   <GlobalSurveyModal />
                   <GlobalDialogStack />
-                  <ClientOnly>
-                     <TanStackDevtools
-                        config={{
-                           position: "top-right",
-                        }}
-                        plugins={[
-                           {
-                              name: "Tanstack Router",
-                              render: <TanStackRouterDevtoolsPanel />,
-                           },
-                           TanStackQueryDevtools,
-                        ]}
-                     />
-                  </ClientOnly>
+                  {import.meta.env.DEV && (
+                     <ClientOnly>
+                        <TanStackDevtools
+                           config={{
+                              position: "top-right",
+                           }}
+                           plugins={[
+                              {
+                                 name: "Tanstack Router",
+                                 render: <TanStackRouterDevtoolsPanel />,
+                              },
+                              TanStackQueryDevtools,
+                           ]}
+                        />
+                     </ClientOnly>
+                  )}
                </ThemeProvider>
             </PostHogWrapper>
             <Scripts />

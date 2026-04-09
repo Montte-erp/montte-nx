@@ -31,7 +31,7 @@ import {
    Trash2,
    Upload,
 } from "lucide-react";
-import { Suspense, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
@@ -47,6 +47,7 @@ import { exportCategoriesCsv } from "./-categories/export-categories-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
+import { QueryBoundary } from "@/components/query-boundary";
 
 const categoriesSearchSchema = z.object({
    sorting: z
@@ -75,9 +76,18 @@ export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/categories",
 )({
    validateSearch: categoriesSearchSchema,
-   loader: ({ context }) => {
+   loaderDeps: ({ search: { type, includeArchived } }) => ({
+      type,
+      includeArchived,
+   }),
+   loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
-         orpc.categories.getAll.queryOptions({}),
+         orpc.categories.getAll.queryOptions({
+            input: {
+               type: deps.type,
+               includeArchived: deps.includeArchived || undefined,
+            },
+         }),
       );
    },
    pendingMs: 300,
@@ -492,9 +502,12 @@ function CategoriesPage() {
             search={search}
             type={type}
          />
-         <Suspense fallback={<CategoriesSkeleton />}>
+         <QueryBoundary
+            fallback={<CategoriesSkeleton />}
+            errorTitle="Erro ao carregar categorias"
+         >
             <CategoriesList navigate={navigate} />
-         </Suspense>
+         </QueryBoundary>
       </main>
    );
 }

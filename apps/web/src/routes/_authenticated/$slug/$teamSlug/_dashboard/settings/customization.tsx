@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@packages/ui/components/card";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
+import { createErrorFallback } from "@/components/query-boundary";
 import {
    Item,
    ItemActions,
@@ -15,9 +15,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { Activity, Moon } from "lucide-react";
 import { usePostHog } from "posthog-js/react";
-import { Suspense, useCallback, useState } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { useCallback, useState } from "react";
+import type { FallbackProps } from "react-error-boundary";
 import { ThemeSwitcher } from "@/layout/dashboard/ui/theme-switcher";
+import { QueryBoundary } from "@/components/query-boundary";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/customization",
@@ -30,15 +31,15 @@ export const Route = createFileRoute(
 
 function PreferencesSectionSkeleton() {
    return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-4">
          <div>
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-4 w-72 mt-2" />
          </div>
-         <div className="space-y-1">
+         <div className="flex flex-col gap-2">
             <Skeleton className="h-16 w-full rounded-lg" />
          </div>
-         <div className="space-y-1">
+         <div className="flex flex-col gap-2">
             <Skeleton className="h-16 w-full rounded-lg" />
          </div>
       </div>
@@ -47,7 +48,7 @@ function PreferencesSectionSkeleton() {
 
 function PreferencesSectionErrorFallback(props: FallbackProps) {
    return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-4">
          <div>
             <h1 className="text-2xl font-semibold font-serif">
                Personalização
@@ -70,17 +71,13 @@ function PreferencesSectionErrorFallback(props: FallbackProps) {
    );
 }
 
-// ============================================
 // Content Creation Card Component (Pro only)
-// ============================================
 
-// ============================================
 // Appearance Card Component
-// ============================================
 
 function AppearanceSection() {
    return (
-      <section className="space-y-3">
+      <section className="flex flex-col gap-4">
          <div>
             <h2 className="text-lg font-medium">Aparência</h2>
             <p className="text-sm text-muted-foreground mt-1">
@@ -107,9 +104,7 @@ function AppearanceSection() {
    );
 }
 
-// ============================================
 // Privacy Section Component
-// ============================================
 
 function PrivacySection({
    hasConsent,
@@ -119,7 +114,7 @@ function PrivacySection({
    onConsentChange: (consent: boolean) => void;
 }) {
    return (
-      <section className="space-y-3">
+      <section className="flex flex-col gap-4">
          <div>
             <h2 className="text-lg font-medium">Privacidade</h2>
             <p className="text-sm text-muted-foreground mt-1">
@@ -150,9 +145,7 @@ function PrivacySection({
    );
 }
 
-// ============================================
 // Main Content Component
-// ============================================
 
 function PreferencesSectionContent() {
    const posthog = usePostHog();
@@ -175,7 +168,7 @@ function PreferencesSectionContent() {
    );
 
    return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-4">
          <div>
             <h1 className="text-2xl font-semibold font-serif">
                Personalização
@@ -197,10 +190,11 @@ function PreferencesSectionContent() {
 
 function PreferencesPage() {
    return (
-      <ErrorBoundary FallbackComponent={PreferencesSectionErrorFallback}>
-         <Suspense fallback={<PreferencesSectionSkeleton />}>
-            <PreferencesSectionContent />
-         </Suspense>
-      </ErrorBoundary>
+      <QueryBoundary
+         fallback={<PreferencesSectionSkeleton />}
+         errorFallback={PreferencesSectionErrorFallback}
+      >
+         <PreferencesSectionContent />
+      </QueryBoundary>
    );
 }

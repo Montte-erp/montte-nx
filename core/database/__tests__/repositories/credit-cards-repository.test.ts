@@ -345,6 +345,87 @@ describe("credit-cards-repository", () => {
       });
    });
 
+   describe("bulkDeleteCreditCards", () => {
+      it("deletes multiple cards belonging to the team", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+         const card1 = await repo.createCreditCard(
+            testDb.db,
+            teamId,
+            validInput(bankAccount.id, { name: "Card One" }),
+         );
+         const card2 = await repo.createCreditCard(
+            testDb.db,
+            teamId,
+            validInput(bankAccount.id, { name: "Card Two" }),
+         );
+
+         await repo.bulkDeleteCreditCards(
+            testDb.db,
+            [card1.id, card2.id],
+            teamId,
+         );
+
+         const rows = await testDb.db
+            .select()
+            .from(creditCards)
+            .where(eq(creditCards.id, card1.id));
+         expect(rows).toHaveLength(0);
+      });
+
+      it("throws conflict when any card has open statements", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+         const card1 = await repo.createCreditCard(
+            testDb.db,
+            teamId,
+            validInput(bankAccount.id, { name: "Card Safe" }),
+         );
+         const card2 = await repo.createCreditCard(
+            testDb.db,
+            teamId,
+            validInput(bankAccount.id, { name: "Card With Statement" }),
+         );
+
+         await testDb.db.insert(creditCardStatements).values({
+            creditCardId: card2.id,
+            statementPeriod: "2026-04",
+            closingDate: "2026-04-10",
+            dueDate: "2026-04-20",
+            status: "open",
+         });
+
+         await expect(
+            repo.bulkDeleteCreditCards(testDb.db, [card1.id, card2.id], teamId),
+         ).rejects.toThrow(/faturas abertas/);
+      });
+
+      it("throws notFound when an id does not belong to the team", async () => {
+         const teamId = randomTeamId();
+         const otherTeamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+         const otherBankAccount = await createBankAccount(otherTeamId);
+         const card = await repo.createCreditCard(
+            testDb.db,
+            teamId,
+            validInput(bankAccount.id),
+         );
+         const otherCard = await repo.createCreditCard(
+            testDb.db,
+            otherTeamId,
+            validInput(otherBankAccount.id),
+         );
+
+         await expect(
+            repo.bulkDeleteCreditCards(
+               testDb.db,
+               [card.id, otherCard.id],
+               teamId,
+            ),
+         ).rejects.toThrow();
+      });
+   });
+
    describe("creditCardHasOpenStatements", () => {
       it("returns false when no statements exist", async () => {
          const teamId = randomTeamId();

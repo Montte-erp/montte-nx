@@ -3,7 +3,6 @@ import {
    DataTable,
    type DataTableStoredState,
 } from "@packages/ui/components/data-table";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Input } from "@packages/ui/components/input";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { InviteMemberForm } from "./-members/invite-member-form";
@@ -21,22 +20,22 @@ import type {
    ColumnFiltersState,
 } from "@tanstack/react-table";
 import { ShieldCheck, Search, UserPlus } from "lucide-react";
-import { Suspense, useMemo, useState, useTransition } from "react";
-import { ErrorBoundary } from "react-error-boundary";
+import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useCredenza } from "@/hooks/use-credenza";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
+import { QueryBoundary } from "@/components/query-boundary";
 
 const searchSchema = z.object({
    sorting: z
       .array(z.object({ id: z.string(), desc: z.boolean() }))
-      .optional()
+      .catch([])
       .default([]),
    columnFilters: z
       .array(z.object({ id: z.string(), value: z.unknown() }))
-      .optional()
+      .catch([])
       .default([]),
 });
 
@@ -234,14 +233,11 @@ function MembersContent() {
 
 function MembersPage() {
    return (
-      <ErrorBoundary
-         FallbackComponent={createErrorFallback({
-            errorTitle: "Erro ao carregar membros",
-         })}
+      <QueryBoundary
+         fallback={<MembersSkeleton />}
+         errorTitle="Erro ao carregar membros"
       >
-         <Suspense fallback={<MembersSkeleton />}>
-            <MembersContent />
-         </Suspense>
-      </ErrorBoundary>
+         <MembersContent />
+      </QueryBoundary>
    );
 }

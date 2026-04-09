@@ -27,9 +27,10 @@ import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
+import { createErrorFallback } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
+import { QueryBoundary } from "@/components/query-boundary";
 import {
    buildCreditCardColumns,
    type CreditCardRow,
@@ -119,6 +120,19 @@ function CreditCardsList() {
       }),
    );
 
+   const bulkDeleteMutation = useMutation(
+      orpc.creditCards.bulkRemove.mutationOptions({
+         onSuccess: ({ deleted }) => {
+            toast.success(
+               `${deleted} ${deleted === 1 ? "cartão excluído" : "cartões excluídos"} com sucesso.`,
+            );
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao excluir cartões.");
+         },
+      }),
+   );
+
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
       (updater) => {
          const next =
@@ -202,13 +216,17 @@ function CreditCardsList() {
          cancelLabel: "Cancelar",
          variant: "destructive",
          onAction: async () => {
-            await Promise.all(
-               selectedIds.map((id) => deleteMutation.mutateAsync({ id })),
-            );
+            await bulkDeleteMutation.mutateAsync({ ids: selectedIds });
             onClear();
          },
       });
-   }, [openAlertDialog, selectedCount, selectedIds, deleteMutation, onClear]);
+   }, [
+      openAlertDialog,
+      selectedCount,
+      selectedIds,
+      bulkDeleteMutation,
+      onClear,
+   ]);
 
    const columns = buildCreditCardColumns();
 
@@ -298,23 +316,23 @@ function CreditCardsPage() {
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
-               <Button onClick={handleCreate}>
-                  <Plus className="size-4 mr-1" />
+               <Button
+                  className="flex items-center gap-2"
+                  onClick={handleCreate}
+               >
+                  <Plus className="size-4" />
                   Novo Cartão
                </Button>
             }
             description="Gerencie seus cartões de crédito"
             title="Cartões de Crédito"
          />
-         <ErrorBoundary
-            FallbackComponent={createErrorFallback({
-               errorTitle: "Erro ao carregar cartões",
-            })}
+         <QueryBoundary
+            fallback={<CreditCardsSkeleton />}
+            errorTitle="Erro ao carregar cartões"
          >
-            <Suspense fallback={<CreditCardsSkeleton />}>
-               <CreditCardsList />
-            </Suspense>
-         </ErrorBoundary>
+            <CreditCardsList />
+         </QueryBoundary>
       </main>
    );
 }

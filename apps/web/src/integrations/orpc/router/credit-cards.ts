@@ -1,4 +1,5 @@
 import {
+   bulkDeleteCreditCards,
    createCreditCard,
    deleteCreditCard,
    ensureCreditCardOwnership,
@@ -44,4 +45,11 @@ export const remove = protectedProcedure
       await ensureCreditCardOwnership(context.db, input.id, context.teamId);
       await deleteCreditCard(context.db, input.id);
       return { success: true };
+   });
+
+export const bulkRemove = protectedProcedure
+   .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
+   .handler(async ({ context, input }) => {
+      await bulkDeleteCreditCards(context.db, input.ids, context.teamId);
+      return { deleted: input.ids.length };
    });
