@@ -26,7 +26,8 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { ORPCError } from "@orpc/client";
 import dayjs from "dayjs";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
@@ -51,18 +52,6 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
    );
    const categories = categoriesResult;
 
-   const updateMutation = useMutation(
-      orpc.bills.update.mutationOptions({
-         onSuccess: () => {
-            toast.success("Conta atualizada com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao atualizar conta.");
-         },
-      }),
-   );
-
    const form = useForm({
       defaultValues: {
          type: bill.type as "payable" | "receivable",
@@ -73,21 +62,36 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
          categoryId: bill.category?.id ?? "",
          description: "",
       },
-      onSubmit: async ({ value }) => {
-         await updateMutation.mutateAsync({
-            id: bill.id,
-            type: value.type,
-            name: value.name.trim(),
-            amount: value.amount,
-            dueDate: value.dueDate,
-            bankAccountId: value.bankAccountId || null,
-            categoryId: value.categoryId || null,
-            description: value.description?.trim() || null,
-         });
+      validators: {
+         onSubmitAsync: async ({ value }) => {
+            try {
+               await orpc.bills.update.call({
+                  id: bill.id,
+                  type: value.type,
+                  name: value.name.trim(),
+                  amount: value.amount,
+                  dueDate: value.dueDate,
+                  bankAccountId: value.bankAccountId || null,
+                  categoryId: value.categoryId || null,
+                  description: value.description?.trim() || null,
+               });
+               toast.success("Conta atualizada com sucesso.");
+               onSuccess();
+               return null;
+            } catch (err) {
+               if (err instanceof ORPCError && err.code === "CONFLICT") {
+                  return { form: "Já existe uma conta com esses dados." };
+               }
+               return {
+                  form:
+                     err instanceof Error
+                        ? err.message
+                        : "Erro ao atualizar conta.",
+               };
+            }
+         },
       },
    });
-
-   const isPending = updateMutation.isPending;
 
    return (
       <form
@@ -311,19 +315,34 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
             </FieldGroup>
          </CredenzaBody>
 
-         <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
+         <CredenzaFooter className="flex flex-col gap-2">
+            <form.Subscribe
+               selector={(state) =>
+                  state.errors.flatMap((e) => {
+                     if (!e) return [];
+                     if (typeof e === "string") return [e];
+                     if ("form" in e && typeof e.form === "string")
+                        return [e.form];
+                     return [];
+                  })
+               }
+            >
+               {(messages) =>
+                  messages.length > 0 && <FieldError errors={messages} />
+               }
+            </form.Subscribe>
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
                   <Button
                      className="w-full"
-                     disabled={
-                        !state.canSubmit || state.isSubmitting || isPending
-                     }
+                     disabled={!canSubmit}
                      type="submit"
                   >
-                     {(state.isSubmitting || isPending) && (
-                        <Spinner className="size-4 mr-2" />
-                     )}
+                     {isSubmitting && <Spinner className="size-4" />}
                      Salvar alterações
                   </Button>
                )}
