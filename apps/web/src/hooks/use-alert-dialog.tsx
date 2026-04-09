@@ -22,6 +22,7 @@ interface AlertDialogState {
    actionLabel: string;
    cancelLabel: string;
    onAction: () => void | Promise<void>;
+   onCancel?: () => void;
    variant: "default" | "destructive";
 }
 
@@ -31,6 +32,7 @@ const initialState: AlertDialogState = {
    description: "",
    isOpen: false,
    onAction: () => {},
+   onCancel: undefined,
    title: "",
    variant: "default",
 };
@@ -41,6 +43,7 @@ interface OpenAlertDialogOptions {
    title: string;
    description: string;
    onAction: () => void | Promise<void>;
+   onCancel?: () => void;
    actionLabel?: string;
    cancelLabel?: string;
    variant?: "default" | "destructive";
@@ -56,6 +59,7 @@ export const useAlertDialog = () => {
             description: options.description,
             isOpen: true,
             onAction: options.onAction,
+            onCancel: options.onCancel,
             title: options.title,
             variant: options.variant ?? "default",
          })),
@@ -73,6 +77,7 @@ export function GlobalAlertDialog() {
 
    const handleOpenChange = (open: boolean) => {
       if (!open) {
+         state.onCancel?.();
          alertDialogStore.setState(() => initialState);
       }
    };

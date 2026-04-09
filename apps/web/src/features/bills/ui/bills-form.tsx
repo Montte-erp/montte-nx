@@ -25,16 +25,6 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
-import {
-   AlertDialog,
-   AlertDialogAction,
-   AlertDialogCancel,
-   AlertDialogContent,
-   AlertDialogDescription,
-   AlertDialogFooter,
-   AlertDialogHeader,
-   AlertDialogTitle,
-} from "@packages/ui/components/alert-dialog";
 import { ORPCError } from "@orpc/client";
 import { useForm } from "@tanstack/react-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -43,6 +33,7 @@ import dayjs from "dayjs";
 import { QueryBoundary } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import type { BillRow } from "./bills-columns";
 
 interface BillFormProps {
@@ -102,293 +93,283 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
       },
    });
 
+   const { openAlertDialog } = useAlertDialog();
+
    const blocker = useBlocker({
       withResolver: true,
-      shouldBlockFn: () =>
-         form.store.state.isDirty && !form.store.state.isSubmitted,
+      shouldBlockFn: () => {
+         if (form.store.state.isDirty && !form.store.state.isSubmitted) {
+            openAlertDialog({
+               title: "Descartar alterações?",
+               description:
+                  "Você tem alterações não salvas. Tem certeza que deseja sair sem salvar?",
+               actionLabel: "Descartar alterações",
+               cancelLabel: "Continuar editando",
+               onAction: () => blocker.proceed(),
+               onCancel: () => blocker.reset(),
+            });
+            return true;
+         }
+         return false;
+      },
    });
 
    return (
-      <>
-         {blocker.status === "blocked" && (
-            <AlertDialog open>
-               <AlertDialogContent>
-                  <AlertDialogHeader>
-                     <AlertDialogTitle>Descartar alterações?</AlertDialogTitle>
-                     <AlertDialogDescription>
-                        Você tem alterações não salvas. Tem certeza que deseja
-                        sair sem salvar?
-                     </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                     <AlertDialogCancel onClick={() => blocker.reset()}>
-                        Continuar editando
-                     </AlertDialogCancel>
-                     <AlertDialogAction onClick={() => blocker.proceed()}>
-                        Descartar alterações
-                     </AlertDialogAction>
-                  </AlertDialogFooter>
-               </AlertDialogContent>
-            </AlertDialog>
-         )}
-         <form
-            onSubmit={(e) => {
-               e.preventDefault();
-               e.stopPropagation();
-               form.handleSubmit();
-            }}
-         >
-            <CredenzaHeader>
-               <CredenzaTitle>Editar Conta</CredenzaTitle>
-               <CredenzaDescription>
-                  Atualize as informações da conta.
-               </CredenzaDescription>
-            </CredenzaHeader>
+      <form
+         onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+         }}
+      >
+         <CredenzaHeader>
+            <CredenzaTitle>Editar Conta</CredenzaTitle>
+            <CredenzaDescription>
+               Atualize as informações da conta.
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-            <CredenzaBody className="px-4">
-               <FieldGroup>
-                  <form.Field
-                     name="type"
-                     children={(field) => {
-                        const isInvalid =
-                           field.state.meta.isTouched &&
-                           field.state.meta.errors.length > 0;
-                        return (
-                           <Field data-invalid={isInvalid}>
-                              <FieldLabel>Tipo</FieldLabel>
-                              <Select
-                                 onValueChange={(v) => {
-                                    if (v === "payable" || v === "receivable") {
-                                       field.handleChange(v);
-                                    }
-                                 }}
-                                 value={field.state.value}
-                              >
-                                 <SelectTrigger>
-                                    <SelectValue placeholder="Selecione o tipo" />
-                                 </SelectTrigger>
-                                 <SelectContent>
-                                    <SelectItem value="payable">
-                                       A Pagar
-                                    </SelectItem>
-                                    <SelectItem value="receivable">
-                                       A Receber
-                                    </SelectItem>
-                                 </SelectContent>
-                              </Select>
-                              {isInvalid && (
-                                 <FieldError errors={field.state.meta.errors} />
-                              )}
-                           </Field>
-                        );
-                     }}
-                  />
-
-                  <form.Field
-                     name="name"
-                     children={(field) => {
-                        const isInvalid =
-                           field.state.meta.isTouched &&
-                           field.state.meta.errors.length > 0;
-                        return (
-                           <Field data-invalid={isInvalid}>
-                              <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
-                              <Input
-                                 id={field.name}
-                                 name={field.name}
-                                 aria-invalid={isInvalid}
-                                 onBlur={field.handleBlur}
-                                 onChange={(e) =>
-                                    field.handleChange(e.target.value)
+         <CredenzaBody className="px-4">
+            <FieldGroup>
+               <form.Field
+                  name="type"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel>Tipo</FieldLabel>
+                           <Select
+                              onValueChange={(v) => {
+                                 if (v === "payable" || v === "receivable") {
+                                    field.handleChange(v);
                                  }
-                                 placeholder="Ex: Aluguel, Energia Elétrica"
-                                 value={field.state.value}
-                              />
-                              {isInvalid && (
-                                 <FieldError errors={field.state.meta.errors} />
-                              )}
-                           </Field>
-                        );
-                     }}
-                  />
+                              }}
+                              value={field.state.value}
+                           >
+                              <SelectTrigger>
+                                 <SelectValue placeholder="Selecione o tipo" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 <SelectItem value="payable">
+                                    A Pagar
+                                 </SelectItem>
+                                 <SelectItem value="receivable">
+                                    A Receber
+                                 </SelectItem>
+                              </SelectContent>
+                           </Select>
+                           {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                           )}
+                        </Field>
+                     );
+                  }}
+               />
 
+               <form.Field
+                  name="name"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
+                           <Input
+                              id={field.name}
+                              name={field.name}
+                              aria-invalid={isInvalid}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              placeholder="Ex: Aluguel, Energia Elétrica"
+                              value={field.state.value}
+                           />
+                           {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                           )}
+                        </Field>
+                     );
+                  }}
+               />
+
+               <form.Field
+                  name="amount"
+                  children={(field) => (
+                     <Field>
+                        <FieldLabel>Valor</FieldLabel>
+                        <MoneyInput
+                           onChange={(v) =>
+                              field.handleChange(
+                                 v !== undefined ? String(v / 100) : "",
+                              )
+                           }
+                           value={
+                              field.state.value
+                                 ? Math.round(Number(field.state.value) * 100)
+                                 : 0
+                           }
+                           valueInCents={true}
+                        />
+                        <FieldError errors={field.state.meta.errors} />
+                     </Field>
+                  )}
+               />
+
+               <form.Field
+                  name="dueDate"
+                  children={(field) => (
+                     <Field>
+                        <FieldLabel>Data de Vencimento</FieldLabel>
+                        <DatePicker
+                           date={
+                              field.state.value
+                                 ? dayjs(field.state.value).toDate()
+                                 : undefined
+                           }
+                           onSelect={(d) =>
+                              field.handleChange(
+                                 d?.toISOString().substring(0, 10) ?? today,
+                              )
+                           }
+                        />
+                        <FieldError errors={field.state.meta.errors} />
+                     </Field>
+                  )}
+               />
+
+               {accounts.length > 0 && (
                   <form.Field
-                     name="amount"
+                     name="bankAccountId"
                      children={(field) => (
                         <Field>
-                           <FieldLabel>Valor</FieldLabel>
-                           <MoneyInput
-                              onChange={(v) =>
-                                 field.handleChange(
-                                    v !== undefined ? String(v / 100) : "",
-                                 )
-                              }
-                              value={
-                                 field.state.value
-                                    ? Math.round(
-                                         Number(field.state.value) * 100,
-                                      )
-                                    : 0
-                              }
-                              valueInCents={true}
-                           />
-                           <FieldError errors={field.state.meta.errors} />
+                           <FieldLabel>Conta Bancária</FieldLabel>
+                           <Select
+                              onValueChange={field.handleChange}
+                              value={field.state.value}
+                           >
+                              <SelectTrigger>
+                                 <SelectValue placeholder="Selecione uma conta (opcional)" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 {accounts.map((acc) => (
+                                    <SelectItem key={acc.id} value={acc.id}>
+                                       {acc.name}
+                                    </SelectItem>
+                                 ))}
+                              </SelectContent>
+                           </Select>
                         </Field>
                      )}
                   />
+               )}
 
-                  <form.Field
-                     name="dueDate"
-                     children={(field) => (
-                        <Field>
-                           <FieldLabel>Data de Vencimento</FieldLabel>
-                           <DatePicker
-                              date={
-                                 field.state.value
-                                    ? dayjs(field.state.value).toDate()
-                                    : undefined
+               <form.Subscribe selector={(s) => s.values.type}>
+                  {(billType) => {
+                     const categoryType =
+                        billType === "receivable" ? "income" : "expense";
+                     const filtered = categories.filter(
+                        (cat) => cat.type === categoryType,
+                     );
+                     if (filtered.length === 0) return null;
+                     return (
+                        <form.Field
+                           name="categoryId"
+                           children={(field) => (
+                              <Field>
+                                 <FieldLabel>Categoria</FieldLabel>
+                                 <Select
+                                    onValueChange={field.handleChange}
+                                    value={field.state.value}
+                                 >
+                                    <SelectTrigger>
+                                       <SelectValue placeholder="Selecione uma categoria (opcional)" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                       {filtered.map((cat) => (
+                                          <SelectItem
+                                             key={cat.id}
+                                             value={cat.id}
+                                          >
+                                             {cat.name}
+                                          </SelectItem>
+                                       ))}
+                                    </SelectContent>
+                                 </Select>
+                              </Field>
+                           )}
+                        />
+                     );
+                  }}
+               </form.Subscribe>
+
+               <form.Field
+                  name="description"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel htmlFor={field.name}>
+                              Descrição (opcional)
+                           </FieldLabel>
+                           <Textarea
+                              id={field.name}
+                              name={field.name}
+                              aria-invalid={isInvalid}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
                               }
-                              onSelect={(d) =>
-                                 field.handleChange(
-                                    d?.toISOString().substring(0, 10) ?? today,
-                                 )
-                              }
+                              placeholder="Observações sobre esta conta..."
+                              rows={2}
+                              value={field.state.value}
                            />
-                           <FieldError errors={field.state.meta.errors} />
                         </Field>
-                     )}
-                  />
+                     );
+                  }}
+               />
+            </FieldGroup>
+         </CredenzaBody>
 
-                  {accounts.length > 0 && (
-                     <form.Field
-                        name="bankAccountId"
-                        children={(field) => (
-                           <Field>
-                              <FieldLabel>Conta Bancária</FieldLabel>
-                              <Select
-                                 onValueChange={field.handleChange}
-                                 value={field.state.value}
-                              >
-                                 <SelectTrigger>
-                                    <SelectValue placeholder="Selecione uma conta (opcional)" />
-                                 </SelectTrigger>
-                                 <SelectContent>
-                                    {accounts.map((acc) => (
-                                       <SelectItem key={acc.id} value={acc.id}>
-                                          {acc.name}
-                                       </SelectItem>
-                                    ))}
-                                 </SelectContent>
-                              </Select>
-                           </Field>
-                        )}
-                     />
-                  )}
-
-                  <form.Subscribe selector={(s) => s.values.type}>
-                     {(billType) => {
-                        const categoryType =
-                           billType === "receivable" ? "income" : "expense";
-                        const filtered = categories.filter(
-                           (cat) => cat.type === categoryType,
-                        );
-                        if (filtered.length === 0) return null;
-                        return (
-                           <form.Field
-                              name="categoryId"
-                              children={(field) => (
-                                 <Field>
-                                    <FieldLabel>Categoria</FieldLabel>
-                                    <Select
-                                       onValueChange={field.handleChange}
-                                       value={field.state.value}
-                                    >
-                                       <SelectTrigger>
-                                          <SelectValue placeholder="Selecione uma categoria (opcional)" />
-                                       </SelectTrigger>
-                                       <SelectContent>
-                                          {filtered.map((cat) => (
-                                             <SelectItem
-                                                key={cat.id}
-                                                value={cat.id}
-                                             >
-                                                {cat.name}
-                                             </SelectItem>
-                                          ))}
-                                       </SelectContent>
-                                    </Select>
-                                 </Field>
-                              )}
-                           />
-                        );
-                     }}
-                  </form.Subscribe>
-
-                  <form.Field
-                     name="description"
-                     children={(field) => {
-                        const isInvalid =
-                           field.state.meta.isTouched &&
-                           field.state.meta.errors.length > 0;
-                        return (
-                           <Field data-invalid={isInvalid}>
-                              <FieldLabel htmlFor={field.name}>
-                                 Descrição (opcional)
-                              </FieldLabel>
-                              <Textarea
-                                 id={field.name}
-                                 name={field.name}
-                                 aria-invalid={isInvalid}
-                                 onBlur={field.handleBlur}
-                                 onChange={(e) =>
-                                    field.handleChange(e.target.value)
-                                 }
-                                 placeholder="Observações sobre esta conta..."
-                                 rows={2}
-                                 value={field.state.value}
-                              />
-                           </Field>
-                        );
-                     }}
-                  />
-               </FieldGroup>
-            </CredenzaBody>
-
-            <CredenzaFooter className="flex flex-col gap-2">
-               <form.Subscribe
-                  selector={(state) =>
-                     state.errors.flatMap((e) => {
-                        if (!e) return [];
-                        if (typeof e === "string") return [e];
-                        if ("form" in e && typeof e.form === "string")
-                           return [e.form];
-                        return [];
-                     })
-                  }
-               >
-                  {(messages) =>
-                     messages.length > 0 && <FieldError errors={messages} />
-                  }
-               </form.Subscribe>
-               <form.Subscribe
-                  selector={(state) =>
-                     [state.canSubmit, state.isSubmitting] as const
-                  }
-               >
-                  {([canSubmit, isSubmitting]) => (
-                     <Button
-                        className="w-full"
-                        disabled={!canSubmit}
-                        type="submit"
-                     >
-                        {isSubmitting && <Spinner className="size-4" />}
-                        Salvar alterações
-                     </Button>
-                  )}
-               </form.Subscribe>
-            </CredenzaFooter>
-         </form>
-      </>
+         <CredenzaFooter className="flex flex-col gap-2">
+            <form.Subscribe
+               selector={(state) =>
+                  state.errors.flatMap((e) => {
+                     if (!e) return [];
+                     if (typeof e === "string") return [e];
+                     if ("form" in e && typeof e.form === "string")
+                        return [e.form];
+                     return [];
+                  })
+               }
+            >
+               {(messages) =>
+                  messages.length > 0 && <FieldError errors={messages} />
+               }
+            </form.Subscribe>
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
+                  <Button
+                     className="w-full"
+                     disabled={!canSubmit}
+                     type="submit"
+                  >
+                     {isSubmitting && <Spinner className="size-4" />}
+                     Salvar alterações
+                  </Button>
+               )}
+            </form.Subscribe>
+         </CredenzaFooter>
+      </form>
    );
 }
 
