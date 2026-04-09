@@ -11,8 +11,8 @@ import {
 } from "@packages/ui/components/select";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
-import { useDebouncedValue } from "foxact/use-debounced-value";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDebouncedCallback } from "@tanstack/react-pacer";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { orpc } from "@/integrations/orpc/client";
 import { TransactionFilterPopover } from "./transaction-filter-popover";
 
@@ -141,31 +141,22 @@ export function TransactionFilterBar({
    );
 
    const [searchInput, setSearchInput] = useState(filters.search);
-   const debouncedSearch = useDebouncedValue(searchInput, 350);
 
-   const stableOnFiltersChange = useCallback(onFiltersChange, [
-      onFiltersChange,
-   ]);
    const filtersRef = useRef(filters);
    useEffect(() => {
       filtersRef.current = filters;
    });
 
-   const isMounted = useRef(false);
-   useEffect(() => {
-      if (!isMounted.current) {
-         isMounted.current = true;
-         return;
-      }
-      stableOnFiltersChange({
-         ...filtersRef.current,
-         search: debouncedSearch,
-         page: 1,
-      });
-   }, [debouncedSearch, stableOnFiltersChange]);
+   const debouncedFilterUpdate = useDebouncedCallback(
+      (value: string) => {
+         onFiltersChange({ ...filtersRef.current, search: value, page: 1 });
+      },
+      { wait: 350 },
+   );
 
    const handleSearchChange = (value: string) => {
       setSearchInput(value);
+      debouncedFilterUpdate(value);
    };
 
    const hasDateFilter = !!(filters.dateFrom || filters.dateTo);
