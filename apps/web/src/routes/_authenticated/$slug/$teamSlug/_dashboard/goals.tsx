@@ -17,8 +17,13 @@ import {
 } from "@packages/ui/components/empty";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import type { ColumnFiltersState, SortingState } from "@tanstack/react-table";
+import type {
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import {
    ChevronLeft,
@@ -31,7 +36,7 @@ import {
    Target,
    Trash2,
 } from "lucide-react";
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import { BudgetGoalDialogStack } from "@/features/budget-goals/ui/budget-goal-dialog-stack";
@@ -46,14 +51,38 @@ const [useGoalsTableState] =
       null,
    );
 
+const now = new Date();
+
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/goals",
 )({
-   loader: ({ context }) => {
-      const now = new Date();
+   validateSearch: z.object({
+      month: z
+         .number()
+         .int()
+         .min(1)
+         .max(12)
+         .catch(now.getMonth() + 1)
+         .default(now.getMonth() + 1),
+      year: z
+         .number()
+         .int()
+         .catch(now.getFullYear())
+         .default(now.getFullYear()),
+      sorting: z
+         .array(z.object({ id: z.string(), desc: z.boolean() }))
+         .catch([])
+         .default([]),
+      columnFilters: z
+         .array(z.object({ id: z.string(), value: z.unknown() }))
+         .catch([])
+         .default([]),
+   }),
+   loaderDeps: ({ search: { month, year } }) => ({ month, year }),
+   loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
          orpc.budgetGoals.getAll.queryOptions({
-            input: { month: now.getMonth() + 1, year: now.getFullYear() },
+            input: { month: deps.month, year: deps.year },
          }),
       );
       context.queryClient.prefetchQuery(
@@ -203,15 +232,39 @@ function MonthNavigation({
 // List
 // =============================================================================
 
-interface GoalsListProps {
-   month: number;
-   year: number;
-}
-
-function GoalsList({ month, year }: GoalsListProps) {
-   const [sorting, setSorting] = useState<SortingState>([]);
-   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+function GoalsList() {
+   const navigate = Route.useNavigate();
+   const { month, year, sorting, columnFilters } = Route.useSearch();
    const [tableState, setTableState] = useGoalsTableState();
+
+   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
+      (updater) => {
+         const next =
+            typeof updater === "function"
+               ? updater(sorting as SortingState)
+               : updater;
+         navigate({
+            search: (prev) => ({ ...prev, sorting: next }),
+            replace: true,
+         });
+      },
+      [navigate, sorting],
+   );
+
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
+      useCallback(
+         (updater) => {
+            const next =
+               typeof updater === "function"
+                  ? updater(columnFilters as ColumnFiltersState)
+                  : updater;
+            navigate({
+               search: (prev) => ({ ...prev, columnFilters: next }),
+               replace: true,
+            });
+         },
+         [navigate, columnFilters],
+      );
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
@@ -264,7 +317,7 @@ function GoalsList({ month, year }: GoalsListProps) {
       [openAlertDialog, deleteMutation],
    );
 
-   const columns = useMemo(() => buildBudgetGoalColumns(), []);
+   const columns = buildBudgetGoalColumns();
 
    if (goals.length === 0) {
       return (
@@ -290,10 +343,10 @@ function GoalsList({ month, year }: GoalsListProps) {
             columns={columns}
             data={goals}
             getRowId={(row) => row.id}
-            sorting={sorting}
-            onSortingChange={setSorting}
-            columnFilters={columnFilters}
-            onColumnFiltersChange={setColumnFilters}
+            sorting={sorting as SortingState}
+            onSortingChange={handleSortingChange}
+            columnFilters={columnFilters as ColumnFiltersState}
+            onColumnFiltersChange={handleColumnFiltersChange}
             tableState={tableState}
             onTableStateChange={setTableState}
             renderActions={({ row }) => (
@@ -329,10 +382,8 @@ function GoalsList({ month, year }: GoalsListProps) {
 // =============================================================================
 
 function GoalsPage() {
-   const [monthYear, setMonthYear] = useState({
-      month: new Date().getMonth() + 1,
-      year: new Date().getFullYear(),
-   });
+   const { month, year } = Route.useSearch();
+   const navigate = Route.useNavigate();
    const { openCredenza, closeCredenza } = useCredenza();
 
    const copyMutation = useMutation(
@@ -357,17 +408,17 @@ function GoalsPage() {
          children: (
             <BudgetGoalDialogStack
                mode="create"
-               month={monthYear.month}
+               month={month}
                onSuccess={closeCredenza}
-               year={monthYear.year}
+               year={year}
             />
          ),
       });
-   }, [openCredenza, closeCredenza, monthYear]);
+   }, [openCredenza, closeCredenza, month, year]);
 
    const handleCopyPreviousMonth = useCallback(() => {
-      copyMutation.mutate({ month: monthYear.month, year: monthYear.year });
-   }, [copyMutation, monthYear]);
+      copyMutation.mutate({ month, year });
+   }, [copyMutation, month, year]);
 
    return (
       <main className="flex flex-col gap-4">
@@ -396,12 +447,17 @@ function GoalsPage() {
             title="Metas"
          />
          <MonthNavigation
-            month={monthYear.month}
-            onChange={setMonthYear}
-            year={monthYear.year}
+            month={month}
+            onChange={(v) =>
+               navigate({
+                  search: (prev) => ({ ...prev, ...v }),
+                  replace: true,
+               })
+            }
+            year={year}
          />
          <Suspense fallback={<GoalsSkeleton />}>
-            <GoalsList month={monthYear.month} year={monthYear.year} />
+            <GoalsList />
          </Suspense>
       </main>
    );

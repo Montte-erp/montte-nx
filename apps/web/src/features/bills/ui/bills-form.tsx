@@ -26,13 +26,13 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
+import { useBlocker } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { Suspense } from "react";
-import { ErrorBoundary } from "react-error-boundary";
-import { createErrorFallback } from "@/components/query-boundary";
+import { QueryBoundary } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import type { BillRow } from "./bills-columns";
 
 interface BillFormProps {
@@ -43,25 +43,14 @@ interface BillFormProps {
 function BillFormInner({ bill, onSuccess }: BillFormProps) {
    const today = dayjs().format("YYYY-MM-DD");
 
-   const { data: accounts } = useSuspenseQuery(
-      orpc.bankAccounts.getAll.queryOptions({}),
-   );
-   const { data: categoriesResult } = useSuspenseQuery(
-      orpc.categories.getAll.queryOptions({}),
-   );
-   const categories = categoriesResult;
+   const [{ data: accounts }, { data: categories }] = useSuspenseQueries({
+      queries: [
+         orpc.bankAccounts.getAll.queryOptions({}),
+         orpc.categories.getAll.queryOptions({}),
+      ],
+   });
 
-   const updateMutation = useMutation(
-      orpc.bills.update.mutationOptions({
-         onSuccess: () => {
-            toast.success("Conta atualizada com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao atualizar conta.");
-         },
-      }),
-   );
+   const updateMutation = useMutation(orpc.bills.update.mutationOptions());
 
    const form = useForm({
       defaultValues: {
@@ -74,20 +63,47 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
          description: "",
       },
       onSubmit: async ({ value }) => {
-         await updateMutation.mutateAsync({
-            id: bill.id,
-            type: value.type,
-            name: value.name.trim(),
-            amount: value.amount,
-            dueDate: value.dueDate,
-            bankAccountId: value.bankAccountId || null,
-            categoryId: value.categoryId || null,
-            description: value.description?.trim() || null,
-         });
+         try {
+            await updateMutation.mutateAsync({
+               id: bill.id,
+               type: value.type,
+               name: value.name.trim(),
+               amount: value.amount,
+               dueDate: value.dueDate,
+               bankAccountId: value.bankAccountId || null,
+               categoryId: value.categoryId || null,
+               description: value.description?.trim() || null,
+            });
+            toast.success("Conta atualizada com sucesso.");
+            onSuccess();
+         } catch (err) {
+            toast.error(
+               err instanceof Error ? err.message : "Erro ao atualizar conta.",
+            );
+         }
       },
    });
 
-   const isPending = updateMutation.isPending;
+   const { openAlertDialog } = useAlertDialog();
+
+   const blocker = useBlocker({
+      withResolver: true,
+      shouldBlockFn: () => {
+         if (form.store.state.isDirty && !form.store.state.isSubmitted) {
+            openAlertDialog({
+               title: "Descartar alterações?",
+               description:
+                  "Você tem alterações não salvas. Tem certeza que deseja sair sem salvar?",
+               actionLabel: "Descartar alterações",
+               cancelLabel: "Continuar editando",
+               onAction: () => blocker.proceed?.(),
+               onCancel: () => blocker.reset?.(),
+            });
+            return true;
+         }
+         return false;
+      },
+   });
 
    return (
       <form
@@ -116,11 +132,11 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                         <Field data-invalid={isInvalid}>
                            <FieldLabel>Tipo</FieldLabel>
                            <Select
-                              onValueChange={(v) =>
-                                 field.handleChange(
-                                    v as "payable" | "receivable",
-                                 )
-                              }
+                              onValueChange={(v) => {
+                                 if (v === "payable" || v === "receivable") {
+                                    field.handleChange(v);
+                                 }
+                              }}
                               value={field.state.value}
                            >
                               <SelectTrigger>
@@ -311,19 +327,19 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
             </FieldGroup>
          </CredenzaBody>
 
-         <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
+         <CredenzaFooter className="flex flex-col gap-2">
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
                   <Button
                      className="w-full"
-                     disabled={
-                        !state.canSubmit || state.isSubmitting || isPending
-                     }
+                     disabled={!canSubmit}
                      type="submit"
                   >
-                     {(state.isSubmitting || isPending) && (
-                        <Spinner className="size-4 mr-2" />
-                     )}
+                     {isSubmitting && <Spinner className="size-4" />}
                      Salvar alterações
                   </Button>
                )}
@@ -348,14 +364,11 @@ function BillFormSkeleton() {
 
 export function BillForm(props: BillFormProps) {
    return (
-      <ErrorBoundary
-         FallbackComponent={createErrorFallback({
-            errorTitle: "Erro ao carregar conta",
-         })}
+      <QueryBoundary
+         fallback={<BillFormSkeleton />}
+         errorTitle="Erro ao carregar conta"
       >
-         <Suspense fallback={<BillFormSkeleton />}>
-            <BillFormInner {...props} />
-         </Suspense>
-      </ErrorBoundary>
+         <BillFormInner {...props} />
+      </QueryBoundary>
    );
 }

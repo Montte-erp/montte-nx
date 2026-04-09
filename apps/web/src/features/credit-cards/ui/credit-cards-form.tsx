@@ -1,4 +1,5 @@
 import { Button } from "@packages/ui/components/button";
+import { Spinner } from "@packages/ui/components/spinner";
 import {
    ColorPicker,
    ColorPickerAlpha,
@@ -29,12 +30,14 @@ import {
    PopoverContent,
    PopoverTrigger,
 } from "@packages/ui/components/popover";
-import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useBlocker } from "@tanstack/react-router";
 import Color from "color";
+import { fromPromise } from "neverthrow";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
 
 interface CreditCardFormProps {
    mode: "create" | "edit";
@@ -58,30 +61,13 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
       orpc.bankAccounts.getAll.queryOptions({}),
    );
 
-   const createMutation = useMutation(
-      orpc.creditCards.create.mutationOptions({
-         onSuccess: () => {
-            toast.success("Cartão de crédito criado com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao criar cartão de crédito.");
-         },
-      }),
-   );
+   const { openAlertDialog } = useAlertDialog();
 
+   const createMutation = useMutation(
+      orpc.creditCards.create.mutationOptions(),
+   );
    const updateMutation = useMutation(
-      orpc.creditCards.update.mutationOptions({
-         onSuccess: () => {
-            toast.success("Cartão de crédito atualizado com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(
-               error.message || "Erro ao atualizar cartão de crédito.",
-            );
-         },
-      }),
+      orpc.creditCards.update.mutationOptions(),
    );
 
    const form = useForm({
@@ -93,28 +79,63 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
          dueDay: card?.dueDay ?? 10,
          bankAccountId: card?.bankAccountId ?? "",
       },
-      onSubmit: async ({ value }) => {
-         if (isCreate) {
-            createMutation.mutate({
-               name: value.name.trim(),
-               color: value.color,
-               creditLimit: value.creditLimit,
-               closingDay: value.closingDay,
-               dueDay: value.dueDay,
-               bankAccountId: value.bankAccountId || "",
-            });
-         } else if (card) {
-            updateMutation.mutate({
-               id: card.id,
-               name: value.name.trim(),
-               color: value.color,
-               creditLimit: value.creditLimit,
-               closingDay: value.closingDay,
-               dueDay: value.dueDay,
-               bankAccountId: value.bankAccountId || undefined,
-            });
-         }
+      validators: {
+         onSubmitAsync: async ({ value }) => {
+            const promise = isCreate
+               ? createMutation.mutateAsync({
+                    name: value.name.trim(),
+                    color: value.color,
+                    creditLimit: value.creditLimit,
+                    closingDay: value.closingDay,
+                    dueDay: value.dueDay,
+                    bankAccountId: value.bankAccountId || "",
+                 })
+               : card
+                 ? updateMutation.mutateAsync({
+                      id: card.id,
+                      name: value.name.trim(),
+                      color: value.color,
+                      creditLimit: value.creditLimit,
+                      closingDay: value.closingDay,
+                      dueDay: value.dueDay,
+                      bankAccountId: value.bankAccountId || undefined,
+                   })
+                 : null;
+            if (!promise) return null;
+            const result = await fromPromise(promise, (e) => e);
+            if (result.isErr()) {
+               const err = result.error;
+               return err instanceof Error ? err.message : "Erro inesperado.";
+            }
+            toast.success(
+               isCreate
+                  ? "Cartão de crédito criado com sucesso."
+                  : "Cartão de crédito atualizado com sucesso.",
+            );
+            onSuccess();
+            return null;
+         },
       },
+   });
+
+   const blocker = useBlocker({
+      withResolver: true,
+      shouldBlockFn: () => {
+         if (form.store.state.isDirty && !form.store.state.isSubmitted) {
+            openAlertDialog({
+               title: "Descartar alterações?",
+               description:
+                  "Você tem alterações não salvas. Tem certeza que deseja sair sem salvar?",
+               actionLabel: "Descartar alterações",
+               cancelLabel: "Continuar editando",
+               onAction: () => blocker.proceed?.(),
+               onCancel: () => blocker.reset?.(),
+            });
+            return true;
+         }
+         return false;
+      },
+      disabled: isCreate,
    });
 
    return (
@@ -165,9 +186,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                               value={field.state.value}
                            />
                            {isInvalid && (
-                              <FieldError
-                                 errors={field.state.meta.errors as any}
-                              />
+                              <FieldError errors={field.state.meta.errors} />
                            )}
                         </Field>
                      );
@@ -281,9 +300,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                               value={field.state.value}
                            />
                            {isInvalid && (
-                              <FieldError
-                                 errors={field.state.meta.errors as any}
-                              />
+                              <FieldError errors={field.state.meta.errors} />
                            )}
                         </Field>
                      );
@@ -322,9 +339,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                               value={field.state.value}
                            />
                            {isInvalid && (
-                              <FieldError
-                                 errors={field.state.meta.errors as any}
-                              />
+                              <FieldError errors={field.state.meta.errors} />
                            )}
                         </Field>
                      );
@@ -354,24 +369,19 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
             </FieldGroup>
          </CredenzaBody>
 
-         <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
+         <CredenzaFooter className="flex flex-col gap-2">
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
                   <Button
-                     className="w-full"
-                     disabled={
-                        !state.canSubmit ||
-                        state.isSubmitting ||
-                        createMutation.isPending ||
-                        updateMutation.isPending
-                     }
+                     className="w-full gap-2"
+                     disabled={!canSubmit || isSubmitting}
                      type="submit"
                   >
-                     {(state.isSubmitting ||
-                        createMutation.isPending ||
-                        updateMutation.isPending) && (
-                        <Spinner className="size-4 mr-2" />
-                     )}
+                     {isSubmitting && <Spinner className="size-4" />}
                      {isCreate ? "Criar cartão" : "Salvar alterações"}
                   </Button>
                )}

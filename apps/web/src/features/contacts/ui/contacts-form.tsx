@@ -24,12 +24,16 @@ import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
 import type { MaskitoOptions } from "@maskito/core";
 import { useMaskito } from "@maskito/react";
+import { ORPCError } from "@orpc/client";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
+import { fromPromise } from "neverthrow";
 import { useStore } from "@tanstack/react-store";
+import { useBlocker } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import type { ContactRow } from "./contacts-columns";
 
 const phoneMaskOptions: MaskitoOptions = {
@@ -105,31 +109,59 @@ interface ContactFormProps {
 export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
    const isCreate = mode === "create";
 
+   const documentTypeDefault: "" | "cpf" | "cnpj" = contact?.documentType ?? "";
+
+   const createMutation = useMutation(orpc.contacts.create.mutationOptions());
+   const updateMutation = useMutation(orpc.contacts.update.mutationOptions());
+
    const form = useForm({
       defaultValues: {
          name: contact?.name ?? "",
-         type: contact?.type ?? ("cliente" as ContactRow["type"]),
+         type: contact?.type ?? ("cliente" satisfies ContactRow["type"]),
          email: contact?.email ?? "",
          phone: contact?.phone ?? "",
          document: contact?.document ?? "",
-         documentType: contact?.documentType ?? ("" as "" | "cpf" | "cnpj"),
+         documentType: documentTypeDefault,
          notes: contact?.notes ?? "",
       },
-      onSubmit: async ({ value }) => {
-         const payload = {
-            name: value.name.trim(),
-            type: value.type,
-            email: value.email?.trim() || null,
-            phone: value.phone?.trim() || null,
-            document: value.document?.trim() || null,
-            documentType: (value.documentType || null) as "cpf" | "cnpj" | null,
-            notes: value.notes?.trim() || null,
-         };
-         if (isCreate) {
-            createMutation.mutate(payload);
-         } else if (contact) {
-            updateMutation.mutate({ id: contact.id, ...payload });
-         }
+      validators: {
+         onSubmitAsync: async ({ value }) => {
+            const payload = {
+               name: value.name.trim(),
+               type: value.type,
+               email: value.email?.trim() || null,
+               phone: value.phone?.trim() || null,
+               document: value.document?.trim() || null,
+               documentType:
+                  value.documentType === "" ? null : value.documentType,
+               notes: value.notes?.trim() || null,
+            };
+            const promise = isCreate
+               ? createMutation.mutateAsync(payload)
+               : contact
+                 ? updateMutation.mutateAsync({ id: contact.id, ...payload })
+                 : null;
+
+            if (!promise) return null;
+
+            const result = await fromPromise(promise, (e) => e);
+
+            if (result.isErr()) {
+               const err = result.error;
+               if (err instanceof ORPCError && err.code === "CONFLICT") {
+                  return { fields: { document: "CNPJ/CPF já cadastrado." } };
+               }
+               return err instanceof Error ? err.message : "Erro inesperado.";
+            }
+
+            toast.success(
+               isCreate
+                  ? "Contato criado com sucesso."
+                  : "Contato atualizado com sucesso.",
+            );
+            onSuccess();
+            return null;
+         },
       },
    });
 
@@ -147,31 +179,27 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
    const phoneRef = useMaskito({ options: phoneMaskOptions });
    const documentRef = useMaskito({ options: documentMaskOptions });
 
-   const createMutation = useMutation(
-      orpc.contacts.create.mutationOptions({
-         onSuccess: () => {
-            toast.success("Contato criado com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao criar contato.");
-         },
-      }),
-   );
+   const { openAlertDialog } = useAlertDialog();
 
-   const updateMutation = useMutation(
-      orpc.contacts.update.mutationOptions({
-         onSuccess: () => {
-            toast.success("Contato atualizado com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao atualizar contato.");
-         },
-      }),
-   );
-
-   const isPending = createMutation.isPending || updateMutation.isPending;
+   const blocker = useBlocker({
+      withResolver: true,
+      shouldBlockFn: () => {
+         if (form.store.state.isDirty && !form.store.state.isSubmitted) {
+            openAlertDialog({
+               title: "Descartar alterações?",
+               description:
+                  "Você tem alterações não salvas. Tem certeza que deseja sair sem salvar?",
+               actionLabel: "Descartar alterações",
+               cancelLabel: "Continuar editando",
+               onAction: () => blocker.proceed?.(),
+               onCancel: () => blocker.reset?.(),
+            });
+            return true;
+         }
+         return false;
+      },
+      disabled: isCreate,
+   });
 
    return (
       <form
@@ -228,9 +256,15 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                      <Field>
                         <FieldLabel>Tipo *</FieldLabel>
                         <Select
-                           onValueChange={(v) =>
-                              field.handleChange(v as ContactRow["type"])
-                           }
+                           onValueChange={(v) => {
+                              if (
+                                 v === "cliente" ||
+                                 v === "fornecedor" ||
+                                 v === "ambos"
+                              ) {
+                                 field.handleChange(v);
+                              }
+                           }}
                            value={field.state.value}
                         >
                            <SelectTrigger>
@@ -255,9 +289,11 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                         <Field>
                            <FieldLabel>Tipo Doc.</FieldLabel>
                            <Select
-                              onValueChange={(v) =>
-                                 field.handleChange(v as "" | "cpf" | "cnpj")
-                              }
+                              onValueChange={(v) => {
+                                 if (v === "" || v === "cpf" || v === "cnpj") {
+                                    field.handleChange(v);
+                                 }
+                              }}
                               value={field.state.value}
                            >
                               <SelectTrigger>
@@ -275,9 +311,7 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                   <form.Field
                      name="document"
                      children={(field) => {
-                        const isInvalid =
-                           field.state.meta.isTouched &&
-                           field.state.meta.errors.length > 0;
+                        const isInvalid = field.state.meta.errors.length > 0;
                         return (
                            <Field
                               className="col-span-2"
@@ -305,6 +339,9 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                                        : "000.000.000-00"
                                  }
                               />
+                              {isInvalid && (
+                                 <FieldError errors={field.state.meta.errors} />
+                              )}
                            </Field>
                         );
                      }}
@@ -398,19 +435,19 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
             </FieldGroup>
          </CredenzaBody>
 
-         <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
+         <CredenzaFooter className="flex flex-col gap-2">
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
                   <Button
                      className="w-full gap-2"
-                     disabled={
-                        !state.canSubmit || state.isSubmitting || isPending
-                     }
+                     disabled={!canSubmit}
                      type="submit"
                   >
-                     {(state.isSubmitting || isPending) && (
-                        <Spinner className="size-4" />
-                     )}
+                     {isSubmitting && <Spinner className="size-4" />}
                      {isCreate ? "Criar contato" : "Salvar alterações"}
                   </Button>
                )}

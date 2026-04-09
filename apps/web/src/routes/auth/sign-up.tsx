@@ -11,7 +11,13 @@ import { defineStepper } from "@packages/ui/components/stepper";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { type FormEvent, useCallback, useTransition } from "react";
+import {
+   createContext,
+   type FormEvent,
+   useCallback,
+   useContext,
+   useTransition,
+} from "react";
 import { toast } from "sonner";
 import z from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
@@ -29,22 +35,176 @@ export const Route = createFileRoute("/auth/sign-up")({
    component: SignUpPage,
 });
 
+const signUpSchema = z
+   .object({
+      confirmPassword: z.string(),
+      email: z.email("Insira um endereco de email valido."),
+      name: z.string().min(2, "O campo deve ter no minimo 2 caracteres."),
+      password: z.string().min(8, "O campo deve ter no minimo 8 caracteres."),
+   })
+   .refine((data) => data.password === data.confirmPassword, {
+      message: "As senhas nao coincidem.",
+      path: ["confirmPassword"],
+   });
+
+function createSignUpForm() {
+   return useForm({
+      defaultValues: {
+         confirmPassword: "",
+         email: "",
+         name: "",
+         password: "",
+      },
+      validators: { onBlur: signUpSchema },
+   });
+}
+type SignUpFormApi = ReturnType<typeof createSignUpForm>;
+
+const SignUpFormContext = createContext<SignUpFormApi | null>(null);
+
+function useSignUpForm() {
+   const form = useContext(SignUpFormContext);
+   if (!form) throw new Error("useSignUpForm used outside provider");
+   return form;
+}
+
+function BasicInfoStep() {
+   const form = useSignUpForm();
+   return (
+      <>
+         <FieldGroup>
+            <form.Field
+               name="name"
+               children={(field) => {
+                  const isInvalid =
+                     field.state.meta.isTouched &&
+                     field.state.meta.errors.length > 0;
+                  return (
+                     <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
+                        <Input
+                           aria-invalid={isInvalid}
+                           autoComplete="name"
+                           id={field.name}
+                           name={field.name}
+                           onBlur={field.handleBlur}
+                           onChange={(e) => field.handleChange(e.target.value)}
+                           placeholder="Seu nome completo"
+                           value={field.state.value}
+                        />
+                        {isInvalid && (
+                           <FieldError errors={field.state.meta.errors} />
+                        )}
+                     </Field>
+                  );
+               }}
+            />
+         </FieldGroup>
+         <FieldGroup>
+            <form.Field
+               name="email"
+               children={(field) => {
+                  const isInvalid =
+                     field.state.meta.isTouched &&
+                     field.state.meta.errors.length > 0;
+                  return (
+                     <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                        <Input
+                           aria-invalid={isInvalid}
+                           autoComplete="email"
+                           id={field.name}
+                           name={field.name}
+                           onBlur={field.handleBlur}
+                           onChange={(e) => field.handleChange(e.target.value)}
+                           placeholder="seu@email.com"
+                           type="email"
+                           value={field.state.value}
+                        />
+                        {isInvalid && (
+                           <FieldError errors={field.state.meta.errors} />
+                        )}
+                     </Field>
+                  );
+               }}
+            />
+         </FieldGroup>
+      </>
+   );
+}
+
+function PasswordStep() {
+   const form = useSignUpForm();
+   return (
+      <>
+         <FieldGroup>
+            <form.Field
+               name="password"
+               children={(field) => {
+                  const isInvalid =
+                     field.state.meta.isTouched &&
+                     field.state.meta.errors.length > 0;
+                  return (
+                     <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Senha</FieldLabel>
+                        <PasswordInput
+                           aria-invalid={isInvalid}
+                           autoComplete="new-password"
+                           id={field.name}
+                           name={field.name}
+                           onBlur={field.handleBlur}
+                           onChange={(e) => field.handleChange(e.target.value)}
+                           placeholder="Minimo 8 caracteres"
+                           value={field.state.value}
+                        />
+                        {isInvalid && (
+                           <FieldError errors={field.state.meta.errors} />
+                        )}
+                     </Field>
+                  );
+               }}
+            />
+         </FieldGroup>
+         <FieldGroup>
+            <form.Field
+               name="confirmPassword"
+               children={(field) => {
+                  const isInvalid =
+                     field.state.meta.isTouched &&
+                     field.state.meta.errors.length > 0;
+                  return (
+                     <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>
+                           Confirmar Senha
+                        </FieldLabel>
+                        <PasswordInput
+                           aria-invalid={isInvalid}
+                           autoComplete="new-password"
+                           id={field.name}
+                           name={field.name}
+                           onBlur={field.handleBlur}
+                           onChange={(e) => field.handleChange(e.target.value)}
+                           placeholder="Repita a senha"
+                           value={field.state.value}
+                        />
+                        {isInvalid && (
+                           <FieldError errors={field.state.meta.errors} />
+                        )}
+                     </Field>
+                  );
+               }}
+            />
+         </FieldGroup>
+         <form.Subscribe selector={(state) => state.values.password}>
+            {(password) => <PasswordStrengthCard password={password} />}
+         </form.Subscribe>
+      </>
+   );
+}
+
 function SignUpPage() {
    const router = useRouter();
    const [isPending, startTransition] = useTransition();
-   const schema = z
-      .object({
-         confirmPassword: z.string(),
-         email: z.email("Insira um endereco de email valido."),
-         name: z.string().min(2, "O campo deve ter no minimo 2 caracteres."),
-         password: z
-            .string()
-            .min(8, "O campo deve ter no minimo 8 caracteres."),
-      })
-      .refine((data) => data.password === data.confirmPassword, {
-         message: "As senhas nao coincidem.",
-         path: ["confirmPassword"],
-      });
 
    const handleSignUp = useCallback(
       async (email: string, name: string, password: string) => {
@@ -87,7 +247,7 @@ function SignUpPage() {
          formApi.reset();
       },
       validators: {
-         onBlur: schema,
+         onBlur: signUpSchema,
       },
    });
 
@@ -102,243 +262,111 @@ function SignUpPage() {
       [form, startTransition],
    );
 
-   function BasicInfoStep() {
-      return (
-         <>
-            <FieldGroup>
-               <form.Field
-                  name="name"
-                  children={(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched &&
-                        field.state.meta.errors.length > 0;
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
-                           <Input
-                              aria-invalid={isInvalid}
-                              autoComplete="name"
-                              id={field.name}
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="Seu nome completo"
-                              value={field.state.value}
-                           />
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
-                        </Field>
-                     );
-                  }}
-               />
-            </FieldGroup>
-            <FieldGroup>
-               <form.Field
-                  name="email"
-                  children={(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched &&
-                        field.state.meta.errors.length > 0;
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>Email</FieldLabel>
-                           <Input
-                              aria-invalid={isInvalid}
-                              autoComplete="email"
-                              id={field.name}
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="seu@email.com"
-                              type="email"
-                              value={field.state.value}
-                           />
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
-                        </Field>
-                     );
-                  }}
-               />
-            </FieldGroup>
-         </>
-      );
-   }
-
-   // Internal component for password step
-   function PasswordStep() {
-      return (
-         <>
-            <FieldGroup>
-               <form.Field
-                  name="password"
-                  children={(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched &&
-                        field.state.meta.errors.length > 0;
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>Senha</FieldLabel>
-                           <PasswordInput
-                              aria-invalid={isInvalid}
-                              autoComplete="new-password"
-                              id={field.name}
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="Minimo 8 caracteres"
-                              value={field.state.value}
-                           />
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
-                        </Field>
-                     );
-                  }}
-               />
-            </FieldGroup>
-            <FieldGroup>
-               <form.Field
-                  name="confirmPassword"
-                  children={(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched &&
-                        field.state.meta.errors.length > 0;
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              Confirmar Senha
-                           </FieldLabel>
-                           <PasswordInput
-                              aria-invalid={isInvalid}
-                              autoComplete="new-password"
-                              id={field.name}
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="Repita a senha"
-                              value={field.state.value}
-                           />
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
-                        </Field>
-                     );
-                  }}
-               />
-            </FieldGroup>
-            <form.Subscribe selector={(state) => state.values.password}>
-               {(password) => <PasswordStrengthCard password={password} />}
-            </form.Subscribe>
-         </>
-      );
-   }
-
    return (
-      <Stepper.Provider>
-         {({ methods }) => (
-            <section className="flex flex-col gap-4 w-full">
-               {/* Header */}
-               <div className="text-center flex flex-col gap-2">
-                  <h1 className="text-3xl font-semibold font-serif">
-                     Cadastrar
-                  </h1>
-                  <p className="text-muted-foreground text-sm">
-                     Crie sua conta e comece a gerenciar seu negocio com IA.
-                  </p>
-               </div>
-
-               {/* Form */}
-               <div className="flex flex-col gap-4">
-                  <Stepper.Navigation>
-                     {steps.map((step) => (
-                        <Stepper.Step key={step.id} of={step.id}></Stepper.Step>
-                     ))}
-                  </Stepper.Navigation>
-                  <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-                     {methods.flow.switch({
-                        "basic-info": () => <BasicInfoStep />,
-                        password: () => <PasswordStep />,
-                     })}
-                     <Stepper.Controls className="flex w-full justify-between">
-                        <Button
-                           className="h-11"
-                           disabled={methods.state.isFirst}
-                           onClick={() => methods.navigation.prev()}
-                           type="button"
-                           variant="outline"
-                        >
-                           Voltar
-                        </Button>
-                        {methods.state.isLast ? (
-                           <form.Subscribe selector={(state) => state}>
-                              {(formState) => (
-                                 <Button
-                                    className="h-11"
-                                    disabled={
-                                       !formState.canSubmit ||
-                                       formState.isSubmitting ||
-                                       isPending
-                                    }
-                                    type="submit"
-                                    variant="default"
-                                 >
-                                    <span className="flex items-center gap-2">
-                                       {isPending && (
-                                          <Loader2 className="size-4 animate-spin" />
-                                       )}
-                                       Enviar
-                                    </span>
-                                 </Button>
-                              )}
-                           </form.Subscribe>
-                        ) : (
-                           <form.Subscribe
-                              selector={(state) => ({
-                                 emailValid: state.fieldMeta.email?.isValid,
-                                 nameValid: state.fieldMeta.name?.isValid,
-                              })}
-                           >
-                              {({ nameValid, emailValid }) => (
-                                 <Button
-                                    className="h-11"
-                                    disabled={!nameValid || !emailValid}
-                                    onClick={() => methods.navigation.next()}
-                                    type="button"
-                                 >
-                                    Proximo
-                                 </Button>
-                              )}
-                           </form.Subscribe>
-                        )}
-                     </Stepper.Controls>
-                  </form>
-               </div>
-
-               {/* Footer */}
-               <div className="text-sm text-center flex flex-col gap-4">
-                  <div className="flex gap-1 justify-center items-center">
-                     <span>Ja tem uma conta?</span>
-                     <Link
-                        className="text-primary font-medium hover:underline"
-                        to="/auth/sign-in"
-                     >
-                        Entre aqui
-                     </Link>
+      <SignUpFormContext.Provider value={form}>
+         <Stepper.Provider>
+            {({ methods }) => (
+               <section className="flex flex-col gap-4 w-full">
+                  <div className="text-center flex flex-col gap-2">
+                     <h1 className="text-3xl font-semibold font-serif">
+                        Cadastrar
+                     </h1>
+                     <p className="text-muted-foreground text-sm">
+                        Crie sua conta e comece a gerenciar seu negocio com IA.
+                     </p>
                   </div>
-                  <TermsAndPrivacyText />
-               </div>
-            </section>
-         )}
-      </Stepper.Provider>
+
+                  <div className="flex flex-col gap-4">
+                     <Stepper.Navigation>
+                        {steps.map((step) => (
+                           <Stepper.Step key={step.id} of={step.id} />
+                        ))}
+                     </Stepper.Navigation>
+                     <form
+                        className="flex flex-col gap-4"
+                        onSubmit={handleSubmit}
+                     >
+                        {methods.flow.switch({
+                           "basic-info": () => <BasicInfoStep />,
+                           password: () => <PasswordStep />,
+                        })}
+                        <Stepper.Controls className="flex w-full justify-between">
+                           <Button
+                              className="h-11"
+                              disabled={methods.state.isFirst}
+                              onClick={() => methods.navigation.prev()}
+                              type="button"
+                              variant="outline"
+                           >
+                              Voltar
+                           </Button>
+                           {methods.state.isLast ? (
+                              <form.Subscribe
+                                 selector={(state) =>
+                                    [
+                                       state.canSubmit,
+                                       state.isSubmitting,
+                                    ] as const
+                                 }
+                              >
+                                 {([canSubmit, isSubmitting]) => (
+                                    <Button
+                                       className="h-11"
+                                       disabled={
+                                          !canSubmit ||
+                                          isSubmitting ||
+                                          isPending
+                                       }
+                                       type="submit"
+                                       variant="default"
+                                    >
+                                       <span className="flex items-center gap-2">
+                                          {isPending && (
+                                             <Loader2 className="size-4 animate-spin" />
+                                          )}
+                                          Enviar
+                                       </span>
+                                    </Button>
+                                 )}
+                              </form.Subscribe>
+                           ) : (
+                              <form.Subscribe
+                                 selector={(state) => ({
+                                    emailValid: state.fieldMeta.email?.isValid,
+                                    nameValid: state.fieldMeta.name?.isValid,
+                                 })}
+                              >
+                                 {({ nameValid, emailValid }) => (
+                                    <Button
+                                       className="h-11"
+                                       disabled={!nameValid || !emailValid}
+                                       onClick={() => methods.navigation.next()}
+                                       type="button"
+                                    >
+                                       Proximo
+                                    </Button>
+                                 )}
+                              </form.Subscribe>
+                           )}
+                        </Stepper.Controls>
+                     </form>
+                  </div>
+
+                  <div className="text-sm text-center flex flex-col gap-4">
+                     <div className="flex gap-1 justify-center items-center">
+                        <span>Ja tem uma conta?</span>
+                        <Link
+                           className="text-primary font-medium hover:underline"
+                           to="/auth/sign-in"
+                        >
+                           Entre aqui
+                        </Link>
+                     </div>
+                     <TermsAndPrivacyText />
+                  </div>
+               </section>
+            )}
+         </Stepper.Provider>
+      </SignUpFormContext.Provider>
    );
 }

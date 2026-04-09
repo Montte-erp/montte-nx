@@ -20,11 +20,18 @@ import { Separator } from "@packages/ui/components/separator";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import {
+   useMutation,
+   useSuspenseQueries,
+   useSuspenseQuery,
+} from "@tanstack/react-query";
+import { useBlocker } from "@tanstack/react-router";
 import { PlusCircle, Trash2 } from "lucide-react";
-import { useTransition } from "react";
+import { fromPromise } from "neverthrow";
 import { toast } from "sonner";
+import { QueryBoundary } from "@/components/query-boundary";
 import { orpc } from "@/integrations/orpc/client";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import type { ServiceRow } from "./services-columns";
 
 type BillingCycle = "hourly" | "monthly" | "annual" | "one_time";
@@ -55,46 +62,51 @@ interface ServiceFormProps {
    onSuccess: () => void;
 }
 
+function ExistingVariants({ serviceId }: { serviceId: string }) {
+   const { data } = useSuspenseQuery(
+      orpc.services.getVariants.queryOptions({ input: { serviceId } }),
+   );
+   if (!data || data.length === 0) return null;
+   return (
+      <div className="flex flex-col gap-2">
+         <span className="text-xs text-muted-foreground">
+            Variantes existentes
+         </span>
+         {data.map((v) => (
+            <div
+               className="flex items-center justify-between p-2 border rounded-md text-sm"
+               key={v.id}
+            >
+               <span>{v.name}</span>
+               <span className="text-muted-foreground text-xs">
+                  {BILLING_CYCLE_LABELS[v.billingCycle as BillingCycle] ??
+                     v.billingCycle}
+               </span>
+            </div>
+         ))}
+      </div>
+   );
+}
+
 export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
    const isCreate = mode === "create";
-   const [isPending, startTransition] = useTransition();
 
-   const { data: categories } = useSuspenseQuery(
-      orpc.categories.getAll.queryOptions({}),
-   );
+   const [{ data: categories }, { data: tags }] = useSuspenseQueries({
+      queries: [
+         orpc.categories.getAll.queryOptions({}),
+         orpc.tags.getAll.queryOptions({}),
+      ],
+   });
 
-   const { data: tags } = useSuspenseQuery(orpc.tags.getAll.queryOptions({}));
+   const { openAlertDialog } = useAlertDialog();
 
-   const { data: existingVariants } = useQuery(
-      orpc.services.getVariants.queryOptions({
-         input: { serviceId: service?.id ?? "" },
-         enabled: !isCreate && !!service?.id,
-      }),
-   );
-
-   const createMutation = useMutation(
-      orpc.services.create.mutationOptions({
-         onError: (error) => {
-            toast.error(error.message || "Erro ao criar serviço.");
-         },
-      }),
-   );
-
-   const updateMutation = useMutation(
-      orpc.services.update.mutationOptions({
-         onError: (error) => {
-            toast.error(error.message || "Erro ao atualizar serviço.");
-         },
-      }),
-   );
-
+   const createMutation = useMutation(orpc.services.create.mutationOptions());
+   const updateMutation = useMutation(orpc.services.update.mutationOptions());
    const createVariantMutation = useMutation(
-      orpc.services.createVariant.mutationOptions({
-         onError: (error) => {
-            toast.error(error.message || "Erro ao criar variante.");
-         },
-      }),
+      orpc.services.createVariant.mutationOptions(),
    );
+
+   const emptyVariants: VariantFormValue[] = [];
 
    const form = useForm({
       defaultValues: {
@@ -103,62 +115,104 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
          basePrice: service?.basePrice ?? "0",
          categoryId: service?.categoryId ?? "",
          tagId: service?.tagId ?? "",
-         variants: [] as VariantFormValue[],
+         variants: emptyVariants,
       },
-      onSubmit: async ({ value }) => {
-         const categoryId = value.categoryId.trim() || undefined;
-         const tagId = value.tagId.trim() || undefined;
+      validators: {
+         onSubmitAsync: async ({ value }) => {
+            const categoryId = value.categoryId.trim() || undefined;
+            const tagId = value.tagId.trim() || undefined;
 
-         if (isCreate) {
-            const created = await createMutation.mutateAsync({
-               name: value.name.trim(),
-               description: value.description.trim() || undefined,
-               basePrice: value.basePrice,
-               categoryId,
-               tagId,
-            });
-
-            if (value.variants.length > 0) {
-               await Promise.all(
-                  value.variants.map((v) =>
-                     createVariantMutation.mutateAsync({
-                        serviceId: created.id,
-                        name: v.name.trim(),
-                        basePrice: v.basePrice,
-                        billingCycle: v.billingCycle as BillingCycle,
-                     }),
-                  ),
+            if (isCreate) {
+               const createResult = await fromPromise(
+                  createMutation.mutateAsync({
+                     name: value.name.trim(),
+                     description: value.description.trim() || undefined,
+                     basePrice: value.basePrice,
+                     categoryId,
+                     tagId,
+                  }),
+                  (e) => e,
                );
+               if (createResult.isErr()) {
+                  const err = createResult.error;
+                  return err instanceof Error
+                     ? err.message
+                     : "Erro inesperado.";
+               }
+               if (value.variants.length > 0) {
+                  const results = await Promise.allSettled(
+                     value.variants.map((v) =>
+                        createVariantMutation.mutateAsync({
+                           serviceId: createResult.value.id,
+                           name: v.name.trim(),
+                           basePrice: v.basePrice,
+                           billingCycle: v.billingCycle,
+                        }),
+                     ),
+                  );
+                  const failed = results.filter(
+                     (r) => r.status === "rejected",
+                  ).length;
+                  if (failed > 0) {
+                     toast.warning(
+                        `Serviço criado, mas ${failed} variante(s) falharam.`,
+                     );
+                  } else {
+                     toast.success("Serviço criado.");
+                  }
+               } else {
+                  toast.success("Serviço criado.");
+               }
+            } else if (service) {
+               const updateResult = await fromPromise(
+                  updateMutation.mutateAsync({
+                     id: service.id,
+                     name: value.name.trim(),
+                     description: value.description.trim() || undefined,
+                     basePrice: value.basePrice,
+                     categoryId,
+                     tagId,
+                  }),
+                  (e) => e,
+               );
+               if (updateResult.isErr()) {
+                  const err = updateResult.error;
+                  return err instanceof Error
+                     ? err.message
+                     : "Erro inesperado.";
+               }
+               toast.success("Serviço atualizado.");
             }
-
-            toast.success("Serviço criado.");
-         } else if (service) {
-            await updateMutation.mutateAsync({
-               id: service.id,
-               name: value.name.trim(),
-               description: value.description.trim() || undefined,
-               basePrice: value.basePrice,
-               categoryId,
-               tagId,
-            });
-            toast.success("Serviço atualizado.");
-         }
-
-         onSuccess();
+            onSuccess();
+            return null;
+         },
       },
    });
 
-   const mutationsPending =
-      createMutation.isPending ||
-      updateMutation.isPending ||
-      createVariantMutation.isPending;
+   const blocker = useBlocker({
+      withResolver: true,
+      shouldBlockFn: () => {
+         if (form.store.state.isDirty && !form.store.state.isSubmitted) {
+            openAlertDialog({
+               title: "Descartar alterações?",
+               description:
+                  "Você tem alterações não salvas. Tem certeza que deseja sair sem salvar?",
+               actionLabel: "Descartar alterações",
+               cancelLabel: "Continuar editando",
+               onAction: () => blocker.proceed?.(),
+               onCancel: () => blocker.reset?.(),
+            });
+            return true;
+         }
+         return false;
+      },
+      disabled: isCreate,
+   });
 
    const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      startTransition(async () => {
-         await form.handleSubmit();
-      });
+      form.handleSubmit();
    };
 
    return (
@@ -302,7 +356,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                      name="variants"
                      children={(field) => (
                         <Button
-                           className="h-7 text-xs"
+                           className="h-7 text-xs gap-2"
                            onClick={() =>
                               field.pushValue({
                                  name: "",
@@ -314,35 +368,21 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                            type="button"
                            variant="outline"
                         >
-                           <PlusCircle className="size-3.5 mr-1" />
+                           <PlusCircle className="size-3.5" />
                            Adicionar
                         </Button>
                      )}
                   />
                </div>
 
-               {!isCreate &&
-                  existingVariants &&
-                  existingVariants.length > 0 && (
-                     <div className="flex flex-col gap-2">
-                        <span className="text-xs text-muted-foreground">
-                           Variantes existentes
-                        </span>
-                        {existingVariants.map((v) => (
-                           <div
-                              className="flex items-center justify-between p-2 border rounded-md text-sm"
-                              key={v.id}
-                           >
-                              <span>{v.name}</span>
-                              <span className="text-muted-foreground text-xs">
-                                 {BILLING_CYCLE_LABELS[
-                                    v.billingCycle as BillingCycle
-                                 ] ?? v.billingCycle}
-                              </span>
-                           </div>
-                        ))}
-                     </div>
-                  )}
+               {!isCreate && service?.id && (
+                  <QueryBoundary
+                     errorTitle="Erro ao carregar variantes"
+                     fallback={null}
+                  >
+                     <ExistingVariants serviceId={service.id} />
+                  </QueryBoundary>
+               )}
 
                <form.Field
                   mode="array"
@@ -455,22 +495,19 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
             </div>
          </CredenzaBody>
 
-         <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
+         <CredenzaFooter className="flex flex-col gap-2">
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
                   <Button
-                     className="w-full"
-                     disabled={
-                        !state.canSubmit ||
-                        state.isSubmitting ||
-                        isPending ||
-                        mutationsPending
-                     }
+                     className="w-full gap-2"
+                     disabled={!canSubmit || isSubmitting}
                      type="submit"
                   >
-                     {(state.isSubmitting || isPending || mutationsPending) && (
-                        <Spinner className="size-4 mr-2" />
-                     )}
+                     {isSubmitting && <Spinner className="size-4" />}
                      {isCreate ? "Criar serviço" : "Salvar alterações"}
                   </Button>
                )}

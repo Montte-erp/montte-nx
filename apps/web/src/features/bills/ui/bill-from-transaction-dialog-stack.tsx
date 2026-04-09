@@ -26,9 +26,7 @@ import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
-import { Suspense } from "react";
-import { ErrorBoundary } from "react-error-boundary";
-import { createErrorFallback } from "@/components/query-boundary";
+import { QueryBoundary } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import { BillInstallmentPreview } from "./bill-installment-preview";
@@ -327,18 +325,22 @@ function BillFromTransactionDialogStackInner({
          </CredenzaBody>
 
          <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
                   <Button
                      disabled={
-                        !state.canSubmit ||
-                        state.isSubmitting ||
+                        !canSubmit ||
+                        isSubmitting ||
                         createFromTransactionMutation.isPending
                      }
                      form="bill-from-transaction-form"
                      type="submit"
                   >
-                     {(state.isSubmitting ||
+                     {(isSubmitting ||
                         createFromTransactionMutation.isPending) && (
                         <Spinner className="size-4 mr-2" />
                      )}
@@ -366,14 +368,11 @@ export function BillFromTransactionDialogStack(
    props: BillFromTransactionDialogStackProps,
 ) {
    return (
-      <ErrorBoundary
-         FallbackComponent={createErrorFallback({
-            errorTitle: "Erro ao carregar transação",
-         })}
+      <QueryBoundary
+         fallback={<BillFromTransactionDialogSkeleton />}
+         errorTitle="Erro ao carregar transação"
       >
-         <Suspense fallback={<BillFromTransactionDialogSkeleton />}>
-            <BillFromTransactionDialogStackInner {...props} />
-         </Suspense>
-      </ErrorBoundary>
+         <BillFromTransactionDialogStackInner {...props} />
+      </QueryBoundary>
    );
 }

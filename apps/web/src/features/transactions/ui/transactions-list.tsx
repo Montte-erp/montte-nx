@@ -99,8 +99,8 @@ export function TransactionsList({
       onClear,
    } = useRowSelection();
 
-   const { data: result } = useSuspenseQuery(
-      orpc.transactions.getAll.queryOptions({
+   const { data: result } = useSuspenseQuery({
+      ...orpc.transactions.getAll.queryOptions({
          input: {
             type: filters.type,
             dateFrom: filters.dateFrom,
@@ -115,7 +115,7 @@ export function TransactionsList({
             pageSize: filters.pageSize,
          },
       }),
-   );
+   });
 
    const { data: summary } = useSuspenseQuery(
       orpc.transactions.getSummary.queryOptions({

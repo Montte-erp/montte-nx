@@ -40,9 +40,8 @@ import {
    Settings,
    UserPlus,
 } from "lucide-react";
-import { Suspense, useCallback, useTransition } from "react";
-import { ErrorBoundary } from "react-error-boundary";
-import { createErrorFallback } from "@/components/query-boundary";
+import { useCallback, useTransition } from "react";
+import { QueryBoundary } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { CreateTeamForm } from "./-sidebar-scope-switcher/create-team-form";
 import { ManageOrganizationForm } from "./-sidebar-scope-switcher/manage-organization-form";
@@ -528,14 +527,11 @@ function SidebarScopeSwitcherContent() {
 
 export function SidebarScopeSwitcher() {
    return (
-      <ErrorBoundary
-         FallbackComponent={createErrorFallback({
-            errorTitle: "Erro ao carregar menu",
-         })}
+      <QueryBoundary
+         fallback={<SidebarScopeSwitcherSkeleton />}
+         errorTitle="Erro ao carregar menu"
       >
-         <Suspense fallback={<SidebarScopeSwitcherSkeleton />}>
-            <SidebarScopeSwitcherContent />
-         </Suspense>
-      </ErrorBoundary>
+         <SidebarScopeSwitcherContent />
+      </QueryBoundary>
    );
 }

@@ -32,12 +32,14 @@ import { Switch } from "@packages/ui/components/switch";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useBlocker } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ChevronLeft, Plus } from "lucide-react";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { orpc } from "@/integrations/orpc/client";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import type { TransactionRow } from "./transactions-columns";
 
 type TransactionType = "income" | "expense" | "transfer";
@@ -730,46 +732,15 @@ function TransactionDialogStackContent({
       orpc.creditCards.getAll.queryOptions({}),
    );
 
+   const { openAlertDialog } = useAlertDialog();
+
    const createMutation = useMutation(
-      orpc.transactions.create.mutationOptions({
-         onSuccess: () => {
-            toast.success("Lançamento criado com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao criar lançamento.");
-         },
-      }),
+      orpc.transactions.create.mutationOptions(),
    );
-
    const updateMutation = useMutation(
-      orpc.transactions.update.mutationOptions({
-         onSuccess: () => {
-            toast.success("Lançamento atualizado com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao atualizar lançamento.");
-         },
-      }),
+      orpc.transactions.update.mutationOptions(),
    );
-
-   const billCreateMutation = useMutation(
-      orpc.bills.create.mutationOptions({
-         onSuccess: () => {
-            toast.success("Conta a pagar criada com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao criar conta a pagar.");
-         },
-      }),
-   );
-
-   const isPending =
-      createMutation.isPending ||
-      updateMutation.isPending ||
-      billCreateMutation.isPending;
+   const billCreateMutation = useMutation(orpc.bills.create.mutationOptions());
 
    const emptyTagIds: string[] = [];
 
@@ -800,62 +771,104 @@ function TransactionDialogStackContent({
          recurringFrequency: null as string | null,
          recurringCount: null as number | null,
       },
-      onSubmit: ({ value }) => {
-         const dateStr = value.date
-            ? dayjs(value.date).format("YYYY-MM-DD")
-            : "";
-         const isTransfer = value.type === "transfer";
+      validators: {
+         onSubmitAsync: async ({ value }) => {
+            const dateStr = value.date
+               ? dayjs(value.date).format("YYYY-MM-DD")
+               : "";
+            const isTransfer = value.type === "transfer";
 
-         if (isCreate && value.createAsBill && value.type === "expense") {
-            billCreateMutation.mutate({
-               bill: {
-                  name: value.name?.trim() || "Despesa",
-                  type: "payable",
+            try {
+               if (isCreate && value.createAsBill && value.type === "expense") {
+                  await billCreateMutation.mutateAsync({
+                     bill: {
+                        name: value.name?.trim() || "Despesa",
+                        type: "payable",
+                        amount: value.amount,
+                        dueDate: dateStr,
+                        bankAccountId: value.bankAccountId || null,
+                        categoryId: value.categoryId || null,
+                        description: value.description || null,
+                     },
+                  });
+                  toast.success("Conta a pagar criada com sucesso.");
+                  onSuccess();
+                  return null;
+               }
+
+               const tagIdsTouched =
+                  form.getFieldMeta("tagIds")?.isTouched ?? false;
+
+               const payload = {
+                  type: value.type,
+                  name: value.name?.trim() || null,
                   amount: value.amount,
-                  dueDate: dateStr,
+                  date: dateStr,
                   bankAccountId: value.bankAccountId || null,
-                  categoryId: value.categoryId || null,
+                  destinationBankAccountId: isTransfer
+                     ? value.destinationBankAccountId || null
+                     : null,
+                  categoryId: isTransfer ? null : value.categoryId || null,
+                  subcategoryId: isTransfer
+                     ? null
+                     : value.subcategoryId || null,
+                  attachments: [] as Attachment[],
+                  tagIds: isCreate || tagIdsTouched ? value.tagIds : undefined,
                   description: value.description || null,
-               },
-            });
-            return;
-         }
+                  contactId: value.contactId,
+                  creditCardId:
+                     value.type === "expense"
+                        ? value.creditCardId || null
+                        : null,
+                  paymentMethod: (isTransfer
+                     ? null
+                     : value.paymentMethod || null) as PaymentMethod | null,
+                  isInstallment: isTransfer ? false : value.isInstallment,
+                  installmentCount:
+                     !isTransfer && value.isInstallment
+                        ? value.installmentCount
+                        : null,
+               };
 
-         const tagIdsTouched = form.getFieldMeta("tagIds")?.isTouched ?? false;
-
-         const payload = {
-            type: value.type,
-            name: value.name?.trim() || null,
-            amount: value.amount,
-            date: dateStr,
-            bankAccountId: value.bankAccountId || null,
-            destinationBankAccountId: isTransfer
-               ? value.destinationBankAccountId || null
-               : null,
-            categoryId: isTransfer ? null : value.categoryId || null,
-            subcategoryId: isTransfer ? null : value.subcategoryId || null,
-            attachments: [] as Attachment[],
-            tagIds: isCreate || tagIdsTouched ? value.tagIds : undefined,
-            description: value.description || null,
-            contactId: value.contactId,
-            creditCardId:
-               value.type === "expense" ? value.creditCardId || null : null,
-            paymentMethod: (isTransfer
-               ? null
-               : value.paymentMethod || null) as PaymentMethod | null,
-            isInstallment: isTransfer ? false : value.isInstallment,
-            installmentCount:
-               !isTransfer && value.isInstallment
-                  ? value.installmentCount
-                  : null,
-         };
-
-         if (isCreate) {
-            createMutation.mutate(payload);
-         } else if (transaction) {
-            updateMutation.mutate({ id: transaction.id, ...payload });
-         }
+               if (isCreate) {
+                  await createMutation.mutateAsync(payload);
+                  toast.success("Lançamento criado com sucesso.");
+               } else if (transaction) {
+                  await updateMutation.mutateAsync({
+                     id: transaction.id,
+                     ...payload,
+                  });
+                  toast.success("Lançamento atualizado com sucesso.");
+               }
+               onSuccess();
+               return null;
+            } catch (err) {
+               return {
+                  form: err instanceof Error ? err.message : "Erro inesperado.",
+               };
+            }
+         },
       },
+   });
+
+   const blocker = useBlocker({
+      withResolver: true,
+      shouldBlockFn: () => {
+         if (form.store.state.isDirty && !form.store.state.isSubmitted) {
+            openAlertDialog({
+               title: "Descartar alterações?",
+               description:
+                  "Você tem alterações não salvas. Tem certeza que deseja sair sem salvar?",
+               actionLabel: "Descartar alterações",
+               cancelLabel: "Continuar editando",
+               onAction: () => blocker.proceed?.(),
+               onCancel: () => blocker.reset?.(),
+            });
+            return true;
+         }
+         return false;
+      },
+      disabled: isCreate,
    });
 
    if (secondaryForm) {
@@ -1106,7 +1119,7 @@ function TransactionDialogStackContent({
                                                    </span>
                                                 </FieldLabel>
                                                 <MoneyInput
-                                                   disabled={isPending}
+                                                   disabled={false}
                                                    onChange={(value) =>
                                                       field.handleChange(
                                                          String(value ?? 0),
@@ -1324,7 +1337,7 @@ function TransactionDialogStackContent({
                                                    </span>
                                                 </FieldLabel>
                                                 <MoneyInput
-                                                   disabled={isPending}
+                                                   disabled={false}
                                                    onChange={(value) =>
                                                       field.handleChange(
                                                          String(value ?? 0),
@@ -1948,28 +1961,48 @@ function TransactionDialogStackContent({
                )}
             </FieldGroup>
          </CredenzaBody>
-         <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(formState) => {
-                  const createAsBill =
+         <CredenzaFooter className="flex flex-col gap-2">
+            <form.Subscribe
+               selector={(state) =>
+                  typeof state.errorMap.onSubmit === "object" &&
+                  state.errorMap.onSubmit !== null &&
+                  "form" in state.errorMap.onSubmit
+                     ? String(state.errorMap.onSubmit.form)
+                     : null
+               }
+            >
+               {(formError) =>
+                  formError && (
+                     <p className="text-sm text-destructive text-center">
+                        {formError}
+                     </p>
+                  )
+               }
+            </form.Subscribe>
+            <form.Subscribe
+               selector={(state) => ({
+                  canSubmit: state.canSubmit,
+                  isSubmitting: state.isSubmitting,
+                  createAsBill:
                      isCreate &&
-                     formState.values.createAsBill &&
-                     formState.values.type === "expense";
-                  return (
-                     <Button
-                        className="w-full"
-                        disabled={!formState.canSubmit || isPending}
-                        type="submit"
-                     >
-                        {isPending ? <Spinner className="size-4 mr-2" /> : null}
-                        {createAsBill
-                           ? "Criar conta a pagar"
-                           : isCreate
-                             ? "Criar lançamento"
-                             : "Salvar alterações"}
-                     </Button>
-                  );
-               }}
+                     state.values.createAsBill &&
+                     state.values.type === "expense",
+               })}
+            >
+               {({ canSubmit, isSubmitting, createAsBill }) => (
+                  <Button
+                     className="w-full gap-2"
+                     disabled={!canSubmit || isSubmitting}
+                     type="submit"
+                  >
+                     {isSubmitting ? <Spinner className="size-4" /> : null}
+                     {createAsBill
+                        ? "Criar conta a pagar"
+                        : isCreate
+                          ? "Criar lançamento"
+                          : "Salvar alterações"}
+                  </Button>
+               )}
             </form.Subscribe>
          </CredenzaFooter>
       </form>

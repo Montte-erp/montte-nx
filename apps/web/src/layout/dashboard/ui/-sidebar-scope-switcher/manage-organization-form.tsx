@@ -306,16 +306,18 @@ export function ManageOrganizationForm({
             </CredenzaBody>
 
             <CredenzaFooter>
-               <form.Subscribe selector={(state) => state}>
-                  {(state) => (
+               <form.Subscribe
+                  selector={(state) =>
+                     [state.canSubmit, state.isSubmitting] as const
+                  }
+               >
+                  {([canSubmit, isSubmitting]) => (
                      <Button
                         className="w-full"
-                        disabled={
-                           !state.canSubmit || state.isSubmitting || isPending
-                        }
+                        disabled={!canSubmit || isSubmitting || isPending}
                         type="submit"
                      >
-                        {state.isSubmitting || isPending
+                        {isSubmitting || isPending
                            ? isEditMode
                               ? "Saving..."
                               : "Creating..."

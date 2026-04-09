@@ -130,6 +130,46 @@ export const bulkRemove = protectedProcedure
 - `input` goes INSIDE `queryOptions()`. Mutation callbacks go INSIDE `mutationOptions()`.
 - Global `MutationCache` in `root-provider.tsx` invalidates all queries after every mutation — per-mutation invalidation only needed for cross-tree queries.
 
+**Hook selection:**
+
+| Need | Hook |
+| ---- | ---- |
+| Single query (default) | `useSuspenseQuery` |
+| Multiple independent queries in same component | `useSuspenseQueries` — avoids waterfall |
+| Conditional query (depends on user input/state) | Child component pattern — see below |
+| Subscribe to partial query data | `useSuspenseQuery` + `select` option |
+| Prefetch before render | `queryClient.prefetchQuery` in route loader |
+| Track mutation state cross-component | `useMutationState` + `orpc.procedure.mutationKey()` |
+
+**Key rules:**
+- **Never `useQuery`** — always `useSuspenseQuery`. No exceptions.
+- **Never `useQuery + enabled`** — use the child component pattern instead (see below).
+- **Never `skipToken + useSuspenseQuery`** — `UseSuspenseQueryOptions` does not support `skipToken`. Use child component pattern.
+- **`useSuspenseQueries`** for 2+ independent queries in the same component — prevents React from suspending sequentially (waterfall).
+- **`select` aggressively** — whenever a component needs only part of a query response, use `select` to derive the exact shape needed. This eliminates `useState` for derived values, prevents re-renders from unrelated field changes, and removes the need for intermediate variables or `useMemo`. Prefer `select` over storing values in separate state:
+  ```tsx
+  // ❌ Redundant state derived from query
+  const { data: service } = useSuspenseQuery(orpc.services.getById.queryOptions({ input: { id } }));
+  const [price, setPrice] = useState(service.basePrice);
+
+  // ✅ select gives you exactly what you need — no extra state
+  const { data: price } = useSuspenseQuery({
+     ...orpc.services.getById.queryOptions({ input: { id } }),
+     select: (s) => s.basePrice,
+  });
+  ```
+- **URL search params over `useState` for any shareable UI state** — filters, sort, pagination, selected tab, open/closed panels, active IDs — anything that benefits from being bookmarkable or surviving a refresh belongs in `validateSearch`. Use `navigate({ search: (prev) => ({ ...prev, key: value }), replace: true })` to update. This eliminates entire classes of local state and keeps components stateless:
+  ```tsx
+  // ❌ Local state lost on refresh, not shareable
+  const [activeTab, setActiveTab] = useState("overview");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // ✅ URL params — survives refresh, shareable, drives loaders
+  const { activeTab, selectedId } = Route.useSearch();
+  navigate({ search: (prev) => ({ ...prev, activeTab: "details" }), replace: true });
+  ```
+- **`orpc.procedure.mutationKey()` / `orpc.procedure.queryKey()`** — always use oRPC-generated keys; never define manual string arrays.
+
 **Type inference** — never define manual interfaces for router data:
 
 ```typescript
@@ -145,25 +185,117 @@ Zod schemas belong in the backend. Frontend only imports inferred types via `Inp
 ## TanStack Form Pattern
 
 - **Schema at module level** — never define `z.object({...})` inside a component.
-- **`isInvalid` check** — `field.state.meta.isTouched && field.state.meta.errors.length > 0`.
+- **`isInvalid` check** — `field.state.meta.isTouched && field.state.meta.errors.length > 0` for client-validated fields. For fields that receive server errors via `onSubmitAsync` (e.g. the conflict field), drop `isTouched`: `field.state.meta.errors.length > 0` — so the injected error shows immediately without prior interaction.
 - **Accessibility** — always set `id`, `name`, `aria-invalid` on inputs; `htmlFor` on `<FieldLabel>`.
 - **`children` prop** — always use `children={(field) => ...}` as explicit JSX prop.
+- **`onSubmitAsync` — only when inline field errors matter** — use only for forms where a server conflict maps to a specific visible field (e.g. duplicate CPF/CNPJ on contacts, duplicate apelido on bank accounts). For generic CRUD forms, use plain `onSubmit` + `toast.error`. Define mutations with `useMutation` outside the form; call `mutateAsync` inside the validator. Use `fromPromise` from `neverthrow` instead of try/catch:
+  ```tsx
+  import { fromPromise } from "neverthrow";
+
+  const createMutation = useMutation(orpc.x.create.mutationOptions());
+
+  const form = useForm({
+    validators: {
+      onSubmitAsync: async ({ value }) => {
+        const result = await fromPromise(createMutation.mutateAsync(value), (e) => e);
+        if (result.isErr()) {
+          const err = result.error;
+          if (err instanceof ORPCError && err.code === "CONFLICT") {
+            return { fields: { fieldName: "Já existe um registro com esse valor." } };
+          }
+          return err instanceof Error ? err.message : "Erro inesperado.";
+        }
+        toast.success("Criado com sucesso.");
+        onSuccess();
+        return null;
+      },
+    },
+  });
+  ```
+- **Field error from server** — return `{ fields: { fieldName: "message" } }` from `onSubmitAsync`; TanStack Form injects into `field.state.meta.errors`. Set `isInvalid = field.state.meta.errors.length > 0` (drop `isTouched` check) so the error shows immediately without prior user interaction.
+- **No footer error display** — don't render a footer error paragraph. Errors go on the field they belong to. Generic errors (non-CONFLICT) return a plain string which TanStack Form stores in `state.errorMap.onSubmit` — but prefer `toast.error` for those instead.
+- **Multi-step forms with nested components** — use a local React context so step components defined outside the parent can access the form without prop drilling. To type the context, use a factory function (never `ReturnType<typeof useForm<T>>` — TypeScript does not allow generic type arguments on `typeof` references):
+  ```tsx
+  function createMyForm() {
+    return useForm({ defaultValues: { ... }, validators: { ... } });
+  }
+  type MyFormApi = ReturnType<typeof createMyForm>;
+
+  const FormCtx = createContext<MyFormApi | null>(null);
+  function useMyForm() {
+     const f = useContext(FormCtx);
+     if (!f) throw new Error("...");
+     return f;
+  }
+  // Step components call useMyForm() — no props needed
+  // Parent wraps: <FormCtx.Provider value={form}>...</FormCtx.Provider>
+  ```
+- **Selective `form.Subscribe`** — always use a specific selector, never `selector={(state) => state}`. For submit buttons use `[state.canSubmit, state.isSubmitting] as const` and destructure.
+- **Navigation guard** — add `useBlocker` from `@tanstack/react-router` to edit forms. Use `withResolver: true` and `shouldBlockFn`. Always use optional chaining on `blocker.proceed?.()` and `blocker.reset?.()` — they are only defined when the blocker is in `"blocked"` state (TS2722 otherwise). Use `useAlertDialog` to prompt the user:
+  ```tsx
+  const blocker = useBlocker({
+     withResolver: true,
+     shouldBlockFn: () => {
+       if (form.store.state.isDirty && !form.store.state.isSubmitted) {
+         openAlertDialog({
+           title: "Descartar alterações?",
+           description: "Você tem alterações não salvas. Tem certeza que deseja sair sem salvar?",
+           actionLabel: "Descartar alterações",
+           cancelLabel: "Continuar editando",
+           onAction: () => blocker.proceed?.(),
+           onCancel: () => blocker.reset?.(),
+         });
+         return true;
+       }
+       return false;
+     },
+     disabled: isCreate, // skip for create-only forms
+  });
+  ```
 
 ---
 
 ## Suspense, Error Boundaries & Empty States
 
-Every `useSuspenseQuery` component must be wrapped in `<ErrorBoundary>` (outer) + `<Suspense>` (inner):
+Every `useSuspenseQuery` component must be wrapped in `<QueryBoundary>` from `@/components/query-boundary` — never raw `ErrorBoundary + Suspense`:
 
 ```tsx
-<ErrorBoundary FallbackComponent={createErrorFallback({ errorTitle: "Erro ao carregar" })}>
-   <Suspense fallback={<MyPageSkeleton />}>
-      <MyPageContent />
-   </Suspense>
-</ErrorBoundary>
+<QueryBoundary fallback={<MyPageSkeleton />} errorTitle="Erro ao carregar">
+   <MyPageContent />
+</QueryBoundary>
 ```
 
-`createErrorFallback` from `@packages/ui/components/error-fallback`. `fallback={null}` only for invisible-while-loading components.
+`QueryBoundary` wraps `QueryErrorResetBoundary` + `ErrorBoundary` + `Suspense` internally. Use `errorFallback` prop for custom fallback components. `fallback={null}` only for invisible-while-loading components.
+
+**Parallel queries** — replace multiple sequential `useSuspenseQuery` calls with `useSuspenseQueries` to eliminate waterfall:
+```tsx
+const [{ data: session }, { data: teams }] = useSuspenseQueries({
+   queries: [orpc.session.getSession.queryOptions({}), orpc.organization.getOrganizationTeams.queryOptions({})],
+});
+```
+
+**Conditional queries** — extract a child component that calls `useSuspenseQuery` unconditionally; the parent renders it only when the input is ready:
+```tsx
+function ItemDetails({ id }: { id: string }) {
+   const { data } = useSuspenseQuery(
+      orpc.procedure.queryOptions({ input: { id } }),
+   );
+   return <div>{data.name}</div>;
+}
+
+// Parent:
+{selectedId && (
+   <Suspense fallback={<Skeleton />}>
+      <ItemDetails id={selectedId} />
+   </Suspense>
+)}
+```
+Never use `skipToken` with `useSuspenseQuery` — it is not supported in TanStack Query v5.
+
+**`skipToken` with oRPC** — only valid inside `queryOptions` as the `input` value when using `useQuery` (rare):
+```tsx
+orpc.procedure.queryOptions({ input: condition ? { id } : skipToken })
+```
 
 **Empty states** — always use `Empty`/`EmptyHeader`/`EmptyMedia`/`EmptyTitle`/`EmptyDescription`/`EmptyContent` from `@packages/ui/components/empty`. Never build custom empty states with raw divs.
 
@@ -183,7 +315,7 @@ Every `useSuspenseQuery` component must be wrapped in `<ErrorBoundary>` (outer) 
 - **Early returns over if/else** — always guard and return early; never use `else` after a `return`.
 - **Minimize `useEffect`** — derive state, use event handlers. Only for external system sync.
 - **Dates** — always `dayjs`. Never raw `Date` math or manual string formatting.
-- **URL search params over local state** — filters, sort, pagination live in `validateSearch` on the route.
+- **URL search params over local state** — filters, sort, pagination, active tabs, selected IDs live in `validateSearch` on the route. See oRPC + TanStack Query section for the full pattern.
 - **Files:** kebab-case. **Components:** PascalCase `[Feature][Action][Type]`. **Hooks:** `use[Feature][Action]`.
 - **oxlint suppression:** `// oxlint-ignore <rule-name>` above the triggering line.
 - **Array index keys:** `` key={`step-${index + 1}`} `` over suppressing `noArrayIndexKey`.
@@ -493,14 +625,48 @@ SSR-safe hook library — import each from its own subpath. Never use `@uidotdev
 | localStorage (fixed key, syncs tabs) | `foxact/create-local-storage-state` |
 | sessionStorage | `foxact/use-session-storage` |
 | Media queries | `foxact/use-media-query` |
-| Debounce (derived values only) | `foxact/use-debounced-value` |
 | Context guard | `foxact/invariant` |
 | Merge refs | `foxact/merge-refs` |
 | SSR-safe layout effect | `foxact/use-isomorphic-layout-effect` |
 
 - All localStorage keys prefixed `montte:`.
 - Prefer `createClientOnlyFn` / `createIsomorphicFn` from `@tanstack/react-start` over `typeof window === 'undefined'` guards.
-- For debouncing callbacks (side effects), use `useDebouncedCallback` from `@tanstack/react-pacer`.
+
+---
+
+## TanStack Pacer
+
+Use `@tanstack/react-pacer` for all debounce, throttle, and rate-limiting needs. Never use `foxact/use-debounced-value`.
+
+| Hook | Use for |
+| ---- | ------- |
+| `useDebouncedCallback` | Sync callbacks (search input → URL/state update) |
+| `useAsyncDebouncedCallback` | Async callbacks (fetch, `mutateAsync`) — handles race conditions |
+| `useThrottledCallback` | Callbacks with limited frequency (scroll, resize handlers) |
+| `useThrottledValue` | Throttled derived values (scroll position for animations) |
+| `useRateLimiter` | Hard limit on action frequency (e.g. 3 exports per minute) |
+
+**Key rules:**
+- If the debounced function is `async` or calls `mutateAsync`, always use `useAsyncDebouncedCallback` — not `useDebouncedCallback`.
+- Never combine `foxact/use-debounced-value` + `useEffect` to debounce a callback. Use `useDebouncedCallback` directly.
+- Options object syntax: `{ wait: 350 }` (not positional).
+
+```typescript
+// ✅ Sync callback (search input)
+const handleSearch = useDebouncedCallback(
+   (value: string) => navigate({ search: (p) => ({ ...p, q: value }) }),
+   { wait: 350 },
+);
+
+// ✅ Async callback (CNPJ lookup, duplicate check)
+const fetchData = useAsyncDebouncedCallback(
+   async (value: string) => {
+      const result = await someMutation.mutateAsync({ value });
+      setResult(result);
+   },
+   { wait: 400 },
+);
+```
 
 ---
 

@@ -25,15 +25,68 @@ import {
 } from "@packages/ui/components/select";
 import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { useMemo, useState, useTransition } from "react";
+import { Suspense, useMemo, useState, useTransition } from "react";
+import { Skeleton } from "@packages/ui/components/skeleton";
 import { toast } from "sonner";
+import type { AnyFieldMeta } from "@tanstack/react-form";
+import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
+
+type ServiceVariant = Outputs["services"]["getVariants"][number];
 
 interface SubscriptionFormProps {
    contactId: string;
    onSuccess: () => void;
+}
+
+interface VariantSelectFieldProps {
+   serviceId: string;
+   value: string;
+   onValueChange: (variantId: string) => void;
+   onVariantChange: (variant: ServiceVariant | null) => void;
+   isInvalid: boolean;
+   errors: AnyFieldMeta["errors"];
+}
+
+function VariantSelectField({
+   serviceId,
+   value,
+   onValueChange,
+   onVariantChange,
+   isInvalid,
+   errors,
+}: VariantSelectFieldProps) {
+   const { data: variants } = useSuspenseQuery(
+      orpc.services.getVariants.queryOptions({ input: { serviceId } }),
+   );
+
+   return (
+      <Field data-invalid={isInvalid}>
+         <FieldLabel>Variante *</FieldLabel>
+         <Select
+            onValueChange={(v) => {
+               onValueChange(v);
+               onVariantChange(variants.find((vt) => vt.id === v) ?? null);
+            }}
+            value={value}
+         >
+            <SelectTrigger>
+               <SelectValue placeholder="Selecione a variante" />
+            </SelectTrigger>
+            <SelectContent>
+               {variants.map((variant) => (
+                  <SelectItem key={variant.id} value={variant.id}>
+                     {variant.name} —{" "}
+                     {format(of(variant.basePrice, "BRL"), "pt-BR")}
+                  </SelectItem>
+               ))}
+            </SelectContent>
+         </Select>
+         {isInvalid && <FieldError errors={errors} />}
+      </Field>
+   );
 }
 
 export function SubscriptionForm({
@@ -81,20 +134,9 @@ export function SubscriptionForm({
    });
 
    const [selectedServiceId, setSelectedServiceId] = useState("");
-   const [selectedVariantId, setSelectedVariantId] = useState("");
+   const [selectedVariant, setSelectedVariant] =
+      useState<ServiceVariant | null>(null);
    const [negotiatedPrice, setNegotiatedPrice] = useState("0");
-
-   const { data: variants = [] } = useQuery({
-      ...orpc.services.getVariants.queryOptions({
-         input: { serviceId: selectedServiceId },
-      }),
-      enabled: !!selectedServiceId,
-   });
-
-   const selectedVariant = useMemo(
-      () => variants.find((v) => v.id === selectedVariantId) ?? null,
-      [variants, selectedVariantId],
-   );
 
    const discountPercent = useMemo(() => {
       const neg = Number(negotiatedPrice);
@@ -137,7 +179,7 @@ export function SubscriptionForm({
                                  field.handleChange(v);
                                  setSelectedServiceId(v);
                                  form.setFieldValue("variantId", "");
-                                 setSelectedVariantId("");
+                                 setSelectedVariant(null);
                               }}
                               value={field.state.value}
                            >
@@ -173,37 +215,18 @@ export function SubscriptionForm({
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
                         return (
-                           <Field data-invalid={isInvalid}>
-                              <FieldLabel>Variante *</FieldLabel>
-                              <Select
-                                 onValueChange={(v) => {
-                                    field.handleChange(v);
-                                    setSelectedVariantId(v);
-                                 }}
+                           <Suspense
+                              fallback={<Skeleton className="h-10 w-full" />}
+                           >
+                              <VariantSelectField
+                                 errors={field.state.meta.errors}
+                                 isInvalid={isInvalid}
+                                 onValueChange={(v) => field.handleChange(v)}
+                                 onVariantChange={setSelectedVariant}
+                                 serviceId={selectedServiceId}
                                  value={field.state.value}
-                              >
-                                 <SelectTrigger>
-                                    <SelectValue placeholder="Selecione a variante" />
-                                 </SelectTrigger>
-                                 <SelectContent>
-                                    {variants.map((variant) => (
-                                       <SelectItem
-                                          key={variant.id}
-                                          value={variant.id}
-                                       >
-                                          {variant.name} —{" "}
-                                          {format(
-                                             of(variant.basePrice, "BRL"),
-                                             "pt-BR",
-                                          )}
-                                       </SelectItem>
-                                    ))}
-                                 </SelectContent>
-                              </Select>
-                              {isInvalid && (
-                                 <FieldError errors={field.state.meta.errors} />
-                              )}
-                           </Field>
+                              />
+                           </Suspense>
                         );
                      }}
                   />
@@ -338,22 +361,26 @@ export function SubscriptionForm({
          </CredenzaBody>
 
          <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
                   <Button
-                     className="w-full"
+                     className="w-full gap-2"
                      disabled={
-                        !state.canSubmit ||
-                        state.isSubmitting ||
+                        !canSubmit ||
+                        isSubmitting ||
                         isPending ||
                         createMutation.isPending
                      }
                      type="submit"
                   >
-                     {(state.isSubmitting ||
+                     {(isSubmitting ||
                         isPending ||
                         createMutation.isPending) && (
-                        <Spinner className="size-4 mr-2" />
+                        <Spinner className="size-4" />
                      )}
                      Criar assinatura
                   </Button>

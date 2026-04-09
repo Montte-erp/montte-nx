@@ -26,9 +26,7 @@ import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { Suspense } from "react";
-import { ErrorBoundary } from "react-error-boundary";
-import { createErrorFallback } from "@/components/query-boundary";
+import { QueryBoundary } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { BillRow } from "./bills-columns";
@@ -239,10 +237,10 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
             </form>
          </CredenzaBody>
          <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
+            <form.Subscribe selector={(state) => state.canSubmit}>
+               {(canSubmit) => (
                   <Button
-                     disabled={!state.canSubmit || payMutation.isPending}
+                     disabled={!canSubmit || payMutation.isPending}
                      form="bill-pay-form"
                      type="submit"
                   >
@@ -272,14 +270,11 @@ function BillPayDialogSkeleton() {
 
 export function BillPayDialogStack(props: BillPayDialogStackProps) {
    return (
-      <ErrorBoundary
-         FallbackComponent={createErrorFallback({
-            errorTitle: "Erro ao carregar conta",
-         })}
+      <QueryBoundary
+         fallback={<BillPayDialogSkeleton />}
+         errorTitle="Erro ao carregar conta"
       >
-         <Suspense fallback={<BillPayDialogSkeleton />}>
-            <BillPayDialogStackInner {...props} />
-         </Suspense>
-      </ErrorBoundary>
+         <BillPayDialogStackInner {...props} />
+      </QueryBoundary>
    );
 }

@@ -17,11 +17,7 @@ import {
 } from "@packages/ui/components/dropdown-menu";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { cn } from "@packages/ui/lib/utils";
-import {
-   useQuery,
-   useQueryClient,
-   useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
    AlertCircle,
@@ -190,27 +186,23 @@ function DashboardInsightContent({
    return <InsightPreview config={config} />;
 }
 
-/**
- * Resolve insight metadata for the tile header.
- */
-function useInsightMetadata(
-   insightName?: string,
-   insightId?: string,
-   globalDateRange?: DashboardDateRange,
-) {
-   const { data: insight } = useQuery({
-      ...orpc.insights.getById.queryOptions({
-         input: { id: insightId ?? "" },
-      }),
-      enabled: !!insightId && !insightName,
-   });
+function InsightTileMeta({
+   insightId,
+   insightName,
+   globalDateRange,
+}: {
+   insightId: string;
+   insightName?: string;
+   globalDateRange?: DashboardDateRange;
+}) {
+   const { data: insight } = useSuspenseQuery(
+      orpc.insights.getById.queryOptions({ input: { id: insightId } }),
+   );
 
-   const name = insightName || insight?.name || "";
-   const description = insight?.description || "";
-   const type = insight?.type || "kpi";
-   const lastComputedAt = insight?.lastComputedAt ?? null;
+   const name = insightName || insight.name || "";
+   const description = insight.description || "";
+   const type = insight.type || "kpi";
 
-   // ERP insight type label
    const typeLabel =
       type === "kpi"
          ? "KPI"
@@ -220,8 +212,7 @@ function useInsightMetadata(
              ? "DISTRIBUIÇÃO"
              : "INSIGHT";
 
-   // Extract date range from config if available
-   const config = insight?.config as Record<string, unknown> | undefined;
+   const config = insight.config as Record<string, unknown> | undefined;
    const dateRange = config?.dateRange as
       | { type: string; value: string }
       | undefined;
@@ -230,7 +221,47 @@ function useInsightMetadata(
       ? formatDateRange(effectiveDateRange.value)
       : "ÚLTIMOS 30 DIAS";
 
-   return { name, description, typeLabel, dateRangeLabel, lastComputedAt };
+   return (
+      <div className="min-w-0 flex-1 space-y-1">
+         <p className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
+            {typeLabel} &bull; {dateRangeLabel}
+         </p>
+         <h3 className="text-sm font-semibold leading-snug">{name}</h3>
+         {description && (
+            <p className="text-xs text-muted-foreground leading-relaxed">
+               {description}
+            </p>
+         )}
+      </div>
+   );
+}
+
+function InsightRefreshMenuItem({
+   insightId,
+   onRefresh,
+}: {
+   insightId: string;
+   onRefresh: () => void;
+}) {
+   const { data: insight } = useSuspenseQuery(
+      orpc.insights.getById.queryOptions({ input: { id: insightId } }),
+   );
+
+   const lastComputedAt = insight.lastComputedAt ?? null;
+
+   return (
+      <DropdownMenuItem onClick={onRefresh}>
+         <RefreshCw className="mr-2 size-4" />
+         <div className="flex flex-col">
+            <span>Atualizar dados</span>
+            {lastComputedAt && (
+               <span className="text-[11px] text-muted-foreground">
+                  {formatLastComputed(new Date(lastComputedAt))}
+               </span>
+            )}
+         </div>
+      </DropdownMenuItem>
+   );
 }
 
 function formatDateRange(value: string): string {
@@ -314,8 +345,6 @@ export function DashboardTile({
    };
 
    const { slug, teamSlug } = useDashboardSlugs();
-   const { name, description, typeLabel, dateRangeLabel, lastComputedAt } =
-      useInsightMetadata(insightName, insightId, globalDateRange);
 
    const handleRefresh = () => {
       if (!insightId) return;
@@ -353,22 +382,31 @@ export function DashboardTile({
                            <GripVertical className="size-4" />
                         </Button>
                      )}
-                     <div className="min-w-0 flex-1 space-y-1">
-                        {/* Type + Date range badge */}
-                        <p className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
-                           {typeLabel} &bull; {dateRangeLabel}
-                        </p>
-                        {/* Title */}
-                        <h3 className="text-sm font-semibold leading-snug">
-                           {name}
-                        </h3>
-                        {/* Description */}
-                        {description && (
-                           <p className="text-xs text-muted-foreground leading-relaxed">
-                              {description}
+                     {insightId ? (
+                        <Suspense
+                           fallback={
+                              <div className="min-w-0 flex-1 space-y-1">
+                                 <Skeleton className="h-3 w-20" />
+                                 <Skeleton className="h-4 w-36" />
+                              </div>
+                           }
+                        >
+                           <InsightTileMeta
+                              globalDateRange={globalDateRange}
+                              insightId={insightId}
+                              insightName={insightName}
+                           />
+                        </Suspense>
+                     ) : (
+                        <div className="min-w-0 flex-1 space-y-1">
+                           <p className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
+                              INSIGHT
                            </p>
-                        )}
-                     </div>
+                           <h3 className="text-sm font-semibold leading-snug">
+                              {insightName ?? ""}
+                           </h3>
+                        </div>
+                     )}
                   </div>
                   <div className="flex items-center gap-0.5 shrink-0">
                      <DropdownMenu>
@@ -425,19 +463,19 @@ export function DashboardTile({
 
                            {/* Refresh data */}
                            {insightId && (
-                              <DropdownMenuItem onClick={handleRefresh}>
-                                 <RefreshCw className="mr-2 size-4" />
-                                 <div className="flex flex-col">
-                                    <span>Atualizar dados</span>
-                                    {lastComputedAt && (
-                                       <span className="text-[11px] text-muted-foreground">
-                                          {formatLastComputed(
-                                             new Date(lastComputedAt),
-                                          )}
-                                       </span>
-                                    )}
-                                 </div>
-                              </DropdownMenuItem>
+                              <Suspense
+                                 fallback={
+                                    <DropdownMenuItem disabled>
+                                       <RefreshCw className="mr-2 size-4" />
+                                       Atualizar dados
+                                    </DropdownMenuItem>
+                                 }
+                              >
+                                 <InsightRefreshMenuItem
+                                    insightId={insightId}
+                                    onRefresh={handleRefresh}
+                                 />
+                              </Suspense>
                            )}
 
                            {/* Remove from dashboard */}

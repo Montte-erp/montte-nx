@@ -1,10 +1,10 @@
 import type {
    BreakdownConfig,
-   InsightConfig,
    KpiConfig,
    TimeSeriesConfig,
 } from "@packages/analytics/types";
 import { insightConfigSchema } from "@packages/analytics/types";
+import type { InsightType } from "@/features/analytics/hooks/use-insight-config";
 import { Button } from "@packages/ui/components/button";
 import {
    CredenzaBody,
@@ -21,10 +21,9 @@ import {
    useQueryClient,
 } from "@tanstack/react-query";
 import { BarChart3, Hash, Loader2, TrendingUp } from "lucide-react";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
-import type { InsightType } from "@/features/analytics/hooks/use-insight-config";
 import { useInsightConfig } from "@/features/analytics/hooks/use-insight-config";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -61,23 +60,13 @@ function InsightEditDialogStackContent({
       orpc.insights.getById.queryOptions({ input: { id: insightId } }),
    );
 
-   const { type, config, setType, updateConfigImmediate } = useInsightConfig();
-   const [name, setName] = useState("");
-   const [initialized, setInitialized] = useState(false);
+   const parsed = insightConfigSchema.safeParse(insight.config);
 
-   useEffect(() => {
-      if (insight && !initialized) {
-         setName(insight.name);
-         const parsed = insightConfigSchema.safeParse(insight.config);
-         if (parsed.success) {
-            setType(parsed.data.type as InsightType);
-            queueMicrotask(() => {
-               updateConfigImmediate(parsed.data);
-            });
-         }
-         setInitialized(true);
-      }
-   }, [insight, initialized, setType, updateConfigImmediate]);
+   const { type, config, setType, updateConfigImmediate } = useInsightConfig(
+      parsed.success ? parsed.data : undefined,
+   );
+
+   const [name, setName] = useState(insight.name);
 
    const updateMutation = useMutation(
       orpc.insights.update.mutationOptions({
@@ -102,16 +91,14 @@ function InsightEditDialogStackContent({
       updateMutation.mutate({
          id: insightId,
          name: name.trim(),
-         config: config as InsightConfig,
+         config,
       });
    }, [insightId, name, config, updateMutation]);
 
    return (
       <>
          <CredenzaHeader className="pb-3">
-            <CredenzaTitle className="text-base">
-               {insight?.name ?? "Configurar insight"}
-            </CredenzaTitle>
+            <CredenzaTitle className="text-base">{insight.name}</CredenzaTitle>
             <CredenzaDescription>
                Ajuste as configurações do insight.
             </CredenzaDescription>

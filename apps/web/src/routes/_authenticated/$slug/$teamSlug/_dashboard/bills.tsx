@@ -25,6 +25,7 @@ import {
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnFiltersState, SortingState } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import {
    Check,
@@ -63,6 +64,12 @@ const [useBillsReceivableTableState] =
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/bills",
 )({
+   validateSearch: z.object({
+      tab: z
+         .enum(["payable", "receivable"])
+         .catch("payable")
+         .default("payable"),
+   }),
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(
          orpc.bills.getAll.queryOptions({ input: { type: "payable" } }),
@@ -351,13 +358,26 @@ function BillsReceivableList() {
 }
 
 function BillsPage() {
+   const { tab } = Route.useSearch();
+   const navigate = Route.useNavigate();
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
             description="Gerencie suas contas a pagar e a receber"
             title="Contas"
          />
-         <Tabs defaultValue="payable">
+         <Tabs
+            value={tab}
+            onValueChange={(v) =>
+               navigate({
+                  search: (prev) => ({
+                     ...prev,
+                     tab: v as "payable" | "receivable",
+                  }),
+                  replace: true,
+               })
+            }
+         >
             <TabsList>
                <TabsTrigger value="payable">A Pagar</TabsTrigger>
                <TabsTrigger value="receivable">A Receber</TabsTrigger>

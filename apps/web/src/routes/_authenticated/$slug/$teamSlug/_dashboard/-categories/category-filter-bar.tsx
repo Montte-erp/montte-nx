@@ -5,9 +5,9 @@ import { Label } from "@packages/ui/components/label";
 import { Switch } from "@packages/ui/components/switch";
 import { cn } from "@packages/ui/lib/utils";
 import { Link, useRouter } from "@tanstack/react-router";
-import { useDebouncedValue } from "foxact/use-debounced-value";
+import { useDebouncedCallback } from "@tanstack/react-pacer";
 import { LayoutList, Search, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 interface CategoryFilterBarProps {
    search: string;
@@ -41,16 +41,10 @@ export function CategoryFilterBar({
 }: CategoryFilterBarProps) {
    const router = useRouter();
    const [inputValue, setInputValue] = useState(search);
-   const debouncedSearch = useDebouncedValue(inputValue, 300);
-   const isMounted = useRef(false);
 
-   useEffect(() => {
-      if (!isMounted.current) {
-         isMounted.current = true;
-         return;
-      }
-      onSearchChange(debouncedSearch);
-   }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+   const debouncedOnSearchChange = useDebouncedCallback(onSearchChange, {
+      wait: 300,
+   });
 
    useEffect(() => {
       if (search === "") setInputValue("");
@@ -65,7 +59,10 @@ export function CategoryFilterBar({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             <Input
                className="pl-9"
-               onChange={(e) => setInputValue(e.target.value)}
+               onChange={(e) => {
+                  setInputValue(e.target.value);
+                  debouncedOnSearchChange(e.target.value);
+               }}
                placeholder="Buscar por nome ou palavra-chave..."
                value={inputValue}
             />

@@ -10,7 +10,7 @@ import type { MaskitoOptions } from "@maskito/core";
 import { useMaskito } from "@maskito/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
-import { useDebouncedCallback } from "@tanstack/react-pacer";
+import { useAsyncDebouncedCallback } from "@tanstack/react-pacer";
 import dayjs from "dayjs";
 import { Building2, CheckCircle2, MapPin } from "lucide-react";
 import { forwardRef, useEffect, useImperativeHandle } from "react";
@@ -99,7 +99,7 @@ export const CnpjStep = forwardRef<StepHandle, CnpjStepProps>(function CnpjStep(
       onStateChange({ canContinue, isPending });
    }, [canContinue, isPending, onStateChange]);
 
-   const fetchCnpj = useDebouncedCallback(
+   const fetchCnpj = useAsyncDebouncedCallback(
       async () => {
          const digits = form.getFieldValue("cnpj").replace(/\D/g, "");
          if (digits.length !== 14) return;
