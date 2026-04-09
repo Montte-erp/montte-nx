@@ -334,6 +334,9 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                                        : "000.000.000-00"
                                  }
                               />
+                              {isInvalid && (
+                                 <FieldError errors={field.state.meta.errors} />
+                              )}
                            </Field>
                         );
                      }}

@@ -350,7 +350,7 @@ export function SubscriptionForm({
             >
                {([canSubmit, isSubmitting]) => (
                   <Button
-                     className="w-full"
+                     className="w-full gap-2"
                      disabled={
                         !canSubmit ||
                         isSubmitting ||
@@ -362,7 +362,7 @@ export function SubscriptionForm({
                      {(isSubmitting ||
                         isPending ||
                         createMutation.isPending) && (
-                        <Spinner className="size-4 mr-2" />
+                        <Spinner className="size-4" />
                      )}
                      Criar assinatura
                   </Button>

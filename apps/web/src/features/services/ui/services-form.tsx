@@ -307,7 +307,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                      name="variants"
                      children={(field) => (
                         <Button
-                           className="h-7 text-xs"
+                           className="h-7 text-xs gap-2"
                            onClick={() =>
                               field.pushValue({
                                  name: "",
@@ -319,7 +319,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                            type="button"
                            variant="outline"
                         >
-                           <PlusCircle className="size-3.5 mr-1" />
+                           <PlusCircle className="size-3.5" />
                            Adicionar
                         </Button>
                      )}
@@ -468,7 +468,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
             >
                {([canSubmit, isSubmitting]) => (
                   <Button
-                     className="w-full"
+                     className="w-full gap-2"
                      disabled={
                         !canSubmit ||
                         isSubmitting ||
@@ -478,7 +478,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                      type="submit"
                   >
                      {(isSubmitting || isPending || mutationsPending) && (
-                        <Spinner className="size-4 mr-2" />
+                        <Spinner className="size-4" />
                      )}
                      {isCreate ? "Criar serviço" : "Salvar alterações"}
                   </Button>

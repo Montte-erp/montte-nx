@@ -165,9 +165,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                               value={field.state.value}
                            />
                            {isInvalid && (
-                              <FieldError
-                                 errors={field.state.meta.errors as any}
-                              />
+                              <FieldError errors={field.state.meta.errors} />
                            )}
                         </Field>
                      );
@@ -281,9 +279,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                               value={field.state.value}
                            />
                            {isInvalid && (
-                              <FieldError
-                                 errors={field.state.meta.errors as any}
-                              />
+                              <FieldError errors={field.state.meta.errors} />
                            )}
                         </Field>
                      );
@@ -322,9 +318,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                               value={field.state.value}
                            />
                            {isInvalid && (
-                              <FieldError
-                                 errors={field.state.meta.errors as any}
-                              />
+                              <FieldError errors={field.state.meta.errors} />
                            )}
                         </Field>
                      );
@@ -362,7 +356,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
             >
                {([canSubmit, isSubmitting]) => (
                   <Button
-                     className="w-full"
+                     className="w-full gap-2"
                      disabled={
                         !canSubmit ||
                         isSubmitting ||
@@ -374,7 +368,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                      {(isSubmitting ||
                         createMutation.isPending ||
                         updateMutation.isPending) && (
-                        <Spinner className="size-4 mr-2" />
+                        <Spinner className="size-4" />
                      )}
                      {isCreate ? "Criar cartão" : "Salvar alterações"}
                   </Button>

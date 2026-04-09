@@ -29,22 +29,21 @@ export const Route = createFileRoute("/auth/sign-up")({
    component: SignUpPage,
 });
 
+const signUpSchema = z
+   .object({
+      confirmPassword: z.string(),
+      email: z.email("Insira um endereco de email valido."),
+      name: z.string().min(2, "O campo deve ter no minimo 2 caracteres."),
+      password: z.string().min(8, "O campo deve ter no minimo 8 caracteres."),
+   })
+   .refine((data) => data.password === data.confirmPassword, {
+      message: "As senhas nao coincidem.",
+      path: ["confirmPassword"],
+   });
+
 function SignUpPage() {
    const router = useRouter();
    const [isPending, startTransition] = useTransition();
-   const schema = z
-      .object({
-         confirmPassword: z.string(),
-         email: z.email("Insira um endereco de email valido."),
-         name: z.string().min(2, "O campo deve ter no minimo 2 caracteres."),
-         password: z
-            .string()
-            .min(8, "O campo deve ter no minimo 8 caracteres."),
-      })
-      .refine((data) => data.password === data.confirmPassword, {
-         message: "As senhas nao coincidem.",
-         path: ["confirmPassword"],
-      });
 
    const handleSignUp = useCallback(
       async (email: string, name: string, password: string) => {
@@ -87,7 +86,7 @@ function SignUpPage() {
          formApi.reset();
       },
       validators: {
-         onBlur: schema,
+         onBlur: signUpSchema,
       },
    });
 

@@ -30,25 +30,24 @@ const steps = [
 
 const { Stepper } = defineStepper(...steps);
 
+const forgotPasswordSchema = z
+   .object({
+      confirmPassword: z.string(),
+      email: z.email("Insira um endereco de email valido."),
+      otp: z.string().min(6, "O campo deve ter no minimo 6 caracteres."),
+      password: z.string().min(8, "O campo deve ter no minimo 8 caracteres."),
+   })
+   .refine((data) => data.password === data.confirmPassword, {
+      message: "As senhas nao coincidem.",
+      path: ["confirmPassword"],
+   });
+
 export const Route = createFileRoute("/auth/forgot-password")({
    component: ForgotPasswordPage,
 });
 
 function ForgotPasswordPage() {
    const router = useRouter();
-   const schema = z
-      .object({
-         confirmPassword: z.string(),
-         email: z.email("Insira um endereco de email valido."),
-         otp: z.string().min(6, "O campo deve ter no minimo 6 caracteres."),
-         password: z
-            .string()
-            .min(8, "O campo deve ter no minimo 8 caracteres."),
-      })
-      .refine((data) => data.password === data.confirmPassword, {
-         message: "As senhas nao coincidem.",
-         path: ["confirmPassword"],
-      });
 
    const handleSendOtp = useCallback(async (email: string) => {
       await authClient.emailOtp.sendVerificationOtp(
@@ -108,7 +107,7 @@ function ForgotPasswordPage() {
          await handleResetPassword(value.email, value.otp, value.password);
       },
       validators: {
-         onBlur: schema,
+         onBlur: forgotPasswordSchema,
       },
    });
 
