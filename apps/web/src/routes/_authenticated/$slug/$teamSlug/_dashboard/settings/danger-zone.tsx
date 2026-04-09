@@ -17,6 +17,9 @@ import { useAlertDialog } from "@/hooks/use-alert-dialog";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone",
 )({
+   head: () => ({
+      meta: [{ title: "Zona de Perigo — Montte" }],
+   }),
    component: AccountDangerZonePage,
 });
 

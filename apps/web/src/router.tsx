@@ -3,7 +3,6 @@ import { createRouter, Link } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import * as TanstackQuery from "./integrations/tanstack-query/root-provider";
 
-// Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 
 function NotFound() {
@@ -21,7 +20,6 @@ function NotFound() {
    );
 }
 
-// Create a new router instance
 export const getRouter = () => {
    const rqContext = TanstackQuery.getContext();
 
@@ -30,8 +28,10 @@ export const getRouter = () => {
       context: {
          ...rqContext,
       },
-
       defaultPreload: "intent",
+      defaultPreloadStaleTime: 0,
+      scrollRestoration: true,
+      defaultStructuralSharing: true,
       defaultNotFoundComponent: NotFound,
    });
 
@@ -42,3 +42,9 @@ export const getRouter = () => {
 
    return router;
 };
+
+declare module "@tanstack/react-router" {
+   interface Register {
+      router: ReturnType<typeof getRouter>;
+   }
+}

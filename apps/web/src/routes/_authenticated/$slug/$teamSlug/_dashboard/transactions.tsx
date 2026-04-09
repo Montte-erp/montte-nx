@@ -28,21 +28,22 @@ import { orpc } from "@/integrations/orpc/client";
 const transactionsSearchSchema = z.object({
    sorting: z
       .array(z.object({ id: z.string(), desc: z.boolean() }))
-      .optional()
+      .catch([])
       .default([]),
    columnFilters: z
       .array(z.object({ id: z.string(), value: z.unknown() }))
-      .optional()
+      .catch([])
       .default([]),
+   page: z.number().int().min(1).catch(1).default(1),
+   pageSize: z.number().int().catch(20).default(20),
 });
-
-type TransactionsSearch = z.infer<typeof transactionsSearchSchema>;
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/transactions",
 )({
    validateSearch: transactionsSearchSchema,
-   loader: ({ context }) => {
+   loaderDeps: ({ search: { page, pageSize } }) => ({ page, pageSize }),
+   loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
          orpc.bankAccounts.getAll.queryOptions({}),
       );
@@ -55,7 +56,7 @@ export const Route = createFileRoute(
       );
       context.queryClient.prefetchQuery(
          orpc.transactions.getAll.queryOptions({
-            input: { page: 1, pageSize: 20 },
+            input: { page: deps.page, pageSize: deps.pageSize },
          }),
       );
       context.queryClient.prefetchQuery(
@@ -67,6 +68,11 @@ export const Route = createFileRoute(
          }),
       );
    },
+   pendingMs: 300,
+   pendingComponent: TransactionsSkeleton,
+   head: () => ({
+      meta: [{ title: "Lançamentos — Montte" }],
+   }),
    component: TransactionsPage,
 });
 
@@ -77,14 +83,22 @@ function TransactionsPage() {
    const { currentTeam } = Route.useRouteContext();
    const { hasBankAccounts } = useTransactionPrerequisites();
    const [filters, setFilters] = useState<TransactionFilters>(DEFAULT_FILTERS);
-   const { sorting, columnFilters } = Route.useSearch();
+   const handleFiltersChange = useCallback(
+      (nextFilters: TransactionFilters) => {
+         setFilters(nextFilters);
+         navigate({ search: (prev) => ({ ...prev, page: 1 }), replace: true });
+      },
+      [navigate],
+   );
+   const { sorting, columnFilters, page, pageSize } = Route.useSearch();
+   const filtersWithPagination = { ...filters, page, pageSize };
 
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
       (updater) => {
          const next =
             typeof updater === "function" ? updater(sorting) : updater;
          navigate({
-            search: (prev: TransactionsSearch) => ({ ...prev, sorting: next }),
+            search: (prev) => ({ ...prev, sorting: next }),
             replace: true,
          });
       },
@@ -97,7 +111,7 @@ function TransactionsPage() {
             const next =
                typeof updater === "function" ? updater(columnFilters) : updater;
             navigate({
-               search: (prev: TransactionsSearch) => ({
+               search: (prev) => ({
                   ...prev,
                   columnFilters: next,
                }),
@@ -176,15 +190,30 @@ function TransactionsPage() {
             panelActions={panelActions}
             title="Lançamentos"
          />
-         <TransactionFilterBar filters={filters} onFiltersChange={setFilters} />
+         <TransactionFilterBar
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+         />
          <Suspense fallback={<TransactionsSkeleton />}>
             <TransactionsList
                columnFilters={columnFilters}
-               filters={filters}
+               filters={filtersWithPagination}
                onColumnFiltersChange={handleColumnFiltersChange}
-               onPageChange={(page) => setFilters((f) => ({ ...f, page }))}
-               onPageSizeChange={(pageSize) =>
-                  setFilters((f) => ({ ...f, pageSize, page: 1 }))
+               onPageChange={(newPage) =>
+                  navigate({
+                     search: (prev) => ({ ...prev, page: newPage }),
+                     replace: true,
+                  })
+               }
+               onPageSizeChange={(newPageSize) =>
+                  navigate({
+                     search: (prev) => ({
+                        ...prev,
+                        pageSize: newPageSize,
+                        page: 1,
+                     }),
+                     replace: true,
+                  })
                }
                onSortingChange={handleSortingChange}
                sorting={sorting}

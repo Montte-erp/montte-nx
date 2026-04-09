@@ -46,6 +46,9 @@ import { orpc } from "@/integrations/orpc/client";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general",
 )({
+   head: () => ({
+      meta: [{ title: "Organização — Montte" }],
+   }),
    component: OrganizationGeneralPage,
 });
 

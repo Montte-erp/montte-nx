@@ -58,6 +58,11 @@ export const Route = createFileRoute(
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(orpc.contacts.getAll.queryOptions({}));
    },
+   pendingMs: 300,
+   pendingComponent: ContactsSkeleton,
+   head: () => ({
+      meta: [{ title: "Contatos — Montte" }],
+   }),
    component: ContactsPage,
 });
 
@@ -292,7 +297,7 @@ function ContactsPage() {
          <DefaultHeader
             actions={
                <Button onClick={handleCreate}>
-                  <Plus className="size-4 mr-1" />
+                  <Plus className="size-4" />
                   Novo Contato
                </Button>
             }

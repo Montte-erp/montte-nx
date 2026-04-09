@@ -9,6 +9,9 @@ import {
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations",
 )({
+   head: () => ({
+      meta: [{ title: "Integrações — Montte" }],
+   }),
    component: ProjectIntegrationsPage,
 });
 

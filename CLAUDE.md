@@ -307,6 +307,42 @@ apps/web/src/routes/
 
 Conventions: kebab-case, `$` for dynamic segments, `_` for layout routes.
 
+**Required patterns for every route:**
+- `head()` required on every route — format: `"Page Name — Montte"` in Brazilian Portuguese
+- `pendingMs: 300` + `pendingComponent` on routes whose loader does `prefetchQuery`
+- `errorComponent` on routes using blocking `ensureQueryData` in the loader
+- `validateSearch` fields must use `.catch()` (not `.optional()`) for fields with defaults — prevents parse errors from invalid URL params
+- `loaderDeps` is mandatory when the loader uses search params — without it, the loader won't re-run when params change
+- `autoCodeSplitting: true` is configured in `vite.config.ts` — no manual `.lazy.tsx` files needed
+
+**Pagination via URL search params (all DataTable routes):**
+- `page` and `pageSize` belong in `validateSearch` with `.catch()` defaults, not in local state
+- Use `loaderDeps` to make the loader reactive to page/pageSize changes
+- Navigate (not `setState`) to change page/pageSize: `navigate({ search: (prev) => ({ ...prev, page: newPage }), replace: true })`
+
+**Full route pattern:**
+
+```typescript
+export const Route = createFileRoute('/feature')({
+   validateSearch: z.object({
+      sorting: z.array(z.object({ id: z.string(), desc: z.boolean() })).catch([]).default([]),
+      columnFilters: z.array(z.object({ id: z.string(), value: z.unknown() })).catch([]).default([]),
+      page: z.number().int().min(1).catch(1).default(1),
+      pageSize: z.number().int().catch(20).default(20),
+   }),
+   loaderDeps: ({ search: { page, pageSize } }) => ({ page, pageSize }),
+   loader: ({ context, deps }) => {
+      context.queryClient.prefetchQuery(
+         orpc.feature.getAll.queryOptions({ input: { page: deps.page, pageSize: deps.pageSize } }),
+      );
+   },
+   pendingMs: 300,
+   pendingComponent: FeatureSkeleton,
+   head: () => ({ meta: [{ title: 'Feature — Montte' }] }),
+   component: FeaturePage,
+});
+```
+
 ---
 
 ## Database (Drizzle ORM + PostgreSQL)

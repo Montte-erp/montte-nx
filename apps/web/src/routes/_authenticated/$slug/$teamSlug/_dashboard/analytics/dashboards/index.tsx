@@ -47,6 +47,11 @@ export const Route = createFileRoute(
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(orpc.dashboards.list.queryOptions({}));
    },
+   pendingMs: 300,
+   pendingComponent: DashboardsPageSkeleton,
+   head: () => ({
+      meta: [{ title: "Dashboards — Montte" }],
+   }),
    component: DashboardsPage,
 });
 

@@ -60,6 +60,11 @@ export const Route = createFileRoute(
          orpc.categories.getAll.queryOptions({}),
       );
    },
+   pendingMs: 300,
+   pendingComponent: GoalsSkeleton,
+   head: () => ({
+      meta: [{ title: "Metas Financeiras — Montte" }],
+   }),
    component: GoalsPage,
 });
 

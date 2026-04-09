@@ -53,6 +53,9 @@ const [useComingSoonNotifications] = createLocalStorageState<string[]>(
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews",
 )({
+   head: () => ({
+      meta: [{ title: "Pré-visualizações — Montte" }],
+   }),
    component: FeaturePreviewsPage,
 });
 

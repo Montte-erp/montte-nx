@@ -82,6 +82,11 @@ export const Route = createFileRoute(
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(orpc.services.getAll.queryOptions({}));
    },
+   pendingMs: 300,
+   pendingComponent: ServicesSkeleton,
+   head: () => ({
+      meta: [{ title: "Gestão de Serviços — Montte" }],
+   }),
    component: ServicesPage,
 });
 

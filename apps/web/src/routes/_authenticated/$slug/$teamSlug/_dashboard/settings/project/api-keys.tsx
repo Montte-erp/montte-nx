@@ -37,6 +37,9 @@ export const Route = createFileRoute(
          .optional()
          .default([]),
    }),
+   head: () => ({
+      meta: [{ title: "Chaves de API — Montte" }],
+   }),
    component: ApiKeysPage,
 });
 

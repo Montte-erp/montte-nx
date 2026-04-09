@@ -22,6 +22,9 @@ import { orpc } from "@/integrations/orpc/client";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents",
 )({
+   head: () => ({
+      meta: [{ title: "Agentes de IA — Montte" }],
+   }),
    component: AiAgentsSettingsPage,
 });
 

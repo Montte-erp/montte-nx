@@ -55,6 +55,9 @@ export const Route = createFileRoute(
          }),
       );
    },
+   head: () => ({
+      meta: [{ title: "Insight — Montte" }],
+   }),
    component: EditInsightPage,
 });
 

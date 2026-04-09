@@ -5,6 +5,9 @@ import { SettingsMobileNav } from "@/layout/dashboard/ui/settings-mobile-nav";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/",
 )({
+   head: () => ({
+      meta: [{ title: "Configurações — Montte" }],
+   }),
    component: SettingsIndexRoute,
 });
 

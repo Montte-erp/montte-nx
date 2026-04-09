@@ -71,26 +71,23 @@ export const Route = createFileRoute(
          orpc.bills.getAll.queryOptions({ input: { type: "receivable" } }),
       );
    },
+   pendingMs: 300,
+   pendingComponent: BillsSkeleton,
+   head: () => ({
+      meta: [{ title: "Cobranças — Montte" }],
+   }),
    component: BillsPage,
 });
 
-// =============================================================================
-// Skeleton
-// =============================================================================
-
 function BillsSkeleton() {
    return (
-      <div className="space-y-3">
+      <div className="flex flex-col gap-4">
          {Array.from({ length: 5 }).map((_, index) => (
             <Skeleton className="h-12 w-full" key={`skeleton-${index + 1}`} />
          ))}
       </div>
    );
 }
-
-// =============================================================================
-// Summary
-// =============================================================================
 
 interface BillsSummaryProps {
    items: BillRow[];
@@ -119,20 +116,20 @@ function BillsSummary({ items }: BillsSummaryProps) {
    }
 
    return (
-      <div className="grid grid-cols-3 gap-3">
-         <div className="rounded-lg border bg-background p-4 space-y-1">
+      <div className="grid grid-cols-3 gap-4">
+         <div className="rounded-lg border bg-background p-4 flex flex-col gap-2">
             <p className="text-xs text-muted-foreground">Pendente</p>
             <p className="text-lg font-semibold tabular-nums">
                {formatBRL(pending)}
             </p>
          </div>
-         <div className="rounded-lg border bg-background p-4 space-y-1">
+         <div className="rounded-lg border bg-background p-4 flex flex-col gap-2">
             <p className="text-xs text-muted-foreground">Vencidas</p>
             <p className="text-lg font-semibold tabular-nums text-destructive">
                {formatBRL(overdue)}
             </p>
          </div>
-         <div className="rounded-lg border bg-background p-4 space-y-1">
+         <div className="rounded-lg border bg-background p-4 flex flex-col gap-2">
             <p className="text-xs text-muted-foreground">Pagas</p>
             <p className="text-lg font-semibold tabular-nums">
                {formatBRL(paid)}
@@ -141,10 +138,6 @@ function BillsSummary({ items }: BillsSummaryProps) {
       </div>
    );
 }
-
-// =============================================================================
-// List
-// =============================================================================
 
 interface BillsListProps {
    type: "payable" | "receivable";
@@ -259,7 +252,7 @@ function BillsList({ type, tableState, onTableStateChange }: BillsListProps) {
    }
 
    return (
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
          <BillsSummary items={items} />
          <DataTable
             columns={columns}

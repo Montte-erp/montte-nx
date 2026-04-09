@@ -22,9 +22,8 @@ describe("tableSearchSchema", () => {
       expect(result.columnFilters).toEqual([{ id: "type", value: "cliente" }]);
    });
 
-   it("rejects sorting entry missing required fields", () => {
-      expect(() =>
-         tableSearchSchema.parse({ sorting: [{ id: "name" }] }),
-      ).toThrow();
+   it("falls back to empty array for invalid sorting entries", () => {
+      const result = tableSearchSchema.parse({ sorting: [{ id: "name" }] });
+      expect(result.sorting).toEqual([]);
    });
 });

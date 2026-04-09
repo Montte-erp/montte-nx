@@ -26,6 +26,9 @@ dayjs.locale("pt-br");
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general",
 )({
+   head: () => ({
+      meta: [{ title: "Geral — Montte" }],
+   }),
    component: ProjectGeneralPage,
 });
 

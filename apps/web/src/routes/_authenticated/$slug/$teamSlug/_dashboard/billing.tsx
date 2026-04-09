@@ -40,6 +40,9 @@ const earlyAccessTemplate = {
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/billing",
 )({
+   head: () => ({
+      meta: [{ title: "Assinatura — Montte" }],
+   }),
    component: BillingPage,
 });
 

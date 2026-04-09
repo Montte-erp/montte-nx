@@ -5,6 +5,9 @@ import { DataManagementMobileNav } from "@/layout/dashboard/ui/data-management-m
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/",
 )({
+   head: () => ({
+      meta: [{ title: "Gestão de Dados — Montte" }],
+   }),
    component: DataManagementIndexRoute,
 });
 

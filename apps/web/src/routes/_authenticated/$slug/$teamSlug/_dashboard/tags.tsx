@@ -36,11 +36,11 @@ import { TagForm } from "./-tags/tags-form";
 const tagsSearchSchema = z.object({
    sorting: z
       .array(z.object({ id: z.string(), desc: z.boolean() }))
-      .optional()
+      .catch([])
       .default([]),
    columnFilters: z
       .array(z.object({ id: z.string(), value: z.unknown() }))
-      .optional()
+      .catch([])
       .default([]),
 });
 
@@ -59,26 +59,23 @@ export const Route = createFileRoute(
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(orpc.tags.getAll.queryOptions({}));
    },
+   pendingMs: 300,
+   pendingComponent: TagsSkeleton,
+   head: () => ({
+      meta: [{ title: "Centros de Custo — Montte" }],
+   }),
    component: TagsPage,
 });
 
-// =============================================================================
-// Skeleton
-// =============================================================================
-
 function TagsSkeleton() {
    return (
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
          {Array.from({ length: 5 }).map((_, index) => (
             <Skeleton className="h-12 w-full" key={`skeleton-${index + 1}`} />
          ))}
       </div>
    );
 }
-
-// =============================================================================
-// List
-// =============================================================================
 
 interface TagsListProps {
    navigate: ReturnType<typeof Route.useNavigate>;
@@ -283,10 +280,6 @@ function TagsList({ navigate }: TagsListProps) {
       </>
    );
 }
-
-// =============================================================================
-// Page
-// =============================================================================
 
 function TagsPage() {
    const navigate = Route.useNavigate();

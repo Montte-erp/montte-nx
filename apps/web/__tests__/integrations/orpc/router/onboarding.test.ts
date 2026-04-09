@@ -348,7 +348,7 @@ describe("fetchCnpjData", () => {
    it("throws NOT_FOUND when response is not ok", async () => {
       vi.stubGlobal(
          "fetch",
-         vi.fn().mockResolvedValue({ ok: false } as Response),
+         vi.fn().mockResolvedValue({ ok: false, status: 404 } as Response),
       );
       await expect(
          call(

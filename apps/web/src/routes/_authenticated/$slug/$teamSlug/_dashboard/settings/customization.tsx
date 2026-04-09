@@ -22,6 +22,9 @@ import { ThemeSwitcher } from "@/layout/dashboard/ui/theme-switcher";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/customization",
 )({
+   head: () => ({
+      meta: [{ title: "Personalização — Montte" }],
+   }),
    component: PreferencesPage,
 });
 

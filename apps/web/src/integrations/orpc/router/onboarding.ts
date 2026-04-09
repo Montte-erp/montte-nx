@@ -25,6 +25,7 @@ import { createSlug } from "@core/utils/text";
 const logger = getLogger().child({ module: "router:onboarding" });
 
 import { cnpjDataSchema } from "@core/authentication/server";
+import { ResultAsync, errAsync, fromThrowable, okAsync } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog } from "posthog-node";
 import { z } from "zod";
@@ -299,47 +300,56 @@ export const getOnboardingStatus = protectedProcedure.handler(
    },
 );
 
+const CNPJ_FETCH_ERROR = "Não foi possível consultar o CNPJ. Tente novamente.";
+const CNPJ_STATUS_ERRORS: Partial<Record<number, WebAppError>> = {
+   404: WebAppError.notFound("CNPJ não encontrado ou inválido."),
+};
+
+const parseCnpjData = fromThrowable(cnpjDataSchema.parse, () =>
+   WebAppError.internal(CNPJ_FETCH_ERROR),
+);
+
 export const fetchCnpjData = authenticatedProcedure
    .input(
       z.object({
          cnpj: z.string().regex(/^\d{14}$/, "CNPJ deve conter 14 dígitos"),
       }),
    )
-   .handler(async ({ input }) => {
-      let res: Response;
-      try {
-         res = await fetch(
-            `https://brasilapi.com.br/api/cnpj/v1/${input.cnpj}`,
-            { signal: AbortSignal.timeout(5000) },
-         );
-      } catch {
-         throw WebAppError.internal(
-            "Não foi possível consultar o CNPJ. Tente novamente.",
-         );
-      }
-      if (!res.ok)
-         throw WebAppError.notFound("CNPJ não encontrado ou inválido.");
-      let rawData: unknown;
-      try {
-         rawData = await res.json();
-      } catch {
-         throw WebAppError.internal(
-            "Não foi possível consultar o CNPJ. Tente novamente.",
-         );
-      }
-      const parsed = cnpjDataSchema.safeParse(rawData);
-      if (!parsed.success)
-         throw WebAppError.internal(
-            "Não foi possível consultar o CNPJ. Tente novamente.",
-         );
-      const data = parsed.data;
-      if (data.descricao_situacao_cadastral !== "ATIVA") {
-         throw WebAppError.badRequest(
-            "Este CNPJ não está ativo na Receita Federal.",
-         );
-      }
-      return data;
-   });
+   .handler(({ input }) =>
+      ResultAsync.fromPromise(
+         fetch(`https://brasilapi.com.br/api/cnpj/v1/${input.cnpj}`, {
+            signal: AbortSignal.timeout(10000),
+            headers: { "User-Agent": "Montte-ERP/1.0" },
+         }),
+         () => WebAppError.internal(CNPJ_FETCH_ERROR),
+      )
+         .andThen((res) =>
+            res.ok
+               ? ResultAsync.fromPromise(res.json(), () =>
+                    WebAppError.internal(CNPJ_FETCH_ERROR),
+                 )
+               : errAsync(
+                    CNPJ_STATUS_ERRORS[res.status] ??
+                       WebAppError.internal(CNPJ_FETCH_ERROR),
+                 ),
+         )
+         .andThen(parseCnpjData)
+         .andThen((data) =>
+            data.descricao_situacao_cadastral === "ATIVA"
+               ? okAsync(data)
+               : errAsync(
+                    WebAppError.badRequest(
+                       "Este CNPJ não está ativo na Receita Federal.",
+                    ),
+                 ),
+         )
+         .match(
+            (data) => data,
+            (error) => {
+               throw error;
+            },
+         ),
+   );
 
 export const fixOnboarding = authenticatedProcedure
    .input(z.object({ organizationId: z.string().uuid() }))

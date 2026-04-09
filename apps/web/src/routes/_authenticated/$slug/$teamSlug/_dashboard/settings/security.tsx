@@ -50,6 +50,9 @@ import { orpc } from "@/integrations/orpc/client";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/security",
 )({
+   head: () => ({
+      meta: [{ title: "Segurança — Montte" }],
+   }),
    component: SecurityPage,
 });
 

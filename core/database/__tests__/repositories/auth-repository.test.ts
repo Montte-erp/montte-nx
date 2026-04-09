@@ -12,7 +12,6 @@ vi.mock("../../src/schemas/auth", () => ({
       slug: "slug",
       name: "name",
       description: "description",
-      context: "context",
       createdAt: "createdAt",
       onboardingCompleted: "onboardingCompleted",
       onboardingTasks: "onboardingTasks",
@@ -104,7 +103,6 @@ describe("createDefaultOrganization", () => {
          id: "org-123",
          name: "John Doe1234",
          slug: "john-doe1234",
-         context: "personal",
          description: "John Doe1234",
          createdAt: expect.any(Date),
       };
@@ -137,7 +135,6 @@ describe("createDefaultOrganization", () => {
          expect.objectContaining({
             name: "John Doe1234",
             slug: "john-doe1234",
-            context: "personal",
             onboardingCompleted: false,
          }),
       );

@@ -51,16 +51,16 @@ import { orpc } from "@/integrations/orpc/client";
 const categoriesSearchSchema = z.object({
    sorting: z
       .array(z.object({ id: z.string(), desc: z.boolean() }))
-      .optional()
+      .catch([])
       .default([]),
    columnFilters: z
       .array(z.object({ id: z.string(), value: z.unknown() }))
-      .optional()
+      .catch([])
       .default([]),
    type: z.enum(["income", "expense"]).optional(),
-   includeArchived: z.boolean().optional().default(false),
-   groupBy: z.boolean().optional().default(true),
-   search: z.string().optional().default(""),
+   includeArchived: z.boolean().catch(false).default(false),
+   groupBy: z.boolean().catch(true).default(true),
+   search: z.string().catch("").default(""),
 });
 
 export type CategoriesSearch = z.infer<typeof categoriesSearchSchema>;
@@ -80,12 +80,13 @@ export const Route = createFileRoute(
          orpc.categories.getAll.queryOptions({}),
       );
    },
+   pendingMs: 300,
+   pendingComponent: CategoriesSkeleton,
+   head: () => ({
+      meta: [{ title: "Categorias — Montte" }],
+   }),
    component: CategoriesPage,
 });
-
-// =============================================================================
-// Skeleton
-// =============================================================================
 
 function CategoriesSkeleton() {
    return (
@@ -96,10 +97,6 @@ function CategoriesSkeleton() {
       </div>
    );
 }
-
-// =============================================================================
-// List
-// =============================================================================
 
 interface CategoriesListProps {
    navigate: ReturnType<typeof Route.useNavigate>;
@@ -392,10 +389,6 @@ function CategoriesList({ navigate }: CategoriesListProps) {
       </>
    );
 }
-
-// =============================================================================
-// Page
-// =============================================================================
 
 function CategoriesPage() {
    const navigate = Route.useNavigate();

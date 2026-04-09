@@ -59,6 +59,11 @@ export const Route = createFileRoute(
          orpc.bankAccounts.getAll.queryOptions({}),
       );
    },
+   pendingMs: 300,
+   pendingComponent: CreditCardsSkeleton,
+   head: () => ({
+      meta: [{ title: "Cartões de Crédito — Montte" }],
+   }),
    component: CreditCardsPage,
 });
 

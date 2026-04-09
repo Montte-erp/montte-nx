@@ -20,6 +20,9 @@ import { orpc } from "@/integrations/orpc/client";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos",
 )({
+   head: () => ({
+      meta: [{ title: "Contatos — Montte" }],
+   }),
    component: ContatosSettingsPage,
 });
 

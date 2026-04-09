@@ -16,12 +16,15 @@ export const Route = createFileRoute(
          orpc.analytics.getDefaultDashboard.queryOptions(),
       );
    },
+   pendingMs: 300,
+   pendingComponent: HomePageSkeleton,
+   head: () => ({
+      meta: [{ title: "Dashboard — Montte" }],
+   }),
    component: HomePage,
 });
 
-// =============================================================================
 // Error & Loading States
-// =============================================================================
 
 function HomePageErrorFallback(props: FallbackProps) {
    return createErrorFallback({
@@ -58,9 +61,7 @@ function HomePageSkeleton() {
    );
 }
 
-// =============================================================================
 // Main Content
-// =============================================================================
 
 function HomePageContent() {
    const { data: dashboard } = useSuspenseQuery(
@@ -73,10 +74,6 @@ function HomePageContent() {
       </DashboardView>
    );
 }
-
-// =============================================================================
-// Page Component
-// =============================================================================
 
 function HomePage() {
    return (
