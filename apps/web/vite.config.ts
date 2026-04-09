@@ -19,7 +19,11 @@ const config = defineConfig({
    },
 
    plugins: [
-      tanstackStart(),
+      tanstackStart({
+         router: {
+            autoCodeSplitting: true,
+         },
+      }),
       nitro({ preset: "bun" }),
       viteReact(),
       tailwindcss(),
