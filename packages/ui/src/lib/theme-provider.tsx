@@ -96,9 +96,10 @@ export function ThemeProvider({
       () => ({
          resolvedTheme,
          setTheme: (newTheme: Theme) => {
-            setStoredTheme(
-               !newTheme || newTheme.trim() === "" ? "system" : newTheme,
-            );
+            const resolved =
+               !newTheme || newTheme.trim() === "" ? "system" : newTheme;
+            document.cookie = `theme=${resolved}; path=/; max-age=31536000; SameSite=Lax`;
+            setStoredTheme(resolved);
          },
          theme,
       }),
