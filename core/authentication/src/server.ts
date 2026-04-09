@@ -39,12 +39,12 @@ export const cnpjDataSchema = z.object({
    ),
    porte: z.string().nullable(),
    natureza_juridica: z.string().nullable(),
-   municipio: z.string(),
-   uf: z.string(),
+   municipio: z.string().nullable(),
+   uf: z.string().nullable(),
    data_inicio_atividade: z.string(),
    descricao_situacao_cadastral: z.string(),
    qsa: z.array(z.unknown()),
-   regime_tributario: z.array(z.unknown()),
+   regime_tributario: z.array(z.unknown()).nullable(),
 });
 
 export type CnpjData = z.infer<typeof cnpjDataSchema>;
