@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import { Suspense, useCallback, useTransition } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
+import { createErrorFallback } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { CreateTeamForm } from "./-sidebar-scope-switcher/create-team-form";
 import { ManageOrganizationForm } from "./-sidebar-scope-switcher/manage-organization-form";

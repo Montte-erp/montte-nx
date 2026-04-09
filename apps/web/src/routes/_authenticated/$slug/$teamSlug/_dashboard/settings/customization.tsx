@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@packages/ui/components/card";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
+import { createErrorFallback } from "@/components/query-boundary";
 import {
    Item,
    ItemActions,

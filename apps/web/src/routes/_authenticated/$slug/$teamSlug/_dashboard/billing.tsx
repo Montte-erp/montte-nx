@@ -5,7 +5,7 @@ import {
    CardHeader,
    CardTitle,
 } from "@packages/ui/components/card";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
+import { createErrorFallback } from "@/components/query-boundary";
 import { Separator } from "@packages/ui/components/separator";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import {

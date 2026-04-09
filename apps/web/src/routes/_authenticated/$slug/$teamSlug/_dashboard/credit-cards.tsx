@@ -27,7 +27,7 @@ import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
+import { createErrorFallback } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import { QueryBoundary } from "@/components/query-boundary";

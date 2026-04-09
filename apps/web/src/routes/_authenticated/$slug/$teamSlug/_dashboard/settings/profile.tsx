@@ -11,7 +11,7 @@ import {
    DropzoneContent,
    DropzoneEmptyState,
 } from "@packages/ui/components/dropzone";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
+import { createErrorFallback } from "@/components/query-boundary";
 import {
    Field,
    FieldError,

@@ -47,7 +47,7 @@ import {
    DropzoneEmptyState,
 } from "@packages/ui/components/dropzone";
 import { defineStepper } from "@packages/ui/components/stepper";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
+import { createErrorFallback } from "@/components/query-boundary";
 import {
    Tooltip,
    TooltipContent,
