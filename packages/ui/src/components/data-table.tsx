@@ -20,8 +20,10 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
    type AccessorKeyColumnDef,
+   type Column,
    type ColumnDef,
    type ColumnFiltersState,
+   type ColumnPinningState,
    type ExpandedState,
    flexRender,
    getCoreRowModel,
@@ -98,6 +100,7 @@ interface DataTablePaginationProps {
 export type DataTableStoredState = {
    columnOrder: string[];
    columnVisibility: VisibilityState;
+   columnPinning?: ColumnPinningState;
 };
 
 interface DataTableProps<TData, TValue> {
@@ -150,10 +153,14 @@ function SortableHeaderCell({
    headerId,
    colSpan,
    children,
+   pinningStyle,
+   isPinned,
 }: {
    headerId: string;
    colSpan: number;
    children: React.ReactNode;
+   pinningStyle?: React.CSSProperties;
+   isPinned?: false | "left" | "right";
 }) {
    const {
       attributes,
@@ -170,8 +177,13 @@ function SortableHeaderCell({
       <TableHead
          ref={setNodeRef}
          colSpan={colSpan}
-         className={cn("text-xs font-medium", isDragging && "opacity-50")}
+         className={cn(
+            "text-xs font-medium",
+            isDragging && "opacity-50",
+            isPinned ? "bg-background" : "",
+         )}
          style={{
+            ...pinningStyle,
             position: "relative",
             transform: CSS.Translate.toString(transform),
             transition,
@@ -536,6 +548,16 @@ export function DataTable<TData, TValue>({
       onRowSelectionChange: handleRowSelectionChange,
       onSortingChange: effectiveOnSortingChange,
       onColumnOrderChange: setColumnOrder,
+      onColumnPinningChange: (updater) => {
+         const currentPinning = tableState?.columnPinning ?? {};
+         const next =
+            typeof updater === "function" ? updater(currentPinning) : updater;
+         onTableStateChange?.({
+            columnOrder: columnOrderRef.current,
+            columnVisibility: effectiveColumnVisibilityRef.current,
+            columnPinning: next,
+         });
+      },
       state: {
          columnFilters: effectiveColumnFilters,
          columnVisibility: effectiveColumnVisibility,
@@ -543,6 +565,7 @@ export function DataTable<TData, TValue>({
          rowSelection,
          sorting: effectiveSorting,
          columnOrder,
+         columnPinning: tableState?.columnPinning ?? {},
       },
    });
 
@@ -572,6 +595,18 @@ export function DataTable<TData, TValue>({
             return arrayMove(prev, oldIndex, newIndex);
          });
       }
+   }
+
+   function getPinningStyles(column: Column<TData>): React.CSSProperties {
+      const isPinned = column.getIsPinned();
+      if (!isPinned) return {};
+      return {
+         left: isPinned === "left" ? `${column.getStart("left")}px` : undefined,
+         right:
+            isPinned === "right" ? `${column.getAfter("right")}px` : undefined,
+         position: "sticky",
+         zIndex: 1,
+      };
    }
 
    // --- Header cells ---
@@ -642,6 +677,8 @@ export function DataTable<TData, TValue>({
                   key={header.id}
                   headerId={header.column.id}
                   colSpan={header.colSpan}
+                  pinningStyle={getPinningStyles(header.column)}
+                  isPinned={header.column.getIsPinned()}
                >
                   {content}
                </SortableHeaderCell>
@@ -652,7 +689,11 @@ export function DataTable<TData, TValue>({
             <TableHead
                key={header.id}
                colSpan={header.colSpan}
-               className="text-xs font-medium"
+               className={cn(
+                  "text-xs font-medium",
+                  header.column.getIsPinned() ? "bg-background" : "",
+               )}
+               style={getPinningStyles(header.column)}
             >
                {content}
             </TableHead>
@@ -725,9 +766,15 @@ export function DataTable<TData, TValue>({
 
       const cells = row.getVisibleCells().map((cell) => (
          <TableCell
-            className="truncate"
+            className={cn(
+               "truncate",
+               cell.column.getIsPinned() ? "bg-background" : "",
+            )}
             key={cell.id}
-            style={{ maxWidth: cell.column.columnDef.maxSize }}
+            style={{
+               maxWidth: cell.column.columnDef.maxSize,
+               ...getPinningStyles(cell.column),
+            }}
          >
             {flexRender(cell.column.columnDef.cell, cell.getContext())}
          </TableCell>
