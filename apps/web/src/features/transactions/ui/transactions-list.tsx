@@ -25,7 +25,11 @@ import {
    SelectionActionButton,
 } from "@packages/ui/components/selection-action-bar";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import {
+   keepPreviousData,
+   useMutation,
+   useSuspenseQuery,
+} from "@tanstack/react-query";
 import {
    ArrowLeftRight,
    FolderOpen,
@@ -99,8 +103,8 @@ export function TransactionsList({
       onClear,
    } = useRowSelection();
 
-   const { data: result } = useSuspenseQuery(
-      orpc.transactions.getAll.queryOptions({
+   const { data: result } = useSuspenseQuery({
+      ...orpc.transactions.getAll.queryOptions({
          input: {
             type: filters.type,
             dateFrom: filters.dateFrom,
@@ -115,7 +119,8 @@ export function TransactionsList({
             pageSize: filters.pageSize,
          },
       }),
-   );
+      placeholderData: keepPreviousData,
+   });
 
    const { data: summary } = useSuspenseQuery(
       orpc.transactions.getSummary.queryOptions({
