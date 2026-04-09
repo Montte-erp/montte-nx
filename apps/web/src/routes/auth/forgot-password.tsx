@@ -385,6 +385,22 @@ function ForgotPasswordPage() {
                                     </Button>
                                  )}
                               </form.Subscribe>
+                           ) : methods.flow.is("enter-otp") ? (
+                              <form.Subscribe
+                                 selector={(state) =>
+                                    state.fieldMeta.otp?.isValid
+                                 }
+                              >
+                                 {(otpValid) => (
+                                    <Button
+                                       disabled={!otpValid}
+                                       onClick={() => methods.navigation.next()}
+                                       type="button"
+                                    >
+                                       Proximo
+                                    </Button>
+                                 )}
+                              </form.Subscribe>
                            ) : (
                               <Button
                                  onClick={() => methods.navigation.next()}
