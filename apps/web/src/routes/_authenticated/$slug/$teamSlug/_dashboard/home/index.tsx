@@ -2,8 +2,8 @@ import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Suspense } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import type { FallbackProps } from "react-error-boundary";
+import { QueryBoundary } from "@/components/query-boundary";
 import { DashboardView } from "@/features/analytics/ui/dashboard-view";
 import { QuickStartChecklist } from "./-home/quick-start-checklist";
 import { orpc } from "@/integrations/orpc/client";
@@ -77,10 +77,11 @@ function HomePageContent() {
 
 function HomePage() {
    return (
-      <ErrorBoundary FallbackComponent={HomePageErrorFallback}>
-         <Suspense fallback={<HomePageSkeleton />}>
-            <HomePageContent />
-         </Suspense>
-      </ErrorBoundary>
+      <QueryBoundary
+         fallback={<HomePageSkeleton />}
+         errorFallback={HomePageErrorFallback}
+      >
+         <HomePageContent />
+      </QueryBoundary>
    );
 }

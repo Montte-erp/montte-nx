@@ -75,9 +75,18 @@ export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/categories",
 )({
    validateSearch: categoriesSearchSchema,
-   loader: ({ context }) => {
+   loaderDeps: ({ search: { type, includeArchived } }) => ({
+      type,
+      includeArchived,
+   }),
+   loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
-         orpc.categories.getAll.queryOptions({}),
+         orpc.categories.getAll.queryOptions({
+            input: {
+               type: deps.type,
+               includeArchived: deps.includeArchived || undefined,
+            },
+         }),
       );
    },
    pendingMs: 300,

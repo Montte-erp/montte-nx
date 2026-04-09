@@ -15,9 +15,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { Activity, Moon } from "lucide-react";
 import { usePostHog } from "posthog-js/react";
-import { Suspense, useCallback, useState } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { useCallback, useState } from "react";
+import type { FallbackProps } from "react-error-boundary";
 import { ThemeSwitcher } from "@/layout/dashboard/ui/theme-switcher";
+import { QueryBoundary } from "@/components/query-boundary";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/customization",
@@ -197,10 +198,11 @@ function PreferencesSectionContent() {
 
 function PreferencesPage() {
    return (
-      <ErrorBoundary FallbackComponent={PreferencesSectionErrorFallback}>
-         <Suspense fallback={<PreferencesSectionSkeleton />}>
-            <PreferencesSectionContent />
-         </Suspense>
-      </ErrorBoundary>
+      <QueryBoundary
+         fallback={<PreferencesSectionSkeleton />}
+         errorFallback={PreferencesSectionErrorFallback}
+      >
+         <PreferencesSectionContent />
+      </QueryBoundary>
    );
 }

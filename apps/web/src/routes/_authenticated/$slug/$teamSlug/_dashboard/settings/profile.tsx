@@ -30,8 +30,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Loader2, ShieldCheck, User } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import type React from "react";
-import { Suspense, useCallback, useState, useTransition } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { useCallback, useState, useTransition } from "react";
+import type { FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useFileUpload } from "@/features/file-upload/lib/use-file-upload";
@@ -39,6 +39,7 @@ import { usePresignedUpload } from "@/features/file-upload/lib/use-presigned-upl
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
+import { QueryBoundary } from "@/components/query-boundary";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/profile",
@@ -966,10 +967,11 @@ function ProfileSectionContent() {
 
 function ProfilePage() {
    return (
-      <ErrorBoundary FallbackComponent={ProfileSectionErrorFallback}>
-         <Suspense fallback={<ProfileSectionSkeleton />}>
-            <ProfileSectionContent />
-         </Suspense>
-      </ErrorBoundary>
+      <QueryBoundary
+         fallback={<ProfileSectionSkeleton />}
+         errorFallback={ProfileSectionErrorFallback}
+      >
+         <ProfileSectionContent />
+      </QueryBoundary>
    );
 }

@@ -30,6 +30,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
+import { QueryBoundary } from "@/components/query-boundary";
 import {
    buildCreditCardColumns,
    type CreditCardRow,
@@ -306,15 +307,12 @@ function CreditCardsPage() {
             description="Gerencie seus cartões de crédito"
             title="Cartões de Crédito"
          />
-         <ErrorBoundary
-            FallbackComponent={createErrorFallback({
-               errorTitle: "Erro ao carregar cartões",
-            })}
+         <QueryBoundary
+            fallback={<CreditCardsSkeleton />}
+            errorTitle="Erro ao carregar cartões"
          >
-            <Suspense fallback={<CreditCardsSkeleton />}>
-               <CreditCardsList />
-            </Suspense>
-         </ErrorBoundary>
+            <CreditCardsList />
+         </QueryBoundary>
       </main>
    );
 }

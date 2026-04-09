@@ -36,8 +36,8 @@ import {
    Trash2,
    User,
 } from "lucide-react";
-import { Fragment, Suspense } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { Fragment } from "react";
+import type { FallbackProps } from "react-error-boundary";
 import {
    useRevokeAllSessions,
    useRevokeOtherSessions,
@@ -46,6 +46,7 @@ import { SessionDetailsForm } from "@/features/settings/ui/session-details-form"
 import { useCredenza } from "@/hooks/use-credenza";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
+import { QueryBoundary } from "@/components/query-boundary";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/security",
@@ -403,10 +404,11 @@ function SecuritySectionContent() {
 
 function SecurityPage() {
    return (
-      <ErrorBoundary FallbackComponent={SecuritySectionErrorFallback}>
-         <Suspense fallback={<SecuritySectionSkeleton />}>
-            <SecuritySectionContent />
-         </Suspense>
-      </ErrorBoundary>
+      <QueryBoundary
+         fallback={<SecuritySectionSkeleton />}
+         errorFallback={SecuritySectionErrorFallback}
+      >
+         <SecuritySectionContent />
+      </QueryBoundary>
    );
 }

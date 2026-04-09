@@ -2,8 +2,7 @@ import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { KeyRound, Plus, Trash2 } from "lucide-react";
-import { Suspense, useMemo } from "react";
-import { ErrorBoundary } from "react-error-boundary";
+import { useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import type { DataTableStoredState } from "@packages/ui/components/data-table";
@@ -15,10 +14,10 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Button } from "@packages/ui/components/button";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
+import { QueryBoundary } from "@/components/query-boundary";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { buildApiKeysColumns } from "./-api-keys/api-keys-columns";
@@ -195,14 +194,11 @@ function ApiKeysContent() {
 
 function ApiKeysPage() {
    return (
-      <ErrorBoundary
-         FallbackComponent={createErrorFallback({
-            errorTitle: "Erro ao carregar chaves de API",
-         })}
+      <QueryBoundary
+         fallback={<ApiKeysSkeleton />}
+         errorTitle="Erro ao carregar chaves de API"
       >
-         <Suspense fallback={<ApiKeysSkeleton />}>
-            <ApiKeysContent />
-         </Suspense>
-      </ErrorBoundary>
+         <ApiKeysContent />
+      </QueryBoundary>
    );
 }

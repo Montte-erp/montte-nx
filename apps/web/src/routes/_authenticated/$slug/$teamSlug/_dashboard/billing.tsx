@@ -15,9 +15,9 @@ import {
    TabsTrigger,
 } from "@packages/ui/components/tabs";
 import { createFileRoute } from "@tanstack/react-router";
+import { QueryBoundary } from "@/components/query-boundary";
 import { CreditCard } from "lucide-react";
-import { Suspense } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import type { FallbackProps } from "react-error-boundary";
 import { BillingOverview } from "@/features/billing/ui/billing-overview";
 import { BillingSpend } from "@/features/billing/ui/billing-spend";
 import { BillingUsage } from "@/features/billing/ui/billing-usage";
@@ -103,30 +103,32 @@ function BillingPage() {
             <Separator />
 
             <TabsContent className="space-y-4" value="overview">
-               <ErrorBoundary FallbackComponent={BillingSectionErrorFallback}>
-                  <Suspense fallback={<BillingSectionSkeleton />}>
-                     <BillingOverview />
-                  </Suspense>
-               </ErrorBoundary>
+               <QueryBoundary
+                  fallback={<BillingSectionSkeleton />}
+                  errorFallback={BillingSectionErrorFallback}
+               >
+                  <BillingOverview />
+               </QueryBoundary>
             </TabsContent>
 
             <TabsContent className="space-y-4" value="usage">
-               <ErrorBoundary FallbackComponent={BillingSectionErrorFallback}>
-                  <Suspense fallback={<BillingSectionSkeleton />}>
-                     <EarlyAccessBanner template={earlyAccessTemplate} />
-                     <BillingUsage />
-                  </Suspense>
-               </ErrorBoundary>
+               <QueryBoundary
+                  fallback={<BillingSectionSkeleton />}
+                  errorFallback={BillingSectionErrorFallback}
+               >
+                  <EarlyAccessBanner template={earlyAccessTemplate} />
+                  <BillingUsage />
+               </QueryBoundary>
             </TabsContent>
 
             <TabsContent className="space-y-4" value="spend">
-               <ErrorBoundary FallbackComponent={BillingSectionErrorFallback}>
-                  <Suspense fallback={<BillingSectionSkeleton />}>
-                     <EarlyAccessBanner template={earlyAccessTemplate} />
-
-                     <BillingSpend />
-                  </Suspense>
-               </ErrorBoundary>
+               <QueryBoundary
+                  fallback={<BillingSectionSkeleton />}
+                  errorFallback={BillingSectionErrorFallback}
+               >
+                  <EarlyAccessBanner template={earlyAccessTemplate} />
+                  <BillingSpend />
+               </QueryBoundary>
             </TabsContent>
          </Tabs>
       </div>
