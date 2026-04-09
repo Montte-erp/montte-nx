@@ -130,6 +130,26 @@ export const bulkRemove = protectedProcedure
 - `input` goes INSIDE `queryOptions()`. Mutation callbacks go INSIDE `mutationOptions()`.
 - Global `MutationCache` in `root-provider.tsx` invalidates all queries after every mutation — per-mutation invalidation only needed for cross-tree queries.
 
+**Hook selection:**
+
+| Need | Hook |
+| ---- | ---- |
+| Single query (default) | `useSuspenseQuery` |
+| Multiple independent queries in same component | `useSuspenseQueries` — avoids waterfall |
+| Conditional query (depends on user input/state) | `useSuspenseQuery` + `skipToken` |
+| Paginated query (no flicker on page change) | `useSuspenseQuery` + `placeholderData: keepPreviousData` |
+| Subscribe to partial query data | `useSuspenseQuery` + `select` option |
+| Prefetch before render | `queryClient.prefetchQuery` in route loader |
+| Track mutation state cross-component | `useMutationState` + `orpc.procedure.mutationKey()` |
+
+**Key rules:**
+- **Never `useQuery`** — always `useSuspenseQuery`. Exception: only when rendering outside a `<Suspense>` and a loading state is intentional (rare).
+- **Never `useQuery + enabled`** — use `skipToken + useSuspenseQuery` instead.
+- **`useSuspenseQueries`** for 2+ independent queries in the same component — prevents React from suspending sequentially (waterfall).
+- **`placeholderData: keepPreviousData`** is mandatory on all queries with `page`/`pageSize` input — prevents content from disappearing while navigating pages.
+- **`select`** — when a component only needs one field from a large query response; prevents re-renders when unrelated fields change.
+- **`orpc.procedure.mutationKey()` / `orpc.procedure.queryKey()`** — always use oRPC-generated keys; never define manual string arrays.
+
 **Type inference** — never define manual interfaces for router data:
 
 ```typescript
