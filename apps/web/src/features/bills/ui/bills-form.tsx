@@ -29,9 +29,7 @@ import { useForm } from "@tanstack/react-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ORPCError } from "@orpc/client";
 import dayjs from "dayjs";
-import { Suspense } from "react";
-import { ErrorBoundary } from "react-error-boundary";
-import { createErrorFallback } from "@/components/query-boundary";
+import { QueryBoundary } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { BillRow } from "./bills-columns";
@@ -367,14 +365,11 @@ function BillFormSkeleton() {
 
 export function BillForm(props: BillFormProps) {
    return (
-      <ErrorBoundary
-         FallbackComponent={createErrorFallback({
-            errorTitle: "Erro ao carregar conta",
-         })}
+      <QueryBoundary
+         fallback={<BillFormSkeleton />}
+         errorTitle="Erro ao carregar conta"
       >
-         <Suspense fallback={<BillFormSkeleton />}>
-            <BillFormInner {...props} />
-         </Suspense>
-      </ErrorBoundary>
+         <BillFormInner {...props} />
+      </QueryBoundary>
    );
 }

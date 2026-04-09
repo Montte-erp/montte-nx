@@ -47,7 +47,7 @@ import {
    DropzoneEmptyState,
 } from "@packages/ui/components/dropzone";
 import { defineStepper } from "@packages/ui/components/stepper";
-import { createErrorFallback } from "@/components/query-boundary";
+import { QueryBoundary } from "@/components/query-boundary";
 import {
    Tooltip,
    TooltipContent,
@@ -68,8 +68,7 @@ import {
    Undo2,
    X,
 } from "lucide-react";
-import { Suspense, useRef, useState, useTransition } from "react";
-import { ErrorBoundary } from "react-error-boundary";
+import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import { useCredenza } from "@/hooks/use-credenza";
@@ -1482,39 +1481,29 @@ function ImportWizard({
    return (
       <>
          {currentId === "upload" && (
-            <ErrorBoundary
-               FallbackComponent={createErrorFallback({
-                  errorTitle: "Erro ao carregar contas",
-               })}
+            <QueryBoundary
+               fallback={
+                  <div className="flex items-center justify-center p-4">
+                     <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  </div>
+               }
+               errorTitle="Erro ao carregar contas"
             >
-               <Suspense
-                  fallback={
-                     <div className="flex items-center justify-center p-4">
-                        <Loader2 className="size-4 animate-spin text-muted-foreground" />
-                     </div>
-                  }
-               >
-                  <UploadStep methods={methods} />
-               </Suspense>
-            </ErrorBoundary>
+               <UploadStep methods={methods} />
+            </QueryBoundary>
          )}
          {currentId === "map" && <MapStep methods={methods} />}
          {currentId === "preview" && (
-            <ErrorBoundary
-               FallbackComponent={createErrorFallback({
-                  errorTitle: "Erro ao carregar categorias",
-               })}
+            <QueryBoundary
+               fallback={
+                  <div className="flex items-center justify-center p-4">
+                     <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  </div>
+               }
+               errorTitle="Erro ao carregar categorias"
             >
-               <Suspense
-                  fallback={
-                     <div className="flex items-center justify-center p-4">
-                        <Loader2 className="size-4 animate-spin text-muted-foreground" />
-                     </div>
-                  }
-               >
-                  <PreviewStep methods={methods} />
-               </Suspense>
-            </ErrorBoundary>
+               <PreviewStep methods={methods} />
+            </QueryBoundary>
          )}
          {currentId === "confirm" && (
             <ConfirmStep methods={methods} onClose={onClose} />

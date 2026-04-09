@@ -25,9 +25,7 @@ import type {
 } from "@tanstack/react-table";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
-import { Suspense, useCallback } from "react";
-import { ErrorBoundary } from "react-error-boundary";
-import { createErrorFallback } from "@/components/query-boundary";
+import { useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
@@ -172,19 +170,16 @@ function CreditCardsList() {
       (card: CreditCardRow) => {
          openCredenza({
             children: (
-               <ErrorBoundary
-                  FallbackComponent={createErrorFallback({
-                     errorTitle: "Erro ao carregar cartão",
-                  })}
+               <QueryBoundary
+                  fallback={<CreditCardFormSkeleton />}
+                  errorTitle="Erro ao carregar cartão"
                >
-                  <Suspense fallback={<CreditCardFormSkeleton />}>
-                     <CreditCardForm
-                        card={card}
-                        mode="edit"
-                        onSuccess={closeCredenza}
-                     />
-                  </Suspense>
-               </ErrorBoundary>
+                  <CreditCardForm
+                     card={card}
+                     mode="edit"
+                     onSuccess={closeCredenza}
+                  />
+               </QueryBoundary>
             ),
          });
       },
@@ -299,15 +294,12 @@ function CreditCardsPage() {
    function handleCreate() {
       openCredenza({
          children: (
-            <ErrorBoundary
-               FallbackComponent={createErrorFallback({
-                  errorTitle: "Erro ao carregar formulário",
-               })}
+            <QueryBoundary
+               fallback={<CreditCardFormSkeleton />}
+               errorTitle="Erro ao carregar formulário"
             >
-               <Suspense fallback={<CreditCardFormSkeleton />}>
-                  <CreditCardForm mode="create" onSuccess={closeCredenza} />
-               </Suspense>
-            </ErrorBoundary>
+               <CreditCardForm mode="create" onSuccess={closeCredenza} />
+            </QueryBoundary>
          ),
       });
    }

@@ -1,5 +1,5 @@
 import { Button } from "@packages/ui/components/button";
-import { createErrorFallback } from "@/components/query-boundary";
+import { QueryBoundary } from "@/components/query-boundary";
 import {
    CredenzaBody,
    CredenzaDescription,
@@ -13,8 +13,7 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
 import type { FC, FormEvent } from "react";
-import { Suspense, useCallback, useTransition } from "react";
-import { ErrorBoundary } from "react-error-boundary";
+import { useCallback, useTransition } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
@@ -212,15 +211,12 @@ export const CreateTeamForm: FC = () => {
                Crie um novo espaço para organizar os membros da sua organização
             </CredenzaDescription>
          </CredenzaHeader>
-         <ErrorBoundary
-            FallbackComponent={createErrorFallback({
-               errorTitle: "Erro ao carregar dados da organização",
-            })}
+         <QueryBoundary
+            fallback={<CreateTeamSkeleton />}
+            errorTitle="Erro ao carregar dados da organização"
          >
-            <Suspense fallback={<CreateTeamSkeleton />}>
-               <CreateTeamFormContent />
-            </Suspense>
-         </ErrorBoundary>
+            <CreateTeamFormContent />
+         </QueryBoundary>
       </>
    );
 };
