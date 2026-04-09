@@ -11,7 +11,7 @@ import type { PublicEnv } from "@/integrations/public-env";
 export type RouterContext = {
    queryClient: QueryClient;
    orpc: typeof orpc;
-   publicEnv: PublicEnv;
+   publicEnv: PublicEnv | undefined;
 };
 
 export function getContext(): RouterContext {
@@ -40,8 +40,7 @@ export function getContext(): RouterContext {
    return {
       queryClient,
       orpc,
-      publicEnv:
-         typeof document === "undefined" ? getPublicEnv() : ({} as PublicEnv),
+      publicEnv: typeof document === "undefined" ? getPublicEnv() : undefined,
    };
 }
 

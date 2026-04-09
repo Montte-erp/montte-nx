@@ -27,10 +27,10 @@ export const getRouter = () => {
       context: {
          ...rqContext,
       },
-      dehydrate: (): { publicEnv: PublicEnv } => ({
+      dehydrate: (): { publicEnv: PublicEnv | undefined } => ({
          publicEnv: router.options.context.publicEnv,
       }),
-      hydrate: (dehydrated: { publicEnv: PublicEnv }) => {
+      hydrate: (dehydrated: { publicEnv: PublicEnv | undefined }) => {
          router.options.context.publicEnv = dehydrated.publicEnv;
       },
       defaultPreload: "intent",
