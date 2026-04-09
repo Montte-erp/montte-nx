@@ -29,7 +29,7 @@ import {
    TooltipProvider,
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
-import { useSuspenseQueries } from "@tanstack/react-query";
+import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import {
    Briefcase,
    Calendar,
@@ -563,7 +563,7 @@ function InvoicesPreviewSkeleton() {
 
 function InvoicesPreviewContent() {
    const { data: invoices } = useSuspenseQuery(
-      orpc.billing.getInvoices.queryOptions({ limit: 5 }),
+      orpc.billing.getInvoices.queryOptions({ input: { limit: 5 } }),
    );
 
    if (!invoices || invoices.length === 0) {

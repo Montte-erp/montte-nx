@@ -25,11 +25,7 @@ import {
    SelectionActionButton,
 } from "@packages/ui/components/selection-action-bar";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
-import {
-   keepPreviousData,
-   useMutation,
-   useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import {
    ArrowLeftRight,
    FolderOpen,
@@ -119,7 +115,6 @@ export function TransactionsList({
             pageSize: filters.pageSize,
          },
       }),
-      placeholderData: keepPreviousData,
    });
 
    const { data: summary } = useSuspenseQuery(
