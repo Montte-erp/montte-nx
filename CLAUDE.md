@@ -295,7 +295,66 @@ const result = await agent.generate("...", { requestContext: context });
 
 ---
 
-## Routes (TanStack Router — file-based)
+## TanStack Start
+
+`apps/web` uses **TanStack Start** (not just TanStack Router). Active APIs: `shellComponent`, `HeadContent`, `Scripts`, `ClientOnly`, `head()`, SSR streaming, `createServerFn`.
+
+**Vite config** (`apps/web/vite.config.ts`) — plugin order is critical:
+```typescript
+plugins: [
+   tanstackStart({ router: { autoCodeSplitting: true } }), // MUST be first
+   nitro({ preset: "bun" }),   // deploy target — change preset to switch environments
+   viteReact(),
+]
+```
+
+**`createServerFn`** — use for HTTP-pure operations that need `process.env` or request context at runtime. Do NOT use as an alternative to oRPC for domain queries/mutations:
+
+```typescript
+import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
+
+const getThingFromRequest = createServerFn({ method: "GET" }).handler(() => {
+   const request = getRequest();
+   // read cookies, headers, process.env — always runs server-side
+});
+```
+
+Valid uses: reading cookies (theme, locale), reading `process.env` for runtime-injected env vars, header inspection.
+
+**Environment variables (Railway skipped builds)** — never use `VITE_*` or `import.meta.env` for public env vars. These are inlined at build time and break Railway's skipped builds feature. Instead, expose via `createServerFn` reading `process.env`, and pass to the client through loader data:
+
+```typescript
+// ✅ Runtime injection via server function
+const getPublicEnvFn = createServerFn({ method: "GET" }).handler(() => getPublicEnv());
+
+// In root loader:
+loader: async ({ context }) => {
+   const [publicEnv, theme] = await Promise.all([getPublicEnvFn(), getThemeFromCookie()]);
+   return { publicEnv, theme };
+}
+```
+
+**Devtools** — always guard with `import.meta.env.DEV`:
+```tsx
+{import.meta.env.DEV && (
+   <ClientOnly>
+      <TanStackDevtools ... />
+   </ClientOnly>
+)}
+```
+
+**Theme (SSR, no flash)** — theme is read from the `theme` cookie via `createServerFn` in the root loader, then applied as `className` on `<html>` server-side. `ThemeProvider.setTheme` writes both localStorage and the cookie. Do not use `dangerouslySetInnerHTML` for theme scripts.
+
+**Streaming SSR** — active by default. `apps/web/src/server.ts` delegates to `handler.fetch` which uses `defaultStreamHandler` → `renderRouterToStream` internally. No explicit configuration needed. To disable streaming, swap for `defaultRenderHandler` from `@tanstack/react-start/server`.
+
+**Start middleware vs oRPC middleware:**
+- `createMiddleware` (Start) → HTTP-level cross-cutting concerns (logging, CSP, rate limiting)
+- oRPC middleware → domain logic with typed context (auth, validation)
+
+---
+
+## Routes
 
 ```
 apps/web/src/routes/
@@ -313,7 +372,6 @@ Conventions: kebab-case, `$` for dynamic segments, `_` for layout routes.
 - `errorComponent` on routes using blocking `ensureQueryData` in the loader
 - `validateSearch` fields must use `.catch()` (not `.optional()`) for fields with defaults — prevents parse errors from invalid URL params
 - `loaderDeps` is mandatory when the loader uses search params — without it, the loader won't re-run when params change
-- `autoCodeSplitting: true` is configured in `vite.config.ts` — no manual `.lazy.tsx` files needed
 
 **Pagination via URL search params (all DataTable routes):**
 - `page` and `pageSize` belong in `validateSearch` with `.catch()` defaults, not in local state
@@ -485,7 +543,9 @@ All scripts in root `scripts/`. Required: `commander` with `run`+`check` command
 
 ## Environment Variables
 
-`SCREAMING_SNAKE_CASE`, Zod-validated in `core/environment/src/{server,worker}.ts`. Client-side: `VITE_` prefix. Env files in `apps/web/`.
+`SCREAMING_SNAKE_CASE`, Zod-validated in `core/environment/src/{server,worker}.ts`. Env files in `apps/web/`.
+
+**Public env vars** — do NOT use `VITE_*` / `import.meta.env`. These are inlined at build time and break Railway skipped builds. See TanStack Start section for the correct `createServerFn` pattern.
 
 ---
 

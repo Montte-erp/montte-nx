@@ -22,8 +22,11 @@ import { PostHogWrapper } from "@/integrations/posthog/client";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import type { RouterContext } from "../integrations/tanstack-query/root-provider";
 
+let cachedPublicEnv: ReturnType<typeof getPublicEnv> | null = null;
+
 const getPublicEnvFn = createServerFn({ method: "GET" }).handler(() => {
-   return getPublicEnv();
+   cachedPublicEnv ??= getPublicEnv();
+   return cachedPublicEnv;
 });
 
 const getThemeFromCookie = createServerFn({ method: "GET" }).handler(() => {

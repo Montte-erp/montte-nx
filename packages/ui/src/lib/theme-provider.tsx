@@ -3,20 +3,6 @@ import { invariant } from "foxact/invariant";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import * as React from "react";
 
-function FunctionOnce<T = unknown>({
-   children,
-   param,
-}: {
-   children: (param: T) => unknown;
-   param?: T;
-}) {
-   return (
-      <ScriptOnce>
-         {`(${children.toString()})(${JSON.stringify(param)})`}
-      </ScriptOnce>
-   );
-}
-
 export type ResolvedTheme = "dark" | "light";
 export type Theme = ResolvedTheme | "system";
 
@@ -98,7 +84,7 @@ export function ThemeProvider({
          setTheme: (newTheme: Theme) => {
             const resolved =
                !newTheme || newTheme.trim() === "" ? "system" : newTheme;
-            document.cookie = `theme=${resolved}; path=/; max-age=31536000; SameSite=Lax`;
+            document.cookie = `theme=${resolved}; path=/; max-age=31536000; SameSite=Lax; Secure`;
             setStoredTheme(resolved);
          },
          theme,
@@ -108,28 +94,14 @@ export function ThemeProvider({
 
    return (
       <ThemeProviderContext value={value}>
-         <FunctionOnce
-            param={{ attribute, enableSystem, storageKey: "montte:theme" }}
-         >
-            {({ storageKey, enableSystem, attribute }) => {
-               const theme: string | null = localStorage.getItem(storageKey);
-               const root = document.documentElement;
-
-               const isDark =
-                  theme === "dark" ||
-                  ((theme === null || theme === "system") &&
-                     enableSystem &&
-                     window.matchMedia("(prefers-color-scheme: dark)").matches);
-
-               if (isDark) {
-                  if (attribute === "class") {
-                     root.classList.add("dark");
-                  } else {
-                     root.setAttribute(attribute, "dark");
-                  }
-               }
-            }}
-         </FunctionOnce>
+         <ScriptOnce>
+            {`(function(){
+               var t=localStorage.getItem('montte:theme');
+               var isDark=t==='dark'||((t===null||t==='system')&&${enableSystem}&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+               if(isDark){${attribute === "class" ? 'document.documentElement.classList.add("dark")' : `document.documentElement.setAttribute("${attribute}","dark")`}}
+               document.cookie='theme='+(t||'system')+'; path=/; max-age=31536000; SameSite=Lax; Secure';
+            })()`}
+         </ScriptOnce>
          {children}
       </ThemeProviderContext>
    );
