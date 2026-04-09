@@ -101,6 +101,14 @@ export async function bulkDeleteCreditCards(
       if (cards.length !== ids.length) {
          throw AppError.notFound("Um ou mais cartões não encontrados.");
       }
+      for (const card of cards) {
+         const hasOpen = await creditCardHasOpenStatements(db, card.id);
+         if (hasOpen) {
+            throw AppError.conflict(
+               `Cartão "${card.name}" possui faturas abertas e não pode ser excluído.`,
+            );
+         }
+      }
       await db.delete(creditCards).where(inArray(creditCards.id, ids));
    } catch (err) {
       propagateError(err);

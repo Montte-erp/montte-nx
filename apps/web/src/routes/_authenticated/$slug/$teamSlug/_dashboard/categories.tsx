@@ -31,7 +31,7 @@ import {
    Trash2,
    Upload,
 } from "lucide-react";
-import { Suspense, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
