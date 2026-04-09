@@ -27,12 +27,6 @@ export function createTestAuth(db: DatabaseInstance) {
             schema: {
                organization: {
                   additionalFields: {
-                     context: {
-                        defaultValue: "personal",
-                        input: true,
-                        required: false,
-                        type: "string",
-                     },
                      description: {
                         defaultValue: "",
                         input: true,

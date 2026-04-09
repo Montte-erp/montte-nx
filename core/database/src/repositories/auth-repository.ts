@@ -141,7 +141,6 @@ export async function createDefaultOrganization(
       const [createdOrganization] = await dbClient
          .insert(organization)
          .values({
-            context: "personal",
             createdAt: now,
             description: orgName,
             name: orgName,

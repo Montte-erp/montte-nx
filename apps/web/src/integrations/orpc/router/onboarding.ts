@@ -325,7 +325,9 @@ export const fetchCnpjData = authenticatedProcedure
       )
          .andThen((res) =>
             res.ok
-               ? ResultAsync.fromSafePromise(res.json())
+               ? ResultAsync.fromPromise(res.json(), () =>
+                    WebAppError.internal(CNPJ_FETCH_ERROR),
+                 )
                : errAsync(
                     CNPJ_STATUS_ERRORS[res.status] ??
                        WebAppError.internal(CNPJ_FETCH_ERROR),
