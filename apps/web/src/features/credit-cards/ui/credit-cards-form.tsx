@@ -1,4 +1,5 @@
 import { Button } from "@packages/ui/components/button";
+import { Spinner } from "@packages/ui/components/spinner";
 import {
    ColorPicker,
    ColorPickerAlpha,
@@ -369,13 +370,18 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
          </CredenzaBody>
 
          <CredenzaFooter className="flex flex-col gap-2">
-            <form.Subscribe selector={(state) => state.canSubmit}>
-               {(canSubmit) => (
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
                   <Button
                      className="w-full gap-2"
-                     disabled={!canSubmit}
+                     disabled={!canSubmit || isSubmitting}
                      type="submit"
                   >
+                     {isSubmitting && <Spinner className="size-4" />}
                      {isCreate ? "Criar cartão" : "Salvar alterações"}
                   </Button>
                )}
