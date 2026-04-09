@@ -79,7 +79,6 @@ function SignInEmailPage() {
 
    return (
       <section className="flex flex-col gap-4 w-full">
-         {/* Back Link */}
          <Button asChild className="gap-2 px-0" variant="link">
             <Link to="/auth/sign-in">
                <ArrowLeft className="size-4" />
@@ -87,7 +86,6 @@ function SignInEmailPage() {
             </Link>
          </Button>
 
-         {/* Header */}
          <div className="text-center flex flex-col gap-2">
             <h1 className="text-3xl font-semibold font-serif">
                Entrar com Email
@@ -97,7 +95,6 @@ function SignInEmailPage() {
             </p>
          </div>
 
-         {/* Form */}
          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <FieldGroup>
                <form.Field
@@ -186,7 +183,6 @@ function SignInEmailPage() {
             </form.Subscribe>
          </form>
 
-         {/* Footer */}
          <div className="text-sm text-center">
             <div className="flex gap-1 justify-center items-center">
                <span>Primeira vez aqui? </span>

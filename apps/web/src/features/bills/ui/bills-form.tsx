@@ -25,9 +25,8 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
-import { ORPCError } from "@orpc/client";
 import { useForm } from "@tanstack/react-form";
-import { useSuspenseQueries } from "@tanstack/react-query";
+import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { QueryBoundary } from "@/components/query-boundary";
@@ -51,6 +50,8 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
       ],
    });
 
+   const updateMutation = useMutation(orpc.bills.update.mutationOptions());
+
    const form = useForm({
       defaultValues: {
          type: bill.type as "payable" | "receivable",
@@ -61,34 +62,19 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
          categoryId: bill.category?.id ?? "",
          description: "",
       },
-      validators: {
-         onSubmitAsync: async ({ value }) => {
-            try {
-               await orpc.bills.update.call({
-                  id: bill.id,
-                  type: value.type,
-                  name: value.name.trim(),
-                  amount: value.amount,
-                  dueDate: value.dueDate,
-                  bankAccountId: value.bankAccountId || null,
-                  categoryId: value.categoryId || null,
-                  description: value.description?.trim() || null,
-               });
-               toast.success("Conta atualizada com sucesso.");
-               onSuccess();
-               return null;
-            } catch (err) {
-               if (err instanceof ORPCError && err.code === "CONFLICT") {
-                  return { form: "Já existe uma conta com esses dados." };
-               }
-               return {
-                  form:
-                     err instanceof Error
-                        ? err.message
-                        : "Erro ao atualizar conta.",
-               };
-            }
-         },
+      onSubmit: async ({ value }) => {
+         await updateMutation.mutateAsync({
+            id: bill.id,
+            type: value.type,
+            name: value.name.trim(),
+            amount: value.amount,
+            dueDate: value.dueDate,
+            bankAccountId: value.bankAccountId || null,
+            categoryId: value.categoryId || null,
+            description: value.description?.trim() || null,
+         });
+         toast.success("Conta atualizada com sucesso.");
+         onSuccess();
       },
    });
 
@@ -336,21 +322,6 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
          </CredenzaBody>
 
          <CredenzaFooter className="flex flex-col gap-2">
-            <form.Subscribe
-               selector={(state) =>
-                  state.errors.flatMap((e) => {
-                     if (!e) return [];
-                     if (typeof e === "string") return [e];
-                     if ("form" in e && typeof e.form === "string")
-                        return [e.form];
-                     return [];
-                  })
-               }
-            >
-               {(messages) =>
-                  messages.length > 0 && <FieldError errors={messages} />
-               }
-            </form.Subscribe>
             <form.Subscribe
                selector={(state) =>
                   [state.canSubmit, state.isSubmitting] as const

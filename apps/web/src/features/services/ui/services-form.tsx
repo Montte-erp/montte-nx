@@ -28,6 +28,7 @@ import {
 import { useBlocker } from "@tanstack/react-router";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { QueryBoundary } from "@/components/query-boundary";
 import { orpc } from "@/integrations/orpc/client";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import type { ServiceRow } from "./services-columns";
@@ -353,7 +354,12 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                </div>
 
                {!isCreate && service?.id && (
-                  <ExistingVariants serviceId={service.id} />
+                  <QueryBoundary
+                     errorTitle="Erro ao carregar variantes"
+                     fallback={null}
+                  >
+                     <ExistingVariants serviceId={service.id} />
+                  </QueryBoundary>
                )}
 
                <form.Field
