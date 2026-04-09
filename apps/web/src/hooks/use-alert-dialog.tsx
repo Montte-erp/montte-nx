@@ -71,6 +71,7 @@ export function GlobalAlertDialog() {
    const [isPending, startTransition] = useTransition();
 
    const handleAction = async () => {
+      alertDialogStore.setState((s) => ({ ...s, onCancel: undefined }));
       await state.onAction();
       alertDialogStore.setState(() => initialState);
    };

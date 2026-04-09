@@ -25,10 +25,11 @@ import {
    useMutation,
    useSuspenseQueries,
 } from "@tanstack/react-query";
+import { useBlocker } from "@tanstack/react-router";
 import { PlusCircle, Trash2 } from "lucide-react";
-import { useTransition } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import type { ServiceRow } from "./services-columns";
 
 type BillingCycle = "hourly" | "monthly" | "annual" | "one_time";
@@ -61,7 +62,6 @@ interface ServiceFormProps {
 
 export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
    const isCreate = mode === "create";
-   const [isPending, startTransition] = useTransition();
 
    const [{ data: categories }, { data: tags }, { data: existingVariants }] =
       useSuspenseQueries({
@@ -79,29 +79,15 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
          ],
       });
 
-   const createMutation = useMutation(
-      orpc.services.create.mutationOptions({
-         onError: (error) => {
-            toast.error(error.message || "Erro ao criar serviço.");
-         },
-      }),
-   );
+   const { openAlertDialog } = useAlertDialog();
 
-   const updateMutation = useMutation(
-      orpc.services.update.mutationOptions({
-         onError: (error) => {
-            toast.error(error.message || "Erro ao atualizar serviço.");
-         },
-      }),
-   );
-
+   const createMutation = useMutation(orpc.services.create.mutationOptions());
+   const updateMutation = useMutation(orpc.services.update.mutationOptions());
    const createVariantMutation = useMutation(
-      orpc.services.createVariant.mutationOptions({
-         onError: (error) => {
-            toast.error(error.message || "Erro ao criar variante.");
-         },
-      }),
+      orpc.services.createVariant.mutationOptions(),
    );
+
+   const emptyVariants: VariantFormValue[] = [];
 
    const form = useForm({
       defaultValues: {
@@ -110,62 +96,83 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
          basePrice: service?.basePrice ?? "0",
          categoryId: service?.categoryId ?? "",
          tagId: service?.tagId ?? "",
-         variants: [] as VariantFormValue[],
+         variants: emptyVariants,
       },
-      onSubmit: async ({ value }) => {
-         const categoryId = value.categoryId.trim() || undefined;
-         const tagId = value.tagId.trim() || undefined;
+      validators: {
+         onSubmitAsync: async ({ value }) => {
+            const categoryId = value.categoryId.trim() || undefined;
+            const tagId = value.tagId.trim() || undefined;
 
-         if (isCreate) {
-            const created = await createMutation.mutateAsync({
-               name: value.name.trim(),
-               description: value.description.trim() || undefined,
-               basePrice: value.basePrice,
-               categoryId,
-               tagId,
-            });
+            try {
+               if (isCreate) {
+                  const created = await createMutation.mutateAsync({
+                     name: value.name.trim(),
+                     description: value.description.trim() || undefined,
+                     basePrice: value.basePrice,
+                     categoryId,
+                     tagId,
+                  });
 
-            if (value.variants.length > 0) {
-               await Promise.all(
-                  value.variants.map((v) =>
-                     createVariantMutation.mutateAsync({
-                        serviceId: created.id,
-                        name: v.name.trim(),
-                        basePrice: v.basePrice,
-                        billingCycle: v.billingCycle as BillingCycle,
-                     }),
-                  ),
-               );
+                  if (value.variants.length > 0) {
+                     await Promise.all(
+                        value.variants.map((v) =>
+                           createVariantMutation.mutateAsync({
+                              serviceId: created.id,
+                              name: v.name.trim(),
+                              basePrice: v.basePrice,
+                              billingCycle: v.billingCycle,
+                           }),
+                        ),
+                     );
+                  }
+
+                  toast.success("Serviço criado.");
+               } else if (service) {
+                  await updateMutation.mutateAsync({
+                     id: service.id,
+                     name: value.name.trim(),
+                     description: value.description.trim() || undefined,
+                     basePrice: value.basePrice,
+                     categoryId,
+                     tagId,
+                  });
+                  toast.success("Serviço atualizado.");
+               }
+               onSuccess();
+               return null;
+            } catch (err) {
+               return {
+                  form: err instanceof Error ? err.message : "Erro inesperado.",
+               };
             }
-
-            toast.success("Serviço criado.");
-         } else if (service) {
-            await updateMutation.mutateAsync({
-               id: service.id,
-               name: value.name.trim(),
-               description: value.description.trim() || undefined,
-               basePrice: value.basePrice,
-               categoryId,
-               tagId,
-            });
-            toast.success("Serviço atualizado.");
-         }
-
-         onSuccess();
+         },
       },
    });
 
-   const mutationsPending =
-      createMutation.isPending ||
-      updateMutation.isPending ||
-      createVariantMutation.isPending;
+   const blocker = useBlocker({
+      withResolver: true,
+      shouldBlockFn: () => {
+         if (form.store.state.isDirty && !form.store.state.isSubmitted) {
+            openAlertDialog({
+               title: "Descartar alterações?",
+               description:
+                  "Você tem alterações não salvas. Tem certeza que deseja sair sem salvar?",
+               actionLabel: "Descartar alterações",
+               cancelLabel: "Continuar editando",
+               onAction: () => blocker.proceed(),
+               onCancel: () => blocker.reset(),
+            });
+            return true;
+         }
+         return false;
+      },
+      disabled: isCreate,
+   });
 
    const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      startTransition(async () => {
-         await form.handleSubmit();
-      });
+      form.handleSubmit();
    };
 
    return (
@@ -462,7 +469,24 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
             </div>
          </CredenzaBody>
 
-         <CredenzaFooter>
+         <CredenzaFooter className="flex flex-col gap-2">
+            <form.Subscribe
+               selector={(state) =>
+                  typeof state.errorMap.onSubmit === "object" &&
+                  state.errorMap.onSubmit !== null &&
+                  "form" in state.errorMap.onSubmit
+                     ? String(state.errorMap.onSubmit.form)
+                     : null
+               }
+            >
+               {(formError) =>
+                  formError && (
+                     <p className="text-sm text-destructive text-center">
+                        {formError}
+                     </p>
+                  )
+               }
+            </form.Subscribe>
             <form.Subscribe
                selector={(state) =>
                   [state.canSubmit, state.isSubmitting] as const
@@ -471,17 +495,10 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                {([canSubmit, isSubmitting]) => (
                   <Button
                      className="w-full gap-2"
-                     disabled={
-                        !canSubmit ||
-                        isSubmitting ||
-                        isPending ||
-                        mutationsPending
-                     }
+                     disabled={!canSubmit || isSubmitting}
                      type="submit"
                   >
-                     {(isSubmitting || isPending || mutationsPending) && (
-                        <Spinner className="size-4" />
-                     )}
+                     {isSubmitting && <Spinner className="size-4" />}
                      {isCreate ? "Criar serviço" : "Salvar alterações"}
                   </Button>
                )}

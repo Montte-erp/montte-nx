@@ -27,7 +27,7 @@ import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
 import { ORPCError } from "@orpc/client";
 import { useForm } from "@tanstack/react-form";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQueries } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { QueryBoundary } from "@/components/query-boundary";
@@ -44,13 +44,12 @@ interface BillFormProps {
 function BillFormInner({ bill, onSuccess }: BillFormProps) {
    const today = dayjs().format("YYYY-MM-DD");
 
-   const { data: accounts } = useSuspenseQuery(
-      orpc.bankAccounts.getAll.queryOptions({}),
-   );
-   const { data: categoriesResult } = useSuspenseQuery(
-      orpc.categories.getAll.queryOptions({}),
-   );
-   const categories = categoriesResult;
+   const [{ data: accounts }, { data: categories }] = useSuspenseQueries({
+      queries: [
+         orpc.bankAccounts.getAll.queryOptions({}),
+         orpc.categories.getAll.queryOptions({}),
+      ],
+   });
 
    const form = useForm({
       defaultValues: {

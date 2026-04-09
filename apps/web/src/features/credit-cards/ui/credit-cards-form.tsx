@@ -32,9 +32,11 @@ import {
 import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useBlocker } from "@tanstack/react-router";
 import Color from "color";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
 
 interface CreditCardFormProps {
    mode: "create" | "edit";
@@ -58,30 +60,13 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
       orpc.bankAccounts.getAll.queryOptions({}),
    );
 
-   const createMutation = useMutation(
-      orpc.creditCards.create.mutationOptions({
-         onSuccess: () => {
-            toast.success("Cartão de crédito criado com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao criar cartão de crédito.");
-         },
-      }),
-   );
+   const { openAlertDialog } = useAlertDialog();
 
+   const createMutation = useMutation(
+      orpc.creditCards.create.mutationOptions(),
+   );
    const updateMutation = useMutation(
-      orpc.creditCards.update.mutationOptions({
-         onSuccess: () => {
-            toast.success("Cartão de crédito atualizado com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(
-               error.message || "Erro ao atualizar cartão de crédito.",
-            );
-         },
-      }),
+      orpc.creditCards.update.mutationOptions(),
    );
 
    const form = useForm({
@@ -93,28 +78,60 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
          dueDay: card?.dueDay ?? 10,
          bankAccountId: card?.bankAccountId ?? "",
       },
-      onSubmit: async ({ value }) => {
-         if (isCreate) {
-            createMutation.mutate({
-               name: value.name.trim(),
-               color: value.color,
-               creditLimit: value.creditLimit,
-               closingDay: value.closingDay,
-               dueDay: value.dueDay,
-               bankAccountId: value.bankAccountId || "",
-            });
-         } else if (card) {
-            updateMutation.mutate({
-               id: card.id,
-               name: value.name.trim(),
-               color: value.color,
-               creditLimit: value.creditLimit,
-               closingDay: value.closingDay,
-               dueDay: value.dueDay,
-               bankAccountId: value.bankAccountId || undefined,
-            });
-         }
+      validators: {
+         onSubmitAsync: async ({ value }) => {
+            try {
+               if (isCreate) {
+                  await createMutation.mutateAsync({
+                     name: value.name.trim(),
+                     color: value.color,
+                     creditLimit: value.creditLimit,
+                     closingDay: value.closingDay,
+                     dueDay: value.dueDay,
+                     bankAccountId: value.bankAccountId || "",
+                  });
+                  toast.success("Cartão de crédito criado com sucesso.");
+               } else if (card) {
+                  await updateMutation.mutateAsync({
+                     id: card.id,
+                     name: value.name.trim(),
+                     color: value.color,
+                     creditLimit: value.creditLimit,
+                     closingDay: value.closingDay,
+                     dueDay: value.dueDay,
+                     bankAccountId: value.bankAccountId || undefined,
+                  });
+                  toast.success("Cartão de crédito atualizado com sucesso.");
+               }
+               onSuccess();
+               return null;
+            } catch (err) {
+               return {
+                  form: err instanceof Error ? err.message : "Erro inesperado.",
+               };
+            }
+         },
       },
+   });
+
+   const blocker = useBlocker({
+      withResolver: true,
+      shouldBlockFn: () => {
+         if (form.store.state.isDirty && !form.store.state.isSubmitted) {
+            openAlertDialog({
+               title: "Descartar alterações?",
+               description:
+                  "Você tem alterações não salvas. Tem certeza que deseja sair sem salvar?",
+               actionLabel: "Descartar alterações",
+               cancelLabel: "Continuar editando",
+               onAction: () => blocker.proceed(),
+               onCancel: () => blocker.reset(),
+            });
+            return true;
+         }
+         return false;
+      },
+      disabled: isCreate,
    });
 
    return (
@@ -348,7 +365,24 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
             </FieldGroup>
          </CredenzaBody>
 
-         <CredenzaFooter>
+         <CredenzaFooter className="flex flex-col gap-2">
+            <form.Subscribe
+               selector={(state) =>
+                  typeof state.errorMap.onSubmit === "object" &&
+                  state.errorMap.onSubmit !== null &&
+                  "form" in state.errorMap.onSubmit
+                     ? String(state.errorMap.onSubmit.form)
+                     : null
+               }
+            >
+               {(formError) =>
+                  formError && (
+                     <p className="text-sm text-destructive text-center">
+                        {formError}
+                     </p>
+                  )
+               }
+            </form.Subscribe>
             <form.Subscribe
                selector={(state) =>
                   [state.canSubmit, state.isSubmitting] as const
@@ -357,19 +391,10 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                {([canSubmit, isSubmitting]) => (
                   <Button
                      className="w-full gap-2"
-                     disabled={
-                        !canSubmit ||
-                        isSubmitting ||
-                        createMutation.isPending ||
-                        updateMutation.isPending
-                     }
+                     disabled={!canSubmit || isSubmitting}
                      type="submit"
                   >
-                     {(isSubmitting ||
-                        createMutation.isPending ||
-                        updateMutation.isPending) && (
-                        <Spinner className="size-4" />
-                     )}
+                     {isSubmitting && <Spinner className="size-4" />}
                      {isCreate ? "Criar cartão" : "Salvar alterações"}
                   </Button>
                )}

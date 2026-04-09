@@ -168,17 +168,27 @@ Zod schemas belong in the backend. Frontend only imports inferred types via `Inp
 - **`isInvalid` check** — `field.state.meta.isTouched && field.state.meta.errors.length > 0`.
 - **Accessibility** — always set `id`, `name`, `aria-invalid` on inputs; `htmlFor` on `<FieldLabel>`.
 - **`children` prop** — always use `children={(field) => ...}` as explicit JSX prop.
-- **Server validation via `onSubmitAsync`** — use `validators: { onSubmitAsync }` instead of `useMutation`. Call `orpc.procedure.call({...})` directly. Return `{ form: "error" }` or `{ fields: { fieldName: "error" } }` or `null`. Catch `ORPCError` from `@orpc/client` for typed error codes (e.g. `err.code === "CONFLICT"`).
-- **Form-level error display** — use `form.Subscribe` with `flatMap` selector to extract `.form` key from `state.errors`:
+- **Server validation via `onSubmitAsync`** — use `validators: { onSubmitAsync }` with `useMutation` defined outside the form. Call `mutation.mutateAsync({...})` inside the async validator. Return `{ form: "error" }` or `{ fields: { fieldName: "error" } }` or `null`. Catch `ORPCError` from `@orpc/client` for typed error codes (e.g. `err.code === "CONFLICT"`).
+- **Form-level error display** — use `form.Subscribe` reading from `state.errorMap.onSubmit`:
   ```tsx
   selector={(state) =>
-     state.errors.flatMap((e) => {
-        if (!e) return [];
-        if (typeof e === "string") return [e];
-        if ("form" in e && typeof e.form === "string") return [e.form];
-        return [];
-     })
+     typeof state.errorMap.onSubmit === "object" &&
+     state.errorMap.onSubmit !== null &&
+     "form" in state.errorMap.onSubmit
+        ? String(state.errorMap.onSubmit.form)
+        : null
   }
+  ```
+- **Multi-step forms with nested components** — use a local React context so step components defined outside the parent can access the form without prop drilling:
+  ```tsx
+  const FormCtx = createContext<FormApi | null>(null);
+  function useMyForm() {
+     const f = useContext(FormCtx);
+     if (!f) throw new Error("...");
+     return f;
+  }
+  // Step components call useMyForm() — no props needed
+  // Parent wraps: <FormCtx.Provider value={form}>...</FormCtx.Provider>
   ```
 - **Selective `form.Subscribe`** — always use a specific selector, never `selector={(state) => state}`. For submit buttons use `[state.canSubmit, state.isSubmitting] as const` and destructure.
 - **Navigation guard** — add `useBlocker` from `@tanstack/react-router` to edit forms. Use `withResolver: true` and `shouldBlockFn`. Render a pt-BR AlertDialog when `blocker.status === "blocked"`:
