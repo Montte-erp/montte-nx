@@ -47,14 +47,18 @@ const signUpSchema = z
       path: ["confirmPassword"],
    });
 
-type SignUpFormApi = ReturnType<
-   typeof useForm<{
-      confirmPassword: string;
-      email: string;
-      name: string;
-      password: string;
-   }>
->;
+function createSignUpForm() {
+   return useForm({
+      defaultValues: {
+         confirmPassword: "",
+         email: "",
+         name: "",
+         password: "",
+      },
+      validators: { onBlur: signUpSchema },
+   });
+}
+type SignUpFormApi = ReturnType<typeof createSignUpForm>;
 
 const SignUpFormContext = createContext<SignUpFormApi | null>(null);
 

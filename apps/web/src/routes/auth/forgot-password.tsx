@@ -46,14 +46,18 @@ export const Route = createFileRoute("/auth/forgot-password")({
    component: ForgotPasswordPage,
 });
 
-type ForgotPasswordFormApi = ReturnType<
-   typeof useForm<{
-      confirmPassword: string;
-      email: string;
-      otp: string;
-      password: string;
-   }>
->;
+function createForgotPasswordForm() {
+   return useForm({
+      defaultValues: {
+         confirmPassword: "",
+         email: "",
+         otp: "",
+         password: "",
+      },
+      validators: { onBlur: forgotPasswordSchema },
+   });
+}
+type ForgotPasswordFormApi = ReturnType<typeof createForgotPasswordForm>;
 
 const ForgotPasswordFormContext = createContext<ForgotPasswordFormApi | null>(
    null,
@@ -225,8 +229,12 @@ function ForgotPasswordPage() {
       await authClient.emailOtp.sendVerificationOtp(
          { email, type: "forget-password" },
          {
-            onError: ({ error }) => toast.error(error.message),
-            onRequest: () => toast.loading("Processando..."),
+            onError: ({ error }) => {
+               toast.error(error.message);
+            },
+            onRequest: () => {
+               toast.loading("Processando...");
+            },
             onSuccess: () => {
                toast.success("Codigo enviado!");
                success = true;

@@ -21,9 +21,9 @@ import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
 import {
-   skipToken,
    useMutation,
    useSuspenseQueries,
+   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
 import { PlusCircle, Trash2 } from "lucide-react";
@@ -60,24 +60,41 @@ interface ServiceFormProps {
    onSuccess: () => void;
 }
 
+function ExistingVariants({ serviceId }: { serviceId: string }) {
+   const { data } = useSuspenseQuery(
+      orpc.services.getVariants.queryOptions({ input: { serviceId } }),
+   );
+   if (!data || data.length === 0) return null;
+   return (
+      <div className="flex flex-col gap-2">
+         <span className="text-xs text-muted-foreground">
+            Variantes existentes
+         </span>
+         {data.map((v) => (
+            <div
+               className="flex items-center justify-between p-2 border rounded-md text-sm"
+               key={v.id}
+            >
+               <span>{v.name}</span>
+               <span className="text-muted-foreground text-xs">
+                  {BILLING_CYCLE_LABELS[v.billingCycle as BillingCycle] ??
+                     v.billingCycle}
+               </span>
+            </div>
+         ))}
+      </div>
+   );
+}
+
 export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
    const isCreate = mode === "create";
 
-   const [{ data: categories }, { data: tags }, { data: existingVariants }] =
-      useSuspenseQueries({
-         queries: [
-            orpc.categories.getAll.queryOptions({}),
-            orpc.tags.getAll.queryOptions({}),
-            !isCreate && service?.id
-               ? orpc.services.getVariants.queryOptions({
-                    input: { serviceId: service.id },
-                 })
-               : {
-                    queryKey: ["disabled-variants", service?.id],
-                    queryFn: skipToken,
-                 },
-         ],
-      });
+   const [{ data: categories }, { data: tags }] = useSuspenseQueries({
+      queries: [
+         orpc.categories.getAll.queryOptions({}),
+         orpc.tags.getAll.queryOptions({}),
+      ],
+   });
 
    const { openAlertDialog } = useAlertDialog();
 
@@ -159,8 +176,8 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                   "Você tem alterações não salvas. Tem certeza que deseja sair sem salvar?",
                actionLabel: "Descartar alterações",
                cancelLabel: "Continuar editando",
-               onAction: () => blocker.proceed(),
-               onCancel: () => blocker.reset(),
+               onAction: () => blocker.proceed?.(),
+               onCancel: () => blocker.reset?.(),
             });
             return true;
          }
@@ -335,28 +352,9 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                   />
                </div>
 
-               {!isCreate &&
-                  existingVariants &&
-                  existingVariants.length > 0 && (
-                     <div className="flex flex-col gap-2">
-                        <span className="text-xs text-muted-foreground">
-                           Variantes existentes
-                        </span>
-                        {existingVariants.map((v) => (
-                           <div
-                              className="flex items-center justify-between p-2 border rounded-md text-sm"
-                              key={v.id}
-                           >
-                              <span>{v.name}</span>
-                              <span className="text-muted-foreground text-xs">
-                                 {BILLING_CYCLE_LABELS[
-                                    v.billingCycle as BillingCycle
-                                 ] ?? v.billingCycle}
-                              </span>
-                           </div>
-                        ))}
-                     </div>
-                  )}
+               {!isCreate && service?.id && (
+                  <ExistingVariants serviceId={service.id} />
+               )}
 
                <form.Field
                   mode="array"

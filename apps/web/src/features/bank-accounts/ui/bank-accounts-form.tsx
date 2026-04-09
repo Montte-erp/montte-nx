@@ -277,8 +277,8 @@ export function BankAccountForm({
                   "Você tem alterações não salvas. Tem certeza que deseja sair sem salvar?",
                actionLabel: "Descartar alterações",
                cancelLabel: "Continuar editando",
-               onAction: () => blocker.proceed(),
-               onCancel: () => blocker.reset(),
+               onAction: () => blocker.proceed?.(),
+               onCancel: () => blocker.reset?.(),
             });
             return true;
          }
