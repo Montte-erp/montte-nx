@@ -88,6 +88,11 @@ export function TransactionsList({
    onColumnFiltersChange,
 }: TransactionsListProps) {
    const [tableState, setTableState] = useTransactionsTableState();
+   const effectiveTableState: DataTableStoredState = tableState ?? {
+      columnOrder: [],
+      columnVisibility: {},
+      columnPinning: { left: ["name"], right: ["amount"] },
+   };
 
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
@@ -334,7 +339,7 @@ export function TransactionsList({
             onSortingChange={onSortingChange}
             onTableStateChange={setTableState}
             sorting={sorting}
-            tableState={tableState}
+            tableState={effectiveTableState}
             pagination={{
                currentPage: filters.page,
                onPageChange,
