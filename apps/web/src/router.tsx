@@ -1,8 +1,7 @@
 import { createRouter, Link } from "@tanstack/react-router";
-
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import * as TanstackQuery from "./integrations/tanstack-query/root-provider";
-
+import type { PublicEnv } from "./integrations/public-env";
 import { routeTree } from "./routeTree.gen";
 
 function NotFound() {
@@ -27,6 +26,12 @@ export const getRouter = () => {
       routeTree,
       context: {
          ...rqContext,
+      },
+      dehydrate: (): { publicEnv: PublicEnv } => ({
+         publicEnv: router.options.context.publicEnv,
+      }),
+      hydrate: (dehydrated: { publicEnv: PublicEnv }) => {
+         router.options.context.publicEnv = dehydrated.publicEnv;
       },
       defaultPreload: "intent",
       defaultPreloadStaleTime: 0,

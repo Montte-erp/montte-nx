@@ -17,17 +17,9 @@ import { GlobalCredenza } from "@/hooks/use-credenza";
 import { GlobalSelectionToolbar } from "@/hooks/use-selection-toolbar";
 import { GlobalSurveyModal } from "@/hooks/use-survey-modal";
 import { GlobalDialogStack } from "@/hooks/use-dialog-stack";
-import { getPublicEnv } from "@/integrations/public-env";
 import { PostHogWrapper } from "@/integrations/posthog/client";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import type { RouterContext } from "../integrations/tanstack-query/root-provider";
-
-let cachedPublicEnv: ReturnType<typeof getPublicEnv> | null = null;
-
-const getPublicEnvFn = createServerFn({ method: "GET" }).handler(() => {
-   cachedPublicEnv ??= getPublicEnv();
-   return cachedPublicEnv;
-});
 
 const getThemeFromCookie = createServerFn({ method: "GET" }).handler(() => {
    const request = getRequest();
@@ -40,15 +32,13 @@ const getThemeFromCookie = createServerFn({ method: "GET" }).handler(() => {
 });
 
 export const Route = createRootRouteWithContext<RouterContext>()({
+   staleTime: Infinity,
    loader: async ({ context }) => {
       await context.queryClient
          .ensureQueryData(context.orpc.session.getSession.queryOptions())
          .catch(() => null);
-      const [publicEnv, theme] = await Promise.all([
-         getPublicEnvFn(),
-         getThemeFromCookie(),
-      ]);
-      return { publicEnv, theme };
+      const theme = await getThemeFromCookie();
+      return { theme };
    },
    head: () => ({
       meta: [
@@ -81,7 +71,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-   const { publicEnv, theme } = Route.useLoaderData();
+   const { theme } = Route.useLoaderData();
+   const { publicEnv } = Route.useRouteContext();
    return (
       <html
          lang="pt-BR"
