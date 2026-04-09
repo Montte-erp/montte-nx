@@ -23,7 +23,7 @@ import { useForm } from "@tanstack/react-form";
 import {
    skipToken,
    useMutation,
-   useSuspenseQuery,
+   useSuspenseQueries,
 } from "@tanstack/react-query";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { useTransition } from "react";
@@ -63,19 +63,21 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
    const isCreate = mode === "create";
    const [isPending, startTransition] = useTransition();
 
-   const { data: categories } = useSuspenseQuery(
-      orpc.categories.getAll.queryOptions({}),
-   );
-
-   const { data: tags } = useSuspenseQuery(orpc.tags.getAll.queryOptions({}));
-
-   const { data: existingVariants } = useSuspenseQuery(
-      !isCreate && service?.id
-         ? orpc.services.getVariants.queryOptions({
-              input: { serviceId: service.id },
-           })
-         : { queryKey: ["disabled-variants", service?.id], queryFn: skipToken },
-   );
+   const [{ data: categories }, { data: tags }, { data: existingVariants }] =
+      useSuspenseQueries({
+         queries: [
+            orpc.categories.getAll.queryOptions({}),
+            orpc.tags.getAll.queryOptions({}),
+            !isCreate && service?.id
+               ? orpc.services.getVariants.queryOptions({
+                    input: { serviceId: service.id },
+                 })
+               : {
+                    queryKey: ["disabled-variants", service?.id],
+                    queryFn: skipToken,
+                 },
+         ],
+      });
 
    const createMutation = useMutation(
       orpc.services.create.mutationOptions({

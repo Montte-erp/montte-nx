@@ -29,7 +29,7 @@ import {
    TooltipProvider,
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQueries } from "@tanstack/react-query";
 import {
    Briefcase,
    Calendar,
@@ -241,10 +241,7 @@ function BillingPeriodSection() {
    );
 }
 
-function AddCardBanner() {
-   const { data, isLoading } = useQuery(
-      orpc.billing.getPaymentStatus.queryOptions({}),
-   );
+function AddCardBanner({ hasPaymentMethod }: { hasPaymentMethod: boolean }) {
    const { activeOrganization } = useActiveOrganization();
    const [isPending, startTransition] = useTransition();
 
@@ -264,7 +261,7 @@ function AddCardBanner() {
       });
    };
 
-   if (isLoading || data?.hasPaymentMethod) return null;
+   if (hasPaymentMethod) return null;
 
    return (
       <div className="rounded-lg border border-dashed bg-muted/40 p-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -660,16 +657,15 @@ function InvoicesPreviewContent() {
 }
 
 export function BillingOverview() {
-   const { data: meterUsage } = useSuspenseQuery(
-      orpc.billing.getMeterUsage.queryOptions({}),
-   );
-   const { data: catalog } = useSuspenseQuery(
-      orpc.billing.getEventCatalog.queryOptions({}),
-   );
-   const { data: paymentStatus } = useQuery(
-      orpc.billing.getPaymentStatus.queryOptions({}),
-   );
-   const hasPaymentMethod = paymentStatus?.hasPaymentMethod ?? false;
+   const [{ data: meterUsage }, { data: catalog }, { data: paymentStatus }] =
+      useSuspenseQueries({
+         queries: [
+            orpc.billing.getMeterUsage.queryOptions({}),
+            orpc.billing.getEventCatalog.queryOptions({}),
+            orpc.billing.getPaymentStatus.queryOptions({}),
+         ],
+      });
+   const hasPaymentMethod = paymentStatus.hasPaymentMethod;
 
    const categorySummaries = buildCategorySummaries(catalog, meterUsage);
    const monthToDate = categorySummaries.reduce(
@@ -685,10 +681,8 @@ export function BillingOverview() {
       <div className="space-y-6">
          <CurrentBillHeader monthToDate={monthToDate} />
          <BillingPeriodSection />
-         <AddCardBanner />
-         {paymentStatus !== undefined && (
-            <AddonsSection hasPaymentMethod={hasPaymentMethod} />
-         )}
+         <AddCardBanner hasPaymentMethod={hasPaymentMethod} />
+         <AddonsSection hasPaymentMethod={hasPaymentMethod} />
 
          <div>
             <h2 className="text-lg font-semibold mb-4">Produtos</h2>

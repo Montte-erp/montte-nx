@@ -536,14 +536,48 @@ SSR-safe hook library — import each from its own subpath. Never use `@uidotdev
 | localStorage (fixed key, syncs tabs) | `foxact/create-local-storage-state` |
 | sessionStorage | `foxact/use-session-storage` |
 | Media queries | `foxact/use-media-query` |
-| Debounce (derived values only) | `foxact/use-debounced-value` — **deprecated: use `useDebouncedCallback` from `@tanstack/react-pacer` instead** |
 | Context guard | `foxact/invariant` |
 | Merge refs | `foxact/merge-refs` |
 | SSR-safe layout effect | `foxact/use-isomorphic-layout-effect` |
 
 - All localStorage keys prefixed `montte:`.
 - Prefer `createClientOnlyFn` / `createIsomorphicFn` from `@tanstack/react-start` over `typeof window === 'undefined'` guards.
-- For debouncing callbacks (side effects), use `useDebouncedCallback` from `@tanstack/react-pacer`. Never use `foxact/use-debounced-value` + `useEffect` for debounced callbacks.
+
+---
+
+## TanStack Pacer
+
+Use `@tanstack/react-pacer` for all debounce, throttle, and rate-limiting needs. Never use `foxact/use-debounced-value`.
+
+| Hook | Use for |
+| ---- | ------- |
+| `useDebouncedCallback` | Sync callbacks (search input → URL/state update) |
+| `useAsyncDebouncedCallback` | Async callbacks (fetch, `mutateAsync`) — handles race conditions |
+| `useThrottledCallback` | Callbacks with limited frequency (scroll, resize handlers) |
+| `useThrottledValue` | Throttled derived values (scroll position for animations) |
+| `useRateLimiter` | Hard limit on action frequency (e.g. 3 exports per minute) |
+
+**Key rules:**
+- If the debounced function is `async` or calls `mutateAsync`, always use `useAsyncDebouncedCallback` — not `useDebouncedCallback`.
+- Never combine `foxact/use-debounced-value` + `useEffect` to debounce a callback. Use `useDebouncedCallback` directly.
+- Options object syntax: `{ wait: 350 }` (not positional).
+
+```typescript
+// ✅ Sync callback (search input)
+const handleSearch = useDebouncedCallback(
+   (value: string) => navigate({ search: (p) => ({ ...p, q: value }) }),
+   { wait: 350 },
+);
+
+// ✅ Async callback (CNPJ lookup, duplicate check)
+const fetchData = useAsyncDebouncedCallback(
+   async (value: string) => {
+      const result = await someMutation.mutateAsync({ value });
+      setResult(result);
+   },
+   { wait: 400 },
+);
+```
 
 ---
 

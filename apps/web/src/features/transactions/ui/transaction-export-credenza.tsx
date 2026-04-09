@@ -431,15 +431,15 @@ function ExportForm({
                      Cancelar
                   </Button>
                   <Button
-                     className="flex-1"
+                     className="flex-1 gap-2"
                      disabled={!canDownload || isPending}
                      onClick={handleDownload}
                      type="button"
                   >
                      {isPending ? (
-                        <Spinner className="size-4 mr-2" />
+                        <Spinner className="size-4" />
                      ) : (
-                        <Download className="size-4 mr-2" />
+                        <Download className="size-4" />
                      )}
                      Baixar
                   </Button>

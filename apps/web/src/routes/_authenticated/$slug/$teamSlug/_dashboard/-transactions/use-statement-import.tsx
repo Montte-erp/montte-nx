@@ -6,7 +6,7 @@ import {
 } from "@f-o-t/money";
 import { parseBufferOrThrow as parseOfx, getTransactions } from "@f-o-t/ofx";
 import { useMutation } from "@tanstack/react-query";
-import { useDebouncedCallback } from "@tanstack/react-pacer";
+import { useAsyncDebouncedCallback } from "@tanstack/react-pacer";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { useLocalStorage } from "foxact/use-local-storage";
@@ -454,7 +454,7 @@ function useStatementImport({
       [onInitSelection],
    );
 
-   const debouncedCheckDuplicates = useDebouncedCallback(
+   const debouncedCheckDuplicates = useAsyncDebouncedCallback(
       async (mapped: ValidatedRow[]) => {
          const validRows = mapped.filter((r) => r.isValid);
          if (!bankAccountId || validRows.length === 0) {
