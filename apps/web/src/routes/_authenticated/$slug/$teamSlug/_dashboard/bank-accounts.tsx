@@ -63,6 +63,11 @@ export const Route = createFileRoute(
          orpc.bankAccounts.getAll.queryOptions({}),
       );
    },
+   pendingMs: 300,
+   pendingComponent: BankAccountsSkeleton,
+   head: () => ({
+      meta: [{ title: "Contas Bancárias — Montte" }],
+   }),
    component: BankAccountsPage,
 });
 

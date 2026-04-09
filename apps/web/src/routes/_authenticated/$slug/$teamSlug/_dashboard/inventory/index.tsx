@@ -80,6 +80,11 @@ export const Route = createFileRoute(
          orpc.inventory.getProducts.queryOptions({}),
       );
    },
+   pendingMs: 300,
+   pendingComponent: InventorySkeleton,
+   head: () => ({
+      meta: [{ title: "Estoque — Montte" }],
+   }),
    component: InventoryPage,
 });
 

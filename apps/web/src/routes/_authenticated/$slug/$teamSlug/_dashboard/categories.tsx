@@ -80,6 +80,11 @@ export const Route = createFileRoute(
          orpc.categories.getAll.queryOptions({}),
       );
    },
+   pendingMs: 300,
+   pendingComponent: CategoriesSkeleton,
+   head: () => ({
+      meta: [{ title: "Categorias — Montte" }],
+   }),
    component: CategoriesPage,
 });
 

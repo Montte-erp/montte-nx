@@ -59,6 +59,11 @@ export const Route = createFileRoute(
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(orpc.tags.getAll.queryOptions({}));
    },
+   pendingMs: 300,
+   pendingComponent: TagsSkeleton,
+   head: () => ({
+      meta: [{ title: "Centros de Custo — Montte" }],
+   }),
    component: TagsPage,
 });
 

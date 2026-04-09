@@ -71,6 +71,11 @@ export const Route = createFileRoute(
          orpc.bills.getAll.queryOptions({ input: { type: "receivable" } }),
       );
    },
+   pendingMs: 300,
+   pendingComponent: BillsSkeleton,
+   head: () => ({
+      meta: [{ title: "Cobranças — Montte" }],
+   }),
    component: BillsPage,
 });
 
