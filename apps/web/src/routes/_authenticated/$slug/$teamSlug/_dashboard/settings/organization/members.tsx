@@ -50,6 +50,9 @@ export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members",
 )({
    validateSearch: searchSchema,
+   head: () => ({
+      meta: [{ title: "Membros — Montte" }],
+   }),
    component: MembersPage,
 });
 

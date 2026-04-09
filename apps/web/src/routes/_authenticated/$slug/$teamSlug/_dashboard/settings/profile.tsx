@@ -43,6 +43,9 @@ import { orpc } from "@/integrations/orpc/client";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/profile",
 )({
+   head: () => ({
+      meta: [{ title: "Perfil — Montte" }],
+   }),
    component: ProfilePage,
 });
 

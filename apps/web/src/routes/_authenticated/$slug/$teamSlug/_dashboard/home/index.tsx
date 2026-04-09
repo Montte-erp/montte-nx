@@ -16,6 +16,11 @@ export const Route = createFileRoute(
          orpc.analytics.getDefaultDashboard.queryOptions(),
       );
    },
+   pendingMs: 300,
+   pendingComponent: HomePageSkeleton,
+   head: () => ({
+      meta: [{ title: "Dashboard — Montte" }],
+   }),
    component: HomePage,
 });
 

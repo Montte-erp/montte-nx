@@ -44,6 +44,9 @@ export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/event-definitions",
 )({
    validateSearch: eventDefinitionsSearchSchema,
+   head: () => ({
+      meta: [{ title: "Definições de Eventos — Montte" }],
+   }),
    component: EventDefinitionsPage,
 });
 

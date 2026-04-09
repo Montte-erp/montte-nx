@@ -36,6 +36,9 @@ import { orpc } from "@/integrations/orpc/client";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone",
 )({
+   head: () => ({
+      meta: [{ title: "Zona de Perigo — Montte" }],
+   }),
    component: OrgDangerZonePage,
 });
 

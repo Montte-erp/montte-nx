@@ -5,6 +5,9 @@ import { ArrowUpFromLine } from "lucide-react";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/destinations",
 )({
+   head: () => ({
+      meta: [{ title: "Destinos — Montte" }],
+   }),
    component: DestinationsPage,
 });
 

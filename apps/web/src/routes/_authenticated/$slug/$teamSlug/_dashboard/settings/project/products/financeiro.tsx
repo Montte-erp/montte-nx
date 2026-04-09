@@ -24,6 +24,9 @@ dayjs.locale("pt-br");
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro",
 )({
+   head: () => ({
+      meta: [{ title: "Financeiro — Montte" }],
+   }),
    component: FinanceiroSettingsPage,
 });
 

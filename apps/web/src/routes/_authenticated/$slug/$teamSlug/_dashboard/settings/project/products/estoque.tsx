@@ -19,6 +19,9 @@ import { orpc } from "@/integrations/orpc/client";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/estoque",
 )({
+   head: () => ({
+      meta: [{ title: "Estoque — Montte" }],
+   }),
    component: EstoqueSettingsPage,
 });
 

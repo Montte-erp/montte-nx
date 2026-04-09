@@ -44,6 +44,11 @@ export const Route = createFileRoute(
          );
       }
    },
+   pendingMs: 300,
+   pendingComponent: DashboardSkeleton,
+   head: () => ({
+      meta: [{ title: "Dashboard — Montte" }],
+   }),
    component: DashboardViewPage,
 });
 

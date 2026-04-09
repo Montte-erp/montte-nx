@@ -19,6 +19,9 @@ import { useActiveTeam } from "@/hooks/use-active-team";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone",
 )({
+   head: () => ({
+      meta: [{ title: "Zona de Perigo — Montte" }],
+   }),
    component: ProjectDangerZonePage,
 });
 
