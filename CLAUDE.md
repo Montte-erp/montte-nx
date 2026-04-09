@@ -148,22 +148,65 @@ Zod schemas belong in the backend. Frontend only imports inferred types via `Inp
 - **`isInvalid` check** — `field.state.meta.isTouched && field.state.meta.errors.length > 0`.
 - **Accessibility** — always set `id`, `name`, `aria-invalid` on inputs; `htmlFor` on `<FieldLabel>`.
 - **`children` prop** — always use `children={(field) => ...}` as explicit JSX prop.
+- **Server validation via `onSubmitAsync`** — use `validators: { onSubmitAsync }` instead of `useMutation`. Call `orpc.procedure.call({...})` directly. Return `{ form: "error" }` or `{ fields: { fieldName: "error" } }` or `null`. Catch `ORPCError` from `@orpc/client` for typed error codes (e.g. `err.code === "CONFLICT"`).
+- **Form-level error display** — use `form.Subscribe` with `flatMap` selector to extract `.form` key from `state.errors`:
+  ```tsx
+  selector={(state) =>
+     state.errors.flatMap((e) => {
+        if (!e) return [];
+        if (typeof e === "string") return [e];
+        if ("form" in e && typeof e.form === "string") return [e.form];
+        return [];
+     })
+  }
+  ```
+- **Selective `form.Subscribe`** — always use a specific selector, never `selector={(state) => state}`. For submit buttons use `[state.canSubmit, state.isSubmitting] as const` and destructure.
+- **Navigation guard** — add `useBlocker` from `@tanstack/react-router` to edit forms. Use `withResolver: true` and `shouldBlockFn`. Render a pt-BR AlertDialog when `blocker.status === "blocked"`:
+  ```tsx
+  const blocker = useBlocker({
+     withResolver: true,
+     shouldBlockFn: () => form.store.state.isDirty && !form.store.state.isSubmitted,
+     disabled: isCreate, // skip for create-only forms
+  });
+  ```
 
 ---
 
 ## Suspense, Error Boundaries & Empty States
 
-Every `useSuspenseQuery` component must be wrapped in `<ErrorBoundary>` (outer) + `<Suspense>` (inner):
+Every `useSuspenseQuery` component must be wrapped in `<QueryBoundary>` from `@/components/query-boundary` — never raw `ErrorBoundary + Suspense`:
 
 ```tsx
-<ErrorBoundary FallbackComponent={createErrorFallback({ errorTitle: "Erro ao carregar" })}>
-   <Suspense fallback={<MyPageSkeleton />}>
-      <MyPageContent />
-   </Suspense>
-</ErrorBoundary>
+<QueryBoundary fallback={<MyPageSkeleton />} errorTitle="Erro ao carregar">
+   <MyPageContent />
+</QueryBoundary>
 ```
 
-`createErrorFallback` from `@packages/ui/components/error-fallback`. `fallback={null}` only for invisible-while-loading components.
+`QueryBoundary` wraps `QueryErrorResetBoundary` + `ErrorBoundary` + `Suspense` internally. Use `errorFallback` prop for custom fallback components. `fallback={null}` only for invisible-while-loading components.
+
+**Parallel queries** — replace multiple sequential `useSuspenseQuery` calls with `useSuspenseQueries` to eliminate waterfall:
+```tsx
+const [{ data: session }, { data: teams }] = useSuspenseQueries({
+   queries: [orpc.session.getSession.queryOptions({}), orpc.organization.getOrganizationTeams.queryOptions({})],
+});
+```
+
+**Conditional queries** — replace `useQuery + enabled` with `skipToken + useSuspenseQuery`:
+```tsx
+const { data } = useSuspenseQuery(
+   condition
+      ? orpc.procedure.queryOptions({ input: { id } })
+      : { queryKey: ["disabled-key"], queryFn: skipToken },
+);
+```
+
+**Paginated queries** — add `placeholderData: keepPreviousData` to prevent flicker when navigating pages:
+```tsx
+const { data } = useSuspenseQuery({
+   ...orpc.procedure.queryOptions({ input: { page, pageSize } }),
+   placeholderData: keepPreviousData,
+});
+```
 
 **Empty states** — always use `Empty`/`EmptyHeader`/`EmptyMedia`/`EmptyTitle`/`EmptyDescription`/`EmptyContent` from `@packages/ui/components/empty`. Never build custom empty states with raw divs.
 
@@ -493,14 +536,14 @@ SSR-safe hook library — import each from its own subpath. Never use `@uidotdev
 | localStorage (fixed key, syncs tabs) | `foxact/create-local-storage-state` |
 | sessionStorage | `foxact/use-session-storage` |
 | Media queries | `foxact/use-media-query` |
-| Debounce (derived values only) | `foxact/use-debounced-value` |
+| Debounce (derived values only) | `foxact/use-debounced-value` — **deprecated: use `useDebouncedCallback` from `@tanstack/react-pacer` instead** |
 | Context guard | `foxact/invariant` |
 | Merge refs | `foxact/merge-refs` |
 | SSR-safe layout effect | `foxact/use-isomorphic-layout-effect` |
 
 - All localStorage keys prefixed `montte:`.
 - Prefer `createClientOnlyFn` / `createIsomorphicFn` from `@tanstack/react-start` over `typeof window === 'undefined'` guards.
-- For debouncing callbacks (side effects), use `useDebouncedCallback` from `@tanstack/react-pacer`.
+- For debouncing callbacks (side effects), use `useDebouncedCallback` from `@tanstack/react-pacer`. Never use `foxact/use-debounced-value` + `useEffect` for debounced callbacks.
 
 ---
 
