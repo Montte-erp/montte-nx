@@ -297,7 +297,7 @@ function ContactsPage() {
          <DefaultHeader
             actions={
                <Button onClick={handleCreate}>
-                  <Plus className="size-4 mr-1" />
+                  <Plus className="size-4" />
                   Novo Contato
                </Button>
             }

@@ -83,6 +83,13 @@ function TransactionsPage() {
    const { currentTeam } = Route.useRouteContext();
    const { hasBankAccounts } = useTransactionPrerequisites();
    const [filters, setFilters] = useState<TransactionFilters>(DEFAULT_FILTERS);
+   const handleFiltersChange = useCallback(
+      (nextFilters: TransactionFilters) => {
+         setFilters(nextFilters);
+         navigate({ search: (prev) => ({ ...prev, page: 1 }), replace: true });
+      },
+      [navigate],
+   );
    const { sorting, columnFilters, page, pageSize } = Route.useSearch();
    const filtersWithPagination = { ...filters, page, pageSize };
 
@@ -183,7 +190,10 @@ function TransactionsPage() {
             panelActions={panelActions}
             title="Lançamentos"
          />
-         <TransactionFilterBar filters={filters} onFiltersChange={setFilters} />
+         <TransactionFilterBar
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+         />
          <Suspense fallback={<TransactionsSkeleton />}>
             <TransactionsList
                columnFilters={columnFilters}

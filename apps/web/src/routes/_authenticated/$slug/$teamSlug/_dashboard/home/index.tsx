@@ -24,9 +24,7 @@ export const Route = createFileRoute(
    component: HomePage,
 });
 
-// =============================================================================
 // Error & Loading States
-// =============================================================================
 
 function HomePageErrorFallback(props: FallbackProps) {
    return createErrorFallback({
@@ -63,9 +61,7 @@ function HomePageSkeleton() {
    );
 }
 
-// =============================================================================
 // Main Content
-// =============================================================================
 
 function HomePageContent() {
    const { data: dashboard } = useSuspenseQuery(
@@ -78,10 +74,6 @@ function HomePageContent() {
       </DashboardView>
    );
 }
-
-// =============================================================================
-// Page Component
-// =============================================================================
 
 function HomePage() {
    return (

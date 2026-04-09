@@ -35,11 +35,11 @@ import { orpc } from "@/integrations/orpc/client";
 const bankAccountsSearchSchema = z.object({
    sorting: z
       .array(z.object({ id: z.string(), desc: z.boolean() }))
-      .optional()
+      .catch([])
       .default([]),
    columnFilters: z
       .array(z.object({ id: z.string(), value: z.unknown() }))
-      .optional()
+      .catch([])
       .default([]),
    type: z
       .enum(["checking", "savings", "investment", "payment", "cash"])
@@ -71,10 +71,6 @@ export const Route = createFileRoute(
    component: BankAccountsPage,
 });
 
-// =============================================================================
-// Skeleton
-// =============================================================================
-
 function BankAccountsSkeleton() {
    return (
       <div className="flex flex-col gap-4">
@@ -84,10 +80,6 @@ function BankAccountsSkeleton() {
       </div>
    );
 }
-
-// =============================================================================
-// List
-// =============================================================================
 
 interface BankAccountsListProps {
    navigate: ReturnType<typeof Route.useNavigate>;
@@ -228,10 +220,6 @@ function BankAccountsList({ navigate }: BankAccountsListProps) {
       />
    );
 }
-
-// =============================================================================
-// Page
-// =============================================================================
 
 function BankAccountsPage() {
    const navigate = Route.useNavigate();
