@@ -576,12 +576,12 @@ function ProfileNameSection({ currentName }: { currentName: string }) {
                   }}
                />
             </FieldGroup>
-            <form.Subscribe selector={(state) => state}>
-               {(formState) => (
+            <form.Subscribe
+               selector={(state) => [state.isDirty, state.canSubmit] as const}
+            >
+               {([isDirty, canSubmit]) => (
                   <Button
-                     disabled={
-                        !formState.isDirty || !formState.canSubmit || isPending
-                     }
+                     disabled={!isDirty || !canSubmit || isPending}
                      type="submit"
                   >
                      {isPending && (
@@ -871,12 +871,9 @@ function ProfilePasswordSection({ hasPassword }: { hasPassword: boolean }) {
                   }}
                />
             </FieldGroup>
-            <form.Subscribe selector={(state) => state}>
-               {(formState) => (
-                  <Button
-                     disabled={!formState.canSubmit || isPending}
-                     type="submit"
-                  >
+            <form.Subscribe selector={(state) => state.canSubmit}>
+               {(canSubmit) => (
+                  <Button disabled={!canSubmit || isPending} type="submit">
                      {isPending && (
                         <Loader2 className="size-4 mr-2 animate-spin" />
                      )}

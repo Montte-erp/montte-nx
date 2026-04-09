@@ -456,19 +456,23 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
          </CredenzaBody>
 
          <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
                   <Button
                      className="w-full"
                      disabled={
-                        !state.canSubmit ||
-                        state.isSubmitting ||
+                        !canSubmit ||
+                        isSubmitting ||
                         isPending ||
                         mutationsPending
                      }
                      type="submit"
                   >
-                     {(state.isSubmitting || isPending || mutationsPending) && (
+                     {(isSubmitting || isPending || mutationsPending) && (
                         <Spinner className="size-4 mr-2" />
                      )}
                      {isCreate ? "Criar serviço" : "Salvar alterações"}

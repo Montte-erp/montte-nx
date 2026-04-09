@@ -179,14 +179,14 @@ const CreateTeamFormContent = () => {
             <Button onClick={closeCredenza} type="button" variant="outline">
                Cancelar
             </Button>
-            <form.Subscribe selector={(state) => state}>
-               {(formState) => (
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
                   <Button
-                     disabled={
-                        !formState.canSubmit ||
-                        formState.isSubmitting ||
-                        isPending
-                     }
+                     disabled={!canSubmit || isSubmitting || isPending}
                      onClick={() => {
                         startTransition(async () => {
                            await form.handleSubmit();

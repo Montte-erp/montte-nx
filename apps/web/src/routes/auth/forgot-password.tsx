@@ -322,14 +322,15 @@ function ForgotPasswordPage() {
                            Voltar
                         </Button>
                         {methods.state.isLast ? (
-                           <form.Subscribe selector={(state) => state}>
-                              {(formState) => (
+                           <form.Subscribe
+                              selector={(state) =>
+                                 [state.canSubmit, state.isSubmitting] as const
+                              }
+                           >
+                              {([canSubmit, isSubmitting]) => (
                                  <Button
                                     className="flex gap-2 items-center justify-center"
-                                    disabled={
-                                       !formState.canSubmit ||
-                                       formState.isSubmitting
-                                    }
+                                    disabled={!canSubmit || isSubmitting}
                                     type="submit"
                                     variant="default"
                                  >

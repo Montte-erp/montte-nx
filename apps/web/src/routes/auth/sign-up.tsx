@@ -280,14 +280,16 @@ function SignUpPage() {
                            Voltar
                         </Button>
                         {methods.state.isLast ? (
-                           <form.Subscribe selector={(state) => state}>
-                              {(formState) => (
+                           <form.Subscribe
+                              selector={(state) =>
+                                 [state.canSubmit, state.isSubmitting] as const
+                              }
+                           >
+                              {([canSubmit, isSubmitting]) => (
                                  <Button
                                     className="h-11"
                                     disabled={
-                                       !formState.canSubmit ||
-                                       formState.isSubmitting ||
-                                       isPending
+                                       !canSubmit || isSubmitting || isPending
                                     }
                                     type="submit"
                                     variant="default"

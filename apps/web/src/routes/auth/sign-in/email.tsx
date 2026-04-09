@@ -169,11 +169,15 @@ function SignInEmailPage() {
                   }}
                />
             </FieldGroup>
-            <form.Subscribe selector={(state) => state}>
-               {(formState) => (
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
                   <Button
                      className="w-full h-11"
-                     disabled={!formState.canSubmit || formState.isSubmitting}
+                     disabled={!canSubmit || isSubmitting}
                      type="submit"
                   >
                      Entrar

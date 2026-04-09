@@ -1949,27 +1949,29 @@ function TransactionDialogStackContent({
             </FieldGroup>
          </CredenzaBody>
          <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(formState) => {
-                  const createAsBill =
+            <form.Subscribe
+               selector={(state) => ({
+                  canSubmit: state.canSubmit,
+                  createAsBill:
                      isCreate &&
-                     formState.values.createAsBill &&
-                     formState.values.type === "expense";
-                  return (
-                     <Button
-                        className="w-full"
-                        disabled={!formState.canSubmit || isPending}
-                        type="submit"
-                     >
-                        {isPending ? <Spinner className="size-4 mr-2" /> : null}
-                        {createAsBill
-                           ? "Criar conta a pagar"
-                           : isCreate
-                             ? "Criar lançamento"
-                             : "Salvar alterações"}
-                     </Button>
-                  );
-               }}
+                     state.values.createAsBill &&
+                     state.values.type === "expense",
+               })}
+            >
+               {({ canSubmit, createAsBill }) => (
+                  <Button
+                     className="w-full"
+                     disabled={!canSubmit || isPending}
+                     type="submit"
+                  >
+                     {isPending ? <Spinner className="size-4 mr-2" /> : null}
+                     {createAsBill
+                        ? "Criar conta a pagar"
+                        : isCreate
+                          ? "Criar lançamento"
+                          : "Salvar alterações"}
+                  </Button>
+               )}
             </form.Subscribe>
          </CredenzaFooter>
       </form>

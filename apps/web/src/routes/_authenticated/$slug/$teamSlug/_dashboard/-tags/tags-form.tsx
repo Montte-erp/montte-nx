@@ -249,19 +249,23 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
          </CredenzaBody>
 
          <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
                   <Button
                      className="w-full"
                      disabled={
-                        !state.canSubmit ||
-                        state.isSubmitting ||
+                        !canSubmit ||
+                        isSubmitting ||
                         createMutation.isPending ||
                         updateMutation.isPending
                      }
                      type="submit"
                   >
-                     {(state.isSubmitting ||
+                     {(isSubmitting ||
                         createMutation.isPending ||
                         updateMutation.isPending) && (
                         <Spinner className="size-4" />

@@ -327,18 +327,22 @@ function BillFromTransactionDialogStackInner({
          </CredenzaBody>
 
          <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
                   <Button
                      disabled={
-                        !state.canSubmit ||
-                        state.isSubmitting ||
+                        !canSubmit ||
+                        isSubmitting ||
                         createFromTransactionMutation.isPending
                      }
                      form="bill-from-transaction-form"
                      type="submit"
                   >
-                     {(state.isSubmitting ||
+                     {(isSubmitting ||
                         createFromTransactionMutation.isPending) && (
                         <Spinner className="size-4 mr-2" />
                      )}

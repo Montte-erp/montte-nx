@@ -239,10 +239,10 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
             </form>
          </CredenzaBody>
          <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
+            <form.Subscribe selector={(state) => state.canSubmit}>
+               {(canSubmit) => (
                   <Button
-                     disabled={!state.canSubmit || payMutation.isPending}
+                     disabled={!canSubmit || payMutation.isPending}
                      form="bill-pay-form"
                      type="submit"
                   >
