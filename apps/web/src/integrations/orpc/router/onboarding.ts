@@ -300,7 +300,7 @@ export const getOnboardingStatus = protectedProcedure.handler(
    },
 );
 
-async function fetchCnpjFromBrasilApi(cnpj: string) {
+function fetchCnpjFromBrasilApi(cnpj: string) {
    return ResultAsync.fromPromise(
       fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`, {
          signal: AbortSignal.timeout(10000),
