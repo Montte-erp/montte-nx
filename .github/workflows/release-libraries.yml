@@ -19,6 +19,7 @@ jobs:
       runs-on: blacksmith-4vcpu-ubuntu-2404
       permissions:
          contents: write
+         id-token: write
       steps:
          - name: Checkout
            uses: actions/checkout@v4
@@ -34,6 +35,5 @@ jobs:
          - name: Release libraries
            env:
               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
               INPUT_LIBRARY: ${{ github.event.inputs.library }}
            run: bun run scripts/release-library.ts

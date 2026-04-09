@@ -10,7 +10,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { categories } from "@core/database/schemas/categories";
-import { financeSchema } from "@core/database/schemas/finance-schema";
+import { financeSchema } from "@core/database/schemas/schemas";
 
 export const budgetGoals = financeSchema.table(
    "budget_goals",

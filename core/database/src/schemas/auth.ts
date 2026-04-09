@@ -1,6 +1,5 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
-   pgSchema,
    text,
    timestamp,
    boolean,
@@ -10,8 +9,7 @@ import {
    index,
    uniqueIndex,
 } from "drizzle-orm/pg-core";
-
-export const authSchema = pgSchema("auth");
+import { authSchema } from "@core/database/schemas/schemas";
 
 export const user = authSchema.table("user", {
    id: uuid("id")
@@ -90,7 +88,6 @@ export const organization = authSchema.table(
       logo: text("logo"),
       createdAt: timestamp("created_at").notNull(),
       metadata: text("metadata"),
-      context: text("context").default("personal"),
       description: text("description").default(""),
       onboardingCompleted: boolean("onboarding_completed").default(false),
    },
@@ -250,7 +247,7 @@ export const subscription = authSchema.table("subscription", {
    referenceId: text("reference_id").notNull(),
    stripeCustomerId: text("stripe_customer_id"),
    stripeSubscriptionId: text("stripe_subscription_id"),
-   status: text("status").default("incomplete"),
+   status: text("status").default("incomplete").notNull(),
    periodStart: timestamp("period_start"),
    periodEnd: timestamp("period_end"),
    trialStart: timestamp("trial_start"),

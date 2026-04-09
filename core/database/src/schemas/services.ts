@@ -13,7 +13,7 @@ import { z } from "zod";
 import { categories } from "@core/database/schemas/categories";
 import { billingCycleEnum } from "@core/database/schemas/subscriptions";
 import { tags } from "@core/database/schemas/tags";
-import { crmSchema } from "@core/database/schemas/crm-schema";
+import { crmSchema } from "@core/database/schemas/schemas";
 
 export const services = crmSchema.table(
    "services",

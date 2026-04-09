@@ -12,7 +12,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { contacts, serviceSourceEnum } from "@core/database/schemas/contacts";
 import { serviceVariants } from "@core/database/schemas/services";
-import { crmSchema } from "@core/database/schemas/crm-schema";
+import { crmSchema } from "@core/database/schemas/schemas";
 
 export const billingCycleEnum = crmSchema.enum("billing_cycle", [
    "hourly",

@@ -221,15 +221,6 @@ async function createGitHubRelease(
    return result.html_url || result.id;
 }
 
-function setupNpmAuth() {
-   const npmToken = process.env.NODE_AUTH_TOKEN || process.env.NPM_TOKEN;
-   if (npmToken) {
-      execSync(`npm config set //registry.npmjs.org/:_authToken ${npmToken}`, {
-         stdio: "pipe",
-      });
-   }
-}
-
 async function releaseLibrary(
    lib: Library,
    token: string,
@@ -278,7 +269,7 @@ async function releaseLibrary(
          result.steps.npmPublish = "success";
       } else {
          console.log(`  └─ Publishing to npm...`);
-         execSync("npm publish --access public", {
+         execSync("npm publish --access public --provenance", {
             cwd: lib.path,
             stdio: "inherit",
          });
@@ -324,8 +315,6 @@ function printSummary(results: ReleaseResult[]) {
 export async function run() {
    const token = process.env.GITHUB_TOKEN;
    if (!token) throw new Error("GITHUB_TOKEN required");
-
-   setupNpmAuth();
 
    const specificLibrary = process.env.INPUT_LIBRARY || undefined;
 

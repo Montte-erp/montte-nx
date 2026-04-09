@@ -13,7 +13,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { categories } from "@core/database/schemas/categories";
 import { transactions } from "@core/database/schemas/transactions";
-import { financeSchema } from "@core/database/schemas/finance-schema";
+import { financeSchema } from "@core/database/schemas/schemas";
 
 export const goalMovementTypeEnum = financeSchema.enum("goal_movement_type", [
    "deposit",
