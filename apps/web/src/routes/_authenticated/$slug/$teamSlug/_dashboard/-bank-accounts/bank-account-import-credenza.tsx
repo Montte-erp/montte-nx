@@ -60,6 +60,8 @@ import {
    toCreateInput,
    useBankAccountImportContext,
 } from "./use-bank-account-import";
+import { format, of, sumOrZero } from "@f-o-t/money";
+import { TYPE_LABELS, formatBRL } from "./bank-accounts-columns";
 
 const { Stepper, useStepper } = defineStepper(
    { id: "upload", title: "Arquivo" },
@@ -730,18 +732,72 @@ function ConfirmStep({
    methods: StepperMethods;
    onClose?: () => void;
 }) {
-   const { previewRows, ignoredIndices } = useBankAccountImportContext();
+   const { previewRows, ignoredIndices, setIgnoredIndices } =
+      useBankAccountImportContext();
+   const { openAlertDialog } = useAlertDialog();
    const [isPending, startTransition] = useTransition();
+   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
+      new Set(),
+   );
+   const confirmParentRef = useRef<HTMLDivElement>(null);
    const bulkCreate = useMutation(
       orpc.bankAccounts.bulkCreate.mutationOptions(),
    );
 
-   const validRows = previewRows.filter(
-      (r, i) => r._valid && !ignoredIndices.has(i),
+   const validRows = previewRows
+      .map((r, i) => ({ row: r, originalIndex: i }))
+      .filter(
+         ({ row, originalIndex }) =>
+            row._valid && !ignoredIndices.has(originalIndex),
+      );
+
+   const totalBalance = sumOrZero(
+      validRows.map(({ row }) =>
+         of(row.saldo_inicial.replace(",", ".") || "0", "BRL"),
+      ),
+      "BRL",
    );
 
+   const selectableConfirmIndices = validRows.map(
+      ({ originalIndex }) => originalIndex,
+   );
+   const allConfirmSelected =
+      selectableConfirmIndices.length > 0 &&
+      selectableConfirmIndices.every((i) => selectedIndices.has(i));
+   const someConfirmSelected = selectableConfirmIndices.some((i) =>
+      selectedIndices.has(i),
+   );
+   const isConfirmIndeterminate = someConfirmSelected && !allConfirmSelected;
+
+   function toggleSelectAll() {
+      if (allConfirmSelected) {
+         setSelectedIndices(new Set());
+         return;
+      }
+      setSelectedIndices(new Set(selectableConfirmIndices));
+   }
+
+   function removeFromImport(indices: Iterable<number>) {
+      const arr = [...indices];
+      const next = new Set(ignoredIndices);
+      for (const i of arr) next.add(i);
+      setIgnoredIndices(next);
+      setSelectedIndices((prev) => {
+         const nextSel = new Set(prev);
+         for (const i of arr) nextSel.delete(i);
+         return nextSel;
+      });
+   }
+
+   const confirmVirtualizer = useVirtualizer({
+      count: validRows.length,
+      getScrollElement: () => confirmParentRef.current,
+      estimateSize: () => 40,
+      overscan: 8,
+   });
+
    function handleImport() {
-      const accounts = validRows.map(toCreateInput);
+      const accounts = validRows.map(({ row }) => toCreateInput(row));
       startTransition(async () => {
          const result = await fromPromise(
             bulkCreate.mutateAsync({ accounts }),
@@ -764,44 +820,193 @@ function ConfirmStep({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>Tudo certo?</CredenzaTitle>
+            <CredenzaTitle>Confirmar importação</CredenzaTitle>
             <CredenzaDescription>
-               Confira o resumo e clique em importar quando estiver pronto
+               {validRows.length} conta(s) · Saldo inicial total:{" "}
+               {format(totalBalance, "pt-BR")}
             </CredenzaDescription>
          </CredenzaHeader>
          <CredenzaBody>
             <div className="flex flex-col gap-4">
                <StepBar methods={methods} />
-               <div className="rounded-xl border overflow-hidden">
-                  <div className="divide-y">
-                     <div className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-sm text-muted-foreground">
-                           Total no arquivo
-                        </span>
-                        <span className="text-sm font-medium">
-                           {previewRows.length}
-                        </span>
-                     </div>
-                     {previewRows.length - validRows.length > 0 && (
-                        <div className="flex items-center justify-between px-4 py-2.5">
-                           <span className="text-sm text-muted-foreground">
-                              Com erro ou ignoradas
-                           </span>
-                           <Badge variant="destructive">
-                              {previewRows.length - validRows.length}
-                           </Badge>
-                        </div>
-                     )}
-                     <div className="flex items-center justify-between bg-primary/5 px-4 py-2.5">
-                        <span className="text-sm font-medium">
-                           Total a importar
-                        </span>
-                        <span className="text-sm font-bold text-primary">
-                           {validRows.length}
-                        </span>
+
+               <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                     <Checkbox
+                        checked={
+                           isConfirmIndeterminate
+                              ? "indeterminate"
+                              : allConfirmSelected
+                        }
+                        onCheckedChange={toggleSelectAll}
+                        id="confirm-select-all"
+                     />
+                     <label
+                        htmlFor="confirm-select-all"
+                        className="text-xs text-muted-foreground cursor-pointer"
+                     >
+                        Selecionar todas
+                     </label>
+                  </div>
+                  {previewRows.length - validRows.length > 0 && (
+                     <span className="text-xs text-muted-foreground">
+                        {previewRows.length - validRows.length} ignorada(s)
+                     </span>
+                  )}
+               </div>
+
+               <div className="rounded-lg border overflow-hidden">
+                  <div className="grid grid-cols-[2rem_4rem_1fr_5rem_2rem_2rem] items-center gap-2 border-b bg-muted/50 px-3 py-2">
+                     <span />
+                     <span className="text-xs font-medium text-muted-foreground">
+                        Tipo
+                     </span>
+                     <span className="text-xs font-medium text-muted-foreground">
+                        Nome
+                     </span>
+                     <span className="text-xs font-medium text-muted-foreground">
+                        Saldo inicial
+                     </span>
+                     <span className="text-xs font-medium text-muted-foreground">
+                        Cor
+                     </span>
+                     <span />
+                  </div>
+                  <div ref={confirmParentRef} className="h-56 overflow-auto">
+                     <div
+                        style={{
+                           height: confirmVirtualizer.getTotalSize(),
+                           position: "relative",
+                        }}
+                     >
+                        {confirmVirtualizer
+                           .getVirtualItems()
+                           .map((virtualRow) => {
+                              const { row, originalIndex } =
+                                 validRows[virtualRow.index];
+                              const isSelected =
+                                 selectedIndices.has(originalIndex);
+                              const resolvedColor = /^#[0-9a-fA-F]{6}$/.test(
+                                 row.cor,
+                              )
+                                 ? row.cor
+                                 : "#6366f1";
+                              const resolvedType =
+                                 row._resolvedType ?? "checking";
+                              return (
+                                 <div
+                                    key={`confirm-${originalIndex + 1}`}
+                                    data-index={virtualRow.index}
+                                    ref={(el) => {
+                                       if (el)
+                                          confirmVirtualizer.measureElement(el);
+                                    }}
+                                    style={{
+                                       position: "absolute",
+                                       top: 0,
+                                       left: 0,
+                                       width: "100%",
+                                       transform: `translateY(${virtualRow.start}px)`,
+                                    }}
+                                    className={[
+                                       "grid grid-cols-[2rem_4rem_1fr_5rem_2rem_2rem] items-center gap-2 border-b px-3 h-10",
+                                       isSelected ? "bg-primary/5" : "",
+                                    ]
+                                       .filter(Boolean)
+                                       .join(" ")}
+                                 >
+                                    <Checkbox
+                                       checked={isSelected}
+                                       onCheckedChange={() => {
+                                          setSelectedIndices((prev) => {
+                                             const next = new Set(prev);
+                                             if (next.has(originalIndex))
+                                                next.delete(originalIndex);
+                                             else next.add(originalIndex);
+                                             return next;
+                                          });
+                                       }}
+                                    />
+                                    <Badge
+                                       variant="secondary"
+                                       className="text-[10px] px-1.5 py-0 truncate"
+                                    >
+                                       {TYPE_LABELS[resolvedType]}
+                                    </Badge>
+                                    <span className="text-xs truncate font-medium">
+                                       {row.nome}
+                                    </span>
+                                    <span className="text-xs tabular-nums text-muted-foreground">
+                                       {formatBRL(
+                                          row.saldo_inicial.replace(",", ".") ||
+                                             "0",
+                                       )}
+                                    </span>
+                                    <span
+                                       className="size-4 rounded-full shrink-0 border"
+                                       style={{ background: resolvedColor }}
+                                    />
+                                    <TooltipProvider>
+                                       <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon-xs"
+                                          className="text-muted-foreground hover:text-destructive shrink-0"
+                                          tooltip="Remover da importação"
+                                          onClick={(e) => {
+                                             e.stopPropagation();
+                                             removeFromImport([originalIndex]);
+                                          }}
+                                       >
+                                          <X className="size-3.5" />
+                                       </Button>
+                                    </TooltipProvider>
+                                 </div>
+                              );
+                           })}
                      </div>
                   </div>
                </div>
+
+               {selectedIndices.size > 0 && (
+                  <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2">
+                     <span className="text-xs font-medium tabular-nums shrink-0">
+                        {selectedIndices.size} selecionada(s)
+                     </span>
+                     <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 gap-2 px-2 text-xs"
+                        onClick={() => setSelectedIndices(new Set())}
+                     >
+                        <X className="size-3.5" />
+                        Limpar
+                     </Button>
+                     <div className="h-4 w-px bg-border" />
+                     <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                        onClick={() => {
+                           openAlertDialog({
+                              title: `Remover ${selectedIndices.size} conta${selectedIndices.size === 1 ? "" : "s"}`,
+                              description:
+                                 "As contas selecionadas serão removidas desta importação.",
+                              actionLabel: "Remover",
+                              cancelLabel: "Cancelar",
+                              variant: "destructive",
+                              onAction: async () => {
+                                 removeFromImport(selectedIndices);
+                              },
+                           });
+                        }}
+                     >
+                        Remover selecionadas
+                     </Button>
+                  </div>
+               )}
             </div>
          </CredenzaBody>
          <CredenzaFooter className="grid grid-cols-2 gap-2">
