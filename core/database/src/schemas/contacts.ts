@@ -98,6 +98,7 @@ export const createContactSchema = baseContactSchema.extend({
       .max(500, "Observações devem ter no máximo 500 caracteres.")
       .nullable()
       .optional(),
+   externalId: z.string().max(255).nullable().optional(),
 });
 
 export const updateContactSchema = createContactSchema.partial();
