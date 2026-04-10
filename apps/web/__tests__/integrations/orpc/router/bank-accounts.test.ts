@@ -58,6 +58,8 @@ afterAll(async () => {
 beforeEach(async () => {
    await ctx.db.execute(sql`DELETE FROM finance.transactions`);
    await ctx.db.execute(sql`DELETE FROM finance.bank_accounts`);
+   await ctx2.db.execute(sql`DELETE FROM finance.transactions`);
+   await ctx2.db.execute(sql`DELETE FROM finance.bank_accounts`);
 });
 
 describe("create", () => {

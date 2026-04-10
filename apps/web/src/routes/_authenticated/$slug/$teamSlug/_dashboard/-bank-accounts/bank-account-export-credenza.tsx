@@ -1,6 +1,5 @@
 import type { Outputs } from "@/integrations/orpc/client";
 import { generateFromObjects } from "@f-o-t/csv";
-import { utils as xlsxUtils, write as xlsxWrite } from "xlsx";
 import { Button } from "@packages/ui/components/button";
 import {
    Choicebox,
@@ -24,6 +23,7 @@ import { QueryBoundary } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import { useFileDownload } from "@/hooks/use-file-download";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { TYPE_LABELS, formatBRL } from "./bank-accounts-columns";
 
 type ExportFormat = "csv" | "xlsx";
@@ -89,6 +89,7 @@ function BankAccountExportCredenzaContent({
    const [exportFormat, setExportFormat] = useState<ExportFormat>("csv");
    const [isPending, startTransition] = useTransition();
    const { download } = useFileDownload();
+   const xlsx = useXlsxFile();
 
    function handleExport() {
       startTransition(() => {
@@ -104,16 +105,8 @@ function BankAccountExportCredenzaContent({
                   "contas-bancarias.csv",
                );
             } else {
-               const ws = xlsxUtils.json_to_sheet(rows, {
-                  header: [...EXPORT_HEADERS],
-               });
-               const wb = xlsxUtils.book_new();
-               xlsxUtils.book_append_sheet(wb, ws, "Contas");
-               const buf = xlsxWrite(wb, { type: "array", bookType: "xlsx" });
                download(
-                  new Blob([buf], {
-                     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                  }),
+                  xlsx.generate(rows, [...EXPORT_HEADERS]),
                   "contas-bancarias.xlsx",
                );
             }

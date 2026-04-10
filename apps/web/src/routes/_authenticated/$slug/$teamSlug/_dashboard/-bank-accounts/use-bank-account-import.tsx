@@ -186,7 +186,7 @@ export function toCreateInput(row: PreviewRow) {
       notes: row.descricao || null,
       initialBalance: resolvedBalance,
       color: resolvedColor,
-      bankCode: row.codigo_banco || null,
+      bankCode: row._resolvedType === "cash" ? null : row.codigo_banco || null,
    };
 }
 
