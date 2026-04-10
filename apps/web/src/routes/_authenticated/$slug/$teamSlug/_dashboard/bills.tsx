@@ -35,7 +35,7 @@ import {
    Trash2,
    XCircle,
 } from "lucide-react";
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import { BillPayDialogStack } from "@/features/bills/ui/bill-pay-dialog-stack";
@@ -238,7 +238,7 @@ function BillsList({ type, tableState, onTableStateChange }: BillsListProps) {
       [openAlertDialog, deleteMutation],
    );
 
-   const columns = buildBillsColumns();
+   const columns = useMemo(() => buildBillsColumns(), []);
 
    if (items.length === 0) {
       return (

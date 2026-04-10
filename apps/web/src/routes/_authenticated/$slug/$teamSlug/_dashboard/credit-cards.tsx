@@ -25,7 +25,7 @@ import type {
 } from "@tanstack/react-table";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
@@ -223,7 +223,7 @@ function CreditCardsList() {
       onClear,
    ]);
 
-   const columns = buildCreditCardColumns();
+   const columns = useMemo(() => buildCreditCardColumns(), []);
 
    if (cards.length === 0) {
       return (

@@ -36,7 +36,7 @@ import {
    Pencil,
    Plus,
 } from "lucide-react";
-import { Suspense, useCallback } from "react";
+import { Suspense, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import {
@@ -226,6 +226,8 @@ function InventoryList() {
       [openAlertDialog, archiveMutation],
    );
 
+   const columns = useMemo(() => buildInventoryProductColumns(), []);
+
    if (!products.length) {
       return (
          <Empty>
@@ -241,8 +243,6 @@ function InventoryList() {
          </Empty>
       );
    }
-
-   const columns = buildInventoryProductColumns();
 
    return (
       <DataTable

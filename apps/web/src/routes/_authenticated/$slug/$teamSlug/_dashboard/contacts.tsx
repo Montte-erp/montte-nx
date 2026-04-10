@@ -21,7 +21,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Pencil, Plus, Trash2, Users } from "lucide-react";
 
-import { Suspense, useCallback } from "react";
+import { Suspense, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import {
@@ -217,6 +217,8 @@ function ContactsList() {
       });
    }, [openAlertDialog, selectedCount, selectedIds, deleteMutation, onClear]);
 
+   const columns = useMemo(() => buildContactColumns(), []);
+
    if (contacts.length === 0) {
       return (
          <Empty>
@@ -233,8 +235,6 @@ function ContactsList() {
          </Empty>
       );
    }
-
-   const columns = buildContactColumns();
 
    return (
       <>

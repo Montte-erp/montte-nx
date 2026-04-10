@@ -358,6 +358,28 @@ Every usage needs:
 1. `createLocalStorageState<DataTableStoredState | null>("montte:datatable:<feature>", null)` at module level.
 2. `validateSearch` on the route with `sorting` + `columnFilters` arrays.
 
+**Server-side tables (all tables with paginated oRPC queries) must use:**
+- `manualSorting: true` — prevents TanStack Table from re-sorting server-paginated data client-side
+- `manualFiltering: true` — prevents TanStack Table from re-filtering server-filtered data client-side
+
+These are already set in `DataTable` internally. No additional configuration needed at the call site.
+
+**Column definitions must be memoized:**
+```tsx
+// ❌ Recreated every render
+const columns = buildTransactionColumns();
+
+// ✅ Memoized
+const columns = useMemo(() => buildTransactionColumns(), []);
+// Include reactive args as deps if the builder accepts them
+```
+
+**Column pinning** — pass initial `columnPinning` in `tableState` to pin columns on first render. Pinned columns get `position: sticky` automatically. Stored in localStorage via `DataTableStoredState`.
+
+**Typed `ColumnMeta`** — use `meta` on column definitions for `label`, `filterVariant` (`"text" | "select" | "range" | "date"`), `align` (`"left" | "center" | "right"`), and `exportable`. The type is globally augmented in `data-table.tsx`. The `align` value is applied as a Tailwind class automatically.
+
+**Faceted models** — `getFacetedUniqueValues()` and `getFacetedMinMaxValues()` are available on all columns. Use `column.getFacetedUniqueValues()` in filter components to show value counts for the current page's data.
+
 **Card view** — pass `view` prop (`"table" | "card"`). Never use `renderMobileCard` (removed). DataTable handles view switching internally.
 
 **View switch pattern:**

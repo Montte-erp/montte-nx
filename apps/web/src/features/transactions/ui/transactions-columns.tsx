@@ -104,6 +104,12 @@ export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
       {
          accessorKey: "amount",
          header: "Valor",
+         meta: {
+            label: "Valor",
+            align: "right",
+            filterVariant: "range",
+            exportable: true,
+         },
          cell: ({ row }) => {
             const { type, amount } = row.original;
             if (type === "income") {

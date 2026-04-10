@@ -261,7 +261,7 @@ function ServicesList({ filters }: { filters: FiltersState }) {
       );
    }
 
-   const columns = buildServiceColumns();
+   const columns = useMemo(() => buildServiceColumns(), []);
 
    return (
       <div className="space-y-2">
