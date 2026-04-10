@@ -1,7 +1,8 @@
-import { ORPCError, os } from "@orpc/server";
+import { os } from "@orpc/server";
 import type { PostHog } from "@core/posthog/server";
+import { WebAppError } from "@core/logging/errors";
 import { db } from "../singletons";
-import { authenticateRequest, checkDomainAllowed } from "../utils/sdk-auth";
+import { authenticateRequest } from "../utils/sdk-auth";
 import type { AuthError } from "../utils/sdk-auth";
 
 interface BaseContext {
@@ -23,16 +24,24 @@ interface SdkContext extends BaseContext {
 function authErrorToOrpc(error: AuthError) {
    switch (error.code) {
       case "MISSING_KEY":
-         return new ORPCError("UNAUTHORIZED", { message: "Missing API Key" });
+         return new WebAppError("UNAUTHORIZED", {
+            message: "Missing API Key",
+            source: "sdk",
+         });
       case "RATE_LIMITED":
-         return new ORPCError("TOO_MANY_REQUESTS", {
+         return new WebAppError("TOO_MANY_REQUESTS", {
             message: "Rate limit exceeded",
+            source: "sdk",
          });
       case "INVALID_KEY":
-         return new ORPCError("UNAUTHORIZED", { message: "Invalid API Key" });
+         return new WebAppError("UNAUTHORIZED", {
+            message: "Invalid API Key",
+            source: "sdk",
+         });
       case "NO_ORGANIZATION":
-         return new ORPCError("FORBIDDEN", {
+         return new WebAppError("FORBIDDEN", {
             message: "API key has no associated organization",
+            source: "sdk",
          });
    }
 }
@@ -56,11 +65,6 @@ export const sdkProcedure = baseProcedure.use(async ({ context, next }) => {
       remaining,
       apiKeyType,
    } = authResult.value;
-
-   const domainResult = await checkDomainAllowed(request, teamId, db);
-   if (domainResult.isErr()) {
-      throw new ORPCError("FORBIDDEN", { message: "Origin not allowed" });
-   }
 
    return next({
       context: {
