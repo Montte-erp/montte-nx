@@ -12,14 +12,15 @@ import { initOtel, shutdownOtel } from "@core/logging/otel";
 import { getServerLogger } from "@core/logging/server";
 import { shutdownPosthog } from "@core/posthog/server";
 import { Elysia } from "elysia";
-import { initializeWebhookQueue } from "@packages/events/emit";
+import { setWebhookDeliveryHandler } from "@packages/events/emit";
+import type { WebhookDeliveryJobData } from "@packages/events/queues/webhook-delivery";
+import { WebhookDeliveryWorkflow } from "./workflows/webhook-delivery";
 import { auth, db, minioClient, posthog } from "./singletons";
 import sdkRouter from "./orpc/router";
 
 import "./workflows/refresh-insights";
 import "./workflows/bill-occurrences";
 import "./workflows/budget-alerts";
-import "./workflows/webhook-delivery";
 
 DBOS.setConfig({
    name: "montte-server",
@@ -64,9 +65,12 @@ async function handleOrpcRequest({ request }: { request: Request }) {
 }
 
 async function main() {
-   initializeWebhookQueue(env.REDIS_URL);
    await DBOS.launch();
    logger.info("DBOS runtime started");
+
+   setWebhookDeliveryHandler(async (data: WebhookDeliveryJobData) => {
+      await DBOS.startWorkflow(WebhookDeliveryWorkflow).deliverDirect(data);
+   });
 
    const app = new Elysia({
       serve: {
@@ -95,6 +99,12 @@ async function main() {
          }),
       )
       .post("/sdk/orpc", handleOrpcRequest)
+      .post("/internal/webhooks/deliver", async ({ body }) => {
+         await DBOS.startWorkflow(WebhookDeliveryWorkflow).deliverDirect(
+            body as WebhookDeliveryJobData,
+         );
+         return { accepted: true };
+      })
       .get("/health", () => ({
          status: "healthy",
          timestamp: new Date().toISOString(),

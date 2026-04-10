@@ -23,7 +23,6 @@ const fmt = (v: string | number) =>
    }).format(Number(v));
 
 export interface BudgetAlertInput {
-   teamId: string;
    month: number;
    year: number;
 }
@@ -126,7 +125,6 @@ export class BudgetAlertsWorkflow {
       _startTime: Date,
    ): Promise<void> {
       await BudgetAlertsWorkflow.processAlerts({
-         teamId: "",
          month: scheduledTime.getMonth() + 1,
          year: scheduledTime.getFullYear(),
       });

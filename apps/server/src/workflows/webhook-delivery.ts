@@ -6,6 +6,7 @@ import {
    updateWebhookDeliveryStatus,
    updateWebhookLastSuccess,
 } from "@core/database/repositories/webhook-repository";
+import type { WebhookDeliveryJobData } from "@packages/events/queues/webhook-delivery";
 import { getLogger } from "@core/logging/root";
 import { db } from "../singletons";
 
@@ -27,24 +28,16 @@ export class WebhookDeliveryWorkflow {
    }
 
    @DBOS.step()
-   static async deliverOne(delivery: {
-      id: string;
-      webhookEndpointId: string;
-      url: string;
-      payload: Record<string, unknown>;
-      signingSecret: string;
-      attemptNumber: number;
-      maxAttempts: number;
-   }): Promise<void> {
+   static async deliverOne(delivery: WebhookDeliveryJobData): Promise<void> {
       const {
-         id,
+         deliveryId,
          webhookEndpointId,
          url,
          payload,
          signingSecret,
          attemptNumber,
-         maxAttempts,
       } = delivery;
+      const maxAttempts = 5;
       const timestamp = Date.now();
       const payloadString = JSON.stringify(payload);
       const signature = generateSignature(
@@ -60,7 +53,7 @@ export class WebhookDeliveryWorkflow {
                "Content-Type": "application/json",
                "X-Montte-Signature": `t=${timestamp},v1=${signature}`,
                "X-Montte-Event": String(payload.event ?? ""),
-               "X-Montte-Delivery-Id": id,
+               "X-Montte-Delivery-Id": deliveryId,
                "X-Montte-Attempt": attemptNumber.toString(),
                "User-Agent": "Montte-Webhooks/1.0",
             },
@@ -71,7 +64,7 @@ export class WebhookDeliveryWorkflow {
          const responseBody = await response.text().catch(() => "");
 
          if (response.ok) {
-            await updateWebhookDeliveryStatus(db, id, {
+            await updateWebhookDeliveryStatus(db, deliveryId, {
                status: "success",
                httpStatusCode: response.status,
                responseBody: responseBody.slice(0, 1000),
@@ -91,7 +84,7 @@ export class WebhookDeliveryWorkflow {
          const isLastAttempt = nextAttempt > maxAttempts;
 
          if (isLastAttempt) {
-            await updateWebhookDeliveryStatus(db, id, {
+            await updateWebhookDeliveryStatus(db, deliveryId, {
                status: "failed",
                errorMessage: `Max attempts reached: ${errorMessage}`,
             }).catch((e) =>
@@ -103,7 +96,7 @@ export class WebhookDeliveryWorkflow {
             );
          } else {
             const nextRetryAt = new Date(Date.now() + nextAttempt * 60_000);
-            await updateWebhookDeliveryStatus(db, id, {
+            await updateWebhookDeliveryStatus(db, deliveryId, {
                status: "retrying",
                errorMessage,
                attemptNumber: nextAttempt,
@@ -118,6 +111,11 @@ export class WebhookDeliveryWorkflow {
             "Webhook delivery failed",
          );
       }
+   }
+
+   @DBOS.workflow()
+   static async deliverDirect(data: WebhookDeliveryJobData): Promise<void> {
+      await WebhookDeliveryWorkflow.deliverOne(data);
    }
 
    @DBOS.scheduled({ crontab: "* * * * *" })

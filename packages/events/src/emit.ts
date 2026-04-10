@@ -66,11 +66,20 @@ export interface EmitEventBatchParams {
 }
 
 let webhookQueue: Queue<WebhookDeliveryJobData> | null = null;
+let webhookDeliveryHandler:
+   | ((data: WebhookDeliveryJobData) => Promise<void>)
+   | null = null;
 
 export function initializeWebhookQueue(redisUrl: string): void {
    if (webhookQueue) return;
    const connection = createQueueConnection(redisUrl);
    webhookQueue = createWebhookDeliveryQueue(connection);
+}
+
+export function setWebhookDeliveryHandler(
+   fn: (data: WebhookDeliveryJobData) => Promise<void>,
+): void {
+   webhookDeliveryHandler = fn;
 }
 
 function buildWebhookPayload(
@@ -168,7 +177,7 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
          });
       }
 
-      if (webhookQueue && storedEvent) {
+      if ((webhookDeliveryHandler || webhookQueue) && storedEvent) {
          try {
             const matchingWebhooks = await findMatchingWebhooks(
                db,
@@ -198,7 +207,7 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
 
                if (!delivery) continue;
 
-               await webhookQueue.add("deliver", {
+               const jobData: WebhookDeliveryJobData = {
                   deliveryId: delivery.id,
                   webhookEndpointId: webhook.id,
                   eventId: storedEvent.id,
@@ -206,7 +215,13 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
                   payload,
                   signingSecret: webhook.signingSecret,
                   attemptNumber: 1,
-               });
+               };
+
+               if (webhookDeliveryHandler) {
+                  await webhookDeliveryHandler(jobData);
+               } else if (webhookQueue) {
+                  await webhookQueue.add("deliver", jobData);
+               }
             }
          } catch (error) {
             logger.error({ err: error }, "Failed to trigger webhooks");

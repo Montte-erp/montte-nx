@@ -243,14 +243,13 @@ export async function getPendingWebhookDeliveries(db: DatabaseInstance) {
    try {
       return await db
          .select({
-            id: webhookDeliveries.id,
+            deliveryId: webhookDeliveries.id,
             webhookEndpointId: webhookDeliveries.webhookEndpointId,
             eventId: webhookDeliveries.eventId,
             url: webhookDeliveries.url,
             eventName: webhookDeliveries.eventName,
             payload: webhookDeliveries.payload,
             attemptNumber: webhookDeliveries.attemptNumber,
-            maxAttempts: webhookDeliveries.maxAttempts,
             signingSecret: webhookEndpoints.signingSecret,
          })
          .from(webhookDeliveries)
