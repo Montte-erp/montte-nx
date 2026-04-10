@@ -492,6 +492,7 @@ export function DataTable<TData, TValue>({
          onTableStateChangeRef.current?.({
             columnOrder: columnOrderRef.current,
             columnVisibility: next,
+            columnPinning: effectiveColumnPinningRef.current,
          });
       },
       [effectiveColumnVisibility],
@@ -552,6 +553,7 @@ export function DataTable<TData, TValue>({
       onTableStateChangeRef.current?.({
          columnOrder,
          columnVisibility: effectiveColumnVisibilityRef.current,
+         columnPinning: effectiveColumnPinningRef.current,
       });
    }, [columnOrder]);
 

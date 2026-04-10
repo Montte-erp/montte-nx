@@ -226,6 +226,8 @@ function InventoryList() {
       [openAlertDialog, archiveMutation],
    );
 
+   const columns = useMemo(() => buildInventoryProductColumns(), []);
+
    if (!products.length) {
       return (
          <Empty>
@@ -241,8 +243,6 @@ function InventoryList() {
          </Empty>
       );
    }
-
-   const columns = useMemo(() => buildInventoryProductColumns(), []);
 
    return (
       <DataTable

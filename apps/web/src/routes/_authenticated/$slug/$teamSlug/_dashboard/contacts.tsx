@@ -217,6 +217,8 @@ function ContactsList() {
       });
    }, [openAlertDialog, selectedCount, selectedIds, deleteMutation, onClear]);
 
+   const columns = useMemo(() => buildContactColumns(), []);
+
    if (contacts.length === 0) {
       return (
          <Empty>
@@ -233,8 +235,6 @@ function ContactsList() {
          </Empty>
       );
    }
-
-   const columns = useMemo(() => buildContactColumns(), []);
 
    return (
       <>
