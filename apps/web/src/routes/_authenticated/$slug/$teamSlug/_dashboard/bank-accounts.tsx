@@ -47,7 +47,7 @@ const bankAccountsSearchSchema = z.object({
       .default([]),
    type: z
       .enum(["checking", "savings", "investment", "payment", "cash"])
-      .optional(),
+      .catch("checking"),
 });
 
 export type BankAccountsSearch = z.infer<typeof bankAccountsSearchSchema>;

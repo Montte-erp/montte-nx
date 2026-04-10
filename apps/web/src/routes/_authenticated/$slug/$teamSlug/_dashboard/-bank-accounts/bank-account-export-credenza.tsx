@@ -1,6 +1,5 @@
 import type { Outputs } from "@/integrations/orpc/client";
 import { generateFromObjects } from "@f-o-t/csv";
-import { format, of } from "@f-o-t/money";
 import { utils as xlsxUtils, write as xlsxWrite } from "xlsx";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -24,7 +23,8 @@ import { useState, useTransition } from "react";
 import { QueryBoundary } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
-import { TYPE_LABELS } from "./bank-accounts-columns";
+import { useFileDownload } from "@/hooks/use-file-download";
+import { TYPE_LABELS, formatBRL } from "./bank-accounts-columns";
 
 type ExportFormat = "csv" | "xlsx";
 type BankAccount = Outputs["bankAccounts"]["getAll"][number];
@@ -55,19 +55,6 @@ const EXPORT_HEADERS = [
    "cor",
 ] as const;
 
-function formatBRL(value: string | number): string {
-   return format(of(String(value), "BRL"), "pt-BR");
-}
-
-function triggerDownload(blob: Blob, filename: string): void {
-   const url = URL.createObjectURL(blob);
-   const a = document.createElement("a");
-   a.href = url;
-   a.download = filename;
-   a.click();
-   URL.revokeObjectURL(url);
-}
-
 function buildRows(accounts: BankAccount[]) {
    return accounts.map((a) => ({
       nome: a.name,
@@ -85,7 +72,7 @@ export function BankAccountExportCredenza({
    onClose?: () => void;
 }) {
    return (
-      <QueryBoundary>
+      <QueryBoundary fallback={null}>
          <BankAccountExportCredenzaContent onClose={onClose} />
       </QueryBoundary>
    );
@@ -101,6 +88,7 @@ function BankAccountExportCredenzaContent({
    );
    const [exportFormat, setExportFormat] = useState<ExportFormat>("csv");
    const [isPending, startTransition] = useTransition();
+   const { download } = useFileDownload();
 
    function handleExport() {
       startTransition(() => {
@@ -111,7 +99,7 @@ function BankAccountExportCredenzaContent({
                const csv = generateFromObjects(rows, {
                   headers: [...EXPORT_HEADERS],
                });
-               triggerDownload(
+               download(
                   new Blob([csv], { type: "text/csv;charset=utf-8;" }),
                   "contas-bancarias.csv",
                );
@@ -122,7 +110,7 @@ function BankAccountExportCredenzaContent({
                const wb = xlsxUtils.book_new();
                xlsxUtils.book_append_sheet(wb, ws, "Contas");
                const buf = xlsxWrite(wb, { type: "array", bookType: "xlsx" });
-               triggerDownload(
+               download(
                   new Blob([buf], {
                      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                   }),
