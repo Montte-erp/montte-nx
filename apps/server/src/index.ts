@@ -9,7 +9,7 @@ import {
 } from "@core/logging/health";
 import { FetchLoggingPlugin } from "@core/logging/orpc-plugin";
 import { initOtel, shutdownOtel } from "@core/logging/otel";
-import { initLogger } from "@core/logging/root";
+import { getServerLogger } from "@core/logging/server";
 import { shutdownPosthog } from "@core/posthog/server";
 import { Elysia } from "elysia";
 import { initializeWebhookQueue } from "@packages/events/emit";
@@ -24,6 +24,7 @@ import "./workflows/webhook-delivery";
 DBOS.setConfig({
    name: "montte-server",
    systemDatabaseUrl: env.DATABASE_URL,
+   logLevel: env.LOG_LEVEL,
 });
 
 initOtel({
@@ -33,7 +34,7 @@ initOtel({
 });
 startHealthHeartbeat({ serviceName: "montte-server", posthog });
 
-const logger = initLogger({ name: "montte-server", level: "info" });
+const logger = getServerLogger(env);
 
 const orpcHandler = new RPCHandler(sdkRouter, {
    plugins: [
