@@ -329,16 +329,21 @@ function MapStep({ methods }: { methods: StepperMethods }) {
                            {FIELD_LABELS[field]}
                         </span>
                         <Select
-                           value={mapping[field] ?? ""}
+                           value={mapping[field] || "__none__"}
                            onValueChange={(v) =>
-                              setMapping({ ...mapping, [field]: v })
+                              setMapping({
+                                 ...mapping,
+                                 [field]: v === "__none__" ? "" : v,
+                              })
                            }
                         >
                            <SelectTrigger>
                               <SelectValue placeholder="Não importar" />
                            </SelectTrigger>
                            <SelectContent>
-                              <SelectItem value="">Não importar</SelectItem>
+                              <SelectItem value="__none__">
+                                 Não importar
+                              </SelectItem>
                               {rawData.headers.map((h) => (
                                  <SelectItem key={h} value={h}>
                                     {h}
