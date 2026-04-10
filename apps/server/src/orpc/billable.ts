@@ -1,5 +1,5 @@
-import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
+import { WebAppError } from "@core/logging/errors";
 import type { DatabaseInstance } from "@core/database/client";
 import { user as userTable } from "@core/database/schemas/auth";
 import { createEmitFn } from "@packages/events/emit";
@@ -38,9 +38,10 @@ export function createBillableProcedure(eventName: string) {
             stripeCustomerId,
          );
       } catch {
-         throw new ORPCError("FORBIDDEN", {
+         throw new WebAppError("FORBIDDEN", {
             message:
                "Free tier limit exceeded. Enable pay-as-you-go to continue.",
+            source: "billing",
          });
       }
 
