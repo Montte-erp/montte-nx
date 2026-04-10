@@ -40,16 +40,6 @@ import {
    useReactTable,
    type VisibilityState,
 } from "@tanstack/react-table";
-
-declare module "@tanstack/react-table" {
-   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-   interface ColumnMeta<TData extends RowData, TValue> {
-      label?: string;
-      filterVariant?: "text" | "select" | "range" | "date";
-      align?: "left" | "center" | "right";
-      exportable?: boolean;
-   }
-}
 import {
    ArrowDown,
    ArrowUp,
@@ -96,6 +86,16 @@ import {
    TableHeader,
    TableRow,
 } from "./table";
+
+declare module "@tanstack/react-table" {
+   // oxlint-ignore @typescript-eslint/no-unused-vars
+   interface ColumnMeta<TData extends RowData, TValue> {
+      label?: string;
+      filterVariant?: "text" | "select" | "range" | "date";
+      align?: "left" | "center" | "right";
+      exportable?: boolean;
+   }
+}
 
 // =============================================================================
 // Types
