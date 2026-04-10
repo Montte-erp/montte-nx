@@ -14,22 +14,6 @@ const teamIdSchema = z.object({
    teamId: z.uuid(),
 });
 
-const domainPatternRegex =
-   /^(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/;
-
-const updateAllowedDomainsSchema = z.object({
-   teamId: z.uuid(),
-   allowedDomains: z
-      .array(
-         z
-            .string()
-            .min(1)
-            .max(253)
-            .regex(domainPatternRegex, "Invalid domain pattern"),
-      )
-      .max(50),
-});
-
 // =============================================================================
 // Helpers
 // =============================================================================
@@ -47,7 +31,6 @@ async function verifyTeamOwnership(
          id: team.id,
          name: team.name,
          description: team.description,
-         allowedDomains: team.allowedDomains,
          createdAt: team.createdAt,
          updatedAt: team.updatedAt,
          cnpjData: team.cnpjData,
@@ -79,31 +62,6 @@ export const get = protectedProcedure
       const { db, organizationId } = context;
 
       return verifyTeamOwnership(db, input.teamId, organizationId);
-   });
-
-/**
- * Update the allowed domains for a team.
- * Validates domain patterns and verifies team ownership.
- */
-export const updateAllowedDomains = protectedProcedure
-   .input(updateAllowedDomainsSchema)
-   .handler(async ({ context, input }) => {
-      const { db, organizationId } = context;
-
-      // Verify team belongs to this organization
-      await verifyTeamOwnership(db, input.teamId, organizationId);
-
-      const [updated] = await db
-         .update(team)
-         .set({ allowedDomains: input.allowedDomains })
-         .where(eq(team.id, input.teamId))
-         .returning({ allowedDomains: team.allowedDomains });
-
-      if (!updated) {
-         throw WebAppError.internal("Failed to update allowed domains");
-      }
-
-      return { allowedDomains: updated.allowedDomains };
    });
 
 /**

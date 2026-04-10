@@ -1,15 +1,5 @@
-import type { DatabaseInstance } from "@core/database/client";
-import { team } from "@core/database/schemas/auth";
 import { getLogger } from "@core/logging/root";
-import { eq } from "drizzle-orm";
-import {
-   ResultAsync,
-   err,
-   errAsync,
-   fromPromise,
-   ok,
-   okAsync,
-} from "neverthrow";
+import { ResultAsync, err, errAsync, fromPromise, ok } from "neverthrow";
 import { auth } from "../singletons";
 
 const logger = getLogger().child({ module: "sdk-auth" });
@@ -103,64 +93,5 @@ export function authenticateRequest(
             (result.key.metadata?.apiKeyType as "public" | "private") ??
             "private",
       });
-   });
-}
-
-/**
- * Checks whether the given origin hostname matches any of the allowed domain patterns.
- * Supports exact matches and wildcard subdomains (e.g. `*.example.com`).
- */
-function matchesDomain(origin: string, patterns: string[]): boolean {
-   try {
-      const hostname = new URL(origin).hostname;
-      return patterns.some((pattern) => {
-         if (pattern.startsWith("*.")) {
-            const suffix = pattern.slice(2);
-            return hostname === suffix || hostname.endsWith(`.${suffix}`);
-         }
-         return hostname === pattern;
-      });
-   } catch {
-      return false;
-   }
-}
-
-/**
- * Soft domain filtering for SDK requests.
- * Returns Ok(undefined) when allowed, Err("Origin not allowed") when blocked.
- */
-export function checkDomainAllowed(
-   request: Request,
-   teamId: string | undefined,
-   db: DatabaseInstance,
-): ResultAsync<void, string> {
-   if (!teamId) {
-      return okAsync(undefined);
-   }
-
-   return fromPromise(
-      db
-         .select({ allowedDomains: team.allowedDomains })
-         .from(team)
-         .where(eq(team.id, teamId))
-         .then((rows) => rows[0]),
-      () => "Domain check failed",
-   ).andThen((row) => {
-      if (!row?.allowedDomains || row.allowedDomains.length === 0) {
-         return ok(undefined);
-      }
-
-      const origin =
-         request.headers.get("Origin") ?? request.headers.get("Referer");
-
-      if (!origin) {
-         return ok(undefined);
-      }
-
-      if (matchesDomain(origin, row.allowedDomains)) {
-         return ok(undefined);
-      }
-
-      return err("Origin not allowed");
    });
 }
