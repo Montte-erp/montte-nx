@@ -17,7 +17,7 @@ import type {
 } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
-import { Landmark, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { Download, Landmark, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { Suspense, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -27,6 +27,7 @@ import {
    type BankAccountRow,
    buildBankAccountColumns,
 } from "./-bank-accounts/bank-accounts-columns";
+import { BankAccountExportCredenza } from "./-bank-accounts/bank-account-export-credenza";
 import { BankAccountImportCredenza } from "./-bank-accounts/bank-account-import-credenza";
 import { BankAccountsFilterBar } from "./-bank-accounts/bank-accounts-filter-bar";
 import { BankAccountForm } from "@/features/bank-accounts/ui/bank-accounts-form";
@@ -241,6 +242,14 @@ function BankAccountsPage() {
          onClick: () =>
             openCredenza({
                children: <BankAccountImportCredenza onClose={closeCredenza} />,
+            }),
+      },
+      {
+         icon: Download,
+         label: "Exportar",
+         onClick: () =>
+            openCredenza({
+               children: <BankAccountExportCredenza onClose={closeCredenza} />,
             }),
       },
    ];

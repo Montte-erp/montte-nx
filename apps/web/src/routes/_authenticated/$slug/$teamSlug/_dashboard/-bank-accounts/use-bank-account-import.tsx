@@ -15,6 +15,7 @@ export type RawData = {
 export type ColumnField =
    | "tipo"
    | "nome"
+   | "codigo_banco"
    | "descricao"
    | "saldo_inicial"
    | "cor";
@@ -24,6 +25,7 @@ export type ColumnMapping = Record<ColumnField, string>;
 export const COLUMN_FIELDS: ColumnField[] = [
    "tipo",
    "nome",
+   "codigo_banco",
    "descricao",
    "saldo_inicial",
    "cor",
@@ -34,6 +36,7 @@ export const REQUIRED_FIELDS: ColumnField[] = ["tipo", "nome"];
 export const FIELD_LABELS: Record<ColumnField, string> = {
    tipo: "Tipo de conta *",
    nome: "Nome *",
+   codigo_banco: "Código do banco",
    descricao: "Descrição",
    saldo_inicial: "Saldo inicial",
    cor: "Cor (hex)",
@@ -42,6 +45,7 @@ export const FIELD_LABELS: Record<ColumnField, string> = {
 export const TEMPLATE_HEADERS = [
    "tipo",
    "nome",
+   "codigo_banco",
    "descricao",
    "saldo_inicial",
    "cor",
@@ -51,6 +55,7 @@ export const TEMPLATE_ROWS = [
    {
       tipo: "corrente",
       nome: "Nubank",
+      codigo_banco: "260",
       descricao: "Conta principal",
       saldo_inicial: "1500.00",
       cor: "#6366f1",
@@ -58,9 +63,18 @@ export const TEMPLATE_ROWS = [
    {
       tipo: "poupanca",
       nome: "Caixa Econômica",
+      codigo_banco: "104",
       descricao: "",
       saldo_inicial: "500.00",
       cor: "#22c55e",
+   },
+   {
+      tipo: "caixa",
+      nome: "Caixa Físico",
+      codigo_banco: "",
+      descricao: "",
+      saldo_inicial: "200.00",
+      cor: "#f59e0b",
    },
 ] as const;
 
@@ -94,9 +108,17 @@ export const TYPE_MAP: Record<string, ResolvedBankAccountType> = {
 
 const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{6}$/;
 
+const BANK_TYPES: ResolvedBankAccountType[] = [
+   "checking",
+   "savings",
+   "investment",
+   "payment",
+];
+
 export type PreviewRow = {
    tipo: string;
    nome: string;
+   codigo_banco: string;
    descricao: string;
    saldo_inicial: string;
    cor: string;
@@ -128,13 +150,18 @@ export function buildPreviewRows(
       };
       const tipo = get("tipo");
       const nome = get("nome");
+      const codigo_banco = get("codigo_banco");
       const resolvedType = TYPE_MAP[tipo.toLowerCase().trim()] ?? null;
       const errors: string[] = [];
       if (!resolvedType) errors.push("Tipo inválido");
       if (nome.length < 2) errors.push("Nome muito curto");
+      if (resolvedType && BANK_TYPES.includes(resolvedType) && !codigo_banco) {
+         errors.push("Código do banco obrigatório");
+      }
       return {
          tipo,
          nome,
+         codigo_banco,
          descricao: get("descricao"),
          saldo_inicial: get("saldo_inicial"),
          cor: get("cor"),
@@ -157,12 +184,14 @@ export function toCreateInput(row: PreviewRow) {
       notes: row.descricao || null,
       initialBalance: resolvedBalance,
       color: resolvedColor,
+      bankCode: row.codigo_banco || null,
    };
 }
 
 const EMPTY_MAPPING: ColumnMapping = {
    tipo: "",
    nome: "",
+   codigo_banco: "",
    descricao: "",
    saldo_inicial: "",
    cor: "",

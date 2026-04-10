@@ -34,13 +34,19 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import {
    AlertTriangle,
    ChevronRight,
+   CreditCard,
    FileSpreadsheet,
+   Landmark,
    Loader2,
+   PiggyBank,
    Table2,
+   TrendingUp,
    Undo2,
+   Wallet,
    X,
 } from "lucide-react";
 import { fromPromise } from "neverthrow";
+import type React from "react";
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -62,6 +68,17 @@ import {
 } from "./use-bank-account-import";
 import { format, of, sumOrZero } from "@f-o-t/money";
 import { TYPE_LABELS, formatBRL } from "./bank-accounts-columns";
+
+import type { ResolvedBankAccountType } from "./use-bank-account-import";
+
+const ACCOUNT_TYPE_ICONS: Record<ResolvedBankAccountType, React.ReactElement> =
+   {
+      cash: <Wallet className="size-4" />,
+      checking: <Landmark className="size-4" />,
+      savings: <PiggyBank className="size-4" />,
+      payment: <CreditCard className="size-4" />,
+      investment: <TrendingUp className="size-4" />,
+   };
 
 const { Stepper, useStepper } = defineStepper(
    { id: "upload", title: "Arquivo" },
@@ -795,9 +812,11 @@ function ConfirmStep({
                            className="flex items-center gap-2 px-3 py-2.5"
                         >
                            <span
-                              className="size-3 rounded-full shrink-0"
+                              className="flex size-8 shrink-0 items-center justify-center rounded-full text-white"
                               style={{ background: resolvedColor }}
-                           />
+                           >
+                              {ACCOUNT_TYPE_ICONS[resolvedType]}
+                           </span>
                            <div className="flex flex-col flex-1 min-w-0">
                               <span className="text-sm font-medium truncate">
                                  {row.nome}
