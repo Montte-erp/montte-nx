@@ -1,3 +1,4 @@
+import { DBOS } from "@dbos-inc/dbos-sdk";
 import cors from "@elysiajs/cors";
 import { RPCHandler } from "@orpc/server/fetch";
 import { BatchHandlerPlugin } from "@orpc/server/plugins";
@@ -13,6 +14,10 @@ import { shutdownPosthog } from "@core/posthog/server";
 import { Elysia } from "elysia";
 import { auth, db, minioClient, posthog } from "./singletons";
 import sdkRouter from "./orpc/router";
+
+import "./workflows/refresh-insights";
+import "./workflows/bill-occurrences";
+import "./workflows/budget-alerts";
 
 initOtel({
    serviceName: "montte-server",
@@ -50,49 +55,61 @@ async function handleOrpcRequest({ request }: { request: Request }) {
    return response ?? new Response("Not Found", { status: 404 });
 }
 
-const app = new Elysia({
-   serve: {
-      idleTimeout: 0,
-   },
-})
-   .derive(() => ({
-      auth,
-      db,
-      minioBucket: env.MINIO_BUCKET,
-      minioClient,
-      posthog,
-   }))
-   .use(
-      cors({
-         allowedHeaders: [
-            "Content-Type",
-            "sdk-api-key",
-            "X-API-Key",
-            "X-Locale",
-            "Authorization",
-         ],
-         credentials: true,
-         methods: ["GET", "POST", "DELETE", "OPTIONS"],
-         origin: true,
-      }),
-   )
-   .post("/sdk/orpc", handleOrpcRequest)
-   .get("/health", () => ({
-      status: "healthy",
-      timestamp: new Date().toISOString(),
-   }))
-   .listen(process.env.PORT ?? 9877);
+async function main() {
+   await DBOS.launch();
+   logger.info("DBOS runtime started");
 
-logger.info({ port: app.server?.port }, "Server started");
+   const app = new Elysia({
+      serve: {
+         idleTimeout: 0,
+      },
+   })
+      .derive(() => ({
+         auth,
+         db,
+         minioBucket: env.MINIO_BUCKET,
+         minioClient,
+         posthog,
+      }))
+      .use(
+         cors({
+            allowedHeaders: [
+               "Content-Type",
+               "sdk-api-key",
+               "X-API-Key",
+               "X-Locale",
+               "Authorization",
+            ],
+            credentials: true,
+            methods: ["GET", "POST", "DELETE", "OPTIONS"],
+            origin: true,
+         }),
+      )
+      .post("/sdk/orpc", handleOrpcRequest)
+      .get("/health", () => ({
+         status: "healthy",
+         timestamp: new Date().toISOString(),
+      }))
+      .listen(process.env.PORT ?? 9877);
 
-const shutdown = async (signal: string) => {
-   logger.info({ signal }, "Received signal, shutting down");
-   await shutdownPosthog(posthog);
-   stopHealthHeartbeat();
-   await shutdownOtel();
-   process.exit(0);
-};
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("SIGINT", () => shutdown("SIGINT"));
+   logger.info({ port: app.server?.port }, "Server started");
 
-export type App = typeof app;
+   const shutdown = async (signal: string) => {
+      logger.info({ signal }, "Received signal, shutting down");
+      await DBOS.shutdown();
+      await shutdownPosthog(posthog);
+      stopHealthHeartbeat();
+      await shutdownOtel();
+      process.exit(0);
+   };
+
+   process.on("SIGTERM", () => shutdown("SIGTERM"));
+   process.on("SIGINT", () => shutdown("SIGINT"));
+}
+
+main().catch((err) => {
+   console.error("Fatal error", err);
+   process.exit(1);
+});
+
+export type App = Elysia;
