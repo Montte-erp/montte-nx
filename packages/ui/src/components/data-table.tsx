@@ -33,12 +33,23 @@ import {
    getExpandedRowModel,
    type OnChangeFn,
    type Row,
+   type RowData,
    type RowSelectionState,
    type SortingState,
    type Table as TanStackTable,
    useReactTable,
    type VisibilityState,
 } from "@tanstack/react-table";
+
+declare module "@tanstack/react-table" {
+   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   interface ColumnMeta<TData extends RowData, TValue> {
+      label?: string;
+      filterVariant?: "text" | "select" | "range" | "date";
+      align?: "left" | "center" | "right";
+      exportable?: boolean;
+   }
+}
 import {
    ArrowDown,
    ArrowUp,
@@ -158,12 +169,14 @@ function SortableHeaderCell({
    children,
    pinningStyle,
    isPinned,
+   align,
 }: {
    headerId: string;
    colSpan: number;
    children: React.ReactNode;
    pinningStyle?: React.CSSProperties;
    isPinned?: false | "left" | "right";
+   align?: "left" | "center" | "right";
 }) {
    const {
       attributes,
@@ -184,6 +197,8 @@ function SortableHeaderCell({
             "text-xs font-medium",
             isDragging && "opacity-50",
             isPinned ? "bg-background" : "",
+            align === "right" && "text-right",
+            align === "center" && "text-center",
          )}
          style={{
             ...pinningStyle,
@@ -685,6 +700,7 @@ export function DataTable<TData, TValue>({
                   colSpan={header.colSpan}
                   pinningStyle={getPinningStyles(header.column)}
                   isPinned={header.column.getIsPinned()}
+                  align={header.column.columnDef.meta?.align}
                >
                   {content}
                </SortableHeaderCell>
@@ -698,6 +714,10 @@ export function DataTable<TData, TValue>({
                className={cn(
                   "text-xs font-medium",
                   header.column.getIsPinned() ? "bg-background" : "",
+                  header.column.columnDef.meta?.align === "right" &&
+                     "text-right",
+                  header.column.columnDef.meta?.align === "center" &&
+                     "text-center",
                )}
                style={getPinningStyles(header.column)}
             >
@@ -775,6 +795,8 @@ export function DataTable<TData, TValue>({
             className={cn(
                "truncate",
                cell.column.getIsPinned() ? "bg-background" : "",
+               cell.column.columnDef.meta?.align === "right" && "text-right",
+               cell.column.columnDef.meta?.align === "center" && "text-center",
             )}
             key={cell.id}
             style={{
