@@ -72,10 +72,6 @@
          "types": "./dist/document.d.ts",
          "default": "./dist/document.js"
       },
-      "./queues/connection": {
-         "types": "./dist/queues/connection.d.ts",
-         "default": "./dist/queues/connection.js"
-      },
       "./queues/webhook-delivery": {
          "types": "./dist/queues/webhook-delivery.d.ts",
          "default": "./dist/queues/webhook-delivery.js"
@@ -101,9 +97,7 @@
       "@core/stripe": "workspace:*",
       "@f-o-t/money": "catalog:fot",
       "@orpc/server": "catalog:orpc",
-      "bullmq": "catalog:workers",
       "drizzle-orm": "catalog:database",
-      "ioredis": "catalog:workers",
       "zod": "catalog:validation"
    },
    "devDependencies": {

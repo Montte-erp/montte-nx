@@ -1,8 +1,3 @@
-import type { ConnectionOptions } from "bullmq";
-import { Queue } from "bullmq";
-
-export const WEBHOOK_DELIVERY_QUEUE = "webhook-delivery";
-
 export interface WebhookDeliveryJobData {
    deliveryId: string;
    webhookEndpointId: string;
@@ -11,21 +6,4 @@ export interface WebhookDeliveryJobData {
    payload: Record<string, unknown>;
    signingSecret: string;
    attemptNumber: number;
-}
-
-export function createWebhookDeliveryQueue(
-   connection: ConnectionOptions,
-): Queue<WebhookDeliveryJobData> {
-   return new Queue<WebhookDeliveryJobData>(WEBHOOK_DELIVERY_QUEUE, {
-      connection,
-      defaultJobOptions: {
-         attempts: 5,
-         backoff: {
-            type: "exponential",
-            delay: 60_000,
-         },
-         removeOnComplete: { count: 1000 },
-         removeOnFail: { count: 5000 },
-      },
-   });
 }
