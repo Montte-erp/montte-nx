@@ -17,15 +17,19 @@ import type {
 } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
-import { Landmark, Pencil, Plus, Trash2 } from "lucide-react";
-import { Suspense, useCallback, useMemo } from "react";
+import { Download, Landmark, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { QueryBoundary } from "@/components/query-boundary";
 import { DefaultHeader } from "@/components/default-header";
+import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import {
    type BankAccountRow,
    buildBankAccountColumns,
 } from "./-bank-accounts/bank-accounts-columns";
+import { BankAccountExportCredenza } from "./-bank-accounts/bank-account-export-credenza";
+import { BankAccountImportCredenza } from "./-bank-accounts/bank-account-import-credenza";
 import { BankAccountsFilterBar } from "./-bank-accounts/bank-accounts-filter-bar";
 import { BankAccountForm } from "@/features/bank-accounts/ui/bank-accounts-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -43,7 +47,8 @@ const bankAccountsSearchSchema = z.object({
       .default([]),
    type: z
       .enum(["checking", "savings", "investment", "payment", "cash"])
-      .optional(),
+      .optional()
+      .catch(undefined),
 });
 
 export type BankAccountsSearch = z.infer<typeof bankAccountsSearchSchema>;
@@ -99,6 +104,7 @@ function BankAccountsList({ navigate }: BankAccountsListProps) {
                : updater;
          navigate({
             search: (prev: BankAccountsSearch) => ({ ...prev, sorting: next }),
+            replace: true,
          });
       },
       [sorting, navigate],
@@ -116,6 +122,7 @@ function BankAccountsList({ navigate }: BankAccountsListProps) {
                   ...prev,
                   columnFilters: next,
                }),
+               replace: true,
             });
          },
          [columnFilters, navigate],
@@ -232,6 +239,25 @@ function BankAccountsPage() {
       });
    }, [openCredenza, closeCredenza]);
 
+   const panelActions: PanelAction[] = [
+      {
+         icon: Upload,
+         label: "Importar",
+         onClick: () =>
+            openCredenza({
+               children: <BankAccountImportCredenza onClose={closeCredenza} />,
+            }),
+      },
+      {
+         icon: Download,
+         label: "Exportar",
+         onClick: () =>
+            openCredenza({
+               children: <BankAccountExportCredenza onClose={closeCredenza} />,
+            }),
+      },
+   ];
+
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
@@ -242,12 +268,13 @@ function BankAccountsPage() {
                </Button>
             }
             description="Gerencie suas contas bancárias e saldos"
+            panelActions={panelActions}
             title="Contas Bancárias"
          />
          <BankAccountsFilterBar type={type} />
-         <Suspense fallback={<BankAccountsSkeleton />}>
+         <QueryBoundary fallback={<BankAccountsSkeleton />}>
             <BankAccountsList navigate={navigate} />
-         </Suspense>
+         </QueryBoundary>
       </main>
    );
 }

@@ -1,4 +1,5 @@
 import {
+   bulkCreateBankAccounts,
    computeBankAccountBalance,
    createBankAccount,
    deleteBankAccount,
@@ -55,4 +56,19 @@ export const remove = protectedProcedure
       await ensureBankAccountOwnership(context.db, input.id, context.teamId);
       await deleteBankAccount(context.db, input.id);
       return { success: true };
+   });
+
+export const bulkCreate = protectedProcedure
+   .input(
+      z.object({
+         accounts: z.array(createBankAccountSchema).min(1).max(500),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      const rows = await bulkCreateBankAccounts(
+         context.db,
+         context.teamId,
+         input.accounts,
+      );
+      return { created: rows.length };
    });

@@ -31,6 +31,26 @@ export async function createBankAccount(
    }
 }
 
+export async function bulkCreateBankAccounts(
+   db: DatabaseInstance,
+   teamId: string,
+   items: CreateBankAccountInput[],
+) {
+   const validated = items.map((item) =>
+      validateInput(createBankAccountSchema, item),
+   );
+   try {
+      const rows = await db
+         .insert(bankAccounts)
+         .values(validated.map((v) => ({ ...v, teamId })))
+         .returning();
+      return rows;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to bulk create bank accounts");
+   }
+}
+
 export async function listBankAccounts(
    db: DatabaseInstance,
    teamId: string,

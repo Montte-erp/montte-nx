@@ -52,6 +52,28 @@ describe("bank-accounts-repository", () => {
       });
    });
 
+   describe("bulkCreateBankAccounts", () => {
+      it("creates multiple accounts and returns them all", async () => {
+         const teamId = randomTeamId();
+         const rows = await repo.bulkCreateBankAccounts(testDb.db, teamId, [
+            validCreateInput({ name: "Conta A" }),
+            validCreateInput({ name: "Conta B" }),
+            validCreateInput({ name: "Conta C" }),
+         ]);
+
+         expect(rows).toHaveLength(3);
+         expect(rows.map((r) => r.name).sort()).toEqual([
+            "Conta A",
+            "Conta B",
+            "Conta C",
+         ]);
+         for (const row of rows) {
+            expect(row.teamId).toBe(teamId);
+            expect(row.status).toBe("active");
+         }
+      });
+   });
+
    describe("listBankAccounts", () => {
       it("lists active bank accounts only by default", async () => {
          const teamId = randomTeamId();
@@ -298,6 +320,41 @@ describe("bank-accounts-repository", () => {
 
          expect(currentBalance).toBe("1000.00");
          expect(projectedBalance).toBe("1150.00");
+      });
+   });
+
+   describe("listBankAccountsWithBalance", () => {
+      it("returns accounts with currentBalance and projectedBalance", async () => {
+         const teamId = randomTeamId();
+         await repo.createBankAccount(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "Saldo", initialBalance: "300.00" }),
+         );
+
+         const list = await repo.listBankAccountsWithBalance(testDb.db, teamId);
+         expect(list).toHaveLength(1);
+         expect(list[0]!.currentBalance).toBe("300.00");
+         expect(list[0]!.projectedBalance).toBe("300.00");
+      });
+
+      it("excludes archived accounts by default", async () => {
+         const teamId = randomTeamId();
+         await repo.createBankAccount(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "Ativa" }),
+         );
+         const archived = await repo.createBankAccount(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "Arquivada" }),
+         );
+         await repo.archiveBankAccount(testDb.db, archived.id);
+
+         const list = await repo.listBankAccountsWithBalance(testDb.db, teamId);
+         expect(list).toHaveLength(1);
+         expect(list[0]!.name).toBe("Ativa");
       });
    });
 

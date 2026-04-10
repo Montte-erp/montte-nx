@@ -58,6 +58,8 @@ afterAll(async () => {
 beforeEach(async () => {
    await ctx.db.execute(sql`DELETE FROM finance.transactions`);
    await ctx.db.execute(sql`DELETE FROM finance.bank_accounts`);
+   await ctx2.db.execute(sql`DELETE FROM finance.transactions`);
+   await ctx2.db.execute(sql`DELETE FROM finance.bank_accounts`);
 });
 
 describe("create", () => {
@@ -183,6 +185,46 @@ describe("update", () => {
          where: (fields, { eq }) => eq(fields.id, created.id),
       });
       expect(fromDb!.name).toBe("Bradesco PJ");
+   });
+});
+
+describe("bulkCreate", () => {
+   it("creates multiple bank accounts and returns count", async () => {
+      const result = await call(
+         bankAccountsRouter.bulkCreate,
+         {
+            accounts: [
+               {
+                  name: "Conta 1",
+                  type: "checking",
+                  bankCode: "001",
+                  initialBalance: "100.00",
+               },
+               {
+                  name: "Conta 2",
+                  type: "savings",
+                  bankCode: "002",
+                  initialBalance: "200.00",
+               },
+            ],
+         },
+         { context: ctx },
+      );
+
+      expect(result).toEqual({ created: 2 });
+
+      const rows = await ctx.db.query.bankAccounts.findMany();
+      expect(rows).toHaveLength(2);
+   });
+
+   it("rejects empty accounts array", async () => {
+      await expect(
+         call(
+            bankAccountsRouter.bulkCreate,
+            { accounts: [] },
+            { context: ctx },
+         ),
+      ).rejects.toThrow();
    });
 });
 
