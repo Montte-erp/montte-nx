@@ -19,10 +19,12 @@
       "@core/posthog": "workspace:*",
       "@core/stripe": "workspace:*",
       "@core/transactional": "workspace:*",
+      "@dbos-inc/dbos-sdk": "catalog:workers",
       "@elysiajs/cors": "catalog:server",
       "@montte/cli": "workspace:*",
       "@montte/hyprpay": "workspace:*",
       "@orpc/server": "catalog:orpc",
+      "@packages/analytics": "workspace:*",
       "@packages/events": "workspace:*",
       "elysia": "catalog:server"
    },
