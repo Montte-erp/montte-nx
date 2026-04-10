@@ -215,10 +215,10 @@ function SortableHeaderCell({
          )}
          style={{
             ...pinningStyle,
-            position: "relative",
+            ...(isPinned ? {} : { position: "relative" as const }),
             transform: CSS.Translate.toString(transform),
             transition,
-            zIndex: isDragging ? 1 : undefined,
+            zIndex: isDragging ? (isPinned ? 2 : 1) : undefined,
          }}
       >
          <div className="group flex items-center">
