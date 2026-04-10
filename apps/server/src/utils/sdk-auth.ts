@@ -62,12 +62,12 @@ export function authenticateRequest(
 
    if (!apiKeyValue) {
       logger.error({ reason: "missing_api_key", endpoint }, "SDK auth failed");
-      return errAsync({ code: "MISSING_KEY" as const });
+      return errAsync<AuthData, AuthError>({ code: "MISSING_KEY" });
    }
 
    return fromPromise(
       auth.api.verifyApiKey({ body: { key: apiKeyValue } }),
-      () => ({ code: "INVALID_KEY" as const }),
+      (): AuthError => ({ code: "INVALID_KEY" }),
    ).andThen((result) => {
       if (!result.valid || !result.key) {
          const isRateLimited = result.error?.code === "RATE_LIMITED";
@@ -88,7 +88,7 @@ export function authenticateRequest(
       const { organizationId, teamId } = result.key.metadata ?? {};
 
       if (!organizationId || typeof organizationId !== "string") {
-         return err({ code: "NO_ORGANIZATION" as const });
+         return err<AuthData, AuthError>({ code: "NO_ORGANIZATION" });
       }
 
       return ok({
@@ -135,7 +135,7 @@ export function checkDomainAllowed(
    db: DatabaseInstance,
 ): ResultAsync<void, string> {
    if (!teamId) {
-      return okAsync(undefined as void);
+      return okAsync(undefined);
    }
 
    return fromPromise(
@@ -147,7 +147,7 @@ export function checkDomainAllowed(
       () => "Domain check failed",
    ).andThen((row) => {
       if (!row?.allowedDomains || row.allowedDomains.length === 0) {
-         return ok(undefined as void);
+         return ok(undefined);
       }
 
       const origin =
@@ -158,7 +158,7 @@ export function checkDomainAllowed(
       }
 
       if (matchesDomain(origin, row.allowedDomains)) {
-         return ok(undefined as void);
+         return ok(undefined);
       }
 
       return err("Origin not allowed");
