@@ -9,6 +9,7 @@ import { emitFinanceBudgetAlertTriggered } from "@packages/events/finance";
 import { getLogger } from "@core/logging/root";
 import { sendBudgetAlertEmail } from "@core/transactional/client";
 import { eq } from "drizzle-orm";
+import { fromPromise } from "neverthrow";
 import { db, resendClient } from "../singletons";
 
 const logger = getLogger().child({ module: "workflow:budget-alerts" });
@@ -62,21 +63,30 @@ export class BudgetAlertsWorkflow {
                .from(team)
                .where(eq(team.id, goal.teamId));
 
-            for (const member of members) {
-               await sendBudgetAlertEmail(resend, {
-                  email: member.email,
-                  categoryName,
-                  spentAmount: fmt(goal.spentAmount),
-                  limitAmount: fmt(Number(goal.limitAmount)),
-                  percentUsed: goal.percentUsed,
-                  alertThreshold: goal.alertThreshold ?? 0,
-                  month: monthName,
-               }).catch((err: unknown) => {
+            const emailResults = await Promise.all(
+               members.map((member) =>
+                  fromPromise(
+                     sendBudgetAlertEmail(resend, {
+                        email: member.email,
+                        categoryName,
+                        spentAmount: fmt(goal.spentAmount),
+                        limitAmount: fmt(Number(goal.limitAmount)),
+                        percentUsed: goal.percentUsed,
+                        alertThreshold: goal.alertThreshold ?? 0,
+                        month: monthName,
+                     }),
+                     (error) => ({ email: member.email, error }),
+                  ),
+               ),
+            );
+
+            for (const result of emailResults) {
+               if (result.isErr()) {
                   logger.error(
-                     { err, email: member.email },
+                     { err: result.error.error, email: result.error.email },
                      "Failed to send budget alert email",
                   );
-               });
+               }
             }
 
             await markAlertSent(db, goal.id, goal.teamId);
