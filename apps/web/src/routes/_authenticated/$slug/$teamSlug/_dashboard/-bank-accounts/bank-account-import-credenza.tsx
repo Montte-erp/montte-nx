@@ -1,6 +1,7 @@
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
+import { Input } from "@packages/ui/components/input";
 import {
    Choicebox,
    ChoiceboxIndicator,
@@ -57,6 +58,7 @@ import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { orpc } from "@/integrations/orpc/client";
 import {
    BankAccountImportProvider,
+   BANK_TYPES,
    COLUMN_FIELDS,
    FIELD_LABELS,
    REQUIRED_FIELDS,
@@ -423,14 +425,17 @@ function MapStep({ methods }: { methods: StepperMethods }) {
    );
 }
 
+const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{6}$/;
+
 function PreviewStep({ methods }: { methods: StepperMethods }) {
-   const { previewRows, ignoredIndices, setIgnoredIndices } =
+   const { previewRows, ignoredIndices, setIgnoredIndices, updateRow } =
       useBankAccountImportContext();
    const { openAlertDialog } = useAlertDialog();
 
    const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
       new Set(),
    );
+   const [bulkBankCode, setBulkBankCode] = useState("");
 
    const parentRef = useRef<HTMLDivElement>(null);
 
@@ -476,6 +481,7 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
    const someSelected = selectableIndices.some((i) => selectedIndices.has(i));
    const isIndeterminate = someSelected && !allSelected;
    const validCount = previewRows.filter((r) => r._valid).length;
+   const errorCount = previewRows.length - validCount;
 
    function toggleSelectAll() {
       if (allSelected) {
@@ -485,10 +491,26 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
       setSelectedIndices(new Set(selectableIndices));
    }
 
+   const selectedAreBankTypes = [...selectedIndices].some((i) => {
+      const row = previewRows[i];
+      return row?._resolvedType && BANK_TYPES.includes(row._resolvedType);
+   });
+
+   function applyBulkBankCode() {
+      if (!bulkBankCode.trim()) return;
+      for (const i of selectedIndices) {
+         const row = previewRows[i];
+         if (row?._resolvedType && BANK_TYPES.includes(row._resolvedType)) {
+            updateRow(i, { codigo_banco: bulkBankCode.trim() });
+         }
+      }
+      setBulkBankCode("");
+   }
+
    const virtualizer = useVirtualizer({
       count: previewRows.length,
       getScrollElement: () => parentRef.current,
-      estimateSize: () => 40,
+      estimateSize: () => 44,
       overscan: 8,
    });
 
@@ -502,9 +524,7 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
             <CredenzaTitle>Prévia da importação</CredenzaTitle>
             <CredenzaDescription>
                {validCount} conta(s) válida(s)
-               {previewRows.length - validCount > 0
-                  ? ` · ${previewRows.length - validCount} com erro (serão ignoradas)`
-                  : ""}
+               {errorCount > 0 ? ` · ${errorCount} com erro` : ""}
             </CredenzaDescription>
          </CredenzaHeader>
          <CredenzaBody>
@@ -527,23 +547,29 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                         Selecionar todas válidas
                      </label>
                   </div>
+                  {errorCount > 0 && (
+                     <Badge variant="destructive" className="text-xs">
+                        {errorCount} com erro
+                     </Badge>
+                  )}
                </div>
 
                <div className="rounded-lg border overflow-hidden">
-                  <div className="grid grid-cols-[2rem_5rem_1fr_6rem_2rem] items-center gap-2 border-b bg-muted/50 px-3 py-2">
+                  <div className="grid grid-cols-[2rem_2rem_1fr_7rem_6rem_2rem] items-center gap-2 border-b bg-muted/50 px-3 py-2">
                      <span />
-                     <span className="text-xs font-medium text-muted-foreground">
-                        Tipo
-                     </span>
+                     <span />
                      <span className="text-xs font-medium text-muted-foreground">
                         Nome
                      </span>
                      <span className="text-xs font-medium text-muted-foreground">
+                        Cód. banco
+                     </span>
+                     <span className="text-xs font-medium text-muted-foreground text-right">
                         Saldo inicial
                      </span>
                      <span />
                   </div>
-                  <div ref={parentRef} className="h-56 overflow-auto">
+                  <div ref={parentRef} className="h-64 overflow-auto">
                      <div
                         style={{
                            height: virtualizer.getTotalSize(),
@@ -556,14 +582,16 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                            const isSelected =
                               selectedIndices.has(originalIndex);
                            const isIgnored = ignoredIndices.has(originalIndex);
+                           const resolvedColor = HEX_COLOR_REGEX.test(row.cor)
+                              ? row.cor
+                              : "#6366f1";
+                           const resolvedType = row._resolvedType ?? "checking";
+                           const needsBankCode =
+                              row._resolvedType &&
+                              BANK_TYPES.includes(row._resolvedType);
 
                            const rowEl = (
                               <div
-                                 key={
-                                    row._valid
-                                       ? `prev-${originalIndex + 1}`
-                                       : undefined
-                                 }
                                  data-index={virtualRow.index}
                                  ref={(el) => {
                                     if (el) virtualizer.measureElement(el);
@@ -576,7 +604,7 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                                     transform: `translateY(${virtualRow.start}px)`,
                                  }}
                                  className={[
-                                    "grid grid-cols-[2rem_5rem_1fr_6rem_2rem] items-center gap-2 border-b px-3 h-10",
+                                    "grid grid-cols-[2rem_2rem_1fr_7rem_6rem_2rem] items-center gap-2 border-b px-3 min-h-11",
                                     !row._valid || isIgnored
                                        ? "opacity-40"
                                        : "",
@@ -594,50 +622,74 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                                           toggleRow(originalIndex);
                                     }}
                                  />
-                                 <span className="text-xs truncate">
-                                    {row.tipo || "—"}
+                                 <span
+                                    className="flex size-6 shrink-0 items-center justify-center rounded-full text-white"
+                                    style={{ background: resolvedColor }}
+                                 >
+                                    {ACCOUNT_TYPE_ICONS[resolvedType]}
                                  </span>
-                                 <span className="text-xs truncate">
-                                    {row.nome || "—"}
+                                 <div className="flex flex-col min-w-0 py-1">
+                                    <span className="text-xs font-medium truncate">
+                                       {row.nome || "—"}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground truncate">
+                                       {TYPE_LABELS[resolvedType]}
+                                    </span>
+                                 </div>
+                                 {needsBankCode && !isIgnored ? (
+                                    <Input
+                                       className="h-7 text-xs px-2"
+                                       placeholder="Ex: 260"
+                                       value={row.codigo_banco}
+                                       onChange={(e) =>
+                                          updateRow(originalIndex, {
+                                             codigo_banco: e.target.value,
+                                          })
+                                       }
+                                       onClick={(e) => e.stopPropagation()}
+                                    />
+                                 ) : (
+                                    <span className="text-xs text-muted-foreground">
+                                       —
+                                    </span>
+                                 )}
+                                 <span className="text-xs tabular-nums text-right text-muted-foreground">
+                                    {formatBRL(
+                                       row.saldo_inicial.replace(",", ".") ||
+                                          "0",
+                                    )}
                                  </span>
-                                 <span className="text-xs tabular-nums text-muted-foreground">
-                                    {row.saldo_inicial || "0"}
-                                 </span>
-                                 <span className="flex items-center justify-end gap-1">
+                                 <span className="flex items-center justify-end">
                                     {!row._valid ? (
-                                       <AlertTriangle className="size-3.5 text-destructive" />
+                                       <AlertTriangle className="size-3.5 text-destructive shrink-0" />
                                     ) : isIgnored ? (
-                                       <TooltipProvider>
-                                          <Button
-                                             type="button"
-                                             variant="ghost"
-                                             size="icon-xs"
-                                             className="text-muted-foreground hover:text-foreground shrink-0"
-                                             tooltip="Desfazer"
-                                             onClick={(e) => {
-                                                e.stopPropagation();
-                                                unignoreIndex(originalIndex);
-                                             }}
-                                          >
-                                             <Undo2 className="size-3.5" />
-                                          </Button>
-                                       </TooltipProvider>
+                                       <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon-xs"
+                                          className="text-muted-foreground hover:text-foreground shrink-0"
+                                          tooltip="Desfazer"
+                                          onClick={(e) => {
+                                             e.stopPropagation();
+                                             unignoreIndex(originalIndex);
+                                          }}
+                                       >
+                                          <Undo2 className="size-3.5" />
+                                       </Button>
                                     ) : (
-                                       <TooltipProvider>
-                                          <Button
-                                             type="button"
-                                             variant="ghost"
-                                             size="icon-xs"
-                                             className="text-muted-foreground hover:text-destructive shrink-0"
-                                             tooltip="Ignorar conta"
-                                             onClick={(e) => {
-                                                e.stopPropagation();
-                                                ignoreIndices([originalIndex]);
-                                             }}
-                                          >
-                                             <X className="size-3.5" />
-                                          </Button>
-                                       </TooltipProvider>
+                                       <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon-xs"
+                                          className="text-muted-foreground hover:text-destructive shrink-0"
+                                          tooltip="Ignorar conta"
+                                          onClick={(e) => {
+                                             e.stopPropagation();
+                                             ignoreIndices([originalIndex]);
+                                          }}
+                                       >
+                                          <X className="size-3.5" />
+                                       </Button>
                                     )}
                                  </span>
                               </div>
@@ -670,49 +722,78 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                               );
                            }
 
-                           return rowEl;
+                           return (
+                              <div key={`prev-${originalIndex + 1}`}>
+                                 {rowEl}
+                              </div>
+                           );
                         })}
                      </div>
                   </div>
                </div>
 
                {selectedIndices.size > 0 && (
-                  <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2">
-                     <span className="text-xs font-medium tabular-nums shrink-0">
-                        {selectedIndices.size} de {validCount} selecionadas
-                     </span>
-                     <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 gap-2 px-2 text-xs"
-                        onClick={clearIndices}
-                     >
-                        <X className="size-3.5" />
-                        Limpar
-                     </Button>
-                     <div className="h-4 w-px bg-border" />
-                     <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                        onClick={() => {
-                           openAlertDialog({
-                              title: `Ignorar ${selectedIndices.size} conta${selectedIndices.size === 1 ? "" : "s"}`,
-                              description:
-                                 "As contas selecionadas serão marcadas como ignoradas e não serão importadas.",
-                              actionLabel: "Ignorar",
-                              cancelLabel: "Cancelar",
-                              variant: "destructive",
-                              onAction: async () => {
-                                 ignoreIndices(selectedIndices);
-                              },
-                           });
-                        }}
-                     >
-                        Ignorar selecionadas
-                     </Button>
+                  <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 px-3 py-2">
+                     <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium tabular-nums shrink-0">
+                           {selectedIndices.size} de {validCount} selecionadas
+                        </span>
+                        <Button
+                           type="button"
+                           variant="ghost"
+                           size="sm"
+                           className="h-7 gap-2 px-2 text-xs"
+                           onClick={clearIndices}
+                        >
+                           <X className="size-3.5" />
+                           Limpar
+                        </Button>
+                        <div className="h-4 w-px bg-border" />
+                        <Button
+                           type="button"
+                           variant="ghost"
+                           size="sm"
+                           className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                           onClick={() => {
+                              openAlertDialog({
+                                 title: `Ignorar ${selectedIndices.size} conta${selectedIndices.size === 1 ? "" : "s"}`,
+                                 description:
+                                    "As contas selecionadas serão marcadas como ignoradas e não serão importadas.",
+                                 actionLabel: "Ignorar",
+                                 cancelLabel: "Cancelar",
+                                 variant: "destructive",
+                                 onAction: async () => {
+                                    ignoreIndices(selectedIndices);
+                                 },
+                              });
+                           }}
+                        >
+                           Ignorar selecionadas
+                        </Button>
+                     </div>
+                     {selectedAreBankTypes && (
+                        <div className="flex items-center gap-2">
+                           <Input
+                              className="h-7 text-xs px-2 flex-1"
+                              placeholder="Código do banco para as selecionadas (ex: 260)"
+                              value={bulkBankCode}
+                              onChange={(e) => setBulkBankCode(e.target.value)}
+                              onKeyDown={(e) => {
+                                 if (e.key === "Enter") applyBulkBankCode();
+                              }}
+                           />
+                           <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs shrink-0"
+                              disabled={!bulkBankCode.trim()}
+                              onClick={applyBulkBankCode}
+                           >
+                              Aplicar
+                           </Button>
+                        </div>
+                     )}
                   </div>
                )}
             </div>

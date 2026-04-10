@@ -108,7 +108,7 @@ export const TYPE_MAP: Record<string, ResolvedBankAccountType> = {
 
 const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{6}$/;
 
-const BANK_TYPES: ResolvedBankAccountType[] = [
+export const BANK_TYPES: ResolvedBankAccountType[] = [
    "checking",
    "savings",
    "investment",
@@ -140,8 +140,9 @@ export function getSampleValues(raw: RawData, header: string): string {
 export function buildPreviewRows(
    rawData: RawData,
    mapping: ColumnMapping,
+   overrides?: Map<number, Partial<Pick<PreviewRow, "codigo_banco">>>,
 ): PreviewRow[] {
-   return rawData.rows.map((row) => {
+   return rawData.rows.map((row, index) => {
       const get = (field: ColumnField) => {
          const col = mapping[field];
          if (!col) return "";
@@ -150,7 +151,8 @@ export function buildPreviewRows(
       };
       const tipo = get("tipo");
       const nome = get("nome");
-      const codigo_banco = get("codigo_banco");
+      const override = overrides?.get(index);
+      const codigo_banco = override?.codigo_banco ?? get("codigo_banco");
       const resolvedType = TYPE_MAP[tipo.toLowerCase().trim()] ?? null;
       const errors: string[] = [];
       if (!resolvedType) errors.push("Tipo inválido");
@@ -221,6 +223,10 @@ type BankAccountImportContextValue = {
    previewRows: PreviewRow[];
    ignoredIndices: Set<number>;
    setIgnoredIndices: (s: Set<number>) => void;
+   updateRow: (
+      index: number,
+      data: Partial<Pick<PreviewRow, "codigo_banco">>,
+   ) => void;
 };
 
 const BankAccountImportContext =
@@ -246,6 +252,9 @@ export function BankAccountImportProvider({
    const [mapping, setMappingState] = useState<ColumnMapping>(EMPTY_MAPPING);
    const [savedMappingApplied, setSavedMappingApplied] = useState(false);
    const [ignoredIndices, setIgnoredIndices] = useState<Set<number>>(new Set());
+   const [rowOverrides, setRowOverrides] = useState<
+      Map<number, Partial<Pick<PreviewRow, "codigo_banco">>>
+   >(new Map());
    const [savedMapping, setSavedMapping] =
       useLocalStorage<ColumnMapping | null>(
          "montte:bank-account-import:mapping",
@@ -298,7 +307,20 @@ export function BankAccountImportProvider({
       setSavedMappingApplied(false);
    }, [rawData, setSavedMapping]);
 
-   const previewRows = rawData ? buildPreviewRows(rawData, mapping) : [];
+   const updateRow = useCallback(
+      (index: number, data: Partial<Pick<PreviewRow, "codigo_banco">>) => {
+         setRowOverrides((prev) => {
+            const next = new Map(prev);
+            next.set(index, { ...prev.get(index), ...data });
+            return next;
+         });
+      },
+      [],
+   );
+
+   const previewRows = rawData
+      ? buildPreviewRows(rawData, mapping, rowOverrides)
+      : [];
 
    return (
       <BankAccountImportContext.Provider
@@ -313,6 +335,7 @@ export function BankAccountImportProvider({
             previewRows,
             ignoredIndices,
             setIgnoredIndices,
+            updateRow,
          }}
       >
          {children}
