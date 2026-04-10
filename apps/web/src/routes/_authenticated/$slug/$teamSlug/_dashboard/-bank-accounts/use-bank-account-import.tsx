@@ -105,6 +105,16 @@ export type PreviewRow = {
    _errors: string[];
 };
 
+export function getSampleValues(raw: RawData, header: string): string {
+   const idx = raw.headers.indexOf(header);
+   if (idx === -1) return "";
+   return raw.rows
+      .slice(0, 3)
+      .map((r) => r[idx] ?? "")
+      .filter(Boolean)
+      .join(", ");
+}
+
 export function buildPreviewRows(
    rawData: RawData,
    mapping: ColumnMapping,
@@ -162,7 +172,9 @@ function autoDetectMapping(headers: string[]): ColumnMapping {
    const mapped = { ...EMPTY_MAPPING };
    for (const field of COLUMN_FIELDS) {
       const match = headers.find(
-         (h) => h.toLowerCase().trim() === field.replace("_", " "),
+         (h) =>
+            h.toLowerCase().trim() === field ||
+            h.toLowerCase().trim() === field.replace(/_/g, " "),
       );
       if (match) mapped[field] = match;
    }
@@ -178,6 +190,8 @@ type BankAccountImportContextValue = {
    applyColumnMapping: (m: ColumnMapping) => void;
    resetMapping: () => void;
    previewRows: PreviewRow[];
+   ignoredIndices: Set<number>;
+   setIgnoredIndices: (s: Set<number>) => void;
 };
 
 const BankAccountImportContext =
@@ -202,6 +216,7 @@ export function BankAccountImportProvider({
    const [rawData, setRawData] = useState<RawData | null>(null);
    const [mapping, setMappingState] = useState<ColumnMapping>(EMPTY_MAPPING);
    const [savedMappingApplied, setSavedMappingApplied] = useState(false);
+   const [ignoredIndices, setIgnoredIndices] = useState<Set<number>>(new Set());
    const [savedMapping, setSavedMapping] =
       useLocalStorage<ColumnMapping | null>(
          "montte:bank-account-import:mapping",
@@ -267,6 +282,8 @@ export function BankAccountImportProvider({
             applyColumnMapping,
             resetMapping,
             previewRows,
+            ignoredIndices,
+            setIgnoredIndices,
          }}
       >
          {children}

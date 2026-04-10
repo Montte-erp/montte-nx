@@ -1,5 +1,6 @@
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import {
    Choicebox,
    ChoiceboxIndicator,
@@ -20,25 +21,29 @@ import {
    DropzoneContent,
    DropzoneEmptyState,
 } from "@packages/ui/components/dropzone";
-import {
-   Select,
-   SelectContent,
-   SelectItem,
-   SelectTrigger,
-   SelectValue,
-} from "@packages/ui/components/select";
+import { Combobox } from "@packages/ui/components/combobox";
 import { defineStepper } from "@packages/ui/components/stepper";
-import { useMutation } from "@tanstack/react-query";
 import {
-   CheckCircle2,
+   Tooltip,
+   TooltipContent,
+   TooltipProvider,
+   TooltipTrigger,
+} from "@packages/ui/components/tooltip";
+import { useMutation } from "@tanstack/react-query";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import {
+   AlertTriangle,
    ChevronRight,
    FileSpreadsheet,
    Loader2,
    Table2,
+   Undo2,
+   X,
 } from "lucide-react";
 import { fromPromise } from "neverthrow";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { useFileDownload } from "@/hooks/use-file-download";
 import { useCsvFile } from "@/hooks/use-csv-file";
@@ -51,6 +56,7 @@ import {
    REQUIRED_FIELDS,
    TEMPLATE_HEADERS,
    TEMPLATE_ROWS,
+   getSampleValues,
    toCreateInput,
    useBankAccountImportContext,
 } from "./use-bank-account-import";
@@ -295,6 +301,7 @@ function MapStep({ methods }: { methods: StepperMethods }) {
          <CredenzaBody>
             <div className="flex flex-col gap-4">
                <StepBar methods={methods} />
+
                {savedMappingApplied && (
                   <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2">
                      <p className="text-xs text-muted-foreground">
@@ -311,7 +318,8 @@ function MapStep({ methods }: { methods: StepperMethods }) {
                      </Button>
                   </div>
                )}
-               <div className="flex flex-col gap-2">
+
+               <div className="flex flex-col gap-1">
                   <div className="grid grid-cols-[10rem_1fr] items-center gap-2 px-1 pb-1">
                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                         Campo
@@ -320,52 +328,76 @@ function MapStep({ methods }: { methods: StepperMethods }) {
                         Coluna do arquivo
                      </span>
                   </div>
-                  {COLUMN_FIELDS.map((field) => (
-                     <div
-                        key={field}
-                        className="grid grid-cols-[10rem_1fr] items-center gap-2 rounded-md px-1 py-1.5 hover:bg-muted/30"
-                     >
-                        <span className="text-sm font-medium truncate">
-                           {FIELD_LABELS[field]}
-                        </span>
-                        <Select
-                           value={mapping[field] || "__none__"}
-                           onValueChange={(v) =>
-                              setMapping({
-                                 ...mapping,
-                                 [field]: v === "__none__" ? "" : v,
-                              })
-                           }
+                  {COLUMN_FIELDS.map((field) => {
+                     const sample = mapping[field]
+                        ? getSampleValues(rawData, mapping[field])
+                        : null;
+                     return (
+                        <div
+                           className="grid grid-cols-[10rem_1fr] items-start gap-2 rounded-lg border bg-muted/20 px-3 py-2.5 overflow-hidden"
+                           key={field}
                         >
-                           <SelectTrigger>
-                              <SelectValue placeholder="Não importar" />
-                           </SelectTrigger>
-                           <SelectContent>
-                              <SelectItem value="__none__">
-                                 Não importar
-                              </SelectItem>
-                              {rawData.headers.map((h) => (
-                                 <SelectItem key={h} value={h}>
-                                    {h}
-                                 </SelectItem>
-                              ))}
-                           </SelectContent>
-                        </Select>
-                     </div>
-                  ))}
+                           <div className="flex flex-col gap-0.5 pt-1">
+                              <span className="text-sm font-medium">
+                                 {FIELD_LABELS[field]}
+                              </span>
+                           </div>
+                           <div className="flex flex-col gap-1 min-w-0">
+                              <Combobox
+                                 options={[
+                                    {
+                                       value: "__none__",
+                                       label: "— Não mapear —",
+                                    },
+                                    ...rawData.headers.map((h) => ({
+                                       value: h,
+                                       label: h,
+                                    })),
+                                 ]}
+                                 onValueChange={(v) =>
+                                    setMapping({
+                                       ...mapping,
+                                       [field]: v === "__none__" ? "" : v,
+                                    })
+                                 }
+                                 value={mapping[field] || "__none__"}
+                              />
+                              {sample && (
+                                 <p className="text-xs text-muted-foreground px-1 truncate">
+                                    {sample}
+                                 </p>
+                              )}
+                           </div>
+                        </div>
+                     );
+                  })}
                </div>
+
+               <p className="text-xs text-muted-foreground">
+                  {rawData.rows.length} linha(s) · {rawData.headers.length}{" "}
+                  colunas detectadas
+               </p>
             </div>
          </CredenzaBody>
-         <CredenzaFooter className="flex gap-2">
+         <CredenzaFooter className="grid grid-cols-2 gap-2">
             <Button
-               variant="outline"
-               type="button"
+               className="w-full"
                onClick={() => methods.navigation.prev()}
+               type="button"
+               variant="outline"
             >
                Voltar
             </Button>
-            <Button type="button" disabled={!canProceed} onClick={handleNext}>
-               Continuar <ChevronRight className="size-4" />
+            <Button
+               className="w-full"
+               disabled={!canProceed}
+               onClick={handleNext}
+               type="button"
+            >
+               <span className="flex items-center gap-2">
+                  Continuar
+                  <ChevronRight className="size-4" />
+               </span>
             </Button>
          </CredenzaFooter>
       </>
@@ -373,9 +405,77 @@ function MapStep({ methods }: { methods: StepperMethods }) {
 }
 
 function PreviewStep({ methods }: { methods: StepperMethods }) {
-   const { previewRows } = useBankAccountImportContext();
+   const { previewRows, ignoredIndices, setIgnoredIndices } =
+      useBankAccountImportContext();
+   const { openAlertDialog } = useAlertDialog();
+
+   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
+      new Set(),
+   );
+
+   const parentRef = useRef<HTMLDivElement>(null);
+
+   function toggleRow(index: number) {
+      setSelectedIndices((prev) => {
+         const next = new Set(prev);
+         if (next.has(index)) next.delete(index);
+         else next.add(index);
+         return next;
+      });
+   }
+
+   function clearIndices() {
+      setSelectedIndices(new Set());
+   }
+
+   function ignoreIndices(indices: Iterable<number>) {
+      const arr = [...indices];
+      const nextIgnored = new Set(ignoredIndices);
+      for (const i of arr) nextIgnored.add(i);
+      setIgnoredIndices(nextIgnored);
+      setSelectedIndices((prev) => {
+         const next = new Set(prev);
+         for (const i of arr) next.delete(i);
+         return next;
+      });
+   }
+
+   function unignoreIndex(index: number) {
+      const next = new Set(ignoredIndices);
+      next.delete(index);
+      setIgnoredIndices(next);
+   }
+
+   const selectableIndices = previewRows
+      .map((r, i) => ({ r, i }))
+      .filter(({ r, i }) => r._valid && !ignoredIndices.has(i))
+      .map(({ i }) => i);
+
+   const allSelected =
+      selectableIndices.length > 0 &&
+      selectableIndices.every((i) => selectedIndices.has(i));
+   const someSelected = selectableIndices.some((i) => selectedIndices.has(i));
+   const isIndeterminate = someSelected && !allSelected;
    const validCount = previewRows.filter((r) => r._valid).length;
-   const invalidCount = previewRows.length - validCount;
+
+   function toggleSelectAll() {
+      if (allSelected) {
+         clearIndices();
+         return;
+      }
+      setSelectedIndices(new Set(selectableIndices));
+   }
+
+   const virtualizer = useVirtualizer({
+      count: previewRows.length,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => 40,
+      overscan: 8,
+   });
+
+   const canContinue = previewRows.some(
+      (r, i) => r._valid && !ignoredIndices.has(i),
+   );
 
    return (
       <>
@@ -383,75 +483,240 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
             <CredenzaTitle>Prévia da importação</CredenzaTitle>
             <CredenzaDescription>
                {validCount} conta(s) válida(s)
-               {invalidCount > 0
-                  ? ` · ${invalidCount} com erro (serão ignoradas)`
+               {previewRows.length - validCount > 0
+                  ? ` · ${previewRows.length - validCount} com erro (serão ignoradas)`
                   : ""}
             </CredenzaDescription>
          </CredenzaHeader>
          <CredenzaBody>
             <div className="flex flex-col gap-4">
                <StepBar methods={methods} />
-               <div className="max-h-72 overflow-y-auto rounded-md border">
-                  <table className="w-full text-sm">
-                     <thead className="border-b bg-muted/50">
-                        <tr>
-                           <th className="px-3 py-2 text-left font-medium text-muted-foreground">
-                              Tipo
-                           </th>
-                           <th className="px-3 py-2 text-left font-medium text-muted-foreground">
-                              Nome
-                           </th>
-                           <th className="px-3 py-2 text-left font-medium text-muted-foreground">
-                              Saldo inicial
-                           </th>
-                           <th className="px-3 py-2 text-left font-medium text-muted-foreground" />
-                        </tr>
-                     </thead>
-                     <tbody>
-                        {previewRows.slice(0, 50).map((row, i) => (
-                           <tr
-                              key={`preview-row-${i + 1}`}
-                              className={row._valid ? "" : "opacity-50"}
-                           >
-                              <td className="px-3 py-2">{row.tipo}</td>
-                              <td className="px-3 py-2">{row.nome}</td>
-                              <td className="px-3 py-2 text-muted-foreground">
-                                 {row.saldo_inicial || "0"}
-                              </td>
-                              <td className="px-3 py-2">
-                                 {row._valid ? (
-                                    <CheckCircle2 className="size-4 text-green-600" />
-                                 ) : (
-                                    <Badge
-                                       variant="destructive"
-                                       className="text-xs"
-                                    >
-                                       {row._errors[0]}
-                                    </Badge>
-                                 )}
-                              </td>
-                           </tr>
-                        ))}
-                     </tbody>
-                  </table>
+
+               <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                     <Checkbox
+                        checked={
+                           isIndeterminate ? "indeterminate" : allSelected
+                        }
+                        onCheckedChange={toggleSelectAll}
+                        id="select-all"
+                     />
+                     <label
+                        htmlFor="select-all"
+                        className="text-xs text-muted-foreground cursor-pointer"
+                     >
+                        Selecionar todas válidas
+                     </label>
+                  </div>
                </div>
+
+               <div className="rounded-lg border overflow-hidden">
+                  <div className="grid grid-cols-[2rem_5rem_1fr_6rem_2rem] items-center gap-2 border-b bg-muted/50 px-3 py-2">
+                     <span />
+                     <span className="text-xs font-medium text-muted-foreground">
+                        Tipo
+                     </span>
+                     <span className="text-xs font-medium text-muted-foreground">
+                        Nome
+                     </span>
+                     <span className="text-xs font-medium text-muted-foreground">
+                        Saldo inicial
+                     </span>
+                     <span />
+                  </div>
+                  <div ref={parentRef} className="h-56 overflow-auto">
+                     <div
+                        style={{
+                           height: virtualizer.getTotalSize(),
+                           position: "relative",
+                        }}
+                     >
+                        {virtualizer.getVirtualItems().map((virtualRow) => {
+                           const row = previewRows[virtualRow.index];
+                           const originalIndex = virtualRow.index;
+                           const isSelected =
+                              selectedIndices.has(originalIndex);
+                           const isIgnored = ignoredIndices.has(originalIndex);
+
+                           const rowEl = (
+                              <div
+                                 key={
+                                    row._valid
+                                       ? `prev-${originalIndex + 1}`
+                                       : undefined
+                                 }
+                                 data-index={virtualRow.index}
+                                 ref={(el) => {
+                                    if (el) virtualizer.measureElement(el);
+                                 }}
+                                 style={{
+                                    position: "absolute",
+                                    top: 0,
+                                    left: 0,
+                                    width: "100%",
+                                    transform: `translateY(${virtualRow.start}px)`,
+                                 }}
+                                 className={[
+                                    "grid grid-cols-[2rem_5rem_1fr_6rem_2rem] items-center gap-2 border-b px-3 h-10",
+                                    !row._valid || isIgnored
+                                       ? "opacity-40"
+                                       : "",
+                                    isIgnored ? "bg-muted/60 line-through" : "",
+                                    isSelected ? "bg-primary/5" : "",
+                                 ]
+                                    .filter(Boolean)
+                                    .join(" ")}
+                              >
+                                 <Checkbox
+                                    checked={isSelected}
+                                    disabled={!row._valid || isIgnored}
+                                    onCheckedChange={() => {
+                                       if (row._valid && !isIgnored)
+                                          toggleRow(originalIndex);
+                                    }}
+                                 />
+                                 <span className="text-xs truncate">
+                                    {row.tipo || "—"}
+                                 </span>
+                                 <span className="text-xs truncate">
+                                    {row.nome || "—"}
+                                 </span>
+                                 <span className="text-xs tabular-nums text-muted-foreground">
+                                    {row.saldo_inicial || "0"}
+                                 </span>
+                                 <span className="flex items-center justify-end gap-1">
+                                    {!row._valid ? (
+                                       <AlertTriangle className="size-3.5 text-destructive" />
+                                    ) : isIgnored ? (
+                                       <TooltipProvider>
+                                          <Button
+                                             type="button"
+                                             variant="ghost"
+                                             size="icon-xs"
+                                             className="text-muted-foreground hover:text-foreground shrink-0"
+                                             tooltip="Desfazer"
+                                             onClick={(e) => {
+                                                e.stopPropagation();
+                                                unignoreIndex(originalIndex);
+                                             }}
+                                          >
+                                             <Undo2 className="size-3.5" />
+                                          </Button>
+                                       </TooltipProvider>
+                                    ) : (
+                                       <TooltipProvider>
+                                          <Button
+                                             type="button"
+                                             variant="ghost"
+                                             size="icon-xs"
+                                             className="text-muted-foreground hover:text-destructive shrink-0"
+                                             tooltip="Ignorar conta"
+                                             onClick={(e) => {
+                                                e.stopPropagation();
+                                                ignoreIndices([originalIndex]);
+                                             }}
+                                          >
+                                             <X className="size-3.5" />
+                                          </Button>
+                                       </TooltipProvider>
+                                    )}
+                                 </span>
+                              </div>
+                           );
+
+                           if (!row._valid && row._errors.length > 0) {
+                              return (
+                                 <TooltipProvider
+                                    key={`prev-${originalIndex + 1}`}
+                                 >
+                                    <Tooltip>
+                                       <TooltipTrigger asChild>
+                                          {rowEl}
+                                       </TooltipTrigger>
+                                       <TooltipContent
+                                          side="top"
+                                          className="max-w-xs"
+                                       >
+                                          <p className="font-medium text-xs mb-1">
+                                             Não pode ser importado:
+                                          </p>
+                                          <ul className="list-disc list-inside text-xs space-y-0.5">
+                                             {row._errors.map((e) => (
+                                                <li key={e}>{e}</li>
+                                             ))}
+                                          </ul>
+                                       </TooltipContent>
+                                    </Tooltip>
+                                 </TooltipProvider>
+                              );
+                           }
+
+                           return rowEl;
+                        })}
+                     </div>
+                  </div>
+               </div>
+
+               {selectedIndices.size > 0 && (
+                  <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2">
+                     <span className="text-xs font-medium tabular-nums shrink-0">
+                        {selectedIndices.size} de {validCount} selecionadas
+                     </span>
+                     <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 gap-2 px-2 text-xs"
+                        onClick={clearIndices}
+                     >
+                        <X className="size-3.5" />
+                        Limpar
+                     </Button>
+                     <div className="h-4 w-px bg-border" />
+                     <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                        onClick={() => {
+                           openAlertDialog({
+                              title: `Ignorar ${selectedIndices.size} conta${selectedIndices.size === 1 ? "" : "s"}`,
+                              description:
+                                 "As contas selecionadas serão marcadas como ignoradas e não serão importadas.",
+                              actionLabel: "Ignorar",
+                              cancelLabel: "Cancelar",
+                              variant: "destructive",
+                              onAction: async () => {
+                                 ignoreIndices(selectedIndices);
+                              },
+                           });
+                        }}
+                     >
+                        Ignorar selecionadas
+                     </Button>
+                  </div>
+               )}
             </div>
          </CredenzaBody>
-         <CredenzaFooter className="flex gap-2">
+         <CredenzaFooter className="grid grid-cols-2 gap-2">
             <Button
-               variant="outline"
-               type="button"
+               className="w-full"
                onClick={() => methods.navigation.prev()}
+               type="button"
+               variant="outline"
             >
                Voltar
             </Button>
             <Button
-               type="button"
-               disabled={validCount === 0}
+               className="w-full"
+               disabled={!canContinue}
                onClick={() => methods.navigation.next()}
+               type="button"
             >
-               Importar {validCount} conta(s){" "}
-               <ChevronRight className="size-4" />
+               <span className="flex items-center gap-2">
+                  Continuar
+                  <ChevronRight className="size-4" />
+               </span>
             </Button>
          </CredenzaFooter>
       </>
@@ -465,13 +730,15 @@ function ConfirmStep({
    methods: StepperMethods;
    onClose?: () => void;
 }) {
-   const { previewRows } = useBankAccountImportContext();
+   const { previewRows, ignoredIndices } = useBankAccountImportContext();
    const [isPending, startTransition] = useTransition();
    const bulkCreate = useMutation(
       orpc.bankAccounts.bulkCreate.mutationOptions(),
    );
 
-   const validRows = previewRows.filter((r) => r._valid);
+   const validRows = previewRows.filter(
+      (r, i) => r._valid && !ignoredIndices.has(i),
+   );
 
    function handleImport() {
       const accounts = validRows.map(toCreateInput);
@@ -518,7 +785,7 @@ function ConfirmStep({
                      {previewRows.length - validRows.length > 0 && (
                         <div className="flex items-center justify-between px-4 py-2.5">
                            <span className="text-sm text-muted-foreground">
-                              Com erro (ignoradas)
+                              Com erro ou ignoradas
                            </span>
                            <Badge variant="destructive">
                               {previewRows.length - validRows.length}
@@ -535,28 +802,30 @@ function ConfirmStep({
                      </div>
                   </div>
                </div>
-               <div className="flex gap-2">
-                  <Button
-                     className="flex-none"
-                     disabled={isPending}
-                     onClick={() => methods.navigation.prev()}
-                     type="button"
-                     variant="outline"
-                  >
-                     Voltar
-                  </Button>
-                  <Button
-                     className="flex-1"
-                     disabled={isPending || validRows.length === 0}
-                     onClick={handleImport}
-                     type="button"
-                  >
-                     {isPending && <Loader2 className="size-4 animate-spin" />}
-                     Importar {validRows.length} conta(s)
-                  </Button>
-               </div>
             </div>
          </CredenzaBody>
+         <CredenzaFooter className="grid grid-cols-2 gap-2">
+            <Button
+               className="w-full"
+               disabled={isPending}
+               onClick={() => methods.navigation.prev()}
+               type="button"
+               variant="outline"
+            >
+               Voltar
+            </Button>
+            <Button
+               className="w-full"
+               disabled={isPending || validRows.length === 0}
+               onClick={handleImport}
+               type="button"
+            >
+               <span className="flex items-center gap-2">
+                  {isPending && <Loader2 className="size-4 animate-spin" />}
+                  Importar {validRows.length} conta(s)
+               </span>
+            </Button>
+         </CredenzaFooter>
       </>
    );
 }
