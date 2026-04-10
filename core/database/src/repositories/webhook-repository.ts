@@ -1,5 +1,5 @@
 import { AppError, propagateError } from "@core/logging/errors";
-import { and, desc, eq, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateWebhookEndpointInput,
@@ -236,40 +236,6 @@ export async function updateWebhookDeliveryStatus(
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to update webhook delivery");
-   }
-}
-
-export async function getPendingWebhookDeliveries(db: DatabaseInstance) {
-   try {
-      return await db
-         .select({
-            deliveryId: webhookDeliveries.id,
-            webhookEndpointId: webhookDeliveries.webhookEndpointId,
-            eventId: webhookDeliveries.eventId,
-            url: webhookDeliveries.url,
-            eventName: webhookDeliveries.eventName,
-            payload: webhookDeliveries.payload,
-            attemptNumber: webhookDeliveries.attemptNumber,
-            signingSecret: webhookEndpoints.signingSecret,
-         })
-         .from(webhookDeliveries)
-         .innerJoin(
-            webhookEndpoints,
-            eq(webhookDeliveries.webhookEndpointId, webhookEndpoints.id),
-         )
-         .where(
-            and(
-               inArray(webhookDeliveries.status, ["pending", "retrying"]),
-               or(
-                  isNull(webhookDeliveries.nextRetryAt),
-                  lte(webhookDeliveries.nextRetryAt, new Date()),
-               ),
-            ),
-         )
-         .limit(100);
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to get pending webhook deliveries");
    }
 }
 

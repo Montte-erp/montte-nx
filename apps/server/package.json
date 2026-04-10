@@ -26,7 +26,6 @@
       "@orpc/server": "catalog:orpc",
       "@packages/analytics": "workspace:*",
       "@packages/events": "workspace:*",
-      "dayjs": "catalog:ui",
       "elysia": "catalog:server",
       "neverthrow": "catalog:validation"
    },
