@@ -1,5 +1,9 @@
 import { format, of } from "@f-o-t/money";
-import { Badge } from "@packages/ui/components/badge";
+import {
+   Announcement,
+   AnnouncementTag,
+   AnnouncementTitle,
+} from "@packages/ui/components/announcement";
 import {
    Tooltip,
    TooltipContent,
@@ -7,7 +11,17 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Info } from "lucide-react";
+import {
+   CalendarClock,
+   CircleDollarSign,
+   CreditCard,
+   Info,
+   Landmark,
+   PiggyBank,
+   TrendingUp,
+   Wallet,
+} from "lucide-react";
+import type { ReactNode } from "react";
 
 export type BankAccountRow = {
    id: string;
@@ -31,6 +45,14 @@ const TYPE_LABELS: Record<BankAccountRow["type"], string> = {
    investment: "Conta Investimento",
 };
 
+const TYPE_ICONS: Record<BankAccountRow["type"], ReactNode> = {
+   cash: <Wallet className="size-3" />,
+   checking: <Landmark className="size-3" />,
+   savings: <PiggyBank className="size-3" />,
+   payment: <CreditCard className="size-3" />,
+   investment: <TrendingUp className="size-3" />,
+};
+
 function formatBRL(value: string | number): string {
    return format(of(String(value), "BRL"), "pt-BR");
 }
@@ -41,13 +63,7 @@ export function buildBankAccountColumns(): ColumnDef<BankAccountRow>[] {
          accessorKey: "name",
          header: "Nome",
          cell: ({ row }) => (
-            <div className="flex items-center gap-2 min-w-0">
-               <span
-                  className="size-3 rounded-full shrink-0"
-                  style={{ backgroundColor: row.original.color }}
-               />
-               <span className="font-medium truncate">{row.original.name}</span>
-            </div>
+            <span className="font-medium truncate">{row.original.name}</span>
          ),
       },
       {
@@ -56,15 +72,26 @@ export function buildBankAccountColumns(): ColumnDef<BankAccountRow>[] {
          cell: ({ row }) => {
             const balance = Number(row.original.currentBalance);
             return (
-               <span
-                  className={`text-sm font-medium ${
-                     balance >= 0
-                        ? "text-green-600 dark:text-green-500"
-                        : "text-destructive"
-                  }`}
-               >
-                  {formatBRL(row.original.currentBalance)}
-               </span>
+               <Announcement>
+                  <AnnouncementTag
+                     className={`flex items-center ${
+                        balance >= 0
+                           ? "text-green-600 dark:text-green-500"
+                           : "text-destructive"
+                     }`}
+                  >
+                     <CircleDollarSign className="size-3" />
+                  </AnnouncementTag>
+                  <AnnouncementTitle
+                     className={`font-medium ${
+                        balance >= 0
+                           ? "text-green-600 dark:text-green-500"
+                           : "text-destructive"
+                     }`}
+                  >
+                     {formatBRL(row.original.currentBalance)}
+                  </AnnouncementTitle>
+               </Announcement>
             );
          },
       },
@@ -87,15 +114,26 @@ export function buildBankAccountColumns(): ColumnDef<BankAccountRow>[] {
          cell: ({ row }) => {
             const balance = Number(row.original.projectedBalance);
             return (
-               <span
-                  className={`text-sm font-medium ${
-                     balance >= 0
-                        ? "text-blue-600 dark:text-blue-400"
-                        : "text-destructive"
-                  }`}
-               >
-                  {formatBRL(row.original.projectedBalance)}
-               </span>
+               <Announcement>
+                  <AnnouncementTag
+                     className={`flex items-center ${
+                        balance >= 0
+                           ? "text-blue-600 dark:text-blue-400"
+                           : "text-destructive"
+                     }`}
+                  >
+                     <CalendarClock className="size-3" />
+                  </AnnouncementTag>
+                  <AnnouncementTitle
+                     className={`font-medium ${
+                        balance >= 0
+                           ? "text-blue-600 dark:text-blue-400"
+                           : "text-destructive"
+                     }`}
+                  >
+                     {formatBRL(row.original.projectedBalance)}
+                  </AnnouncementTitle>
+               </Announcement>
             );
          },
       },
@@ -103,16 +141,28 @@ export function buildBankAccountColumns(): ColumnDef<BankAccountRow>[] {
          accessorKey: "type",
          header: "Tipo",
          cell: ({ row }) => (
-            <Badge variant="secondary">{TYPE_LABELS[row.original.type]}</Badge>
+            <Announcement>
+               <AnnouncementTag className="flex items-center">
+                  {TYPE_ICONS[row.original.type]}
+               </AnnouncementTag>
+               <AnnouncementTitle>
+                  {TYPE_LABELS[row.original.type]}
+               </AnnouncementTitle>
+            </Announcement>
          ),
       },
       {
          accessorKey: "initialBalance",
          header: "Saldo Inicial",
          cell: ({ row }) => (
-            <span className="text-sm text-muted-foreground">
-               {formatBRL(row.original.initialBalance)}
-            </span>
+            <Announcement>
+               <AnnouncementTag className="flex items-center text-muted-foreground">
+                  <CircleDollarSign className="size-3" />
+               </AnnouncementTag>
+               <AnnouncementTitle className="text-muted-foreground">
+                  {formatBRL(row.original.initialBalance)}
+               </AnnouncementTitle>
+            </Announcement>
          ),
       },
    ];
