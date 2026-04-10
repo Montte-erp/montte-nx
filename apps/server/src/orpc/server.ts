@@ -1,7 +1,8 @@
 import { ORPCError, os } from "@orpc/server";
 import type { PostHog } from "@core/posthog/server";
-import { auth, db } from "../singletons";
-import { checkDomainAllowed } from "../utils/sdk-auth";
+import { db } from "../singletons";
+import { authenticateRequest, checkDomainAllowed } from "../utils/sdk-auth";
+import type { AuthError } from "../utils/sdk-auth";
 
 interface BaseContext {
    db: typeof db;
@@ -19,40 +20,45 @@ interface SdkContext extends BaseContext {
    apiKeyType: "public" | "private";
 }
 
+function authErrorToOrpc(error: AuthError) {
+   switch (error.code) {
+      case "MISSING_KEY":
+         return new ORPCError("UNAUTHORIZED", { message: "Missing API Key" });
+      case "RATE_LIMITED":
+         return new ORPCError("TOO_MANY_REQUESTS", {
+            message: "Rate limit exceeded",
+         });
+      case "INVALID_KEY":
+         return new ORPCError("UNAUTHORIZED", { message: "Invalid API Key" });
+      case "NO_ORGANIZATION":
+         return new ORPCError("FORBIDDEN", {
+            message: "API key has no associated organization",
+         });
+   }
+}
+
 const baseProcedure = os.$context<BaseContext>();
 
 export const sdkProcedure = baseProcedure.use(async ({ context, next }) => {
    const { request } = context;
 
-   const apiKeyHeader = request.headers.get("sdk-api-key");
-   if (!apiKeyHeader) {
-      throw new ORPCError("UNAUTHORIZED", { message: "Missing API Key" });
+   const authResult = await authenticateRequest(request);
+   if (authResult.isErr()) {
+      throw authErrorToOrpc(authResult.error);
    }
 
-   const result = await auth.api.verifyApiKey({
-      body: { key: apiKeyHeader },
-   });
+   const {
+      organizationId,
+      teamId,
+      userId,
+      plan,
+      sdkMode,
+      remaining,
+      apiKeyType,
+   } = authResult.value;
 
-   if (!result.valid || !result.key) {
-      const isRateLimited = result.error?.code === "RATE_LIMITED";
-      throw new ORPCError(
-         isRateLimited ? "TOO_MANY_REQUESTS" : "UNAUTHORIZED",
-         { message: isRateLimited ? "Rate limit exceeded" : "Invalid API Key" },
-      );
-   }
-
-   const { plan, organizationId, sdkMode, teamId, apiKeyType } =
-      result.key.metadata ?? {};
-
-   if (!organizationId || typeof organizationId !== "string") {
-      throw new ORPCError("FORBIDDEN", {
-         message: "API key has no associated organization",
-      });
-   }
-
-   const resolvedTeamId = typeof teamId === "string" ? teamId : undefined;
-   const domainCheck = await checkDomainAllowed(request, resolvedTeamId, db);
-   if (!domainCheck.allowed) {
+   const domainResult = await checkDomainAllowed(request, teamId, db);
+   if (domainResult.isErr()) {
       throw new ORPCError("FORBIDDEN", { message: "Origin not allowed" });
    }
 
@@ -60,12 +66,12 @@ export const sdkProcedure = baseProcedure.use(async ({ context, next }) => {
       context: {
          ...context,
          organizationId,
-         teamId: resolvedTeamId,
-         plan: (plan as string) ?? "metered",
-         sdkMode: (sdkMode as "static" | "ssr") ?? "static",
-         remaining: result.key.remaining,
-         userId: result.key.referenceId,
-         apiKeyType: (apiKeyType as "public" | "private") ?? "private",
+         teamId,
+         plan,
+         sdkMode,
+         remaining,
+         userId,
+         apiKeyType,
       },
    });
 });
