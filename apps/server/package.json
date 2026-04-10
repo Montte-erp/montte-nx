@@ -26,6 +26,7 @@
       "@orpc/server": "catalog:orpc",
       "@packages/analytics": "workspace:*",
       "@packages/events": "workspace:*",
+      "dayjs": "*",
       "elysia": "catalog:server"
    },
    "devDependencies": {

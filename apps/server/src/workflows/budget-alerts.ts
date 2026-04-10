@@ -4,16 +4,12 @@ import {
    markAlertSent,
 } from "@core/database/repositories/budget-goals-repository";
 import { teamMember, user, team } from "@core/database/schema";
-import { env } from "@core/environment/server";
 import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceBudgetAlertTriggered } from "@packages/events/finance";
 import { getLogger } from "@core/logging/root";
-import {
-   getResendClient,
-   sendBudgetAlertEmail,
-} from "@core/transactional/client";
+import { sendBudgetAlertEmail } from "@core/transactional/client";
 import { eq } from "drizzle-orm";
-import { db } from "../singletons";
+import { db, resendClient } from "../singletons";
 
 const logger = getLogger().child({ module: "workflow:budget-alerts" });
 
@@ -40,13 +36,7 @@ export class BudgetAlertsWorkflow {
          return;
       }
 
-      const resendApiKey = env.RESEND_API_KEY;
-      if (!resendApiKey) {
-         logger.error("RESEND_API_KEY not set — skipping budget alert emails");
-         return;
-      }
-
-      const resend = getResendClient(resendApiKey);
+      const resend = resendClient;
       const emit = createEmitFn(db);
 
       for (const goal of goals) {
@@ -120,5 +110,18 @@ export class BudgetAlertsWorkflow {
    @DBOS.workflow()
    static async run(input: BudgetAlertInput): Promise<void> {
       await BudgetAlertsWorkflow.processAlerts(input);
+   }
+
+   @DBOS.scheduled({ crontab: "0 8 * * *" })
+   @DBOS.workflow()
+   static async runScheduled(
+      scheduledTime: Date,
+      _startTime: Date,
+   ): Promise<void> {
+      await BudgetAlertsWorkflow.processAlerts({
+         teamId: "",
+         month: scheduledTime.getMonth() + 1,
+         year: scheduledTime.getFullYear(),
+      });
    }
 }

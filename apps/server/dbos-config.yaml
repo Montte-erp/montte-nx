@@ -1,9 +1,0 @@
-name: montte-server
-language: node
-database:
-  hostname: localhost
-  port: 5432
-  username: postgres
-  password: ""
-  connectionTimeoutMillis: 3000
-  ssl: false
