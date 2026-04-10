@@ -26,9 +26,9 @@
       "@orpc/server": "catalog:orpc",
       "@packages/analytics": "workspace:*",
       "@packages/events": "workspace:*",
-      "dayjs": "*",
+      "dayjs": "^1.11.13",
       "elysia": "catalog:server",
-      "neverthrow": "*"
+      "neverthrow": "^8.1.1"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",

@@ -9,6 +9,8 @@ import { emitFinanceBudgetAlertTriggered } from "@packages/events/finance";
 import { getLogger } from "@core/logging/root";
 import { sendBudgetAlertEmail } from "@core/transactional/client";
 import { eq } from "drizzle-orm";
+import dayjs from "dayjs";
+import "dayjs/locale/pt-br";
 import { fromPromise } from "neverthrow";
 import { db, resendClient } from "../singletons";
 
@@ -42,14 +44,9 @@ export class BudgetAlertsWorkflow {
 
       for (const goal of goals) {
          try {
-            const monthName = new Date(
-               goal.year,
-               goal.month - 1,
-               1,
-            ).toLocaleDateString("pt-BR", {
-               month: "long",
-               year: "numeric",
-            });
+            const monthName = dayjs(new Date(goal.year, goal.month - 1, 1))
+               .locale("pt-br")
+               .format("MMMM [de] YYYY");
             const categoryName = goal.categoryName ?? "Geral";
 
             const members = await db

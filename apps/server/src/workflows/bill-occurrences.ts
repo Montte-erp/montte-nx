@@ -4,6 +4,7 @@ import {
    getActiveRecurrenceSettings,
    getLastBillForRecurrenceGroup,
 } from "@core/database/repositories/bills-repository";
+import type { RecurrenceSetting } from "@core/database/schemas/bills";
 import { getLogger } from "@core/logging/root";
 import dayjs from "dayjs";
 import { db } from "../singletons";
@@ -32,11 +33,12 @@ function computeNextDueDate(from: string, frequency: string): string {
 
 export class BillOccurrencesWorkflow {
    @DBOS.step()
-   static async generateForSetting(settingId: string): Promise<void> {
-      const settings = await getActiveRecurrenceSettings(db);
-      const setting = settings.find((s) => s.id === settingId);
-      if (!setting) return;
+   static async fetchActiveSettings(): Promise<RecurrenceSetting[]> {
+      return getActiveRecurrenceSettings(db);
+   }
 
+   @DBOS.step()
+   static async generateForSetting(setting: RecurrenceSetting): Promise<void> {
       const lastBill = await getLastBillForRecurrenceGroup(db, setting.id);
       if (!lastBill) return;
 
@@ -74,9 +76,9 @@ export class BillOccurrencesWorkflow {
    @DBOS.scheduled({ crontab: "0 6 * * *" })
    @DBOS.workflow()
    static async run(_scheduledTime: Date, _startTime: Date): Promise<void> {
-      const settings = await getActiveRecurrenceSettings(db);
+      const settings = await BillOccurrencesWorkflow.fetchActiveSettings();
       for (const setting of settings) {
-         await BillOccurrencesWorkflow.generateForSetting(setting.id);
+         await BillOccurrencesWorkflow.generateForSetting(setting);
       }
    }
 }

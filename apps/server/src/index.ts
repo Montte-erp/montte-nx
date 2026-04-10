@@ -12,12 +12,14 @@ import { initOtel, shutdownOtel } from "@core/logging/otel";
 import { initLogger } from "@core/logging/root";
 import { shutdownPosthog } from "@core/posthog/server";
 import { Elysia } from "elysia";
+import { initializeWebhookQueue } from "@packages/events/emit";
 import { auth, db, minioClient, posthog } from "./singletons";
 import sdkRouter from "./orpc/router";
 
 import "./workflows/refresh-insights";
 import "./workflows/bill-occurrences";
 import "./workflows/budget-alerts";
+import "./workflows/webhook-delivery";
 
 DBOS.setConfig({
    name: "montte-server",
@@ -61,6 +63,7 @@ async function handleOrpcRequest({ request }: { request: Request }) {
 }
 
 async function main() {
+   initializeWebhookQueue(env.REDIS_URL);
    await DBOS.launch();
    logger.info("DBOS runtime started");
 
