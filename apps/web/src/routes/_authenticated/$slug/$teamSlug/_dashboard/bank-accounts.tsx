@@ -17,15 +17,17 @@ import type {
 } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
-import { Landmark, Pencil, Plus, Trash2 } from "lucide-react";
+import { Landmark, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { Suspense, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
+import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import {
    type BankAccountRow,
    buildBankAccountColumns,
 } from "./-bank-accounts/bank-accounts-columns";
+import { BankAccountImportCredenza } from "./-bank-accounts/bank-account-import-credenza";
 import { BankAccountsFilterBar } from "./-bank-accounts/bank-accounts-filter-bar";
 import { BankAccountForm } from "@/features/bank-accounts/ui/bank-accounts-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -232,6 +234,17 @@ function BankAccountsPage() {
       });
    }, [openCredenza, closeCredenza]);
 
+   const panelActions: PanelAction[] = [
+      {
+         icon: Upload,
+         label: "Importar",
+         onClick: () =>
+            openCredenza({
+               children: <BankAccountImportCredenza onClose={closeCredenza} />,
+            }),
+      },
+   ];
+
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
@@ -242,6 +255,7 @@ function BankAccountsPage() {
                </Button>
             }
             description="Gerencie suas contas bancárias e saldos"
+            panelActions={panelActions}
             title="Contas Bancárias"
          />
          <BankAccountsFilterBar type={type} />
