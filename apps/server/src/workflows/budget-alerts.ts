@@ -4,7 +4,7 @@ import {
    markAlertSent,
 } from "@core/database/repositories/budget-goals-repository";
 import { teamMember, user, team } from "@core/database/schema";
-import { env } from "@core/environment/web";
+import { env } from "@core/environment/server";
 import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceBudgetAlertTriggered } from "@packages/events/finance";
 import { getLogger } from "@core/logging/root";

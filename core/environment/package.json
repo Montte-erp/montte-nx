@@ -16,9 +16,9 @@
          "types": "./dist/helpers.d.ts",
          "default": "./dist/helpers.js"
       },
-      "./worker": {
-         "types": "./dist/worker.d.ts",
-         "default": "./dist/worker.js"
+      "./server": {
+         "types": "./dist/server.d.ts",
+         "default": "./dist/server.js"
       }
    },
    "scripts": {

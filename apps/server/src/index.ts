@@ -2,7 +2,7 @@ import { DBOS } from "@dbos-inc/dbos-sdk";
 import cors from "@elysiajs/cors";
 import { RPCHandler } from "@orpc/server/fetch";
 import { BatchHandlerPlugin } from "@orpc/server/plugins";
-import { env } from "@core/environment/web";
+import { env } from "@core/environment/server";
 import {
    startHealthHeartbeat,
    stopHealthHeartbeat,
@@ -18,6 +18,11 @@ import sdkRouter from "./orpc/router";
 import "./workflows/refresh-insights";
 import "./workflows/bill-occurrences";
 import "./workflows/budget-alerts";
+
+DBOS.setConfig({
+   name: "montte-server",
+   systemDatabaseUrl: env.DATABASE_URL,
+});
 
 initOtel({
    serviceName: "montte-server",
