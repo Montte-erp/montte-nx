@@ -186,6 +186,46 @@ describe("update", () => {
    });
 });
 
+describe("bulkCreate", () => {
+   it("creates multiple bank accounts and returns count", async () => {
+      const result = await call(
+         bankAccountsRouter.bulkCreate,
+         {
+            accounts: [
+               {
+                  name: "Conta 1",
+                  type: "checking",
+                  bankCode: "001",
+                  initialBalance: "100.00",
+               },
+               {
+                  name: "Conta 2",
+                  type: "savings",
+                  bankCode: "002",
+                  initialBalance: "200.00",
+               },
+            ],
+         },
+         { context: ctx },
+      );
+
+      expect(result).toEqual({ created: 2 });
+
+      const rows = await ctx.db.query.bankAccounts.findMany();
+      expect(rows).toHaveLength(2);
+   });
+
+   it("rejects empty accounts array", async () => {
+      await expect(
+         call(
+            bankAccountsRouter.bulkCreate,
+            { accounts: [] },
+            { context: ctx },
+         ),
+      ).rejects.toThrow();
+   });
+});
+
 describe("remove", () => {
    it("deletes account with no transactions", async () => {
       const created = await call(

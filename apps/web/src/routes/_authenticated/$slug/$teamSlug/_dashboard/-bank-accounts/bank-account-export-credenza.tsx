@@ -21,6 +21,7 @@ import {
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Download, FileSpreadsheet, Table2 } from "lucide-react";
 import { useState, useTransition } from "react";
+import { QueryBoundary } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import { TYPE_LABELS } from "./bank-accounts-columns";
@@ -79,6 +80,18 @@ function buildRows(accounts: BankAccount[]) {
 }
 
 export function BankAccountExportCredenza({
+   onClose,
+}: {
+   onClose?: () => void;
+}) {
+   return (
+      <QueryBoundary>
+         <BankAccountExportCredenzaContent onClose={onClose} />
+      </QueryBoundary>
+   );
+}
+
+function BankAccountExportCredenzaContent({
    onClose,
 }: {
    onClose?: () => void;

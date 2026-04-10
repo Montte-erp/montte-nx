@@ -18,9 +18,10 @@ import type {
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Download, Landmark, Pencil, Plus, Trash2, Upload } from "lucide-react";
-import { Suspense, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { QueryBoundary } from "@/components/query-boundary";
 import { DefaultHeader } from "@/components/default-header";
 import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import {
@@ -102,6 +103,7 @@ function BankAccountsList({ navigate }: BankAccountsListProps) {
                : updater;
          navigate({
             search: (prev: BankAccountsSearch) => ({ ...prev, sorting: next }),
+            replace: true,
          });
       },
       [sorting, navigate],
@@ -119,6 +121,7 @@ function BankAccountsList({ navigate }: BankAccountsListProps) {
                   ...prev,
                   columnFilters: next,
                }),
+               replace: true,
             });
          },
          [columnFilters, navigate],
@@ -268,9 +271,9 @@ function BankAccountsPage() {
             title="Contas Bancárias"
          />
          <BankAccountsFilterBar type={type} />
-         <Suspense fallback={<BankAccountsSkeleton />}>
+         <QueryBoundary fallback={<BankAccountsSkeleton />}>
             <BankAccountsList navigate={navigate} />
-         </Suspense>
+         </QueryBoundary>
       </main>
    );
 }

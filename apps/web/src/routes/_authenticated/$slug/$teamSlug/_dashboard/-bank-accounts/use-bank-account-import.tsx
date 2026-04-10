@@ -272,16 +272,18 @@ export function BankAccountImportProvider({
          const auto = autoDetectMapping(data.headers);
          if (savedMapping) {
             const applied = { ...auto };
+            let anyApplied = false;
             for (const field of COLUMN_FIELDS) {
                if (
                   savedMapping[field] &&
                   data.headers.includes(savedMapping[field])
                ) {
                   applied[field] = savedMapping[field];
+                  anyApplied = true;
                }
             }
             setMappingState(applied);
-            setSavedMappingApplied(true);
+            setSavedMappingApplied(anyApplied);
          } else {
             setMappingState(auto);
             setSavedMappingApplied(false);
