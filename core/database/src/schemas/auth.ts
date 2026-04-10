@@ -110,7 +110,6 @@ export const team = authSchema.table(
       ),
       slug: text("slug").notNull(),
       description: text("description").default(""),
-      allowedDomains: text("allowed_domains").array(),
       onboardingCompleted: boolean("onboarding_completed").default(false),
       onboardingProducts: jsonb("onboarding_products"),
       onboardingTasks: jsonb("onboarding_tasks"),

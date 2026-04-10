@@ -54,20 +54,6 @@ export function createTestAuth(db: DatabaseInstance) {
                         required: false,
                         type: "string",
                      },
-                     allowedDomains: {
-                        type: "string[]",
-                        input: true,
-                        required: false,
-                        validator: {
-                           input: z.array(
-                              z
-                                 .string()
-                                 .regex(
-                                    /^(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/,
-                                 ),
-                           ),
-                        },
-                     },
                      onboardingCompleted: {
                         defaultValue: false,
                         input: true,

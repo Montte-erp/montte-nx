@@ -71,7 +71,13 @@ export function createBillableProcedure(eventName: string) {
          },
       });
 
-      if (pendingEmit) await (pendingEmit as () => Promise<void>)();
+      if (pendingEmit) {
+         try {
+            await (pendingEmit as () => Promise<void>)();
+         } catch {
+            // emit failure must not roll back the already-committed mutation
+         }
+      }
 
       return result;
    });
