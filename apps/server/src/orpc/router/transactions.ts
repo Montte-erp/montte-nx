@@ -14,6 +14,11 @@ import {
    ListTransactionsFilterSchema,
 } from "@montte/cli/contract";
 import { sdkProcedure } from "../server";
+import { createEmitFn } from "@packages/events/emit";
+import {
+   emitFinanceTransactionCreated,
+   emitFinanceTransactionUpdated,
+} from "@packages/events/finance";
 
 function mapTransaction(tx: Record<string, unknown>) {
    return {
@@ -69,6 +74,22 @@ export const create = sdkProcedure
          data,
          tagIds,
       );
+      const emit = createEmitFn(context.db, context.posthog);
+      await emitFinanceTransactionCreated(
+         emit,
+         {
+            organizationId: context.organizationId!,
+            teamId: context.teamId!,
+            userId: context.userId!,
+         },
+         {
+            transactionId: tx!.id,
+            type: data.type,
+            bankAccountId: data.bankAccountId ?? tx!.bankAccountId,
+            categoryId: data.categoryId ?? undefined,
+            amountCents: Math.round(parseFloat(data.amount) * 100),
+         },
+      );
       return mapTransaction(tx!);
    });
 
@@ -88,6 +109,16 @@ export const update = sdkProcedure
          });
       }
       const tx = await updateTransaction(context.db, id, data, tagIds);
+      const emit = createEmitFn(context.db, context.posthog);
+      await emitFinanceTransactionUpdated(
+         emit,
+         {
+            organizationId: context.organizationId!,
+            teamId: context.teamId!,
+            userId: context.userId!,
+         },
+         { transactionId: id },
+      );
       return mapTransaction(tx);
    });
 
