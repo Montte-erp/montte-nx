@@ -27,7 +27,8 @@
       "@packages/analytics": "workspace:*",
       "@packages/events": "workspace:*",
       "dayjs": "*",
-      "elysia": "catalog:server"
+      "elysia": "catalog:server",
+      "neverthrow": "*"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
