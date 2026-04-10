@@ -94,7 +94,7 @@ Built as an **Nx** monorepo with **Bun**.
 
 | Category      | Technology                                                                           |
 | :------------ | :----------------------------------------------------------------------------------- |
-| **Frontend**  | React 19, Vite, TypeScript, TanStack Router, TanStack Query, shadcn/ui, Tailwind CSS |
+| **Frontend**  | React 19, TanStack Start (SSR), TanStack Router, TanStack Query, shadcn/ui, Tailwind CSS, TypeScript |
 | **AI**        | Mastra (Agent orchestration)                                                         |
 | **Backend**   | oRPC (type-safe API), ElysiaJS (SDK server), Drizzle ORM, PostgreSQL                 |
 | **Auth**      | Better Auth                                                                          |
@@ -113,7 +113,7 @@ Built as an **Nx** monorepo with **Bun**.
 ```
 montte-nx/
 ├── apps/
-│   ├── web/             # React/Vite SPA — dashboard + oRPC API routers
+│   ├── web/             # TanStack Start (SSR) — dashboard + oRPC API routers
 │   ├── server/          # Elysia API server for SDK consumers
 │   └── worker/          # BullMQ background job processor
 ├── core/
@@ -134,7 +134,8 @@ montte-nx/
 │   ├── feedback/        # User feedback collection
 │   └── ui/              # Radix + Tailwind component library
 ├── libraries/
-│   └── cli/             # Montte CLI
+│   ├── cli/             # @montte/cli — TanStack Intent skills + CLI tooling
+│   └── hyprpay/         # @montte/hyprpay — HyprPay SDK
 └── tooling/
     ├── oxc/             # oxlint + oxfmt configs
     └── typescript/      # Shared TypeScript configs
