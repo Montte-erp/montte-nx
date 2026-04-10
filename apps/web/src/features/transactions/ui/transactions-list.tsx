@@ -88,10 +88,13 @@ export function TransactionsList({
    onColumnFiltersChange,
 }: TransactionsListProps) {
    const [tableState, setTableState] = useTransactionsTableState();
-   const effectiveTableState: DataTableStoredState = tableState ?? {
-      columnOrder: [],
-      columnVisibility: {},
-      columnPinning: { left: ["name"], right: ["amount"] },
+   const effectiveTableState: DataTableStoredState = {
+      columnOrder: tableState?.columnOrder ?? [],
+      columnVisibility: tableState?.columnVisibility ?? {},
+      columnPinning: tableState?.columnPinning ?? {
+         left: ["name"],
+         right: ["amount"],
+      },
    };
 
    const { openCredenza, closeCredenza } = useCredenza();
