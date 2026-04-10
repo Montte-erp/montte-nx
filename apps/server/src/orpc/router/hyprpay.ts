@@ -1,4 +1,5 @@
 import { ORPCError, implementerInternal } from "@orpc/server";
+import { Result, err, ok } from "neverthrow";
 import { and, asc, count, eq } from "drizzle-orm";
 import { updateContact } from "@core/database/repositories/contacts-repository";
 import { contacts } from "@core/database/schemas/contacts";
@@ -13,14 +14,18 @@ const impl = implementerInternal(
    [...sdkProcedure["~orpc"].middlewares],
 );
 
-function requireTeamId(teamId: SdkContext["teamId"]): string {
+function requireTeamId(
+   teamId: SdkContext["teamId"],
+): Result<string, ORPCError<"FORBIDDEN", unknown>> {
    if (!teamId) {
-      throw new ORPCError("FORBIDDEN", {
-         message:
-            "Esta operação requer uma chave de API vinculada a um projeto.",
-      });
+      return err(
+         new ORPCError("FORBIDDEN", {
+            message:
+               "Esta operação requer uma chave de API vinculada a um projeto.",
+         }),
+      );
    }
-   return teamId;
+   return ok(teamId);
 }
 
 function mapCustomer(contact: Contact) {
@@ -32,7 +37,9 @@ function mapCustomer(contact: Contact) {
 }
 
 export const create = impl.create.handler(async ({ context, input }) => {
-   const teamId = requireTeamId(context.teamId);
+   const teamIdResult = requireTeamId(context.teamId);
+   if (teamIdResult.isErr()) throw teamIdResult.error;
+   const teamId = teamIdResult.value;
    const [contact] = await context.db
       .insert(contacts)
       .values({
@@ -54,7 +61,9 @@ export const create = impl.create.handler(async ({ context, input }) => {
 });
 
 export const get = impl.get.handler(async ({ context, input }) => {
-   const teamId = requireTeamId(context.teamId);
+   const teamIdResult = requireTeamId(context.teamId);
+   if (teamIdResult.isErr()) throw teamIdResult.error;
+   const teamId = teamIdResult.value;
    const [contact] = await context.db
       .select()
       .from(contacts)
@@ -75,7 +84,9 @@ export const get = impl.get.handler(async ({ context, input }) => {
 });
 
 export const list = impl.list.handler(async ({ context, input }) => {
-   const teamId = requireTeamId(context.teamId);
+   const teamIdResult = requireTeamId(context.teamId);
+   if (teamIdResult.isErr()) throw teamIdResult.error;
+   const teamId = teamIdResult.value;
    const where = and(
       eq(contacts.teamId, teamId),
       eq(contacts.type, "cliente"),
@@ -103,7 +114,9 @@ export const list = impl.list.handler(async ({ context, input }) => {
 });
 
 export const update = impl.update.handler(async ({ context, input }) => {
-   const teamId = requireTeamId(context.teamId);
+   const teamIdResult = requireTeamId(context.teamId);
+   if (teamIdResult.isErr()) throw teamIdResult.error;
+   const teamId = teamIdResult.value;
    const { externalId, ...data } = input;
    const [existing] = await context.db
       .select()
