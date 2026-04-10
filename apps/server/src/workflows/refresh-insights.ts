@@ -1,4 +1,5 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
+import { fromPromise } from "neverthrow";
 import { computeInsightData } from "@packages/analytics/compute-insight";
 import { insights } from "@core/database/schemas/insights";
 import { getLogger } from "@core/logging/root";
@@ -14,23 +15,32 @@ export class RefreshInsightsWorkflow {
       const allInsights = await db.select().from(insights);
       logger.info({ count: allInsights.length }, "Refreshing insights");
 
-      let successCount = 0;
-      let failureCount = 0;
+      const results = await Promise.all(
+         allInsights.map((insight) =>
+            fromPromise(
+               computeInsightData(db, insight).then((freshData) =>
+                  db
+                     .update(insights)
+                     .set({
+                        cachedResults: freshData,
+                        lastComputedAt: new Date(),
+                     })
+                     .where(eq(insights.id, insight.id)),
+               ),
+               (error) => ({ insightId: insight.id, error }),
+            ),
+         ),
+      );
 
-      for (const insight of allInsights) {
-         try {
-            const freshData = await computeInsightData(db, insight);
-            await db
-               .update(insights)
-               .set({ cachedResults: freshData, lastComputedAt: new Date() })
-               .where(eq(insights.id, insight.id));
-            successCount++;
-         } catch (error) {
+      const successCount = results.filter((r) => r.isOk()).length;
+      const failureCount = results.filter((r) => r.isErr()).length;
+
+      for (const result of results) {
+         if (result.isErr()) {
             logger.error(
-               { err: error, insightId: insight.id },
+               { err: result.error.error, insightId: result.error.insightId },
                "Failed to refresh insight",
             );
-            failureCount++;
          }
       }
 
