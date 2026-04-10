@@ -150,6 +150,21 @@ function getColumnDefId<TData>(col: ColumnDef<TData, unknown>): string {
    return "";
 }
 
+function isFixedColumn(id: string): boolean {
+   return id === "__actions";
+}
+
+function getPinningStyles<TData>(column: Column<TData>): React.CSSProperties {
+   const isPinned = column.getIsPinned();
+   if (!isPinned) return {};
+   return {
+      left: isPinned === "left" ? `${column.getStart("left")}px` : undefined,
+      right: isPinned === "right" ? `${column.getAfter("right")}px` : undefined,
+      position: "sticky",
+      zIndex: 1,
+   };
+}
+
 function getPageNumbers(currentPage: number, totalPages: number): number[] {
    if (totalPages <= 5)
       return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -160,7 +175,7 @@ function getPageNumbers(currentPage: number, totalPages: number): number[] {
 }
 
 // =============================================================================
-// DnD — Sortable header cell (column reorder)
+// DnD — Sortable header cell
 // =============================================================================
 
 function SortableHeaderCell({
@@ -185,9 +200,7 @@ function SortableHeaderCell({
       transform,
       transition,
       isDragging,
-   } = useSortable({
-      id: headerId,
-   });
+   } = useSortable({ id: headerId });
 
    return (
       <TableHead
@@ -224,7 +237,7 @@ function SortableHeaderCell({
 }
 
 // =============================================================================
-// Column Visibility Toggle
+// Column visibility toggle
 // =============================================================================
 
 function ColumnVisibilityToggle<TData>({
@@ -274,6 +287,263 @@ function ColumnVisibilityToggle<TData>({
          </DropdownMenuContent>
       </DropdownMenu>
    );
+}
+
+// =============================================================================
+// Header row
+// =============================================================================
+
+function DataTableHeaderRow<TData>({
+   headerGroup,
+   columnIds,
+   effectiveColumnVisibility,
+   onColumnVisibilityChange,
+   table,
+}: {
+   headerGroup: ReturnType<TanStackTable<TData>["getHeaderGroups"]>[number];
+   columnIds: UniqueIdentifier[];
+   effectiveColumnVisibility: VisibilityState;
+   onColumnVisibilityChange: (
+      updater: VisibilityState | ((old: VisibilityState) => VisibilityState),
+   ) => void;
+   table: TanStackTable<TData>;
+}) {
+   const headers = headerGroup.headers.map((header) => {
+      if (header.column.id === "__actions") {
+         return (
+            <TableHead className="w-0" key={header.id}>
+               <div className="flex items-center justify-end">
+                  <ColumnVisibilityToggle
+                     columnVisibility={effectiveColumnVisibility}
+                     onColumnVisibilityChange={onColumnVisibilityChange}
+                     table={table}
+                  />
+               </div>
+            </TableHead>
+         );
+      }
+
+      const content =
+         header.isPlaceholder ? null : header.column.getCanSort() ? (
+            <Button
+               className="h-8 gap-1.5 text-xs font-medium px-2"
+               onClick={header.column.getToggleSortingHandler()}
+               variant="ghost"
+            >
+               {flexRender(header.column.columnDef.header, header.getContext())}
+               {header.column.getIsSorted() === "asc" ? (
+                  <ArrowUp className="size-3.5" />
+               ) : header.column.getIsSorted() === "desc" ? (
+                  <ArrowDown className="size-3.5" />
+               ) : (
+                  <ArrowUpDown className="size-3.5 opacity-50" />
+               )}
+            </Button>
+         ) : (
+            <span className="px-2 text-xs font-medium">
+               {flexRender(header.column.columnDef.header, header.getContext())}
+            </span>
+         );
+
+      if (!isFixedColumn(header.column.id)) {
+         return (
+            <SortableHeaderCell
+               key={header.id}
+               headerId={header.column.id}
+               colSpan={header.colSpan}
+               pinningStyle={getPinningStyles(header.column)}
+               isPinned={header.column.getIsPinned()}
+               align={header.column.columnDef.meta?.align}
+            >
+               {content}
+            </SortableHeaderCell>
+         );
+      }
+
+      return (
+         <TableHead
+            key={header.id}
+            colSpan={header.colSpan}
+            className={cn(
+               "text-xs font-medium",
+               header.column.getIsPinned() ? "bg-background" : "",
+               header.column.columnDef.meta?.align === "right" && "text-right",
+               header.column.columnDef.meta?.align === "center" &&
+                  "text-center",
+            )}
+            style={getPinningStyles(header.column)}
+         >
+            {content}
+         </TableHead>
+      );
+   });
+
+   return (
+      <>
+         <TableHead className="w-[40px] px-2">
+            <Checkbox
+               aria-label="Select all"
+               checked={
+                  table.getIsAllPageRowsSelected() ||
+                  (table.getIsSomePageRowsSelected() && "indeterminate")
+               }
+               onCheckedChange={(value) =>
+                  table.toggleAllPageRowsSelected(!!value)
+               }
+            />
+         </TableHead>
+         <SortableContext
+            items={columnIds}
+            strategy={horizontalListSortingStrategy}
+         >
+            {headers}
+         </SortableContext>
+      </>
+   );
+}
+
+// =============================================================================
+// Body row
+// =============================================================================
+
+function DataTableBodyRow<TData>({
+   row,
+   getSubRows,
+}: {
+   row: Row<TData>;
+   getSubRows?: (row: TData) => TData[] | undefined;
+}) {
+   if (row.depth > 0) {
+      return (
+         <>
+            <TableCell className="w-[40px] p-0" />
+            {row.getVisibleCells().map((cell, i) => (
+               <TableCell
+                  className={cn("truncate text-sm", i === 0 && "pl-6")}
+                  key={cell.id}
+                  style={{ maxWidth: cell.column.columnDef.maxSize }}
+               >
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+               </TableCell>
+            ))}
+         </>
+      );
+   }
+
+   return (
+      <>
+         <TableCell className="w-[40px] px-2">
+            <div className="flex items-center gap-1">
+               {getSubRows &&
+                  (row.getCanExpand() ? (
+                     <button
+                        className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => row.toggleExpanded()}
+                        type="button"
+                     >
+                        {row.getIsExpanded() ? (
+                           <ChevronDown className="size-3.5" />
+                        ) : (
+                           <ChevronRight className="size-3.5" />
+                        )}
+                     </button>
+                  ) : (
+                     <span className="size-3.5 shrink-0" />
+                  ))}
+               <Checkbox
+                  aria-label="Select row"
+                  checked={row.getIsSelected()}
+                  onCheckedChange={(value) => row.toggleSelected(!!value)}
+               />
+            </div>
+         </TableCell>
+         {row.getVisibleCells().map((cell) => (
+            <TableCell
+               className={cn(
+                  "truncate",
+                  cell.column.getIsPinned() ? "bg-background" : "",
+                  cell.column.columnDef.meta?.align === "right" && "text-right",
+                  cell.column.columnDef.meta?.align === "center" &&
+                     "text-center",
+               )}
+               key={cell.id}
+               style={{
+                  maxWidth: cell.column.columnDef.maxSize,
+                  ...getPinningStyles(cell.column),
+               }}
+            >
+               {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </TableCell>
+         ))}
+      </>
+   );
+}
+
+// =============================================================================
+// Body rows (with optional grouping)
+// =============================================================================
+
+function DataTableBodyRows<TData>({
+   table,
+   groupBy,
+   renderGroupHeader,
+   columnCount,
+   getSubRows,
+}: {
+   table: TanStackTable<TData>;
+   groupBy?: (row: TData) => string;
+   renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
+   columnCount: number;
+   getSubRows?: (row: TData) => TData[] | undefined;
+}) {
+   const rows = table.getRowModel().rows;
+
+   if (!rows.length) {
+      return (
+         <TableRow>
+            <TableCell className="h-24 text-center" colSpan={columnCount}>
+               Nenhum resultado encontrado.
+            </TableCell>
+         </TableRow>
+      );
+   }
+
+   const renderRow = (row: Row<TData>) => (
+      <TableRow
+         key={row.id}
+         className={cn("bg-card", row.getIsSelected() && "bg-muted/50")}
+         data-state={row.getIsSelected() ? "selected" : undefined}
+      >
+         <DataTableBodyRow row={row} getSubRows={getSubRows} />
+      </TableRow>
+   );
+
+   if (groupBy && renderGroupHeader) {
+      const groups = new Map<string, Row<TData>[]>();
+      for (const row of rows) {
+         const key = groupBy(row.original);
+         const existing = groups.get(key);
+         if (existing) {
+            existing.push(row);
+         } else {
+            groups.set(key, [row]);
+         }
+      }
+
+      return Array.from(groups.entries()).flatMap(([key, groupRows]) => [
+         <TableRow key={`group-${key}`} className="hover:bg-transparent">
+            <TableCell
+               colSpan={columnCount}
+               className="py-2 px-4 bg-muted text-sm font-medium text-foreground"
+            >
+               {renderGroupHeader(key, groupRows)}
+            </TableCell>
+         </TableRow>,
+         ...groupRows.map(renderRow),
+      ]);
+   }
+
+   return rows.map(renderRow);
 }
 
 // =============================================================================
@@ -515,8 +785,6 @@ export function DataTable<TData, TValue>({
       return [...columns, actionsCol as ColumnDef<TData, TValue>];
    }, [columns, renderActions]);
 
-   const isFixedColumn = (id: string) => id === "__actions";
-
    const [columnOrder, setColumnOrder] = useState<string[]>(() => {
       const draggableIds = allColumns
          .filter((c) => !isFixedColumn(getColumnDefId(c)))
@@ -542,7 +810,9 @@ export function DataTable<TData, TValue>({
       });
    }, [allColumns]);
 
-   columnOrderRef.current = columnOrder;
+   useIsomorphicLayoutEffect(() => {
+      columnOrderRef.current = columnOrder;
+   });
 
    const columnOrderMounted = useRef(false);
    useEffect(() => {
@@ -577,10 +847,11 @@ export function DataTable<TData, TValue>({
       onSortingChange: effectiveOnSortingChange,
       onColumnOrderChange: setColumnOrder,
       onColumnPinningChange: (updater) => {
-         const currentPinning = effectiveColumnPinningRef.current;
          const next =
-            typeof updater === "function" ? updater(currentPinning) : updater;
-         onTableStateChange?.({
+            typeof updater === "function"
+               ? updater(effectiveColumnPinningRef.current)
+               : updater;
+         onTableStateChangeRef.current?.({
             columnOrder: columnOrderRef.current,
             columnVisibility: effectiveColumnVisibilityRef.current,
             columnPinning: next,
@@ -614,7 +885,7 @@ export function DataTable<TData, TValue>({
       useSensor(KeyboardSensor, {}),
    );
 
-   function handleColumnDragEnd(event: DragEndEvent) {
+   const handleColumnDragEnd = useCallback((event: DragEndEvent) => {
       const { active, over } = event;
       if (active && over && active.id !== over.id) {
          setColumnOrder((prev) => {
@@ -623,260 +894,7 @@ export function DataTable<TData, TValue>({
             return arrayMove(prev, oldIndex, newIndex);
          });
       }
-   }
-
-   function getPinningStyles(column: Column<TData>): React.CSSProperties {
-      const isPinned = column.getIsPinned();
-      if (!isPinned) return {};
-      return {
-         left: isPinned === "left" ? `${column.getStart("left")}px` : undefined,
-         right:
-            isPinned === "right" ? `${column.getAfter("right")}px` : undefined,
-         position: "sticky",
-         zIndex: 1,
-      };
-   }
-
-   // --- Header cells ---
-   const renderHeaderCells = (
-      headerGroup: ReturnType<typeof table.getHeaderGroups>[number],
-   ) => {
-      const selectionHead = (
-         <TableHead className="w-[40px] px-2">
-            <Checkbox
-               aria-label="Select all"
-               checked={
-                  table.getIsAllPageRowsSelected() ||
-                  (table.getIsSomePageRowsSelected() && "indeterminate")
-               }
-               onCheckedChange={(value) =>
-                  table.toggleAllPageRowsSelected(!!value)
-               }
-            />
-         </TableHead>
-      );
-
-      const headers = headerGroup.headers.map((header) => {
-         if (header.column.id === "__actions") {
-            return (
-               <TableHead className="w-0" key={header.id}>
-                  <div className="flex items-center justify-end">
-                     <ColumnVisibilityToggle
-                        columnVisibility={effectiveColumnVisibility}
-                        onColumnVisibilityChange={handleColumnVisibilityChange}
-                        table={table}
-                     />
-                  </div>
-               </TableHead>
-            );
-         }
-
-         const content =
-            header.isPlaceholder ? null : header.column.getCanSort() ? (
-               <Button
-                  className="h-8 gap-1.5 text-xs font-medium px-2"
-                  onClick={header.column.getToggleSortingHandler()}
-                  variant="ghost"
-               >
-                  {flexRender(
-                     header.column.columnDef.header,
-                     header.getContext(),
-                  )}
-                  {header.column.getIsSorted() === "asc" ? (
-                     <ArrowUp className="size-3.5" />
-                  ) : header.column.getIsSorted() === "desc" ? (
-                     <ArrowDown className="size-3.5" />
-                  ) : (
-                     <ArrowUpDown className="size-3.5 opacity-50" />
-                  )}
-               </Button>
-            ) : (
-               <span className="px-2 text-xs font-medium">
-                  {flexRender(
-                     header.column.columnDef.header,
-                     header.getContext(),
-                  )}
-               </span>
-            );
-
-         if (!isFixedColumn(header.column.id)) {
-            return (
-               <SortableHeaderCell
-                  key={header.id}
-                  headerId={header.column.id}
-                  colSpan={header.colSpan}
-                  pinningStyle={getPinningStyles(header.column)}
-                  isPinned={header.column.getIsPinned()}
-                  align={header.column.columnDef.meta?.align}
-               >
-                  {content}
-               </SortableHeaderCell>
-            );
-         }
-
-         return (
-            <TableHead
-               key={header.id}
-               colSpan={header.colSpan}
-               className={cn(
-                  "text-xs font-medium",
-                  header.column.getIsPinned() ? "bg-background" : "",
-                  header.column.columnDef.meta?.align === "right" &&
-                     "text-right",
-                  header.column.columnDef.meta?.align === "center" &&
-                     "text-center",
-               )}
-               style={getPinningStyles(header.column)}
-            >
-               {content}
-            </TableHead>
-         );
-      });
-
-      return (
-         <>
-            {selectionHead}
-            <SortableContext
-               items={columnIds}
-               strategy={horizontalListSortingStrategy}
-            >
-               {headers}
-            </SortableContext>
-         </>
-      );
-   };
-
-   // --- Body cells ---
-   const renderBodyCells = (
-      row: ReturnType<typeof table.getRowModel>["rows"][number],
-   ) => {
-      if (row.depth > 0) {
-         const visibleCells = row.getVisibleCells();
-         const cells = visibleCells.map((cell, i) => (
-            <TableCell
-               className={cn("truncate text-sm", i === 0 && "pl-6")}
-               key={cell.id}
-               style={{ maxWidth: cell.column.columnDef.maxSize }}
-            >
-               {flexRender(cell.column.columnDef.cell, cell.getContext())}
-            </TableCell>
-         ));
-         return (
-            <>
-               <TableCell className="w-[40px] p-0" />
-               {cells}
-            </>
-         );
-      }
-
-      const selectionCell = (
-         <TableCell className="w-[40px] px-2">
-            <div className="flex items-center gap-1">
-               {getSubRows &&
-                  (row.getCanExpand() ? (
-                     <button
-                        className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                        onClick={() => row.toggleExpanded()}
-                        type="button"
-                     >
-                        {row.getIsExpanded() ? (
-                           <ChevronDown className="size-3.5" />
-                        ) : (
-                           <ChevronRight className="size-3.5" />
-                        )}
-                     </button>
-                  ) : (
-                     <span className="size-3.5 shrink-0" />
-                  ))}
-               <Checkbox
-                  aria-label="Select row"
-                  checked={row.getIsSelected()}
-                  onCheckedChange={(value) => row.toggleSelected(!!value)}
-               />
-            </div>
-         </TableCell>
-      );
-
-      const cells = row.getVisibleCells().map((cell) => (
-         <TableCell
-            className={cn(
-               "truncate",
-               cell.column.getIsPinned() ? "bg-background" : "",
-               cell.column.columnDef.meta?.align === "right" && "text-right",
-               cell.column.columnDef.meta?.align === "center" && "text-center",
-            )}
-            key={cell.id}
-            style={{
-               maxWidth: cell.column.columnDef.maxSize,
-               ...getPinningStyles(cell.column),
-            }}
-         >
-            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-         </TableCell>
-      ));
-
-      return (
-         <>
-            {selectionCell}
-            {cells}
-         </>
-      );
-   };
-
-   // --- Single row ---
-   const renderRow = (
-      row: ReturnType<typeof table.getRowModel>["rows"][number],
-   ) => (
-      <TableRow
-         key={row.id}
-         className={cn("bg-card", row.getIsSelected() && "bg-muted/50")}
-         data-state={row.getIsSelected() ? "selected" : undefined}
-      >
-         {renderBodyCells(row)}
-      </TableRow>
-   );
-
-   // --- Body rows (with optional grouping) ---
-   const renderBodyRows = () => {
-      const rows = table.getRowModel().rows;
-
-      if (!rows.length) {
-         return (
-            <TableRow>
-               <TableCell className="h-24 text-center" colSpan={columnCount}>
-                  Nenhum resultado encontrado.
-               </TableCell>
-            </TableRow>
-         );
-      }
-
-      if (groupBy && renderGroupHeader) {
-         const groups = new Map<string, Row<TData>[]>();
-         for (const row of rows) {
-            const key = groupBy(row.original);
-            const existing = groups.get(key);
-            if (existing) {
-               existing.push(row);
-            } else {
-               groups.set(key, [row]);
-            }
-         }
-
-         return Array.from(groups.entries()).flatMap(([key, groupRows]) => [
-            <TableRow key={`group-${key}`} className="hover:bg-transparent">
-               <TableCell
-                  colSpan={columnCount}
-                  className="py-2 px-4 bg-muted text-sm font-medium text-foreground"
-               >
-                  {renderGroupHeader(key, groupRows)}
-               </TableCell>
-            </TableRow>,
-            ...groupRows.map(renderRow),
-         ]);
-      }
-
-      return rows.map(renderRow);
-   };
+   }, []);
 
    return (
       <div>
@@ -894,11 +912,29 @@ export function DataTable<TData, TValue>({
                            key={headerGroup.id}
                            className="bg-muted/50 hover:bg-muted/50"
                         >
-                           {renderHeaderCells(headerGroup)}
+                           <DataTableHeaderRow
+                              columnIds={columnIds}
+                              effectiveColumnVisibility={
+                                 effectiveColumnVisibility
+                              }
+                              headerGroup={headerGroup}
+                              onColumnVisibilityChange={
+                                 handleColumnVisibilityChange
+                              }
+                              table={table}
+                           />
                         </TableRow>
                      ))}
                   </TableHeader>
-                  <TableBody>{renderBodyRows()}</TableBody>
+                  <TableBody>
+                     <DataTableBodyRows
+                        columnCount={columnCount}
+                        getSubRows={getSubRows}
+                        groupBy={groupBy}
+                        renderGroupHeader={renderGroupHeader}
+                        table={table}
+                     />
+                  </TableBody>
                </Table>
             </div>
          </DndContext>
