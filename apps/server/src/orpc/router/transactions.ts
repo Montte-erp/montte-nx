@@ -13,12 +13,9 @@ import {
    UpdateTransactionSchema,
    ListTransactionsFilterSchema,
 } from "@montte/cli/contract";
+import { emitFinanceTransactionCreated } from "@packages/events/finance";
+import { createBillableProcedure } from "../billable";
 import { sdkProcedure } from "../server";
-import { createEmitFn } from "@packages/events/emit";
-import {
-   emitFinanceTransactionCreated,
-   emitFinanceTransactionUpdated,
-} from "@packages/events/finance";
 
 function mapTransaction(tx: Record<string, unknown>) {
    return {
@@ -56,7 +53,7 @@ export const get = sdkProcedure
       return mapTransaction(tx);
    });
 
-export const create = sdkProcedure
+export const create = createBillableProcedure("finance.transaction_created")
    .input(CreateTransactionSchema)
    .handler(async ({ context, input }) => {
       const { tagIds, ...data } = input;
@@ -74,21 +71,14 @@ export const create = sdkProcedure
          data,
          tagIds,
       );
-      const emit = createEmitFn(context.db, context.posthog);
-      await emitFinanceTransactionCreated(
-         emit,
-         {
-            organizationId: context.organizationId!,
-            teamId: context.teamId!,
-            userId: context.userId!,
-         },
-         {
+      context.scheduleEmit(() =>
+         emitFinanceTransactionCreated(context.emit, context.emitCtx, {
             transactionId: tx!.id,
             type: data.type,
-            bankAccountId: data.bankAccountId ?? tx!.bankAccountId,
+            bankAccountId: data.bankAccountId ?? tx!.bankAccountId ?? "",
             categoryId: data.categoryId ?? undefined,
             amountCents: Math.round(parseFloat(data.amount) * 100),
-         },
+         }),
       );
       return mapTransaction(tx!);
    });
@@ -109,16 +99,6 @@ export const update = sdkProcedure
          });
       }
       const tx = await updateTransaction(context.db, id, data, tagIds);
-      const emit = createEmitFn(context.db, context.posthog);
-      await emitFinanceTransactionUpdated(
-         emit,
-         {
-            organizationId: context.organizationId!,
-            teamId: context.teamId!,
-            userId: context.userId!,
-         },
-         { transactionId: id },
-      );
       return mapTransaction(tx);
    });
 

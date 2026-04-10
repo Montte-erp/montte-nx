@@ -5,7 +5,6 @@ const {
    mockFindMatchingWebhooks,
    mockCreateWebhookDelivery,
    mockGetEventPrice,
-   mockQueueAdd,
 } = vi.hoisted(() => ({
    mockFindMatchingWebhooks: vi.fn().mockResolvedValue([]),
    mockCreateWebhookDelivery: vi.fn().mockResolvedValue({ id: "delivery-1" }),
@@ -13,7 +12,6 @@ const {
       price: { amount: 0n, currency: "BRL", scale: 6 },
       isBillable: false,
    }),
-   mockQueueAdd: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@core/database/repositories/webhook-repository", () => ({
@@ -41,20 +39,12 @@ vi.mock("@f-o-t/money", () => ({
    toMajorUnitsString: () => "0.000000",
 }));
 
-vi.mock("../src/queues/connection", () => ({
-   createQueueConnection: () => ({}),
-}));
-
-vi.mock("../src/queues/webhook-delivery", () => ({
-   createWebhookDeliveryQueue: () => ({ add: mockQueueAdd }),
-}));
-
 vi.mock("@core/stripe/constants", () => ({
    STRIPE_METER_EVENTS: {} as Record<string, string>,
 }));
 
 import { EVENT_CATEGORIES } from "../src/catalog";
-import { emitEvent, initializeWebhookQueue } from "../src/emit";
+import { emitEvent } from "../src/emit";
 
 function createMockDb() {
    const mockReturning = vi.fn().mockResolvedValue([{ id: "event-1" }]);
@@ -138,8 +128,10 @@ describe("emitEvent", () => {
       );
    });
 
-   it("triggers webhook delivery when queue is initialized", async () => {
-      initializeWebhookQueue("redis://test");
+   it("calls webhook delivery handler when set", async () => {
+      const { setWebhookDeliveryHandler } = await import("../src/emit");
+      const mockHandler = vi.fn().mockResolvedValue(undefined);
+      setWebhookDeliveryHandler(mockHandler);
 
       const db = createMockDb();
       mockFindMatchingWebhooks.mockResolvedValueOnce([
@@ -167,8 +159,7 @@ describe("emitEvent", () => {
          "team-1",
       );
       expect(mockCreateWebhookDelivery).toHaveBeenCalled();
-      expect(mockQueueAdd).toHaveBeenCalledWith(
-         "deliver",
+      expect(mockHandler).toHaveBeenCalledWith(
          expect.objectContaining({
             deliveryId: "delivery-1",
             webhookEndpointId: "wh-1",

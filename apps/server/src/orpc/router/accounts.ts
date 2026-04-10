@@ -11,6 +11,8 @@ import {
    CreateBankAccountSchema,
    UpdateBankAccountSchema,
 } from "@montte/cli/contract";
+import { emitFinanceBankAccountConnected } from "@packages/events/finance";
+import { createBillableProcedure } from "../billable";
 import { sdkProcedure } from "../server";
 
 function mapAccount(account: Record<string, unknown>) {
@@ -49,7 +51,7 @@ export const get = sdkProcedure
       return mapAccount({ ...account, currentBalance, projectedBalance });
    });
 
-export const create = sdkProcedure
+export const create = createBillableProcedure("finance.bank_account_connected")
    .input(CreateBankAccountSchema)
    .handler(async ({ context, input }) => {
       const account = await createBankAccount(
@@ -63,6 +65,16 @@ export const create = sdkProcedure
             account.id,
             account.initialBalance,
          );
+      const eventType =
+         account.type === "payment"
+            ? ("other" as const)
+            : (account.type as Exclude<typeof account.type, "payment">);
+      context.scheduleEmit(() =>
+         emitFinanceBankAccountConnected(context.emit, context.emitCtx, {
+            bankAccountId: account.id,
+            type: eventType,
+         }),
+      );
       return mapAccount({ ...account, currentBalance, projectedBalance });
    });
 

@@ -11,6 +11,8 @@ import {
    CreateCategorySchema,
    UpdateCategorySchema,
 } from "@montte/cli/contract";
+import { emitFinanceCategoryCreated } from "@packages/events/finance";
+import { createBillableProcedure } from "../billable";
 import { sdkProcedure } from "../server";
 
 function mapCategory(cat: Record<string, unknown>) {
@@ -36,13 +38,18 @@ export const list = sdkProcedure
       return cats.map(mapCategory);
    });
 
-export const create = sdkProcedure
+export const create = createBillableProcedure("finance.category_created")
    .input(CreateCategorySchema)
    .handler(async ({ context, input }) => {
       const cat = await createCategory(context.db, context.teamId!, {
          ...input,
          participatesDre: false,
       });
+      context.scheduleEmit(() =>
+         emitFinanceCategoryCreated(context.emit, context.emitCtx, {
+            categoryId: cat.id,
+         }),
+      );
       return mapCategory(cat);
    });
 
