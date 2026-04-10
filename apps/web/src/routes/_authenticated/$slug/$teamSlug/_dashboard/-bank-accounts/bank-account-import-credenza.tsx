@@ -311,7 +311,7 @@ function MapStep({ methods }: { methods: StepperMethods }) {
                      </Button>
                   </div>
                )}
-               <div className="flex flex-col gap-1">
+               <div className="flex flex-col gap-2">
                   <div className="grid grid-cols-[10rem_1fr] items-center gap-2 px-1 pb-1">
                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                         Campo

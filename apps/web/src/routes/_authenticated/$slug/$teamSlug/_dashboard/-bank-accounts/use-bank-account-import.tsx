@@ -64,7 +64,14 @@ export const TEMPLATE_ROWS = [
    },
 ] as const;
 
-export const TYPE_MAP: Record<string, string> = {
+export type ResolvedBankAccountType =
+   | "checking"
+   | "savings"
+   | "investment"
+   | "payment"
+   | "cash";
+
+export const TYPE_MAP: Record<string, ResolvedBankAccountType> = {
    caixa: "cash",
    "caixa fisico": "cash",
    "caixa físico": "cash",
@@ -93,7 +100,7 @@ export type PreviewRow = {
    descricao: string;
    saldo_inicial: string;
    cor: string;
-   _resolvedType: string | null;
+   _resolvedType: ResolvedBankAccountType | null;
    _valid: boolean;
    _errors: string[];
 };
@@ -135,12 +142,7 @@ export function toCreateInput(row: PreviewRow) {
       ? "0"
       : String(Number(rawBalance));
    return {
-      type: row._resolvedType as
-         | "checking"
-         | "savings"
-         | "investment"
-         | "payment"
-         | "cash",
+      type: row._resolvedType ?? "checking",
       name: row.nome.trim(),
       notes: row.descricao || null,
       initialBalance: resolvedBalance,
@@ -248,8 +250,9 @@ export function BankAccountImportProvider({
       if (!rawData) return;
       const auto = autoDetectMapping(rawData.headers);
       setMappingState(auto);
+      setSavedMapping(null);
       setSavedMappingApplied(false);
-   }, [rawData]);
+   }, [rawData, setSavedMapping]);
 
    const previewRows = rawData ? buildPreviewRows(rawData, mapping) : [];
 
