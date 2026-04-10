@@ -237,7 +237,6 @@
       "dev:all": "bun run scripts/seed-event-catalog.ts run --env local && bun run scripts/seed-addons.ts run --env local && bun run scripts/setup-stripe.ts run --env local && nx run-many -t dev --parallel=6",
       "dev:mastra": "nx run-many -t dev --parallel=1 -p agents",
       "dev:server": "nx run-many -t dev --parallel=1 -p server ",
-      "dev:worker": "bun run scripts/seed-event-catalog.ts run --env local && bun run scripts/seed-addons.ts run --env local && nx run worker:dev",
       "doctor": "bun run scripts/doctor.ts",
       "seed:events": "bun run scripts/seed-event-catalog.ts run",
       "seed:addons": "bun run scripts/seed-addons.ts run",
