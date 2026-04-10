@@ -231,27 +231,7 @@ Zod schemas belong in the backend. Frontend only imports inferred types via `Inp
   // Parent wraps: <FormCtx.Provider value={form}>...</FormCtx.Provider>
   ```
 - **Selective `form.Subscribe`** — always use a specific selector, never `selector={(state) => state}`. For submit buttons use `[state.canSubmit, state.isSubmitting] as const` and destructure.
-- **Navigation guard** — add `useBlocker` from `@tanstack/react-router` to edit forms. Use `withResolver: true` and `shouldBlockFn`. Always use optional chaining on `blocker.proceed?.()` and `blocker.reset?.()` — they are only defined when the blocker is in `"blocked"` state (TS2722 otherwise). Use `useAlertDialog` to prompt the user:
-  ```tsx
-  const blocker = useBlocker({
-     withResolver: true,
-     shouldBlockFn: () => {
-       if (form.store.state.isDirty && !form.store.state.isSubmitted) {
-         openAlertDialog({
-           title: "Descartar alterações?",
-           description: "Você tem alterações não salvas. Tem certeza que deseja sair sem salvar?",
-           actionLabel: "Descartar alterações",
-           cancelLabel: "Continuar editando",
-           onAction: () => blocker.proceed?.(),
-           onCancel: () => blocker.reset?.(),
-         });
-         return true;
-       }
-       return false;
-     },
-     disabled: isCreate, // skip for create-only forms
-  });
-  ```
+- **Navigation guard** — add `useBlocker` from `@tanstack/react-router` to edit forms. Use `withResolver: true` and `shouldBlockFn`. Always use optional chaining on `blocker.proceed?.()` and `blocker.reset?.()` — only defined when blocker is in `"blocked"` state (TS2722 otherwise). Use `useAlertDialog` to prompt the user. Set `disabled: isCreate` to skip for create-only forms.
 
 ---
 
@@ -291,11 +271,6 @@ function ItemDetails({ id }: { id: string }) {
 )}
 ```
 Never use `skipToken` with `useSuspenseQuery` — it is not supported in TanStack Query v5.
-
-**`skipToken` with oRPC** — only valid inside `queryOptions` as the `input` value when using `useQuery` (rare):
-```tsx
-orpc.procedure.queryOptions({ input: condition ? { id } : skipToken })
-```
 
 **Empty states** — always use `Empty`/`EmptyHeader`/`EmptyMedia`/`EmptyTitle`/`EmptyDescription`/`EmptyContent` from `@packages/ui/components/empty`. Never build custom empty states with raw divs.
 
@@ -702,11 +677,33 @@ File-per-category in `packages/events/`: `finance.ts`, `ai.ts`, `contact.ts`, `i
 
 ---
 
+## Worker (BullMQ)
+
+`apps/worker/src/` — queues in `queues/`, processors in `processors/`. Cron jobs in `apps/worker/src/cron.ts`.
+
+```typescript
+import { Queue } from "bullmq";
+import { redis } from "@core/redis/connection";
+
+export const myQueue = new Queue("my-queue", { connection: redis });
+
+// Processor
+export default async function myProcessor(job: Job<MyJobData>) {
+   // job.data is typed via Queue<MyJobData>
+}
+```
+
+- Queue names: kebab-case, matching processor file names.
+- Cron syntax: `repeat: { pattern: "0 * * * *" }`.
+- Never swallow errors in processors — let BullMQ handle retries.
+
+---
+
 ## Testing
 
 ```bash
 bun run test
-npx vitest run apps/web/__tests__/integrations/orpc/router/transactions.test.ts
+npx vitest run <path-to-test-file>  # run a single test file
 ```
 
 **Three layers, nothing else:**
