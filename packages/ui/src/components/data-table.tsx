@@ -154,14 +154,12 @@ function isFixedColumn(id: string): boolean {
    return id === "__actions";
 }
 
-function getPinningStyles<TData>(column: Column<TData>): React.CSSProperties {
+function getPinningOffsets<TData>(column: Column<TData>): React.CSSProperties {
    const isPinned = column.getIsPinned();
    if (!isPinned) return {};
    return {
       left: isPinned === "left" ? `${column.getStart("left")}px` : undefined,
       right: isPinned === "right" ? `${column.getAfter("right")}px` : undefined,
-      position: "sticky",
-      zIndex: 1,
    };
 }
 
@@ -209,16 +207,15 @@ function SortableHeaderCell({
          className={cn(
             "text-xs font-medium",
             isDragging && "opacity-50",
-            isPinned ? "bg-background" : "",
+            isPinned ? "sticky bg-background" : "relative",
+            isDragging ? (isPinned ? "z-[2]" : "z-[1]") : isPinned && "z-[1]",
             align === "right" && "text-right",
             align === "center" && "text-center",
          )}
          style={{
             ...pinningStyle,
-            ...(isPinned ? {} : { position: "relative" as const }),
             transform: CSS.Translate.toString(transform),
             transition,
-            zIndex: isDragging ? (isPinned ? 2 : 1) : undefined,
          }}
       >
          <div className="group flex items-center">
@@ -351,7 +348,7 @@ function DataTableHeaderRow<TData>({
                key={header.id}
                headerId={header.column.id}
                colSpan={header.colSpan}
-               pinningStyle={getPinningStyles(header.column)}
+               pinningStyle={getPinningOffsets(header.column)}
                isPinned={header.column.getIsPinned()}
                align={header.column.columnDef.meta?.align}
             >
@@ -366,12 +363,12 @@ function DataTableHeaderRow<TData>({
             colSpan={header.colSpan}
             className={cn(
                "text-xs font-medium",
-               header.column.getIsPinned() ? "bg-background" : "",
+               header.column.getIsPinned() && "sticky z-[1] bg-background",
                header.column.columnDef.meta?.align === "right" && "text-right",
                header.column.columnDef.meta?.align === "center" &&
                   "text-center",
             )}
-            style={getPinningStyles(header.column)}
+            style={getPinningOffsets(header.column)}
          >
             {content}
          </TableHead>
@@ -461,7 +458,7 @@ function DataTableBodyRow<TData>({
             <TableCell
                className={cn(
                   "truncate",
-                  cell.column.getIsPinned() ? "bg-background" : "",
+                  cell.column.getIsPinned() && "sticky z-[1] bg-background",
                   cell.column.columnDef.meta?.align === "right" && "text-right",
                   cell.column.columnDef.meta?.align === "center" &&
                      "text-center",
@@ -469,7 +466,7 @@ function DataTableBodyRow<TData>({
                key={cell.id}
                style={{
                   maxWidth: cell.column.columnDef.maxSize,
-                  ...getPinningStyles(cell.column),
+                  ...getPinningOffsets(cell.column),
                }}
             >
                {flexRender(cell.column.columnDef.cell, cell.getContext())}
