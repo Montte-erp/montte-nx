@@ -467,6 +467,11 @@ export function DataTable<TData, TValue>({
       effectiveColumnVisibilityRef.current = effectiveColumnVisibility;
    });
 
+   const effectiveColumnPinningRef = useRef(tableState?.columnPinning ?? {});
+   useIsomorphicLayoutEffect(() => {
+      effectiveColumnPinningRef.current = tableState?.columnPinning ?? {};
+   });
+
    const onTableStateChangeRef = useRef(onTableStateChange);
    useIsomorphicLayoutEffect(() => {
       onTableStateChangeRef.current = onTableStateChange;
@@ -570,7 +575,7 @@ export function DataTable<TData, TValue>({
       onSortingChange: effectiveOnSortingChange,
       onColumnOrderChange: setColumnOrder,
       onColumnPinningChange: (updater) => {
-         const currentPinning = tableState?.columnPinning ?? {};
+         const currentPinning = effectiveColumnPinningRef.current;
          const next =
             typeof updater === "function" ? updater(currentPinning) : updater;
          onTableStateChange?.({
