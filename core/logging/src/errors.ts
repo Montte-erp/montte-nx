@@ -106,7 +106,10 @@ export class WebAppError<
    TCode extends ORPCErrorCode = ORPCErrorCode,
    TData = unknown,
 > extends ORPCError<TCode, TData> {
-   constructor(code: TCode, options?: ORPCErrorOptions<TData>) {
+   constructor(
+      code: TCode,
+      options?: ORPCErrorOptions<TData> & { source?: string },
+   ) {
       super(code, options as ORPCErrorOptions<TData>);
 
       otelLogger.emit({
@@ -116,6 +119,7 @@ export class WebAppError<
             "error.type": "WebAppError",
             "error.code": code,
             "error.stack": this.stack ?? "",
+            ...(options?.source ? { "error.source": options.source } : {}),
          },
       });
    }
