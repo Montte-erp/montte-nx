@@ -9,6 +9,7 @@ import {
 } from "@core/logging/health";
 import { FetchLoggingPlugin } from "@core/logging/orpc-plugin";
 import { initOtel, shutdownOtel } from "@core/logging/otel";
+import { AppError, WebAppError } from "@core/logging/errors";
 import { getServerLogger } from "@core/logging/server";
 import { shutdownPosthog } from "@core/posthog/server";
 import { Elysia } from "elysia";
@@ -92,6 +93,22 @@ async function main() {
          status: "healthy",
          timestamp: new Date().toISOString(),
       }))
+      .onError(({ error, set }) => {
+         if (error instanceof WebAppError) {
+            set.status = error.status;
+            return { code: error.code, message: error.message };
+         }
+         if (error instanceof AppError) {
+            set.status = error.status;
+            return { code: "APP_ERROR", message: error.message };
+         }
+         logger.error({ err: error }, "Unhandled server error");
+         set.status = 500;
+         return {
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Internal server error",
+         };
+      })
       .listen(process.env.PORT ?? 9877);
 
    logger.info({ port: app.server?.port }, "Server started");
