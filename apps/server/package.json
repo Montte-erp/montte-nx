@@ -5,7 +5,8 @@
    "scripts": {
       "build": "dotenv -e ../web/.env.local -- bun build --compile --minify-whitespace --minify-syntax --target bun --outfile server --external @tanstack/react-start --external @tanstack/start-server-core --external winston --external winston-transport ./src/index.ts",
       "check": "oxlint .",
-      "dev": "dotenv -e ../web/.env.local -- bun run --watch src/index.ts",
+      "wait-pg": "until pg_isready -h localhost -p 5432 -q; do sleep 1; done",
+      "dev": "bun run wait-pg && dotenv -e ../web/.env.local -- bun run --watch src/index.ts",
       "start": "./server",
       "typecheck": "tsgo"
    },
