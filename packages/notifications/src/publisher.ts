@@ -12,12 +12,9 @@ export type JobPublisher = Publisher<JobEvents>;
 class RedisJobPublisher extends Publisher<JobEvents> {
    private readonly subscriber: Redis;
 
-   constructor(
-      private readonly publisher: Redis,
-      subscriberFactory: () => Redis,
-   ) {
+   constructor(private readonly publisher: Redis) {
       super();
-      this.subscriber = subscriberFactory();
+      this.subscriber = publisher.duplicate();
    }
 
    async publish<K extends keyof JobEvents & string>(
@@ -48,9 +45,6 @@ class RedisJobPublisher extends Publisher<JobEvents> {
    }
 }
 
-export function createJobPublisher(
-   redis: Redis,
-   subscriberFactory: () => Redis,
-): JobPublisher {
-   return new RedisJobPublisher(redis, subscriberFactory);
+export function createJobPublisher(redis: Redis): JobPublisher {
+   return new RedisJobPublisher(redis);
 }
