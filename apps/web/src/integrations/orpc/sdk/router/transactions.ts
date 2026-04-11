@@ -13,6 +13,8 @@ import {
    UpdateTransactionSchema,
    ListTransactionsFilterSchema,
 } from "@montte/cli/contract";
+import dayjs from "dayjs";
+import { WebAppError } from "@core/logging/errors";
 import { emitFinanceTransactionCreated } from "@packages/events/finance";
 import { createBillableProcedure } from "../billable";
 import { sdkProcedure } from "../server";
@@ -23,17 +25,18 @@ function mapTransaction(tx: Record<string, unknown>) {
       date:
          typeof tx.date === "string"
             ? tx.date
-            : (tx.date as Date).toISOString().slice(0, 10),
-      createdAt: (tx.createdAt as Date).toISOString(),
-      updatedAt: (tx.updatedAt as Date).toISOString(),
+            : dayjs(tx.date as Date).format("YYYY-MM-DD"),
+      createdAt: dayjs(tx.createdAt as string | Date).toISOString(),
+      updatedAt: dayjs(tx.updatedAt as string | Date).toISOString(),
    };
 }
 
 export const list = sdkProcedure
    .input(ListTransactionsFilterSchema)
    .handler(async ({ context, input }) => {
+      if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
       const result = await listTransactions(context.db, {
-         teamId: context.teamId!,
+         teamId: context.teamId,
          ...input,
       });
       return {
@@ -45,10 +48,11 @@ export const list = sdkProcedure
 export const get = sdkProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
+      if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
       const tx = await ensureTransactionOwnership(
          context.db,
          input.id,
-         context.teamId!,
+         context.teamId,
       );
       return mapTransaction(tx);
    });
@@ -56,8 +60,9 @@ export const get = sdkProcedure
 export const create = createBillableProcedure("finance.transaction_created")
    .input(CreateTransactionSchema)
    .handler(async ({ context, input }) => {
+      if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
       const { tagIds, ...data } = input;
-      await validateTransactionReferences(context.db, context.teamId!, {
+      await validateTransactionReferences(context.db, context.teamId, {
          bankAccountId: data.bankAccountId,
          destinationBankAccountId: data.destinationBankAccountId,
          categoryId: data.categoryId,
@@ -67,7 +72,7 @@ export const create = createBillableProcedure("finance.transaction_created")
       });
       const tx = await createTransaction(
          context.db,
-         context.teamId!,
+         context.teamId,
          data,
          tagIds,
       );
@@ -86,10 +91,11 @@ export const create = createBillableProcedure("finance.transaction_created")
 export const update = sdkProcedure
    .input(z.object({ id: z.string().uuid() }).merge(UpdateTransactionSchema))
    .handler(async ({ context, input }) => {
+      if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
       const { id, tagIds, ...data } = input;
-      await ensureTransactionOwnership(context.db, id, context.teamId!);
+      await ensureTransactionOwnership(context.db, id, context.teamId);
       if (Object.keys(data).length > 0 || tagIds) {
-         await validateTransactionReferences(context.db, context.teamId!, {
+         await validateTransactionReferences(context.db, context.teamId, {
             bankAccountId: data.bankAccountId,
             destinationBankAccountId: data.destinationBankAccountId,
             categoryId: data.categoryId,
@@ -105,7 +111,8 @@ export const update = sdkProcedure
 export const remove = sdkProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      await ensureTransactionOwnership(context.db, input.id, context.teamId!);
+      if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
+      await ensureTransactionOwnership(context.db, input.id, context.teamId);
       await deleteTransaction(context.db, input.id);
       return { success: true as const };
    });
@@ -113,8 +120,9 @@ export const remove = sdkProcedure
 export const summary = sdkProcedure
    .input(ListTransactionsFilterSchema)
    .handler(async ({ context, input }) => {
+      if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
       return await getTransactionsSummary(context.db, {
-         teamId: context.teamId!,
+         teamId: context.teamId,
          ...input,
       });
    });

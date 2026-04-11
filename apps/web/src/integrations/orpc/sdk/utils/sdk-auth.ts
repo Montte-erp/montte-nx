@@ -62,7 +62,7 @@ export function authenticateRequest(
             },
             "SDK auth failed",
          );
-         return err({ code } as AuthError);
+         return err<AuthData, AuthError>({ code });
       }
 
       const { organizationId, teamId } = result.key.metadata ?? {};
@@ -75,13 +75,21 @@ export function authenticateRequest(
          organizationId,
          teamId: typeof teamId === "string" ? teamId : undefined,
          userId: result.key.referenceId ?? undefined,
-         plan: (result.key.metadata?.plan as string) ?? "metered",
+         plan:
+            typeof result.key.metadata?.plan === "string"
+               ? result.key.metadata.plan
+               : "metered",
          sdkMode:
-            (result.key.metadata?.sdkMode as "static" | "ssr") ?? "static",
+            result.key.metadata?.sdkMode === "static" ||
+            result.key.metadata?.sdkMode === "ssr"
+               ? result.key.metadata.sdkMode
+               : "static",
          remaining: result.key.remaining ?? null,
          apiKeyType:
-            (result.key.metadata?.apiKeyType as "public" | "private") ??
-            "private",
+            result.key.metadata?.apiKeyType === "public" ||
+            result.key.metadata?.apiKeyType === "private"
+               ? result.key.metadata.apiKeyType
+               : "private",
       });
    });
 }

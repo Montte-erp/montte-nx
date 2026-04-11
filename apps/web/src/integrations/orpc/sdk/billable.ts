@@ -32,7 +32,7 @@ export function createBillableProcedure(eventName: string) {
 
       try {
          await enforceCreditBudget(
-            context.organizationId!,
+            context.organizationId,
             eventName,
             redis,
             stripeCustomerId,
@@ -53,12 +53,12 @@ export function createBillableProcedure(eventName: string) {
          redis,
       );
       const emitCtx: EmitCtx = {
-         organizationId: context.organizationId!,
+         organizationId: context.organizationId,
          teamId: context.teamId,
          userId: context.userId,
       };
 
-      let pendingEmit: (() => Promise<void>) | null = null;
+      let pendingEmit: (() => Promise<void>) | undefined;
 
       const result = await next({
          context: {
@@ -71,9 +71,10 @@ export function createBillableProcedure(eventName: string) {
          },
       });
 
-      if (pendingEmit) {
+      if (pendingEmit !== undefined) {
+         const fn = pendingEmit;
          try {
-            await (pendingEmit as () => Promise<void>)();
+            await fn();
          } catch {
             // emit failure must not roll back the already-committed mutation
          }
