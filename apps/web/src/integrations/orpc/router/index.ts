@@ -14,6 +14,7 @@ import * as dashboardsRouter from "./dashboards";
 import * as financialSettingsRouter from "./financial-settings";
 import * as insightsRouter from "./insights";
 import * as inventoryRouter from "./inventory";
+import * as notificationsRouter from "./notifications";
 import * as onboardingRouter from "./onboarding";
 import * as organizationRouter from "./organization";
 import * as servicesRouter from "./services";
@@ -39,6 +40,7 @@ export default {
    financialSettings: financialSettingsRouter,
    insights: insightsRouter,
    inventory: inventoryRouter,
+   notifications: notificationsRouter,
    onboarding: onboardingRouter,
    services: servicesRouter,
    session: sessionRouter,
