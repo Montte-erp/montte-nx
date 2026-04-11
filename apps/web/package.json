@@ -14,8 +14,6 @@
       "check": "oxlint ."
    },
    "dependencies": {
-      "@ai-sdk/react": "catalog:assistant-ui",
-      "@assistant-ui/react-ai-sdk": "catalog:assistant-ui",
       "@core/agents": "workspace:*",
       "@core/authentication": "workspace:*",
       "@core/database": "workspace:*",
@@ -51,6 +49,8 @@
       "@packages/events": "workspace:*",
       "@packages/ui": "workspace:*",
       "@tailwindcss/vite": "catalog:vite",
+      "@tanstack/ai": "catalog:tanstack-ai",
+      "@tanstack/ai-react": "catalog:tanstack-ai",
       "@tanstack/match-sorter-utils": "catalog:tanstack",
       "@tanstack/pacer": "catalog:tanstack",
       "@tanstack/react-devtools": "catalog:tanstack",
