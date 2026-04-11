@@ -13,8 +13,10 @@ import { AppError, WebAppError } from "@core/logging/errors";
 import { getServerLogger } from "@core/logging/server";
 import { shutdownPosthog } from "@core/posthog/server";
 import { Elysia } from "elysia";
+import { z } from "zod";
 import { auth, db, minioClient, posthog } from "./singletons";
 import sdkRouter from "./orpc/router";
+import { DeriveKeywordsWorkflow } from "./workflows/derive-keywords.workflow";
 
 DBOS.setConfig({
    name: "montte-server",
@@ -89,6 +91,27 @@ async function main() {
          }),
       )
       .post("/sdk/orpc", handleOrpcRequest)
+      .post("/internal/jobs/derive-keywords", async ({ body, set }) => {
+         const parsed = z
+            .object({
+               categoryId: z.string().uuid(),
+               teamId: z.string().uuid(),
+               organizationId: z.string().uuid(),
+               name: z.string(),
+               description: z.string().nullable().optional(),
+               userId: z.string().optional(),
+               stripeCustomerId: z.string().nullable().optional(),
+            })
+            .safeParse(body);
+
+         if (!parsed.success) {
+            set.status = 400;
+            return { error: "Invalid input" };
+         }
+
+         await DBOS.startWorkflow(DeriveKeywordsWorkflow).run(parsed.data);
+         return { queued: true };
+      })
       .get("/health", () => ({
          status: "healthy",
          timestamp: new Date().toISOString(),
