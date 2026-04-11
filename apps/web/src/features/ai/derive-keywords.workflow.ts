@@ -9,8 +9,8 @@ import { createEmitFn } from "@packages/events/emit";
 import { enforceCreditBudget } from "@packages/events/credits";
 import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import type { JobNotification } from "@packages/notifications/schema";
-import { jobPublisher } from "../publisher";
-import { db, redis, posthog, stripeClient } from "../singletons";
+import { jobPublisher } from "@/integrations/orpc/publisher";
+import { db, redis, posthog, stripeClient } from "@/integrations/singletons";
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
 

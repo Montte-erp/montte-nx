@@ -1,6 +1,7 @@
 {
    "extends": "@tooling/typescript/app.json",
    "compilerOptions": {
+      "experimentalDecorators": true,
       "types": ["vite/client"],
       "verbatimModuleSyntax": false,
       "noUncheckedIndexedAccess": false,

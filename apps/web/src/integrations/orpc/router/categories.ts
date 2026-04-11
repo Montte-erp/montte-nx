@@ -11,11 +11,10 @@ import {
    createCategorySchema,
    updateCategorySchema,
 } from "@core/database/schemas/categories";
-import { env } from "@core/environment/server";
-import { AppError } from "@core/logging/errors";
 import { getLogger } from "@core/logging/root";
-import { ResultAsync } from "neverthrow";
+import { DBOS } from "@dbos-inc/dbos-sdk";
 import { z } from "zod";
+import { DeriveKeywordsWorkflow } from "@/features/ai/derive-keywords.workflow";
 import { protectedProcedure } from "../server";
 
 const logger = getLogger().child({ module: "categories.router" });
@@ -27,24 +26,16 @@ function enqueueKeywordDerivation(input: {
    userId: string;
    name: string;
    description?: string | null;
+   stripeCustomerId?: string | null;
 }): void {
-   void ResultAsync.fromPromise(
-      fetch(`${env.SERVER_URL}/internal/jobs/derive-keywords`, {
-         method: "POST",
-         headers: { "Content-Type": "application/json" },
-         body: JSON.stringify(input),
-      }),
-      (e) =>
-         AppError.internal(
-            `Failed to enqueue keyword derivation: ${String(e)}`,
-         ),
-   ).mapErr((err) => {
-      logger.error(
-         { err, categoryId: input.categoryId },
-         "Failed to enqueue keyword derivation",
-      );
-      return err;
-   });
+   void DBOS.startWorkflow(DeriveKeywordsWorkflow)
+      .run(input)
+      .catch((err) => {
+         logger.error(
+            { err, categoryId: input.categoryId },
+            "Failed to start derive-keywords workflow",
+         );
+      });
 }
 
 const idSchema = z.object({ id: z.string().uuid() });
@@ -60,6 +51,7 @@ export const create = protectedProcedure
          userId: context.userId,
          name: category.name,
          description: category.description,
+         stripeCustomerId: null,
       });
       return category;
    });
@@ -94,6 +86,7 @@ export const update = protectedProcedure
             userId: context.userId,
             name: category.name,
             description: category.description,
+            stripeCustomerId: null,
          });
       }
       return category;
