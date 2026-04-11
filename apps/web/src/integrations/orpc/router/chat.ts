@@ -1,14 +1,7 @@
-import { toAISdkV5Messages } from "@mastra/ai-sdk/ui";
-import { mastra } from "@core/agents";
+import * as chatRepo from "@core/database/repositories/chat-repository";
 import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
-
-const getMemory = async () => {
-   const memory = await mastra.getAgent("rubiAgent").getMemory();
-   if (!memory) throw WebAppError.internal("Memory not configured");
-   return memory;
-};
 
 export const listThreads = protectedProcedure
    .input(
@@ -19,13 +12,12 @@ export const listThreads = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const memory = await getMemory();
-      const result = await memory.listThreads({
-         filter: { resourceId: `${input.teamId}:${context.userId}` },
-         page: input.page,
-         perPage: input.perPage,
-         orderBy: { field: "updatedAt", direction: "DESC" },
-      });
+      const result = await chatRepo.listThreads(
+         context.db,
+         `${input.teamId}:${context.userId}`,
+         input.page,
+         input.perPage,
+      );
       return {
          threads: result.threads.map((t) => ({
             id: t.id,
@@ -47,12 +39,12 @@ export const createThread = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const memory = await getMemory();
-      const thread = await memory.createThread({
-         resourceId: `${input.teamId}:${context.userId}`,
-         title: input.title,
-         metadata: input.metadata,
-      });
+      const thread = await chatRepo.createThread(
+         context.db,
+         `${input.teamId}:${context.userId}`,
+         input.title,
+         input.metadata,
+      );
       return {
          id: thread.id,
          title: thread.title ?? "Nova conversa",
@@ -63,29 +55,19 @@ export const createThread = protectedProcedure
 export const deleteThread = protectedProcedure
    .input(z.object({ threadId: z.string() }))
    .handler(async ({ input, context }) => {
-      const memory = await getMemory();
-      const thread = await memory.getThreadById({ threadId: input.threadId });
-      if (!thread?.resourceId?.endsWith(`:${context.userId}`)) {
+      const thread = await chatRepo.getThreadById(context.db, input.threadId);
+      if (!thread?.resourceId.endsWith(`:${context.userId}`)) {
          throw WebAppError.forbidden("Thread not found or access denied");
       }
-      await memory.deleteThread(input.threadId);
+      await chatRepo.deleteThread(context.db, input.threadId);
    });
 
 export const getThreadMessages = protectedProcedure
    .input(z.object({ threadId: z.string() }))
    .handler(async ({ input, context }) => {
-      const memory = await getMemory();
-      const thread = await memory.getThreadById({ threadId: input.threadId });
-      if (!thread?.resourceId?.endsWith(`:${context.userId}`)) {
+      const thread = await chatRepo.getThreadById(context.db, input.threadId);
+      if (!thread?.resourceId.endsWith(`:${context.userId}`)) {
          throw WebAppError.forbidden("Thread not found or access denied");
       }
-      const { messages } = await memory.recall({
-         threadId: input.threadId,
-         perPage: false,
-      });
-      // Strip data-* parts (Mastra workflow/agent metadata) from stored messages.
-      // These parts are never meaningful to display, and DataUIDisplay in
-      // @assistant-ui/react crashes during SSR because RuntimeAdapter does not
-      // register the `dataRenderers` scope.
-      return toAISdkV5Messages(messages);
+      return chatRepo.getThreadMessages(context.db, input.threadId);
    });
