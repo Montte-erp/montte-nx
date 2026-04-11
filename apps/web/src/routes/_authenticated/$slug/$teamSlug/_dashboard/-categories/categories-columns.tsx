@@ -1,4 +1,9 @@
 import { Badge } from "@packages/ui/components/badge";
+import {
+   Announcement,
+   AnnouncementTag,
+   AnnouncementTitle,
+} from "@packages/ui/components/announcement";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
    Baby,
@@ -66,18 +71,30 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
          cell: ({ row }) => {
             const { name, color, icon, isDefault } = row.original;
             const IconComponent = icon ? ICON_MAP[icon] : null;
+
+            if (row.depth === 0 && (color || IconComponent)) {
+               return (
+                  <div className="flex items-center gap-2 min-w-0">
+                     <Announcement>
+                        <AnnouncementTag
+                           style={{ backgroundColor: color ?? "#6366f1" }}
+                           className="bg-transparent"
+                        >
+                           {IconComponent && (
+                              <IconComponent className="size-3 text-white" />
+                           )}
+                        </AnnouncementTag>
+                        <AnnouncementTitle className="font-medium">
+                           {name}
+                        </AnnouncementTitle>
+                     </Announcement>
+                     {isDefault && <Badge variant="outline">Padrão</Badge>}
+                  </div>
+               );
+            }
+
             return (
                <div className="flex items-center gap-2 min-w-0">
-                  {(color || IconComponent) && row.depth === 0 ? (
-                     <span
-                        className="size-7 rounded-md flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: color ?? "#6366f1" }}
-                     >
-                        {IconComponent && (
-                           <IconComponent className="size-3.5 text-white" />
-                        )}
-                     </span>
-                  ) : null}
                   <span
                      className={
                         row.depth > 0 ? "truncate" : "font-medium truncate"
