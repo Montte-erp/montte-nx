@@ -1,35 +1,36 @@
-# @packages/agents
+# @core/agents
 
-Mastra-powered AI agent framework with multi-model support and custom request context.
+TanStack AI-powered agent framework with multi-model support via OpenRouter.
 
 ## Exports
 
-| Export     | Purpose                                                          |
-| ---------- | ---------------------------------------------------------------- |
-| `.`        | `mastra` singleton, `createRequestContext()`, agent registration |
-| `./models` | Model ID types and configuration                                 |
-| `./utils`  | Agent utility functions                                          |
+| Export     | Purpose                                      |
+| ---------- | -------------------------------------------- |
+| `.`        | `chatRubi()` — streaming chat function       |
+| `./models` | Model ID types and available model presets   |
+| `./utils`  | Agent utility functions                      |
 
 ## Usage
 
 ```typescript
-import { mastra, createRequestContext } from "@packages/agents";
+import { chatRubi } from "@core/agents";
 
-const agent = mastra.getAgent("rubiAgent");
-const context = createRequestContext({
-   userId: "user-id",
-   brandId: "brand-id",
-   writerId: "writer-id",
-   model: "openrouter/moonshotai/kimi-k2.5",
+const stream = chatRubi({
+   db,
+   userId,
+   teamId,
+   organizationId,
+   threadId,
+   messages,
+   modelId: "openrouter/moonshotai/kimi-k2.5",
    language: "pt-BR",
-   writerInstructions: [],
 });
 
-const result = await agent.generate("Write about TypeScript", {
-   requestContext: context,
-});
+for await (const chunk of stream) {
+   // stream TanStack AI chunks to the client
+}
 ```
 
 ## How It Works
 
-Registers AI agents on a Mastra instance with PostgreSQL vector storage and PostHog observability. The `createRequestContext()` builder scopes requests to a team/org/user with model preferences, temperature tuning, thinking budget, and language settings.
+`chatRubi()` wraps TanStack AI's `chat()` with an OpenRouter adapter. It builds a system prompt scoped to Rubi's persona, resolves the model preset (temperature, topP, maxTokens), and attaches a persistence middleware that saves user/assistant messages and auto-generates a thread title after the first exchange.
