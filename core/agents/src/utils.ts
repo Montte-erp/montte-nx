@@ -7,11 +7,3 @@ export function buildLanguageInstruction(language: string): string {
    };
    return `## IDIOMA DE SAÍDA\n${languageMap[language] ?? languageMap["pt-BR"]}`;
 }
-
-export type MastraLLMUsage = {
-   inputTokens: number;
-   outputTokens: number;
-   totalTokens: number;
-   reasoningTokens?: number | null;
-   cachedInputTokens?: number | null;
-};

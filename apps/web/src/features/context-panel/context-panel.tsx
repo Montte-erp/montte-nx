@@ -23,7 +23,7 @@ import {
 } from "@packages/ui/components/sidebar";
 import { cn } from "@packages/ui/lib/utils";
 import { useStore } from "@tanstack/react-store";
-import { Check, ChevronDown, Info, MessageSquare, X } from "lucide-react";
+import { Check, ChevronDown, Info, X } from "lucide-react";
 import type React from "react";
 import { ContextPanelAction } from "./context-panel-info";
 import {
@@ -31,7 +31,6 @@ import {
    contextPanelStore,
    type PageViewSwitchConfig,
 } from "./context-panel-store";
-import { RubiChatTab } from "./ui/rubi-chat-tab";
 import {
    closeContextPanel,
    openContextPanel,
@@ -122,27 +121,6 @@ function InfoContent() {
    );
 }
 
-function ChatContent() {
-   return (
-      <ContextPanel>
-         <ContextPanelHeader>
-            <ContextPanelTitle>Rubi AI</ContextPanelTitle>
-         </ContextPanelHeader>
-         <ContextPanelContent>
-            <RubiChatTab />
-         </ContextPanelContent>
-      </ContextPanel>
-   );
-}
-
-const CHAT_TAB: ContextPanelTab = {
-   id: "chat",
-   icon: MessageSquare,
-   label: "Chat IA",
-   content: <ChatContent />,
-   order: 1,
-};
-
 const INFO_TAB: ContextPanelTab = {
    id: "info",
    icon: Info,
@@ -156,7 +134,6 @@ function ContextPanelInner() {
 
    const allTabs: ContextPanelTab[] = [
       INFO_TAB,
-      CHAT_TAB,
       ...dynamicTabs.sort((a, b) => (a.order ?? 99) - (b.order ?? 99)),
    ];
 

@@ -2,7 +2,7 @@
    "extends": "@tooling/typescript/tsconfig.package.json",
    "compilerOptions": {
       "paths": {
-         "@core/agents": ["./src/mastra/index.ts"],
+         "@core/agents": ["./src/agent.ts"],
          "@core/agents/*": ["./src/*"],
          "@core/authentication/*": ["../authentication/src/*"],
          "@core/database": ["../database/src/index.ts"],
