@@ -1,30 +1,11 @@
-import type {
-   ReasoningGroupComponent,
-   ReasoningMessagePartComponent,
-} from "@assistant-ui/react";
 import { cn } from "@packages/ui/lib/utils";
 import { ChevronDownIcon } from "lucide-react";
+import type { FC, ReactNode } from "react";
 import { memo, useState } from "react";
 
-/** Individual reasoning part — just raw text, hidden by default inside ReasoningGroup */
-export const ReasoningDisplay: ReasoningMessagePartComponent = memo(
-   ({ text }) => {
-      if (!text?.trim()) return null;
-      return (
-         <p className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground/70">
-            {text}
-         </p>
-      );
-   },
-);
-ReasoningDisplay.displayName = "ReasoningDisplay";
-
-/** Groups consecutive reasoning parts in a collapsible "Pensando..." block */
-export const ReasoningGroupDisplay: ReasoningGroupComponent = ({
-   children,
-}) => {
+export const ReasoningDisplay: FC<{ text: string }> = memo(({ text }) => {
    const [isOpen, setIsOpen] = useState(false);
-
+   if (!text?.trim()) return null;
    return (
       <div className="my-1 w-full">
          <button
@@ -42,10 +23,17 @@ export const ReasoningGroupDisplay: ReasoningGroupComponent = ({
          </button>
          {isOpen && (
             <div className="ml-1 mt-0.5 space-y-1 border-l border-border/30 py-1 pl-3">
-               {children}
+               <p className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground/70">
+                  {text}
+               </p>
             </div>
          )}
       </div>
    );
-};
+});
+ReasoningDisplay.displayName = "ReasoningDisplay";
+
+export const ReasoningGroupDisplay: FC<{ children: ReactNode }> = ({
+   children,
+}) => <>{children}</>;
 ReasoningGroupDisplay.displayName = "ReasoningGroupDisplay";

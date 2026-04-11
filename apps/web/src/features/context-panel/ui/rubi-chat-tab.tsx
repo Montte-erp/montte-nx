@@ -1,7 +1,6 @@
-import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
-import { useRubiRuntime } from "@/features/rubi-chat/hooks/use-rubi-runtime";
+import { useRubiChat } from "@/features/rubi-chat/hooks/use-rubi-chat";
 import type { QuickSuggestion } from "@/features/rubi-chat/ui/thread";
 import { formatTimeAgo, Thread } from "@/features/rubi-chat/ui/thread";
 import { useActiveTeam } from "@/hooks/use-active-team";
@@ -50,33 +49,27 @@ function RecentThreadsList({ teamId }: { teamId: string }) {
    );
 }
 
-function RubiChatTabInner({ teamId }: { teamId: string }) {
+export function RubiChatTab() {
+   const { activeTeamId } = useActiveTeam();
+   const chat = useRubiChat({ teamId: activeTeamId ?? "" });
+
+   if (!activeTeamId) return null;
+
    return (
       <div className="h-full [&_.aui-user-message-content]:bg-background [&_.aui-user-message-content]:text-foreground">
          <Thread
+            chat={chat}
             quickSuggestions={QUICK_SUGGESTIONS}
             recentThreadsSlot={
                <Suspense fallback={null}>
-                  <RecentThreadsList teamId={teamId} />
+                  <RecentThreadsList teamId={activeTeamId} />
                </Suspense>
             }
+            teamId={activeTeamId}
             welcomeIconUrl="/mascot.svg"
             welcomeSubtitle="Seu assistente financeiro e ERP com IA."
             welcomeTitle="Como posso te ajudar?"
          />
       </div>
-   );
-}
-
-export function RubiChatTab() {
-   const { activeTeamId } = useActiveTeam();
-   const runtime = useRubiRuntime({ teamId: activeTeamId ?? "" });
-
-   if (!activeTeamId) return null;
-
-   return (
-      <AssistantRuntimeProvider runtime={runtime}>
-         <RubiChatTabInner teamId={activeTeamId} />
-      </AssistantRuntimeProvider>
    );
 }

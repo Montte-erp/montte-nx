@@ -1,6 +1,5 @@
 "use client";
 
-import { useAui } from "@assistant-ui/react";
 import {
    Select,
    SelectContent,
@@ -11,7 +10,7 @@ import { cn } from "@packages/ui/lib/utils";
 import { CheckIcon } from "lucide-react";
 import { Select as SelectPrimitive } from "radix-ui";
 import type { ComponentPropsWithoutRef, NamedExoticComponent } from "react";
-import { createContext, memo, useContext, useEffect, useState } from "react";
+import { createContext, memo, useContext, useState } from "react";
 
 export type ModelOption = {
    id: string;
@@ -115,13 +114,6 @@ const ModelSelectorImpl = ({
    );
    const resolved = isControlled ? value : internal;
    const onChange = onValueChange ?? setInternal;
-
-   const api = useAui();
-   useEffect(() => {
-      return api.modelContext().register({
-         getModelContext: () => ({ config: { modelName: resolved } }),
-      });
-   }, [api, resolved]);
 
    return (
       <ModelSelectorRoot

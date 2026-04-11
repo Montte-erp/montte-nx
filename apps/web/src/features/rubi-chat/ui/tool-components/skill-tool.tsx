@@ -1,4 +1,4 @@
-import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
+import type { RubiToolProps } from "@/features/rubi-chat/ui/thread";
 import { cn } from "@packages/ui/lib/utils";
 import {
    BookOpen,
@@ -7,6 +7,7 @@ import {
    LoaderIcon,
    SearchIcon,
 } from "lucide-react";
+import type { FC } from "react";
 import { memo } from "react";
 
 /** Extract a human-readable skill name from a workspace path or search query */
@@ -44,11 +45,7 @@ function extractSkillLabel(
    }
 }
 
-const SkillToolImpl: ToolCallMessagePartComponent = ({
-   toolName,
-   argsText,
-   status,
-}) => {
+const SkillToolImpl: FC<RubiToolProps> = ({ toolName, argsText, status }) => {
    const isSearch = toolName === "mastra_workspace_search";
    const isListFiles = toolName === "mastra_workspace_list_files";
    const isRunning = status?.type === "running";
@@ -94,5 +91,5 @@ const SkillToolImpl: ToolCallMessagePartComponent = ({
    );
 };
 
-export const SkillTool = memo(SkillToolImpl) as ToolCallMessagePartComponent;
+export const SkillTool = memo(SkillToolImpl);
 SkillTool.displayName = "SkillTool";

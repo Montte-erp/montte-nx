@@ -34,7 +34,9 @@ export function useRubiChat({ teamId, onThreadCreated }: UseRubiChatOptions) {
             activeThreadIdRef.current = thread.id;
             onThreadCreatedRef.current?.(thread.id);
             void queryClient.invalidateQueries({
-               queryKey: orpc.chat.listThreads.queryKey(),
+               queryKey: orpc.chat.listThreads.queryKey({
+                  input: { teamId: teamIdRef.current },
+               }),
             });
             return thread.id;
          })
@@ -90,7 +92,9 @@ export function useRubiChat({ teamId, onThreadCreated }: UseRubiChatOptions) {
             newThread();
          }
          void queryClient.invalidateQueries({
-            queryKey: orpc.chat.listThreads.queryKey(),
+            queryKey: orpc.chat.listThreads.queryKey({
+               input: { teamId: teamIdRef.current },
+            }),
          });
       },
       [newThread, queryClient],

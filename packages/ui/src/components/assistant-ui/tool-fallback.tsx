@@ -1,11 +1,6 @@
 "use client";
 
 import {
-   type ToolCallMessagePartComponent,
-   type ToolCallMessagePartStatus,
-   useScrollLock,
-} from "@assistant-ui/react";
-import {
    Collapsible,
    CollapsibleContent,
    CollapsibleTrigger,
@@ -42,22 +37,18 @@ function ToolFallbackRoot({
 }: ToolFallbackRootProps) {
    const collapsibleRef = useRef<HTMLDivElement>(null);
    const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
-   const lockScroll = useScrollLock(collapsibleRef, ANIMATION_DURATION);
 
    const isControlled = controlledOpen !== undefined;
    const isOpen = isControlled ? controlledOpen : uncontrolledOpen;
 
    const handleOpenChange = useCallback(
       (open: boolean) => {
-         if (!open) {
-            lockScroll();
-         }
          if (!isControlled) {
             setUncontrolledOpen(open);
          }
          controlledOnOpenChange?.(open);
       },
-      [lockScroll, isControlled, controlledOnOpenChange],
+      [isControlled, controlledOnOpenChange],
    );
 
    return (
@@ -82,13 +73,12 @@ function ToolFallbackRoot({
    );
 }
 
-type ToolStatus = ToolCallMessagePartStatus["type"];
+export type ToolStatus = "running" | "complete" | "incomplete";
 
 const statusIconMap: Record<ToolStatus, React.ElementType> = {
    running: LoaderIcon,
    complete: CheckIcon,
    incomplete: XCircleIcon,
-   "requires-action": AlertCircleIcon,
 };
 
 function ToolFallbackTrigger({
@@ -98,15 +88,12 @@ function ToolFallbackTrigger({
    ...props
 }: React.ComponentProps<typeof CollapsibleTrigger> & {
    toolName: string;
-   status?: ToolCallMessagePartStatus;
+   status?: ToolStatus;
 }) {
-   const statusType = status?.type ?? "complete";
+   const statusType = status ?? "complete";
    const isRunning = statusType === "running";
-   const isCancelled =
-      status?.type === "incomplete" && status.reason === "cancelled";
-
-   const Icon = statusIconMap[statusType];
-   const label = isCancelled ? "Ferramenta cancelada" : "Ferramenta usada";
+   const Icon = statusIconMap[statusType] ?? AlertCircleIcon;
+   const label = "Ferramenta usada";
    const displayName = TOOL_DISPLAY_LABELS[toolName] ?? toolName;
 
    return (
@@ -121,16 +108,12 @@ function ToolFallbackTrigger({
          <Icon
             className={cn(
                "aui-tool-fallback-trigger-icon size-4 shrink-0",
-               isCancelled && "text-muted-foreground",
                isRunning && "animate-spin",
             )}
             data-slot="tool-fallback-trigger-icon"
          />
          <span
-            className={cn(
-               "aui-tool-fallback-trigger-label-wrapper relative inline-block grow text-left leading-none",
-               isCancelled && "text-muted-foreground line-through",
-            )}
+            className="aui-tool-fallback-trigger-label-wrapper relative inline-block grow text-left leading-none"
             data-slot="tool-fallback-trigger-label"
          >
             <span>
@@ -239,87 +222,40 @@ function ToolFallbackResult({
    );
 }
 
-function ToolFallbackError({
-   status,
-   className,
-   ...props
-}: React.ComponentProps<"div"> & {
-   status?: ToolCallMessagePartStatus;
-}) {
-   if (status?.type !== "incomplete") return null;
+export type RubiToolProps = {
+   toolName: string;
+   argsText: string;
+   status: { type: "running" | "complete" | "incomplete" };
+   result: unknown;
+};
 
-   const error = status.error;
-   const errorText = error
-      ? typeof error === "string"
-         ? error
-         : JSON.stringify(error)
-      : null;
-
-   if (!errorText) return null;
-
-   const isCancelled = status.reason === "cancelled";
-   const headerText = isCancelled ? "Motivo do cancelamento:" : "Erro:";
-
-   return (
-      <div
-         className={cn("aui-tool-fallback-error px-4", className)}
-         data-slot="tool-fallback-error"
-         {...props}
-      >
-         <p className="aui-tool-fallback-error-header font-semibold text-muted-foreground">
-            {headerText}
-         </p>
-         <p className="aui-tool-fallback-error-reason text-muted-foreground">
-            {errorText}
-         </p>
-      </div>
-   );
-}
-
-const ToolFallbackImpl: ToolCallMessagePartComponent = ({
+const ToolFallbackImpl = ({
    toolName,
    argsText,
    result,
    status,
-}) => {
-   const isCancelled =
-      status?.type === "incomplete" && status.reason === "cancelled";
-
+}: RubiToolProps) => {
    return (
-      <ToolFallbackRoot
-         className={cn(isCancelled && "border-muted-foreground/30 bg-muted/30")}
-      >
-         <ToolFallbackTrigger status={status} toolName={toolName} />
+      <ToolFallbackRoot>
+         <ToolFallbackTrigger status={status.type} toolName={toolName} />
          <ToolFallbackContent>
-            <ToolFallbackError status={status} />
-            <ToolFallbackArgs
-               argsText={argsText}
-               className={cn(isCancelled && "opacity-60")}
-            />
-            {!isCancelled && <ToolFallbackResult result={result} />}
+            <ToolFallbackArgs argsText={argsText} />
+            {status.type !== "running" && (
+               <ToolFallbackResult result={result} />
+            )}
          </ToolFallbackContent>
       </ToolFallbackRoot>
    );
 };
 
-const ToolFallback = memo(
-   ToolFallbackImpl,
-) as unknown as ToolCallMessagePartComponent & {
-   Root: typeof ToolFallbackRoot;
-   Trigger: typeof ToolFallbackTrigger;
-   Content: typeof ToolFallbackContent;
-   Args: typeof ToolFallbackArgs;
-   Result: typeof ToolFallbackResult;
-   Error: typeof ToolFallbackError;
-};
-
-ToolFallback.displayName = "ToolFallback";
-ToolFallback.Root = ToolFallbackRoot;
-ToolFallback.Trigger = ToolFallbackTrigger;
-ToolFallback.Content = ToolFallbackContent;
-ToolFallback.Args = ToolFallbackArgs;
-ToolFallback.Result = ToolFallbackResult;
-ToolFallback.Error = ToolFallbackError;
+const ToolFallback = Object.assign(memo(ToolFallbackImpl), {
+   displayName: "ToolFallback",
+   Root: ToolFallbackRoot,
+   Trigger: ToolFallbackTrigger,
+   Content: ToolFallbackContent,
+   Args: ToolFallbackArgs,
+   Result: ToolFallbackResult,
+});
 
 export {
    ToolFallback,
@@ -328,5 +264,4 @@ export {
    ToolFallbackContent,
    ToolFallbackArgs,
    ToolFallbackResult,
-   ToolFallbackError,
 };

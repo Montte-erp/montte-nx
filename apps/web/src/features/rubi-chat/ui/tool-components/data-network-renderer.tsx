@@ -1,6 +1,7 @@
-import type { DataMessagePartComponent } from "@assistant-ui/react";
+import type { RubiToolProps } from "@/features/rubi-chat/ui/thread";
 import { cn } from "@packages/ui/lib/utils";
 import { CheckIcon, LoaderIcon } from "lucide-react";
+import type { FC } from "react";
 import { memo } from "react";
 import { getToolDisplay } from "./tool-display-config";
 
@@ -8,27 +9,20 @@ interface NetworkStep {
    id: string;
    name: string;
    status: "running" | "done";
-   input: Record<string, unknown> | null;
-   output: unknown | null;
 }
 
 interface NetworkData {
-   name: string;
-   status: "running" | "done";
-   steps: NetworkStep[];
-   output: unknown | null;
-   usage: unknown | null;
+   steps?: NetworkStep[];
 }
 
-const DataNetworkRendererImpl: DataMessagePartComponent<NetworkData> = ({
-   data,
-}) => {
+const DataNetworkRendererImpl: FC<RubiToolProps> = ({ result }) => {
+   const data = result as NetworkData | undefined;
    const steps = data?.steps;
    if (!steps || steps.length === 0) return null;
 
    return (
       <div className="flex flex-col gap-0.5 py-0.5">
-         {steps.map((step: NetworkStep) => {
+         {steps.map((step) => {
             const config = getToolDisplay(step.name);
             const Icon = config?.icon;
             const label = config?.label ?? step.name;
@@ -44,7 +38,6 @@ const DataNetworkRendererImpl: DataMessagePartComponent<NetworkData> = ({
                   ) : (
                      <CheckIcon className="size-3 shrink-0 text-muted-foreground/50" />
                   )}
-
                   {Icon && (
                      <div
                         className={cn(
@@ -57,7 +50,6 @@ const DataNetworkRendererImpl: DataMessagePartComponent<NetworkData> = ({
                         <Icon className="size-2.5" />
                      </div>
                   )}
-
                   <span
                      className={cn(
                         "text-muted-foreground",
@@ -73,7 +65,5 @@ const DataNetworkRendererImpl: DataMessagePartComponent<NetworkData> = ({
    );
 };
 
-export const DataNetworkRenderer = memo(
-   DataNetworkRendererImpl,
-) as DataMessagePartComponent<NetworkData>;
+export const DataNetworkRenderer = memo(DataNetworkRendererImpl);
 DataNetworkRenderer.displayName = "DataNetworkRenderer";

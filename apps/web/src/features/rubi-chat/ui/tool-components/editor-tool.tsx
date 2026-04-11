@@ -1,6 +1,7 @@
-import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
+import type { RubiToolProps } from "@/features/rubi-chat/ui/thread";
 import { cn } from "@packages/ui/lib/utils";
 import { CheckIcon, LoaderIcon } from "lucide-react";
+import type { FC } from "react";
 import { memo } from "react";
 import { getToolDisplay } from "./tool-display-config";
 
@@ -31,11 +32,7 @@ function extractPreview(argsText: string | undefined): string | null {
    }
 }
 
-const EditorToolImpl: ToolCallMessagePartComponent = ({
-   toolName,
-   argsText,
-   status,
-}) => {
+const EditorToolImpl: FC<RubiToolProps> = ({ toolName, argsText, status }) => {
    const config = getToolDisplay(toolName);
    const label = config?.label ?? toolName;
    const preview = extractPreview(argsText);
@@ -68,5 +65,5 @@ const EditorToolImpl: ToolCallMessagePartComponent = ({
    );
 };
 
-export const EditorTool = memo(EditorToolImpl) as ToolCallMessagePartComponent;
+export const EditorTool = memo(EditorToolImpl);
 EditorTool.displayName = "EditorTool";

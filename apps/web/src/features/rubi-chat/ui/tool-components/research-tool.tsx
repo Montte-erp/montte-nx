@@ -1,6 +1,7 @@
-import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
+import type { RubiToolProps } from "@/features/rubi-chat/ui/thread";
 import { cn } from "@packages/ui/lib/utils";
 import { CheckIcon, Globe, LoaderIcon, SearchIcon } from "lucide-react";
+import type { FC } from "react";
 import { memo, useState } from "react";
 import { getToolDisplay } from "./tool-display-config";
 
@@ -99,7 +100,7 @@ function SourceCard({ title, url }: { title: string; url: string }) {
    );
 }
 
-const ResearchToolImpl: ToolCallMessagePartComponent = ({
+const ResearchToolImpl: FC<RubiToolProps> = ({
    toolName,
    argsText,
    result,
@@ -166,7 +167,5 @@ const ResearchToolImpl: ToolCallMessagePartComponent = ({
    );
 };
 
-export const ResearchTool = memo(
-   ResearchToolImpl,
-) as ToolCallMessagePartComponent;
+export const ResearchTool = memo(ResearchToolImpl);
 ResearchTool.displayName = "ResearchTool";

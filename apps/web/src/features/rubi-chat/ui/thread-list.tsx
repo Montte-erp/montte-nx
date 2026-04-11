@@ -1,134 +1,127 @@
-"use client";
-
-import {
-   ThreadListItemPrimitive,
-   ThreadListPrimitive,
-   useAuiState,
-} from "@assistant-ui/react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "@packages/ui/components/button";
 import { cn } from "@packages/ui/lib/utils";
 import { MessageSquarePlusIcon, Trash2Icon } from "lucide-react";
 import type { FC, ReactNode } from "react";
+import { orpc } from "@/integrations/orpc/client";
 
 export interface ThreadListProps {
-   welcomeIconUrl?: string;
+   teamId: string;
+   activeThreadId: string | undefined;
+   onSelect: (threadId: string) => void;
+   onDelete: (threadId: string) => Promise<void>;
+   onNew: () => void;
    className?: string;
-   /**
-    * Optional slot to replace the default "Nova conversa" button.
-    * Use this to inject a router Link from the app layer.
-    */
    newThreadTrigger?: ReactNode;
-   /**
-    * Optional render function for thread item trigger.
-    * Receives the thread's externalId and title, plus the default children.
-    * If not provided, the default button trigger is used.
-    *
-    * Use this to inject routing (e.g. TanStack Link) from the app layer.
-    */
    renderThreadTrigger?: (props: {
-      externalId: string | undefined;
+      threadId: string;
       title: string | undefined;
       children: ReactNode;
    }) => ReactNode;
 }
 
 export const ThreadList: FC<ThreadListProps> = ({
-   welcomeIconUrl,
+   teamId,
+   activeThreadId,
+   onSelect,
+   onDelete,
+   onNew,
    className,
    newThreadTrigger,
    renderThreadTrigger,
 }) => {
+   const { data } = useSuspenseQuery(
+      orpc.chat.listThreads.queryOptions({
+         input: { teamId, page: 0, perPage: 50 },
+      }),
+   );
+
    return (
-      <ThreadListPrimitive.Root
+      <div
          className={cn(
             "flex h-full flex-col gap-1 overflow-y-auto px-2 py-2",
             className,
          )}
       >
-         {newThreadTrigger ?? <ThreadListNew welcomeIconUrl={welcomeIconUrl} />}
-
+         {newThreadTrigger ?? (
+            <Button
+               className="flex w-full items-center justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium"
+               onClick={onNew}
+               variant="outline"
+            >
+               Nova conversa
+               <MessageSquarePlusIcon className="ml-auto size-4 shrink-0 text-muted-foreground" />
+            </Button>
+         )}
          <div className="mt-2">
-            <p className="mb-1 px-2 text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wide">
+            <p className="mb-1 px-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70">
                Conversas
             </p>
-            <ThreadListPrimitive.Items
-               components={{
-                  ThreadListItem: (props) => (
-                     <ThreadListItemComponent
-                        {...props}
-                        renderThreadTrigger={renderThreadTrigger}
-                     />
-                  ),
-               }}
-            />
+            {data.threads.map((thread) => (
+               <ThreadItem
+                  activeThreadId={activeThreadId}
+                  key={thread.id}
+                  onDelete={onDelete}
+                  onSelect={onSelect}
+                  renderThreadTrigger={renderThreadTrigger}
+                  thread={thread}
+               />
+            ))}
          </div>
-      </ThreadListPrimitive.Root>
+      </div>
    );
 };
 
-const ThreadListNew: FC<{ welcomeIconUrl?: string }> = () => {
-   return (
-      <ThreadListPrimitive.New asChild>
-         <Button
-            className="flex w-full items-center justify-start gap-2 rounded-lg px-3 py-2 text-sm font-medium"
-            variant="outline"
-         >
-            Nova conversa
-            <MessageSquarePlusIcon className="ml-auto size-4 shrink-0 text-muted-foreground" />
-         </Button>
-      </ThreadListPrimitive.New>
-   );
-};
-
-const ThreadListItemComponent: FC<{
+function ThreadItem({
+   thread,
+   activeThreadId,
+   onSelect,
+   onDelete,
+   renderThreadTrigger,
+}: {
+   thread: { id: string; title: string; updatedAt: Date };
+   activeThreadId: string | undefined;
+   onSelect: (id: string) => void;
+   onDelete: (id: string) => Promise<void>;
    renderThreadTrigger?: ThreadListProps["renderThreadTrigger"];
-}> = ({ renderThreadTrigger }) => {
-   const title = useAuiState((s) => s.threadListItem.title);
-   const externalId = useAuiState((s) => s.threadListItem.externalId);
-
+}) {
+   const isActive = thread.id === activeThreadId;
    const triggerContent = (
       <span className="flex-1 truncate text-foreground/80">
-         {title ?? "Nova conversa"}
+         {thread.title ?? "Nova conversa"}
       </span>
    );
 
-   const trigger = (
-      <ThreadListItemPrimitive.Trigger asChild>
+   return (
+      <div
+         className={cn(
+            "group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-accent/60",
+            isActive && "bg-accent/80 font-medium",
+         )}
+      >
          {renderThreadTrigger ? (
             renderThreadTrigger({
-               externalId,
-               title: title ?? undefined,
+               threadId: thread.id,
+               title: thread.title,
                children: triggerContent,
             })
          ) : (
             <button
                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+               onClick={() => onSelect(thread.id)}
                type="button"
             >
                {triggerContent}
             </button>
          )}
-      </ThreadListItemPrimitive.Trigger>
+         <button
+            className="ml-auto shrink-0 rounded p-1 text-muted-foreground/50 opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+            onClick={() => onDelete(thread.id)}
+            type="button"
+         >
+            <Trash2Icon className="size-3.5" />
+            <span className="sr-only">Excluir conversa</span>
+         </button>
+      </div>
    );
-
-   return (
-      <ThreadListItemPrimitive.Root
-         className={cn(
-            "group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-accent/60",
-            "data-[active=true]:bg-accent/80 data-[active=true]:font-medium",
-         )}
-      >
-         {trigger}
-
-         <ThreadListItemPrimitive.Delete asChild>
-            <button
-               className="ml-auto shrink-0 rounded p-1 text-muted-foreground/50 opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-               type="button"
-            >
-               <Trash2Icon className="size-3.5" />
-               <span className="sr-only">Excluir conversa</span>
-            </button>
-         </ThreadListItemPrimitive.Delete>
-      </ThreadListItemPrimitive.Root>
-   );
-};
+}

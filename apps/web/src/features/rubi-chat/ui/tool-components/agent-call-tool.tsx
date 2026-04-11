@@ -1,4 +1,4 @@
-import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
+import type { RubiToolProps } from "@/features/rubi-chat/ui/thread";
 import { cn } from "@packages/ui/lib/utils";
 import {
    AlertCircleIcon,
@@ -9,10 +9,8 @@ import {
 import { memo } from "react";
 import { getToolDisplay } from "./tool-display-config";
 
-const AgentCallToolImpl: ToolCallMessagePartComponent = ({
-   toolName,
-   status,
-}) => {
+import type { FC } from "react";
+const AgentCallToolImpl: FC<RubiToolProps> = ({ toolName, status }) => {
    const config = getToolDisplay(toolName);
    const Icon = config?.icon;
    const label = config?.label ?? toolName;
@@ -70,8 +68,6 @@ const AgentCallToolImpl: ToolCallMessagePartComponent = ({
    );
 };
 
-export const AgentCallTool = memo(
-   AgentCallToolImpl,
-) as ToolCallMessagePartComponent;
+export const AgentCallTool = memo(AgentCallToolImpl);
 
 AgentCallTool.displayName = "AgentCallTool";
