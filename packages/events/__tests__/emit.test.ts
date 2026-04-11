@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DatabaseInstance } from "@core/database/client";
 
 const {
@@ -132,6 +132,7 @@ describe("emitEvent", () => {
       const { setWebhookDeliveryHandler } = await import("../src/emit");
       const mockHandler = vi.fn().mockResolvedValue(undefined);
       setWebhookDeliveryHandler(mockHandler);
+      afterEach(() => setWebhookDeliveryHandler(null));
 
       const db = createMockDb();
       mockFindMatchingWebhooks.mockResolvedValueOnce([

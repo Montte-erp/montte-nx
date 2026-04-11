@@ -199,7 +199,9 @@ export async function createTransaction(
          .values({ ...validated, teamId })
          .returning();
 
-      if (tagIds && tagIds.length > 0 && transaction) {
+      if (!transaction) throw AppError.database("Failed to create transaction");
+
+      if (tagIds && tagIds.length > 0) {
          await db.insert(transactionTags).values(
             tagIds.map((tagId) => ({
                transactionId: transaction.id,

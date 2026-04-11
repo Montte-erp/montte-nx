@@ -73,14 +73,14 @@ export const create = createBillableProcedure("finance.transaction_created")
       );
       context.scheduleEmit(() =>
          emitFinanceTransactionCreated(context.emit, context.emitCtx, {
-            transactionId: tx!.id,
+            transactionId: tx.id,
             type: data.type,
-            bankAccountId: data.bankAccountId ?? tx!.bankAccountId ?? "",
+            bankAccountId: data.bankAccountId ?? tx.bankAccountId ?? "",
             categoryId: data.categoryId ?? undefined,
             amountCents: Math.round(parseFloat(data.amount) * 100),
          }),
       );
-      return mapTransaction(tx!);
+      return mapTransaction(tx);
    });
 
 export const update = sdkProcedure
