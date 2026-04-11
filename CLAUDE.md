@@ -138,9 +138,10 @@ export const bulkRemove = protectedProcedure
 | Subscribe to partial query data | `useSuspenseQuery` + `select` option |
 | Prefetch before render | `queryClient.prefetchQuery` in route loader |
 | Track mutation state cross-component | `useMutationState` + `orpc.procedure.mutationKey()` |
+| SSE / Event Iterator (live stream) | `useQuery` + `experimental_liveOptions` — see below |
 
 **Key rules:**
-- **Never `useQuery`** — always `useSuspenseQuery`. No exceptions.
+- **Never `useQuery`** — always `useSuspenseQuery`. The only exception is `experimental_liveOptions` (SSE / Event Iterator) — live queries have no initial data so suspending is wrong.
 - **Never `useQuery + enabled`** — use the child component pattern instead (see below).
 - **Never `skipToken + useSuspenseQuery`** — `UseSuspenseQueryOptions` does not support `skipToken`. Use child component pattern.
 - **`useSuspenseQueries`** for 2+ independent queries in the same component — prevents React from suspending sequentially (waterfall).
@@ -167,6 +168,21 @@ export const bulkRemove = protectedProcedure
   navigate({ search: (prev) => ({ ...prev, activeTab: "details" }), replace: true });
   ```
 - **`orpc.procedure.mutationKey()` / `orpc.procedure.queryKey()`** — always use oRPC-generated keys; never define manual string arrays.
+
+**SSE / Live queries** — for oRPC procedures that return an `eventIterator`, use `experimental_liveOptions`. `data` is always the latest event. Use `useEffect([data])` to react to each new event. `retry: true` reconnects automatically on drop:
+
+```tsx
+const { data } = useQuery(
+   orpc.notifications.subscribe.experimental_liveOptions({ retry: true }),
+);
+
+useEffect(() => {
+   if (!data) return;
+   // data is the latest JobNotification — handle toast, invalidate queries, etc.
+}, [data]);
+```
+
+Never use `consumeEventIterator` + `useEffect` manually — `experimental_liveOptions` handles connection lifecycle and retries.
 
 **Type inference** — never define manual interfaces for router data:
 
