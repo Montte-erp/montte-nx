@@ -76,6 +76,7 @@
             "@orpc/client": "^1.13.13",
             "@orpc/contract": "^1.13.13",
             "@orpc/experimental-pino": "^1.13.13",
+            "@orpc/experimental-publisher": "^1.13.13",
             "@orpc/json-schema": "^1.13.13",
             "@orpc/otel": "^1.13.13",
             "@orpc/server": "^1.13.13",

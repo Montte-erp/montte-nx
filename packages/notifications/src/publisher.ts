@@ -1,0 +1,56 @@
+import { Publisher } from "@orpc/experimental-publisher";
+import type { PublisherSubscribeListenerOptions } from "@orpc/experimental-publisher";
+import type { Redis } from "@core/redis/connection";
+import type { JobNotification } from "./schema";
+
+type JobEvents = {
+   "job.notification": JobNotification;
+};
+
+export type JobPublisher = Publisher<JobEvents>;
+
+class RedisJobPublisher extends Publisher<JobEvents> {
+   private readonly subscriber: Redis;
+
+   constructor(
+      private readonly publisher: Redis,
+      subscriberFactory: () => Redis,
+   ) {
+      super();
+      this.subscriber = subscriberFactory();
+   }
+
+   async publish<K extends keyof JobEvents & string>(
+      event: K,
+      payload: JobEvents[K],
+   ): Promise<void> {
+      await this.publisher.publish(event, JSON.stringify(payload));
+   }
+
+   protected async subscribeListener<K extends keyof JobEvents & string>(
+      event: K,
+      listener: (payload: JobEvents[K]) => void,
+      _options?: PublisherSubscribeListenerOptions,
+   ): Promise<() => Promise<void>> {
+      await this.subscriber.subscribe(event);
+
+      const handler = (channel: string, message: string) => {
+         if (channel !== event) return;
+         listener(JSON.parse(message) as JobEvents[K]);
+      };
+
+      this.subscriber.on("message", handler);
+
+      return async () => {
+         this.subscriber.off("message", handler);
+         await this.subscriber.unsubscribe(event);
+      };
+   }
+}
+
+export function createJobPublisher(
+   redis: Redis,
+   subscriberFactory: () => Redis,
+): JobPublisher {
+   return new RedisJobPublisher(redis, subscriberFactory);
+}
