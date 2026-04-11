@@ -12,7 +12,7 @@ import type { JobNotification } from "@packages/notifications/schema";
 import { jobPublisher } from "../publisher";
 import { db, redis, posthog, stripeClient } from "../singletons";
 
-const MODEL = "google/gemini-3.1-flash-lite-preview";
+const MODEL = "qwen/qwen3.5-flash-02-23";
 
 const keywordsOutputSchema = z.object({
    keywords: z
