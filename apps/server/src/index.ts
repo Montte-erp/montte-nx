@@ -17,6 +17,7 @@ import { z } from "zod";
 import { auth, db, minioClient, posthog } from "./singletons";
 import sdkRouter from "./orpc/router";
 import { DeriveKeywordsWorkflow } from "./workflows/derive-keywords.workflow";
+import "./workflows/backfill-keywords.workflow";
 
 DBOS.setConfig({
    name: "montte-server",
