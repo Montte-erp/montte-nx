@@ -3,9 +3,9 @@
    "version": "0.8.1",
    "license": "Apache-2.0",
    "scripts": {
-      "build": "dotenv -e ../web/.env -- bun build --compile --minify-whitespace --minify-syntax --target bun --outfile server --external @tanstack/react-start --external @tanstack/start-server-core --external winston --external winston-transport ./src/index.ts",
+      "build": "dotenv -e ../web/.env.local -- bun build --compile --minify-whitespace --minify-syntax --target bun --outfile server --external @tanstack/react-start --external @tanstack/start-server-core --external winston --external winston-transport ./src/index.ts",
       "check": "oxlint .",
-      "dev": "dotenv -e ../web/.env -- bun run --watch src/index.ts",
+      "dev": "dotenv -e ../web/.env.local -- bun run --watch src/index.ts",
       "start": "./server",
       "typecheck": "tsgo"
    },
