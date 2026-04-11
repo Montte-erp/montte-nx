@@ -193,7 +193,9 @@
          "tanstack-ai": {
             "@tanstack/ai": "^0.10.1",
             "@tanstack/ai-react": "^0.7.9",
-            "@tanstack/ai-openrouter": "^0.7.3"
+            "@tanstack/ai-openrouter": "^0.7.3",
+            "ai": "^6.0.97",
+            "@openrouter/ai-sdk-provider": "^2.2.5"
          },
          "workers": {
             "@dbos-inc/dbos-sdk": "^4.14.6",
