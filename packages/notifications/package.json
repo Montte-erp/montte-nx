@@ -29,12 +29,14 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@core/redis": "workspace:*",
       "@orpc/experimental-publisher": "catalog:orpc",
       "zod": "catalog:validation"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
       "typescript": "catalog:development"
+   },
+   "peerDependencies": {
+      "@core/redis": "workspace:*"
    }
 }

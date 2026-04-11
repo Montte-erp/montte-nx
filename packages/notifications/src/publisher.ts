@@ -1,6 +1,7 @@
 import { Publisher } from "@orpc/experimental-publisher";
 import type { PublisherSubscribeListenerOptions } from "@orpc/experimental-publisher";
 import type { Redis } from "@core/redis/connection";
+import { jobNotificationSchema } from "./schema";
 import type { JobNotification } from "./schema";
 
 type JobEvents = {
@@ -33,7 +34,9 @@ class RedisJobPublisher extends Publisher<JobEvents> {
 
       const handler = (channel: string, message: string) => {
          if (channel !== event) return;
-         listener(JSON.parse(message) as JobEvents[K]);
+         listener(
+            jobNotificationSchema.parse(JSON.parse(message)) as JobEvents[K],
+         );
       };
 
       this.subscriber.on("message", handler);
@@ -41,6 +44,10 @@ class RedisJobPublisher extends Publisher<JobEvents> {
       return async () => {
          this.subscriber.off("message", handler);
          await this.subscriber.unsubscribe(event);
+         const subscriptionCount = this.subscriber.listenerCount("message");
+         if (subscriptionCount === 0) {
+            await this.subscriber.quit();
+         }
       };
    }
 }

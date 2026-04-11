@@ -7,7 +7,7 @@ export const jobNotificationSchema = z.object({
    payload: z.record(z.string(), z.unknown()).optional(),
    error: z.string().optional(),
    teamId: z.string().uuid(),
-   timestamp: z.string(),
+   timestamp: z.string().datetime(),
 });
 
 export type JobNotification = z.infer<typeof jobNotificationSchema>;
