@@ -21,6 +21,7 @@ function enqueueKeywordDerivation(input: {
    categoryId: string;
    teamId: string;
    organizationId: string;
+   userId: string;
    name: string;
    description?: string | null;
 }): void {
@@ -47,6 +48,7 @@ export const create = protectedProcedure
          categoryId: category.id,
          teamId: context.teamId,
          organizationId: context.organizationId,
+         userId: context.userId,
          name: category.name,
          description: category.description,
       });
@@ -80,6 +82,7 @@ export const update = protectedProcedure
             categoryId: category.id,
             teamId: context.teamId,
             organizationId: context.organizationId,
+            userId: context.userId,
             name: category.name,
             description: category.description,
          });

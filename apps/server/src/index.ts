@@ -100,8 +100,7 @@ async function main() {
                organizationId: z.string().uuid(),
                name: z.string(),
                description: z.string().nullable().optional(),
-               userId: z.string().optional(),
-               stripeCustomerId: z.string().nullable().optional(),
+               userId: z.string().uuid(),
             })
             .safeParse(body);
 
@@ -110,7 +109,15 @@ async function main() {
             return { error: "Invalid input" };
          }
 
-         await DBOS.startWorkflow(DeriveKeywordsWorkflow).run(parsed.data);
+         const userRecord = await db.query.user.findFirst({
+            where: (fields, { eq }) => eq(fields.id, parsed.data.userId),
+            columns: { stripeCustomerId: true },
+         });
+
+         await DBOS.startWorkflow(DeriveKeywordsWorkflow).run({
+            ...parsed.data,
+            stripeCustomerId: userRecord?.stripeCustomerId ?? null,
+         });
          return { queued: true };
       })
       .get("/health", () => ({
