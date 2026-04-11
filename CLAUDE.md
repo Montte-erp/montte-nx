@@ -9,7 +9,7 @@ AI-powered ERP, Nx monorepo with Bun. Brazilian Portuguese (pt-BR).
 ```bash
 bun dev              # Seed event catalog (local) then start web app
 bun dev:all          # Start all apps and packages
-bun dev:worker       # Worker only
+bun dev:server       # Server only (Elysia + DBOS workflows)
 bun run build        # Build all (Nx cached)
 bun run typecheck    # TypeScript checks
 bun run check        # oxlint
@@ -37,6 +37,7 @@ bun run scripts/doctor.ts check
 ```
 montte-nx/
 ├── core/
+│   ├── agents/          # AI agents
 │   ├── database/        # Drizzle ORM schemas & repositories
 │   ├── authentication/  # Better Auth setup
 │   ├── environment/     # Zod-validated env vars
@@ -49,13 +50,10 @@ montte-nx/
 │   └── utils/           # Shared utilities
 ├── apps/
 │   ├── web/             # TanStack Start (SSR) — dashboard + oRPC routers
-│   ├── server/          # Elysia API (SDK consumers)
-│   └── worker/          # BullMQ processor (queues + processors in src/)
+│   └── server/          # Elysia API (SDK consumers) + DBOS durable workflows
 ├── packages/
-│   ├── agents/          # Mastra AI agents
 │   ├── analytics/       # Analytics engine
 │   ├── events/          # Event catalog, schemas, emit, credits
-│   ├── feedback/        # Product feedback primitives
 │   └── ui/              # Radix + Tailwind + CVA components
 ├── libraries/
 │   ├── cli/             # @montte/cli — TanStack Intent skills + CLI tooling

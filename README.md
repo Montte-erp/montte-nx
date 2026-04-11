@@ -43,7 +43,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for staging setup and all available comma
 ### Budget & Goals
 
 - **Budget Goals**: Set spending limits by category and track progress in real-time
-- **Budget Alerts**: Automated notifications when spending approaches or exceeds thresholds (powered by background workers)
+- **Budget Alerts**: Automated notifications when spending approaches or exceeds thresholds (powered by durable background workflows)
 
 ### Services & Inventory
 
@@ -98,7 +98,7 @@ Built as an **Nx** monorepo with **Bun**.
 | **AI**        | Mastra (Agent orchestration)                                                         |
 | **Backend**   | oRPC (type-safe API), ElysiaJS (SDK server), Drizzle ORM, PostgreSQL                 |
 | **Auth**      | Better Auth                                                                          |
-| **Jobs**      | BullMQ, Redis                                                                        |
+| **Jobs**      | DBOS (durable workflows, cron, retries), Redis (rate limiting, credit counters)      |
 | **Storage**   | MinIO (S3-compatible)                                                                |
 | **Security**  | Arcjet (Rate limiting & bot detection)                                               |
 | **Analytics** | PostHog                                                                              |
@@ -114,10 +114,10 @@ Built as an **Nx** monorepo with **Bun**.
 montte-nx/
 ├── apps/
 │   ├── web/             # TanStack Start (SSR) — dashboard + oRPC API routers
-│   ├── server/          # Elysia API server for SDK consumers
-│   └── worker/          # BullMQ background job processor
+│   └── server/          # Elysia API server for SDK consumers + DBOS durable workflows
 ├── core/
 │   ├── database/        # Drizzle ORM schemas & repositories
+│   ├── agents/          # AI agents
 │   ├── authentication/  # Better Auth setup
 │   ├── environment/     # Zod-validated env vars
 │   ├── redis/           # Redis singleton
@@ -128,10 +128,8 @@ montte-nx/
 │   ├── transactional/   # Resend + email templates
 │   └── utils/           # Shared utilities
 ├── packages/
-│   ├── agents/          # Mastra AI agents
 │   ├── analytics/       # Analytics engine
 │   ├── events/          # Event catalog, schemas, credits
-│   ├── feedback/        # User feedback collection
 │   └── ui/              # Radix + Tailwind component library
 ├── libraries/
 │   ├── cli/             # @montte/cli — TanStack Intent skills + CLI tooling
