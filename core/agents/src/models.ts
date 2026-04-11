@@ -45,9 +45,9 @@ export const AVAILABLE_MODELS = {
       frequencyPenalty: 0.3,
       presencePenalty: 0.1,
    },
-   "openrouter/liquid/lfm2-8b-a1b": {
-      label: "LFM2-8B-A1B",
-      provider: "Liquid AI",
+   "openrouter/qwen/qwen3.5-9b": {
+      label: "Qwen 3.5 9B",
+      provider: "Qwen",
       description: "Ultra-leve e econômico — opção para equipes no plano FREE",
       temperature: 0.6,
       topP: 0.9,
