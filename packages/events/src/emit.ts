@@ -8,15 +8,10 @@ import {
 import { events } from "@core/database/schemas/events";
 import { getLogger } from "@core/logging/root";
 import type { PostHog } from "@core/posthog/server";
-import { createQueueConnection } from "./queues/connection";
-import {
-   createWebhookDeliveryQueue,
-   type WebhookDeliveryJobData,
-} from "./queues/webhook-delivery";
+import type { WebhookDeliveryJobData } from "./queues/webhook-delivery";
 import type { StripeClient } from "@core/stripe";
 import { STRIPE_METER_EVENTS } from "@core/stripe/constants";
 import type { Redis } from "@core/redis/connection";
-import type { Queue } from "bullmq";
 import type { EmitFn, EventCategory } from "./catalog";
 
 const logger = getLogger().child({ module: "events" });
@@ -65,12 +60,14 @@ export interface EmitEventBatchParams {
    events: Omit<EmitEventParams, "db" | "posthog" | "redis">[];
 }
 
-let webhookQueue: Queue<WebhookDeliveryJobData> | null = null;
+let webhookDeliveryHandler:
+   | ((data: WebhookDeliveryJobData) => Promise<void>)
+   | null = null;
 
-export function initializeWebhookQueue(redisUrl: string): void {
-   if (webhookQueue) return;
-   const connection = createQueueConnection(redisUrl);
-   webhookQueue = createWebhookDeliveryQueue(connection);
+export function setWebhookDeliveryHandler(
+   fn: (data: WebhookDeliveryJobData) => Promise<void>,
+): void {
+   webhookDeliveryHandler = fn;
 }
 
 function buildWebhookPayload(
@@ -168,7 +165,7 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
          });
       }
 
-      if (webhookQueue && storedEvent) {
+      if (webhookDeliveryHandler && storedEvent) {
          try {
             const matchingWebhooks = await findMatchingWebhooks(
                db,
@@ -198,7 +195,7 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
 
                if (!delivery) continue;
 
-               await webhookQueue.add("deliver", {
+               const jobData: WebhookDeliveryJobData = {
                   deliveryId: delivery.id,
                   webhookEndpointId: webhook.id,
                   eventId: storedEvent.id,
@@ -206,7 +203,9 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
                   payload,
                   signingSecret: webhook.signingSecret,
                   attemptNumber: 1,
-               });
+               };
+
+               await webhookDeliveryHandler(jobData);
             }
          } catch (error) {
             logger.error({ err: error }, "Failed to trigger webhooks");

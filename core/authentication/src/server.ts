@@ -257,21 +257,6 @@ export function createAuth(deps: CreateAuthDeps) {
                         required: false,
                         type: "string",
                      },
-                     allowedDomains: {
-                        type: "string[]",
-                        input: true,
-                        required: false,
-                        validator: {
-                           input: z.array(
-                              z
-                                 .string()
-                                 .regex(
-                                    /^(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/,
-                                    "Invalid domain pattern. Examples: example.com, *.example.com, app.example.com, localhost",
-                                 ),
-                           ),
-                        },
-                     },
                      onboardingCompleted: {
                         defaultValue: false,
                         input: true,

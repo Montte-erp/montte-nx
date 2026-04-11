@@ -1,6 +1,7 @@
 {
    "extends": "@tooling/typescript/app.json",
    "compilerOptions": {
+      "experimentalDecorators": true,
       "paths": {
          "@api/*": ["./src/*"],
          "@core/authentication/*": ["../../core/authentication/src/*"],
@@ -62,6 +63,9 @@
       },
       {
          "path": "../../core/database"
+      },
+      {
+         "path": "../../packages/analytics"
       }
    ]
 }

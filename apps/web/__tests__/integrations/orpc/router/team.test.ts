@@ -81,20 +81,6 @@ describe("team router", () => {
       });
    });
 
-   describe("updateAllowedDomains", () => {
-      it("updates and returns new domains", async () => {
-         const domains = ["example.com", "*.test.org"];
-
-         const result = await call(
-            teamRouter.updateAllowedDomains,
-            { teamId: getTeamId(ctx), allowedDomains: domains },
-            { context: ctx },
-         );
-
-         expect(result.allowedDomains).toEqual(domains);
-      });
-   });
-
    describe("addMember", () => {
       it("adds org member to team", async () => {
          const secondUserId = getUserId(ctx2);

@@ -1,7 +1,12 @@
-import { ORPCError, implementerInternal } from "@orpc/server";
-import { and, asc, count, eq } from "drizzle-orm";
-import { updateContact } from "@core/database/repositories/contacts-repository";
-import { contacts } from "@core/database/schemas/contacts";
+import { implementerInternal } from "@orpc/server";
+import { Result, err, ok } from "neverthrow";
+import { WebAppError } from "@core/logging/errors";
+import {
+   createContact,
+   getContactByExternalId,
+   listContactsPaginated,
+   updateContact,
+} from "@core/database/repositories/contacts-repository";
 import type { Contact } from "@core/database/schemas/contacts";
 import { hyprpayContract } from "@montte/hyprpay/contract";
 import { sdkProcedure } from "../server";
@@ -13,14 +18,19 @@ const impl = implementerInternal(
    [...sdkProcedure["~orpc"].middlewares],
 );
 
-function requireTeamId(teamId: SdkContext["teamId"]): string {
+function requireTeamId(
+   teamId: SdkContext["teamId"],
+): Result<string, WebAppError<"FORBIDDEN">> {
    if (!teamId) {
-      throw new ORPCError("FORBIDDEN", {
-         message:
-            "Esta operação requer uma chave de API vinculada a um projeto.",
-      });
+      return err(
+         new WebAppError("FORBIDDEN", {
+            message:
+               "Esta operação requer uma chave de API vinculada a um projeto.",
+            source: "hyprpay",
+         }),
+      );
    }
-   return teamId;
+   return ok(teamId);
 }
 
 function mapCustomer(contact: Contact) {
@@ -32,67 +42,48 @@ function mapCustomer(contact: Contact) {
 }
 
 export const create = impl.create.handler(async ({ context, input }) => {
-   const teamId = requireTeamId(context.teamId);
-   const [contact] = await context.db
-      .insert(contacts)
-      .values({
-         teamId,
-         name: input.name,
-         type: "cliente",
-         email: input.email ?? null,
-         phone: input.phone ?? null,
-         document: input.document ?? null,
-         externalId: input.externalId ?? null,
-      })
-      .returning();
-   if (!contact) {
-      throw new ORPCError("INTERNAL_SERVER_ERROR", {
-         message: "Falha ao criar cliente.",
-      });
-   }
+   const teamIdResult = requireTeamId(context.teamId);
+   if (teamIdResult.isErr()) throw teamIdResult.error;
+   const teamId = teamIdResult.value;
+   const contact = await createContact(context.db, teamId, {
+      name: input.name,
+      type: "cliente",
+      email: input.email ?? null,
+      phone: input.phone ?? null,
+      document: input.document ?? null,
+      externalId: input.externalId ?? null,
+   });
    return mapCustomer(contact);
 });
 
 export const get = impl.get.handler(async ({ context, input }) => {
-   const teamId = requireTeamId(context.teamId);
-   const [contact] = await context.db
-      .select()
-      .from(contacts)
-      .where(
-         and(
-            eq(contacts.externalId, input.externalId),
-            eq(contacts.teamId, teamId),
-            eq(contacts.type, "cliente"),
-            eq(contacts.isArchived, false),
-         ),
-      );
-   if (!contact) {
-      throw new ORPCError("NOT_FOUND", {
+   const teamIdResult = requireTeamId(context.teamId);
+   if (teamIdResult.isErr()) throw teamIdResult.error;
+   const teamId = teamIdResult.value;
+   const contact = await getContactByExternalId(
+      context.db,
+      input.externalId,
+      teamId,
+      "cliente",
+   );
+   if (!contact || contact.isArchived) {
+      throw new WebAppError("NOT_FOUND", {
          message: "Cliente não encontrado.",
+         source: "hyprpay",
       });
    }
    return mapCustomer(contact);
 });
 
 export const list = impl.list.handler(async ({ context, input }) => {
-   const teamId = requireTeamId(context.teamId);
-   const where = and(
-      eq(contacts.teamId, teamId),
-      eq(contacts.type, "cliente"),
-      eq(contacts.isArchived, false),
-   );
-   const [totalResult] = await context.db
-      .select({ value: count() })
-      .from(contacts)
-      .where(where);
-   const total = totalResult?.value ?? 0;
-   const items = await context.db
-      .select()
-      .from(contacts)
-      .where(where)
-      .orderBy(asc(contacts.name))
-      .limit(input.limit)
-      .offset((input.page - 1) * input.limit);
+   const teamIdResult = requireTeamId(context.teamId);
+   if (teamIdResult.isErr()) throw teamIdResult.error;
+   const teamId = teamIdResult.value;
+   const { items, total } = await listContactsPaginated(context.db, teamId, {
+      page: input.page,
+      limit: input.limit,
+      type: "cliente",
+   });
    return {
       items: items.map(mapCustomer),
       total,
@@ -103,21 +94,20 @@ export const list = impl.list.handler(async ({ context, input }) => {
 });
 
 export const update = impl.update.handler(async ({ context, input }) => {
-   const teamId = requireTeamId(context.teamId);
+   const teamIdResult = requireTeamId(context.teamId);
+   if (teamIdResult.isErr()) throw teamIdResult.error;
+   const teamId = teamIdResult.value;
    const { externalId, ...data } = input;
-   const [existing] = await context.db
-      .select()
-      .from(contacts)
-      .where(
-         and(
-            eq(contacts.externalId, externalId),
-            eq(contacts.teamId, teamId),
-            eq(contacts.type, "cliente"),
-         ),
-      );
+   const existing = await getContactByExternalId(
+      context.db,
+      externalId,
+      teamId,
+      "cliente",
+   );
    if (!existing) {
-      throw new ORPCError("NOT_FOUND", {
+      throw new WebAppError("NOT_FOUND", {
          message: "Cliente não encontrado.",
+         source: "hyprpay",
       });
    }
    const updated = await updateContact(context.db, existing.id, data);

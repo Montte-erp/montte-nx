@@ -672,8 +672,40 @@ const fetchData = useAsyncDebouncedCallback(
 File-per-category in `packages/events/`: `finance.ts`, `ai.ts`, `contact.ts`, `inventory.ts`, `service.ts`, `nfe.ts`, `document.ts`, `webhook.ts`, `emit.ts`, `credits.ts`
 
 - `emitEvent()` is non-throwing.
-- `enforceCreditBudget()` throws — wrap as `WebAppError.forbidden(...)` in routers.
+- `enforceCreditBudget()` throws — wrap as `ORPCError("FORBIDDEN")` or `WebAppError.forbidden(...)` in routers.
 - In generators, emit/track BEFORE final yield.
+
+### Billable Procedure Pattern
+
+For mutations that consume a credit-limited event, use `createBillableProcedure(eventName)` instead of the base procedure. This middleware:
+1. **Pre-handler**: looks up the user's `stripeCustomerId`, calls `enforceCreditBudget` — returns `FORBIDDEN` if the free tier is exhausted and pay-as-you-go is not active.
+2. **Post-handler** (success only): runs any emit registered via `context.scheduleEmit`. If the handler throws, the emit is never executed.
+
+**SDK server** (`apps/server/src/orpc/billable.ts`):
+
+```typescript
+import { createBillableProcedure } from "../billable";
+import { emitFinanceTransactionCreated } from "@packages/events/finance";
+
+export const create = createBillableProcedure("finance.transaction_created")
+   .input(CreateTransactionSchema)
+   .handler(async ({ context, input }) => {
+      const tx = await createTransaction(...);
+      context.scheduleEmit(() =>
+         emitFinanceTransactionCreated(context.emit, context.emitCtx, {
+            transactionId: tx.id,
+            type: input.type,
+            bankAccountId: tx.bankAccountId ?? "",
+            amountCents: Math.round(parseFloat(input.amount) * 100),
+         }),
+      );
+      return mapTransaction(tx);
+   });
+```
+
+**Web oRPC** (`apps/web/src/integrations/orpc/billable.ts`) — same API, uses `protectedProcedure` as base and passes full Stripe/Redis context to `createEmitFn` for metering.
+
+**Free-tier event names** (from `@core/stripe/constants`): `finance.transaction_created` (500), `webhook.delivered` (500), `contact.created` (50), `inventory.item_created` (50), `service.created` (20), `finance.statement_imported` (10).
 
 ---
 

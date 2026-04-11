@@ -1,5 +1,5 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { and, count, eq } from "drizzle-orm";
+import { and, asc, count, eq } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateContactInput,
@@ -140,6 +140,64 @@ export async function ensureContactOwnership(
       throw AppError.notFound("Contato não encontrado.");
    }
    return contact;
+}
+
+export async function getContactByExternalId(
+   db: DatabaseInstance,
+   externalId: string,
+   teamId: string,
+   type?: ContactType,
+) {
+   try {
+      const conditions = [
+         eq(contacts.externalId, externalId),
+         eq(contacts.teamId, teamId),
+      ];
+      if (type) conditions.push(eq(contacts.type, type));
+      const [contact] = await db
+         .select()
+         .from(contacts)
+         .where(and(...conditions));
+      return contact ?? null;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to get contact by external id");
+   }
+}
+
+export async function listContactsPaginated(
+   db: DatabaseInstance,
+   teamId: string,
+   options: {
+      page: number;
+      limit: number;
+      type?: ContactType;
+      includeArchived?: boolean;
+   },
+) {
+   try {
+      const { page, limit, type, includeArchived = false } = options;
+      const conditions = [eq(contacts.teamId, teamId)];
+      if (type) conditions.push(eq(contacts.type, type));
+      if (!includeArchived) conditions.push(eq(contacts.isArchived, false));
+      const where = and(...conditions);
+      const [totalResult] = await db
+         .select({ value: count() })
+         .from(contacts)
+         .where(where);
+      const total = totalResult?.value ?? 0;
+      const items = await db
+         .select()
+         .from(contacts)
+         .where(where)
+         .orderBy(asc(contacts.name))
+         .limit(limit)
+         .offset((page - 1) * limit);
+      return { items, total };
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to list contacts");
+   }
 }
 
 export async function contactHasLinks(

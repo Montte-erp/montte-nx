@@ -13,6 +13,8 @@ import {
    UpdateTransactionSchema,
    ListTransactionsFilterSchema,
 } from "@montte/cli/contract";
+import { emitFinanceTransactionCreated } from "@packages/events/finance";
+import { createBillableProcedure } from "../billable";
 import { sdkProcedure } from "../server";
 
 function mapTransaction(tx: Record<string, unknown>) {
@@ -51,7 +53,7 @@ export const get = sdkProcedure
       return mapTransaction(tx);
    });
 
-export const create = sdkProcedure
+export const create = createBillableProcedure("finance.transaction_created")
    .input(CreateTransactionSchema)
    .handler(async ({ context, input }) => {
       const { tagIds, ...data } = input;
@@ -69,7 +71,16 @@ export const create = sdkProcedure
          data,
          tagIds,
       );
-      return mapTransaction(tx!);
+      context.scheduleEmit(() =>
+         emitFinanceTransactionCreated(context.emit, context.emitCtx, {
+            transactionId: tx.id,
+            type: data.type,
+            bankAccountId: data.bankAccountId ?? tx.bankAccountId ?? "",
+            categoryId: data.categoryId ?? undefined,
+            amountCents: Math.round(parseFloat(data.amount) * 100),
+         }),
+      );
+      return mapTransaction(tx);
    });
 
 export const update = sdkProcedure

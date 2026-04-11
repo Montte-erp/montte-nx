@@ -1,4 +1,4 @@
-import { env } from "@core/environment/web";
+import { env } from "@core/environment/server";
 import { createDb } from "@core/database/client";
 import { createPostHog } from "@core/posthog/server";
 import { createStripeClient } from "@core/stripe";

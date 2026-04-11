@@ -1,10 +1,24 @@
-import type { DatabaseInstance } from "@core/database/client";
-import { team } from "@core/database/schemas/auth";
 import { getLogger } from "@core/logging/root";
-import { eq } from "drizzle-orm";
+import { ResultAsync, err, errAsync, fromPromise, ok } from "neverthrow";
 import { auth } from "../singletons";
 
 const logger = getLogger().child({ module: "sdk-auth" });
+
+export interface AuthData {
+   organizationId: string;
+   teamId: string | undefined;
+   userId: string | undefined;
+   plan: string;
+   sdkMode: "static" | "ssr";
+   remaining: number | null;
+   apiKeyType: "public" | "private";
+}
+
+export type AuthError =
+   | { code: "MISSING_KEY" }
+   | { code: "RATE_LIMITED" }
+   | { code: "INVALID_KEY" }
+   | { code: "NO_ORGANIZATION" };
 
 /**
  * Resolves an API key from the request, checking multiple sources:
@@ -27,141 +41,57 @@ export function resolveApiKey(request: Request): string | null {
 }
 
 /**
- * Authenticates the request using the API key and returns the organizationId
- * and userId. Sets the appropriate error status on failure.
+ * Authenticates the request using the API key.
+ * Returns Ok<AuthData> on success or Err<AuthError> on failure.
  */
-export async function authenticateRequest(
+export function authenticateRequest(
    request: Request,
-   set: { status?: number | string },
-): Promise<
-   | {
-        success: true;
-        organizationId: string;
-        teamId: string | undefined;
-        userId: string | undefined;
-     }
-   | { success: false; error: string }
-> {
+): ResultAsync<AuthData, AuthError> {
    const endpoint = new URL(request.url).pathname;
    const apiKeyValue = resolveApiKey(request);
 
    if (!apiKeyValue) {
       logger.error({ reason: "missing_api_key", endpoint }, "SDK auth failed");
-      set.status = 401;
-      return { success: false, error: "Missing API Key." };
+      return errAsync<AuthData, AuthError>({ code: "MISSING_KEY" });
    }
 
-   const result = await auth.api.verifyApiKey({
-      body: { key: apiKeyValue },
-   });
-
-   if (!result.valid || !result.key) {
-      const isRateLimited = result.error?.code === "RATE_LIMITED";
-      const reason = isRateLimited ? "rate_limited" : "invalid_key";
-
-      logger.error(
-         {
-            reason,
-            endpoint,
-            organizationId: result.key?.metadata?.organizationId,
-            plan: result.key?.metadata?.plan,
-            remaining: result.key?.remaining,
-         },
-         "SDK auth failed",
-      );
-
-      if (isRateLimited) {
-         set.status = 429;
-         return {
-            success: false,
-            error: "Rate limit exceeded. Please try again later.",
-         };
+   return fromPromise(
+      auth.api.verifyApiKey({ body: { key: apiKeyValue } }),
+      (): AuthError => ({ code: "INVALID_KEY" }),
+   ).andThen((result) => {
+      if (!result.valid || !result.key) {
+         const isRateLimited = result.error?.code === "RATE_LIMITED";
+         const code = isRateLimited ? "RATE_LIMITED" : "INVALID_KEY";
+         logger.error(
+            {
+               reason: code.toLowerCase(),
+               endpoint,
+               organizationId: result.key?.metadata?.organizationId,
+               plan: result.key?.metadata?.plan,
+               remaining: result.key?.remaining,
+            },
+            "SDK auth failed",
+         );
+         return err({ code } as AuthError);
       }
 
-      set.status = 401;
-      return { success: false, error: "Invalid API Key." };
-   }
+      const { organizationId, teamId } = result.key.metadata ?? {};
 
-   const { organizationId, teamId } = result.key.metadata ?? {};
+      if (!organizationId || typeof organizationId !== "string") {
+         return err<AuthData, AuthError>({ code: "NO_ORGANIZATION" });
+      }
 
-   if (!organizationId || typeof organizationId !== "string") {
-      set.status = 403;
-      return {
-         success: false,
-         error: "API key has no associated organization.",
-      };
-   }
-
-   return {
-      success: true,
-      organizationId,
-      teamId: typeof teamId === "string" ? teamId : undefined,
-      userId: result.key.referenceId ?? undefined,
-   };
-}
-
-/**
- * Checks whether the given origin hostname matches any of the allowed domain patterns.
- * Supports exact matches and wildcard subdomains (e.g. `*.example.com`).
- */
-function matchesDomain(origin: string, patterns: string[]): boolean {
-   try {
-      const hostname = new URL(origin).hostname;
-      return patterns.some((pattern) => {
-         if (pattern.startsWith("*.")) {
-            const suffix = pattern.slice(2);
-            return hostname === suffix || hostname.endsWith(`.${suffix}`);
-         }
-         return hostname === pattern;
+      return ok({
+         organizationId,
+         teamId: typeof teamId === "string" ? teamId : undefined,
+         userId: result.key.referenceId ?? undefined,
+         plan: (result.key.metadata?.plan as string) ?? "metered",
+         sdkMode:
+            (result.key.metadata?.sdkMode as "static" | "ssr") ?? "static",
+         remaining: result.key.remaining ?? null,
+         apiKeyType:
+            (result.key.metadata?.apiKeyType as "public" | "private") ??
+            "private",
       });
-   } catch {
-      return false; // malformed URL
-   }
-}
-
-/**
- * Soft domain filtering for SDK requests. When a team has `allowedDomains`
- * configured, the request's Origin/Referer header is checked against them.
- *
- * Returns `{ allowed: true }` when:
- * - No teamId (backwards compat with old keys)
- * - Team has no allowedDomains configured (opt-in behaviour)
- * - No Origin/Referer header present (server-side calls)
- * - Origin matches one of the allowed patterns
- */
-export async function checkDomainAllowed(
-   request: Request,
-   teamId: string | undefined,
-   db: DatabaseInstance,
-): Promise<{ allowed: boolean; reason?: string }> {
-   // No teamId — backwards compat with old keys
-   if (!teamId) {
-      return { allowed: true };
-   }
-
-   const row = await db
-      .select({ allowedDomains: team.allowedDomains })
-      .from(team)
-      .where(eq(team.id, teamId))
-      .then((rows) => rows[0]);
-
-   // Team not found or no domains configured — allow (opt-in)
-   if (!row?.allowedDomains || row.allowedDomains.length === 0) {
-      return { allowed: true };
-   }
-
-   // Extract origin from headers; fallback to Referer
-   const origin =
-      request.headers.get("Origin") ?? request.headers.get("Referer");
-
-   // No origin header at all — allow (server-side calls won't have it)
-   if (!origin) {
-      return { allowed: true };
-   }
-
-   if (matchesDomain(origin, row.allowedDomains)) {
-      return { allowed: true };
-   }
-
-   return { allowed: false, reason: "Origin not allowed" };
+   });
 }
