@@ -1,7 +1,7 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { ResultAsync } from "neverthrow";
 import { AppError } from "@core/logging/errors";
-import { isNull, eq } from "drizzle-orm";
+import { isNull, eq, and } from "drizzle-orm";
 import { categories } from "@core/database/schemas/categories";
 import { team } from "@core/database/schemas/auth";
 import { enforceCreditBudget } from "@packages/events/credits";
@@ -48,7 +48,12 @@ export class BackfillKeywordsWorkflow {
       const pending = await db
          .select()
          .from(categories)
-         .where(isNull(categories.keywords))
+         .where(
+            and(
+               isNull(categories.keywords),
+               eq(categories.teamId, teamEntry.teamId),
+            ),
+         )
          .limit(50);
 
       let processed = 0;

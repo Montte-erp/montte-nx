@@ -4,6 +4,7 @@ import { AppError } from "@core/logging/errors";
 import { generateObject } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { z } from "zod";
+import { env } from "@core/environment/server";
 import { updateCategory } from "@core/database/repositories/categories-repository";
 import { emitAiKeywordDerived } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
@@ -14,7 +15,7 @@ import { jobPublisher } from "../publisher";
 import { db, redis, posthog, stripeClient } from "../singletons";
 
 const openrouter = createOpenRouter({
-   apiKey: process.env.OPENROUTER_API_KEY!,
+   apiKey: env.OPENROUTER_API_KEY,
 });
 
 const keywordsOutputSchema = z.object({
@@ -70,10 +71,21 @@ export class DeriveKeywordsWorkflow {
       }
 
       const keywords = deriveResult.value;
-      await DeriveKeywordsWorkflow.saveStep({
+      const saveResult = await DeriveKeywordsWorkflow.saveStep({
          categoryId: input.categoryId,
          keywords,
       });
+      if (saveResult.isErr()) {
+         await DeriveKeywordsWorkflow.publishStep({
+            jobId: crypto.randomUUID(),
+            type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
+            status: "failed",
+            error: saveResult.error.message,
+            teamId: input.teamId,
+            timestamp: new Date().toISOString(),
+         });
+         return;
+      }
       await DeriveKeywordsWorkflow.emitBillingStep({ input, keywords });
       await DeriveKeywordsWorkflow.publishStep({
          jobId: crypto.randomUUID(),
@@ -128,8 +140,11 @@ Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua 
    }: {
       categoryId: string;
       keywords: string[];
-   }): Promise<void> {
-      await updateCategory(db, categoryId, { keywords });
+   }) {
+      return ResultAsync.fromPromise(
+         updateCategory(db, categoryId, { keywords }),
+         (e) => AppError.internal(`Failed to save keywords: ${String(e)}`),
+      );
    }
 
    @DBOS.step()

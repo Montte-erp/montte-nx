@@ -34,9 +34,10 @@ class RedisJobPublisher extends Publisher<JobEvents> {
 
       const handler = (channel: string, message: string) => {
          if (channel !== event) return;
-         listener(
-            jobNotificationSchema.parse(JSON.parse(message)) as JobEvents[K],
+         const parsed: JobNotification = jobNotificationSchema.parse(
+            JSON.parse(message),
          );
+         listener(parsed);
       };
 
       this.subscriber.on("message", handler);
