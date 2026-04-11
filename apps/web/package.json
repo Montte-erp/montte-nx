@@ -45,6 +45,7 @@
       "@orpc/zod": "catalog:orpc",
       "@packages/analytics": "workspace:*",
       "@packages/events": "workspace:*",
+      "@packages/notifications": "workspace:*",
       "@packages/ui": "workspace:*",
       "@tailwindcss/vite": "catalog:vite",
       "@tanstack/match-sorter-utils": "catalog:tanstack",

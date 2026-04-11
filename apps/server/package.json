@@ -25,6 +25,7 @@
       "@montte/hyprpay": "workspace:*",
       "@orpc/server": "catalog:orpc",
       "@packages/events": "workspace:*",
+      "@packages/notifications": "workspace:*",
       "elysia": "catalog:server",
       "neverthrow": "catalog:validation"
    },
