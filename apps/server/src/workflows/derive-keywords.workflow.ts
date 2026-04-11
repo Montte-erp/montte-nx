@@ -12,7 +12,7 @@ import type { JobNotification } from "@packages/notifications/schema";
 import { jobPublisher } from "../publisher";
 import { db, redis, posthog, stripeClient } from "../singletons";
 
-const MODEL = "qwen/qwen3.5-9b";
+const MODEL = "nvidia/nemotron-3-super-120b-a12b";
 
 const keywordsOutputSchema = z.object({
    keywords: z
