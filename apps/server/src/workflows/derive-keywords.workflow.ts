@@ -1,5 +1,4 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
-import { ResultAsync } from "neverthrow";
 import { AppError } from "@core/logging/errors";
 import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
@@ -37,51 +36,46 @@ export type DeriveKeywordsInput = {
 export class DeriveKeywordsWorkflow {
    @DBOS.workflow()
    static async run(input: DeriveKeywordsInput) {
-      const budgetResult =
-         await DeriveKeywordsWorkflow.enforceBudgetStep(input);
-
-      if (budgetResult.isErr()) {
-         await DeriveKeywordsWorkflow.publishStep({
-            jobId: crypto.randomUUID(),
-            type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
-            status: "failed",
-            error: budgetResult.error.message,
-            teamId: input.teamId,
-            timestamp: new Date().toISOString(),
-         });
-         return;
-      }
-
-      const deriveResult = await DeriveKeywordsWorkflow.deriveStep(input);
-
-      if (deriveResult.isErr()) {
-         await DeriveKeywordsWorkflow.publishStep({
-            jobId: crypto.randomUUID(),
-            type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
-            status: "failed",
-            error: deriveResult.error.message,
-            teamId: input.teamId,
-            timestamp: new Date().toISOString(),
-         });
-         return;
-      }
-
-      const keywords = deriveResult.value;
-      const saveResult = await DeriveKeywordsWorkflow.saveStep({
-         categoryId: input.categoryId,
-         keywords,
+      const failNotification = (error: string): JobNotification => ({
+         jobId: crypto.randomUUID(),
+         type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
+         status: "failed",
+         error,
+         teamId: input.teamId,
+         timestamp: new Date().toISOString(),
       });
-      if (saveResult.isErr()) {
-         await DeriveKeywordsWorkflow.publishStep({
-            jobId: crypto.randomUUID(),
-            type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
-            status: "failed",
-            error: saveResult.error.message,
-            teamId: input.teamId,
-            timestamp: new Date().toISOString(),
-         });
+
+      try {
+         await DeriveKeywordsWorkflow.enforceBudgetStep(input);
+      } catch (e) {
+         await DeriveKeywordsWorkflow.publishStep(
+            failNotification(e instanceof Error ? e.message : String(e)),
+         );
          return;
       }
+
+      let keywords: string[];
+      try {
+         keywords = await DeriveKeywordsWorkflow.deriveStep(input);
+      } catch (e) {
+         await DeriveKeywordsWorkflow.publishStep(
+            failNotification(e instanceof Error ? e.message : String(e)),
+         );
+         return;
+      }
+
+      try {
+         await DeriveKeywordsWorkflow.saveStep({
+            categoryId: input.categoryId,
+            keywords,
+         });
+      } catch (e) {
+         await DeriveKeywordsWorkflow.publishStep(
+            failNotification(e instanceof Error ? e.message : String(e)),
+         );
+         return;
+      }
+
       await DeriveKeywordsWorkflow.emitBillingStep({ input, keywords });
       await DeriveKeywordsWorkflow.publishStep({
          jobId: crypto.randomUUID(),
@@ -99,47 +93,39 @@ export class DeriveKeywordsWorkflow {
 
    @DBOS.step()
    static async enforceBudgetStep(input: DeriveKeywordsInput) {
-      return ResultAsync.fromPromise(
-         enforceCreditBudget(
-            input.organizationId,
-            "ai.keyword_derived",
-            redis,
-            input.stripeCustomerId,
-         ),
-         () =>
-            AppError.forbidden(
-               "Free tier limit exceeded for ai.keyword_derived",
-            ),
+      await enforceCreditBudget(
+         input.organizationId,
+         "ai.keyword_derived",
+         redis,
+         input.stripeCustomerId,
       );
    }
 
    @DBOS.step()
    static async deriveStep(input: DeriveKeywordsInput) {
-      return ResultAsync.fromPromise(
-         chat({
-            adapter: openRouterText("liquid/lfm2-8b-a1b", {
-               apiKey: env.OPENROUTER_API_KEY,
-            }),
-            messages: [
-               {
-                  role: "user",
-                  content: [
-                     {
-                        type: "text",
-                        content: `Você é um assistente financeiro brasileiro. Gere palavras-chave para a categoria financeira abaixo. As palavras-chave devem ser termos comuns que aparecem em descrições de transações bancárias.
+      const result = await chat({
+         adapter: openRouterText("liquid/lfm2-8b-a1b", {
+            apiKey: env.OPENROUTER_API_KEY,
+         }),
+         messages: [
+            {
+               role: "user",
+               content: [
+                  {
+                     type: "text",
+                     content: `Você é um assistente financeiro brasileiro. Gere palavras-chave para a categoria financeira abaixo. As palavras-chave devem ser termos comuns que aparecem em descrições de transações bancárias.
 
 Categoria: ${input.name}${input.description ? `\nDescrição: ${input.description}` : ""}
 
 Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua variações, abreviações e termos relacionados.`,
-                     },
-                  ],
-               },
-            ],
-            outputSchema: keywordsOutputSchema,
-            stream: false,
-         }).then((r) => r.keywords),
-         (e) => AppError.internal(`LLM derivation failed: ${String(e)}`),
-      );
+                  },
+               ],
+            },
+         ],
+         outputSchema: keywordsOutputSchema,
+         stream: false,
+      });
+      return result.keywords;
    }
 
    @DBOS.step()
@@ -150,10 +136,7 @@ Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua 
       categoryId: string;
       keywords: string[];
    }) {
-      return ResultAsync.fromPromise(
-         updateCategory(db, categoryId, { keywords }),
-         (e) => AppError.internal(`Failed to save keywords: ${String(e)}`),
-      );
+      await updateCategory(db, categoryId, { keywords });
    }
 
    @DBOS.step()
@@ -181,7 +164,7 @@ Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua 
          {
             categoryId: input.categoryId,
             keywordCount: keywords.length,
-            model: "liquid/lfm2-8b",
+            model: "liquid/lfm2-8b-a1b",
             latencyMs: 0,
          },
       );

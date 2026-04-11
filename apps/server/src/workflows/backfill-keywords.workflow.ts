@@ -1,6 +1,4 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
-import { ResultAsync } from "neverthrow";
-import { AppError } from "@core/logging/errors";
 import {
    listTeamsWithPendingKeywords,
    listCategoriesWithNullKeywords,
@@ -50,17 +48,16 @@ export class BackfillKeywordsWorkflow {
       let processed = 0;
 
       for (const category of pending) {
-         const budgetOk = await ResultAsync.fromPromise(
-            enforceCreditBudget(
+         try {
+            await enforceCreditBudget(
                teamEntry.organizationId,
                "ai.keyword_derived",
                redis,
                null,
-            ),
-            () => AppError.forbidden("Free tier exhausted"),
-         );
-
-         if (budgetOk.isErr()) break;
+            );
+         } catch {
+            break;
+         }
 
          await DBOS.startWorkflow(DeriveKeywordsWorkflow).run({
             categoryId: category.id,
