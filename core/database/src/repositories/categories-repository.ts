@@ -14,35 +14,45 @@ import { transactions } from "@core/database/schemas/transactions";
 type CategorySeed = {
    name: string;
    type: "income" | "expense";
-   children?: Array<{ name: string }>;
+   icon?: string;
+   children?: Array<{ name: string; icon?: string }>;
 };
 
 const EMPRESARIAL_CATEGORIES: CategorySeed[] = [
    {
       name: "Vendas",
       type: "income",
-      children: [{ name: "Produtos" }, { name: "Serviços" }],
+      icon: "briefcase",
+      children: [
+         { name: "Produtos", icon: "package" },
+         { name: "Serviços", icon: "briefcase" },
+      ],
    },
-   { name: "Outras Receitas", type: "income" },
+   { name: "Outras Receitas", type: "income", icon: "wallet" },
    {
       name: "Custos",
       type: "expense",
-      children: [{ name: "CMV" }, { name: "Serviços de Terceiros" }],
+      icon: "shopping-cart",
+      children: [
+         { name: "CMV", icon: "package" },
+         { name: "Serviços de Terceiros", icon: "briefcase" },
+      ],
    },
    {
       name: "Despesas Operacionais",
       type: "expense",
+      icon: "briefcase",
       children: [
-         { name: "Administrativo" },
-         { name: "Comercial" },
-         { name: "Marketing" },
+         { name: "Administrativo", icon: "briefcase" },
+         { name: "Comercial", icon: "shopping-cart" },
+         { name: "Marketing", icon: "gift" },
       ],
    },
-   { name: "Pessoal", type: "expense" },
-   { name: "Impostos", type: "expense" },
-   { name: "Tarifas Bancárias", type: "expense" },
-   { name: "Tecnologia", type: "expense" },
-   { name: "Transferências", type: "expense" },
+   { name: "Pessoal", type: "expense", icon: "heart" },
+   { name: "Impostos", type: "expense", icon: "wallet" },
+   { name: "Tarifas Bancárias", type: "expense", icon: "credit-card" },
+   { name: "Tecnologia", type: "expense", icon: "smartphone" },
+   { name: "Transferências", type: "expense", icon: "zap" },
 ];
 
 export async function createCategory(
@@ -101,6 +111,7 @@ export async function seedEmpresarialCategories(
                teamId,
                name: root.name,
                type: root.type,
+               icon: root.icon ?? null,
                level: 1,
                isDefault: true,
             })
@@ -113,6 +124,7 @@ export async function seedEmpresarialCategories(
                   teamId,
                   name: child.name,
                   type: root.type,
+                  icon: child.icon ?? null,
                   parentId: parent.id,
                   level: 2,
                   isDefault: true,
