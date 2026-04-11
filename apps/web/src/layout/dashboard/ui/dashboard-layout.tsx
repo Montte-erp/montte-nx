@@ -10,6 +10,7 @@ import { useLocation } from "@tanstack/react-router";
 import type * as React from "react";
 import { useEffect } from "react";
 import { useSingleton } from "foxact/use-singleton";
+import { useJobNotifications } from "@/features/notifications/use-job-notifications";
 import { GlobalContextPanel } from "@/features/context-panel/context-panel";
 import { AutoBugReporter } from "@/features/feedback/ui/auto-bug-reporter";
 import { MonthlySatisfactionSurvey } from "@/features/feedback/ui/monthly-satisfaction-survey";
@@ -29,6 +30,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
    const { setLastSlug } = useLastOrganization();
    const queryClient = useQueryClient();
    const setTeamForOrgRef = useSingleton(() => new Set<string>());
+   useJobNotifications();
    const { pathname } = useLocation();
 
    const [sidebarCollapsed, setSidebarCollapsed] = useLocalStorage<boolean>(
