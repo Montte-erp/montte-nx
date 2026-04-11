@@ -2,6 +2,7 @@ import { DBOS } from "@dbos-inc/dbos-sdk";
 import {
    listTeamsWithPendingKeywords,
    listCategoriesWithNullKeywords,
+   listTeamMetadataByIds,
 } from "@core/database/repositories/categories-repository";
 import { enforceCreditBudget } from "@packages/events/credits";
 import { NOTIFICATION_TYPES } from "@packages/notifications/types";
@@ -24,10 +25,7 @@ export class BackfillKeywordsWorkflow {
    static async fetchTeamsWithPendingStep() {
       const rows = await listTeamsWithPendingKeywords(db);
       const teamIds = [...new Set(rows.map((r) => r.teamId))];
-      const teamRows = await db.query.team.findMany({
-         where: (fields, { inArray }) => inArray(fields.id, teamIds),
-         columns: { id: true, organizationId: true },
-      });
+      const teamRows = await listTeamMetadataByIds(db, teamIds);
       return teamRows.map((t) => ({
          teamId: t.id,
          organizationId: t.organizationId,

@@ -1,5 +1,4 @@
 import { Publisher } from "@orpc/experimental-publisher";
-import type { PublisherSubscribeListenerOptions } from "@orpc/experimental-publisher";
 import type { Redis } from "@core/redis/connection";
 import { jobNotificationSchema } from "./schema";
 import type { JobNotification } from "./schema";
@@ -28,7 +27,6 @@ class RedisJobPublisher extends Publisher<JobEvents> {
    protected async subscribeListener<K extends keyof JobEvents & string>(
       event: K,
       listener: (payload: JobEvents[K]) => void,
-      _options?: PublisherSubscribeListenerOptions,
    ): Promise<() => Promise<void>> {
       await this.subscriber.subscribe(event);
 

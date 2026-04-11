@@ -408,6 +408,22 @@ async function getDescendantIds(
    return [...level2Ids, ...level3.map((r) => r.id)];
 }
 
+export async function listTeamMetadataByIds(
+   db: DatabaseInstance,
+   teamIds: string[],
+) {
+   try {
+      if (teamIds.length === 0) return [];
+      return await db.query.team.findMany({
+         where: (fields, { inArray }) => inArray(fields.id, teamIds),
+         columns: { id: true, organizationId: true },
+      });
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to list team metadata");
+   }
+}
+
 export async function listTeamsWithPendingKeywords(db: DatabaseInstance) {
    try {
       return await db.query.categories.findMany({

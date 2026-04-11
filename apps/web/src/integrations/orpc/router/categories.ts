@@ -13,9 +13,12 @@ import {
 } from "@core/database/schemas/categories";
 import { env } from "@core/environment/server";
 import { AppError } from "@core/logging/errors";
+import { getLogger } from "@core/logging/root";
 import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
+
+const logger = getLogger().child({ module: "categories.router" });
 
 function enqueueKeywordDerivation(input: {
    categoryId: string;
@@ -35,7 +38,13 @@ function enqueueKeywordDerivation(input: {
          AppError.internal(
             `Failed to enqueue keyword derivation: ${String(e)}`,
          ),
-   );
+   ).mapErr((err) => {
+      logger.error(
+         { err, categoryId: input.categoryId },
+         "Failed to enqueue keyword derivation",
+      );
+      return err;
+   });
 }
 
 const idSchema = z.object({ id: z.string().uuid() });
