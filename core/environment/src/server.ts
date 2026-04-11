@@ -33,8 +33,6 @@ export const env = createEnv({
          .optional()
          .default("info"),
 
-      SERVER_URL: z.string().url(),
-
       OPENROUTER_API_KEY: z.string(),
    },
    runtimeEnv: process.env,

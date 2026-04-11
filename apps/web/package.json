@@ -39,6 +39,8 @@
       "@maskito/core": "catalog:ui",
       "@maskito/kit": "catalog:ui",
       "@maskito/react": "catalog:ui",
+      "@montte/cli": "workspace:*",
+      "@montte/hyprpay": "workspace:*",
       "@orpc/client": "catalog:orpc",
       "@orpc/json-schema": "catalog:orpc",
       "@orpc/server": "catalog:orpc",
