@@ -277,6 +277,8 @@ Never use `skipToken` with `useSuspenseQuery` — it is not supported in TanStac
 ## Code Style
 
 - **No type casting** — never use `as` or `as unknown as`. Fix the source types.
+- **No redundant type annotations** — never annotate what TypeScript already infers (e.g. no `const x: string = "foo"`, no explicit `: Promise<void>` return types on obvious functions). Only annotate function parameters and exported API boundaries.
+- **No unused parameters** — never prefix unused params with `_`. Remove them entirely or refactor the caller. `_foo` is noise.
 - **No comments** — no JSDoc, section dividers, or inline explanations.
 - **No barrel files** — never create `index.ts` re-exports. Import directly from source.
 - **No relative imports in `core/`** — use `@core/<package>/*` aliases (oxlint enforced).
@@ -398,6 +400,22 @@ Internal packages: `"@core/database": "workspace:*"`.
 ---
 
 ## AI Agents
+
+**AI SDK:** Always use `@tanstack/ai` + `@tanstack/ai-openrouter` (`catalog:tanstack-ai`). Never use the Vercel AI SDK (`ai`, `@openrouter/ai-sdk-provider`) — it has been removed from the project.
+
+```typescript
+import { chat } from "@tanstack/ai";
+import { openRouterText } from "@tanstack/ai-openrouter";
+
+const result = await chat({
+   adapter: openRouterText("liquid/lfm2-8b-a1b", { apiKey: env.OPENROUTER_API_KEY }),
+   messages: [{ role: "user", content: [{ type: "text", content: prompt }] }],
+   outputSchema: z.object({ ... }),
+   stream: false,
+});
+```
+
+**DBOS workflows** — always use repositories (`@core/database/repositories/*`) for all DB access. Never import `db` and write raw Drizzle queries inside a workflow or step. Repositories own query logic, error handling (`AppError` + `propagateError`), and are the correct abstraction layer.
 
 Single agent: `rubiAgent`. Usage in routers:
 
