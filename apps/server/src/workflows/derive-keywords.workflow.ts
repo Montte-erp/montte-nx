@@ -104,7 +104,7 @@ export class DeriveKeywordsWorkflow {
    @DBOS.step()
    static async deriveStep(input: DeriveKeywordsInput) {
       const result = await chat({
-         adapter: openRouterText("liquid/lfm2-8b-a1b", {
+         adapter: openRouterText("qwen/qwen3.5-9b", {
             apiKey: env.OPENROUTER_API_KEY,
          }),
          messages: [
@@ -164,7 +164,7 @@ Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua 
          {
             categoryId: input.categoryId,
             keywordCount: keywords.length,
-            model: "liquid/lfm2-8b-a1b",
+            model: "qwen/qwen3.5-9b",
             latencyMs: 0,
          },
       );
