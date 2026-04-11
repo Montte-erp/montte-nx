@@ -11,15 +11,46 @@ import {
    createCategorySchema,
    updateCategorySchema,
 } from "@core/database/schemas/categories";
+import { env } from "@core/environment/server";
+import { AppError } from "@core/logging/errors";
+import { ResultAsync } from "neverthrow";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
+
+function enqueueKeywordDerivation(input: {
+   categoryId: string;
+   teamId: string;
+   organizationId: string;
+   name: string;
+   description?: string | null;
+}): void {
+   void ResultAsync.fromPromise(
+      fetch(`${env.SERVER_URL}/internal/jobs/derive-keywords`, {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify(input),
+      }),
+      (e) =>
+         AppError.internal(
+            `Failed to enqueue keyword derivation: ${String(e)}`,
+         ),
+   );
+}
 
 const idSchema = z.object({ id: z.string().uuid() });
 
 export const create = protectedProcedure
    .input(createCategorySchema)
    .handler(async ({ context, input }) => {
-      return createCategory(context.db, context.teamId, input);
+      const category = await createCategory(context.db, context.teamId, input);
+      enqueueKeywordDerivation({
+         categoryId: category.id,
+         teamId: context.teamId,
+         organizationId: context.organizationId,
+         name: category.name,
+         description: category.description,
+      });
+      return category;
    });
 
 const getAllInput = z
@@ -43,7 +74,17 @@ export const update = protectedProcedure
    .handler(async ({ context, input }) => {
       await ensureCategoryOwnership(context.db, input.id, context.teamId);
       const { id, ...data } = input;
-      return updateCategory(context.db, id, data);
+      const category = await updateCategory(context.db, id, data);
+      if (data.name !== undefined || data.description !== undefined) {
+         enqueueKeywordDerivation({
+            categoryId: category.id,
+            teamId: context.teamId,
+            organizationId: context.organizationId,
+            name: category.name,
+            description: category.description,
+         });
+      }
+      return category;
    });
 
 export const remove = protectedProcedure

@@ -32,6 +32,8 @@ export const env = createEnv({
          .enum(["trace", "debug", "info", "warn", "error", "fatal"])
          .optional()
          .default("info"),
+
+      SERVER_URL: z.string().url(),
    },
    runtimeEnv: process.env,
 });
