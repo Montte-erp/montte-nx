@@ -23,11 +23,11 @@
       "@elysiajs/cors": "catalog:server",
       "@montte/cli": "workspace:*",
       "@montte/hyprpay": "workspace:*",
-      "@openrouter/ai-sdk-provider": "catalog:tanstack-ai",
       "@orpc/server": "catalog:orpc",
       "@packages/events": "workspace:*",
       "@packages/notifications": "workspace:*",
-      "ai": "catalog:tanstack-ai",
+      "@tanstack/ai": "catalog:tanstack-ai",
+      "@tanstack/ai-openrouter": "catalog:tanstack-ai",
       "elysia": "catalog:server",
       "neverthrow": "catalog:validation"
    },

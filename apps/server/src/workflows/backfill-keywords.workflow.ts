@@ -1,9 +1,10 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { ResultAsync } from "neverthrow";
 import { AppError } from "@core/logging/errors";
-import { isNull, eq, and } from "drizzle-orm";
-import { categories } from "@core/database/schemas/categories";
-import { team } from "@core/database/schemas/auth";
+import {
+   listTeamsWithPendingKeywords,
+   listCategoriesWithNullKeywords,
+} from "@core/database/repositories/categories-repository";
 import { enforceCreditBudget } from "@packages/events/credits";
 import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import type { JobNotification } from "@packages/notifications/schema";
@@ -14,10 +15,7 @@ import { DeriveKeywordsWorkflow } from "./derive-keywords.workflow";
 export class BackfillKeywordsWorkflow {
    @DBOS.scheduled({ crontab: "0 3 * * *" })
    @DBOS.workflow()
-   static async runDaily(
-      _scheduledTime: Date,
-      _actualTime: Date,
-   ): Promise<void> {
+   static async runDaily() {
       const teams = await BackfillKeywordsWorkflow.fetchTeamsWithPendingStep();
       for (const t of teams) {
          await BackfillKeywordsWorkflow.processTeamStep(t);
@@ -25,36 +23,29 @@ export class BackfillKeywordsWorkflow {
    }
 
    @DBOS.step()
-   static async fetchTeamsWithPendingStep(): Promise<
-      { teamId: string; organizationId: string }[]
-   > {
-      const rows = await db
-         .selectDistinct({
-            teamId: categories.teamId,
-            organizationId: team.organizationId,
-         })
-         .from(categories)
-         .innerJoin(team, eq(team.id, categories.teamId))
-         .where(isNull(categories.keywords));
-
-      return rows;
+   static async fetchTeamsWithPendingStep() {
+      const rows = await listTeamsWithPendingKeywords(db);
+      const teamIds = [...new Set(rows.map((r) => r.teamId))];
+      const teamRows = await db.query.team.findMany({
+         where: (fields, { inArray }) => inArray(fields.id, teamIds),
+         columns: { id: true, organizationId: true },
+      });
+      return teamRows.map((t) => ({
+         teamId: t.id,
+         organizationId: t.organizationId,
+      }));
    }
 
    @DBOS.step()
    static async processTeamStep(teamEntry: {
       teamId: string;
       organizationId: string;
-   }): Promise<void> {
-      const pending = await db
-         .select()
-         .from(categories)
-         .where(
-            and(
-               isNull(categories.keywords),
-               eq(categories.teamId, teamEntry.teamId),
-            ),
-         )
-         .limit(50);
+   }) {
+      const pending = await listCategoriesWithNullKeywords(
+         db,
+         teamEntry.teamId,
+         50,
+      );
 
       let processed = 0;
 

@@ -376,6 +376,35 @@ async function getDescendantIds(
    return [...level2Ids, ...level3.map((r) => r.id)];
 }
 
+export async function listTeamsWithPendingKeywords(db: DatabaseInstance) {
+   try {
+      return await db.query.categories.findMany({
+         columns: { teamId: true },
+         where: (fields, { isNull }) => isNull(fields.keywords),
+      });
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to list teams with pending keywords");
+   }
+}
+
+export async function listCategoriesWithNullKeywords(
+   db: DatabaseInstance,
+   teamId: string,
+   limit = 50,
+) {
+   try {
+      return await db.query.categories.findMany({
+         where: (fields, { and, eq, isNull }) =>
+            and(eq(fields.teamId, teamId), isNull(fields.keywords)),
+         limit,
+      });
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to list categories with null keywords");
+   }
+}
+
 export async function validateKeywordsUniqueness(
    db: DatabaseInstance,
    teamId: string,

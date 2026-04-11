@@ -1,8 +1,8 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { ResultAsync } from "neverthrow";
 import { AppError } from "@core/logging/errors";
-import { generateObject } from "ai";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { chat } from "@tanstack/ai";
+import { openRouterText } from "@tanstack/ai-openrouter";
 import { z } from "zod";
 import { env } from "@core/environment/server";
 import { updateCategory } from "@core/database/repositories/categories-repository";
@@ -13,10 +13,6 @@ import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import type { JobNotification } from "@packages/notifications/schema";
 import { jobPublisher } from "../publisher";
 import { db, redis, posthog, stripeClient } from "../singletons";
-
-const openrouter = createOpenRouter({
-   apiKey: env.OPENROUTER_API_KEY,
-});
 
 const keywordsOutputSchema = z.object({
    keywords: z
@@ -40,7 +36,7 @@ export type DeriveKeywordsInput = {
 
 export class DeriveKeywordsWorkflow {
    @DBOS.workflow()
-   static async run(input: DeriveKeywordsInput): Promise<void> {
+   static async run(input: DeriveKeywordsInput) {
       const budgetResult =
          await DeriveKeywordsWorkflow.enforceBudgetStep(input);
 
@@ -120,15 +116,28 @@ export class DeriveKeywordsWorkflow {
    @DBOS.step()
    static async deriveStep(input: DeriveKeywordsInput) {
       return ResultAsync.fromPromise(
-         generateObject({
-            model: openrouter("liquid/lfm2-8b"),
-            schema: keywordsOutputSchema,
-            prompt: `Você é um assistente financeiro brasileiro. Gere palavras-chave para a categoria financeira abaixo. As palavras-chave devem ser termos comuns que aparecem em descrições de transações bancárias.
+         chat({
+            adapter: openRouterText("liquid/lfm2-8b-a1b", {
+               apiKey: env.OPENROUTER_API_KEY,
+            }),
+            messages: [
+               {
+                  role: "user",
+                  content: [
+                     {
+                        type: "text",
+                        content: `Você é um assistente financeiro brasileiro. Gere palavras-chave para a categoria financeira abaixo. As palavras-chave devem ser termos comuns que aparecem em descrições de transações bancárias.
 
 Categoria: ${input.name}${input.description ? `\nDescrição: ${input.description}` : ""}
 
 Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua variações, abreviações e termos relacionados.`,
-         }).then((r) => r.object.keywords),
+                     },
+                  ],
+               },
+            ],
+            outputSchema: keywordsOutputSchema,
+            stream: false,
+         }).then((r) => r.keywords),
          (e) => AppError.internal(`LLM derivation failed: ${String(e)}`),
       );
    }
@@ -154,7 +163,7 @@ Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua 
    }: {
       input: DeriveKeywordsInput;
       keywords: string[];
-   }): Promise<void> {
+   }) {
       const emit = createEmitFn(
          db,
          posthog,
@@ -179,7 +188,7 @@ Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua 
    }
 
    @DBOS.step()
-   static async publishStep(notification: JobNotification): Promise<void> {
+   static async publishStep(notification: JobNotification) {
       await jobPublisher.publish("job.notification", notification);
    }
 }
