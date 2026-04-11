@@ -15,6 +15,7 @@ type CategorySeed = {
    name: string;
    type: "income" | "expense";
    icon?: string;
+   color?: string;
    children?: Array<{ name: string; icon?: string }>;
 };
 
@@ -23,16 +24,23 @@ const EMPRESARIAL_CATEGORIES: CategorySeed[] = [
       name: "Vendas",
       type: "income",
       icon: "briefcase",
+      color: "#22c55e",
       children: [
          { name: "Produtos", icon: "package" },
          { name: "Serviços", icon: "briefcase" },
       ],
    },
-   { name: "Outras Receitas", type: "income", icon: "wallet" },
+   {
+      name: "Outras Receitas",
+      type: "income",
+      icon: "wallet",
+      color: "#14b8a6",
+   },
    {
       name: "Custos",
       type: "expense",
       icon: "shopping-cart",
+      color: "#ef4444",
       children: [
          { name: "CMV", icon: "package" },
          { name: "Serviços de Terceiros", icon: "briefcase" },
@@ -42,17 +50,28 @@ const EMPRESARIAL_CATEGORIES: CategorySeed[] = [
       name: "Despesas Operacionais",
       type: "expense",
       icon: "briefcase",
+      color: "#f97316",
       children: [
          { name: "Administrativo", icon: "briefcase" },
          { name: "Comercial", icon: "shopping-cart" },
          { name: "Marketing", icon: "gift" },
       ],
    },
-   { name: "Pessoal", type: "expense", icon: "heart" },
-   { name: "Impostos", type: "expense", icon: "wallet" },
-   { name: "Tarifas Bancárias", type: "expense", icon: "credit-card" },
-   { name: "Tecnologia", type: "expense", icon: "smartphone" },
-   { name: "Transferências", type: "expense", icon: "zap" },
+   { name: "Pessoal", type: "expense", icon: "heart", color: "#ec4899" },
+   { name: "Impostos", type: "expense", icon: "wallet", color: "#f59e0b" },
+   {
+      name: "Tarifas Bancárias",
+      type: "expense",
+      icon: "credit-card",
+      color: "#78716c",
+   },
+   {
+      name: "Tecnologia",
+      type: "expense",
+      icon: "smartphone",
+      color: "#6366f1",
+   },
+   { name: "Transferências", type: "expense", icon: "zap", color: "#06b6d4" },
 ];
 
 export async function createCategory(
@@ -112,6 +131,7 @@ export async function seedEmpresarialCategories(
                name: root.name,
                type: root.type,
                icon: root.icon ?? null,
+               color: root.color ?? null,
                level: 1,
                isDefault: true,
             })
