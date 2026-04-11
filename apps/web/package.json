@@ -14,7 +14,6 @@
       "check": "oxlint ."
    },
    "dependencies": {
-      "@core/agents": "workspace:*",
       "@core/authentication": "workspace:*",
       "@core/database": "workspace:*",
       "@core/environment": "workspace:*",
@@ -39,7 +38,6 @@
       "@maskito/core": "catalog:ui",
       "@maskito/kit": "catalog:ui",
       "@maskito/react": "catalog:ui",
-      "@openrouter/ai-sdk-provider": "^2.2.3",
       "@orpc/client": "catalog:orpc",
       "@orpc/json-schema": "catalog:orpc",
       "@orpc/server": "catalog:orpc",
@@ -49,8 +47,6 @@
       "@packages/events": "workspace:*",
       "@packages/ui": "workspace:*",
       "@tailwindcss/vite": "catalog:vite",
-      "@tanstack/ai": "catalog:tanstack-ai",
-      "@tanstack/ai-react": "catalog:tanstack-ai",
       "@tanstack/match-sorter-utils": "catalog:tanstack",
       "@tanstack/pacer": "catalog:tanstack",
       "@tanstack/react-devtools": "catalog:tanstack",
@@ -67,7 +63,6 @@
       "@tanstack/react-virtual": "catalog:tanstack",
       "@tanstack/router-plugin": "catalog:tanstack",
       "@tanstack/store": "catalog:tanstack",
-      "ai": "^6.0.97",
       "better-auth": "catalog:auth",
       "clsx": "catalog:ui",
       "color": "catalog:ui",
