@@ -1,5 +1,4 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
-import { AppError } from "@core/logging/errors";
 import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
 import { z } from "zod";
@@ -12,6 +11,8 @@ import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import type { JobNotification } from "@packages/notifications/schema";
 import { jobPublisher } from "../publisher";
 import { db, redis, posthog, stripeClient } from "../singletons";
+
+const MODEL = "qwen/qwen3.5-9b";
 
 const keywordsOutputSchema = z.object({
    keywords: z
@@ -36,6 +37,8 @@ export type DeriveKeywordsInput = {
 export class DeriveKeywordsWorkflow {
    @DBOS.workflow()
    static async run(input: DeriveKeywordsInput) {
+      const ctx = `[derive-keywords] category=${input.categoryId} team=${input.teamId}`;
+
       const failNotification = (error: string): JobNotification => ({
          jobId: crypto.randomUUID(),
          type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
@@ -45,22 +48,27 @@ export class DeriveKeywordsWorkflow {
          timestamp: new Date().toISOString(),
       });
 
+      DBOS.logger.info(`${ctx} started name="${input.name}"`);
+
       try {
          await DeriveKeywordsWorkflow.enforceBudgetStep(input);
       } catch (e) {
-         await DeriveKeywordsWorkflow.publishStep(
-            failNotification(e instanceof Error ? e.message : String(e)),
-         );
+         const msg = e instanceof Error ? e.message : String(e);
+         DBOS.logger.warn(`${ctx} budget exceeded: ${msg}`);
+         await DeriveKeywordsWorkflow.publishStep(failNotification(msg));
          return;
       }
 
       let keywords: string[];
       try {
          keywords = await DeriveKeywordsWorkflow.deriveStep(input);
-      } catch (e) {
-         await DeriveKeywordsWorkflow.publishStep(
-            failNotification(e instanceof Error ? e.message : String(e)),
+         DBOS.logger.info(
+            `${ctx} derived ${keywords.length} keywords: [${keywords.join(", ")}]`,
          );
+      } catch (e) {
+         const msg = e instanceof Error ? e.message : String(e);
+         DBOS.logger.error(`${ctx} derive failed: ${msg}`);
+         await DeriveKeywordsWorkflow.publishStep(failNotification(msg));
          return;
       }
 
@@ -69,10 +77,11 @@ export class DeriveKeywordsWorkflow {
             categoryId: input.categoryId,
             keywords,
          });
+         DBOS.logger.info(`${ctx} saved`);
       } catch (e) {
-         await DeriveKeywordsWorkflow.publishStep(
-            failNotification(e instanceof Error ? e.message : String(e)),
-         );
+         const msg = e instanceof Error ? e.message : String(e);
+         DBOS.logger.error(`${ctx} save failed: ${msg}`);
+         await DeriveKeywordsWorkflow.publishStep(failNotification(msg));
          return;
       }
 
@@ -89,10 +98,15 @@ export class DeriveKeywordsWorkflow {
          teamId: input.teamId,
          timestamp: new Date().toISOString(),
       });
+
+      DBOS.logger.info(`${ctx} completed`);
    }
 
    @DBOS.step()
    static async enforceBudgetStep(input: DeriveKeywordsInput) {
+      DBOS.logger.debug(
+         `[derive-keywords] enforceBudgetStep org=${input.organizationId}`,
+      );
       await enforceCreditBudget(
          input.organizationId,
          "ai.keyword_derived",
@@ -103,8 +117,11 @@ export class DeriveKeywordsWorkflow {
 
    @DBOS.step()
    static async deriveStep(input: DeriveKeywordsInput) {
+      DBOS.logger.debug(
+         `[derive-keywords] deriveStep model=${MODEL} name="${input.name}"`,
+      );
       const result = await chat({
-         adapter: openRouterText("qwen/qwen3.5-9b", {
+         adapter: openRouterText(MODEL, {
             apiKey: env.OPENROUTER_API_KEY,
          }),
          messages: [
@@ -136,6 +153,9 @@ Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua 
       categoryId: string;
       keywords: string[];
    }) {
+      DBOS.logger.debug(
+         `[derive-keywords] saveStep category=${categoryId} count=${keywords.length}`,
+      );
       await updateCategory(db, categoryId, { keywords });
    }
 
@@ -147,6 +167,9 @@ Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua 
       input: DeriveKeywordsInput;
       keywords: string[];
    }) {
+      DBOS.logger.debug(
+         `[derive-keywords] emitBillingStep category=${input.categoryId}`,
+      );
       const emit = createEmitFn(
          db,
          posthog,
@@ -164,7 +187,7 @@ Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua 
          {
             categoryId: input.categoryId,
             keywordCount: keywords.length,
-            model: "qwen/qwen3.5-9b",
+            model: MODEL,
             latencyMs: 0,
          },
       );
@@ -172,6 +195,9 @@ Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua 
 
    @DBOS.step()
    static async publishStep(notification: JobNotification) {
+      DBOS.logger.debug(
+         `[derive-keywords] publishStep status=${notification.status} team=${notification.teamId}`,
+      );
       await jobPublisher.publish("job.notification", notification);
    }
 }
