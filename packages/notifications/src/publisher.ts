@@ -42,7 +42,6 @@ class RedisJobPublisher extends Publisher<JobEvents> {
 
       return async () => {
          this.subscriber.off("message", handler);
-         await this.subscriber.unsubscribe(event);
       };
    }
 }
