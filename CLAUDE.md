@@ -9,7 +9,6 @@ AI-powered ERP, Nx monorepo with Bun. Brazilian Portuguese (pt-BR).
 ```bash
 bun dev              # Seed event catalog (local) then start web app
 bun dev:all          # Start all apps and packages
-bun dev:server       # Server only (Elysia + DBOS workflows)
 bun run build        # Build all (Nx cached)
 bun run typecheck    # TypeScript checks
 bun run check        # oxlint
@@ -49,8 +48,7 @@ montte-nx/
 │   ├── transactional/   # Resend + email
 │   └── utils/           # Shared utilities
 ├── apps/
-│   ├── web/             # TanStack Start (SSR) — dashboard + oRPC routers
-│   └── server/          # Elysia API (SDK consumers) + DBOS durable workflows
+│   └── web/             # TanStack Start (SSR) — dashboard + oRPC routers + SDK oRPC API + DBOS workflows
 ├── packages/
 │   ├── analytics/       # Analytics engine
 │   ├── events/          # Event catalog, schemas, emit, credits
