@@ -29,7 +29,12 @@ const config = defineConfig({
             autoCodeSplitting: true,
          },
       }),
-      nitro({ preset: "bun" }),
+      nitro({
+         preset: "bun",
+         externals: {
+            external: ["@dbos-inc/dbos-sdk"],
+         },
+      }),
       viteReact(),
       tailwindcss(),
       devtools(),
