@@ -1,4 +1,14 @@
 import { Badge } from "@packages/ui/components/badge";
+import {
+   Announcement,
+   AnnouncementTag,
+   AnnouncementTitle,
+} from "@packages/ui/components/announcement";
+import {
+   Tooltip,
+   TooltipContent,
+   TooltipTrigger,
+} from "@packages/ui/components/tooltip";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
    Baby,
@@ -18,6 +28,8 @@ import {
    Plane,
    ShoppingCart,
    Smartphone,
+   ShieldCheck,
+   Star,
    Utensils,
    Wallet,
    Zap,
@@ -66,18 +78,35 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
          cell: ({ row }) => {
             const { name, color, icon, isDefault } = row.original;
             const IconComponent = icon ? ICON_MAP[icon] : null;
+
+            if (row.depth === 0 && (color || IconComponent)) {
+               return (
+                  <Announcement>
+                     <AnnouncementTag>
+                        {IconComponent && (
+                           <IconComponent
+                              className="size-4"
+                              style={{ color: color ?? undefined }}
+                           />
+                        )}
+                     </AnnouncementTag>
+                     <AnnouncementTitle>
+                        {name}
+                        {isDefault && (
+                           <Tooltip>
+                              <TooltipTrigger asChild>
+                                 <ShieldCheck className="size-4 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>Padrão</TooltipContent>
+                           </Tooltip>
+                        )}
+                     </AnnouncementTitle>
+                  </Announcement>
+               );
+            }
+
             return (
                <div className="flex items-center gap-2 min-w-0">
-                  {(color || IconComponent) && row.depth === 0 ? (
-                     <span
-                        className="size-7 rounded-md flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: color ?? "#6366f1" }}
-                     >
-                        {IconComponent && (
-                           <IconComponent className="size-3.5 text-white" />
-                        )}
-                     </span>
-                  ) : null}
                   <span
                      className={
                         row.depth > 0 ? "truncate" : "font-medium truncate"
@@ -86,7 +115,12 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                      {name}
                   </span>
                   {isDefault && row.depth === 0 && (
-                     <Badge variant="outline">Padrão</Badge>
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                           <Star className="size-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>Padrão</TooltipContent>
+                     </Tooltip>
                   )}
                </div>
             );

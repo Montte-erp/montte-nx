@@ -101,6 +101,8 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
    } = params;
 
    try {
+      if (!teamId)
+         throw new Error(`emitEvent: missing teamId for event "${eventName}"`);
       const { price, isBillable } = params.priceOverride
          ? { price: params.priceOverride, isBillable: true }
          : await getEventPrice(db, eventName);
@@ -112,8 +114,8 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
             eventName,
             eventCategory,
             properties,
-            userId: userId ?? "",
-            teamId: teamId ?? "",
+            userId: userId ?? null,
+            teamId,
             isBillable,
             pricePerEvent: toMajorUnitsString(price),
             ipAddress,
@@ -241,6 +243,10 @@ export async function emitEventBatch(
       );
 
       const rows = eventList.map((evt) => {
+         if (!evt.teamId)
+            throw new Error(
+               `emitEventBatch: missing teamId for event "${evt.eventName}"`,
+            );
          const billing = billingMap.get(evt.eventName) ?? {
             priceStr: "0",
             isBillable: false,
@@ -250,8 +256,8 @@ export async function emitEventBatch(
             eventName: evt.eventName,
             eventCategory: evt.eventCategory,
             properties: evt.properties,
-            userId: evt.userId ?? "",
-            teamId: evt.teamId ?? "",
+            userId: evt.userId ?? null,
+            teamId: evt.teamId,
             isBillable: billing.isBillable,
             pricePerEvent: billing.priceStr,
             ipAddress: evt.ipAddress,

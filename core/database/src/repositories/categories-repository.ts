@@ -14,35 +14,64 @@ import { transactions } from "@core/database/schemas/transactions";
 type CategorySeed = {
    name: string;
    type: "income" | "expense";
-   children?: Array<{ name: string }>;
+   icon?: string;
+   color?: string;
+   children?: Array<{ name: string; icon?: string }>;
 };
 
 const EMPRESARIAL_CATEGORIES: CategorySeed[] = [
    {
       name: "Vendas",
       type: "income",
-      children: [{ name: "Produtos" }, { name: "Serviços" }],
+      icon: "briefcase",
+      color: "#22c55e",
+      children: [
+         { name: "Produtos", icon: "package" },
+         { name: "Serviços", icon: "briefcase" },
+      ],
    },
-   { name: "Outras Receitas", type: "income" },
+   {
+      name: "Outras Receitas",
+      type: "income",
+      icon: "wallet",
+      color: "#14b8a6",
+   },
    {
       name: "Custos",
       type: "expense",
-      children: [{ name: "CMV" }, { name: "Serviços de Terceiros" }],
+      icon: "shopping-cart",
+      color: "#ef4444",
+      children: [
+         { name: "CMV", icon: "package" },
+         { name: "Serviços de Terceiros", icon: "briefcase" },
+      ],
    },
    {
       name: "Despesas Operacionais",
       type: "expense",
+      icon: "briefcase",
+      color: "#f97316",
       children: [
-         { name: "Administrativo" },
-         { name: "Comercial" },
-         { name: "Marketing" },
+         { name: "Administrativo", icon: "briefcase" },
+         { name: "Comercial", icon: "shopping-cart" },
+         { name: "Marketing", icon: "gift" },
       ],
    },
-   { name: "Pessoal", type: "expense" },
-   { name: "Impostos", type: "expense" },
-   { name: "Tarifas Bancárias", type: "expense" },
-   { name: "Tecnologia", type: "expense" },
-   { name: "Transferências", type: "expense" },
+   { name: "Pessoal", type: "expense", icon: "heart", color: "#ec4899" },
+   { name: "Impostos", type: "expense", icon: "wallet", color: "#f59e0b" },
+   {
+      name: "Tarifas Bancárias",
+      type: "expense",
+      icon: "credit-card",
+      color: "#78716c",
+   },
+   {
+      name: "Tecnologia",
+      type: "expense",
+      icon: "smartphone",
+      color: "#6366f1",
+   },
+   { name: "Transferências", type: "expense", icon: "zap", color: "#06b6d4" },
 ];
 
 export async function createCategory(
@@ -101,6 +130,8 @@ export async function seedEmpresarialCategories(
                teamId,
                name: root.name,
                type: root.type,
+               icon: root.icon ?? null,
+               color: root.color ?? null,
                level: 1,
                isDefault: true,
             })
@@ -113,6 +144,7 @@ export async function seedEmpresarialCategories(
                   teamId,
                   name: child.name,
                   type: root.type,
+                  icon: child.icon ?? null,
                   parentId: parent.id,
                   level: 2,
                   isDefault: true,
@@ -374,6 +406,57 @@ async function getDescendantIds(
       .where(inArray(categories.parentId, level2Ids));
 
    return [...level2Ids, ...level3.map((r) => r.id)];
+}
+
+export async function listTeamMetadataByIds(
+   db: DatabaseInstance,
+   teamIds: string[],
+) {
+   try {
+      if (teamIds.length === 0) return [];
+      return await db.query.team.findMany({
+         where: (fields, { inArray }) => inArray(fields.id, teamIds),
+         columns: { id: true, organizationId: true },
+      });
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to list team metadata");
+   }
+}
+
+export async function listTeamsWithPendingKeywords(db: DatabaseInstance) {
+   try {
+      return await db.query.categories.findMany({
+         columns: { teamId: true },
+         where: (fields, { isNull, eq, and }) =>
+            and(isNull(fields.keywords), eq(fields.isDefault, false)),
+         limit: 500,
+      });
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to list teams with pending keywords");
+   }
+}
+
+export async function listCategoriesWithNullKeywords(
+   db: DatabaseInstance,
+   teamId: string,
+   limit = 50,
+) {
+   try {
+      return await db.query.categories.findMany({
+         where: (fields, { and, eq, isNull }) =>
+            and(
+               eq(fields.teamId, teamId),
+               isNull(fields.keywords),
+               eq(fields.isDefault, false),
+            ),
+         limit,
+      });
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to list categories with null keywords");
+   }
 }
 
 export async function validateKeywordsUniqueness(

@@ -45,9 +45,9 @@ export const AVAILABLE_MODELS = {
       frequencyPenalty: 0.3,
       presencePenalty: 0.1,
    },
-   "openrouter/liquid/lfm2-8b-a1b": {
-      label: "LFM2-8B-A1B",
-      provider: "Liquid AI",
+   "openrouter/google/gemini-3.1-flash-lite-preview": {
+      label: "Gemini 3.1 Flash Lite",
+      provider: "Google",
       description: "Ultra-leve e econômico — opção para equipes no plano FREE",
       temperature: 0.6,
       topP: 0.9,

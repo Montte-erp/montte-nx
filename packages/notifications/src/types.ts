@@ -1,0 +1,25 @@
+export const NOTIFICATION_TYPES = {
+   AI_KEYWORD_DERIVED: "ai.keyword_derived",
+   CRON_KEYWORDS_BACKFILL: "cron.keywords_backfill",
+} as const;
+
+export type NotificationType =
+   (typeof NOTIFICATION_TYPES)[keyof typeof NOTIFICATION_TYPES];
+
+export type NotificationPayloadMap = {
+   "ai.keyword_derived": {
+      categoryId: string;
+      categoryName: string;
+      count: number;
+   };
+   "cron.keywords_backfill": {
+      count: number;
+   };
+};
+
+export function getPayload<T extends NotificationType>(
+   type: T,
+   payload: Record<string, unknown> | undefined,
+): NotificationPayloadMap[T] | undefined {
+   return payload as NotificationPayloadMap[T] | undefined;
+}

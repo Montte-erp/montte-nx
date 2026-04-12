@@ -12,6 +12,11 @@ const config = defineConfig({
    optimizeDeps: {
       include: ["react", "react-dom"],
    },
+   oxc: {
+      transform: {
+         target: "es2022",
+      },
+   },
    server: {
       watch: {
          ignored: ["**/node_modules/**", "**/.git/**"],
@@ -24,7 +29,14 @@ const config = defineConfig({
             autoCodeSplitting: true,
          },
       }),
-      nitro({ preset: "bun" }),
+      nitro({
+         preset: "bun",
+         rollupConfig: {
+            external: (id: string) =>
+               id === "@dbos-inc/dbos-sdk" ||
+               id.startsWith("@dbos-inc/dbos-sdk/"),
+         },
+      }),
       viteReact(),
       tailwindcss(),
       devtools(),

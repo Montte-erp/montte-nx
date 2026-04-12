@@ -1,0 +1,11 @@
+{
+   "extends": "@tooling/typescript/tsconfig.package.json",
+   "compilerOptions": {
+      "paths": {
+         "@core/redis/*": ["../../core/redis/src/*"],
+         "@packages/notifications/*": ["./src/*"]
+      }
+   },
+   "include": ["src"],
+   "references": [{ "path": "../../core/redis" }]
+}

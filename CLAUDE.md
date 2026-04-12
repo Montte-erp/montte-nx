@@ -9,7 +9,6 @@ AI-powered ERP, Nx monorepo with Bun. Brazilian Portuguese (pt-BR).
 ```bash
 bun dev              # Seed event catalog (local) then start web app
 bun dev:all          # Start all apps and packages
-bun dev:server       # Server only (Elysia + DBOS workflows)
 bun run build        # Build all (Nx cached)
 bun run typecheck    # TypeScript checks
 bun run check        # oxlint
@@ -49,8 +48,7 @@ montte-nx/
 │   ├── transactional/   # Resend + email
 │   └── utils/           # Shared utilities
 ├── apps/
-│   ├── web/             # TanStack Start (SSR) — dashboard + oRPC routers
-│   └── server/          # Elysia API (SDK consumers) + DBOS durable workflows
+│   └── web/             # TanStack Start (SSR) — dashboard + oRPC routers + SDK oRPC API + DBOS workflows
 ├── packages/
 │   ├── analytics/       # Analytics engine
 │   ├── events/          # Event catalog, schemas, emit, credits
@@ -138,9 +136,10 @@ export const bulkRemove = protectedProcedure
 | Subscribe to partial query data | `useSuspenseQuery` + `select` option |
 | Prefetch before render | `queryClient.prefetchQuery` in route loader |
 | Track mutation state cross-component | `useMutationState` + `orpc.procedure.mutationKey()` |
+| SSE / Event Iterator (live stream) | `useQuery` + `experimental_liveOptions` — see below |
 
 **Key rules:**
-- **Never `useQuery`** — always `useSuspenseQuery`. No exceptions.
+- **Never `useQuery`** — always `useSuspenseQuery`. The only exception is `experimental_liveOptions` (SSE / Event Iterator) — live queries have no initial data so suspending is wrong.
 - **Never `useQuery + enabled`** — use the child component pattern instead (see below).
 - **Never `skipToken + useSuspenseQuery`** — `UseSuspenseQueryOptions` does not support `skipToken`. Use child component pattern.
 - **`useSuspenseQueries`** for 2+ independent queries in the same component — prevents React from suspending sequentially (waterfall).
@@ -167,6 +166,21 @@ export const bulkRemove = protectedProcedure
   navigate({ search: (prev) => ({ ...prev, activeTab: "details" }), replace: true });
   ```
 - **`orpc.procedure.mutationKey()` / `orpc.procedure.queryKey()`** — always use oRPC-generated keys; never define manual string arrays.
+
+**SSE / Live queries** — for oRPC procedures that return an `eventIterator`, use `experimental_liveOptions`. `data` is always the latest event. Use `useEffect([data])` to react to each new event. `retry: true` reconnects automatically on drop:
+
+```tsx
+const { data } = useQuery(
+   orpc.notifications.subscribe.experimental_liveOptions({ retry: true }),
+);
+
+useEffect(() => {
+   if (!data) return;
+   // data is the latest JobNotification — handle toast, invalidate queries, etc.
+}, [data]);
+```
+
+Never use `consumeEventIterator` + `useEffect` manually — `experimental_liveOptions` handles connection lifecycle and retries.
 
 **Type inference** — never define manual interfaces for router data:
 
@@ -277,6 +291,8 @@ Never use `skipToken` with `useSuspenseQuery` — it is not supported in TanStac
 ## Code Style
 
 - **No type casting** — never use `as` or `as unknown as`. Fix the source types.
+- **No redundant type annotations** — never annotate what TypeScript already infers (e.g. no `const x: string = "foo"`, no explicit `: Promise<void>` return types on obvious functions). Only annotate function parameters and exported API boundaries.
+- **No unused parameters** — never prefix unused params with `_`. Remove them entirely or refactor the caller. `_foo` is noise.
 - **No comments** — no JSDoc, section dividers, or inline explanations.
 - **No barrel files** — never create `index.ts` re-exports. Import directly from source.
 - **No relative imports in `core/`** — use `@core/<package>/*` aliases (oxlint enforced).
@@ -398,6 +414,22 @@ Internal packages: `"@core/database": "workspace:*"`.
 ---
 
 ## AI Agents
+
+**AI SDK:** Always use `@tanstack/ai` + `@tanstack/ai-openrouter` (`catalog:tanstack-ai`). Never use the Vercel AI SDK (`ai`, `@openrouter/ai-sdk-provider`) — it has been removed from the project.
+
+```typescript
+import { chat } from "@tanstack/ai";
+import { openRouterText } from "@tanstack/ai-openrouter";
+
+const result = await chat({
+   adapter: openRouterText("liquid/lfm2-8b-a1b", { apiKey: env.OPENROUTER_API_KEY }),
+   messages: [{ role: "user", content: [{ type: "text", content: prompt }] }],
+   outputSchema: z.object({ ... }),
+   stream: false,
+});
+```
+
+**DBOS workflows** — always use repositories (`@core/database/repositories/*`) for all DB access. Never import `db` and write raw Drizzle queries inside a workflow or step. Repositories own query logic, error handling (`AppError` + `propagateError`), and are the correct abstraction layer.
 
 Single agent: `rubiAgent`. Usage in routers:
 

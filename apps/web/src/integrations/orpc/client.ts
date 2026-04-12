@@ -38,7 +38,11 @@ const getORPCClient = createIsomorphicFn()
             new BatchLinkPlugin({
                groups: [
                   {
-                     condition: () => true,
+                     condition: (options) =>
+                        !(
+                           options.path[0] === "notifications" &&
+                           options.path[1] === "subscribe"
+                        ),
                      context: {},
                   },
                ],

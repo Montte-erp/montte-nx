@@ -263,6 +263,16 @@ const EVENT_PRICING: EventPricing[] = [
       isBillable: true,
    },
    {
+      eventName: AI_EVENTS["ai.keyword_derived"],
+      category: EVENT_CATEGORIES.ai,
+      pricePerEvent: "0.010000",
+      freeTierLimit: 100,
+      displayName: "Palavras-chave Derivadas",
+      description:
+         "Registrada quando palavras-chave são derivadas automaticamente para uma categoria financeira.",
+      isBillable: true,
+   },
+   {
       eventName: DOCUMENT_EVENTS["document.signed"],
       category: EVENT_CATEGORIES.document,
       pricePerEvent: "0.050000",

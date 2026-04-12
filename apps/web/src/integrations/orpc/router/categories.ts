@@ -11,15 +11,57 @@ import {
    createCategorySchema,
    updateCategorySchema,
 } from "@core/database/schemas/categories";
+import { user as userTable } from "@core/database/schemas/auth";
+import { getLogger } from "@core/logging/root";
+import { eq } from "drizzle-orm";
+import { DBOS } from "@dbos-inc/dbos-sdk";
 import { z } from "zod";
+import { DeriveKeywordsWorkflow } from "@/integrations/dbos/workflows";
 import { protectedProcedure } from "../server";
+
+const logger = getLogger().child({ module: "categories.router" });
+
+function enqueueKeywordDerivation(input: {
+   categoryId: string;
+   teamId: string;
+   organizationId: string;
+   userId: string;
+   name: string;
+   description?: string | null;
+   stripeCustomerId?: string | null;
+}): void {
+   void DBOS.startWorkflow(DeriveKeywordsWorkflow)
+      .run(input)
+      .catch((err) => {
+         logger.error(
+            { err, categoryId: input.categoryId },
+            "Failed to start derive-keywords workflow",
+         );
+      });
+}
 
 const idSchema = z.object({ id: z.string().uuid() });
 
 export const create = protectedProcedure
    .input(createCategorySchema)
    .handler(async ({ context, input }) => {
-      return createCategory(context.db, context.teamId, input);
+      const [category, userRecord] = await Promise.all([
+         createCategory(context.db, context.teamId, input),
+         context.db.query.user.findFirst({
+            where: eq(userTable.id, context.userId),
+            columns: { stripeCustomerId: true },
+         }),
+      ]);
+      enqueueKeywordDerivation({
+         categoryId: category.id,
+         teamId: context.teamId,
+         organizationId: context.organizationId,
+         userId: context.userId,
+         name: category.name,
+         description: category.description,
+         stripeCustomerId: userRecord?.stripeCustomerId ?? null,
+      });
+      return category;
    });
 
 const getAllInput = z
@@ -43,7 +85,23 @@ export const update = protectedProcedure
    .handler(async ({ context, input }) => {
       await ensureCategoryOwnership(context.db, input.id, context.teamId);
       const { id, ...data } = input;
-      return updateCategory(context.db, id, data);
+      const category = await updateCategory(context.db, id, data);
+      if (data.name !== undefined || data.description !== undefined) {
+         const userRecord = await context.db.query.user.findFirst({
+            where: eq(userTable.id, context.userId),
+            columns: { stripeCustomerId: true },
+         });
+         enqueueKeywordDerivation({
+            categoryId: category.id,
+            teamId: context.teamId,
+            organizationId: context.organizationId,
+            userId: context.userId,
+            name: category.name,
+            description: category.description,
+            stripeCustomerId: userRecord?.stripeCustomerId ?? null,
+         });
+      }
+      return category;
    });
 
 export const remove = protectedProcedure
@@ -65,10 +123,23 @@ export const importBatch = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
+      const userRecord = await context.db.query.user.findFirst({
+         where: eq(userTable.id, context.userId),
+         columns: { stripeCustomerId: true },
+      });
       const results = [];
       for (const cat of input.categories) {
          const created = await createCategory(context.db, context.teamId, cat);
          results.push(created);
+         enqueueKeywordDerivation({
+            categoryId: created.id,
+            teamId: context.teamId,
+            organizationId: context.organizationId,
+            userId: context.userId,
+            name: created.name,
+            description: created.description,
+            stripeCustomerId: userRecord?.stripeCustomerId,
+         });
       }
       return results;
    });

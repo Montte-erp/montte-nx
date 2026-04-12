@@ -97,6 +97,7 @@ describe("emitEvent", () => {
          eventCategory: EVENT_CATEGORIES.ai,
          properties: { chatId: "chat-1" },
          userId: "user-1",
+         teamId: "team-1",
       });
 
       expect(posthog.capture).toHaveBeenCalledWith(
@@ -119,6 +120,7 @@ describe("emitEvent", () => {
          eventName: "webhook.delivered",
          eventCategory: EVENT_CATEGORIES.webhook,
          properties: {},
+         teamId: "team-1",
       });
 
       expect(posthog.capture).toHaveBeenCalledWith(

@@ -41,7 +41,6 @@ services:
 
    redis:
       image: docker.io/library/redis:7-alpine
-      container_name: montte-redis
       ports:
          - "6379:6379"
       volumes:

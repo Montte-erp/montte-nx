@@ -23,6 +23,35 @@ vi.mock("@core/environment/web", () => ({
 
 vi.mock("@/integrations/otel/init");
 
+vi.mock("@dbos-inc/dbos-sdk", () => ({
+   DBOS: {
+      workflow:
+         () =>
+         (_target: unknown, _key: unknown, descriptor: PropertyDescriptor) =>
+            descriptor,
+      step:
+         () =>
+         (_target: unknown, _key: unknown, descriptor: PropertyDescriptor) =>
+            descriptor,
+      startWorkflow: vi
+         .fn()
+         .mockReturnValue({ run: vi.fn().mockResolvedValue(undefined) }),
+      setConfig: vi.fn(),
+      launch: vi.fn().mockResolvedValue(undefined),
+      shutdown: vi.fn().mockResolvedValue(undefined),
+      logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+   },
+}));
+
+vi.mock("@/integrations/dbos/workflows", () => ({
+   DeriveKeywordsWorkflow: { run: vi.fn().mockResolvedValue(undefined) },
+   BackfillKeywordsWorkflow: { run: vi.fn().mockResolvedValue(undefined) },
+}));
+
+vi.mock("@/integrations/dbos/init", () => ({
+   launchDBOS: vi.fn(),
+}));
+
 vi.mock("@/integrations/singletons", async () => {
    const { testStore } = await import("./test-store");
 
