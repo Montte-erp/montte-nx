@@ -25,6 +25,7 @@ import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedSlugRouteImport } from './routes/_authenticated/$slug'
 import { Route as AuthSignInIndexRouteImport } from './routes/auth/sign-in/index'
 import { Route as AuthSignInEmailRouteImport } from './routes/auth/sign-in/email'
+import { Route as ApiSdkSplatRouteImport } from './routes/api/sdk/$'
 import { Route as ApiRpcSplatRouteImport } from './routes/api/rpc/$'
 import { Route as ApiFilesSplatRouteImport } from './routes/api/files/$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -148,6 +149,11 @@ const AuthSignInEmailRoute = AuthSignInEmailRouteImport.update({
   id: '/email',
   path: '/email',
   getParentRoute: () => AuthSignInRoute,
+} as any)
+const ApiSdkSplatRoute = ApiSdkSplatRouteImport.update({
+  id: '/api/sdk/$',
+  path: '/api/sdk/$',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
   id: '/api/rpc/$',
@@ -459,6 +465,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/$': typeof ApiFilesSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/api/sdk/$': typeof ApiSdkSplatRoute
   '/auth/sign-in/email': typeof AuthSignInEmailRoute
   '/auth/sign-in/': typeof AuthSignInIndexRoute
   '/callback/organization/invitation/$invitationId': typeof CallbackOrganizationInvitationInvitationIdRoute
@@ -518,6 +525,7 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/$': typeof ApiFilesSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/api/sdk/$': typeof ApiSdkSplatRoute
   '/auth/sign-in/email': typeof AuthSignInEmailRoute
   '/auth/sign-in': typeof AuthSignInIndexRoute
   '/callback/organization/invitation/$invitationId': typeof CallbackOrganizationInvitationInvitationIdRoute
@@ -578,6 +586,7 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/$': typeof ApiFilesSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/api/sdk/$': typeof ApiSdkSplatRoute
   '/auth/sign-in/email': typeof AuthSignInEmailRoute
   '/auth/sign-in/': typeof AuthSignInIndexRoute
   '/_authenticated/$slug/$teamSlug/_dashboard': typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren
@@ -641,6 +650,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/files/$'
     | '/api/rpc/$'
+    | '/api/sdk/$'
     | '/auth/sign-in/email'
     | '/auth/sign-in/'
     | '/callback/organization/invitation/$invitationId'
@@ -700,6 +710,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/files/$'
     | '/api/rpc/$'
+    | '/api/sdk/$'
     | '/auth/sign-in/email'
     | '/auth/sign-in'
     | '/callback/organization/invitation/$invitationId'
@@ -759,6 +770,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/files/$'
     | '/api/rpc/$'
+    | '/api/sdk/$'
     | '/auth/sign-in/email'
     | '/auth/sign-in/'
     | '/_authenticated/$slug/$teamSlug/_dashboard'
@@ -813,6 +825,7 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiFilesSplatRoute: typeof ApiFilesSplatRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
+  ApiSdkSplatRoute: typeof ApiSdkSplatRoute
   CallbackOrganizationInvitationInvitationIdRoute: typeof CallbackOrganizationInvitationInvitationIdRoute
 }
 
@@ -929,6 +942,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/sign-in/email'
       preLoaderRoute: typeof AuthSignInEmailRouteImport
       parentRoute: typeof AuthSignInRoute
+    }
+    '/api/sdk/$': {
+      id: '/api/sdk/$'
+      path: '/api/sdk/$'
+      fullPath: '/api/sdk/$'
+      preLoaderRoute: typeof ApiSdkSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/rpc/$': {
       id: '/api/rpc/$'
@@ -1475,6 +1495,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiFilesSplatRoute: ApiFilesSplatRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,
+  ApiSdkSplatRoute: ApiSdkSplatRoute,
   CallbackOrganizationInvitationInvitationIdRoute:
     CallbackOrganizationInvitationInvitationIdRoute,
 }

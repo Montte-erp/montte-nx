@@ -224,7 +224,6 @@
       "dev:staging": "bun run scripts/check-env.ts --env staging && nx run-many -t dev:staging --parallel=3 -p web",
       "setup": "bun run scripts/setup.ts",
       "dev:all": "bun run scripts/dev-init.ts && nx run-many -t dev --parallel=6",
-      "dev:server": "nx run-many -t dev --parallel=1 -p server ",
       "doctor": "bun run scripts/doctor.ts",
       "seed:events": "bun run scripts/seed-event-catalog.ts run",
       "seed:addons": "bun run scripts/seed-addons.ts run",

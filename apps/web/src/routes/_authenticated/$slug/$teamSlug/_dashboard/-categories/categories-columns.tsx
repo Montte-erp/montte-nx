@@ -4,6 +4,11 @@ import {
    AnnouncementTag,
    AnnouncementTitle,
 } from "@packages/ui/components/announcement";
+import {
+   Tooltip,
+   TooltipContent,
+   TooltipTrigger,
+} from "@packages/ui/components/tooltip";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
    Baby,
@@ -23,6 +28,7 @@ import {
    Plane,
    ShoppingCart,
    Smartphone,
+   ShieldCheck,
    Utensils,
    Wallet,
    Zap,
@@ -74,22 +80,27 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
 
             if (row.depth === 0 && (color || IconComponent)) {
                return (
-                  <div className="flex items-center gap-2 min-w-0">
-                     <Announcement>
-                        <AnnouncementTag
-                           style={{ backgroundColor: color ?? "#6366f1" }}
-                           className="bg-transparent"
-                        >
-                           {IconComponent && (
-                              <IconComponent className="size-3 text-white" />
-                           )}
-                        </AnnouncementTag>
-                        <AnnouncementTitle className="font-medium">
-                           {name}
-                        </AnnouncementTitle>
-                     </Announcement>
-                     {isDefault && <Badge variant="outline">Padrão</Badge>}
-                  </div>
+                  <Announcement>
+                     <AnnouncementTag>
+                        {IconComponent && (
+                           <IconComponent
+                              className="size-4"
+                              style={{ color: color ?? undefined }}
+                           />
+                        )}
+                     </AnnouncementTag>
+                     <AnnouncementTitle>
+                        {name}
+                        {isDefault && (
+                           <Tooltip>
+                              <TooltipTrigger asChild>
+                                 <ShieldCheck className="size-4 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>Padrão</TooltipContent>
+                           </Tooltip>
+                        )}
+                     </AnnouncementTitle>
+                  </Announcement>
                );
             }
 
@@ -103,7 +114,12 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                      {name}
                   </span>
                   {isDefault && row.depth === 0 && (
-                     <Badge variant="outline">Padrão</Badge>
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                           <Star className="size-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>Padrão</TooltipContent>
+                     </Tooltip>
                   )}
                </div>
             );
