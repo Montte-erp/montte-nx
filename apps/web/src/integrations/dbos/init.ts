@@ -1,5 +1,5 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
-import { env } from "@core/environment/server";
+import { env } from "@core/environment/web";
 import { getLogger } from "@core/logging/root";
 
 const logger = getLogger().child({ module: "dbos" });

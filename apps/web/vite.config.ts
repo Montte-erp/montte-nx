@@ -31,8 +31,10 @@ const config = defineConfig({
       }),
       nitro({
          preset: "bun",
-         externals: {
-            external: ["@dbos-inc/dbos-sdk"],
+         rollupConfig: {
+            external: (id: string) =>
+               id === "@dbos-inc/dbos-sdk" ||
+               id.startsWith("@dbos-inc/dbos-sdk/"),
          },
       }),
       viteReact(),

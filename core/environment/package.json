@@ -15,10 +15,6 @@
       "./helpers": {
          "types": "./dist/helpers.d.ts",
          "default": "./dist/helpers.js"
-      },
-      "./server": {
-         "types": "./dist/server.d.ts",
-         "default": "./dist/server.js"
       }
    },
    "scripts": {
