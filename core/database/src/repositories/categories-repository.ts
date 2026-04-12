@@ -444,7 +444,11 @@ export async function listCategoriesWithNullKeywords(
    try {
       return await db.query.categories.findMany({
          where: (fields, { and, eq, isNull }) =>
-            and(eq(fields.teamId, teamId), isNull(fields.keywords)),
+            and(
+               eq(fields.teamId, teamId),
+               isNull(fields.keywords),
+               eq(fields.isDefault, false),
+            ),
          limit,
       });
    } catch (err) {
