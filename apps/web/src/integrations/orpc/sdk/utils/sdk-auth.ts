@@ -42,7 +42,7 @@ export function authenticateRequest(
 
    if (!apiKeyValue) {
       logger.error({ reason: "missing_api_key", endpoint }, "SDK auth failed");
-      return errAsync<AuthData, AuthError>({ code: "MISSING_KEY" });
+      return errAsync({ code: "MISSING_KEY" } satisfies AuthError);
    }
 
    return fromPromise(
@@ -62,13 +62,13 @@ export function authenticateRequest(
             },
             "SDK auth failed",
          );
-         return err<AuthData, AuthError>({ code });
+         return err({ code } satisfies AuthError);
       }
 
       const { organizationId, teamId } = result.key.metadata ?? {};
 
       if (!organizationId || typeof organizationId !== "string") {
-         return err<AuthData, AuthError>({ code: "NO_ORGANIZATION" });
+         return err({ code: "NO_ORGANIZATION" } satisfies AuthError);
       }
 
       return ok({
