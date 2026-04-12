@@ -1,5 +1,5 @@
 import "@/integrations/otel/init";
-import "@/integrations/dbos/workflows/backfill-keywords.workflow";
+import "@/integrations/dbos/workflows";
 
 import handler, { createServerEntry } from "@tanstack/react-start/server-entry";
 import { launchDBOS } from "@/integrations/dbos/init";

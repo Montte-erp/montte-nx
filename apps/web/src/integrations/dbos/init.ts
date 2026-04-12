@@ -22,3 +22,10 @@ export function launchDBOS() {
    process.on("SIGTERM", () => void DBOS.shutdown());
    process.on("SIGINT", () => void DBOS.shutdown());
 }
+
+if (import.meta.hot) {
+   import.meta.hot.dispose(async () => {
+      await DBOS.shutdown();
+      logger.info("DBOS runtime stopped (HMR)");
+   });
+}

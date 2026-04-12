@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
+const TOAST_ID = "job-notifications";
+
 export function useJobNotifications() {
    const queryClient = useQueryClient();
 
@@ -15,12 +17,19 @@ export function useJobNotifications() {
    useEffect(() => {
       if (!data) return;
 
-      toast(data.message);
-
-      if (data.status === "completed") {
-         queryClient.invalidateQueries({
-            queryKey: orpc.categories.getAll.queryKey(),
-         });
+      if (data.status === "started") {
+         toast.loading(data.message, { id: TOAST_ID });
+         return;
       }
+
+      if (data.status === "failed") {
+         toast.error(data.message, { id: TOAST_ID });
+         return;
+      }
+
+      toast.info(data.message, { id: TOAST_ID });
+      queryClient.invalidateQueries({
+         queryKey: orpc.categories.getAll.queryKey(),
+      });
    }, [data, queryClient]);
 }

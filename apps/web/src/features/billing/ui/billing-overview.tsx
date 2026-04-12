@@ -31,6 +31,7 @@ import {
 } from "@packages/ui/components/tooltip";
 import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import {
+   Bot,
    Briefcase,
    Calendar,
    ChevronRight,
@@ -72,11 +73,21 @@ interface CategorySummary {
 }
 
 const CATEGORY_ICONS: Record<string, ReactNode> = {
+   ai: <Bot className="size-5" />,
    finance: <Coins className="size-5" />,
    contact: <Users className="size-5" />,
    inventory: <Package className="size-5" />,
    service: <Briefcase className="size-5" />,
    webhook: <Webhook className="size-5" />,
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+   ai: "IA",
+   finance: "Finanças",
+   contact: "Contatos",
+   inventory: "Estoque",
+   service: "Serviços",
+   webhook: "Webhooks",
 };
 
 const PLATFORM_ADDONS = [
@@ -441,8 +452,9 @@ function OverviewProductCard({ category }: { category: CategorySummary }) {
                      {icon}
                   </div>
                   <div className="min-w-0">
-                     <CardTitle className="text-base capitalize">
-                        {category.category}
+                     <CardTitle className="text-base">
+                        {CATEGORY_LABELS[category.category] ??
+                           category.category}
                      </CardTitle>
                   </div>
                </div>

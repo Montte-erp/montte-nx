@@ -43,12 +43,21 @@ export class DeriveKeywordsWorkflow {
          jobId: crypto.randomUUID(),
          type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
          status: "failed",
-         message: "Não foi possível gerar palavras-chave.",
+         message: error,
          teamId: input.teamId,
          timestamp: new Date().toISOString(),
       });
 
       DBOS.logger.info(`${ctx} started name="${input.name}"`);
+
+      await DeriveKeywordsWorkflow.publishStep({
+         jobId: crypto.randomUUID(),
+         type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
+         status: "started",
+         message: `Gerando palavras-chave para ${input.name}...`,
+         teamId: input.teamId,
+         timestamp: new Date().toISOString(),
+      });
 
       try {
          await DeriveKeywordsWorkflow.enforceBudgetStep(input);

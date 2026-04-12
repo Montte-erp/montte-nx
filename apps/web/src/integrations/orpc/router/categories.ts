@@ -14,7 +14,7 @@ import {
 import { getLogger } from "@core/logging/root";
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { z } from "zod";
-import { DeriveKeywordsWorkflow } from "@/integrations/dbos/workflows/derive-keywords.workflow";
+import { DeriveKeywordsWorkflow } from "@/integrations/dbos/workflows";
 import { protectedProcedure } from "../server";
 
 const logger = getLogger().child({ module: "categories.router" });
