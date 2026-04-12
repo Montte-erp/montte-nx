@@ -1,8 +1,7 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { chat } from "@tanstack/ai";
-import { createOpenRouterText } from "@tanstack/ai-openrouter";
+import { openRouterText } from "@tanstack/ai-openrouter";
 import { z } from "zod";
-import { env } from "@core/environment/server";
 import { updateCategory } from "@core/database/repositories/categories-repository";
 import { emitAiKeywordDerived } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
@@ -131,7 +130,7 @@ export class DeriveKeywordsWorkflow {
          `[derive-keywords] deriveStep model=${MODEL} name="${input.name}"`,
       );
       const result = await chat({
-         adapter: createOpenRouterText(MODEL, env.OPENROUTER_API_KEY),
+         adapter: openRouterText(MODEL),
          messages: [
             {
                role: "user",
