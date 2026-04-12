@@ -123,10 +123,23 @@ export const importBatch = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
+      const userRecord = await context.db.query.user.findFirst({
+         where: eq(userTable.id, context.userId),
+         columns: { stripeCustomerId: true },
+      });
       const results = [];
       for (const cat of input.categories) {
          const created = await createCategory(context.db, context.teamId, cat);
          results.push(created);
+         enqueueKeywordDerivation({
+            categoryId: created.id,
+            teamId: context.teamId,
+            organizationId: context.organizationId,
+            userId: context.userId,
+            name: created.name,
+            description: created.description,
+            stripeCustomerId: userRecord?.stripeCustomerId,
+         });
       }
       return results;
    });

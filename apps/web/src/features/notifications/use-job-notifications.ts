@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
+import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 
 const TOAST_ID = "job-notifications";
 
@@ -28,8 +29,13 @@ export function useJobNotifications() {
       }
 
       toast.info(data.message, { id: TOAST_ID });
-      queryClient.invalidateQueries({
-         queryKey: orpc.categories.getAll.queryKey(),
-      });
+      if (
+         data.type === NOTIFICATION_TYPES.AI_KEYWORD_DERIVED ||
+         data.type === NOTIFICATION_TYPES.CRON_KEYWORDS_BACKFILL
+      ) {
+         queryClient.invalidateQueries({
+            queryKey: orpc.categories.getAll.queryKey(),
+         });
+      }
    }, [data, queryClient]);
 }
