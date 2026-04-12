@@ -96,7 +96,7 @@ Built as an **Nx** monorepo with **Bun**.
 | :------------ | :----------------------------------------------------------------------------------- |
 | **Frontend**  | React 19, TanStack Start (SSR), TanStack Router, TanStack Query, shadcn/ui, Tailwind CSS, TypeScript |
 | **AI**        | Mastra (Agent orchestration)                                                         |
-| **Backend**   | oRPC (type-safe API), ElysiaJS (SDK server), Drizzle ORM, PostgreSQL                 |
+| **Backend**   | oRPC (type-safe API), DBOS (durable workflows), Drizzle ORM, PostgreSQL              |
 | **Auth**      | Better Auth                                                                          |
 | **Jobs**      | DBOS (durable workflows, cron, retries), Redis (rate limiting, credit counters)      |
 | **Storage**   | MinIO (S3-compatible)                                                                |
@@ -113,8 +113,7 @@ Built as an **Nx** monorepo with **Bun**.
 ```
 montte-nx/
 ├── apps/
-│   ├── web/             # TanStack Start (SSR) — dashboard + oRPC API routers
-│   └── server/          # Elysia API server for SDK consumers + DBOS durable workflows
+│   └── web/             # TanStack Start (SSR) — dashboard + oRPC routers + DBOS workflows
 ├── core/
 │   ├── database/        # Drizzle ORM schemas & repositories
 │   ├── agents/          # AI agents

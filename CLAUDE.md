@@ -48,7 +48,7 @@ montte-nx/
 │   ├── transactional/   # Resend + email
 │   └── utils/           # Shared utilities
 ├── apps/
-│   └── web/             # TanStack Start (SSR) — dashboard + oRPC routers + SDK oRPC API + DBOS workflows
+│   └── web/             # TanStack Start (SSR) — dashboard + oRPC routers + DBOS workflows
 ├── packages/
 │   ├── analytics/       # Analytics engine
 │   ├── events/          # Event catalog, schemas, emit, credits
@@ -711,7 +711,7 @@ For mutations that consume a credit-limited event, use `createBillableProcedure(
 1. **Pre-handler**: looks up the user's `stripeCustomerId`, calls `enforceCreditBudget` — returns `FORBIDDEN` if the free tier is exhausted and pay-as-you-go is not active.
 2. **Post-handler** (success only): runs any emit registered via `context.scheduleEmit`. If the handler throws, the emit is never executed.
 
-**SDK server** (`apps/server/src/orpc/billable.ts`):
+**Web oRPC** (`apps/web/src/integrations/orpc/billable.ts`):
 
 ```typescript
 import { createBillableProcedure } from "../billable";
@@ -733,31 +733,9 @@ export const create = createBillableProcedure("finance.transaction_created")
    });
 ```
 
-**Web oRPC** (`apps/web/src/integrations/orpc/billable.ts`) — same API, uses `protectedProcedure` as base and passes full Stripe/Redis context to `createEmitFn` for metering.
+Uses `protectedProcedure` as base and passes full Stripe/Redis context to `createEmitFn` for metering.
 
 **Free-tier event names** (from `@core/stripe/constants`): `finance.transaction_created` (500), `webhook.delivered` (500), `contact.created` (50), `inventory.item_created` (50), `service.created` (20), `finance.statement_imported` (10).
-
----
-
-## Worker (BullMQ)
-
-`apps/worker/src/` — queues in `queues/`, processors in `processors/`. Cron jobs in `apps/worker/src/cron.ts`.
-
-```typescript
-import { Queue } from "bullmq";
-import { redis } from "@core/redis/connection";
-
-export const myQueue = new Queue("my-queue", { connection: redis });
-
-// Processor
-export default async function myProcessor(job: Job<MyJobData>) {
-   // job.data is typed via Queue<MyJobData>
-}
-```
-
-- Queue names: kebab-case, matching processor file names.
-- Cron syntax: `repeat: { pattern: "0 * * * *" }`.
-- Never swallow errors in processors — let BullMQ handle retries.
 
 ---
 
@@ -790,7 +768,7 @@ All scripts in root `scripts/`. Required: `commander` with `run`+`check` command
 
 ## Environment Variables
 
-`SCREAMING_SNAKE_CASE`, Zod-validated in `core/environment/src/{server,worker}.ts`. Env files in `apps/web/`.
+`SCREAMING_SNAKE_CASE`, Zod-validated in `core/environment/src/server.ts`. Env files in `apps/web/`.
 
 **Public env vars** — do NOT use `VITE_*` / `import.meta.env`. These are inlined at build time and break Railway skipped builds. See TanStack Start section for the correct `createServerFn` pattern.
 
@@ -807,7 +785,7 @@ Procedures: `apps/web/src/integrations/orpc/router/onboarding.ts`.
 
 ## Billing Model
 
-100% usage-based via Stripe meter events. Free tier per event (Redis counters, monthly TTL). Usage above free tier → Stripe meter events. Optional addon subscriptions (Boost, Scale, Enterprise). Redis tracks real-time; materialized views reconcile hourly (worker cron).
+100% usage-based via Stripe meter events. Free tier per event (Redis counters, monthly TTL). Usage above free tier → Stripe meter events. Optional addon subscriptions (Boost, Scale, Enterprise). Redis tracks real-time; materialized views reconcile hourly (DBOS scheduled workflow).
 
 ---
 
