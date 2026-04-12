@@ -430,6 +430,7 @@ export async function listTeamsWithPendingKeywords(db: DatabaseInstance) {
          columns: { teamId: true },
          where: (fields, { isNull, eq, and }) =>
             and(isNull(fields.keywords), eq(fields.isDefault, false)),
+         limit: 500,
       });
    } catch (err) {
       propagateError(err);

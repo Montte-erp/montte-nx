@@ -57,7 +57,9 @@ export class BackfillKeywordsWorkflow {
             break;
          }
 
-         await DBOS.startWorkflow(DeriveKeywordsWorkflow).run({
+         await DBOS.startWorkflow(DeriveKeywordsWorkflow, {
+            workflowID: `derive-${category.id}-${new Date().toISOString().slice(0, 10)}`,
+         }).run({
             categoryId: category.id,
             teamId: category.teamId,
             organizationId: teamEntry.organizationId,

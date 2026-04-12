@@ -75,7 +75,10 @@ export function createBillableProcedure(eventName: string) {
          const fn = pendingEmit;
          try {
             await fn();
-         } catch {}
+         } catch (err) {
+            import.meta.env.DEV &&
+               console.error("[sdk-billable] emit failed", err);
+         }
       }
 
       return result;
