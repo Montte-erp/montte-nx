@@ -9,7 +9,7 @@ import { createEmitFn } from "@packages/events/emit";
 import { enforceCreditBudget } from "@packages/events/credits";
 import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import type { JobNotification } from "@packages/notifications/schema";
-import { jobPublisher } from "@/integrations/orpc/publisher";
+import { jobPublisher } from "@/integrations/dbos/publisher";
 import { db, redis, posthog, stripeClient } from "@/integrations/singletons";
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
@@ -43,7 +43,7 @@ export class DeriveKeywordsWorkflow {
          jobId: crypto.randomUUID(),
          type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
          status: "failed",
-         error,
+         message: "Não foi possível gerar palavras-chave.",
          teamId: input.teamId,
          timestamp: new Date().toISOString(),
       });
@@ -90,6 +90,7 @@ export class DeriveKeywordsWorkflow {
          jobId: crypto.randomUUID(),
          type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
          status: "completed",
+         message: `Palavras-chave geradas para ${input.name}.`,
          payload: {
             categoryId: input.categoryId,
             categoryName: input.name,

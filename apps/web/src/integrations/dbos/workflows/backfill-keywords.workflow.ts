@@ -7,7 +7,7 @@ import {
 import { enforceCreditBudget } from "@packages/events/credits";
 import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import type { JobNotification } from "@packages/notifications/schema";
-import { jobPublisher } from "@/integrations/orpc/publisher";
+import { jobPublisher } from "@/integrations/dbos/publisher";
 import { db, redis } from "@/integrations/singletons";
 import { DeriveKeywordsWorkflow } from "./derive-keywords.workflow";
 
@@ -73,6 +73,7 @@ export class BackfillKeywordsWorkflow {
             jobId: crypto.randomUUID(),
             type: NOTIFICATION_TYPES.CRON_KEYWORDS_BACKFILL,
             status: "completed",
+            message: `Palavras-chave configuradas para ${processed} categorias.`,
             payload: { count: processed },
             teamId: teamEntry.teamId,
             timestamp: new Date().toISOString(),

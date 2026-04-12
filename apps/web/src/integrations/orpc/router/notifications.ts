@@ -2,7 +2,7 @@ import { eventIterator } from "@orpc/server";
 import { jobNotificationSchema } from "@packages/notifications/schema";
 import { getLogger } from "@core/logging/root";
 import { protectedProcedure } from "../server";
-import { jobPublisher } from "../publisher";
+import { jobPublisher } from "@/integrations/dbos/publisher";
 
 const logger = getLogger().child({ module: "notifications.subscribe" });
 
