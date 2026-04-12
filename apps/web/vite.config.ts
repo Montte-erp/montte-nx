@@ -12,8 +12,10 @@ const config = defineConfig({
    optimizeDeps: {
       include: ["react", "react-dom"],
    },
-   esbuild: {
-      target: "es2022",
+   oxc: {
+      transform: {
+         target: "es2022",
+      },
    },
    server: {
       watch: {

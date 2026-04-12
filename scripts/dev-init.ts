@@ -26,25 +26,6 @@ function run(cmd: string) {
    execSync(cmd, { stdio: "inherit" });
 }
 
-function detectComposeCommand(): string {
-   try {
-      execSync("docker compose version", { stdio: "pipe" });
-      return "docker compose";
-   } catch {
-      try {
-         execSync("docker-compose --version", { stdio: "pipe" });
-         return "docker-compose";
-      } catch {
-         try {
-            execSync("podman-compose version", { stdio: "pipe" });
-            return "podman-compose";
-         } catch {
-            return "";
-         }
-      }
-   }
-}
-
 // ── 1. Ensure .env.local exists ──────────────────────────────────────────────
 if (!fs.existsSync(envLocalPath)) {
    if (!fs.existsSync(envExamplePath)) {
@@ -61,22 +42,11 @@ if (!fs.existsSync(envLocalPath)) {
 }
 
 // ── 2. Start containers ───────────────────────────────────────────────────────
-const compose = detectComposeCommand();
-const composeFile = path.join("apps", "web", "docker-compose.yml");
-
-if (!compose) {
-   console.log(
-      colors.yellow(
-         "⚠ No container runtime found (Docker/Podman). Skipping container start.",
-      ),
-   );
-} else {
-   step("Starting containers...");
-   try {
-      run(`${compose} -f ${composeFile} up -d`);
-   } catch {
-      console.log(colors.yellow("⚠ Could not start containers — continuing."));
-   }
+step("Starting containers...");
+try {
+   run("bun run --cwd apps/web container-start");
+} catch {
+   console.log(colors.yellow("⚠ Could not start containers — continuing."));
 }
 
 // ── 3. Push DB schema ─────────────────────────────────────────────────────────
