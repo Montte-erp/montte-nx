@@ -12,6 +12,9 @@ const config = defineConfig({
    optimizeDeps: {
       include: ["react", "react-dom"],
    },
+   esbuild: {
+      target: "es2022",
+   },
    server: {
       watch: {
          ignored: ["**/node_modules/**", "**/.git/**"],
