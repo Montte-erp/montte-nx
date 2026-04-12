@@ -27,10 +27,6 @@ export function resolveApiKey(request: Request): string | null {
    const sdkApiKey = request.headers.get("sdk-api-key");
    if (sdkApiKey) return sdkApiKey;
 
-   const url = new URL(request.url);
-   const queryApiKey = url.searchParams.get("apiKey");
-   if (queryApiKey) return queryApiKey;
-
    return null;
 }
 

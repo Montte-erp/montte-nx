@@ -11,7 +11,9 @@ import {
    createCategorySchema,
    updateCategorySchema,
 } from "@core/database/schemas/categories";
+import { user as userTable } from "@core/database/schemas/auth";
 import { getLogger } from "@core/logging/root";
+import { eq } from "drizzle-orm";
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { z } from "zod";
 import { DeriveKeywordsWorkflow } from "@/integrations/dbos/workflows";
@@ -43,7 +45,13 @@ const idSchema = z.object({ id: z.string().uuid() });
 export const create = protectedProcedure
    .input(createCategorySchema)
    .handler(async ({ context, input }) => {
-      const category = await createCategory(context.db, context.teamId, input);
+      const [category, userRecord] = await Promise.all([
+         createCategory(context.db, context.teamId, input),
+         context.db.query.user.findFirst({
+            where: eq(userTable.id, context.userId),
+            columns: { stripeCustomerId: true },
+         }),
+      ]);
       enqueueKeywordDerivation({
          categoryId: category.id,
          teamId: context.teamId,
@@ -51,7 +59,7 @@ export const create = protectedProcedure
          userId: context.userId,
          name: category.name,
          description: category.description,
-         stripeCustomerId: null,
+         stripeCustomerId: userRecord?.stripeCustomerId ?? null,
       });
       return category;
    });
@@ -79,6 +87,10 @@ export const update = protectedProcedure
       const { id, ...data } = input;
       const category = await updateCategory(context.db, id, data);
       if (data.name !== undefined || data.description !== undefined) {
+         const userRecord = await context.db.query.user.findFirst({
+            where: eq(userTable.id, context.userId),
+            columns: { stripeCustomerId: true },
+         });
          enqueueKeywordDerivation({
             categoryId: category.id,
             teamId: context.teamId,
@@ -86,7 +98,7 @@ export const update = protectedProcedure
             userId: context.userId,
             name: category.name,
             description: category.description,
-            stripeCustomerId: null,
+            stripeCustomerId: userRecord?.stripeCustomerId ?? null,
          });
       }
       return category;
