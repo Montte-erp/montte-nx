@@ -14,7 +14,7 @@ import { DeriveKeywordsWorkflow } from "./derive-keywords.workflow";
 export class BackfillKeywordsWorkflow {
    @DBOS.scheduled({ crontab: "0 3 * * *" })
    @DBOS.workflow()
-   static async runDaily() {
+   static async runDaily(_scheduledTime: Date, _startTime: Date) {
       const teams = await BackfillKeywordsWorkflow.fetchTeamsWithPendingStep();
       for (const t of teams) {
          await BackfillKeywordsWorkflow.processTeamStep(t);

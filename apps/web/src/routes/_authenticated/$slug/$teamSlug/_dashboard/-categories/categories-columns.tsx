@@ -29,6 +29,7 @@ import {
    ShoppingCart,
    Smartphone,
    ShieldCheck,
+   Star,
    Utensils,
    Wallet,
    Zap,

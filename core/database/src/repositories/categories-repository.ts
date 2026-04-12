@@ -428,7 +428,8 @@ export async function listTeamsWithPendingKeywords(db: DatabaseInstance) {
    try {
       return await db.query.categories.findMany({
          columns: { teamId: true },
-         where: (fields, { isNull }) => isNull(fields.keywords),
+         where: (fields, { isNull, eq, and }) =>
+            and(isNull(fields.keywords), eq(fields.isDefault, false)),
       });
    } catch (err) {
       propagateError(err);
