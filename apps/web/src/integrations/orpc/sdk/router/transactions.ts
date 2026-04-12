@@ -19,15 +19,20 @@ import { emitFinanceTransactionCreated } from "@packages/events/finance";
 import { createBillableProcedure } from "../billable";
 import { sdkProcedure } from "../server";
 
-function mapTransaction(tx: Record<string, unknown>) {
+function mapTransaction(tx: {
+   createdAt?: string | Date | null;
+   updatedAt?: string | Date | null;
+   date?: string | Date | null;
+   [key: string]: unknown;
+}) {
    return {
       ...tx,
       date:
          typeof tx.date === "string"
             ? tx.date
-            : dayjs(tx.date as Date).format("YYYY-MM-DD"),
-      createdAt: dayjs(tx.createdAt as string | Date).toISOString(),
-      updatedAt: dayjs(tx.updatedAt as string | Date).toISOString(),
+            : dayjs(tx.date).format("YYYY-MM-DD"),
+      createdAt: dayjs(tx.createdAt).toISOString(),
+      updatedAt: dayjs(tx.updatedAt).toISOString(),
    };
 }
 
@@ -114,7 +119,7 @@ export const remove = sdkProcedure
       if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
       await ensureTransactionOwnership(context.db, input.id, context.teamId);
       await deleteTransaction(context.db, input.id);
-      return { success: true as const };
+      return { success: true };
    });
 
 export const summary = sdkProcedure

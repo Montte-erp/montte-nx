@@ -75,9 +75,7 @@ export function createBillableProcedure(eventName: string) {
          const fn = pendingEmit;
          try {
             await fn();
-         } catch {
-            // emit failure must not roll back the already-committed mutation
-         }
+         } catch {}
       }
 
       return result;

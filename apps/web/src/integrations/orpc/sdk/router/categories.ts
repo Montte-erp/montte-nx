@@ -17,11 +17,15 @@ import { emitFinanceCategoryCreated } from "@packages/events/finance";
 import { createBillableProcedure } from "../billable";
 import { sdkProcedure } from "../server";
 
-function mapCategory(cat: Record<string, unknown>) {
+function mapCategory(cat: {
+   createdAt?: string | Date | null;
+   updatedAt?: string | Date | null;
+   [key: string]: unknown;
+}) {
    return {
       ...cat,
-      createdAt: dayjs(cat.createdAt as string | Date).toISOString(),
-      updatedAt: dayjs(cat.updatedAt as string | Date).toISOString(),
+      createdAt: dayjs(cat.createdAt).toISOString(),
+      updatedAt: dayjs(cat.updatedAt).toISOString(),
    };
 }
 
@@ -73,7 +77,7 @@ export const remove = sdkProcedure
       if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
       await ensureCategoryOwnership(context.db, input.id, context.teamId);
       await deleteCategory(context.db, input.id);
-      return { success: true as const };
+      return { success: true };
    });
 
 export const archive = sdkProcedure

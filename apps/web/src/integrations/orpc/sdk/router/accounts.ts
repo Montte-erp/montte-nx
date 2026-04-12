@@ -17,11 +17,15 @@ import { WebAppError } from "@core/logging/errors";
 import { createBillableProcedure } from "../billable";
 import { sdkProcedure } from "../server";
 
-function mapAccount(account: Record<string, unknown>) {
+function mapAccount(account: {
+   createdAt?: string | Date | null;
+   updatedAt?: string | Date | null;
+   [key: string]: unknown;
+}) {
    return {
       ...account,
-      createdAt: dayjs(account.createdAt as string | Date).toISOString(),
-      updatedAt: dayjs(account.updatedAt as string | Date).toISOString(),
+      createdAt: dayjs(account.createdAt).toISOString(),
+      updatedAt: dayjs(account.updatedAt).toISOString(),
    };
 }
 
@@ -102,5 +106,5 @@ export const remove = sdkProcedure
       if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
       await ensureBankAccountOwnership(context.db, input.id, context.teamId);
       await deleteBankAccount(context.db, input.id);
-      return { success: true as const };
+      return { success: true };
    });

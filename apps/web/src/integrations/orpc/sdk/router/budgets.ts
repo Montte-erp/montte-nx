@@ -16,14 +16,18 @@ import dayjs from "dayjs";
 import { WebAppError } from "@core/logging/errors";
 import { sdkProcedure } from "../server";
 
-function mapBudgetGoal(goal: Record<string, unknown>) {
+function mapBudgetGoal(goal: {
+   createdAt?: string | Date | null;
+   updatedAt?: string | Date | null;
+   [key: string]: unknown;
+}) {
    return {
       ...goal,
       currentSpent:
          typeof goal.spentAmount === "string" ? goal.spentAmount : "0",
       percentUsed: typeof goal.percentUsed === "number" ? goal.percentUsed : 0,
-      createdAt: dayjs(goal.createdAt as string | Date).toISOString(),
-      updatedAt: dayjs(goal.updatedAt as string | Date).toISOString(),
+      createdAt: dayjs(goal.createdAt).toISOString(),
+      updatedAt: dayjs(goal.updatedAt).toISOString(),
    };
 }
 
@@ -81,5 +85,5 @@ export const remove = sdkProcedure
       if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
       await ensureBudgetGoalOwnership(context.db, input.id, context.teamId);
       await deleteBudgetGoal(context.db, input.id, context.teamId);
-      return { success: true as const };
+      return { success: true };
    });
