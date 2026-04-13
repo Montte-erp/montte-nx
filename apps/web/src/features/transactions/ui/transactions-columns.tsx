@@ -1,5 +1,10 @@
 import { format, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
+import {
+   Tooltip,
+   TooltipContent,
+   TooltipTrigger,
+} from "@packages/ui/components/tooltip";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Outputs } from "@/integrations/orpc/client";
 
@@ -76,8 +81,26 @@ export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
          header: "Categoria",
          cell: ({ row }) => {
             const name = row.original.categoryName;
-            if (!name)
+            const hasSuggestion = !name && row.original.suggestedCategoryId;
+            if (!name && !hasSuggestion)
                return <span className="text-xs text-muted-foreground">—</span>;
+            if (hasSuggestion) {
+               return (
+                  <Tooltip>
+                     <TooltipTrigger asChild>
+                        <Badge
+                           variant="outline"
+                           className="text-xs cursor-default"
+                        >
+                           sugestão IA
+                        </Badge>
+                     </TooltipTrigger>
+                     <TooltipContent>
+                        Categoria sugerida pela IA. Clique para revisar.
+                     </TooltipContent>
+                  </Tooltip>
+               );
+            }
             return <span className="text-sm">{name}</span>;
          },
       },
