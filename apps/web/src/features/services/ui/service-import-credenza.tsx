@@ -37,6 +37,7 @@ import {
    Loader2,
 } from "lucide-react";
 import { useState } from "react";
+import { useCsvFile } from "@/hooks/use-csv-file";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -93,47 +94,6 @@ function parsePriceToCents(raw: string): number | null {
    const num = Number.parseFloat(cleaned);
    if (Number.isNaN(num)) return null;
    return Math.round(num * 100);
-}
-
-function parseCsvContent(content: string): RawCsvData {
-   const lines = content.split(/\r?\n/).filter((l) => l.trim().length > 0);
-   if (lines.length === 0) return { headers: [], rows: [] };
-
-   const parseRow = (line: string): string[] => {
-      const fields: string[] = [];
-      let current = "";
-      let inQuotes = false;
-
-      for (let i = 0; i < line.length; i++) {
-         const char = line[i];
-         if (inQuotes) {
-            if (char === '"') {
-               if (line[i + 1] === '"') {
-                  current += '"';
-                  i++;
-               } else {
-                  inQuotes = false;
-               }
-            } else {
-               current += char;
-            }
-         } else if (char === '"') {
-            inQuotes = true;
-         } else if (char === "," || char === ";") {
-            fields.push(current.trim());
-            current = "";
-         } else {
-            current += char;
-         }
-      }
-      fields.push(current.trim());
-      return fields;
-   };
-
-   const headers = parseRow(lines[0]);
-   const rows = lines.slice(1).map(parseRow);
-
-   return { headers, rows };
 }
 
 function guessMapping(headers: string[]): Partial<ColumnMapping> {
@@ -221,6 +181,7 @@ interface UploadStepProps {
 function UploadStep({ methods, onFileReady }: UploadStepProps) {
    const [isParsing, setIsParsing] = useState(false);
    const [selectedFile, setSelectedFile] = useState<File | undefined>();
+   const { parse } = useCsvFile();
 
    function handleTemplateDownload() {
       const csv =
@@ -234,30 +195,24 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
       URL.revokeObjectURL(url);
    }
 
-   function processFile(file: File) {
+   async function processFile(file: File) {
       setSelectedFile(file);
       setIsParsing(true);
-
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-         try {
-            const content = ev.target?.result as string;
-            const rawCsv = parseCsvContent(content);
-            if (rawCsv.headers.length === 0) {
-               toast.error("Arquivo CSV vazio ou inválido.");
-               setSelectedFile(undefined);
-               return;
-            }
-            onFileReady(rawCsv);
-            methods.navigation.next();
-         } catch {
-            toast.error("Erro ao processar o arquivo. Verifique o formato.");
+      try {
+         const rawCsv = await parse(file);
+         if (rawCsv.headers.length === 0) {
+            toast.error("Arquivo CSV vazio ou inválido.");
             setSelectedFile(undefined);
-         } finally {
-            setIsParsing(false);
+            return;
          }
-      };
-      reader.readAsText(file, "utf-8");
+         onFileReady(rawCsv);
+         methods.navigation.next();
+      } catch {
+         toast.error("Erro ao processar o arquivo. Verifique o formato.");
+         setSelectedFile(undefined);
+      } finally {
+         setIsParsing(false);
+      }
    }
 
    return (
