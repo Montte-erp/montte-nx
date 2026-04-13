@@ -73,6 +73,10 @@ export const transactions = financeSchema.table(
       categoryId: uuid("category_id").references(() => categories.id, {
          onDelete: "set null",
       }),
+      suggestedCategoryId: uuid("suggested_category_id").references(
+         () => categories.id,
+         { onDelete: "set null" },
+      ),
       attachments: jsonb("attachments").$type<Attachment[]>(),
       paymentMethod: paymentMethodEnum("payment_method"),
       isInstallment: boolean("is_installment").default(false).notNull(),
