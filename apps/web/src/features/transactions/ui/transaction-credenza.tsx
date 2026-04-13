@@ -1151,7 +1151,7 @@ function TransactionCredenzaContent({
                                                                      id,
                                                                   ) => {
                                                                      form.setFieldValue(
-                                                                        "bankAccountId",
+                                                                        "destinationBankAccountId",
                                                                         id,
                                                                      );
                                                                      closeTopCredenza();
