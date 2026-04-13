@@ -132,16 +132,22 @@ export const bulkRemove = protectedProcedure
 | ---- | ---- |
 | Single query (default) | `useSuspenseQuery` |
 | Multiple independent queries in same component | `useSuspenseQueries` — avoids waterfall |
-| Conditional query (depends on user input/state) | Child component pattern — see below |
+| Conditional query (depends on user input/state) | `useQuery` + `skipToken` as input, or child component pattern for `useSuspenseQuery` |
 | Subscribe to partial query data | `useSuspenseQuery` + `select` option |
 | Prefetch before render | `queryClient.prefetchQuery` in route loader |
 | Track mutation state cross-component | `useMutationState` + `orpc.procedure.mutationKey()` |
 | SSE / Event Iterator (live stream) | `useQuery` + `experimental_liveOptions` — see below |
 
 **Key rules:**
-- **Never `useQuery`** — always `useSuspenseQuery`. The only exception is `experimental_liveOptions` (SSE / Event Iterator) — live queries have no initial data so suspending is wrong.
-- **Never `useQuery + enabled`** — use the child component pattern instead (see below).
-- **Never `skipToken + useSuspenseQuery`** — `UseSuspenseQueryOptions` does not support `skipToken`. Use child component pattern.
+- **Never `useQuery`** — always `useSuspenseQuery`. Exceptions: `experimental_liveOptions` (SSE / Event Iterator) and conditional queries via `skipToken` (see below).
+- **Never `useQuery + enabled`** — use `skipToken` as input instead: `orpc.procedure.queryOptions({ input: condition ? { ...} : skipToken })`.
+- **`skipToken` with `useQuery` only** — `UseSuspenseQueryOptions` does not support `skipToken`. For conditional `useSuspenseQuery`, use the child component pattern instead.
+  ```tsx
+  // ✅ Conditional query with useQuery + skipToken
+  const { data } = useQuery(
+     orpc.items.getById.queryOptions({ input: selectedId ? { id: selectedId } : skipToken }),
+  );
+  ```
 - **`useSuspenseQueries`** for 2+ independent queries in the same component — prevents React from suspending sequentially (waterfall).
 - **`select` aggressively** — whenever a component needs only part of a query response, use `select` to derive the exact shape needed. This eliminates `useState` for derived values, prevents re-renders from unrelated field changes, and removes the need for intermediate variables or `useMemo`. Prefer `select` over storing values in separate state:
   ```tsx
@@ -282,7 +288,7 @@ function ItemDetails({ id }: { id: string }) {
    </Suspense>
 )}
 ```
-Never use `skipToken` with `useSuspenseQuery` — it is not supported in TanStack Query v5.
+`skipToken` works with `useQuery` only — pass it as `input` when condition is false. `useSuspenseQuery` does not support `skipToken`; use the child component pattern above instead.
 
 **Empty states** — always use `Empty`/`EmptyHeader`/`EmptyMedia`/`EmptyTitle`/`EmptyDescription`/`EmptyContent` from `@packages/ui/components/empty`. Never build custom empty states with raw divs.
 
