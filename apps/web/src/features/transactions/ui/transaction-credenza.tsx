@@ -701,18 +701,15 @@ function TransactionCredenzaContent({
          subcategoryId: "",
          tagIds: emptyTagIds,
          description: transaction?.description ?? "",
-         contactId: transaction?.contactId ?? (null as string | null),
+         contactId: transaction?.contactId ?? null,
          creditCardId: transaction?.creditCardId ?? "",
-         createAsBill: false as boolean,
-         paymentMethod: (transaction?.paymentMethod ?? "") as
-            | PaymentMethod
-            | "",
+         createAsBill: false,
+         paymentMethod: transaction?.paymentMethod ?? "",
          isInstallment: transaction?.isInstallment ?? false,
-         installmentCount:
-            transaction?.installmentCount ?? (null as number | null),
-         isRecurring: false as boolean,
-         recurringFrequency: null as string | null,
-         recurringCount: null as number | null,
+         installmentCount: transaction?.installmentCount ?? null,
+         isRecurring: false,
+         recurringFrequency: null,
+         recurringCount: null,
       },
       validators: {
          onSubmitAsync: async ({ value }) => {

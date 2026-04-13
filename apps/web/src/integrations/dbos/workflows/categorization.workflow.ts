@@ -32,24 +32,22 @@ export class CategorizationWorkflow {
    static async run(input: CategorizationInput) {
       const ctx = `[categorization] tx=${input.transactionId} team=${input.teamId}`;
 
-      const failNotification = (error: string): JobNotification => ({
-         jobId: crypto.randomUUID(),
+      const failNotification = (
+         error: string,
+      ): Omit<JobNotification, "jobId" | "timestamp"> => ({
          type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
          status: "failed",
          message: error,
          teamId: input.teamId,
-         timestamp: new Date().toISOString(),
       });
 
       DBOS.logger.info(`${ctx} started name="${input.name}"`);
 
       await CategorizationWorkflow.publishStep({
-         jobId: crypto.randomUUID(),
          type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
          status: "started",
          message: `Categorizando transação "${input.name}"...`,
          teamId: input.teamId,
-         timestamp: new Date().toISOString(),
       });
 
       let keywordMatch: { id: string } | null;
@@ -67,13 +65,11 @@ export class CategorizationWorkflow {
             categoryId: keywordMatch.id,
          });
          await CategorizationWorkflow.publishStep({
-            jobId: crypto.randomUUID(),
             type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
             status: "completed",
             message: `Transação "${input.name}" categorizada.`,
             payload: { transactionId: input.transactionId },
             teamId: input.teamId,
-            timestamp: new Date().toISOString(),
          });
          DBOS.logger.info(`${ctx} completed via keyword match`);
          return;
@@ -102,13 +98,11 @@ export class CategorizationWorkflow {
       );
 
       await CategorizationWorkflow.publishStep({
-         jobId: crypto.randomUUID(),
          type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
          status: "completed",
          message: `Transação "${input.name}" categorizada.`,
          payload: { transactionId: input.transactionId },
          teamId: input.teamId,
-         timestamp: new Date().toISOString(),
       });
 
       DBOS.logger.info(`${ctx} completed via AI inference`);
@@ -180,10 +174,21 @@ Se tiver certeza, retorne confidence "high". Se estiver em dúvida, retorne "low
    }
 
    @DBOS.step()
-   static async publishStep(notification: JobNotification) {
+   static async publishStep(
+      notification: Omit<JobNotification, "jobId" | "timestamp"> & {
+         jobId?: string;
+         timestamp?: string;
+      },
+   ) {
+      const jobId = notification.jobId ?? crypto.randomUUID();
+      const timestamp = notification.timestamp ?? new Date().toISOString();
       DBOS.logger.debug(
          `[categorization] publishStep status=${notification.status} team=${notification.teamId}`,
       );
-      await jobPublisher.publish("job.notification", notification);
+      await jobPublisher.publish("job.notification", {
+         ...notification,
+         jobId,
+         timestamp,
+      });
    }
 }

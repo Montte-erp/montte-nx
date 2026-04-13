@@ -1,7 +1,7 @@
 import type { Outputs } from "@/integrations/orpc/client";
+import { Button } from "@packages/ui/components/button";
 
 type BudgetGoalWithProgress = Outputs["budgetGoals"]["getAll"][number];
-import { Button } from "@packages/ui/components/button";
 import {
    Combobox,
    type ComboboxOption,
