@@ -56,6 +56,13 @@ type PaymentMethod =
    | "cheque"
    | "automatic_debit";
 
+const bankAccountIdSchema = z.string().uuid("Conta vinculada inválida.");
+const daySchema = z
+   .number()
+   .int("Dia deve ser um número inteiro.")
+   .min(1, "Dia deve ser entre 1 e 31.")
+   .max(31, "Dia deve ser entre 1 e 31.");
+
 const amountSchema = z
    .string()
    .min(1, "Campo obrigatório.")
@@ -246,7 +253,7 @@ function NovaConta({ onSuccess }: { onSuccess: (id: string) => void }) {
                      type="submit"
                   >
                      {mutation.isPending ? (
-                        <Spinner className="size-4 mr-2" />
+                        <Spinner className="size-4" />
                      ) : null}
                      Criar conta
                   </Button>
@@ -269,12 +276,6 @@ function NovoCartao({ onSuccess }: { onSuccess: (id: string) => void }) {
          },
       }),
    );
-   const bankAccountIdSchema = z.string().uuid("Conta vinculada inválida.");
-   const daySchema = z
-      .number()
-      .int("Dia deve ser um número inteiro.")
-      .min(1, "Dia deve ser entre 1 e 31.")
-      .max(31, "Dia deve ser entre 1 e 31.");
    const form = useForm({
       defaultValues: {
          name: "",
@@ -418,7 +419,7 @@ function NovoCartao({ onSuccess }: { onSuccess: (id: string) => void }) {
                      type="submit"
                   >
                      {mutation.isPending ? (
-                        <Spinner className="size-4 mr-2" />
+                        <Spinner className="size-4" />
                      ) : null}
                      Criar cartão
                   </Button>
@@ -492,7 +493,7 @@ function NovoContato({ onSuccess }: { onSuccess: (id: string) => void }) {
                      type="submit"
                   >
                      {mutation.isPending ? (
-                        <Spinner className="size-4 mr-2" />
+                        <Spinner className="size-4" />
                      ) : null}
                      Criar contato
                   </Button>
@@ -572,7 +573,7 @@ function NovaCategoria({
                      type="submit"
                   >
                      {mutation.isPending ? (
-                        <Spinner className="size-4 mr-2" />
+                        <Spinner className="size-4" />
                      ) : null}
                      Criar categoria
                   </Button>
@@ -645,7 +646,7 @@ function NovaTag({ onSuccess }: { onSuccess: (id: string) => void }) {
                      type="submit"
                   >
                      {mutation.isPending ? (
-                        <Spinner className="size-4 mr-2" />
+                        <Spinner className="size-4" />
                      ) : null}
                      Criar centro de custo
                   </Button>

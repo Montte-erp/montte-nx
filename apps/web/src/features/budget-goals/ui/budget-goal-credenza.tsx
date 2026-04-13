@@ -341,9 +341,7 @@ export function BudgetGoalCredenza({
                   children={(alertEnabledField) => (
                      <Field>
                         <div className="flex items-center justify-between gap-2">
-                           <FieldLabel className="mb-0">
-                              Ativar alerta
-                           </FieldLabel>
+                           <FieldLabel>Ativar alerta</FieldLabel>
                            <Switch
                               checked={alertEnabledField.state.value}
                               onCheckedChange={alertEnabledField.handleChange}
@@ -367,7 +365,6 @@ export function BudgetGoalCredenza({
                                           id={field.name}
                                           name={field.name}
                                           aria-invalid={isInvalid}
-                                          className="mt-1.5"
                                           max="100"
                                           min="1"
                                           onBlur={field.handleBlur}

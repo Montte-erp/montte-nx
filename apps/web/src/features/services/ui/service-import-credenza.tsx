@@ -195,7 +195,7 @@ function StepIndicator({ methods }: { methods: ImportStepperMethods }) {
    const currentIndex = methods.lookup.getIndex(methods.state.current.data.id);
 
    return (
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2">
          {steps.map((step, idx) => (
             <div
                className={[
@@ -288,12 +288,12 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                      ) : (
                         <FileSpreadsheet className="size-8 text-muted-foreground" />
                      )}
-                     <p className="text-sm font-medium mt-2">
+                     <p className="text-sm font-medium">
                         {isParsing
                            ? "Processando arquivo..."
                            : "Arraste um arquivo CSV ou clique para selecionar"}
                      </p>
-                     <p className="text-xs text-muted-foreground mt-1">
+                     <p className="text-xs text-muted-foreground">
                         Formato aceito: .csv
                      </p>
                   </DropzoneEmptyState>
@@ -389,11 +389,11 @@ function MappingStep({
                   ))}
                </div>
 
-               <div className="rounded-lg border bg-muted/20 p-3">
+               <div className="flex flex-col gap-2 rounded-lg border bg-muted/20 p-3">
                   <p className="text-xs text-muted-foreground">
                      Colunas detectadas: {rawCsv.headers.join(", ")}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground">
                      {rawCsv.rows.length} linha(s) de dados
                   </p>
                </div>
@@ -417,7 +417,7 @@ function MappingStep({
                   type="button"
                >
                   Continuar
-                  <ChevronRight className="ml-1 size-4" />
+                  <ChevronRight className="size-4" />
                </Button>
             </div>
          </CredenzaFooter>
@@ -532,7 +532,7 @@ function PreviewStep({ methods, rows }: PreviewStepProps) {
                   type="button"
                >
                   Continuar
-                  <ChevronRight className="ml-1 size-4" />
+                  <ChevronRight className="size-4" />
                </Button>
             </div>
          </CredenzaFooter>
@@ -674,7 +674,7 @@ function ConfirmStep({ methods, rows, onClose }: ConfirmStepProps) {
                   type="button"
                >
                   {isLoading ? (
-                     <Loader2 className="mr-2 size-4 animate-spin" />
+                     <Loader2 className="size-4 animate-spin" />
                   ) : null}
                   Importar {validRows.length} serviço(s)
                </Button>

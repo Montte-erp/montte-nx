@@ -116,7 +116,7 @@ function InsightEditCredenzaContent({ insightId }: InsightEditCredenzaProps) {
                      <div className="border-t" />
 
                      <div className="flex flex-col gap-2">
-                        <span className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider px-1 mb-0.5">
+                        <span className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider px-1">
                            Tipo
                         </span>
                         {TYPE_ITEMS.map((item) => {

@@ -277,7 +277,7 @@ function StepIndicator({ methods }: { methods: ImportStepperMethods }) {
    const currentIndex = methods.lookup.getIndex(methods.state.current.data.id);
 
    return (
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2">
          {steps.map((step, idx) => (
             <div
                className={[
@@ -429,16 +429,16 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                      {isParsing ? (
                         <Loader2 className="size-8 text-primary animate-spin" />
                      ) : (
-                        <>
+                        <div className="flex flex-col gap-2 items-center">
                            <FileSpreadsheet className="size-8 text-muted-foreground" />
-                           <p className="font-medium text-sm mt-2">
+                           <p className="font-medium text-sm">
                               Arraste e solte ou clique para selecionar
                            </p>
-                           <p className="text-xs text-muted-foreground mt-1">
+                           <p className="text-xs text-muted-foreground">
                               Suporta arquivos <strong>.CSV</strong> e{" "}
                               <strong>.OFX</strong>
                            </p>
-                           <div className="flex items-center gap-2 mt-2">
+                           <div className="flex items-center gap-2">
                               <div className="flex items-center gap-2 rounded-md border bg-background px-2.5 py-1">
                                  <FileSpreadsheet className="size-3.5 text-emerald-600" />
                                  <span className="text-xs font-medium">
@@ -452,21 +452,21 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                                  </span>
                               </div>
                            </div>
-                        </>
+                        </div>
                      )}
                   </DropzoneEmptyState>
                   <DropzoneContent />
                </Dropzone>
 
                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-lg border bg-muted/30 p-3">
-                     <p className="text-xs font-medium mb-0.5">Arquivo CSV</p>
+                  <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+                     <p className="text-xs font-medium">Arquivo CSV</p>
                      <p className="text-xs text-muted-foreground">
                         Você poderá mapear as colunas no próximo passo
                      </p>
                   </div>
-                  <div className="rounded-lg border bg-muted/30 p-3">
-                     <p className="text-xs font-medium mb-0.5">Arquivo OFX</p>
+                  <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+                     <p className="text-xs font-medium">Arquivo OFX</p>
                      <p className="text-xs text-muted-foreground">
                         Mapeamento automático — pula direto para a prévia
                      </p>
@@ -483,7 +483,7 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                type="button"
                variant="outline"
             >
-               <FileSpreadsheet className="size-4 mr-2" />
+               <FileSpreadsheet className="size-4" />
                Baixar modelo CSV
             </Button>
          </CredenzaFooter>
@@ -655,7 +655,7 @@ function ColumnMappingStep({
                   type="button"
                >
                   Aplicar mapeamento
-                  <ChevronRight className="size-4 ml-1" />
+                  <ChevronRight className="size-4" />
                </Button>
             </div>
          </CredenzaFooter>
@@ -847,8 +847,8 @@ function PreviewStep({
                      </p>
 
                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                           <p className="text-xs text-muted-foreground mb-1">
+                        <div className="flex flex-col gap-2">
+                           <p className="text-xs text-muted-foreground">
                               Conta padrão *
                            </p>
                            <Combobox
@@ -868,8 +868,8 @@ function PreviewStep({
                            />
                         </div>
 
-                        <div>
-                           <p className="text-xs text-muted-foreground mb-1">
+                        <div className="flex flex-col gap-2">
+                           <p className="text-xs text-muted-foreground">
                               Categoria padrão
                            </p>
                            <Combobox
@@ -894,8 +894,8 @@ function PreviewStep({
                               (c: { parentId: string | null }) =>
                                  c.parentId === defaults.categoryId,
                            ).length > 0 && (
-                              <div className="col-span-2">
-                                 <p className="text-xs text-muted-foreground mb-1">
+                              <div className="col-span-2 flex flex-col gap-2">
+                                 <p className="text-xs text-muted-foreground">
                                     Subcategoria padrão
                                  </p>
                                  <Combobox
@@ -1085,7 +1085,7 @@ function PreviewStep({
 
                   {ignoreDuplicates && duplicateCount > 0 && (
                      <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5">
-                        <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600" />
+                        <AlertTriangle className="size-3.5 shrink-0 self-start text-amber-600" />
                         <p className="text-xs text-amber-700">
                            {duplicateCount} lançamento(s) marcada(s) como
                            duplicata serão ignoradas.
@@ -1114,7 +1114,7 @@ function PreviewStep({
                      type="button"
                   >
                      Continuar
-                     <ChevronRight className="ml-1 size-4" />
+                     <ChevronRight className="size-4" />
                   </Button>
                </div>
             </CredenzaFooter>
@@ -1331,7 +1331,7 @@ function ConfirmStep({
                   <label className="flex cursor-pointer select-none items-start gap-2">
                      <Checkbox
                         checked={ignoreOnServer}
-                        className="mt-0.5"
+                        className="self-start"
                         onCheckedChange={(c) => setIgnoreOnServer(c === true)}
                      />
                      <div>
@@ -1380,7 +1380,7 @@ function ConfirmStep({
                   type="button"
                >
                   {isLoading ? (
-                     <Loader2 className="mr-2 size-4 animate-spin" />
+                     <Loader2 className="size-4 animate-spin" />
                   ) : null}
                   Importar {visibleRows.length} lançamento(s)
                </Button>
