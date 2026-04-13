@@ -8,6 +8,7 @@ const logger = getLogger().child({ module: "dbos.runner" });
 type WorkflowClasses = {
    CategorizationWorkflow: typeof import("./categorization.workflow").CategorizationWorkflow;
    DeriveKeywordsWorkflow: typeof import("./derive-keywords.workflow").DeriveKeywordsWorkflow;
+   BackfillKeywordsWorkflow: typeof import("./backfill-keywords.workflow").BackfillKeywordsWorkflow;
 };
 
 const registry: Partial<WorkflowClasses> = {};

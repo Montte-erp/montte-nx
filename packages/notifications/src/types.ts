@@ -18,7 +18,7 @@ export type NotificationPayloadMap = {
    };
 };
 
-export function getPayload<T extends NotificationType>(
+export function getPayload<T extends keyof NotificationPayloadMap>(
    type: T,
    payload: Record<string, unknown> | undefined,
 ): NotificationPayloadMap[T] | undefined {
