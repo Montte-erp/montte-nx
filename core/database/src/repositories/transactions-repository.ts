@@ -510,7 +510,12 @@ export async function updateTransaction(
       const validated = validateInput(updateTransactionSchema, data);
       const [updated] = await db
          .update(transactions)
-         .set(validated)
+         .set({
+            ...validated,
+            ...(validated.categoryId !== undefined
+               ? { suggestedCategoryId: null }
+               : {}),
+         })
          .where(eq(transactions.id, id))
          .returning();
 

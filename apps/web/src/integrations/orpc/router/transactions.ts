@@ -321,7 +321,6 @@ export const checkDuplicates = protectedProcedure
             )
             .min(1)
             .max(1000),
-         autoCategorize: z.boolean().default(false),
       }),
    )
    .handler(async ({ context, input }) => {
