@@ -131,6 +131,7 @@ export const updateCreditCardSchema = baseCreditCardSchema
          .enum(["visa", "mastercard", "elo", "amex", "hipercard", "other"])
          .nullable()
          .optional(),
+      status: z.enum(["active", "blocked", "cancelled"]).optional(),
    })
    .partial();
 
