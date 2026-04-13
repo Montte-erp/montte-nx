@@ -237,15 +237,21 @@ function BillPayCredenzaInner({ bill, onSuccess }: BillPayCredenzaProps) {
             </form>
          </CredenzaBody>
          <CredenzaFooter>
-            <form.Subscribe selector={(state) => state.canSubmit}>
-               {(canSubmit) => (
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
                   <Button
-                     disabled={!canSubmit || payMutation.isPending}
+                     disabled={
+                        !canSubmit || isSubmitting || payMutation.isPending
+                     }
                      form="bill-pay-form"
                      type="submit"
                   >
-                     {payMutation.isPending && (
-                        <Spinner className="size-4 mr-2" />
+                     {(isSubmitting || payMutation.isPending) && (
+                        <Spinner className="size-4" />
                      )}
                      Confirmar
                   </Button>

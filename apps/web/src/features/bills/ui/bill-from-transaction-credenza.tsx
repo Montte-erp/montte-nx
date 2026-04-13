@@ -23,9 +23,8 @@ import {
 } from "@packages/ui/components/select";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
-import { useStore } from "@tanstack/react-store";
 import { QueryBoundary } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
@@ -145,15 +144,15 @@ function BillFromTransactionCredenzaInner({
       },
    });
 
-   const formValues = useStore(
-      form.baseStore as never,
-      (state: any) => state.values,
+   const installmentCount = useStore(
+      form.store,
+      (state) => state.values.installmentCount,
    );
    const previewItems =
       mode === "installment"
          ? buildInstallmentItems(
               transactionAmount,
-              formValues.installmentCount,
+              installmentCount,
               firstDueDate,
            )
          : [];
@@ -342,7 +341,7 @@ function BillFromTransactionCredenzaInner({
                   >
                      {(isSubmitting ||
                         createFromTransactionMutation.isPending) && (
-                        <Spinner className="size-4 mr-2" />
+                        <Spinner className="size-4" />
                      )}
                      Confirmar
                   </Button>

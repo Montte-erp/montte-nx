@@ -154,6 +154,7 @@ Retorne o nome exato de uma categoria da lista acima, ou null se nenhuma for ade
 Se tiver certeza, retorne confidence "high". Se estiver em dúvida, retorne "low".`;
 
       const result = await chat({
+         // openRouterText reads OPENROUTER_API_KEY from process.env automatically
          adapter: openRouterText(MODEL),
          messages: [
             { role: "user", content: [{ type: "text", content: prompt }] },

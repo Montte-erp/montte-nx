@@ -13,6 +13,9 @@ export type NotificationPayloadMap = {
       categoryName: string;
       count: number;
    };
+   "ai.transaction_categorized": {
+      transactionId: string;
+   };
    "cron.keywords_backfill": {
       count: number;
    };

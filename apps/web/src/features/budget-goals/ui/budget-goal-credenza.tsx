@@ -1,4 +1,6 @@
-import type { BudgetGoalWithProgress } from "@core/database/repositories/budget-goals-repository";
+import type { Outputs } from "@/integrations/orpc/client";
+
+type BudgetGoalWithProgress = Outputs["budgetGoals"]["getAll"][number];
 import { Button } from "@packages/ui/components/button";
 import {
    Combobox,
@@ -356,7 +358,7 @@ export function BudgetGoalCredenza({
                                     field.state.meta.isTouched &&
                                     field.state.meta.errors.length > 0;
                                  return (
-                                    <div className="mt-2">
+                                    <div className="flex flex-col gap-2">
                                        <FieldLabel htmlFor={field.name}>
                                           Alertar quando atingir{" "}
                                           {field.state.value}% do limite
@@ -413,7 +415,7 @@ export function BudgetGoalCredenza({
                      {(isSubmitting ||
                         createMutation.isPending ||
                         updateMutation.isPending) && (
-                        <Spinner className="size-4 mr-2" />
+                        <Spinner className="size-4" />
                      )}
                      {isCreate ? "Criar meta" : "Salvar alterações"}
                   </Button>
