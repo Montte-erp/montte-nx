@@ -1,5 +1,5 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { eq, inArray } from "drizzle-orm";
+import { and, asc, eq, ilike, inArray, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateCreditCardInput,
@@ -28,15 +28,79 @@ export async function createCreditCard(
    }
 }
 
-export async function listCreditCards(db: DatabaseInstance, teamId: string) {
+export type ListCreditCardsFilter = {
+   page?: number;
+   pageSize?: number;
+   search?: string;
+   status?: "active" | "blocked" | "cancelled";
+};
+
+export async function listCreditCards(
+   db: DatabaseInstance,
+   teamId: string,
+   filter: ListCreditCardsFilter = {},
+) {
+   const { page = 1, pageSize = 20, search, status } = filter;
+   const offset = (page - 1) * pageSize;
+
    try {
-      return await db.query.creditCards.findMany({
-         where: (fields, { eq }) => eq(fields.teamId, teamId),
-         orderBy: (fields, { desc }) => [desc(fields.createdAt)],
-      });
+      const where = and(
+         eq(creditCards.teamId, teamId),
+         status ? eq(creditCards.status, status) : undefined,
+         search ? ilike(creditCards.name, `%${search}%`) : undefined,
+      );
+
+      const [data, countResult] = await Promise.all([
+         db
+            .select()
+            .from(creditCards)
+            .where(where)
+            .orderBy(asc(creditCards.name))
+            .limit(pageSize)
+            .offset(offset),
+         db
+            .select({ count: sql<number>`cast(count(*) as int)` })
+            .from(creditCards)
+            .where(where),
+      ]);
+
+      const totalCount = countResult[0]?.count ?? 0;
+
+      return {
+         data,
+         totalCount,
+         page,
+         pageSize,
+         totalPages: Math.ceil(totalCount / pageSize),
+      };
    } catch (err) {
       propagateError(err);
-      throw AppError.database("Failed to list credit cards");
+      throw AppError.database("Falha ao listar cartões de crédito");
+   }
+}
+
+export async function getCreditCardsSummary(
+   db: DatabaseInstance,
+   teamId: string,
+) {
+   try {
+      const [row] = await db
+         .select({
+            totalCards: sql<number>`cast(count(*) as int)`,
+            totalLimit: sql<string>`coalesce(cast(sum(credit_limit) as text), '0')`,
+            activeCards: sql<number>`cast(count(*) filter (where status = 'active') as int)`,
+         })
+         .from(creditCards)
+         .where(eq(creditCards.teamId, teamId));
+
+      return {
+         totalCards: row?.totalCards ?? 0,
+         totalLimit: row?.totalLimit ?? "0",
+         activeCards: row?.activeCards ?? 0,
+      };
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Falha ao carregar resumo de cartões");
    }
 }
 
