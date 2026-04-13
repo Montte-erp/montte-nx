@@ -138,8 +138,14 @@ function CollapsibleNavItem({
    isItemActive: (item: NavItemDef) => boolean;
    onMainItemClick: () => void;
 }) {
+   const { isVisible } = useSidebarVisibility();
    const Icon = item.icon;
-   const anyChildActive = (item.children ?? []).some(isItemActive);
+   const visibleChildren = (item.children ?? []).filter((child) =>
+      isVisible(child.id),
+   );
+   const anyChildActive = visibleChildren.some(isItemActive);
+
+   if (visibleChildren.length === 0) return null;
 
    return (
       <Collapsible asChild className="group/collapsible" defaultOpen>
@@ -157,7 +163,7 @@ function CollapsibleNavItem({
             </CollapsibleTrigger>
             <CollapsibleContent>
                <SidebarMenuSub>
-                  {(item.children ?? []).map((child) => (
+                  {visibleChildren.map((child) => (
                      <SidebarMenuSubItem key={child.id}>
                         <SidebarMenuSubButton
                            asChild
