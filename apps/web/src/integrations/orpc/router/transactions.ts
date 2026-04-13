@@ -27,8 +27,7 @@ import { emitFinanceStatementImported } from "@packages/events/finance";
 import { getLogger } from "@core/logging/root";
 import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
-import { DBOS } from "@dbos-inc/dbos-sdk";
-import { CategorizationWorkflow } from "@/integrations/dbos/workflows";
+import { startCategorizationWorkflow } from "@/integrations/dbos/workflows/runner";
 import { withCreditEnforcement } from "../middlewares/credit-enforcement";
 import { protectedProcedure } from "../server";
 
@@ -41,16 +40,7 @@ function enqueueCategorization(input: {
    type: "income" | "expense";
    contactName?: string | null;
 }): void {
-   void DBOS.startWorkflow(CategorizationWorkflow, {
-      workflowID: `categorize-${input.transactionId}`,
-   })
-      .run(input)
-      .catch((err) => {
-         logger.error(
-            { err, transactionId: input.transactionId },
-            "Failed to start categorization workflow",
-         );
-      });
+   startCategorizationWorkflow(input);
 }
 
 const idSchema = z.object({ id: z.string().uuid() });
@@ -413,6 +403,7 @@ export const importBulk = protectedProcedure
             .array(createTransactionSchema.merge(tagAndItemsSchema))
             .min(1)
             .max(500),
+         autoCategorize: z.boolean().default(false),
       }),
    )
    .handler(async ({ context, input }) => {
@@ -426,7 +417,25 @@ export const importBulk = protectedProcedure
             tagIds,
             date: data.date,
          });
-         await createTransaction(context.db, context.teamId, data, tagIds);
+         const transaction = await createTransaction(
+            context.db,
+            context.teamId,
+            data,
+            tagIds,
+         );
+         if (
+            input.autoCategorize &&
+            transaction &&
+            !data.categoryId &&
+            (data.type === "income" || data.type === "expense")
+         ) {
+            enqueueCategorization({
+               transactionId: transaction.id,
+               teamId: context.teamId,
+               name: data.name ?? "",
+               type: data.type,
+            });
+         }
          imported++;
       }
       return { imported, skipped: 0 };

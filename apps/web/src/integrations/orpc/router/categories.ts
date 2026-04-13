@@ -14,9 +14,8 @@ import {
 import { user as userTable } from "@core/database/schemas/auth";
 import { getLogger } from "@core/logging/root";
 import { eq } from "drizzle-orm";
-import { DBOS } from "@dbos-inc/dbos-sdk";
 import { z } from "zod";
-import { DeriveKeywordsWorkflow } from "@/integrations/dbos/workflows";
+import { startDeriveKeywordsWorkflow } from "@/integrations/dbos/workflows/runner";
 import { protectedProcedure } from "../server";
 
 const logger = getLogger().child({ module: "categories.router" });
@@ -30,14 +29,7 @@ function enqueueKeywordDerivation(input: {
    description?: string | null;
    stripeCustomerId?: string | null;
 }): void {
-   void DBOS.startWorkflow(DeriveKeywordsWorkflow)
-      .run(input)
-      .catch((err) => {
-         logger.error(
-            { err, categoryId: input.categoryId },
-            "Failed to start derive-keywords workflow",
-         );
-      });
+   startDeriveKeywordsWorkflow(input);
 }
 
 const idSchema = z.object({ id: z.string().uuid() });

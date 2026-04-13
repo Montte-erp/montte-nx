@@ -1142,6 +1142,7 @@ function ConfirmStep({
 }: ConfirmStepProps) {
    const [isPending, startTransition] = useTransition();
    const [ignoreOnServer, setIgnoreOnServer] = useState(true);
+   const [autoCategorize, setAutoCategorize] = useState(false);
 
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
@@ -1233,7 +1234,7 @@ function ConfirmStep({
             };
          });
 
-         importMutation.mutate({ transactions: payload });
+         importMutation.mutate({ transactions: payload, autoCategorize });
       });
    }
 
@@ -1341,6 +1342,24 @@ function ConfirmStep({
                         <p className="text-xs text-muted-foreground">
                            Lançamentos exatamente iguais já existentes serão
                            ignoradas automaticamente.
+                        </p>
+                     </div>
+                  </label>
+
+                  {/* biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is a Radix button */}
+                  <label className="flex cursor-pointer select-none items-start gap-2">
+                     <Checkbox
+                        checked={autoCategorize}
+                        className="mt-0.5"
+                        onCheckedChange={(c) => setAutoCategorize(c === true)}
+                     />
+                     <div>
+                        <p className="text-xs font-medium">
+                           Auto-categorizar com IA
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                           Lançamentos sem categoria serão categorizados
+                           automaticamente pela IA após a importação.
                         </p>
                      </div>
                   </label>
