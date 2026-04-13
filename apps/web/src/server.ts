@@ -1,16 +1,20 @@
 import "@/integrations/otel/init";
-import "@/integrations/dbos/workflows";
 
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import handler, { createServerEntry } from "@tanstack/react-start/server-entry";
 import { launchDBOS } from "@/integrations/dbos/init";
+
+async function bootDbos() {
+   await import("@/integrations/dbos/workflows");
+   launchDBOS();
+}
 
 if (import.meta.hot) {
    const boot = async () => {
       if (import.meta.hot!.data.shutdown) {
          await import.meta.hot!.data.shutdown;
       }
-      launchDBOS();
+      await bootDbos();
    };
 
    import.meta.hot.dispose(async () => {
@@ -20,7 +24,7 @@ if (import.meta.hot) {
 
    void boot();
 } else {
-   launchDBOS();
+   void bootDbos();
 }
 
 export default createServerEntry({
