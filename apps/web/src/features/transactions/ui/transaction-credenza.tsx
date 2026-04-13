@@ -1370,10 +1370,11 @@ function TransactionCredenzaContent({
                                              onClick={() =>
                                                 openCredenza({
                                                    children: (
-                                                      <Suspense
+                                                      <QueryBoundary
                                                          fallback={
                                                             <Skeleton className="h-40 w-full" />
                                                          }
+                                                         errorTitle="Erro ao carregar contas"
                                                       >
                                                          <NovoCartao
                                                             onSuccess={(id) => {
@@ -1384,7 +1385,7 @@ function TransactionCredenzaContent({
                                                                closeTopCredenza();
                                                             }}
                                                          />
-                                                      </Suspense>
+                                                      </QueryBoundary>
                                                    ),
                                                 })
                                              }
