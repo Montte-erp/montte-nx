@@ -1,5 +1,5 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -487,5 +487,42 @@ export async function validateKeywordsUniqueness(
       throw AppError.conflict(
          "Palavras-chave já utilizadas em outra categoria ativa.",
       );
+   }
+}
+
+export async function findCategoryByKeywords(
+   db: DatabaseInstance,
+   teamId: string,
+   opts: {
+      name: string;
+      type: "income" | "expense";
+   },
+): Promise<{ id: string; name: string } | null> {
+   try {
+      const rows = await db
+         .select({
+            id: categories.id,
+            name: categories.name,
+            level: categories.level,
+         })
+         .from(categories)
+         .where(
+            and(
+               eq(categories.teamId, teamId),
+               eq(categories.type, opts.type),
+               eq(categories.isArchived, false),
+               sql`EXISTS (
+                  SELECT 1 FROM unnest(${categories.keywords}) k
+                  WHERE ${opts.name} ILIKE '%' || k || '%'
+               )`,
+            ),
+         )
+         .orderBy(desc(categories.level))
+         .limit(1);
+
+      return rows[0] ?? null;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to find category by keywords");
    }
 }
