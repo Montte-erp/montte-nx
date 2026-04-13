@@ -35,7 +35,6 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { Plus } from "lucide-react";
-import { Suspense } from "react";
 import { QueryBoundary } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -1627,18 +1626,19 @@ function TransactionCredenzaContent({
                                        <Plus className="size-3" /> Nova
                                     </button>
                                  </div>
-                                 <Suspense
+                                 <QueryBoundary
                                     fallback={
                                        <p className="text-sm text-muted-foreground">
                                           Carregando centros de custo...
                                        </p>
                                     }
+                                    errorTitle="Erro ao carregar centros de custo"
                                  >
                                     <TagCombobox
                                        onChange={field.handleChange}
                                        selectedIds={field.state.value}
                                     />
-                                 </Suspense>
+                                 </QueryBoundary>
                               </Field>
                            )}
                         />
@@ -1672,16 +1672,17 @@ function TransactionCredenzaContent({
                                           <Plus className="size-3" /> Novo
                                        </button>
                                     </div>
-                                    <Suspense
+                                    <QueryBoundary
                                        fallback={
                                           <Skeleton className="h-9 w-full" />
                                        }
+                                       errorTitle="Erro ao carregar contatos"
                                     >
                                        <ContactCombobox
                                           onChange={field.handleChange}
                                           value={field.state.value}
                                        />
-                                    </Suspense>
+                                    </QueryBoundary>
                                  </Field>
                               )}
                            />

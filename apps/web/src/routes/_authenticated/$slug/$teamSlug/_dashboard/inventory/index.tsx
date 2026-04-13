@@ -36,9 +36,10 @@ import {
    Pencil,
    Plus,
 } from "lucide-react";
-import { Suspense, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
+import { QueryBoundary } from "@/components/query-boundary";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
@@ -325,9 +326,12 @@ function InventoryPage() {
             title="Estoque"
          />
          <EarlyAccessBanner template={INVENTORY_BANNER} />
-         <Suspense fallback={<InventorySkeleton />}>
+         <QueryBoundary
+            fallback={<InventorySkeleton />}
+            errorTitle="Erro ao carregar estoque"
+         >
             <InventoryList />
-         </Suspense>
+         </QueryBoundary>
       </main>
    );
 }
