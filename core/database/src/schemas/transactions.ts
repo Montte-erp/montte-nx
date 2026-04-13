@@ -102,6 +102,9 @@ export const transactions = financeSchema.table(
       index("transactions_category_id_idx").on(table.categoryId),
       index("transactions_credit_card_id_idx").on(table.creditCardId),
       index("transactions_contact_id_idx").on(table.contactId),
+      index("transactions_suggested_category_id_idx").on(
+         table.suggestedCategoryId,
+      ),
       index("transactions_statement_period_idx").on(
          table.creditCardId,
          table.statementPeriod,

@@ -39,7 +39,7 @@ function SuggestedCategoryCell({ id }: { id: string }) {
             </Badge>
          </PopoverTrigger>
          <PopoverContent className="w-56 p-3">
-            <p className="text-sm text-muted-foreground mb-2">
+            <p className="text-sm text-muted-foreground">
                Categoria sugerida pela IA. Deseja aceitar?
             </p>
             <div className="flex gap-2">

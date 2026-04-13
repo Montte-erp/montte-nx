@@ -25,24 +25,11 @@ import {
 } from "@core/database/schemas/transactions";
 import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceStatementImported } from "@packages/events/finance";
-import { getLogger } from "@core/logging/root";
 import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
 import { startCategorizationWorkflow } from "@/integrations/dbos/workflows/runner";
 import { withCreditEnforcement } from "../middlewares/credit-enforcement";
 import { protectedProcedure } from "../server";
-
-const logger = getLogger().child({ module: "transactions.router" });
-
-function enqueueCategorization(input: {
-   transactionId: string;
-   teamId: string;
-   name: string;
-   type: "income" | "expense";
-   contactName?: string | null;
-}): void {
-   startCategorizationWorkflow(input);
-}
 
 const idSchema = z.object({ id: z.string().uuid() });
 
@@ -87,9 +74,13 @@ const filterSchema = z
    .optional();
 
 export const create = protectedProcedure
-   .input(createTransactionSchema.merge(tagAndItemsSchema))
+   .input(
+      createTransactionSchema
+         .merge(tagAndItemsSchema)
+         .merge(z.object({ autoCategorize: z.boolean().default(false) })),
+   )
    .handler(async ({ context, input }) => {
-      const { tagIds, items, ...data } = input;
+      const { tagIds, items, autoCategorize, ...data } = input;
       await validateTransactionReferences(context.db, context.teamId, {
          bankAccountId: data.bankAccountId,
          destinationBankAccountId: data.destinationBankAccountId,
@@ -121,11 +112,12 @@ export const create = protectedProcedure
       }
 
       if (
+         autoCategorize &&
          transaction &&
          !input.categoryId &&
          (input.type === "income" || input.type === "expense")
       ) {
-         enqueueCategorization({
+         startCategorizationWorkflow({
             transactionId: transaction.id,
             teamId: context.teamId,
             name: input.name ?? "",
