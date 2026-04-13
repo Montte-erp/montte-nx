@@ -13,6 +13,7 @@ import {
    listTransactions,
    replaceTransactionItems,
    updateTransaction,
+   updateTransactionCategory,
    validateTransactionReferences,
 } from "@core/database/repositories/transactions-repository";
 import { ensureBankAccountOwnership } from "@core/database/repositories/bank-accounts-repository";
@@ -24,6 +25,7 @@ import {
 import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceStatementImported } from "@packages/events/finance";
 import { getLogger } from "@core/logging/root";
+import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { CategorizationWorkflow } from "@/integrations/dbos/workflows";
@@ -428,4 +430,34 @@ export const importBulk = protectedProcedure
          imported++;
       }
       return { imported, skipped: 0 };
+   });
+
+export const acceptSuggestedCategory = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      const tx = await ensureTransactionOwnership(
+         context.db,
+         input.id,
+         context.teamId,
+      );
+      if (!tx.suggestedCategoryId) {
+         throw WebAppError.badRequest(
+            "Nenhuma sugestão de categoria disponível.",
+         );
+      }
+      await updateTransactionCategory(context.db, input.id, {
+         categoryId: tx.suggestedCategoryId,
+         suggestedCategoryId: null,
+      });
+      return { ok: true };
+   });
+
+export const dismissSuggestedCategory = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      await ensureTransactionOwnership(context.db, input.id, context.teamId);
+      await updateTransactionCategory(context.db, input.id, {
+         suggestedCategoryId: null,
+      });
+      return { ok: true };
    });
