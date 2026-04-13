@@ -34,12 +34,13 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { ChevronLeft, Plus } from "lucide-react";
-import { Suspense, useState } from "react";
+import { Plus } from "lucide-react";
+import { Suspense } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { orpc } from "@/integrations/orpc/client";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { useCredenza } from "@/hooks/use-credenza";
 import type { TransactionRow } from "./transactions-columns";
 
 type TransactionType = "income" | "expense" | "transfer";
@@ -68,14 +69,6 @@ const requiredDateSchema = z
    .refine((v) => v instanceof Date && !Number.isNaN(v.getTime()), {
       message: "Campo obrigatório.",
    });
-
-type SecondaryForm =
-   | { type: "bankAccount" }
-   | { type: "creditCard" }
-   | { type: "contact" }
-   | { type: "category"; transactionType: "income" | "expense" }
-   | { type: "tag" }
-   | null;
 
 interface TransactionCredenzaProps {
    mode: "create" | "edit";
@@ -160,13 +153,7 @@ function ContactCombobox({
    );
 }
 
-function NovaConta({
-   onSuccess,
-   onBack,
-}: {
-   onSuccess: (id: string) => void;
-   onBack: () => void;
-}) {
+function NovaConta({ onSuccess }: { onSuccess: (id: string) => void }) {
    const mutation = useMutation(
       orpc.bankAccounts.create.mutationOptions({
          onSuccess: (data) => {
@@ -193,12 +180,7 @@ function NovaConta({
          }}
       >
          <CredenzaHeader>
-            <div className="flex items-center gap-2">
-               <button onClick={onBack} type="button">
-                  <ChevronLeft className="size-4" />
-               </button>
-               <CredenzaTitle>Nova Conta</CredenzaTitle>
-            </div>
+            <CredenzaTitle>Nova Conta</CredenzaTitle>
          </CredenzaHeader>
          <CredenzaBody className="px-4">
             <FieldGroup>
@@ -275,13 +257,7 @@ function NovaConta({
    );
 }
 
-function NovoCartao({
-   onSuccess,
-   onBack,
-}: {
-   onSuccess: (id: string) => void;
-   onBack: () => void;
-}) {
+function NovoCartao({ onSuccess }: { onSuccess: (id: string) => void }) {
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
    );
@@ -324,12 +300,7 @@ function NovoCartao({
          }}
       >
          <CredenzaHeader>
-            <div className="flex items-center gap-2">
-               <button onClick={onBack} type="button">
-                  <ChevronLeft className="size-4" />
-               </button>
-               <CredenzaTitle>Novo Cartão</CredenzaTitle>
-            </div>
+            <CredenzaTitle>Novo Cartão</CredenzaTitle>
          </CredenzaHeader>
          <CredenzaBody className="px-4">
             <FieldGroup>
@@ -458,13 +429,7 @@ function NovoCartao({
    );
 }
 
-function NovoContato({
-   onSuccess,
-   onBack,
-}: {
-   onSuccess: (id: string) => void;
-   onBack: () => void;
-}) {
+function NovoContato({ onSuccess }: { onSuccess: (id: string) => void }) {
    const mutation = useMutation(
       orpc.contacts.create.mutationOptions({
          onSuccess: (data) => {
@@ -488,12 +453,7 @@ function NovoContato({
          }}
       >
          <CredenzaHeader>
-            <div className="flex items-center gap-2">
-               <button onClick={onBack} type="button">
-                  <ChevronLeft className="size-4" />
-               </button>
-               <CredenzaTitle>Novo Contato</CredenzaTitle>
-            </div>
+            <CredenzaTitle>Novo Contato</CredenzaTitle>
          </CredenzaHeader>
          <CredenzaBody className="px-4">
             <FieldGroup>
@@ -545,11 +505,9 @@ function NovoContato({
 
 function NovaCategoria({
    onSuccess,
-   onBack,
    transactionType,
 }: {
    onSuccess: (id: string) => void;
-   onBack: () => void;
    transactionType: "income" | "expense";
 }) {
    const mutation = useMutation(
@@ -575,12 +533,7 @@ function NovaCategoria({
          }}
       >
          <CredenzaHeader>
-            <div className="flex items-center gap-2">
-               <button onClick={onBack} type="button">
-                  <ChevronLeft className="size-4" />
-               </button>
-               <CredenzaTitle>Nova Categoria</CredenzaTitle>
-            </div>
+            <CredenzaTitle>Nova Categoria</CredenzaTitle>
          </CredenzaHeader>
          <CredenzaBody className="px-4">
             <FieldGroup>
@@ -630,13 +583,7 @@ function NovaCategoria({
    );
 }
 
-function NovaTag({
-   onSuccess,
-   onBack,
-}: {
-   onSuccess: (id: string) => void;
-   onBack: () => void;
-}) {
+function NovaTag({ onSuccess }: { onSuccess: (id: string) => void }) {
    const mutation = useMutation(
       orpc.tags.create.mutationOptions({
          onSuccess: (data) => {
@@ -659,12 +606,7 @@ function NovaTag({
          }}
       >
          <CredenzaHeader>
-            <div className="flex items-center gap-2">
-               <button onClick={onBack} type="button">
-                  <ChevronLeft className="size-4" />
-               </button>
-               <CredenzaTitle>Novo Centro de Custo</CredenzaTitle>
-            </div>
+            <CredenzaTitle>Novo Centro de Custo</CredenzaTitle>
          </CredenzaHeader>
          <CredenzaBody className="px-4">
             <FieldGroup>
@@ -720,7 +662,7 @@ function TransactionCredenzaContent({
    onSuccess,
 }: TransactionCredenzaProps) {
    const isCreate = mode === "create";
-   const [secondaryForm, setSecondaryForm] = useState<SecondaryForm>(null);
+   const { openCredenza, closeTopCredenza } = useCredenza();
 
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
@@ -870,68 +812,6 @@ function TransactionCredenzaContent({
       },
       disabled: isCreate,
    });
-
-   if (secondaryForm) {
-      return (
-         <>
-            {secondaryForm.type === "bankAccount" && (
-               <NovaConta
-                  onBack={() => setSecondaryForm(null)}
-                  onSuccess={(id) => {
-                     form.setFieldValue("bankAccountId", id);
-                     setSecondaryForm(null);
-                  }}
-               />
-            )}
-            {secondaryForm.type === "creditCard" && (
-               <Suspense fallback={<Skeleton className="h-40 w-full" />}>
-                  <NovoCartao
-                     onBack={() => setSecondaryForm(null)}
-                     onSuccess={(id) => {
-                        form.setFieldValue("creditCardId", id);
-                        setSecondaryForm(null);
-                     }}
-                  />
-               </Suspense>
-            )}
-            {secondaryForm.type === "contact" && (
-               <NovoContato
-                  onBack={() => setSecondaryForm(null)}
-                  onSuccess={(id) => {
-                     form.setFieldValue("contactId", id);
-                     setSecondaryForm(null);
-                  }}
-               />
-            )}
-            {secondaryForm.type === "category" && (
-               <NovaCategoria
-                  onBack={() => setSecondaryForm(null)}
-                  onSuccess={(id) => {
-                     form.setFieldValue("categoryId", id);
-                     setSecondaryForm(null);
-                  }}
-                  transactionType={secondaryForm.transactionType}
-               />
-            )}
-            {secondaryForm.type === "tag" && (
-               <NovaTag
-                  onBack={() => setSecondaryForm(null)}
-                  onSuccess={(id) => {
-                     form.setFieldValue("tagIds", [
-                        ...form.getFieldValue("tagIds"),
-                        id,
-                     ]);
-                     form.setFieldMeta("tagIds", (prev) => ({
-                        ...prev,
-                        isTouched: true,
-                     }));
-                     setSecondaryForm(null);
-                  }}
-               />
-            )}
-         </>
-      );
-   }
 
    return (
       <form
@@ -1163,8 +1043,20 @@ function TransactionCredenzaContent({
                                                    <button
                                                       className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                                       onClick={() =>
-                                                         setSecondaryForm({
-                                                            type: "bankAccount",
+                                                         openCredenza({
+                                                            children: (
+                                                               <NovaConta
+                                                                  onSuccess={(
+                                                                     id,
+                                                                  ) => {
+                                                                     form.setFieldValue(
+                                                                        "bankAccountId",
+                                                                        id,
+                                                                     );
+                                                                     closeTopCredenza();
+                                                                  }}
+                                                               />
+                                                            ),
                                                          })
                                                       }
                                                       type="button"
@@ -1233,8 +1125,20 @@ function TransactionCredenzaContent({
                                                    <button
                                                       className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                                       onClick={() =>
-                                                         setSecondaryForm({
-                                                            type: "bankAccount",
+                                                         openCredenza({
+                                                            children: (
+                                                               <NovaConta
+                                                                  onSuccess={(
+                                                                     id,
+                                                                  ) => {
+                                                                     form.setFieldValue(
+                                                                        "bankAccountId",
+                                                                        id,
+                                                                     );
+                                                                     closeTopCredenza();
+                                                                  }}
+                                                               />
+                                                            ),
                                                          })
                                                       }
                                                       type="button"
@@ -1379,8 +1283,20 @@ function TransactionCredenzaContent({
                                                    <button
                                                       className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                                       onClick={() =>
-                                                         setSecondaryForm({
-                                                            type: "bankAccount",
+                                                         openCredenza({
+                                                            children: (
+                                                               <NovaConta
+                                                                  onSuccess={(
+                                                                     id,
+                                                                  ) => {
+                                                                     form.setFieldValue(
+                                                                        "bankAccountId",
+                                                                        id,
+                                                                     );
+                                                                     closeTopCredenza();
+                                                                  }}
+                                                               />
+                                                            ),
                                                          })
                                                       }
                                                       type="button"
@@ -1432,8 +1348,24 @@ function TransactionCredenzaContent({
                                           <button
                                              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                              onClick={() =>
-                                                setSecondaryForm({
-                                                   type: "creditCard",
+                                                openCredenza({
+                                                   children: (
+                                                      <Suspense
+                                                         fallback={
+                                                            <Skeleton className="h-40 w-full" />
+                                                         }
+                                                      >
+                                                         <NovoCartao
+                                                            onSuccess={(id) => {
+                                                               form.setFieldValue(
+                                                                  "creditCardId",
+                                                                  id,
+                                                               );
+                                                               closeTopCredenza();
+                                                            }}
+                                                         />
+                                                      </Suspense>
+                                                   ),
                                                 })
                                              }
                                              type="button"
@@ -1480,13 +1412,28 @@ function TransactionCredenzaContent({
                                                 <button
                                                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                                    onClick={() =>
-                                                      setSecondaryForm({
-                                                         type: "category",
-                                                         transactionType:
-                                                            type === "income" ||
-                                                            type === "expense"
-                                                               ? type
-                                                               : "expense",
+                                                      openCredenza({
+                                                         children: (
+                                                            <NovaCategoria
+                                                               transactionType={
+                                                                  type ===
+                                                                     "income" ||
+                                                                  type ===
+                                                                     "expense"
+                                                                     ? type
+                                                                     : "expense"
+                                                               }
+                                                               onSuccess={(
+                                                                  id,
+                                                               ) => {
+                                                                  form.setFieldValue(
+                                                                     "categoryId",
+                                                                     id,
+                                                                  );
+                                                                  closeTopCredenza();
+                                                               }}
+                                                            />
+                                                         ),
                                                       })
                                                    }
                                                    type="button"
@@ -1628,8 +1575,30 @@ function TransactionCredenzaContent({
                                     <button
                                        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                        onClick={() =>
-                                          setSecondaryForm({
-                                             type: "tag",
+                                          openCredenza({
+                                             children: (
+                                                <NovaTag
+                                                   onSuccess={(id) => {
+                                                      form.setFieldValue(
+                                                         "tagIds",
+                                                         [
+                                                            ...form.getFieldValue(
+                                                               "tagIds",
+                                                            ),
+                                                            id,
+                                                         ],
+                                                      );
+                                                      form.setFieldMeta(
+                                                         "tagIds",
+                                                         (prev) => ({
+                                                            ...prev,
+                                                            isTouched: true,
+                                                         }),
+                                                      );
+                                                      closeTopCredenza();
+                                                   }}
+                                                />
+                                             ),
                                           })
                                        }
                                        type="button"
@@ -1663,8 +1632,18 @@ function TransactionCredenzaContent({
                                        <button
                                           className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                           onClick={() =>
-                                             setSecondaryForm({
-                                                type: "contact",
+                                             openCredenza({
+                                                children: (
+                                                   <NovoContato
+                                                      onSuccess={(id) => {
+                                                         form.setFieldValue(
+                                                            "contactId",
+                                                            id,
+                                                         );
+                                                         closeTopCredenza();
+                                                      }}
+                                                   />
+                                                ),
                                              })
                                           }
                                           type="button"
