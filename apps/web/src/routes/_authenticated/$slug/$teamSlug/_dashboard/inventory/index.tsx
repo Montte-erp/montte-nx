@@ -36,15 +36,16 @@ import {
    Pencil,
    Plus,
 } from "lucide-react";
-import { Suspense, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
+import { QueryBoundary } from "@/components/query-boundary";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
 import { InventoryHistorySheet } from "./-inventory/inventory-history-sheet";
-import { InventoryMovementDialogStack } from "./-inventory/inventory-movement-dialog-stack";
+import { InventoryMovementCredenza } from "./-inventory/inventory-movement-credenza";
 import {
    buildInventoryProductColumns,
    type InventoryProductRow,
@@ -57,11 +58,11 @@ import { orpc } from "@/integrations/orpc/client";
 const searchSchema = z.object({
    sorting: z
       .array(z.object({ id: z.string(), desc: z.boolean() }))
-      .optional()
+      .catch([])
       .default([]),
    columnFilters: z
       .array(z.object({ id: z.string(), value: z.unknown() }))
-      .optional()
+      .catch([])
       .default([]),
 });
 
@@ -173,7 +174,7 @@ function InventoryList() {
       (product: InventoryProductRow) => {
          openCredenza({
             children: (
-               <InventoryMovementDialogStack
+               <InventoryMovementCredenza
                   onSuccess={closeCredenza}
                   product={product}
                />
@@ -325,9 +326,12 @@ function InventoryPage() {
             title="Estoque"
          />
          <EarlyAccessBanner template={INVENTORY_BANNER} />
-         <Suspense fallback={<InventorySkeleton />}>
+         <QueryBoundary
+            fallback={<InventorySkeleton />}
+            errorTitle="Erro ao carregar estoque"
+         >
             <InventoryList />
-         </Suspense>
+         </QueryBoundary>
       </main>
    );
 }

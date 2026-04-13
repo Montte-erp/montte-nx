@@ -39,7 +39,7 @@ import {
 import { Suspense, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
-import { BudgetGoalDialogStack } from "@/features/budget-goals/ui/budget-goal-dialog-stack";
+import { BudgetGoalCredenza } from "@/features/budget-goals/ui/budget-goal-credenza";
 import { buildBudgetGoalColumns } from "@/features/budget-goals/ui/budget-goals-columns";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
@@ -118,19 +118,19 @@ function GoalsSummary({ goals }: { goals: BudgetGoalWithProgress[] }) {
 
    return (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-         <div className="rounded-lg border bg-card p-4 space-y-1">
+         <div className="rounded-lg border bg-card p-4 flex flex-col gap-2">
             <p className="text-xs text-muted-foreground">Total orçado</p>
             <p className="text-lg font-semibold tabular-nums">
                {fmt(totalLimit)}
             </p>
          </div>
-         <div className="rounded-lg border bg-card p-4 space-y-1">
+         <div className="rounded-lg border bg-card p-4 flex flex-col gap-2">
             <p className="text-xs text-muted-foreground">Total gasto</p>
             <p className="text-lg font-semibold tabular-nums text-destructive">
                {fmt(totalSpent)}
             </p>
          </div>
-         <div className="rounded-lg border bg-card p-4 space-y-1">
+         <div className="rounded-lg border bg-card p-4 flex flex-col gap-2">
             <p className="text-xs text-muted-foreground">Disponível</p>
             <p
                className={`text-lg font-semibold tabular-nums ${
@@ -142,7 +142,7 @@ function GoalsSummary({ goals }: { goals: BudgetGoalWithProgress[] }) {
                {fmt(totalRemaining)}
             </p>
          </div>
-         <div className="rounded-lg border bg-card p-4 space-y-1">
+         <div className="rounded-lg border bg-card p-4 flex flex-col gap-2">
             <p className="text-xs text-muted-foreground">Em alerta</p>
             <p className="text-lg font-semibold tabular-nums text-amber-500">
                {atAlertCount}
@@ -287,7 +287,7 @@ function GoalsList() {
       (goal: BudgetGoalWithProgress) => {
          openCredenza({
             children: (
-               <BudgetGoalDialogStack
+               <BudgetGoalCredenza
                   goal={goal}
                   mode="edit"
                   month={goal.month}
@@ -337,7 +337,7 @@ function GoalsList() {
    }
 
    return (
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
          <GoalsSummary goals={goals} />
          <DataTable
             columns={columns}
@@ -406,7 +406,7 @@ function GoalsPage() {
    const handleCreate = useCallback(() => {
       openCredenza({
          children: (
-            <BudgetGoalDialogStack
+            <BudgetGoalCredenza
                mode="create"
                month={month}
                onSuccess={closeCredenza}
@@ -438,7 +438,7 @@ function GoalsPage() {
                      )}
                   </Button>
                   <Button onClick={handleCreate}>
-                     <Plus className="size-4 mr-1" />
+                     <Plus className="size-4" />
                      Nova Meta
                   </Button>
                </div>

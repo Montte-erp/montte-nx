@@ -42,7 +42,7 @@ import {
 import { CategoryForm } from "@/features/categories/ui/categories-form";
 import { SubcategoryForm } from "@/features/categories/ui/subcategory-form";
 import { CategoryFilterBar } from "./-categories/category-filter-bar";
-import { CategoryImportDialogStack } from "./-categories/category-import-dialog-stack";
+import { CategoryImportCredenza } from "./-categories/category-import-credenza";
 import { exportCategoriesCsv } from "./-categories/export-categories-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
@@ -456,7 +456,7 @@ function CategoriesPage() {
 
    const handleImport = useCallback(() => {
       openCredenza({
-         children: <CategoryImportDialogStack onSuccess={closeCredenza} />,
+         children: <CategoryImportCredenza onSuccess={closeCredenza} />,
       });
    }, [openCredenza, closeCredenza]);
 

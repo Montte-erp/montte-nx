@@ -1,4 +1,5 @@
-import type { BudgetGoalWithProgress } from "@core/database/repositories/budget-goals-repository";
+import type { Outputs } from "@/integrations/orpc/client";
+import { QueryBoundary } from "@/components/query-boundary";
 import { Button } from "@packages/ui/components/button";
 import {
    Combobox,
@@ -47,6 +48,8 @@ import {
 import { toast } from "sonner";
 import { z } from "zod";
 import { orpc } from "@/integrations/orpc/client";
+
+type BudgetGoalWithProgress = Outputs["budgetGoals"]["getAll"][number];
 
 const CATEGORY_ICONS: { name: string; label: string; Icon: LucideIcon }[] = [
    { name: "wallet", label: "Carteira", Icon: Wallet },
@@ -106,7 +109,7 @@ const schema = z
       }
    });
 
-interface BudgetGoalDialogStackProps {
+interface BudgetGoalCredenzaProps {
    mode: "create" | "edit";
    goal?: BudgetGoalWithProgress;
    month: number;
@@ -114,13 +117,13 @@ interface BudgetGoalDialogStackProps {
    onSuccess: () => void;
 }
 
-export function BudgetGoalDialogStack({
+function BudgetGoalCredenzaContent({
    mode,
    goal,
    month,
    year,
    onSuccess,
-}: BudgetGoalDialogStackProps) {
+}: BudgetGoalCredenzaProps) {
    const isCreate = mode === "create";
 
    const { data: categoriesResult } = useSuspenseQuery(
@@ -339,9 +342,7 @@ export function BudgetGoalDialogStack({
                   children={(alertEnabledField) => (
                      <Field>
                         <div className="flex items-center justify-between gap-2">
-                           <FieldLabel className="mb-0">
-                              Ativar alerta
-                           </FieldLabel>
+                           <FieldLabel>Ativar alerta</FieldLabel>
                            <Switch
                               checked={alertEnabledField.state.value}
                               onCheckedChange={alertEnabledField.handleChange}
@@ -356,7 +357,7 @@ export function BudgetGoalDialogStack({
                                     field.state.meta.isTouched &&
                                     field.state.meta.errors.length > 0;
                                  return (
-                                    <div className="mt-2">
+                                    <div className="flex flex-col gap-2">
                                        <FieldLabel htmlFor={field.name}>
                                           Alertar quando atingir{" "}
                                           {field.state.value}% do limite
@@ -365,7 +366,6 @@ export function BudgetGoalDialogStack({
                                           id={field.name}
                                           name={field.name}
                                           aria-invalid={isInvalid}
-                                          className="mt-1.5"
                                           max="100"
                                           min="1"
                                           onBlur={field.handleBlur}
@@ -413,7 +413,7 @@ export function BudgetGoalDialogStack({
                      {(isSubmitting ||
                         createMutation.isPending ||
                         updateMutation.isPending) && (
-                        <Spinner className="size-4 mr-2" />
+                        <Spinner className="size-4" />
                      )}
                      {isCreate ? "Criar meta" : "Salvar alterações"}
                   </Button>
@@ -421,5 +421,13 @@ export function BudgetGoalDialogStack({
             </form.Subscribe>
          </CredenzaFooter>
       </form>
+   );
+}
+
+export function BudgetGoalCredenza(props: BudgetGoalCredenzaProps) {
+   return (
+      <QueryBoundary fallback={null} errorTitle="Erro ao carregar">
+         <BudgetGoalCredenzaContent {...props} />
+      </QueryBoundary>
    );
 }

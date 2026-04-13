@@ -21,15 +21,15 @@ import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { InventoryProductRow } from "./inventory-product-columns";
 
-interface InventoryMovementDialogStackProps {
+interface InventoryMovementCredenzaProps {
    product: InventoryProductRow;
    onSuccess: () => void;
 }
 
-export function InventoryMovementDialogStack({
+export function InventoryMovementCredenza({
    product,
    onSuccess,
-}: InventoryMovementDialogStackProps) {
+}: InventoryMovementCredenzaProps) {
    const mutation = useMutation(
       orpc.inventory.registerMovement.mutationOptions({
          onSuccess: () => {
@@ -168,7 +168,7 @@ export function InventoryMovementDialogStack({
                         type="submit"
                      >
                         {mutation.isPending && (
-                           <Loader2 className="size-4 mr-2 animate-spin" />
+                           <Loader2 className="size-4 animate-spin" />
                         )}
                         Registrar recebimento
                      </Button>
@@ -221,7 +221,7 @@ export function InventoryMovementDialogStack({
                         type="submit"
                      >
                         {mutation.isPending && (
-                           <Loader2 className="size-4 mr-2 animate-spin" />
+                           <Loader2 className="size-4 animate-spin" />
                         )}
                         Registrar venda
                      </Button>
@@ -264,7 +264,7 @@ export function InventoryMovementDialogStack({
                         variant="destructive"
                      >
                         {mutation.isPending && (
-                           <Loader2 className="size-4 mr-2 animate-spin" />
+                           <Loader2 className="size-4 animate-spin" />
                         )}
                         Registrar descarte
                      </Button>

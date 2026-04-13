@@ -23,9 +23,8 @@ import {
 } from "@packages/ui/components/select";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
-import { useStore } from "@tanstack/react-store";
 import { QueryBoundary } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
@@ -43,7 +42,7 @@ const FREQUENCY_OPTIONS = [
 type ActionMode = "installment" | "recurring";
 type Frequency = "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
 
-interface BillFromTransactionDialogStackProps {
+interface BillFromTransactionCredenzaProps {
    transactionId: string;
    transactionName: string;
    transactionAmount: string;
@@ -78,7 +77,7 @@ function buildInstallmentItems(amount: string, count: number, dueDate: string) {
    }));
 }
 
-function BillFromTransactionDialogStackInner({
+function BillFromTransactionCredenzaInner({
    transactionId,
    transactionName,
    transactionAmount,
@@ -88,7 +87,7 @@ function BillFromTransactionDialogStackInner({
    categoryId,
    mode,
    onSuccess,
-}: BillFromTransactionDialogStackProps) {
+}: BillFromTransactionCredenzaProps) {
    const billType = deriveBillType(transactionType);
 
    const firstDueDate = addMonths(transactionDate, 1);
@@ -145,15 +144,15 @@ function BillFromTransactionDialogStackInner({
       },
    });
 
-   const formValues = useStore(
-      form.baseStore as never,
-      (state: any) => state.values,
+   const installmentCount = useStore(
+      form.store,
+      (state) => state.values.installmentCount,
    );
    const previewItems =
       mode === "installment"
          ? buildInstallmentItems(
               transactionAmount,
-              formValues.installmentCount,
+              installmentCount,
               firstDueDate,
            )
          : [];
@@ -342,7 +341,7 @@ function BillFromTransactionDialogStackInner({
                   >
                      {(isSubmitting ||
                         createFromTransactionMutation.isPending) && (
-                        <Spinner className="size-4 mr-2" />
+                        <Spinner className="size-4" />
                      )}
                      Confirmar
                   </Button>
@@ -364,15 +363,15 @@ function BillFromTransactionDialogSkeleton() {
    );
 }
 
-export function BillFromTransactionDialogStack(
-   props: BillFromTransactionDialogStackProps,
+export function BillFromTransactionCredenza(
+   props: BillFromTransactionCredenzaProps,
 ) {
    return (
       <QueryBoundary
          fallback={<BillFromTransactionDialogSkeleton />}
          errorTitle="Erro ao carregar transação"
       >
-         <BillFromTransactionDialogStackInner {...props} />
+         <BillFromTransactionCredenzaInner {...props} />
       </QueryBoundary>
    );
 }

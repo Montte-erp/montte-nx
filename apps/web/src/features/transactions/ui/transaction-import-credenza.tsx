@@ -1,7 +1,7 @@
 import type { Attachment } from "@core/database/schemas/transactions";
 import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
-import { generateFromObjects, parseOrThrow } from "@f-o-t/csv";
-import { getTransactions, parseOrThrow as parseOfx } from "@f-o-t/ofx";
+import { generateFromObjects } from "@f-o-t/csv";
+import { getTransactions, parseBufferOrThrow as parseOfx } from "@f-o-t/ofx";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
@@ -54,6 +54,7 @@ import { Suspense, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 dayjs.extend(customParseFormat);
+import { useCsvFile } from "@/hooks/use-csv-file";
 import { orpc } from "@/integrations/orpc/client";
 
 const { Stepper, useStepper } = defineStepper(
@@ -277,7 +278,7 @@ function StepIndicator({ methods }: { methods: ImportStepperMethods }) {
    const currentIndex = methods.lookup.getIndex(methods.state.current.data.id);
 
    return (
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2">
          {steps.map((step, idx) => (
             <div
                className={[
@@ -307,6 +308,7 @@ interface UploadStepProps {
 function UploadStep({ methods, onFileReady }: UploadStepProps) {
    const [isParsing, setIsParsing] = useState(false);
    const [selectedFile, setSelectedFile] = useState<File | undefined>();
+   const { parse } = useCsvFile();
 
    function handleTemplateDownload() {
       const exampleRow = {
@@ -341,63 +343,54 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
       triggerDownload(blob, "modelo-transacoes.csv");
    }
 
-   function processFile(file: File) {
+   async function processFile(file: File) {
       setSelectedFile(file);
       setIsParsing(true);
-
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-         try {
-            const content = ev.target?.result as string;
-            const ext = file.name.split(".").pop()?.toLowerCase();
-
-            if (ext === "ofx") {
-               const ofxDoc = parseOfx(content);
-               const txs = getTransactions(ofxDoc);
-               const parsed: ImportRow[] = txs.map((tx) => {
-                  const amount = Math.abs(tx.TRNAMT);
-                  const tipo = tx.TRNAMT >= 0 ? "receita" : "despesa";
-                  // biome-ignore lint/suspicious/noExplicitAny: OFXDate shape access
-                  const dtPosted = tx.DTPOSTED as any;
-                  const rawDate: string =
-                     typeof dtPosted?.raw === "string"
-                        ? dtPosted.raw.slice(0, 8)
-                        : "";
-                  const data = normalizeOfxDate(rawDate);
-                  return {
-                     data,
-                     nome: tx.NAME ?? tx.MEMO ?? "",
-                     tipo,
-                     valor: String(amount),
-                     descricao: tx.MEMO ?? "",
-                     conta: "",
-                     conta_destino: "",
-                     categoria: "",
-                     subcategoria: "",
-                     tags: "",
-                     forma_pagamento: "",
-                     parcelado: "",
-                     num_parcelas: "",
-                     isDuplicate: false,
-                  };
-               });
-               onFileReady(parsed, "ofx", null);
-               methods.navigation.goTo("preview");
-            } else {
-               const doc = parseOrThrow(content);
-               const headers = doc.rows[0]?.fields ?? [];
-               const rawRows = doc.rows.slice(1).map((r) => r.fields);
-               onFileReady([], "csv", { headers, rows: rawRows });
-               methods.navigation.next();
-            }
-         } catch {
-            toast.error("Erro ao processar o arquivo. Verifique o formato.");
-            setSelectedFile(undefined);
-         } finally {
-            setIsParsing(false);
+      try {
+         const ext = file.name.split(".").pop()?.toLowerCase();
+         if (ext === "ofx") {
+            const ofxDoc = parseOfx(new Uint8Array(await file.arrayBuffer()));
+            const txs = getTransactions(ofxDoc);
+            const parsed: ImportRow[] = txs.map((tx) => {
+               const amount = Math.abs(tx.TRNAMT);
+               const tipo = tx.TRNAMT >= 0 ? "receita" : "despesa";
+               // biome-ignore lint/suspicious/noExplicitAny: OFXDate shape access
+               const dtPosted = tx.DTPOSTED as any;
+               const rawDate: string =
+                  typeof dtPosted?.raw === "string"
+                     ? dtPosted.raw.slice(0, 8)
+                     : "";
+               const data = normalizeOfxDate(rawDate);
+               return {
+                  data,
+                  nome: tx.NAME ?? tx.MEMO ?? "",
+                  tipo,
+                  valor: String(amount),
+                  descricao: tx.MEMO ?? "",
+                  conta: "",
+                  conta_destino: "",
+                  categoria: "",
+                  subcategoria: "",
+                  tags: "",
+                  forma_pagamento: "",
+                  parcelado: "",
+                  num_parcelas: "",
+                  isDuplicate: false,
+               };
+            });
+            onFileReady(parsed, "ofx", null);
+            methods.navigation.goTo("preview");
+         } else {
+            const { headers, rows } = await parse(file);
+            onFileReady([], "csv", { headers, rows });
+            methods.navigation.next();
          }
-      };
-      reader.readAsText(file, "utf-8");
+      } catch {
+         toast.error("Erro ao processar o arquivo. Verifique o formato.");
+         setSelectedFile(undefined);
+      } finally {
+         setIsParsing(false);
+      }
    }
 
    return (
@@ -429,16 +422,16 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                      {isParsing ? (
                         <Loader2 className="size-8 text-primary animate-spin" />
                      ) : (
-                        <>
+                        <div className="flex flex-col gap-2 items-center">
                            <FileSpreadsheet className="size-8 text-muted-foreground" />
-                           <p className="font-medium text-sm mt-2">
+                           <p className="font-medium text-sm">
                               Arraste e solte ou clique para selecionar
                            </p>
-                           <p className="text-xs text-muted-foreground mt-1">
+                           <p className="text-xs text-muted-foreground">
                               Suporta arquivos <strong>.CSV</strong> e{" "}
                               <strong>.OFX</strong>
                            </p>
-                           <div className="flex items-center gap-2 mt-2">
+                           <div className="flex items-center gap-2">
                               <div className="flex items-center gap-2 rounded-md border bg-background px-2.5 py-1">
                                  <FileSpreadsheet className="size-3.5 text-emerald-600" />
                                  <span className="text-xs font-medium">
@@ -452,21 +445,21 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                                  </span>
                               </div>
                            </div>
-                        </>
+                        </div>
                      )}
                   </DropzoneEmptyState>
                   <DropzoneContent />
                </Dropzone>
 
                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-lg border bg-muted/30 p-3">
-                     <p className="text-xs font-medium mb-0.5">Arquivo CSV</p>
+                  <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+                     <p className="text-xs font-medium">Arquivo CSV</p>
                      <p className="text-xs text-muted-foreground">
                         Você poderá mapear as colunas no próximo passo
                      </p>
                   </div>
-                  <div className="rounded-lg border bg-muted/30 p-3">
-                     <p className="text-xs font-medium mb-0.5">Arquivo OFX</p>
+                  <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+                     <p className="text-xs font-medium">Arquivo OFX</p>
                      <p className="text-xs text-muted-foreground">
                         Mapeamento automático — pula direto para a prévia
                      </p>
@@ -483,7 +476,7 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                type="button"
                variant="outline"
             >
-               <FileSpreadsheet className="size-4 mr-2" />
+               <FileSpreadsheet className="size-4" />
                Baixar modelo CSV
             </Button>
          </CredenzaFooter>
@@ -655,7 +648,7 @@ function ColumnMappingStep({
                   type="button"
                >
                   Aplicar mapeamento
-                  <ChevronRight className="size-4 ml-1" />
+                  <ChevronRight className="size-4" />
                </Button>
             </div>
          </CredenzaFooter>
@@ -847,8 +840,8 @@ function PreviewStep({
                      </p>
 
                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                           <p className="text-xs text-muted-foreground mb-1">
+                        <div className="flex flex-col gap-2">
+                           <p className="text-xs text-muted-foreground">
                               Conta padrão *
                            </p>
                            <Combobox
@@ -868,8 +861,8 @@ function PreviewStep({
                            />
                         </div>
 
-                        <div>
-                           <p className="text-xs text-muted-foreground mb-1">
+                        <div className="flex flex-col gap-2">
+                           <p className="text-xs text-muted-foreground">
                               Categoria padrão
                            </p>
                            <Combobox
@@ -894,8 +887,8 @@ function PreviewStep({
                               (c: { parentId: string | null }) =>
                                  c.parentId === defaults.categoryId,
                            ).length > 0 && (
-                              <div className="col-span-2">
-                                 <p className="text-xs text-muted-foreground mb-1">
+                              <div className="col-span-2 flex flex-col gap-2">
+                                 <p className="text-xs text-muted-foreground">
                                     Subcategoria padrão
                                  </p>
                                  <Combobox
@@ -1085,7 +1078,7 @@ function PreviewStep({
 
                   {ignoreDuplicates && duplicateCount > 0 && (
                      <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5">
-                        <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600" />
+                        <AlertTriangle className="size-3.5 shrink-0 self-start text-amber-600" />
                         <p className="text-xs text-amber-700">
                            {duplicateCount} lançamento(s) marcada(s) como
                            duplicata serão ignoradas.
@@ -1114,7 +1107,7 @@ function PreviewStep({
                      type="button"
                   >
                      Continuar
-                     <ChevronRight className="ml-1 size-4" />
+                     <ChevronRight className="size-4" />
                   </Button>
                </div>
             </CredenzaFooter>
@@ -1331,7 +1324,7 @@ function ConfirmStep({
                   <label className="flex cursor-pointer select-none items-start gap-2">
                      <Checkbox
                         checked={ignoreOnServer}
-                        className="mt-0.5"
+                        className="self-start"
                         onCheckedChange={(c) => setIgnoreOnServer(c === true)}
                      />
                      <div>
@@ -1380,7 +1373,7 @@ function ConfirmStep({
                   type="button"
                >
                   {isLoading ? (
-                     <Loader2 className="mr-2 size-4 animate-spin" />
+                     <Loader2 className="size-4 animate-spin" />
                   ) : null}
                   Importar {visibleRows.length} lançamento(s)
                </Button>
@@ -1408,7 +1401,7 @@ function StepLoadingFallback({ title }: { title: string }) {
    );
 }
 
-export function TransactionImportDialogStack({
+export function TransactionImportCredenza({
    onClose,
 }: {
    onClose?: () => void;

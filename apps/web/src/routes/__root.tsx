@@ -16,7 +16,6 @@ import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";
 import { GlobalSelectionToolbar } from "@/hooks/use-selection-toolbar";
 import { GlobalSurveyModal } from "@/hooks/use-survey-modal";
-import { GlobalDialogStack } from "@/hooks/use-dialog-stack";
 import { PostHogWrapper } from "@/integrations/posthog/client";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import type { RouterContext } from "../integrations/tanstack-query/root-provider";
@@ -97,7 +96,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                      <GlobalSelectionToolbar />
                   </ClientOnly>
                   <GlobalSurveyModal />
-                  <GlobalDialogStack />
                   {import.meta.env.DEV && (
                      <ClientOnly>
                         <TanStackDevtools

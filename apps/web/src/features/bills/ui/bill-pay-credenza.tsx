@@ -31,12 +31,12 @@ import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { BillRow } from "./bills-columns";
 
-interface BillPayDialogStackProps {
+interface BillPayCredenzaProps {
    bill: BillRow;
    onSuccess: () => void;
 }
 
-function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
+function BillPayCredenzaInner({ bill, onSuccess }: BillPayCredenzaProps) {
    const { data: accounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
    );
@@ -237,15 +237,21 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
             </form>
          </CredenzaBody>
          <CredenzaFooter>
-            <form.Subscribe selector={(state) => state.canSubmit}>
-               {(canSubmit) => (
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
+            >
+               {([canSubmit, isSubmitting]) => (
                   <Button
-                     disabled={!canSubmit || payMutation.isPending}
+                     disabled={
+                        !canSubmit || isSubmitting || payMutation.isPending
+                     }
                      form="bill-pay-form"
                      type="submit"
                   >
-                     {payMutation.isPending && (
-                        <Spinner className="size-4 mr-2" />
+                     {(isSubmitting || payMutation.isPending) && (
+                        <Spinner className="size-4" />
                      )}
                      Confirmar
                   </Button>
@@ -268,13 +274,13 @@ function BillPayDialogSkeleton() {
    );
 }
 
-export function BillPayDialogStack(props: BillPayDialogStackProps) {
+export function BillPayCredenza(props: BillPayCredenzaProps) {
    return (
       <QueryBoundary
          fallback={<BillPayDialogSkeleton />}
          errorTitle="Erro ao carregar conta"
       >
-         <BillPayDialogStackInner {...props} />
+         <BillPayCredenzaInner {...props} />
       </QueryBoundary>
    );
 }

@@ -6,12 +6,13 @@ import type {
 } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Plus, Upload } from "lucide-react";
-import { Suspense, useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
+import { QueryBoundary } from "@/components/query-boundary";
 import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import { useTransactionPrerequisites } from "@/features/transactions/hooks/use-transaction-prerequisites";
-import { TransactionDialogStack } from "@/features/transactions/ui/transaction-dialog-stack";
+import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
 import { TransactionExportCredenza } from "@/features/transactions/ui/transaction-export-credenza";
 import {
    DEFAULT_FILTERS,
@@ -140,7 +141,7 @@ function TransactionsPage() {
       }
       openCredenza({
          children: (
-            <TransactionDialogStack mode="create" onSuccess={closeCredenza} />
+            <TransactionCredenza mode="create" onSuccess={closeCredenza} />
          ),
       });
    }, [hasBankAccounts, openCredenza, closeCredenza, navigate, slug, teamSlug]);
@@ -194,7 +195,10 @@ function TransactionsPage() {
             filters={filters}
             onFiltersChange={handleFiltersChange}
          />
-         <Suspense fallback={<TransactionsSkeleton />}>
+         <QueryBoundary
+            fallback={<TransactionsSkeleton />}
+            errorTitle="Erro ao carregar lançamentos"
+         >
             <TransactionsList
                columnFilters={columnFilters}
                filters={filtersWithPagination}
@@ -218,7 +222,7 @@ function TransactionsPage() {
                onSortingChange={handleSortingChange}
                sorting={sorting}
             />
-         </Suspense>
+         </QueryBoundary>
       </main>
    );
 }

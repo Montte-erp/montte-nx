@@ -48,10 +48,10 @@ import type {
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import { BillFromTransactionDialogStack } from "@/features/bills/ui/bill-from-transaction-dialog-stack";
+import { BillFromTransactionCredenza } from "@/features/bills/ui/bill-from-transaction-credenza";
 import { BulkCategorizeForm } from "@/features/transactions/ui/bulk-categorize-form";
 import { BulkMoveAccountForm } from "@/features/transactions/ui/bulk-move-account-form";
-import { TransactionDialogStack } from "@/features/transactions/ui/transaction-dialog-stack";
+import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
 import type { TransactionFilters } from "@/features/transactions/ui/transaction-filter-bar";
 import {
    buildTransactionColumns,
@@ -171,7 +171,7 @@ export function TransactionsList({
       (transaction: TransactionRow) => {
          openCredenza({
             children: (
-               <TransactionDialogStack
+               <TransactionCredenza
                   mode="edit"
                   onSuccess={closeCredenza}
                   transaction={transaction}
@@ -203,7 +203,7 @@ export function TransactionsList({
       (tx: TransactionRow) => {
          openCredenza({
             children: (
-               <BillFromTransactionDialogStack
+               <BillFromTransactionCredenza
                   bankAccountId={tx.bankAccountId}
                   categoryId={tx.categoryId}
                   mode="recurring"

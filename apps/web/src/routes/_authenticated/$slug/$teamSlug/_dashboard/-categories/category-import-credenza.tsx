@@ -25,6 +25,7 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, Upload } from "lucide-react";
 import { type ChangeEvent, useCallback, useState } from "react";
+import { useCsvFile } from "@/hooks/use-csv-file";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -44,45 +45,6 @@ const FIELD_OPTIONS = [
    { value: "subcategory", label: "Subcategoria" },
    { value: "subcategoryKeywords", label: "Palavras-chave (Sub)" },
 ];
-
-function parseCsvContent(content: string): {
-   headers: string[];
-   rows: ParsedRow[];
-} {
-   const lines = content.split(/\r?\n/).filter((line) => line.trim());
-   if (lines.length === 0) return { headers: [], rows: [] };
-
-   const delimiter = lines[0].includes(";") ? ";" : ",";
-   const parseRow = (line: string): string[] => {
-      const result: string[] = [];
-      let current = "";
-      let inQuotes = false;
-      for (const char of line) {
-         if (char === '"') {
-            inQuotes = !inQuotes;
-         } else if (char === delimiter && !inQuotes) {
-            result.push(current.trim());
-            current = "";
-         } else {
-            current += char;
-         }
-      }
-      result.push(current.trim());
-      return result;
-   };
-
-   const headers = parseRow(lines[0]);
-   const rows = lines.slice(1).map((line) => {
-      const values = parseRow(line);
-      const row: ParsedRow = {};
-      for (let i = 0; i < headers.length; i++) {
-         row[headers[i]] = values[i] ?? "";
-      }
-      return row;
-   });
-
-   return { headers, rows };
-}
 
 function guessMapping(headers: string[]): Record<string, string> {
    const mapping: Record<string, string> = {};
@@ -184,13 +146,13 @@ function applyMapping(
    return Array.from(categoryMap.values());
 }
 
-interface CategoryImportDialogStackProps {
+interface CategoryImportCredenzaProps {
    onSuccess: () => void;
 }
 
-export function CategoryImportDialogStack({
+export function CategoryImportCredenza({
    onSuccess,
-}: CategoryImportDialogStackProps) {
+}: CategoryImportCredenzaProps) {
    const [step, setStep] = useState<Step>("upload");
    const [headers, setHeaders] = useState<string[]>([]);
    const [rows, setRows] = useState<ParsedRow[]>([]);
@@ -209,20 +171,28 @@ export function CategoryImportDialogStack({
       }),
    );
 
-   const handleFileUpload = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-         const content = ev.target?.result as string;
-         const parsed = parseCsvContent(content);
-         setHeaders(parsed.headers);
-         setRows(parsed.rows);
-         setMapping(guessMapping(parsed.headers));
-         setStep("mapping");
-      };
-      reader.readAsText(file);
-   }, []);
+   const { parse } = useCsvFile();
+
+   const handleFileUpload = useCallback(
+      (e: ChangeEvent<HTMLInputElement>) => {
+         const file = e.target.files?.[0];
+         if (!file) return;
+         parse(file).then(({ headers: parsedHeaders, rows: parsedRows }) => {
+            const parsedRow = parsedRows.map((fields) => {
+               const row: ParsedRow = {};
+               for (let i = 0; i < parsedHeaders.length; i++) {
+                  row[parsedHeaders[i]] = fields[i] ?? "";
+               }
+               return row;
+            });
+            setHeaders(parsedHeaders);
+            setRows(parsedRow);
+            setMapping(guessMapping(parsedHeaders));
+            setStep("mapping");
+         });
+      },
+      [parse],
+   );
 
    const handleMappingConfirm = useCallback(() => {
       const result = applyMapping(rows, headers, mapping);

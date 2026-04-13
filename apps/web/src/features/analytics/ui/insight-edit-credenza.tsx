@@ -21,8 +21,8 @@ import {
    useQueryClient,
 } from "@tanstack/react-query";
 import { BarChart3, Hash, Loader2, TrendingUp } from "lucide-react";
-import { Suspense, useCallback, useState } from "react";
-import { ErrorBoundary } from "react-error-boundary";
+import { useCallback, useState } from "react";
+import { QueryBoundary } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { useInsightConfig } from "@/features/analytics/hooks/use-insight-config";
 import { useCredenza } from "@/hooks/use-credenza";
@@ -46,13 +46,11 @@ const TYPE_ITEMS: {
    { value: "breakdown", label: "Distribuição", icon: BarChart3 },
 ];
 
-interface InsightEditDialogStackProps {
+interface InsightEditCredenzaProps {
    insightId: string;
 }
 
-function InsightEditDialogStackContent({
-   insightId,
-}: InsightEditDialogStackProps) {
+function InsightEditCredenzaContent({ insightId }: InsightEditCredenzaProps) {
    const queryClient = useQueryClient();
    const { closeCredenza } = useCredenza();
 
@@ -118,7 +116,7 @@ function InsightEditDialogStackContent({
                      <div className="border-t" />
 
                      <div className="flex flex-col gap-2">
-                        <span className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider px-1 mb-0.5">
+                        <span className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider px-1">
                            Tipo
                         </span>
                         {TYPE_ITEMS.map((item) => {
@@ -145,7 +143,7 @@ function InsightEditDialogStackContent({
 
                      <div className="border-t" />
 
-                     <div className="[&_.space-y-4]:space-y-3 [&_label]:text-[10px]">
+                     <div className="flex flex-col gap-4 [&_label]:text-[10px]">
                         {type === "kpi" && (
                            <KpiQueryBuilder
                               config={config as KpiConfig}
@@ -169,15 +167,14 @@ function InsightEditDialogStackContent({
                </aside>
 
                <div className="flex-1 min-w-0 overflow-y-auto bg-muted/20 p-4">
-                  <ErrorBoundary
-                     fallbackRender={({ error }) => (
+                  <QueryBoundary
+                     fallback={<InsightLoadingState />}
+                     errorFallback={({ error }) => (
                         <InsightErrorState error={error as Error} />
                      )}
                   >
-                     <Suspense fallback={<InsightLoadingState />}>
-                        <InsightPreview config={config} />
-                     </Suspense>
-                  </ErrorBoundary>
+                     <InsightPreview config={config} />
+                  </QueryBoundary>
                </div>
             </div>
          </CredenzaBody>
@@ -188,7 +185,7 @@ function InsightEditDialogStackContent({
             </Button>
             <Button disabled={updateMutation.isPending} onClick={handleSave}>
                {updateMutation.isPending && (
-                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  <Loader2 className="size-4 animate-spin" />
                )}
                Salvar
             </Button>
@@ -197,12 +194,10 @@ function InsightEditDialogStackContent({
    );
 }
 
-export function InsightEditDialogStack({
-   insightId,
-}: InsightEditDialogStackProps) {
+export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
    return (
-      <Suspense fallback={<InsightLoadingState />}>
-         <InsightEditDialogStackContent insightId={insightId} />
-      </Suspense>
+      <QueryBoundary fallback={<InsightLoadingState />}>
+         <InsightEditCredenzaContent insightId={insightId} />
+      </QueryBoundary>
    );
 }

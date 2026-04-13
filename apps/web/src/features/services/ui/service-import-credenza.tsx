@@ -37,6 +37,7 @@ import {
    Loader2,
 } from "lucide-react";
 import { useState } from "react";
+import { useCsvFile } from "@/hooks/use-csv-file";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -93,47 +94,6 @@ function parsePriceToCents(raw: string): number | null {
    const num = Number.parseFloat(cleaned);
    if (Number.isNaN(num)) return null;
    return Math.round(num * 100);
-}
-
-function parseCsvContent(content: string): RawCsvData {
-   const lines = content.split(/\r?\n/).filter((l) => l.trim().length > 0);
-   if (lines.length === 0) return { headers: [], rows: [] };
-
-   const parseRow = (line: string): string[] => {
-      const fields: string[] = [];
-      let current = "";
-      let inQuotes = false;
-
-      for (let i = 0; i < line.length; i++) {
-         const char = line[i];
-         if (inQuotes) {
-            if (char === '"') {
-               if (line[i + 1] === '"') {
-                  current += '"';
-                  i++;
-               } else {
-                  inQuotes = false;
-               }
-            } else {
-               current += char;
-            }
-         } else if (char === '"') {
-            inQuotes = true;
-         } else if (char === "," || char === ";") {
-            fields.push(current.trim());
-            current = "";
-         } else {
-            current += char;
-         }
-      }
-      fields.push(current.trim());
-      return fields;
-   };
-
-   const headers = parseRow(lines[0]);
-   const rows = lines.slice(1).map(parseRow);
-
-   return { headers, rows };
 }
 
 function guessMapping(headers: string[]): Partial<ColumnMapping> {
@@ -195,7 +155,7 @@ function StepIndicator({ methods }: { methods: ImportStepperMethods }) {
    const currentIndex = methods.lookup.getIndex(methods.state.current.data.id);
 
    return (
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2">
          {steps.map((step, idx) => (
             <div
                className={[
@@ -221,6 +181,7 @@ interface UploadStepProps {
 function UploadStep({ methods, onFileReady }: UploadStepProps) {
    const [isParsing, setIsParsing] = useState(false);
    const [selectedFile, setSelectedFile] = useState<File | undefined>();
+   const { parse } = useCsvFile();
 
    function handleTemplateDownload() {
       const csv =
@@ -234,30 +195,24 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
       URL.revokeObjectURL(url);
    }
 
-   function processFile(file: File) {
+   async function processFile(file: File) {
       setSelectedFile(file);
       setIsParsing(true);
-
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-         try {
-            const content = ev.target?.result as string;
-            const rawCsv = parseCsvContent(content);
-            if (rawCsv.headers.length === 0) {
-               toast.error("Arquivo CSV vazio ou inválido.");
-               setSelectedFile(undefined);
-               return;
-            }
-            onFileReady(rawCsv);
-            methods.navigation.next();
-         } catch {
-            toast.error("Erro ao processar o arquivo. Verifique o formato.");
+      try {
+         const rawCsv = await parse(file);
+         if (rawCsv.headers.length === 0) {
+            toast.error("Arquivo CSV vazio ou inválido.");
             setSelectedFile(undefined);
-         } finally {
-            setIsParsing(false);
+            return;
          }
-      };
-      reader.readAsText(file, "utf-8");
+         onFileReady(rawCsv);
+         methods.navigation.next();
+      } catch {
+         toast.error("Erro ao processar o arquivo. Verifique o formato.");
+         setSelectedFile(undefined);
+      } finally {
+         setIsParsing(false);
+      }
    }
 
    return (
@@ -288,12 +243,12 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                      ) : (
                         <FileSpreadsheet className="size-8 text-muted-foreground" />
                      )}
-                     <p className="text-sm font-medium mt-2">
+                     <p className="text-sm font-medium">
                         {isParsing
                            ? "Processando arquivo..."
                            : "Arraste um arquivo CSV ou clique para selecionar"}
                      </p>
-                     <p className="text-xs text-muted-foreground mt-1">
+                     <p className="text-xs text-muted-foreground">
                         Formato aceito: .csv
                      </p>
                   </DropzoneEmptyState>
@@ -389,11 +344,11 @@ function MappingStep({
                   ))}
                </div>
 
-               <div className="rounded-lg border bg-muted/20 p-3">
+               <div className="flex flex-col gap-2 rounded-lg border bg-muted/20 p-3">
                   <p className="text-xs text-muted-foreground">
                      Colunas detectadas: {rawCsv.headers.join(", ")}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground">
                      {rawCsv.rows.length} linha(s) de dados
                   </p>
                </div>
@@ -417,7 +372,7 @@ function MappingStep({
                   type="button"
                >
                   Continuar
-                  <ChevronRight className="ml-1 size-4" />
+                  <ChevronRight className="size-4" />
                </Button>
             </div>
          </CredenzaFooter>
@@ -532,7 +487,7 @@ function PreviewStep({ methods, rows }: PreviewStepProps) {
                   type="button"
                >
                   Continuar
-                  <ChevronRight className="ml-1 size-4" />
+                  <ChevronRight className="size-4" />
                </Button>
             </div>
          </CredenzaFooter>
@@ -674,7 +629,7 @@ function ConfirmStep({ methods, rows, onClose }: ConfirmStepProps) {
                   type="button"
                >
                   {isLoading ? (
-                     <Loader2 className="mr-2 size-4 animate-spin" />
+                     <Loader2 className="size-4 animate-spin" />
                   ) : null}
                   Importar {validRows.length} serviço(s)
                </Button>
@@ -684,11 +639,7 @@ function ConfirmStep({ methods, rows, onClose }: ConfirmStepProps) {
    );
 }
 
-export function ServiceImportDialogStack({
-   onClose,
-}: {
-   onClose?: () => void;
-}) {
+export function ServiceImportCredenza({ onClose }: { onClose?: () => void }) {
    return (
       <Stepper.Provider variant="line">
          {({ methods }) => <ImportWizard methods={methods} onClose={onClose} />}

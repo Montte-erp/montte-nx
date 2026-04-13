@@ -1,5 +1,6 @@
 export const NOTIFICATION_TYPES = {
    AI_KEYWORD_DERIVED: "ai.keyword_derived",
+   AI_TRANSACTION_CATEGORIZED: "ai.transaction_categorized",
    CRON_KEYWORDS_BACKFILL: "cron.keywords_backfill",
 } as const;
 
@@ -12,12 +13,15 @@ export type NotificationPayloadMap = {
       categoryName: string;
       count: number;
    };
+   "ai.transaction_categorized": {
+      transactionId: string;
+   };
    "cron.keywords_backfill": {
       count: number;
    };
 };
 
-export function getPayload<T extends NotificationType>(
+export function getPayload<T extends keyof NotificationPayloadMap>(
    type: T,
    payload: Record<string, unknown> | undefined,
 ): NotificationPayloadMap[T] | undefined {
