@@ -4,6 +4,7 @@ import {
    evaluateConditionGroup,
 } from "@f-o-t/condition-evaluator";
 import {
+   bulkCreateTransactions,
    createTransaction,
    createTransactionItems,
    deleteTransaction,
@@ -257,7 +258,6 @@ export const importStatement = withCreditEnforcement(
       }
 
       const rows = input.transactions.map((t) => ({
-         teamId: context.teamId,
          bankAccountId: input.bankAccountId,
          name: t.name ?? null,
          type: t.type,
@@ -268,7 +268,25 @@ export const importStatement = withCreditEnforcement(
          paymentMethod: t.paymentMethod ?? null,
       }));
 
-      await context.db.insert(transactions).values(rows);
+      const inserted = await bulkCreateTransactions(
+         context.db,
+         context.teamId,
+         rows,
+      );
+
+      for (const tx of inserted) {
+         if (
+            !tx.categoryId &&
+            (tx.type === "income" || tx.type === "expense")
+         ) {
+            enqueueCategorization({
+               transactionId: tx.id,
+               teamId: context.teamId,
+               name: tx.name ?? "",
+               type: tx.type,
+            });
+         }
+      }
 
       try {
          const emit = createEmitFn(context.db, context.posthog);

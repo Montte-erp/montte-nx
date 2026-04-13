@@ -515,6 +515,36 @@ export async function updateTransaction(
    }
 }
 
+export async function bulkCreateTransactions(
+   db: DatabaseInstance,
+   teamId: string,
+   rows: {
+      bankAccountId: string;
+      name: string | null;
+      type: "income" | "expense";
+      amount: string;
+      date: string;
+      description: string | null;
+      categoryId: string | null;
+      paymentMethod: string | null;
+   }[],
+) {
+   try {
+      return await db
+         .insert(transactions)
+         .values(rows.map((r) => ({ ...r, teamId })))
+         .returning({
+            id: transactions.id,
+            name: transactions.name,
+            type: transactions.type,
+            categoryId: transactions.categoryId,
+         });
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to bulk create transactions");
+   }
+}
+
 export async function deleteTransaction(db: DatabaseInstance, id: string) {
    try {
       await db.delete(transactions).where(eq(transactions.id, id));
