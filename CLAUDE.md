@@ -642,7 +642,9 @@ Never roll custom implementations for these domains.
 | `@f-o-t/condition-evaluator` | Rule/condition evaluation with weighted scoring |
 
 **Key gotchas:**
-- CSV/OFX: always `readAsArrayBuffer` + `parseBufferOrThrow(new Uint8Array(buffer))` — never `readAsText`. Handles Brazilian bank encoding automatically.
+- CSV parsing in UI: always use `useCsvFile` from `@/hooks/use-csv-file` — never `FileReader.readAsText` or manual CSV parsers. Handles Brazilian bank encoding (ISO-8859-1) automatically via `readAsArrayBuffer` + `parseBufferOrThrow`.
+- XLSX parsing in UI: always use `useXlsxFile` from `@/hooks/use-xlsx-file` — never manual `FileReader` + `xlsx` calls. Uses `readAsArrayBuffer` internally.
+- OFX: always `readAsArrayBuffer` + `parseBufferOrThrow(new Uint8Array(buffer))` from `@f-o-t/ofx` — never `readAsText`.
 - Money: `toMajorUnitsString(of(decimalStr, "BRL"))` to normalize; `format(of("1500.00", "BRL"), "pt-BR")` to display.
 - Condition evaluator: `weight` goes on `ConditionGroup`, not individual `Condition`.
 
