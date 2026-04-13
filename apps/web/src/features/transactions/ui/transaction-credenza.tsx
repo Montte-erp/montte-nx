@@ -35,6 +35,7 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { Plus } from "lucide-react";
+import { Suspense } from "react";
 import { QueryBoundary } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { z } from "zod";
