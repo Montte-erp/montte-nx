@@ -42,6 +42,7 @@ import {
    type CreditCardRow,
 } from "./-credit-cards/credit-cards-columns";
 import { CreditCardForm } from "./-credit-cards/credit-cards-form";
+import { CreditCardFaturaRow } from "./-credit-cards/credit-card-fatura-row";
 import { CreditCardsExportCredenza } from "./-credit-cards/credit-cards-export-credenza";
 import { CreditCardsImportCredenza } from "./-credit-cards/credit-cards-import-credenza";
 import type { PanelAction } from "@/features/context-panel/context-panel-store";
@@ -312,6 +313,9 @@ function CreditCardsList() {
                </>
             )}
             rowSelection={rowSelection}
+            renderExpandedRow={(props) => (
+               <CreditCardFaturaRow creditCardId={props.row.original.id} />
+            )}
             pagination={{
                currentPage: page,
                pageSize,
