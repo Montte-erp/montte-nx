@@ -83,54 +83,49 @@ interface TransactionCredenzaProps {
    onSuccess: () => void;
 }
 
-type TransactionFormValues = {
-   name: string;
-   type: TransactionType;
-   amount: string;
-   date: Date | undefined;
-   bankAccountId: string;
-   destinationBankAccountId: string;
-   categoryId: string;
-   subcategoryId: string;
-   tagIds: string[];
-   description: string;
-   contactId: string | null;
-   creditCardId: string;
-   createAsBill: boolean;
-   paymentMethod: PaymentMethod | "";
-   isInstallment: boolean;
-   installmentCount: number | null;
-   isRecurring: boolean;
-   recurringFrequency: string | null;
-   recurringCount: number | null;
-};
+const transactionFormSchema = z.object({
+   name: z.string().default(""),
+   type: z.enum(["income", "expense", "transfer"]).default("income"),
+   amount: z.string().default(""),
+   date: z.date().optional(),
+   bankAccountId: z.string().default(""),
+   destinationBankAccountId: z.string().default(""),
+   categoryId: z.string().default(""),
+   subcategoryId: z.string().default(""),
+   tagIds: z.array(z.string()).default([]),
+   description: z.string().default(""),
+   contactId: z.string().nullable().default(null),
+   creditCardId: z.string().default(""),
+   createAsBill: z.boolean().default(false),
+   paymentMethod: z.string().default(""),
+   isInstallment: z.boolean().default(false),
+   installmentCount: z.number().nullable().default(null),
+   isRecurring: z.boolean().default(false),
+   recurringFrequency: z.string().nullable().default(null),
+   recurringCount: z.number().nullable().default(null),
+});
+
+type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 
 function buildTransactionDefaultValues(
    transaction?: TransactionRow,
 ): TransactionFormValues {
-   return {
-      name: transaction?.name ?? "",
-      type: transaction?.type ?? "income",
-      amount: transaction?.amount ?? "",
+   return transactionFormSchema.parse({
+      name: transaction?.name,
+      type: transaction?.type,
+      amount: transaction?.amount,
       date: transaction?.date
          ? new Date(`${transaction.date}T12:00:00`)
          : undefined,
-      bankAccountId: transaction?.bankAccountId ?? "",
-      destinationBankAccountId: transaction?.destinationBankAccountId ?? "",
-      categoryId: transaction?.categoryId ?? "",
-      subcategoryId: "",
-      tagIds: [],
-      description: transaction?.description ?? "",
-      contactId: transaction?.contactId ?? null,
-      creditCardId: transaction?.creditCardId ?? "",
-      createAsBill: false,
-      paymentMethod: transaction?.paymentMethod ?? "",
-      isInstallment: transaction?.isInstallment ?? false,
-      installmentCount: transaction?.installmentCount ?? null,
-      isRecurring: false,
-      recurringFrequency: null,
-      recurringCount: null,
-   };
+      bankAccountId: transaction?.bankAccountId,
+      destinationBankAccountId: transaction?.destinationBankAccountId,
+      categoryId: transaction?.categoryId,
+      contactId: transaction?.contactId,
+      creditCardId: transaction?.creditCardId,
+      paymentMethod: transaction?.paymentMethod,
+      isInstallment: transaction?.isInstallment,
+      installmentCount: transaction?.installmentCount,
+   });
 }
 
 function TagCombobox({
