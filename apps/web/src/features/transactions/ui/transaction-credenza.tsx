@@ -716,9 +716,10 @@ function TransactionCredenzaContent({
    const { data: categories } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
-   const { data: creditCards } = useSuspenseQuery(
-      orpc.creditCards.getAll.queryOptions({}),
+   const { data: creditCardsResult } = useSuspenseQuery(
+      orpc.creditCards.getAll.queryOptions({ input: {} }),
    );
+   const creditCards = creditCardsResult.data;
 
    const { openAlertDialog } = useAlertDialog();
 

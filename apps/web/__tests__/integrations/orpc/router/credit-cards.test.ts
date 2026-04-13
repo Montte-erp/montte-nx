@@ -128,11 +128,15 @@ describe("getAll", () => {
          { context: ctx },
       );
 
-      const result = await call(creditCardsRouter.getAll, undefined, {
-         context: ctx,
-      });
+      const result = await call(
+         creditCardsRouter.getAll,
+         {},
+         {
+            context: ctx,
+         },
+      );
 
-      expect(result).toHaveLength(2);
+      expect(result.data).toHaveLength(2);
    });
 });
 

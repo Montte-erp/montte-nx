@@ -32,13 +32,30 @@ import { QueryBoundary } from "@/components/query-boundary";
 import {
    buildCreditCardColumns,
    type CreditCardRow,
-} from "@/features/credit-cards/ui/credit-cards-columns";
-import { CreditCardForm } from "@/features/credit-cards/ui/credit-cards-form";
+} from "./-credit-cards/credit-cards-columns";
+import { CreditCardForm } from "./-credit-cards/credit-cards-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
-import { tableSearchSchema } from "@/lib/table-search-schema";
 import { z } from "zod";
+
+const creditCardsSearchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .catch([])
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .catch([])
+      .default([]),
+   search: z.string().max(100).catch("").default(""),
+   status: z
+      .enum(["active", "blocked", "cancelled"])
+      .optional()
+      .catch(undefined),
+   page: z.number().int().min(1).catch(1).default(1),
+   pageSize: z.number().int().catch(20).default(20),
+});
 
 const [useCreditCardsTableState] =
    createLocalStorageState<DataTableStoredState | null>(
@@ -49,10 +66,23 @@ const [useCreditCardsTableState] =
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/credit-cards",
 )({
-   validateSearch: tableSearchSchema,
-   loader: ({ context }) => {
+   validateSearch: creditCardsSearchSchema,
+   loaderDeps: ({ search: { page, pageSize, search, status } }) => ({
+      page,
+      pageSize,
+      search,
+      status,
+   }),
+   loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
-         orpc.creditCards.getAll.queryOptions({}),
+         orpc.creditCards.getAll.queryOptions({
+            input: {
+               page: deps.page,
+               pageSize: deps.pageSize,
+               search: deps.search || undefined,
+               status: deps.status,
+            },
+         }),
       );
       context.queryClient.prefetchQuery(
          orpc.bankAccounts.getAll.queryOptions({}),
@@ -91,7 +121,8 @@ function CreditCardFormSkeleton() {
 
 function CreditCardsList() {
    const navigate = Route.useNavigate();
-   const { sorting, columnFilters } = Route.useSearch();
+   const { sorting, columnFilters, page, pageSize, search, status } =
+      Route.useSearch();
    const [tableState, setTableState] = useCreditCardsTableState();
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
@@ -103,8 +134,10 @@ function CreditCardsList() {
       onClear,
    } = useRowSelection();
 
-   const { data: cards } = useSuspenseQuery(
-      orpc.creditCards.getAll.queryOptions({}),
+   const { data: result } = useSuspenseQuery(
+      orpc.creditCards.getAll.queryOptions({
+         input: { page, pageSize, search: search || undefined, status },
+      }),
    );
 
    const deleteMutation = useMutation(
@@ -138,10 +171,7 @@ function CreditCardsList() {
                ? updater(sorting as SortingState)
                : updater;
          navigate({
-            search: (prev: z.infer<typeof tableSearchSchema>) => ({
-               ...prev,
-               sorting: next,
-            }),
+            search: (prev) => ({ ...prev, sorting: next }),
             replace: true,
          });
       },
@@ -156,10 +186,7 @@ function CreditCardsList() {
                   ? updater(columnFilters as ColumnFiltersState)
                   : updater;
             navigate({
-               search: (prev: z.infer<typeof tableSearchSchema>) => ({
-                  ...prev,
-                  columnFilters: next,
-               }),
+               search: (prev) => ({ ...prev, columnFilters: next }),
                replace: true,
             });
          },
@@ -225,7 +252,7 @@ function CreditCardsList() {
 
    const columns = useMemo(() => buildCreditCardColumns(), []);
 
-   if (cards.length === 0) {
+   if (result.data.length === 0 && page === 1) {
       return (
          <Empty>
             <EmptyHeader>
@@ -245,7 +272,7 @@ function CreditCardsList() {
       <>
          <DataTable
             columns={columns}
-            data={cards}
+            data={result.data}
             getRowId={(row) => row.id}
             sorting={sorting as SortingState}
             onSortingChange={handleSortingChange}
@@ -274,6 +301,22 @@ function CreditCardsList() {
                </>
             )}
             rowSelection={rowSelection}
+            pagination={{
+               currentPage: page,
+               pageSize,
+               totalPages: result.totalPages,
+               totalCount: result.totalCount,
+               onPageChange: (p) =>
+                  navigate({
+                     search: (prev) => ({ ...prev, page: p }),
+                     replace: true,
+                  }),
+               onPageSizeChange: (s) =>
+                  navigate({
+                     search: (prev) => ({ ...prev, pageSize: s, page: 1 }),
+                     replace: true,
+                  }),
+            }}
          />
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
             <SelectionActionButton
