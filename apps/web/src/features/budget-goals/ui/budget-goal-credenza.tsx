@@ -1,7 +1,6 @@
 import type { Outputs } from "@/integrations/orpc/client";
+import { QueryBoundary } from "@/components/query-boundary";
 import { Button } from "@packages/ui/components/button";
-
-type BudgetGoalWithProgress = Outputs["budgetGoals"]["getAll"][number];
 import {
    Combobox,
    type ComboboxOption,
@@ -49,6 +48,8 @@ import {
 import { toast } from "sonner";
 import { z } from "zod";
 import { orpc } from "@/integrations/orpc/client";
+
+type BudgetGoalWithProgress = Outputs["budgetGoals"]["getAll"][number];
 
 const CATEGORY_ICONS: { name: string; label: string; Icon: LucideIcon }[] = [
    { name: "wallet", label: "Carteira", Icon: Wallet },
@@ -116,7 +117,7 @@ interface BudgetGoalCredenzaProps {
    onSuccess: () => void;
 }
 
-export function BudgetGoalCredenza({
+function BudgetGoalCredenzaContent({
    mode,
    goal,
    month,
@@ -420,5 +421,13 @@ export function BudgetGoalCredenza({
             </form.Subscribe>
          </CredenzaFooter>
       </form>
+   );
+}
+
+export function BudgetGoalCredenza(props: BudgetGoalCredenzaProps) {
+   return (
+      <QueryBoundary fallback={null} errorTitle="Erro ao carregar">
+         <BudgetGoalCredenzaContent {...props} />
+      </QueryBoundary>
    );
 }
