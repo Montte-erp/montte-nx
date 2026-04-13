@@ -1,7 +1,7 @@
 import type { Attachment } from "@core/database/schemas/transactions";
 import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
-import { generateFromObjects, parseOrThrow } from "@f-o-t/csv";
-import { getTransactions, parseOrThrow as parseOfx } from "@f-o-t/ofx";
+import { generateFromObjects } from "@f-o-t/csv";
+import { getTransactions, parseBufferOrThrow as parseOfx } from "@f-o-t/ofx";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
@@ -54,6 +54,7 @@ import { Suspense, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 dayjs.extend(customParseFormat);
+import { useCsvFile } from "@/hooks/use-csv-file";
 import { orpc } from "@/integrations/orpc/client";
 
 const { Stepper, useStepper } = defineStepper(
@@ -307,6 +308,7 @@ interface UploadStepProps {
 function UploadStep({ methods, onFileReady }: UploadStepProps) {
    const [isParsing, setIsParsing] = useState(false);
    const [selectedFile, setSelectedFile] = useState<File | undefined>();
+   const { parse } = useCsvFile();
 
    function handleTemplateDownload() {
       const exampleRow = {
@@ -341,63 +343,54 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
       triggerDownload(blob, "modelo-transacoes.csv");
    }
 
-   function processFile(file: File) {
+   async function processFile(file: File) {
       setSelectedFile(file);
       setIsParsing(true);
-
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-         try {
-            const content = ev.target?.result as string;
-            const ext = file.name.split(".").pop()?.toLowerCase();
-
-            if (ext === "ofx") {
-               const ofxDoc = parseOfx(content);
-               const txs = getTransactions(ofxDoc);
-               const parsed: ImportRow[] = txs.map((tx) => {
-                  const amount = Math.abs(tx.TRNAMT);
-                  const tipo = tx.TRNAMT >= 0 ? "receita" : "despesa";
-                  // biome-ignore lint/suspicious/noExplicitAny: OFXDate shape access
-                  const dtPosted = tx.DTPOSTED as any;
-                  const rawDate: string =
-                     typeof dtPosted?.raw === "string"
-                        ? dtPosted.raw.slice(0, 8)
-                        : "";
-                  const data = normalizeOfxDate(rawDate);
-                  return {
-                     data,
-                     nome: tx.NAME ?? tx.MEMO ?? "",
-                     tipo,
-                     valor: String(amount),
-                     descricao: tx.MEMO ?? "",
-                     conta: "",
-                     conta_destino: "",
-                     categoria: "",
-                     subcategoria: "",
-                     tags: "",
-                     forma_pagamento: "",
-                     parcelado: "",
-                     num_parcelas: "",
-                     isDuplicate: false,
-                  };
-               });
-               onFileReady(parsed, "ofx", null);
-               methods.navigation.goTo("preview");
-            } else {
-               const doc = parseOrThrow(content);
-               const headers = doc.rows[0]?.fields ?? [];
-               const rawRows = doc.rows.slice(1).map((r) => r.fields);
-               onFileReady([], "csv", { headers, rows: rawRows });
-               methods.navigation.next();
-            }
-         } catch {
-            toast.error("Erro ao processar o arquivo. Verifique o formato.");
-            setSelectedFile(undefined);
-         } finally {
-            setIsParsing(false);
+      try {
+         const ext = file.name.split(".").pop()?.toLowerCase();
+         if (ext === "ofx") {
+            const ofxDoc = parseOfx(new Uint8Array(await file.arrayBuffer()));
+            const txs = getTransactions(ofxDoc);
+            const parsed: ImportRow[] = txs.map((tx) => {
+               const amount = Math.abs(tx.TRNAMT);
+               const tipo = tx.TRNAMT >= 0 ? "receita" : "despesa";
+               // biome-ignore lint/suspicious/noExplicitAny: OFXDate shape access
+               const dtPosted = tx.DTPOSTED as any;
+               const rawDate: string =
+                  typeof dtPosted?.raw === "string"
+                     ? dtPosted.raw.slice(0, 8)
+                     : "";
+               const data = normalizeOfxDate(rawDate);
+               return {
+                  data,
+                  nome: tx.NAME ?? tx.MEMO ?? "",
+                  tipo,
+                  valor: String(amount),
+                  descricao: tx.MEMO ?? "",
+                  conta: "",
+                  conta_destino: "",
+                  categoria: "",
+                  subcategoria: "",
+                  tags: "",
+                  forma_pagamento: "",
+                  parcelado: "",
+                  num_parcelas: "",
+                  isDuplicate: false,
+               };
+            });
+            onFileReady(parsed, "ofx", null);
+            methods.navigation.goTo("preview");
+         } else {
+            const { headers, rows } = await parse(file);
+            onFileReady([], "csv", { headers, rows });
+            methods.navigation.next();
          }
-      };
-      reader.readAsText(file, "utf-8");
+      } catch {
+         toast.error("Erro ao processar o arquivo. Verifique o formato.");
+         setSelectedFile(undefined);
+      } finally {
+         setIsParsing(false);
+      }
    }
 
    return (
