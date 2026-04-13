@@ -25,7 +25,14 @@ import type {
    SortingState,
 } from "@tanstack/react-table";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
-import { CreditCard, Download, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+   CreditCard,
+   Download,
+   Pencil,
+   Plus,
+   Trash2,
+   Upload,
+} from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
@@ -36,6 +43,7 @@ import {
 } from "./-credit-cards/credit-cards-columns";
 import { CreditCardForm } from "./-credit-cards/credit-cards-form";
 import { CreditCardsExportCredenza } from "./-credit-cards/credit-cards-export-credenza";
+import { CreditCardsImportCredenza } from "./-credit-cards/credit-cards-import-credenza";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -350,6 +358,12 @@ function CreditCardsPage() {
       });
    }
 
+   function handleImport() {
+      openCredenza({
+         children: <CreditCardsImportCredenza onClose={closeCredenza} />,
+      });
+   }
+
    function handleExport() {
       openCredenza({
          children: (
@@ -376,6 +390,14 @@ function CreditCardsPage() {
          <DefaultHeader
             actions={
                <div className="flex gap-2">
+                  <Button
+                     variant="outline"
+                     onClick={handleImport}
+                     type="button"
+                  >
+                     <Upload className="size-4" />
+                     Importar
+                  </Button>
                   <Button
                      variant="outline"
                      onClick={handleExport}
