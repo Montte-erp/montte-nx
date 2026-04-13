@@ -19,7 +19,7 @@ const idSchema = z.object({ id: z.string().uuid() });
 
 const listCreditCardsSchema = z.object({
    page: z.number().int().positive().catch(1).default(1),
-   pageSize: z.number().int().positive().max(100).catch(20).default(20),
+   pageSize: z.number().int().positive().max(1000).catch(20).default(20),
    search: z.string().max(100).optional(),
    status: z.enum(["active", "blocked", "cancelled"]).optional(),
 });

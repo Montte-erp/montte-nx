@@ -276,7 +276,7 @@ function CardValueSelectInner({
    onChange: (v: string) => void;
 }) {
    const { data: creditCardsResult } = useSuspenseQuery(
-      orpc.creditCards.getAll.queryOptions({ input: {} }),
+      orpc.creditCards.getAll.queryOptions({ input: { pageSize: 100 } }),
    );
    const options = creditCardsResult.data.map((c) => ({
       value: c.id,

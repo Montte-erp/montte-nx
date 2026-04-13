@@ -253,11 +253,6 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                )}
             </div>
          </CredenzaBody>
-         <CredenzaFooter>
-            <Button disabled={isParsing || !selectedFile} type="button">
-               Próximo
-            </Button>
-         </CredenzaFooter>
       </>
    );
 }

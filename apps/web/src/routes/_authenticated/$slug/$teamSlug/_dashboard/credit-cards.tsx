@@ -19,11 +19,7 @@ import { Spinner } from "@packages/ui/components/spinner";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import type {
-   ColumnFiltersState,
-   OnChangeFn,
-   SortingState,
-} from "@tanstack/react-table";
+import type { ColumnFiltersState, OnChangeFn } from "@tanstack/react-table";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import {
    CreditCard,
@@ -52,10 +48,6 @@ import { orpc } from "@/integrations/orpc/client";
 import { z } from "zod";
 
 const creditCardsSearchSchema = z.object({
-   sorting: z
-      .array(z.object({ id: z.string(), desc: z.boolean() }))
-      .catch([])
-      .default([]),
    columnFilters: z
       .array(z.object({ id: z.string(), value: z.unknown() }))
       .catch([])
@@ -133,8 +125,7 @@ function CreditCardFormSkeleton() {
 
 function CreditCardsList() {
    const navigate = Route.useNavigate();
-   const { sorting, columnFilters, page, pageSize, search, status } =
-      Route.useSearch();
+   const { columnFilters, page, pageSize, search, status } = Route.useSearch();
    const [tableState, setTableState] = useCreditCardsTableState();
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
@@ -174,20 +165,6 @@ function CreditCardsList() {
             toast.error(error.message || "Erro ao excluir cartões.");
          },
       }),
-   );
-
-   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
-      (updater) => {
-         const next =
-            typeof updater === "function"
-               ? updater(sorting as SortingState)
-               : updater;
-         navigate({
-            search: (prev) => ({ ...prev, sorting: next }),
-            replace: true,
-         });
-      },
-      [navigate, sorting],
    );
 
    const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
@@ -286,8 +263,6 @@ function CreditCardsList() {
             columns={columns}
             data={result.data}
             getRowId={(row) => row.id}
-            sorting={sorting as SortingState}
-            onSortingChange={handleSortingChange}
             columnFilters={columnFilters as ColumnFiltersState}
             onColumnFiltersChange={handleColumnFiltersChange}
             tableState={tableState}
