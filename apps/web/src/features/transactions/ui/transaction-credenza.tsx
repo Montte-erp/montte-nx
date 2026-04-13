@@ -115,7 +115,7 @@ function buildTransactionDefaultValues(
       type: transaction?.type,
       amount: transaction?.amount,
       date: transaction?.date
-         ? new Date(`${transaction.date}T12:00:00`)
+         ? dayjs(`${transaction.date}T12:00:00`).toDate()
          : undefined,
       bankAccountId: transaction?.bankAccountId,
       destinationBankAccountId: transaction?.destinationBankAccountId,
