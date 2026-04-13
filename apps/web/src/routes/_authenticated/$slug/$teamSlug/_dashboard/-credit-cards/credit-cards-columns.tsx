@@ -1,7 +1,12 @@
 import { format, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
+import {
+   Announcement,
+   AnnouncementTag,
+   AnnouncementTitle,
+} from "@packages/ui/components/announcement";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CreditCard } from "lucide-react";
+import { Banknote, Calendar, CalendarClock } from "lucide-react";
 import type { Outputs } from "@/integrations/orpc/client";
 
 export type CreditCardRow = Outputs["creditCards"]["getAll"]["data"][number];
@@ -63,20 +68,29 @@ export function buildCreditCardColumns(): ColumnDef<CreditCardRow>[] {
          accessorKey: "creditLimit",
          header: "Limite",
          cell: ({ row }) => (
-            <span className="text-sm text-muted-foreground tabular-nums">
-               {formatBRL(row.original.creditLimit)}
-            </span>
+            <Announcement>
+               <AnnouncementTag className="flex items-center text-muted-foreground">
+                  <Banknote className="size-3" />
+               </AnnouncementTag>
+               <AnnouncementTitle className="tabular-nums">
+                  {formatBRL(row.original.creditLimit)}
+               </AnnouncementTitle>
+            </Announcement>
          ),
-         meta: { label: "Limite", align: "right" },
+         meta: { label: "Limite" },
       },
       {
          accessorKey: "closingDay",
          header: "Fechamento",
          cell: ({ row }) => (
-            <Badge variant="secondary">
-               <CreditCard className="size-3 mr-1" />
-               Dia {row.original.closingDay}
-            </Badge>
+            <Announcement>
+               <AnnouncementTag className="flex items-center text-muted-foreground">
+                  <CalendarClock className="size-3" />
+               </AnnouncementTag>
+               <AnnouncementTitle>
+                  Dia {row.original.closingDay}
+               </AnnouncementTitle>
+            </Announcement>
          ),
          meta: { label: "Fechamento" },
       },
@@ -84,7 +98,12 @@ export function buildCreditCardColumns(): ColumnDef<CreditCardRow>[] {
          accessorKey: "dueDay",
          header: "Vencimento",
          cell: ({ row }) => (
-            <Badge variant="outline">Dia {row.original.dueDay}</Badge>
+            <Announcement>
+               <AnnouncementTag className="flex items-center text-muted-foreground">
+                  <Calendar className="size-3" />
+               </AnnouncementTag>
+               <AnnouncementTitle>Dia {row.original.dueDay}</AnnouncementTitle>
+            </Announcement>
          ),
          meta: { label: "Vencimento" },
       },

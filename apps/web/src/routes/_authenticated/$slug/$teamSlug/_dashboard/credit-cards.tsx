@@ -44,6 +44,7 @@ import {
 import { CreditCardForm } from "./-credit-cards/credit-cards-form";
 import { CreditCardsExportCredenza } from "./-credit-cards/credit-cards-export-credenza";
 import { CreditCardsImportCredenza } from "./-credit-cards/credit-cards-import-credenza";
+import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -385,36 +386,32 @@ function CreditCardsPage() {
       });
    }
 
+   const panelActions: PanelAction[] = [
+      {
+         icon: Upload,
+         label: "Importar",
+         onClick: handleImport,
+      },
+      {
+         icon: Download,
+         label: "Exportar",
+         onClick: handleExport,
+      },
+   ];
+
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
-               <div className="flex gap-2">
-                  <Button
-                     variant="outline"
-                     onClick={handleImport}
-                     type="button"
-                  >
-                     <Upload className="size-4" />
-                     Importar
-                  </Button>
-                  <Button
-                     variant="outline"
-                     onClick={handleExport}
-                     type="button"
-                  >
-                     <Download className="size-4" />
-                     Exportar
-                  </Button>
-                  <Button
-                     className="flex items-center gap-2"
-                     onClick={handleCreate}
-                  >
-                     <Plus className="size-4" />
-                     Novo Cartão
-                  </Button>
-               </div>
+               <Button
+                  className="flex items-center gap-2"
+                  onClick={handleCreate}
+               >
+                  <Plus className="size-4" />
+                  Novo Cartão
+               </Button>
             }
+            panelActions={panelActions}
             description="Gerencie seus cartões de crédito"
             title="Cartões de Crédito"
          />

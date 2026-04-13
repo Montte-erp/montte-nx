@@ -36,7 +36,6 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
-import { DatePicker } from "@packages/ui/components/date-picker";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
@@ -317,19 +316,29 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                      name="closingDay"
                      children={(field) => (
                         <Field>
-                           <FieldLabel>Dia de Fechamento</FieldLabel>
-                           <DatePicker
-                              className="w-full"
-                              date={
-                                 field.state.value
-                                    ? new Date(2025, 0, field.state.value)
-                                    : undefined
+                           <FieldLabel htmlFor={field.name}>
+                              Dia de Fechamento
+                           </FieldLabel>
+                           <Select
+                              value={String(field.state.value || 1)}
+                              onValueChange={(v) =>
+                                 field.handleChange(Number(v))
                               }
-                              onSelect={(d) =>
-                                 field.handleChange(d ? d.getDate() : 1)
-                              }
-                              placeholder="Selecionar dia"
-                           />
+                           >
+                              <SelectTrigger id={field.name} name={field.name}>
+                                 <SelectValue placeholder="Selecionar dia" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 {Array.from(
+                                    { length: 31 },
+                                    (_, i) => i + 1,
+                                 ).map((day) => (
+                                    <SelectItem key={day} value={String(day)}>
+                                       Dia {day}
+                                    </SelectItem>
+                                 ))}
+                              </SelectContent>
+                           </Select>
                         </Field>
                      )}
                   />
@@ -338,19 +347,29 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                      name="dueDay"
                      children={(field) => (
                         <Field>
-                           <FieldLabel>Dia de Vencimento</FieldLabel>
-                           <DatePicker
-                              className="w-full"
-                              date={
-                                 field.state.value
-                                    ? new Date(2025, 0, field.state.value)
-                                    : undefined
+                           <FieldLabel htmlFor={field.name}>
+                              Dia de Vencimento
+                           </FieldLabel>
+                           <Select
+                              value={String(field.state.value || 1)}
+                              onValueChange={(v) =>
+                                 field.handleChange(Number(v))
                               }
-                              onSelect={(d) =>
-                                 field.handleChange(d ? d.getDate() : 1)
-                              }
-                              placeholder="Selecionar dia"
-                           />
+                           >
+                              <SelectTrigger id={field.name} name={field.name}>
+                                 <SelectValue placeholder="Selecionar dia" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 {Array.from(
+                                    { length: 31 },
+                                    (_, i) => i + 1,
+                                 ).map((day) => (
+                                    <SelectItem key={day} value={String(day)}>
+                                       Dia {day}
+                                    </SelectItem>
+                                 ))}
+                              </SelectContent>
+                           </Select>
                         </Field>
                      )}
                   />
