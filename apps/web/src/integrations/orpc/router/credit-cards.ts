@@ -1,4 +1,5 @@
 import {
+   bulkCreateCreditCards,
    bulkDeleteCreditCards,
    createCreditCard,
    deleteCreditCard,
@@ -66,4 +67,37 @@ export const bulkRemove = protectedProcedure
    .handler(async ({ context, input }) => {
       await bulkDeleteCreditCards(context.db, input.ids, context.teamId);
       return { deleted: input.ids.length };
+   });
+
+const bulkCreateSchema = z.object({
+   cards: z
+      .array(
+         z.object({
+            name: z.string().min(2).max(80),
+            creditLimit: z.string(),
+            closingDay: z.number().int().min(1).max(31),
+            dueDay: z.number().int().min(1).max(31),
+            bankAccountId: z.string().uuid(),
+            status: z.enum(["active", "blocked", "cancelled"]).optional(),
+            brand: z
+               .enum([
+                  "visa",
+                  "mastercard",
+                  "elo",
+                  "amex",
+                  "hipercard",
+                  "other",
+               ])
+               .optional(),
+            color: z.string().optional(),
+         }),
+      )
+      .min(1)
+      .max(500),
+});
+
+export const bulkCreate = protectedProcedure
+   .input(bulkCreateSchema)
+   .handler(async ({ context, input }) => {
+      return bulkCreateCreditCards(context.db, context.teamId, input.cards);
    });

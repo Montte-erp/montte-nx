@@ -28,6 +28,47 @@ export async function createCreditCard(
    }
 }
 
+export type BulkCreateCreditCardInput = {
+   name: string;
+   creditLimit: string;
+   closingDay: number;
+   dueDay: number;
+   color?: string;
+   status?: "active" | "blocked" | "cancelled";
+   brand?: "visa" | "mastercard" | "elo" | "amex" | "hipercard" | "other";
+   bankAccountId: string;
+};
+
+export async function bulkCreateCreditCards(
+   db: DatabaseInstance,
+   teamId: string,
+   cards: BulkCreateCreditCardInput[],
+) {
+   try {
+      const rows = cards.map((c) => ({
+         teamId,
+         name: c.name,
+         creditLimit: c.creditLimit,
+         closingDay: c.closingDay,
+         dueDay: c.dueDay,
+         color: c.color ?? "#6366f1",
+         status: c.status ?? ("active" as const),
+         brand: c.brand,
+         bankAccountId: c.bankAccountId,
+      }));
+
+      const created = await db
+         .insert(creditCards)
+         .values(rows)
+         .returning({ id: creditCards.id });
+
+      return { created: created.length };
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Falha ao importar cartões");
+   }
+}
+
 export type ListCreditCardsFilter = {
    page?: number;
    pageSize?: number;
