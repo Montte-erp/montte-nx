@@ -591,3 +591,22 @@ export async function replaceTransactionItems(
       throw AppError.database("Failed to replace transaction items");
    }
 }
+
+export async function updateTransactionCategory(
+   db: DatabaseInstance,
+   id: string,
+   data: {
+      categoryId?: string | null;
+      suggestedCategoryId?: string | null;
+   },
+) {
+   try {
+      await db
+         .update(transactions)
+         .set({ ...data, updatedAt: new Date() })
+         .where(eq(transactions.id, id));
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to update transaction category");
+   }
+}
