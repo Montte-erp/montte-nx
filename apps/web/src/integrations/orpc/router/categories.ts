@@ -12,25 +12,10 @@ import {
    updateCategorySchema,
 } from "@core/database/schemas/categories";
 import { user as userTable } from "@core/database/schemas/auth";
-import { getLogger } from "@core/logging/root";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { startDeriveKeywordsWorkflow } from "@/integrations/dbos/workflows/runner";
 import { protectedProcedure } from "../server";
-
-const logger = getLogger().child({ module: "categories.router" });
-
-function enqueueKeywordDerivation(input: {
-   categoryId: string;
-   teamId: string;
-   organizationId: string;
-   userId: string;
-   name: string;
-   description?: string | null;
-   stripeCustomerId?: string | null;
-}): void {
-   startDeriveKeywordsWorkflow(input);
-}
 
 const idSchema = z.object({ id: z.string().uuid() });
 
@@ -44,7 +29,7 @@ export const create = protectedProcedure
             columns: { stripeCustomerId: true },
          }),
       ]);
-      enqueueKeywordDerivation({
+      startDeriveKeywordsWorkflow({
          categoryId: category.id,
          teamId: context.teamId,
          organizationId: context.organizationId,
@@ -83,7 +68,7 @@ export const update = protectedProcedure
             where: eq(userTable.id, context.userId),
             columns: { stripeCustomerId: true },
          });
-         enqueueKeywordDerivation({
+         startDeriveKeywordsWorkflow({
             categoryId: category.id,
             teamId: context.teamId,
             organizationId: context.organizationId,
@@ -123,7 +108,7 @@ export const importBatch = protectedProcedure
       for (const cat of input.categories) {
          const created = await createCategory(context.db, context.teamId, cat);
          results.push(created);
-         enqueueKeywordDerivation({
+         startDeriveKeywordsWorkflow({
             categoryId: created.id,
             teamId: context.teamId,
             organizationId: context.organizationId,

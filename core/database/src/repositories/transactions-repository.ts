@@ -26,6 +26,7 @@ import {
    type UpdateTransactionInput,
    createTransactionSchema,
    updateTransactionSchema,
+   paymentMethodEnum,
    transactionItems,
    transactions,
    transactionTags,
@@ -526,7 +527,7 @@ export async function bulkCreateTransactions(
       date: string;
       description: string | null;
       categoryId: string | null;
-      paymentMethod: string | null;
+      paymentMethod: (typeof paymentMethodEnum.enumValues)[number] | null;
    }[],
 ) {
    try {

@@ -271,7 +271,7 @@ export const importStatement = withCreditEnforcement(
             !tx.categoryId &&
             (tx.type === "income" || tx.type === "expense")
          ) {
-            enqueueCategorization({
+            startCategorizationWorkflow({
                transactionId: tx.id,
                teamId: context.teamId,
                name: tx.name ?? "",
@@ -439,7 +439,7 @@ export const importBulk = protectedProcedure
             !data.categoryId &&
             (data.type === "income" || data.type === "expense")
          ) {
-            enqueueCategorization({
+            startCategorizationWorkflow({
                transactionId: transaction.id,
                teamId: context.teamId,
                name: data.name ?? "",
