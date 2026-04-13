@@ -47,6 +47,8 @@ import {
    ChevronDown,
    ChevronRight,
    GripVertical,
+   Pin,
+   PinOff,
    Settings2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -86,6 +88,12 @@ import {
    TableHeader,
    TableRow,
 } from "./table";
+import {
+   Tooltip,
+   TooltipContent,
+   TooltipProvider,
+   TooltipTrigger,
+} from "./tooltip";
 
 declare module "@tanstack/react-table" {
    // oxlint-ignore @typescript-eslint/no-unused-vars
@@ -176,13 +184,14 @@ function getPageNumbers(currentPage: number, totalPages: number): number[] {
 // DnD — Sortable header cell
 // =============================================================================
 
-function SortableHeaderCell({
+function SortableHeaderCell<TData>({
    headerId,
    colSpan,
    children,
    pinningStyle,
    isPinned,
    align,
+   column,
 }: {
    headerId: string;
    colSpan: number;
@@ -190,6 +199,7 @@ function SortableHeaderCell({
    pinningStyle?: React.CSSProperties;
    isPinned?: false | "left" | "right";
    align?: "left" | "center" | "right";
+   column: Column<TData>;
 }) {
    const {
       attributes,
@@ -207,7 +217,7 @@ function SortableHeaderCell({
          className={cn(
             "text-xs font-medium",
             isDragging && "opacity-50",
-            isPinned ? "sticky bg-background" : "relative",
+            isPinned ? "sticky bg-inherit" : "relative",
             isDragging ? (isPinned ? "z-[2]" : "z-[1]") : isPinned && "z-[1]",
             align === "right" && "text-right",
             align === "center" && "text-center",
@@ -228,6 +238,31 @@ function SortableHeaderCell({
                <GripVertical className="size-3.5" />
             </button>
             {children}
+            <TooltipProvider>
+               <Tooltip>
+                  <TooltipTrigger asChild>
+                     <button
+                        type="button"
+                        className={cn(
+                           "ml-1 flex size-5 items-center justify-center rounded transition-opacity",
+                           isPinned
+                              ? "opacity-100 text-muted-foreground"
+                              : "opacity-0 group-hover:opacity-100 text-muted-foreground/50 hover:text-muted-foreground",
+                        )}
+                        onClick={() => column.pin(isPinned ? false : "left")}
+                     >
+                        {isPinned ? (
+                           <PinOff className="size-3" />
+                        ) : (
+                           <Pin className="size-3" />
+                        )}
+                     </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                     {isPinned ? "Desafixar coluna" : "Fixar coluna"}
+                  </TooltipContent>
+               </Tooltip>
+            </TooltipProvider>
          </div>
       </TableHead>
    );
@@ -351,6 +386,7 @@ function DataTableHeaderRow<TData>({
                pinningStyle={getPinningOffsets(header.column)}
                isPinned={header.column.getIsPinned()}
                align={header.column.columnDef.meta?.align}
+               column={header.column}
             >
                {content}
             </SortableHeaderCell>
@@ -363,7 +399,7 @@ function DataTableHeaderRow<TData>({
             colSpan={header.colSpan}
             className={cn(
                "text-xs font-medium",
-               header.column.getIsPinned() && "sticky z-[1] bg-background",
+               header.column.getIsPinned() && "sticky z-[1] bg-inherit",
                header.column.columnDef.meta?.align === "right" && "text-right",
                header.column.columnDef.meta?.align === "center" &&
                   "text-center",
@@ -458,7 +494,7 @@ function DataTableBodyRow<TData>({
             <TableCell
                className={cn(
                   "truncate",
-                  cell.column.getIsPinned() && "sticky z-[1] bg-background",
+                  cell.column.getIsPinned() && "sticky z-[1] bg-inherit",
                   cell.column.columnDef.meta?.align === "right" && "text-right",
                   cell.column.columnDef.meta?.align === "center" &&
                      "text-center",
@@ -861,7 +897,10 @@ export function DataTable<TData, TValue>({
          rowSelection,
          sorting: effectiveSorting,
          columnOrder,
-         columnPinning: tableState?.columnPinning ?? {},
+         columnPinning: {
+            ...tableState?.columnPinning,
+            right: [...(tableState?.columnPinning?.right ?? []), "__actions"],
+         },
       },
    });
 

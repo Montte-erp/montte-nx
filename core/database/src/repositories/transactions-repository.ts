@@ -2,6 +2,7 @@ import type { Condition, ConditionGroup } from "@f-o-t/condition-evaluator";
 import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { of, toDecimal } from "@f-o-t/money";
+import { alias } from "drizzle-orm/pg-core";
 import {
    and,
    count,
@@ -298,6 +299,10 @@ export async function listTransactions(
 
       if (isWeighted && filter.conditionGroup) {
          const condGroup = filter.conditionGroup;
+         const suggestedCategoriesWeighted = alias(
+            categories,
+            "suggested_categories",
+         );
          const allRows = await db
             .select({
                ...getTableColumns(transactions),
@@ -305,9 +310,17 @@ export async function listTransactions(
                creditCardName: creditCards.name,
                bankAccountName: bankAccounts.name,
                contactName: contacts.name,
+               suggestedCategoryName: suggestedCategoriesWeighted.name,
             })
             .from(transactions)
             .leftJoin(categories, eq(transactions.categoryId, categories.id))
+            .leftJoin(
+               suggestedCategoriesWeighted,
+               eq(
+                  transactions.suggestedCategoryId,
+                  suggestedCategoriesWeighted.id,
+               ),
+            )
             .leftJoin(
                creditCards,
                eq(transactions.creditCardId, creditCards.id),
@@ -350,6 +363,8 @@ export async function listTransactions(
          .leftJoin(contacts, eq(transactions.contactId, contacts.id))
          .where(whereClause);
 
+      const suggestedCategories = alias(categories, "suggested_categories");
+
       const data = await db
          .select({
             ...getTableColumns(transactions),
@@ -357,9 +372,14 @@ export async function listTransactions(
             creditCardName: creditCards.name,
             bankAccountName: bankAccounts.name,
             contactName: contacts.name,
+            suggestedCategoryName: suggestedCategories.name,
          })
          .from(transactions)
          .leftJoin(categories, eq(transactions.categoryId, categories.id))
+         .leftJoin(
+            suggestedCategories,
+            eq(transactions.suggestedCategoryId, suggestedCategories.id),
+         )
          .leftJoin(creditCards, eq(transactions.creditCardId, creditCards.id))
          .leftJoin(
             bankAccounts,

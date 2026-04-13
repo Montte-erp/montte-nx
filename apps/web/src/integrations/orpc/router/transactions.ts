@@ -227,6 +227,7 @@ export const importStatement = withCreditEnforcement(
             )
             .min(1)
             .max(1000),
+         autoCategorize: z.boolean().default(false),
       }),
    )
    .handler(async ({ context, input }) => {
@@ -266,17 +267,19 @@ export const importStatement = withCreditEnforcement(
          rows,
       );
 
-      for (const tx of inserted) {
-         if (
-            !tx.categoryId &&
-            (tx.type === "income" || tx.type === "expense")
-         ) {
-            startCategorizationWorkflow({
-               transactionId: tx.id,
-               teamId: context.teamId,
-               name: tx.name ?? "",
-               type: tx.type,
-            });
+      if (input.autoCategorize) {
+         for (const tx of inserted) {
+            if (
+               !tx.categoryId &&
+               (tx.type === "income" || tx.type === "expense")
+            ) {
+               startCategorizationWorkflow({
+                  transactionId: tx.id,
+                  teamId: context.teamId,
+                  name: tx.name ?? "",
+                  type: tx.type,
+               });
+            }
          }
       }
 
@@ -318,6 +321,7 @@ export const checkDuplicates = protectedProcedure
             )
             .min(1)
             .max(1000),
+         autoCategorize: z.boolean().default(false),
       }),
    )
    .handler(async ({ context, input }) => {

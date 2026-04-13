@@ -23,7 +23,13 @@ function formatDate(dateStr: string): string {
    return `${day}/${month}/${year}`;
 }
 
-function SuggestedCategoryCell({ id }: { id: string }) {
+function SuggestedCategoryCell({
+   id,
+   categoryName,
+}: {
+   id: string;
+   categoryName: string | null;
+}) {
    const accept = useMutation(
       orpc.transactions.acceptSuggestedCategory.mutationOptions(),
    );
@@ -39,6 +45,9 @@ function SuggestedCategoryCell({ id }: { id: string }) {
             </Badge>
          </PopoverTrigger>
          <PopoverContent className="w-56 p-3">
+            {categoryName && (
+               <p className="text-sm font-medium">{categoryName}</p>
+            )}
             <p className="text-sm text-muted-foreground">
                Categoria sugerida pela IA. Deseja aceitar?
             </p>
@@ -131,7 +140,12 @@ export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
             if (!name && !hasSuggestion)
                return <span className="text-xs text-muted-foreground">—</span>;
             if (hasSuggestion)
-               return <SuggestedCategoryCell id={row.original.id} />;
+               return (
+                  <SuggestedCategoryCell
+                     id={row.original.id}
+                     categoryName={row.original.suggestedCategoryName ?? null}
+                  />
+               );
             return <span className="text-sm">{name}</span>;
          },
       },
