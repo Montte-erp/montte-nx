@@ -38,7 +38,7 @@ import {
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
-import { BillPayDialogStack } from "@/features/bills/ui/bill-pay-dialog-stack";
+import { BillPayCredenza } from "@/features/bills/ui/bill-pay-credenza";
 import {
    type BillRow,
    buildBillsColumns,
@@ -189,9 +189,7 @@ function BillsList({ type, tableState, onTableStateChange }: BillsListProps) {
    const handlePay = useCallback(
       (bill: BillRow) => {
          openCredenza({
-            children: (
-               <BillPayDialogStack bill={bill} onSuccess={closeCredenza} />
-            ),
+            children: <BillPayCredenza bill={bill} onSuccess={closeCredenza} />,
          });
       },
       [openCredenza, closeCredenza],

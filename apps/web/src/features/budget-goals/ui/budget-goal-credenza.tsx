@@ -106,7 +106,7 @@ const schema = z
       }
    });
 
-interface BudgetGoalDialogStackProps {
+interface BudgetGoalCredenzaProps {
    mode: "create" | "edit";
    goal?: BudgetGoalWithProgress;
    month: number;
@@ -114,13 +114,13 @@ interface BudgetGoalDialogStackProps {
    onSuccess: () => void;
 }
 
-export function BudgetGoalDialogStack({
+export function BudgetGoalCredenza({
    mode,
    goal,
    month,
    year,
    onSuccess,
-}: BudgetGoalDialogStackProps) {
+}: BudgetGoalCredenzaProps) {
    const isCreate = mode === "create";
 
    const { data: categoriesResult } = useSuspenseQuery(

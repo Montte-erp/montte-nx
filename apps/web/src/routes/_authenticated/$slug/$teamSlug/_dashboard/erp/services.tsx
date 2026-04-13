@@ -39,7 +39,7 @@ import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
-import { ServiceImportDialogStack } from "@/features/services/ui/service-import-dialog-stack";
+import { ServiceImportCredenza } from "@/features/services/ui/service-import-credenza";
 import { ServicesAnalyticsHeader } from "@/features/services/ui/services-analytics-header";
 import {
    buildServiceColumns,
@@ -334,7 +334,7 @@ function ServicesPage() {
 
    const handleImport = useCallback(() => {
       openCredenza({
-         children: <ServiceImportDialogStack />,
+         children: <ServiceImportCredenza />,
       });
    }, [openCredenza]);
 

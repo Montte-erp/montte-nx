@@ -34,7 +34,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
-import { InsightEditDialogStack } from "./insight-edit-dialog-stack";
+import { InsightEditCredenza } from "./insight-edit-credenza";
 import { InsightPreview } from "./insight-preview";
 
 export type TileSize = "sm" | "md" | "lg" | "full";
@@ -439,7 +439,7 @@ export function DashboardTile({
                                  onClick={() =>
                                     openCredenza({
                                        children: (
-                                          <InsightEditDialogStack
+                                          <InsightEditCredenza
                                              insightId={insightId}
                                           />
                                        ),

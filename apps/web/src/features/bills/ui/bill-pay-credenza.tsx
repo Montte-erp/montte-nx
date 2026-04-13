@@ -31,12 +31,12 @@ import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { BillRow } from "./bills-columns";
 
-interface BillPayDialogStackProps {
+interface BillPayCredenzaProps {
    bill: BillRow;
    onSuccess: () => void;
 }
 
-function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
+function BillPayCredenzaInner({ bill, onSuccess }: BillPayCredenzaProps) {
    const { data: accounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
    );
@@ -268,13 +268,13 @@ function BillPayDialogSkeleton() {
    );
 }
 
-export function BillPayDialogStack(props: BillPayDialogStackProps) {
+export function BillPayCredenza(props: BillPayCredenzaProps) {
    return (
       <QueryBoundary
          fallback={<BillPayDialogSkeleton />}
          errorTitle="Erro ao carregar conta"
       >
-         <BillPayDialogStackInner {...props} />
+         <BillPayCredenzaInner {...props} />
       </QueryBoundary>
    );
 }

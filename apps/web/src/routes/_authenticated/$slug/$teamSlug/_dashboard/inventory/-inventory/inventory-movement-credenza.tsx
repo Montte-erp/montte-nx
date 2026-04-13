@@ -21,15 +21,15 @@ import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { InventoryProductRow } from "./inventory-product-columns";
 
-interface InventoryMovementDialogStackProps {
+interface InventoryMovementCredenzaProps {
    product: InventoryProductRow;
    onSuccess: () => void;
 }
 
-export function InventoryMovementDialogStack({
+export function InventoryMovementCredenza({
    product,
    onSuccess,
-}: InventoryMovementDialogStackProps) {
+}: InventoryMovementCredenzaProps) {
    const mutation = useMutation(
       orpc.inventory.registerMovement.mutationOptions({
          onSuccess: () => {

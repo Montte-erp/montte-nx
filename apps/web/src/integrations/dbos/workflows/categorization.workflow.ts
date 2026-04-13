@@ -7,6 +7,9 @@ import {
    listCategories,
 } from "@core/database/repositories/categories-repository";
 import { updateTransactionCategory } from "@core/database/repositories/transactions-repository";
+import { NOTIFICATION_TYPES } from "@packages/notifications/types";
+import type { JobNotification } from "@packages/notifications/schema";
+import { jobPublisher } from "@/integrations/dbos/publisher";
 import { db } from "@/integrations/singletons";
 
 export type CategorizationInput = {
@@ -27,28 +30,88 @@ const outputSchema = z.object({
 export class CategorizationWorkflow {
    @DBOS.workflow()
    static async run(input: CategorizationInput) {
-      const keywordMatch =
-         await CategorizationWorkflow.matchKeywordsStep(input);
+      const ctx = `[categorization] tx=${input.transactionId} team=${input.teamId}`;
+
+      const failNotification = (error: string): JobNotification => ({
+         jobId: crypto.randomUUID(),
+         type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
+         status: "failed",
+         message: error,
+         teamId: input.teamId,
+         timestamp: new Date().toISOString(),
+      });
+
+      DBOS.logger.info(`${ctx} started name="${input.name}"`);
+
+      await CategorizationWorkflow.publishStep({
+         jobId: crypto.randomUUID(),
+         type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
+         status: "started",
+         message: `Categorizando transação "${input.name}"...`,
+         teamId: input.teamId,
+         timestamp: new Date().toISOString(),
+      });
+
+      let keywordMatch: { id: string } | null;
+      try {
+         keywordMatch = await CategorizationWorkflow.matchKeywordsStep(input);
+      } catch (e) {
+         const msg = e instanceof Error ? e.message : String(e);
+         DBOS.logger.error(`${ctx} keyword match failed: ${msg}`);
+         await CategorizationWorkflow.publishStep(failNotification(msg));
+         return;
+      }
 
       if (keywordMatch) {
          await CategorizationWorkflow.applyStep(input.transactionId, {
             categoryId: keywordMatch.id,
          });
+         await CategorizationWorkflow.publishStep({
+            jobId: crypto.randomUUID(),
+            type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
+            status: "completed",
+            message: `Transação "${input.name}" categorizada.`,
+            payload: { transactionId: input.transactionId },
+            teamId: input.teamId,
+            timestamp: new Date().toISOString(),
+         });
+         DBOS.logger.info(`${ctx} completed via keyword match`);
          return;
       }
 
-      const aiResult = await CategorizationWorkflow.inferWithAIStep(input);
-      if (!aiResult) return;
-
-      if (aiResult.confidence === "high") {
-         await CategorizationWorkflow.applyStep(input.transactionId, {
-            categoryId: aiResult.categoryId,
-         });
-      } else {
-         await CategorizationWorkflow.applyStep(input.transactionId, {
-            suggestedCategoryId: aiResult.categoryId,
-         });
+      let aiResult: { categoryId: string; confidence: "high" | "low" } | null;
+      try {
+         aiResult = await CategorizationWorkflow.inferWithAIStep(input);
+      } catch (e) {
+         const msg = e instanceof Error ? e.message : String(e);
+         DBOS.logger.error(`${ctx} AI inference failed: ${msg}`);
+         await CategorizationWorkflow.publishStep(failNotification(msg));
+         return;
       }
+
+      if (!aiResult) {
+         DBOS.logger.info(`${ctx} no category match found`);
+         return;
+      }
+
+      await CategorizationWorkflow.applyStep(
+         input.transactionId,
+         aiResult.confidence === "high"
+            ? { categoryId: aiResult.categoryId }
+            : { suggestedCategoryId: aiResult.categoryId },
+      );
+
+      await CategorizationWorkflow.publishStep({
+         jobId: crypto.randomUUID(),
+         type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
+         status: "completed",
+         message: `Transação "${input.name}" categorizada.`,
+         payload: { transactionId: input.transactionId },
+         teamId: input.teamId,
+         timestamp: new Date().toISOString(),
+      });
+
+      DBOS.logger.info(`${ctx} completed via AI inference`);
    }
 
    @DBOS.step()
@@ -113,5 +176,13 @@ Se tiver certeza, retorne confidence "high". Se estiver em dúvida, retorne "low
       data: { categoryId?: string; suggestedCategoryId?: string },
    ) {
       await updateTransactionCategory(db, transactionId, data);
+   }
+
+   @DBOS.step()
+   static async publishStep(notification: JobNotification) {
+      DBOS.logger.debug(
+         `[categorization] publishStep status=${notification.status} team=${notification.teamId}`,
+      );
+      await jobPublisher.publish("job.notification", notification);
    }
 }

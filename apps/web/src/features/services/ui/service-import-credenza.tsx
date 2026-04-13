@@ -684,11 +684,7 @@ function ConfirmStep({ methods, rows, onClose }: ConfirmStepProps) {
    );
 }
 
-export function ServiceImportDialogStack({
-   onClose,
-}: {
-   onClose?: () => void;
-}) {
+export function ServiceImportCredenza({ onClose }: { onClose?: () => void }) {
    return (
       <Stepper.Provider variant="line">
          {({ methods }) => <ImportWizard methods={methods} onClose={onClose} />}

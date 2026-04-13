@@ -184,13 +184,13 @@ function applyMapping(
    return Array.from(categoryMap.values());
 }
 
-interface CategoryImportDialogStackProps {
+interface CategoryImportCredenzaProps {
    onSuccess: () => void;
 }
 
-export function CategoryImportDialogStack({
+export function CategoryImportCredenza({
    onSuccess,
-}: CategoryImportDialogStackProps) {
+}: CategoryImportCredenzaProps) {
    const [step, setStep] = useState<Step>("upload");
    const [headers, setHeaders] = useState<string[]>([]);
    const [rows, setRows] = useState<ParsedRow[]>([]);

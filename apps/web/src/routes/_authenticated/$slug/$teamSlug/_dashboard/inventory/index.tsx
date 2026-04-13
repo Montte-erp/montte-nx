@@ -44,7 +44,7 @@ import {
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
 import { InventoryHistorySheet } from "./-inventory/inventory-history-sheet";
-import { InventoryMovementDialogStack } from "./-inventory/inventory-movement-dialog-stack";
+import { InventoryMovementCredenza } from "./-inventory/inventory-movement-credenza";
 import {
    buildInventoryProductColumns,
    type InventoryProductRow,
@@ -173,7 +173,7 @@ function InventoryList() {
       (product: InventoryProductRow) => {
          openCredenza({
             children: (
-               <InventoryMovementDialogStack
+               <InventoryMovementCredenza
                   onSuccess={closeCredenza}
                   product={product}
                />

@@ -39,7 +39,7 @@ import {
 import { Suspense, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
-import { BudgetGoalDialogStack } from "@/features/budget-goals/ui/budget-goal-dialog-stack";
+import { BudgetGoalCredenza } from "@/features/budget-goals/ui/budget-goal-credenza";
 import { buildBudgetGoalColumns } from "@/features/budget-goals/ui/budget-goals-columns";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
@@ -287,7 +287,7 @@ function GoalsList() {
       (goal: BudgetGoalWithProgress) => {
          openCredenza({
             children: (
-               <BudgetGoalDialogStack
+               <BudgetGoalCredenza
                   goal={goal}
                   mode="edit"
                   month={goal.month}
@@ -406,7 +406,7 @@ function GoalsPage() {
    const handleCreate = useCallback(() => {
       openCredenza({
          children: (
-            <BudgetGoalDialogStack
+            <BudgetGoalCredenza
                mode="create"
                month={month}
                onSuccess={closeCredenza}

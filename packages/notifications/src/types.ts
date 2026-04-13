@@ -1,5 +1,6 @@
 export const NOTIFICATION_TYPES = {
    AI_KEYWORD_DERIVED: "ai.keyword_derived",
+   AI_TRANSACTION_CATEGORIZED: "ai.transaction_categorized",
    CRON_KEYWORDS_BACKFILL: "cron.keywords_backfill",
 } as const;
 

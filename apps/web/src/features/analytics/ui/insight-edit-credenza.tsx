@@ -46,13 +46,11 @@ const TYPE_ITEMS: {
    { value: "breakdown", label: "Distribuição", icon: BarChart3 },
 ];
 
-interface InsightEditDialogStackProps {
+interface InsightEditCredenzaProps {
    insightId: string;
 }
 
-function InsightEditDialogStackContent({
-   insightId,
-}: InsightEditDialogStackProps) {
+function InsightEditCredenzaContent({ insightId }: InsightEditCredenzaProps) {
    const queryClient = useQueryClient();
    const { closeCredenza } = useCredenza();
 
@@ -197,12 +195,10 @@ function InsightEditDialogStackContent({
    );
 }
 
-export function InsightEditDialogStack({
-   insightId,
-}: InsightEditDialogStackProps) {
+export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
    return (
       <Suspense fallback={<InsightLoadingState />}>
-         <InsightEditDialogStackContent insightId={insightId} />
+         <InsightEditCredenzaContent insightId={insightId} />
       </Suspense>
    );
 }

@@ -1408,7 +1408,7 @@ function StepLoadingFallback({ title }: { title: string }) {
    );
 }
 
-export function TransactionImportDialogStack({
+export function TransactionImportCredenza({
    onClose,
 }: {
    onClose?: () => void;

@@ -43,7 +43,7 @@ const FREQUENCY_OPTIONS = [
 type ActionMode = "installment" | "recurring";
 type Frequency = "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
 
-interface BillFromTransactionDialogStackProps {
+interface BillFromTransactionCredenzaProps {
    transactionId: string;
    transactionName: string;
    transactionAmount: string;
@@ -78,7 +78,7 @@ function buildInstallmentItems(amount: string, count: number, dueDate: string) {
    }));
 }
 
-function BillFromTransactionDialogStackInner({
+function BillFromTransactionCredenzaInner({
    transactionId,
    transactionName,
    transactionAmount,
@@ -88,7 +88,7 @@ function BillFromTransactionDialogStackInner({
    categoryId,
    mode,
    onSuccess,
-}: BillFromTransactionDialogStackProps) {
+}: BillFromTransactionCredenzaProps) {
    const billType = deriveBillType(transactionType);
 
    const firstDueDate = addMonths(transactionDate, 1);
@@ -364,15 +364,15 @@ function BillFromTransactionDialogSkeleton() {
    );
 }
 
-export function BillFromTransactionDialogStack(
-   props: BillFromTransactionDialogStackProps,
+export function BillFromTransactionCredenza(
+   props: BillFromTransactionCredenzaProps,
 ) {
    return (
       <QueryBoundary
          fallback={<BillFromTransactionDialogSkeleton />}
          errorTitle="Erro ao carregar transação"
       >
-         <BillFromTransactionDialogStackInner {...props} />
+         <BillFromTransactionCredenzaInner {...props} />
       </QueryBoundary>
    );
 }
