@@ -21,8 +21,8 @@ import {
    useQueryClient,
 } from "@tanstack/react-query";
 import { BarChart3, Hash, Loader2, TrendingUp } from "lucide-react";
-import { Suspense, useCallback, useState } from "react";
-import { ErrorBoundary } from "react-error-boundary";
+import { useCallback, useState } from "react";
+import { QueryBoundary } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { useInsightConfig } from "@/features/analytics/hooks/use-insight-config";
 import { useCredenza } from "@/hooks/use-credenza";
@@ -167,15 +167,14 @@ function InsightEditCredenzaContent({ insightId }: InsightEditCredenzaProps) {
                </aside>
 
                <div className="flex-1 min-w-0 overflow-y-auto bg-muted/20 p-4">
-                  <ErrorBoundary
-                     fallbackRender={({ error }) => (
+                  <QueryBoundary
+                     fallback={<InsightLoadingState />}
+                     errorFallback={({ error }) => (
                         <InsightErrorState error={error as Error} />
                      )}
                   >
-                     <Suspense fallback={<InsightLoadingState />}>
-                        <InsightPreview config={config} />
-                     </Suspense>
-                  </ErrorBoundary>
+                     <InsightPreview config={config} />
+                  </QueryBoundary>
                </div>
             </div>
          </CredenzaBody>
@@ -197,8 +196,8 @@ function InsightEditCredenzaContent({ insightId }: InsightEditCredenzaProps) {
 
 export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
    return (
-      <Suspense fallback={<InsightLoadingState />}>
+      <QueryBoundary fallback={<InsightLoadingState />}>
          <InsightEditCredenzaContent insightId={insightId} />
-      </Suspense>
+      </QueryBoundary>
    );
 }

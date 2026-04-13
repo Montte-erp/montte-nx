@@ -35,7 +35,7 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { Plus } from "lucide-react";
-import { Suspense } from "react";
+import { QueryBoundary } from "@/components/query-boundary";
 import { toast } from "sonner";
 import { z } from "zod";
 import { orpc } from "@/integrations/orpc/client";
@@ -2013,7 +2013,7 @@ export function TransactionCredenza({
    onSuccess,
 }: TransactionCredenzaProps) {
    return (
-      <Suspense
+      <QueryBoundary
          fallback={
             <div className="p-6 flex items-center justify-center">
                <Spinner className="size-6" />
@@ -2025,6 +2025,6 @@ export function TransactionCredenza({
             onSuccess={onSuccess}
             transaction={transaction}
          />
-      </Suspense>
+      </QueryBoundary>
    );
 }
