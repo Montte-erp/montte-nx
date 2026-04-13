@@ -16,6 +16,9 @@ const config = defineConfig({
       transform: {
          target: "es2022",
       },
+      decorators: {
+         legacy: true,
+      },
    },
    server: {
       watch: {

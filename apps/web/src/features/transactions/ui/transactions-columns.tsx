@@ -1,7 +1,15 @@
 import { format, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
+import { Button } from "@packages/ui/components/button";
+import {
+   Popover,
+   PopoverContent,
+   PopoverTrigger,
+} from "@packages/ui/components/popover";
+import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Outputs } from "@/integrations/orpc/client";
+import { orpc } from "@/integrations/orpc/client";
 
 export type TransactionRow = Outputs["transactions"]["getAll"]["data"][number];
 
@@ -13,6 +21,58 @@ function formatDate(dateStr: string): string {
    // date is stored as YYYY-MM-DD
    const [year, month, day] = dateStr.split("-");
    return `${day}/${month}/${year}`;
+}
+
+function SuggestedCategoryCell({
+   id,
+   categoryName,
+}: {
+   id: string;
+   categoryName: string | null;
+}) {
+   const accept = useMutation(
+      orpc.transactions.acceptSuggestedCategory.mutationOptions(),
+   );
+   const dismiss = useMutation(
+      orpc.transactions.dismissSuggestedCategory.mutationOptions(),
+   );
+
+   return (
+      <Popover>
+         <PopoverTrigger asChild>
+            <Badge variant="outline" className="text-xs cursor-pointer">
+               sugestão IA
+            </Badge>
+         </PopoverTrigger>
+         <PopoverContent className="w-56 p-3">
+            {categoryName && (
+               <p className="text-sm font-medium">{categoryName}</p>
+            )}
+            <p className="text-sm text-muted-foreground">
+               Categoria sugerida pela IA. Deseja aceitar?
+            </p>
+            <div className="flex gap-2">
+               <Button
+                  size="sm"
+                  className="flex-1"
+                  disabled={accept.isPending || dismiss.isPending}
+                  onClick={() => accept.mutate({ id })}
+               >
+                  Aceitar
+               </Button>
+               <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1"
+                  disabled={accept.isPending || dismiss.isPending}
+                  onClick={() => dismiss.mutate({ id })}
+               >
+                  Ignorar
+               </Button>
+            </div>
+         </PopoverContent>
+      </Popover>
+   );
 }
 
 export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
@@ -76,8 +136,16 @@ export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
          header: "Categoria",
          cell: ({ row }) => {
             const name = row.original.categoryName;
-            if (!name)
+            const hasSuggestion = !name && row.original.suggestedCategoryId;
+            if (!name && !hasSuggestion)
                return <span className="text-xs text-muted-foreground">—</span>;
+            if (hasSuggestion)
+               return (
+                  <SuggestedCategoryCell
+                     id={row.original.id}
+                     categoryName={row.original.suggestedCategoryName ?? null}
+                  />
+               );
             return <span className="text-sm">{name}</span>;
          },
       },

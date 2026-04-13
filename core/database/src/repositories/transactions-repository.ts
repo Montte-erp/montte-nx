@@ -2,6 +2,7 @@ import type { Condition, ConditionGroup } from "@f-o-t/condition-evaluator";
 import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { of, toDecimal } from "@f-o-t/money";
+import { alias } from "drizzle-orm/pg-core";
 import {
    and,
    count,
@@ -26,6 +27,7 @@ import {
    type UpdateTransactionInput,
    createTransactionSchema,
    updateTransactionSchema,
+   paymentMethodEnum,
    transactionItems,
    transactions,
    transactionTags,
@@ -297,6 +299,10 @@ export async function listTransactions(
 
       if (isWeighted && filter.conditionGroup) {
          const condGroup = filter.conditionGroup;
+         const suggestedCategoriesWeighted = alias(
+            categories,
+            "suggested_categories",
+         );
          const allRows = await db
             .select({
                ...getTableColumns(transactions),
@@ -304,9 +310,17 @@ export async function listTransactions(
                creditCardName: creditCards.name,
                bankAccountName: bankAccounts.name,
                contactName: contacts.name,
+               suggestedCategoryName: suggestedCategoriesWeighted.name,
             })
             .from(transactions)
             .leftJoin(categories, eq(transactions.categoryId, categories.id))
+            .leftJoin(
+               suggestedCategoriesWeighted,
+               eq(
+                  transactions.suggestedCategoryId,
+                  suggestedCategoriesWeighted.id,
+               ),
+            )
             .leftJoin(
                creditCards,
                eq(transactions.creditCardId, creditCards.id),
@@ -349,6 +363,8 @@ export async function listTransactions(
          .leftJoin(contacts, eq(transactions.contactId, contacts.id))
          .where(whereClause);
 
+      const suggestedCategories = alias(categories, "suggested_categories");
+
       const data = await db
          .select({
             ...getTableColumns(transactions),
@@ -356,9 +372,14 @@ export async function listTransactions(
             creditCardName: creditCards.name,
             bankAccountName: bankAccounts.name,
             contactName: contacts.name,
+            suggestedCategoryName: suggestedCategories.name,
          })
          .from(transactions)
          .leftJoin(categories, eq(transactions.categoryId, categories.id))
+         .leftJoin(
+            suggestedCategories,
+            eq(transactions.suggestedCategoryId, suggestedCategories.id),
+         )
          .leftJoin(creditCards, eq(transactions.creditCardId, creditCards.id))
          .leftJoin(
             bankAccounts,
@@ -489,7 +510,12 @@ export async function updateTransaction(
       const validated = validateInput(updateTransactionSchema, data);
       const [updated] = await db
          .update(transactions)
-         .set(validated)
+         .set({
+            ...validated,
+            ...(validated.categoryId !== undefined
+               ? { suggestedCategoryId: null }
+               : {}),
+         })
          .where(eq(transactions.id, id))
          .returning();
 
@@ -512,6 +538,36 @@ export async function updateTransaction(
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to update transaction");
+   }
+}
+
+export async function bulkCreateTransactions(
+   db: DatabaseInstance,
+   teamId: string,
+   rows: {
+      bankAccountId: string;
+      name: string | null;
+      type: "income" | "expense";
+      amount: string;
+      date: string;
+      description: string | null;
+      categoryId: string | null;
+      paymentMethod: (typeof paymentMethodEnum.enumValues)[number] | null;
+   }[],
+) {
+   try {
+      return await db
+         .insert(transactions)
+         .values(rows.map((r) => ({ ...r, teamId })))
+         .returning({
+            id: transactions.id,
+            name: transactions.name,
+            type: transactions.type,
+            categoryId: transactions.categoryId,
+         });
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to bulk create transactions");
    }
 }
 
@@ -589,5 +645,24 @@ export async function replaceTransactionItems(
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to replace transaction items");
+   }
+}
+
+export async function updateTransactionCategory(
+   db: DatabaseInstance,
+   id: string,
+   data: {
+      categoryId?: string | null;
+      suggestedCategoryId?: string | null;
+   },
+) {
+   try {
+      await db
+         .update(transactions)
+         .set({ ...data, updatedAt: new Date() })
+         .where(eq(transactions.id, id));
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to update transaction category");
    }
 }

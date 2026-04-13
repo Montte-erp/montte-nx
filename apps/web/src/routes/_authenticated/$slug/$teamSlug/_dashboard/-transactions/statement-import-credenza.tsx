@@ -732,6 +732,7 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
    }
 
    function autoCategorize() {
+      let matched = 0;
       const updated = rows.map((r) => {
          if (r.categoryId || !r.isValid) return r;
          const text = (r.description || r.name || "").toLowerCase();
@@ -741,12 +742,20 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                ...(cat.keywords ?? []).map((k: string) => k.toLowerCase()),
             ];
             if (terms.some((t) => text.includes(t))) {
+               matched++;
                return { ...r, categoryId: cat.id };
             }
          }
          return r;
       });
       onRowsChange(updated);
+      if (matched > 0) {
+         toast.success(
+            `${matched} lançamento(s) categorizados automaticamente.`,
+         );
+      } else {
+         toast.info("Nenhum lançamento pôde ser categorizado automaticamente.");
+      }
    }
 
    function commitDescEdit(originalIndex: number) {
@@ -766,8 +775,8 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
          <CredenzaHeader>
             <CredenzaTitle>Revise as transações</CredenzaTitle>
             <CredenzaDescription>
-               Desmarque o que não deseja importar — duplicatas já estão
-               desmarcadas
+               Todos os lançamentos válidos serão importados — duplicatas já
+               estão ignoradas automaticamente
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -858,9 +867,9 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                         <TooltipProvider>
                            <Button
                               type="button"
-                              variant="ghost"
+                              variant="outline"
                               size="icon-xs"
-                              className="text-muted-foreground hover:text-primary"
+                              className="border-primary/40 text-primary hover:bg-primary/10"
                               tooltip="Categorização automática"
                               onClick={autoCategorize}
                            >
@@ -1320,10 +1329,10 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                   </Button>
                   <Button
                      className="flex-1"
-                     disabled={selectedIndices.size === 0}
+                     disabled={selectableIndices.length === 0}
                      onClick={() => {
-                        const confirmedSet = new Set(selectedIndices);
-                        const duplicateCount = [...selectedIndices].filter(
+                        const confirmedSet = new Set(selectableIndices);
+                        const duplicateCount = selectableIndices.filter(
                            (i) => duplicateFlags[i],
                         ).length;
                         if (duplicateCount > 0) {
@@ -1426,7 +1435,7 @@ function ConfirmStep({
                      )}
                      <div className="flex items-center justify-between bg-primary/5 px-4 py-2.5">
                         <span className="text-sm font-medium">
-                           Total selecionadas
+                           Serão importadas
                         </span>
                         <span className="text-sm font-bold text-primary">
                            {selectedIndices.size}
@@ -1459,7 +1468,7 @@ function ConfirmStep({
                         {importMutation.isPending && (
                            <Loader2 className="size-4 animate-spin" />
                         )}
-                        Importar {selectedCount} transação(ões)
+                        Importar {selectedCount} lançamento(s)
                      </span>
                   </Button>
                </div>

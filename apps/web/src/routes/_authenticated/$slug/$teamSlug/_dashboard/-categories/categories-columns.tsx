@@ -30,6 +30,7 @@ import {
    Smartphone,
    ShieldCheck,
    Star,
+   Tags,
    Utensils,
    Wallet,
    Zap,
@@ -76,8 +77,21 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
          accessorKey: "name",
          header: "Nome",
          cell: ({ row }) => {
-            const { name, color, icon, isDefault } = row.original;
+            const { name, color, icon, isDefault, keywords } = row.original;
             const IconComponent = icon ? ICON_MAP[icon] : null;
+            const hasKeywords = keywords && keywords.length > 0;
+
+            const keywordsTooltip = hasKeywords ? (
+               <Tooltip>
+                  <TooltipTrigger asChild>
+                     <Tags className="size-4 text-muted-foreground shrink-0" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-64">
+                     <p className="font-medium">Palavras-chave IA</p>
+                     <p className="text-xs">{keywords.join(", ")}</p>
+                  </TooltipContent>
+               </Tooltip>
+            ) : null;
 
             if (row.depth === 0 && (color || IconComponent)) {
                return (
@@ -100,6 +114,7 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                               <TooltipContent>Padrão</TooltipContent>
                            </Tooltip>
                         )}
+                        {keywordsTooltip}
                      </AnnouncementTitle>
                   </Announcement>
                );
@@ -122,6 +137,7 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                         <TooltipContent>Padrão</TooltipContent>
                      </Tooltip>
                   )}
+                  {keywordsTooltip}
                </div>
             );
          },

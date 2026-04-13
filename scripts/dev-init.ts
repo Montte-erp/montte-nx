@@ -41,7 +41,14 @@ if (!fs.existsSync(envLocalPath)) {
    );
 }
 
-// ── 2. Start containers ───────────────────────────────────────────────────────
+// ── 2. Install dependencies if needed ────────────────────────────────────────
+if (!fs.existsSync("node_modules")) {
+   step("node_modules not found — installing dependencies...");
+   run("bun install");
+   ok("Dependencies installed.");
+}
+
+// ── 3. Start containers ───────────────────────────────────────────────────────
 step("Starting containers...");
 try {
    run("bun run --cwd apps/web container-start");
@@ -49,7 +56,7 @@ try {
    console.log(colors.yellow("⚠ Could not start containers — continuing."));
 }
 
-// ── 3. Push DB schema ─────────────────────────────────────────────────────────
+// ── 4. Push DB schema ─────────────────────────────────────────────────────────
 step("Pushing database schema...");
 try {
    run("bun run db:push");
@@ -59,7 +66,7 @@ try {
    );
 }
 
-// ── 4. Seed event catalog ─────────────────────────────────────────────────────
+// ── 5. Seed event catalog ─────────────────────────────────────────────────────
 step("Seeding event catalog...");
 try {
    run("bun run scripts/seed-event-catalog.ts run --env local");

@@ -4,6 +4,7 @@ import {
    evaluateConditionGroup,
 } from "@f-o-t/condition-evaluator";
 import {
+   bulkCreateTransactions,
    createTransaction,
    createTransactionItems,
    deleteTransaction,
@@ -13,6 +14,7 @@ import {
    listTransactions,
    replaceTransactionItems,
    updateTransaction,
+   updateTransactionCategory,
    validateTransactionReferences,
 } from "@core/database/repositories/transactions-repository";
 import { ensureBankAccountOwnership } from "@core/database/repositories/bank-accounts-repository";
@@ -23,7 +25,9 @@ import {
 } from "@core/database/schemas/transactions";
 import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceStatementImported } from "@packages/events/finance";
+import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
+import { startCategorizationWorkflow } from "@/integrations/dbos/workflows/runner";
 import { withCreditEnforcement } from "../middlewares/credit-enforcement";
 import { protectedProcedure } from "../server";
 
@@ -70,9 +74,13 @@ const filterSchema = z
    .optional();
 
 export const create = protectedProcedure
-   .input(createTransactionSchema.merge(tagAndItemsSchema))
+   .input(
+      createTransactionSchema
+         .merge(tagAndItemsSchema)
+         .merge(z.object({ autoCategorize: z.boolean().default(false) })),
+   )
    .handler(async ({ context, input }) => {
-      const { tagIds, items, ...data } = input;
+      const { tagIds, items, autoCategorize, ...data } = input;
       await validateTransactionReferences(context.db, context.teamId, {
          bankAccountId: data.bankAccountId,
          destinationBankAccountId: data.destinationBankAccountId,
@@ -101,6 +109,20 @@ export const create = protectedProcedure
             context.teamId,
             items,
          );
+      }
+
+      if (
+         autoCategorize &&
+         transaction &&
+         !input.categoryId &&
+         (input.type === "income" || input.type === "expense")
+      ) {
+         startCategorizationWorkflow({
+            transactionId: transaction.id,
+            teamId: context.teamId,
+            name: input.name ?? "",
+            type: input.type,
+         });
       }
 
       return transaction;
@@ -205,6 +227,7 @@ export const importStatement = withCreditEnforcement(
             )
             .min(1)
             .max(1000),
+         autoCategorize: z.boolean().default(false),
       }),
    )
    .handler(async ({ context, input }) => {
@@ -228,7 +251,6 @@ export const importStatement = withCreditEnforcement(
       }
 
       const rows = input.transactions.map((t) => ({
-         teamId: context.teamId,
          bankAccountId: input.bankAccountId,
          name: t.name ?? null,
          type: t.type,
@@ -239,7 +261,27 @@ export const importStatement = withCreditEnforcement(
          paymentMethod: t.paymentMethod ?? null,
       }));
 
-      await context.db.insert(transactions).values(rows);
+      const inserted = await bulkCreateTransactions(
+         context.db,
+         context.teamId,
+         rows,
+      );
+
+      if (input.autoCategorize) {
+         for (const tx of inserted) {
+            if (
+               !tx.categoryId &&
+               (tx.type === "income" || tx.type === "expense")
+            ) {
+               startCategorizationWorkflow({
+                  transactionId: tx.id,
+                  teamId: context.teamId,
+                  name: tx.name ?? "",
+                  type: tx.type,
+               });
+            }
+         }
+      }
 
       try {
          const emit = createEmitFn(context.db, context.posthog);
@@ -374,6 +416,7 @@ export const importBulk = protectedProcedure
             .array(createTransactionSchema.merge(tagAndItemsSchema))
             .min(1)
             .max(500),
+         autoCategorize: z.boolean().default(false),
       }),
    )
    .handler(async ({ context, input }) => {
@@ -387,8 +430,56 @@ export const importBulk = protectedProcedure
             tagIds,
             date: data.date,
          });
-         await createTransaction(context.db, context.teamId, data, tagIds);
+         const transaction = await createTransaction(
+            context.db,
+            context.teamId,
+            data,
+            tagIds,
+         );
+         if (
+            input.autoCategorize &&
+            transaction &&
+            !data.categoryId &&
+            (data.type === "income" || data.type === "expense")
+         ) {
+            startCategorizationWorkflow({
+               transactionId: transaction.id,
+               teamId: context.teamId,
+               name: data.name ?? "",
+               type: data.type,
+            });
+         }
          imported++;
       }
       return { imported, skipped: 0 };
+   });
+
+export const acceptSuggestedCategory = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      const tx = await ensureTransactionOwnership(
+         context.db,
+         input.id,
+         context.teamId,
+      );
+      if (!tx.suggestedCategoryId) {
+         throw WebAppError.badRequest(
+            "Nenhuma sugestão de categoria disponível.",
+         );
+      }
+      await updateTransactionCategory(context.db, input.id, {
+         categoryId: tx.suggestedCategoryId,
+         suggestedCategoryId: null,
+      });
+      return { ok: true };
+   });
+
+export const dismissSuggestedCategory = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      await ensureTransactionOwnership(context.db, input.id, context.teamId);
+      await updateTransactionCategory(context.db, input.id, {
+         suggestedCategoryId: null,
+      });
+      return { ok: true };
    });
