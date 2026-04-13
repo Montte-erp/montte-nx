@@ -15,6 +15,7 @@ import {
    SelectionActionButton,
 } from "@packages/ui/components/selection-action-bar";
 import { Skeleton } from "@packages/ui/components/skeleton";
+import { Spinner } from "@packages/ui/components/spinner";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -24,8 +25,8 @@ import type {
    SortingState,
 } from "@tanstack/react-table";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
-import { CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { CreditCard, Download, Pencil, Plus, Trash2 } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
@@ -34,6 +35,7 @@ import {
    type CreditCardRow,
 } from "./-credit-cards/credit-cards-columns";
 import { CreditCardForm } from "./-credit-cards/credit-cards-form";
+import { CreditCardsExportCredenza } from "./-credit-cards/credit-cards-export-credenza";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -333,6 +335,7 @@ function CreditCardsList() {
 
 function CreditCardsPage() {
    const { openCredenza, closeCredenza } = useCredenza();
+   const [exportFormat, setExportFormat] = useState<"csv" | "xlsx">("csv");
 
    function handleCreate() {
       openCredenza({
@@ -347,17 +350,48 @@ function CreditCardsPage() {
       });
    }
 
+   function handleExport() {
+      openCredenza({
+         children: (
+            <QueryBoundary
+               fallback={
+                  <div className="flex items-center justify-center py-4">
+                     <Spinner className="size-4" />
+                  </div>
+               }
+               errorTitle="Erro ao carregar cartões"
+            >
+               <CreditCardsExportCredenza
+                  format={exportFormat}
+                  onFormatChange={setExportFormat}
+                  onClose={closeCredenza}
+               />
+            </QueryBoundary>
+         ),
+      });
+   }
+
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
-               <Button
-                  className="flex items-center gap-2"
-                  onClick={handleCreate}
-               >
-                  <Plus className="size-4" />
-                  Novo Cartão
-               </Button>
+               <div className="flex gap-2">
+                  <Button
+                     variant="outline"
+                     onClick={handleExport}
+                     type="button"
+                  >
+                     <Download className="size-4" />
+                     Exportar
+                  </Button>
+                  <Button
+                     className="flex items-center gap-2"
+                     onClick={handleCreate}
+                  >
+                     <Plus className="size-4" />
+                     Novo Cartão
+                  </Button>
+               </div>
             }
             description="Gerencie seus cartões de crédito"
             title="Cartões de Crédito"
