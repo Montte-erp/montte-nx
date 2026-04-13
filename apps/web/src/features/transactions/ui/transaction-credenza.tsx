@@ -83,6 +83,56 @@ interface TransactionCredenzaProps {
    onSuccess: () => void;
 }
 
+type TransactionFormValues = {
+   name: string;
+   type: TransactionType;
+   amount: string;
+   date: Date | undefined;
+   bankAccountId: string;
+   destinationBankAccountId: string;
+   categoryId: string;
+   subcategoryId: string;
+   tagIds: string[];
+   description: string;
+   contactId: string | null;
+   creditCardId: string;
+   createAsBill: boolean;
+   paymentMethod: PaymentMethod | "";
+   isInstallment: boolean;
+   installmentCount: number | null;
+   isRecurring: boolean;
+   recurringFrequency: string | null;
+   recurringCount: number | null;
+};
+
+function buildTransactionDefaultValues(
+   transaction?: TransactionRow,
+): TransactionFormValues {
+   return {
+      name: transaction?.name ?? "",
+      type: transaction?.type ?? "income",
+      amount: transaction?.amount ?? "",
+      date: transaction?.date
+         ? new Date(`${transaction.date}T12:00:00`)
+         : undefined,
+      bankAccountId: transaction?.bankAccountId ?? "",
+      destinationBankAccountId: transaction?.destinationBankAccountId ?? "",
+      categoryId: transaction?.categoryId ?? "",
+      subcategoryId: "",
+      tagIds: [],
+      description: transaction?.description ?? "",
+      contactId: transaction?.contactId ?? null,
+      creditCardId: transaction?.creditCardId ?? "",
+      createAsBill: false,
+      paymentMethod: transaction?.paymentMethod ?? "",
+      isInstallment: transaction?.isInstallment ?? false,
+      installmentCount: transaction?.installmentCount ?? null,
+      isRecurring: false,
+      recurringFrequency: null,
+      recurringCount: null,
+   };
+}
+
 function TagCombobox({
    selectedIds,
    onChange,
@@ -685,34 +735,8 @@ function TransactionCredenzaContent({
    );
    const billCreateMutation = useMutation(orpc.bills.create.mutationOptions());
 
-   const emptyTagIds: string[] = [];
-   const recurringFrequency: string | null = null;
-   const recurringCount: number | null = null;
-
    const form = useForm({
-      defaultValues: {
-         name: transaction?.name ?? "",
-         type: (transaction?.type ?? "income") as TransactionType,
-         amount: transaction?.amount ?? "",
-         date: transaction?.date
-            ? new Date(`${transaction.date}T12:00:00`)
-            : undefined,
-         bankAccountId: transaction?.bankAccountId ?? "",
-         destinationBankAccountId: transaction?.destinationBankAccountId ?? "",
-         categoryId: transaction?.categoryId ?? "",
-         subcategoryId: "",
-         tagIds: emptyTagIds,
-         description: transaction?.description ?? "",
-         contactId: transaction?.contactId ?? null,
-         creditCardId: transaction?.creditCardId ?? "",
-         createAsBill: false,
-         paymentMethod: transaction?.paymentMethod ?? "",
-         isInstallment: transaction?.isInstallment ?? false,
-         installmentCount: transaction?.installmentCount ?? null,
-         isRecurring: false,
-         recurringFrequency,
-         recurringCount,
-      },
+      defaultValues: buildTransactionDefaultValues(transaction),
       validators: {
          onSubmitAsync: async ({ value }) => {
             const dateStr = value.date
