@@ -23,9 +23,33 @@ import {
 } from "@core/database/schemas/transactions";
 import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceStatementImported } from "@packages/events/finance";
+import { getLogger } from "@core/logging/root";
 import { z } from "zod";
+import { DBOS } from "@dbos-inc/dbos-sdk";
+import { CategorizationWorkflow } from "@/integrations/dbos/workflows";
 import { withCreditEnforcement } from "../middlewares/credit-enforcement";
 import { protectedProcedure } from "../server";
+
+const logger = getLogger().child({ module: "transactions.router" });
+
+function enqueueCategorization(input: {
+   transactionId: string;
+   teamId: string;
+   name: string;
+   type: "income" | "expense";
+   contactName?: string | null;
+}): void {
+   void DBOS.startWorkflow(CategorizationWorkflow, {
+      workflowID: `categorize-${input.transactionId}`,
+   })
+      .run(input)
+      .catch((err) => {
+         logger.error(
+            { err, transactionId: input.transactionId },
+            "Failed to start categorization workflow",
+         );
+      });
+}
 
 const idSchema = z.object({ id: z.string().uuid() });
 
@@ -101,6 +125,19 @@ export const create = protectedProcedure
             context.teamId,
             items,
          );
+      }
+
+      if (
+         transaction &&
+         !input.categoryId &&
+         (input.type === "income" || input.type === "expense")
+      ) {
+         enqueueCategorization({
+            transactionId: transaction.id,
+            teamId: context.teamId,
+            name: input.name ?? "",
+            type: input.type,
+         });
       }
 
       return transaction;
