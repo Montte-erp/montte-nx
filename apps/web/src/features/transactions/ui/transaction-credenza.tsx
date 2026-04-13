@@ -94,7 +94,7 @@ function TagCombobox({
 
    return (
       <div className="flex flex-col gap-2">
-         <div className="flex flex-wrap gap-x-4 gap-y-2">
+         <div className="flex flex-wrap gap-2">
             {tags.map((tag) => {
                const checked = selectedIds.includes(tag.id);
                return (

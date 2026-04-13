@@ -168,7 +168,7 @@ export function InventoryMovementCredenza({
                         type="submit"
                      >
                         {mutation.isPending && (
-                           <Loader2 className="size-4 mr-2 animate-spin" />
+                           <Loader2 className="size-4 animate-spin" />
                         )}
                         Registrar recebimento
                      </Button>
@@ -221,7 +221,7 @@ export function InventoryMovementCredenza({
                         type="submit"
                      >
                         {mutation.isPending && (
-                           <Loader2 className="size-4 mr-2 animate-spin" />
+                           <Loader2 className="size-4 animate-spin" />
                         )}
                         Registrar venda
                      </Button>
@@ -264,7 +264,7 @@ export function InventoryMovementCredenza({
                         variant="destructive"
                      >
                         {mutation.isPending && (
-                           <Loader2 className="size-4 mr-2 animate-spin" />
+                           <Loader2 className="size-4 animate-spin" />
                         )}
                         Registrar descarte
                      </Button>

@@ -143,7 +143,7 @@ function InsightEditCredenzaContent({ insightId }: InsightEditCredenzaProps) {
 
                      <div className="border-t" />
 
-                     <div className="[&_.space-y-4]:space-y-3 [&_label]:text-[10px]">
+                     <div className="flex flex-col gap-4 [&_label]:text-[10px]">
                         {type === "kpi" && (
                            <KpiQueryBuilder
                               config={config as KpiConfig}
