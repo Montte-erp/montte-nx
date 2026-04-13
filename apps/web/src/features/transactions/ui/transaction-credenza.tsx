@@ -686,6 +686,8 @@ function TransactionCredenzaContent({
    const billCreateMutation = useMutation(orpc.bills.create.mutationOptions());
 
    const emptyTagIds: string[] = [];
+   const recurringFrequency: string | null = null;
+   const recurringCount: number | null = null;
 
    const form = useForm({
       defaultValues: {
@@ -708,8 +710,8 @@ function TransactionCredenzaContent({
          isInstallment: transaction?.isInstallment ?? false,
          installmentCount: transaction?.installmentCount ?? null,
          isRecurring: false,
-         recurringFrequency: null,
-         recurringCount: null,
+         recurringFrequency,
+         recurringCount,
       },
       validators: {
          onSubmitAsync: async ({ value }) => {
