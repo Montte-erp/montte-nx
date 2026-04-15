@@ -3,7 +3,7 @@ import { Button } from "@packages/ui/components/button";
 import {
    type FeatureStage,
    STAGE_CONFIG,
-} from "@packages/ui/components/feature-stage-badge";
+} from "@/components/blocks/feature-stage-badge";
 import { cn } from "@packages/ui/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import { FlaskConical } from "lucide-react";

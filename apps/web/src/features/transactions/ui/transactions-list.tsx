@@ -2,7 +2,7 @@ import {
    Announcement,
    AnnouncementTag,
    AnnouncementTitle,
-} from "@packages/ui/components/announcement";
+} from "@/components/blocks/announcement";
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
 import {

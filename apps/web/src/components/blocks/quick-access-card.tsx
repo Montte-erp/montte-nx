@@ -7,7 +7,7 @@ import {
    CardDescription,
    CardHeader,
    CardTitle,
-} from "./card";
+} from "@packages/ui/components/card";
 
 interface QuickAccessCardProps {
    icon: ReactNode;

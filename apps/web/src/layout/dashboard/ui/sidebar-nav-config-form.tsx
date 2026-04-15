@@ -6,7 +6,7 @@ import {
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
-import { FeatureStageBadge } from "@packages/ui/components/feature-stage-badge";
+import { FeatureStageBadge } from "@/components/blocks/feature-stage-badge";
 import { useMemo } from "react";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 import { useFinanceNavPreferences } from "@/layout/dashboard/hooks/use-finance-nav-preferences";

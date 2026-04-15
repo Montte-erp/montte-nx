@@ -1,7 +1,7 @@
 import { cn } from "@packages/ui/lib/utils";
 import { CheckCircle2, FlaskConical, Lightbulb, Sparkles } from "lucide-react";
 import type * as React from "react";
-import { Badge } from "./badge";
+import { Badge } from "@packages/ui/components/badge";
 
 const STAGE_CONFIG = {
    alpha: {
@@ -66,13 +66,6 @@ export type FeatureStageChipProps = {
    className?: string;
 };
 
-/**
- * FeatureStageChip - Um chip clicável para usar como filtro de estágio
- * - Mostra a badge com o nome do estágio
- * - Opcionalmente mostra uma contagem
- * - Suporta estado ativo/inativo
- * - Pode ser clicável para alternar filtros
- */
 function FeatureStageChip({
    stage,
    count,

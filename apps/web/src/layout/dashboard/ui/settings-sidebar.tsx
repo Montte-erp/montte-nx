@@ -3,7 +3,7 @@ import {
    CollapsibleContent,
    CollapsibleTrigger,
 } from "@packages/ui/components/collapsible";
-import { FeatureStageBadge } from "@packages/ui/components/feature-stage-badge";
+import { FeatureStageBadge } from "@/components/blocks/feature-stage-badge";
 import {
    SidebarGroup,
    SidebarGroupContent,
