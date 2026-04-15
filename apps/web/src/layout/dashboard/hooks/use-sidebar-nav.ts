@@ -1,24 +1,8 @@
-import { Store, useStore } from "@tanstack/react-store";
+import { useStore } from "@tanstack/react-store";
 import { useEffect } from "react";
+import { createPersistedStore } from "@/lib/persisted-store";
 
 export type SubSidebarSection = "dashboards" | "insights" | "data-management";
-
-const PINNED_STORAGE_KEY = "montte:sidebar-pinned";
-
-function loadPinnedItems(): string[] {
-   try {
-      const stored = localStorage.getItem(PINNED_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-   } catch {
-      return [];
-   }
-}
-
-function savePinnedItems(items: string[]) {
-   try {
-      localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify(items));
-   } catch {}
-}
 
 interface SidebarNavState {
    activeSection: SubSidebarSection | null;
@@ -26,13 +10,12 @@ interface SidebarNavState {
    pinnedItems: string[];
 }
 
-const initialState: SidebarNavState = {
-   activeSection: null,
-   searchQuery: "",
-   pinnedItems: loadPinnedItems(),
-};
-
-const sidebarNavStore = new Store<SidebarNavState>(initialState);
+const { store: sidebarNavStore, useStorePersistence } =
+   createPersistedStore<SidebarNavState>("montte:sidebar-nav", {
+      activeSection: null,
+      searchQuery: "",
+      pinnedItems: [],
+   });
 
 export function setActiveSection(section: SubSidebarSection | null) {
    sidebarNavStore.setState((state) => ({
@@ -50,16 +33,16 @@ export function setSearchQuery(query: string) {
 }
 
 export function togglePinnedItem(itemId: string) {
-   sidebarNavStore.setState((state) => {
-      const pinned = state.pinnedItems.includes(itemId)
+   sidebarNavStore.setState((state) => ({
+      ...state,
+      pinnedItems: state.pinnedItems.includes(itemId)
          ? state.pinnedItems.filter((id) => id !== itemId)
-         : [...state.pinnedItems, itemId];
-      savePinnedItems(pinned);
-      return { ...state, pinnedItems: pinned };
-   });
+         : [...state.pinnedItems, itemId],
+   }));
 }
 
 export function useSidebarNav() {
+   useStorePersistence();
    const state = useStore(sidebarNavStore, (s) => s);
 
    return {
