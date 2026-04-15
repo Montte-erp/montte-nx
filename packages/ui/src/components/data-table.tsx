@@ -737,7 +737,9 @@ export function DataTable<TData, TValue>({
    const [internalSorting, setInternalSorting] = useState<SortingState>([]);
    const [internalColumnFilters, setInternalColumnFilters] =
       useState<ColumnFiltersState>([]);
-   const [expanded, setExpanded] = useState<ExpandedState>({});
+   const [expanded, setExpanded] = useState<ExpandedState>(
+      getSubRows ? true : {},
+   );
    const [internalRowSelection, setInternalRowSelection] =
       useState<RowSelectionState>({});
 

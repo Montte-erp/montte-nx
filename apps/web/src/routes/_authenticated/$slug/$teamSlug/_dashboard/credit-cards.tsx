@@ -174,8 +174,18 @@ function CreditCardsList() {
                typeof updater === "function"
                   ? updater(columnFilters as ColumnFiltersState)
                   : updater;
+            const statusFilter = next.find((f) => f.id === "status");
             navigate({
-               search: (prev) => ({ ...prev, columnFilters: next }),
+               search: (prev) => ({
+                  ...prev,
+                  columnFilters: next,
+                  status:
+                     (statusFilter?.value as
+                        | "active"
+                        | "blocked"
+                        | "cancelled") ?? undefined,
+                  page: 1,
+               }),
                replace: true,
             });
          },
