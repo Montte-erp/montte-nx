@@ -11,13 +11,16 @@ import {
 } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";
 import { GlobalSelectionToolbar } from "@/hooks/use-selection-toolbar";
 import { GlobalSurveyModal } from "@/hooks/use-survey-modal";
 import { PostHogWrapper } from "@/integrations/posthog/client";
-import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
+import {
+   devtoolsConfig,
+   devtoolsEventBusConfig,
+   devtoolsPlugins,
+} from "../integrations/devtools/config";
 import type { RouterContext } from "../integrations/tanstack-query/root-provider";
 
 const getThemeFromCookie = createServerFn({ method: "GET" }).handler(() => {
@@ -99,16 +102,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   {import.meta.env.DEV && (
                      <ClientOnly>
                         <TanStackDevtools
-                           config={{
-                              position: "top-right",
-                           }}
-                           plugins={[
-                              {
-                                 name: "Tanstack Router",
-                                 render: <TanStackRouterDevtoolsPanel />,
-                              },
-                              TanStackQueryDevtools,
-                           ]}
+                           config={devtoolsConfig}
+                           eventBusConfig={devtoolsEventBusConfig}
+                           plugins={devtoolsPlugins}
                         />
                      </ClientOnly>
                   )}
