@@ -599,6 +599,8 @@ startTransition(async () => { await authClient.method(...); });
 
 **ALWAYS use these — never import Sheet/Dialog/Drawer/AlertDialog/Credenza components directly.**
 
+> **Why:** Ensures single overlay stack, consistent focus trapping, and uniform close behavior across all modals. Direct imports break keyboard navigation and screen reader focus flow.
+
 | Hook             | Use For                                         |
 | ---------------- | ----------------------------------------------- |
 | `useCredenza`    | All modals and overlays — creating/editing records, selecting agents, export formats, any overlay UI |
