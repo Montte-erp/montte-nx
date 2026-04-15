@@ -15,13 +15,26 @@ async function importPlugin() {
    return mod;
 }
 
-const mockUser = { id: "u1", name: "Alice", email: "alice@example.com" };
+const mockUser = {
+   id: "u1",
+   name: "Alice",
+   email: "alice@example.com",
+   createdAt: new Date(),
+   updatedAt: new Date(),
+   emailVerified: false,
+   image: null,
+};
 
-function buildContext(body: unknown = {}) {
-   return {
-      path: "/sign-up/email",
-      body,
-   };
+function getAfterHook(
+   options: Parameters<(typeof import("./index"))["hyprpay"]>[0],
+) {
+   return importPlugin().then(({ hyprpay }) => {
+      const plugin = hyprpay(options);
+      const after = plugin.init?.({} as never)?.options?.databaseHooks?.user
+         ?.create?.after;
+      if (!after) throw new Error("after hook not found");
+      return after;
+   });
 }
 
 describe("hyprpay better-auth plugin", () => {
@@ -41,48 +54,23 @@ describe("hyprpay better-auth plugin", () => {
       expect(plugin.id).toBe("hyprpay");
    });
 
-   describe("sign-up hook", () => {
-      async function runHook(
-         options: Parameters<(typeof import("./index"))["hyprpay"]>[0],
-         context: { path: string; body: unknown },
-      ) {
-         const { hyprpay } = await importPlugin();
-         const plugin = hyprpay(options);
-         const handler = plugin.hooks?.after?.[0]?.handler;
-         if (!handler) throw new Error("handler not found");
-         await handler(context as never);
-      }
-
+   describe("databaseHooks.user.create.after", () => {
       it("does nothing when createCustomerOnSignUp is false", async () => {
-         await runHook(
-            { apiKey: "key", createCustomerOnSignUp: false },
-            buildContext({ user: mockUser }),
-         );
-         expect(mockCreate).not.toHaveBeenCalled();
-      });
-
-      it("does nothing when user is missing from body", async () => {
-         await runHook(
-            { apiKey: "key", createCustomerOnSignUp: true },
-            buildContext({}),
-         );
-         expect(mockCreate).not.toHaveBeenCalled();
-      });
-
-      it("does nothing when user.id is missing", async () => {
-         await runHook(
-            { apiKey: "key", createCustomerOnSignUp: true },
-            buildContext({ user: { name: "Alice", email: "a@b.com" } }),
-         );
+         const after = await getAfterHook({
+            apiKey: "key",
+            createCustomerOnSignUp: false,
+         });
+         await after(mockUser, null);
          expect(mockCreate).not.toHaveBeenCalled();
       });
 
       it("calls sdkClient.customers.create with default mapper", async () => {
          mockCreate.mockResolvedValueOnce(ok({ id: "c1" }));
-         await runHook(
-            { apiKey: "key", createCustomerOnSignUp: true },
-            buildContext({ user: mockUser }),
-         );
+         const after = await getAfterHook({
+            apiKey: "key",
+            createCustomerOnSignUp: true,
+         });
+         await after(mockUser, null);
          expect(mockCreate).toHaveBeenCalledWith({
             name: "Alice",
             email: "alice@example.com",
@@ -92,17 +80,15 @@ describe("hyprpay better-auth plugin", () => {
 
       it("uses custom customerData mapper when provided", async () => {
          mockCreate.mockResolvedValueOnce(ok({ id: "c1" }));
-         await runHook(
-            {
-               apiKey: "key",
-               createCustomerOnSignUp: true,
-               customerData: (u) => ({
-                  name: `CUSTOM-${u.name}`,
-                  externalId: u.id,
-               }),
-            },
-            buildContext({ user: mockUser }),
-         );
+         const after = await getAfterHook({
+            apiKey: "key",
+            createCustomerOnSignUp: true,
+            customerData: (u) => ({
+               name: `CUSTOM-${u.name}`,
+               externalId: u.id,
+            }),
+         });
+         await after(mockUser, null);
          expect(mockCreate).toHaveBeenCalledWith({
             name: "CUSTOM-Alice",
             externalId: "u1",
@@ -113,10 +99,12 @@ describe("hyprpay better-auth plugin", () => {
          const customer = { id: "c1", name: "Alice" };
          mockCreate.mockResolvedValueOnce(ok(customer));
          const onCustomerCreate = vi.fn().mockResolvedValue(undefined);
-         await runHook(
-            { apiKey: "key", createCustomerOnSignUp: true, onCustomerCreate },
-            buildContext({ user: mockUser }),
-         );
+         const after = await getAfterHook({
+            apiKey: "key",
+            createCustomerOnSignUp: true,
+            onCustomerCreate,
+         });
+         await after(mockUser, null);
          expect(onCustomerCreate).toHaveBeenCalledWith(customer, mockUser);
       });
 
@@ -125,12 +113,11 @@ describe("hyprpay better-auth plugin", () => {
             .spyOn(console, "error")
             .mockImplementation(() => {});
          mockCreate.mockResolvedValueOnce(err(HyprPayError.internal("fail")));
-         await expect(
-            runHook(
-               { apiKey: "key", createCustomerOnSignUp: true },
-               buildContext({ user: mockUser }),
-            ),
-         ).resolves.toBeUndefined();
+         const after = await getAfterHook({
+            apiKey: "key",
+            createCustomerOnSignUp: true,
+         });
+         await expect(after(mockUser, null)).resolves.toBeUndefined();
          expect(consoleError).toHaveBeenCalledWith(
             "[hyprpay] customer creation failed",
             expect.any(HyprPayError),
@@ -147,44 +134,23 @@ describe("hyprpay better-auth plugin", () => {
          const onCustomerCreate = vi
             .fn()
             .mockRejectedValue(new Error("callback boom"));
-         await expect(
-            runHook(
-               {
-                  apiKey: "key",
-                  createCustomerOnSignUp: true,
-                  onCustomerCreate,
-               },
-               buildContext({ user: mockUser }),
-            ),
-         ).resolves.toBeUndefined();
+         const after = await getAfterHook({
+            apiKey: "key",
+            createCustomerOnSignUp: true,
+            onCustomerCreate,
+         });
+         await expect(after(mockUser, null)).resolves.toBeUndefined();
          expect(consoleError).toHaveBeenCalledWith(
             "[hyprpay] onCustomerCreate threw",
             expect.any(Error),
          );
          consoleError.mockRestore();
       });
-
-      it.each(["/sign-up/email", "/sign-up/email-otp", "/sign-in/magic-link"])(
-         "matcher returns true for %s",
-         async (path) => {
-            const { hyprpay } = await importPlugin();
-            const plugin = hyprpay({ apiKey: "key" });
-            const matcher = plugin.hooks?.after?.[0]?.matcher;
-            expect(matcher?.({ path } as never)).toBe(true);
-         },
-      );
-
-      it("matcher returns false for other paths", async () => {
-         const { hyprpay } = await importPlugin();
-         const plugin = hyprpay({ apiKey: "key" });
-         const matcher = plugin.hooks?.after?.[0]?.matcher;
-         expect(matcher?.({ path: "/sign-in/email" } as never)).toBe(false);
-      });
    });
 
    describe("hyprpayClient", () => {
       it("returns client plugin with id 'hyprpay'", async () => {
-         const { hyprpayClient, hyprpay } = await importPlugin();
+         const { hyprpayClient } = await importPlugin();
          const client = hyprpayClient();
          expect(client.id).toBe("hyprpay");
          expect(client.$InferServerPlugin).toBeDefined();
