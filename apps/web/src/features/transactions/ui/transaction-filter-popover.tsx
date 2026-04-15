@@ -275,10 +275,13 @@ function CardValueSelectInner({
    value: string;
    onChange: (v: string) => void;
 }) {
-   const { data: creditCards } = useSuspenseQuery(
-      orpc.creditCards.getAll.queryOptions({}),
+   const { data: creditCardsResult } = useSuspenseQuery(
+      orpc.creditCards.getAll.queryOptions({ input: { pageSize: 100 } }),
    );
-   const options = creditCards.map((c) => ({ value: c.id, label: c.name }));
+   const options = creditCardsResult.data.map((c) => ({
+      value: c.id,
+      label: c.name,
+   }));
    return (
       <Combobox
          className="h-7 text-xs"

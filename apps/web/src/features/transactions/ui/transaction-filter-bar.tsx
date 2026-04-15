@@ -136,9 +136,10 @@ export function TransactionFilterBar({
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
    );
-   const { data: creditCards } = useSuspenseQuery(
-      orpc.creditCards.getAll.queryOptions({}),
+   const { data: creditCardsResult } = useSuspenseQuery(
+      orpc.creditCards.getAll.queryOptions({ input: { pageSize: 100 } }),
    );
+   const creditCards = creditCardsResult.data;
 
    const [searchInput, setSearchInput] = useState(filters.search);
 

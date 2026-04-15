@@ -15,30 +15,51 @@ import {
    SelectionActionButton,
 } from "@packages/ui/components/selection-action-bar";
 import { Skeleton } from "@packages/ui/components/skeleton";
+import { Spinner } from "@packages/ui/components/spinner";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import type {
-   ColumnFiltersState,
-   OnChangeFn,
-   SortingState,
-} from "@tanstack/react-table";
+import type { ColumnFiltersState, OnChangeFn } from "@tanstack/react-table";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
-import { CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import {
+   CreditCard,
+   Download,
+   Pencil,
+   Plus,
+   Trash2,
+   Upload,
+} from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
 import {
    buildCreditCardColumns,
    type CreditCardRow,
-} from "@/features/credit-cards/ui/credit-cards-columns";
-import { CreditCardForm } from "@/features/credit-cards/ui/credit-cards-form";
+} from "./-credit-cards/credit-cards-columns";
+import { CreditCardForm } from "./-credit-cards/credit-cards-form";
+import { CreditCardFaturaRow } from "./-credit-cards/credit-card-fatura-row";
+import { CreditCardsExportCredenza } from "./-credit-cards/credit-cards-export-credenza";
+import { CreditCardsImportCredenza } from "./-credit-cards/credit-cards-import-credenza";
+import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
-import { tableSearchSchema } from "@/lib/table-search-schema";
 import { z } from "zod";
+
+const creditCardsSearchSchema = z.object({
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .catch([])
+      .default([]),
+   search: z.string().max(100).catch("").default(""),
+   status: z
+      .enum(["active", "blocked", "cancelled"])
+      .optional()
+      .catch(undefined),
+   page: z.number().int().min(1).catch(1).default(1),
+   pageSize: z.number().int().catch(20).default(20),
+});
 
 const [useCreditCardsTableState] =
    createLocalStorageState<DataTableStoredState | null>(
@@ -49,10 +70,23 @@ const [useCreditCardsTableState] =
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/credit-cards",
 )({
-   validateSearch: tableSearchSchema,
-   loader: ({ context }) => {
+   validateSearch: creditCardsSearchSchema,
+   loaderDeps: ({ search: { page, pageSize, search, status } }) => ({
+      page,
+      pageSize,
+      search,
+      status,
+   }),
+   loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
-         orpc.creditCards.getAll.queryOptions({}),
+         orpc.creditCards.getAll.queryOptions({
+            input: {
+               page: deps.page,
+               pageSize: deps.pageSize,
+               search: deps.search || undefined,
+               status: deps.status,
+            },
+         }),
       );
       context.queryClient.prefetchQuery(
          orpc.bankAccounts.getAll.queryOptions({}),
@@ -91,7 +125,7 @@ function CreditCardFormSkeleton() {
 
 function CreditCardsList() {
    const navigate = Route.useNavigate();
-   const { sorting, columnFilters } = Route.useSearch();
+   const { columnFilters, page, pageSize, search, status } = Route.useSearch();
    const [tableState, setTableState] = useCreditCardsTableState();
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
@@ -103,8 +137,10 @@ function CreditCardsList() {
       onClear,
    } = useRowSelection();
 
-   const { data: cards } = useSuspenseQuery(
-      orpc.creditCards.getAll.queryOptions({}),
+   const { data: result } = useSuspenseQuery(
+      orpc.creditCards.getAll.queryOptions({
+         input: { page, pageSize, search: search || undefined, status },
+      }),
    );
 
    const deleteMutation = useMutation(
@@ -131,23 +167,6 @@ function CreditCardsList() {
       }),
    );
 
-   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
-      (updater) => {
-         const next =
-            typeof updater === "function"
-               ? updater(sorting as SortingState)
-               : updater;
-         navigate({
-            search: (prev: z.infer<typeof tableSearchSchema>) => ({
-               ...prev,
-               sorting: next,
-            }),
-            replace: true,
-         });
-      },
-      [navigate, sorting],
-   );
-
    const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
       useCallback(
          (updater) => {
@@ -155,10 +174,17 @@ function CreditCardsList() {
                typeof updater === "function"
                   ? updater(columnFilters as ColumnFiltersState)
                   : updater;
+            const statusFilter = next.find((f) => f.id === "status");
             navigate({
-               search: (prev: z.infer<typeof tableSearchSchema>) => ({
+               search: (prev) => ({
                   ...prev,
                   columnFilters: next,
+                  status:
+                     (statusFilter?.value as
+                        | "active"
+                        | "blocked"
+                        | "cancelled") ?? undefined,
+                  page: 1,
                }),
                replace: true,
             });
@@ -225,7 +251,7 @@ function CreditCardsList() {
 
    const columns = useMemo(() => buildCreditCardColumns(), []);
 
-   if (cards.length === 0) {
+   if (result.data.length === 0 && page === 1) {
       return (
          <Empty>
             <EmptyHeader>
@@ -245,10 +271,8 @@ function CreditCardsList() {
       <>
          <DataTable
             columns={columns}
-            data={cards}
+            data={result.data}
             getRowId={(row) => row.id}
-            sorting={sorting as SortingState}
-            onSortingChange={handleSortingChange}
             columnFilters={columnFilters as ColumnFiltersState}
             onColumnFiltersChange={handleColumnFiltersChange}
             tableState={tableState}
@@ -274,6 +298,25 @@ function CreditCardsList() {
                </>
             )}
             rowSelection={rowSelection}
+            renderExpandedRow={(props) => (
+               <CreditCardFaturaRow creditCardId={props.row.original.id} />
+            )}
+            pagination={{
+               currentPage: page,
+               pageSize,
+               totalPages: result.totalPages,
+               totalCount: result.totalCount,
+               onPageChange: (p) =>
+                  navigate({
+                     search: (prev) => ({ ...prev, page: p }),
+                     replace: true,
+                  }),
+               onPageSizeChange: (s) =>
+                  navigate({
+                     search: (prev) => ({ ...prev, pageSize: s, page: 1 }),
+                     replace: true,
+                  }),
+            }}
          />
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
             <SelectionActionButton
@@ -290,6 +333,7 @@ function CreditCardsList() {
 
 function CreditCardsPage() {
    const { openCredenza, closeCredenza } = useCredenza();
+   const [exportFormat, setExportFormat] = useState<"csv" | "xlsx">("csv");
 
    function handleCreate() {
       openCredenza({
@@ -304,6 +348,46 @@ function CreditCardsPage() {
       });
    }
 
+   function handleImport() {
+      openCredenza({
+         children: <CreditCardsImportCredenza onClose={closeCredenza} />,
+      });
+   }
+
+   function handleExport() {
+      openCredenza({
+         children: (
+            <QueryBoundary
+               fallback={
+                  <div className="flex items-center justify-center py-4">
+                     <Spinner className="size-4" />
+                  </div>
+               }
+               errorTitle="Erro ao carregar cartões"
+            >
+               <CreditCardsExportCredenza
+                  format={exportFormat}
+                  onFormatChange={setExportFormat}
+                  onClose={closeCredenza}
+               />
+            </QueryBoundary>
+         ),
+      });
+   }
+
+   const panelActions: PanelAction[] = [
+      {
+         icon: Upload,
+         label: "Importar",
+         onClick: handleImport,
+      },
+      {
+         icon: Download,
+         label: "Exportar",
+         onClick: handleExport,
+      },
+   ];
+
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
@@ -316,6 +400,7 @@ function CreditCardsPage() {
                   Novo Cartão
                </Button>
             }
+            panelActions={panelActions}
             description="Gerencie seus cartões de crédito"
             title="Cartões de Crédito"
          />

@@ -25,7 +25,7 @@ export const ROLE_LABELS: Record<string, string> = {
 };
 
 export function formatDate(date: Date | string): string {
-   return dayjs(date).format("DD MMM YYYY");
+   return dayjs(date).format("DD/MM/YYYY");
 }
 
 export function getRoleBadgeVariant(

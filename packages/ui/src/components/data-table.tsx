@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import {
    closestCenter,
    DndContext,
@@ -139,6 +140,7 @@ interface DataTableProps<TData, TValue> {
    rowSelection?: RowSelectionState;
    onRowSelectionChange?: (selection: RowSelectionState) => void;
    renderActions?: (props: { row: Row<TData> }) => React.ReactNode;
+   renderExpandedRow?: (props: { row: Row<TData> }) => React.ReactNode;
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
    getSubRows?: (row: TData) => TData[] | undefined;
@@ -442,9 +444,11 @@ function DataTableHeaderRow<TData>({
 function DataTableBodyRow<TData>({
    row,
    getSubRows,
+   renderExpandedRow,
 }: {
    row: Row<TData>;
    getSubRows?: (row: TData) => TData[] | undefined;
+   renderExpandedRow?: (props: { row: Row<TData> }) => React.ReactNode;
 }) {
    if (row.depth > 0) {
       return (
@@ -467,7 +471,7 @@ function DataTableBodyRow<TData>({
       <>
          <TableCell className="w-[40px] px-2">
             <div className="flex items-center gap-1">
-               {getSubRows &&
+               {(getSubRows || renderExpandedRow) &&
                   (row.getCanExpand() ? (
                      <button
                         className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
@@ -522,12 +526,14 @@ function DataTableBodyRows<TData>({
    renderGroupHeader,
    columnCount,
    getSubRows,
+   renderExpandedRow,
 }: {
    table: TanStackTable<TData>;
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
    columnCount: number;
    getSubRows?: (row: TData) => TData[] | undefined;
+   renderExpandedRow?: (props: { row: Row<TData> }) => React.ReactNode;
 }) {
    const rows = table.getRowModel().rows;
 
@@ -542,13 +548,28 @@ function DataTableBodyRows<TData>({
    }
 
    const renderRow = (row: Row<TData>) => (
-      <TableRow
-         key={row.id}
-         className={cn("bg-card", row.getIsSelected() && "bg-muted/50")}
-         data-state={row.getIsSelected() ? "selected" : undefined}
-      >
-         <DataTableBodyRow row={row} getSubRows={getSubRows} />
-      </TableRow>
+      <React.Fragment key={row.id}>
+         <TableRow
+            className={cn("bg-card", row.getIsSelected() && "bg-muted/50")}
+            data-state={row.getIsSelected() ? "selected" : undefined}
+         >
+            <DataTableBodyRow
+               row={row}
+               getSubRows={getSubRows}
+               renderExpandedRow={renderExpandedRow}
+            />
+         </TableRow>
+         {renderExpandedRow && row.getIsExpanded() && (
+            <TableRow
+               key={`${row.id}-expanded`}
+               className="hover:bg-transparent"
+            >
+               <TableCell colSpan={columnCount} className="p-0 border-b">
+                  {renderExpandedRow({ row })}
+               </TableCell>
+            </TableRow>
+         )}
+      </React.Fragment>
    );
 
    if (groupBy && renderGroupHeader) {
@@ -708,6 +729,7 @@ export function DataTable<TData, TValue>({
    rowSelection: controlledRowSelection,
    onRowSelectionChange,
    renderActions,
+   renderExpandedRow,
    groupBy,
    renderGroupHeader,
    getSubRows,
@@ -715,7 +737,9 @@ export function DataTable<TData, TValue>({
    const [internalSorting, setInternalSorting] = useState<SortingState>([]);
    const [internalColumnFilters, setInternalColumnFilters] =
       useState<ColumnFiltersState>([]);
-   const [expanded, setExpanded] = useState<ExpandedState>(true);
+   const [expanded, setExpanded] = useState<ExpandedState>(
+      getSubRows ? true : {},
+   );
    const [internalRowSelection, setInternalRowSelection] =
       useState<RowSelectionState>({});
 
@@ -870,6 +894,7 @@ export function DataTable<TData, TValue>({
       getFacetedUniqueValues: getFacetedUniqueValues(),
       getFacetedMinMaxValues: getFacetedMinMaxValues(),
       getRowId: (originalRow) => getRowId(originalRow),
+      getRowCanExpand: renderExpandedRow ? () => true : undefined,
       manualFiltering: true,
       manualSorting: true,
       getSubRows,

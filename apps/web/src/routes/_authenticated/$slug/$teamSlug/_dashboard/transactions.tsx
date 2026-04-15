@@ -53,7 +53,7 @@ export const Route = createFileRoute(
       );
       context.queryClient.prefetchQuery(orpc.tags.getAll.queryOptions({}));
       context.queryClient.prefetchQuery(
-         orpc.creditCards.getAll.queryOptions({}),
+         orpc.creditCards.getAll.queryOptions({ input: {} }),
       );
       context.queryClient.prefetchQuery(
          orpc.transactions.getAll.queryOptions({

@@ -36,9 +36,10 @@ function EstoqueSettingsForm() {
       orpc.categories.getAll.queryOptions({}),
    );
    const categories = categoriesResult;
-   const { data: creditCards } = useSuspenseQuery(
-      orpc.creditCards.getAll.queryOptions({}),
+   const { data: creditCardsResult } = useSuspenseQuery(
+      orpc.creditCards.getAll.queryOptions({ input: {} }),
    );
+   const creditCards = creditCardsResult.data;
 
    const mutation = useMutation(
       orpc.inventory.upsertSettings.mutationOptions({

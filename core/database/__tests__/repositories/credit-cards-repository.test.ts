@@ -178,9 +178,9 @@ describe("credit-cards-repository", () => {
             }),
          );
 
-         const cards = await repo.listCreditCards(testDb.db, teamId);
-         expect(cards).toHaveLength(2);
-         for (const card of cards) {
+         const result = await repo.listCreditCards(testDb.db, teamId);
+         expect(result.data).toHaveLength(2);
+         for (const card of result.data) {
             expect(card.teamId).toBe(teamId);
          }
       });
@@ -202,9 +202,9 @@ describe("credit-cards-repository", () => {
             validInput(bankB.id, { name: "Team B Card" }),
          );
 
-         const cardsA = await repo.listCreditCards(testDb.db, teamA);
-         expect(cardsA).toHaveLength(1);
-         expect(cardsA[0]!.name).toBe("Team A Card");
+         const resultA = await repo.listCreditCards(testDb.db, teamA);
+         expect(resultA.data).toHaveLength(1);
+         expect(resultA.data[0]!.name).toBe("Team A Card");
       });
    });
 

@@ -1,4 +1,5 @@
 import {
+   bulkCreateCreditCards,
    bulkDeleteCreditCards,
    createCreditCard,
    deleteCreditCard,
@@ -15,15 +16,24 @@ import { protectedProcedure } from "../server";
 
 const idSchema = z.object({ id: z.string().uuid() });
 
+const listCreditCardsSchema = z.object({
+   page: z.number().int().positive().catch(1).default(1),
+   pageSize: z.number().int().positive().max(1000).catch(20).default(20),
+   search: z.string().max(100).optional(),
+   status: z.enum(["active", "blocked", "cancelled"]).optional(),
+});
+
 export const create = protectedProcedure
    .input(createCreditCardSchema)
    .handler(async ({ context, input }) => {
       return createCreditCard(context.db, context.teamId, input);
    });
 
-export const getAll = protectedProcedure.handler(async ({ context }) => {
-   return listCreditCards(context.db, context.teamId);
-});
+export const getAll = protectedProcedure
+   .input(listCreditCardsSchema)
+   .handler(async ({ context, input }) => {
+      return listCreditCards(context.db, context.teamId, input);
+   });
 
 export const getById = protectedProcedure
    .input(idSchema)
@@ -52,4 +62,37 @@ export const bulkRemove = protectedProcedure
    .handler(async ({ context, input }) => {
       await bulkDeleteCreditCards(context.db, input.ids, context.teamId);
       return { deleted: input.ids.length };
+   });
+
+const bulkCreateSchema = z.object({
+   cards: z
+      .array(
+         z.object({
+            name: z.string().min(2).max(80),
+            creditLimit: z.string(),
+            closingDay: z.number().int().min(1).max(31),
+            dueDay: z.number().int().min(1).max(31),
+            bankAccountId: z.string().uuid(),
+            status: z.enum(["active", "blocked", "cancelled"]).optional(),
+            brand: z
+               .enum([
+                  "visa",
+                  "mastercard",
+                  "elo",
+                  "amex",
+                  "hipercard",
+                  "other",
+               ])
+               .optional(),
+            color: z.string().optional(),
+         }),
+      )
+      .min(1)
+      .max(500),
+});
+
+export const bulkCreate = protectedProcedure
+   .input(bulkCreateSchema)
+   .handler(async ({ context, input }) => {
+      return bulkCreateCreditCards(context.db, context.teamId, input.cards);
    });
