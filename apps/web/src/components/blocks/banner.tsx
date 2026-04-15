@@ -9,8 +9,8 @@ import {
    type MouseEventHandler,
    useContext,
 } from "react";
-import { cn } from "../lib/utils";
-import { Button } from "./button";
+import { cn } from "@packages/ui/lib/utils";
+import { Button } from "@packages/ui/components/button";
 
 type BannerContextProps = {
    show: boolean;
