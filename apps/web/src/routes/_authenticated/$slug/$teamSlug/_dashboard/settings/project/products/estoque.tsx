@@ -37,7 +37,7 @@ function EstoqueSettingsForm() {
    );
    const categories = categoriesResult;
    const { data: creditCards } = useSuspenseQuery(
-      orpc.creditCards.getAll.queryOptions({}),
+      orpc.creditCards.getAll.queryOptions({ input: { pageSize: 100 } }),
    );
 
    const mutation = useMutation(

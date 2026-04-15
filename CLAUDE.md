@@ -309,7 +309,7 @@ function ItemDetails({ id }: { id: string }) {
 - **Spacing & sizing scale** — only `2` and `4` suffixes for `p-*`, `px-*`, `py-*`, `size-*`.
 - **Early returns over if/else** — always guard and return early; never use `else` after a `return`.
 - **Minimize `useEffect`** — derive state, use event handlers. Only for external system sync.
-- **Dates** — always `dayjs`. Never raw `Date` math or manual string formatting.
+- **Dates** — always `dayjs`. Never raw `Date` math or manual string formatting. UI display format is always Brazilian `DD/MM/YYYY` (e.g. `dayjs(date).format("DD/MM/YYYY")`). API params and form `defaultValue` fields stay as ISO `YYYY-MM-DD` — backend expects that. Filenames also use `YYYY-MM-DD` for natural sort order.
 - **URL search params over local state** — filters, sort, pagination, active tabs, selected IDs live in `validateSearch` on the route. See oRPC + TanStack Query section for the full pattern.
 - **Files:** kebab-case. **Components:** PascalCase `[Feature][Action][Type]`. **Hooks:** `use[Feature][Action]`.
 - **oxlint suppression:** `// oxlint-ignore <rule-name>` above the triggering line.
