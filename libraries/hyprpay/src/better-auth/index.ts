@@ -1,5 +1,6 @@
 import type { BetterAuthPlugin } from "better-auth";
 import type { BetterAuthClientPlugin } from "better-auth/client";
+import { fromPromise } from "neverthrow";
 import { createHyprPayClient } from "../client";
 import type { HyprPayCustomerFromContract as HyprPayCustomer } from "../contract";
 
@@ -40,39 +41,45 @@ export function hyprpay(options: HyprPayPluginOptions): BetterAuthPlugin {
 
    return {
       id: "hyprpay",
-      hooks: {
-         after: [
-            {
-               matcher: (context) =>
-                  context.path === "/sign-up/email" ||
-                  context.path === "/sign-up/email-otp" ||
-                  context.path === "/sign-in/magic-link",
-               handler: async (context) => {
-                  if (!options.createCustomerOnSignUp) return;
+      init() {
+         return {
+            options: {
+               databaseHooks: {
+                  user: {
+                     create: {
+                        after: async (user) => {
+                           if (!options.createCustomerOnSignUp) return;
 
-                  const body = context.body as
-                     | { user?: { id: string; name: string; email: string } }
-                     | undefined;
-                  const user = body?.user;
-                  if (!user?.id) return;
+                           const input = mapper(user);
+                           const result =
+                              await sdkClient.customers.create(input);
 
-                  const input = mapper(user);
-                  const result = await sdkClient.customers.create(input);
-                  if (result.isErr()) {
-                     console.error(
-                        "[hyprpay] customer creation failed",
-                        result.error,
-                     );
-                     return;
-                  }
-                  try {
-                     await options.onCustomerCreate?.(result.value, user);
-                  } catch (err) {
-                     console.error("[hyprpay] onCustomerCreate threw", err);
-                  }
+                           if (result.isErr()) {
+                              console.error(
+                                 "[hyprpay] customer creation failed",
+                                 result.error,
+                              );
+                              return;
+                           }
+
+                           if (!options.onCustomerCreate) return;
+
+                           const onCreateResult = await fromPromise(
+                              options.onCustomerCreate(result.value, user),
+                              (e) => e,
+                           );
+                           if (onCreateResult.isErr()) {
+                              console.error(
+                                 "[hyprpay] onCustomerCreate threw",
+                                 onCreateResult.error,
+                              );
+                           }
+                        },
+                     },
+                  },
                },
             },
-         ],
+         };
       },
    };
 }
