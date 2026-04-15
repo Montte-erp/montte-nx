@@ -103,7 +103,7 @@ export function CreditCardsExportCredenza({
                status: c.status,
                bandeira: c.brand ?? "",
                conta_bancaria_id: c.bankAccountId ?? "",
-               criado_em: dayjs(c.createdAt).format("YYYY-MM-DD"),
+               criado_em: dayjs(c.createdAt).format("DD/MM/YYYY"),
             }));
 
             const filename = `cartoes-${dayjs().format("YYYY-MM-DD")}`;

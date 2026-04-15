@@ -11,13 +11,15 @@ interface Props {
 }
 
 function FaturaContent({ creditCardId }: Props) {
-   const currentPeriod = dayjs().format("YYYY-MM");
+   const dateFrom = dayjs().startOf("month").format("YYYY-MM-DD");
+   const dateTo = dayjs().endOf("month").format("YYYY-MM-DD");
 
    const { data: summary } = useSuspenseQuery(
       orpc.transactions.getSummary.queryOptions({
          input: {
             creditCardId,
-            statementPeriod: currentPeriod,
+            dateFrom,
+            dateTo,
          },
       }),
    );
