@@ -24,7 +24,7 @@ export const useCredenza = () => ({
 });
 
 export function GlobalCredenza() {
-   const { stack } = useStore(credenzaStore, (s) => s);
+   const stack = useStore(credenzaStore, (s) => s.stack);
 
    return (
       <>
