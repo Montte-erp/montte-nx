@@ -3,7 +3,7 @@ import {
    Announcement,
    AnnouncementTag,
    AnnouncementTitle,
-} from "@packages/ui/components/announcement";
+} from "@/components/blocks/announcement";
 import {
    Tooltip,
    TooltipContent,

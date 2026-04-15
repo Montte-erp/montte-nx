@@ -4,7 +4,7 @@ import {
    Announcement,
    AnnouncementTag,
    AnnouncementTitle,
-} from "@packages/ui/components/announcement";
+} from "@/components/blocks/announcement";
 import { Button } from "@packages/ui/components/button";
 import {
    Choicebox,

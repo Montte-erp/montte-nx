@@ -4,7 +4,7 @@ import {
    Announcement,
    AnnouncementTag,
    AnnouncementTitle,
-} from "@packages/ui/components/announcement";
+} from "@/components/blocks/announcement";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Banknote, Calendar, CalendarClock } from "lucide-react";
 import type { Outputs } from "@/integrations/orpc/client";
