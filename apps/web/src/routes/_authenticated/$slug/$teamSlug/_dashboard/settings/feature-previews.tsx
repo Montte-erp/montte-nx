@@ -24,21 +24,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
    Bell,
    BellOff,
-   Bot,
    Building2,
    ChevronDown,
-   CreditCard,
-   Database,
    FileText,
    FlaskConical,
    Lightbulb,
-   Link,
-   Receipt,
-   RefreshCw,
-   Sparkles,
    Users,
    Workflow,
-   Zap,
 } from "lucide-react";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Fragment, useCallback, useState } from "react";
@@ -61,9 +53,7 @@ export const Route = createFileRoute(
 
 const CONCEPT_CHILDREN: Record<string, string[]> = {};
 
-const FEATURE_ICONS: Record<string, React.ElementType> = {
-   "data-management": Database,
-};
+const FEATURE_ICONS: Record<string, React.ElementType> = {};
 
 type ComingSoonFeature = {
    flagKey: string;
@@ -81,46 +71,6 @@ type ComingSoonCategory = {
 
 const COMING_SOON_CATEGORIES: ComingSoonCategory[] = [
    {
-      id: "financas",
-      label: "Finanças",
-      icon: Receipt,
-      features: [
-         {
-            flagKey: "transacoes-recorrentes",
-            name: "Transações Recorrentes",
-            description:
-               "Auto-criação de lançamentos baseada em regras de recorrência.",
-            icon: RefreshCw,
-         },
-         {
-            flagKey: "importacao-extrato",
-            name: "Importação de Extrato",
-            description: "Importe extratos bancários em CSV, XLSX e OFX.",
-            icon: FileText,
-         },
-         {
-            flagKey: "conciliacao-bancaria",
-            name: "Conciliação Bancária",
-            description:
-               "Matching automático entre extrato e lançamentos cadastrados.",
-            icon: Database,
-         },
-         {
-            flagKey: "nfe",
-            name: "NF-e",
-            description: "Emissão de nota fiscal eletrônica via SEFAZ.",
-            icon: FileText,
-         },
-         {
-            flagKey: "nfse",
-            name: "NFS-e",
-            description:
-               "Emissão de nota fiscal de serviço via APIs municipais.",
-            icon: FileText,
-         },
-      ],
-   },
-   {
       id: "crm",
       label: "CRM",
       icon: Users,
@@ -129,67 +79,8 @@ const COMING_SOON_CATEGORIES: ComingSoonCategory[] = [
             flagKey: "pipeline-deals",
             name: "Pipeline de Deals",
             description:
-               "Kanban de oportunidades com probabilidade e valor estimado.",
+               "Kanban de oportunidades com probabilidade e valor estimado via Twenty CRM.",
             icon: Workflow,
-         },
-         {
-            flagKey: "cobrancas",
-            name: "Cobranças",
-            description:
-               "Gere cobranças para contatos e acompanhe o status de pagamento em tempo real.",
-            icon: CreditCard,
-         },
-         {
-            flagKey: "contratos",
-            name: "Contratos",
-            description: "Editor com assinatura eletrônica via ZapSign.",
-            icon: FileText,
-         },
-         {
-            flagKey: "propostas",
-            name: "Propostas",
-            description: "Editor com aceite online e pagamento integrado.",
-            icon: FileText,
-         },
-         {
-            flagKey: "ai-bot-whatsapp",
-            name: "AI Bot WhatsApp",
-            description: "Auto-resposta a contatos via Evolution API com IA.",
-            icon: Bot,
-         },
-      ],
-   },
-   {
-      id: "ia-automacoes",
-      label: "IA & Automações",
-      icon: Sparkles,
-      features: [
-         {
-            flagKey: "workflows",
-            name: "Workflows",
-            description: "Builder visual de automações com React Flow.",
-            icon: Workflow,
-         },
-         {
-            flagKey: "sub-agents",
-            name: "Sub-agents",
-            description:
-               "Agentes especializados: financeAgent, crmAgent, inventoryAgent, documentAgent.",
-            icon: Bot,
-         },
-         {
-            flagKey: "deteccao-anomalias",
-            name: "Detecção de Anomalias",
-            description:
-               "Alerta quando gastos ou recebíveis desviam do padrão histórico.",
-            icon: Zap,
-         },
-         {
-            flagKey: "previsao-receita",
-            name: "Previsão de Receita",
-            description:
-               "IA prediz o MRR do próximo mês com base no histórico.",
-            icon: Sparkles,
          },
       ],
    },
@@ -202,7 +93,7 @@ const COMING_SOON_CATEGORIES: ComingSoonCategory[] = [
             flagKey: "espacos-reservas",
             name: "Espaços & Reservas",
             description:
-               "Catálogo de espaços e sistema de reservas para membros.",
+               "Catálogo de espaços e sistema de reservas via Cal.com.",
             icon: Building2,
          },
          {
@@ -221,53 +112,16 @@ const COMING_SOON_CATEGORIES: ComingSoonCategory[] = [
       ],
    },
    {
-      id: "integracoes",
-      label: "Integrações",
-      icon: Link,
+      id: "fiscal",
+      label: "Fiscal",
+      icon: FileText,
       features: [
          {
-            flagKey: "abacate-pay",
-            name: "Abacate Pay",
-            description: "Gateway de pagamentos PIX, boleto e cartão.",
-            icon: CreditCard,
-         },
-         {
-            flagKey: "zapsign",
-            name: "ZapSign",
-            description: "Assinatura eletrônica com chave própria do usuário.",
-            icon: FileText,
-         },
-         {
-            flagKey: "google-calendar-outlook",
-            name: "Google Calendar / Outlook",
-            description: "Sync de reservas com calendários externos.",
-            icon: RefreshCw,
-         },
-         {
-            flagKey: "zapier-make",
-            name: "Zapier / Make",
-            description: "Conecte o Montte a mais de 5.000 apps.",
-            icon: Zap,
-         },
-      ],
-   },
-   {
-      id: "hyperpay",
-      label: "HyperPay",
-      icon: CreditCard,
-      features: [
-         {
-            flagKey: "payment-orchestrator",
-            name: "Payment Orchestrator",
-            description: "Smart routing entre múltiplos gateways de pagamento.",
-            icon: Workflow,
-         },
-         {
-            flagKey: "subscription-engine",
-            name: "Subscription Engine",
+            flagKey: "nfse",
+            name: "NFS-e",
             description:
-               "Ciclo de billing, proration e renovações automáticas.",
-            icon: RefreshCw,
+               "Emissão de nota fiscal de serviço via APIs municipais.",
+            icon: FileText,
          },
       ],
    },
