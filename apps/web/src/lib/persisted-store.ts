@@ -1,20 +1,32 @@
+import { createLocalStorageState } from "foxact/create-local-storage-state";
+import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { Store } from "@tanstack/react-store";
+import { useEffect } from "react";
 
 export function createPersistedStore<T>(
    key: string,
-   initialState: T,
-): Store<T> {
-   let hydrated: T = initialState;
-   try {
-      const raw = localStorage.getItem(key);
-      if (raw) hydrated = { ...initialState, ...JSON.parse(raw) };
-   } catch {}
+   initialState: NonNullable<T>,
+) {
+   const [useStoredState] = createLocalStorageState<NonNullable<T>>(
+      key,
+      initialState,
+   );
+   const store = new Store<NonNullable<T>>(initialState);
 
-   const store = new Store<T>(hydrated);
-   store.subscribe(() => {
-      try {
-         localStorage.setItem(key, JSON.stringify(store.state));
-      } catch {}
-   });
-   return store;
+   function useStorePersistence() {
+      const [storedValue, setStoredValue] = useStoredState();
+
+      useIsomorphicLayoutEffect(() => {
+         if (storedValue != null) store.setState(() => storedValue);
+      }, []);
+
+      useEffect(() => {
+         const subscription = store.subscribe(() =>
+            setStoredValue(store.state),
+         );
+         return () => subscription.unsubscribe();
+      }, [setStoredValue]);
+   }
+
+   return { store, useStorePersistence };
 }

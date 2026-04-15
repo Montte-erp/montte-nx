@@ -10,14 +10,12 @@ interface SidebarNavState {
    pinnedItems: string[];
 }
 
-const sidebarNavStore = createPersistedStore<SidebarNavState>(
-   "montte:sidebar-nav",
-   {
+const { store: sidebarNavStore, useStorePersistence } =
+   createPersistedStore<SidebarNavState>("montte:sidebar-nav", {
       activeSection: null,
       searchQuery: "",
       pinnedItems: [],
-   },
-);
+   });
 
 export function setActiveSection(section: SubSidebarSection | null) {
    sidebarNavStore.setState((state) => ({
@@ -44,6 +42,7 @@ export function togglePinnedItem(itemId: string) {
 }
 
 export function useSidebarNav() {
+   useStorePersistence();
    const state = useStore(sidebarNavStore, (s) => s);
 
    return {
