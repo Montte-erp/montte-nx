@@ -8,7 +8,7 @@ import {
    type FeatureStage,
    FeatureStageBadge,
    FeatureStageChip,
-} from "@packages/ui/components/feature-stage-badge";
+} from "@/components/blocks/feature-stage-badge";
 import {
    Item,
    ItemActions,

@@ -1,6 +1,6 @@
 // apps/web/src/layout/dashboard/sidebar-nav.tsx
 
-import { FeatureStageBadge } from "@packages/ui/components/feature-stage-badge";
+import { FeatureStageBadge } from "@/components/blocks/feature-stage-badge";
 import {
    Collapsible,
    CollapsibleContent,
