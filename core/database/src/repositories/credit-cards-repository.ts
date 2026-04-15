@@ -1,6 +1,7 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, asc, eq, ilike, inArray, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import {
    type CreateCreditCardInput,
    type UpdateCreditCardInput,
@@ -45,6 +46,21 @@ export async function bulkCreateCreditCards(
    cards: BulkCreateCreditCardInput[],
 ) {
    try {
+      const uniqueAccountIds = [...new Set(cards.map((c) => c.bankAccountId))];
+      const validAccounts = await db
+         .select({ id: bankAccounts.id })
+         .from(bankAccounts)
+         .where(
+            and(
+               eq(bankAccounts.teamId, teamId),
+               inArray(bankAccounts.id, uniqueAccountIds),
+            ),
+         );
+      const validIds = new Set(validAccounts.map((a) => a.id));
+      if (cards.some((c) => !validIds.has(c.bankAccountId))) {
+         throw AppError.validation("Conta bancária inválida para este time");
+      }
+
       const rows = cards.map((c) => ({
          teamId,
          name: c.name,

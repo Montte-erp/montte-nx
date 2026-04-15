@@ -93,12 +93,11 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
          closingDay: card?.closingDay ?? 1,
          dueDay: card?.dueDay ?? 10,
          bankAccountId: card?.bankAccountId ?? "",
-         brand: (card?.brand ?? "") as string,
-         status: (card?.status ?? "active") as string,
+         brand: card?.brand ?? null,
+         status: card?.status ?? "active",
       },
       validators: {
          onSubmitAsync: async ({ value }) => {
-            const brandValue = value.brand || null;
             const promise = isCreate
                ? createMutation.mutateAsync({
                     name: value.name.trim(),
@@ -107,14 +106,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                     closingDay: value.closingDay,
                     dueDay: value.dueDay,
                     bankAccountId: value.bankAccountId,
-                    brand: brandValue as
-                       | "visa"
-                       | "mastercard"
-                       | "elo"
-                       | "amex"
-                       | "hipercard"
-                       | "other"
-                       | null,
+                    brand: value.brand,
                  })
                : card
                  ? updateMutation.mutateAsync({
@@ -125,18 +117,8 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                       closingDay: value.closingDay,
                       dueDay: value.dueDay,
                       bankAccountId: value.bankAccountId || undefined,
-                      brand: brandValue as
-                         | "visa"
-                         | "mastercard"
-                         | "elo"
-                         | "amex"
-                         | "hipercard"
-                         | "other"
-                         | null,
-                      status: value.status as
-                         | "active"
-                         | "blocked"
-                         | "cancelled",
+                      brand: value.brand,
+                      status: value.status,
                    })
                  : null;
             if (!promise) return null;
@@ -199,7 +181,6 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
 
          <CredenzaBody className="px-4">
             <FieldGroup>
-               {/* Nome */}
                <form.Field
                   name="name"
                   validators={{
@@ -232,7 +213,6 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                   }}
                />
 
-               {/* Cor */}
                <form.Field
                   name="color"
                   children={(field) => (
@@ -295,7 +275,6 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                   )}
                />
 
-               {/* Limite de Crédito */}
                <form.Field
                   name="creditLimit"
                   children={(field) => (
@@ -310,7 +289,6 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                   )}
                />
 
-               {/* Dia de Fechamento + Dia de Vencimento side-by-side */}
                <div className="grid grid-cols-2 gap-4">
                   <form.Field
                      name="closingDay"
@@ -375,7 +353,6 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                   />
                </div>
 
-               {/* Bandeira */}
                <form.Field
                   name="brand"
                   children={(field) => (
@@ -400,7 +377,6 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                   )}
                />
 
-               {/* Status — somente no edit */}
                {!isCreate && (
                   <form.Field
                      name="status"
@@ -430,7 +406,6 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                   />
                )}
 
-               {/* Conta Bancária */}
                <form.Field
                   name="bankAccountId"
                   validators={{

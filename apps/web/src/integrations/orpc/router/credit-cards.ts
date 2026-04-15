@@ -4,7 +4,6 @@ import {
    createCreditCard,
    deleteCreditCard,
    ensureCreditCardOwnership,
-   getCreditCardsSummary,
    listCreditCards,
    updateCreditCard,
 } from "@core/database/repositories/credit-cards-repository";
@@ -35,10 +34,6 @@ export const getAll = protectedProcedure
    .handler(async ({ context, input }) => {
       return listCreditCards(context.db, context.teamId, input);
    });
-
-export const getSummary = protectedProcedure.handler(async ({ context }) => {
-   return getCreditCardsSummary(context.db, context.teamId);
-});
 
 export const getById = protectedProcedure
    .input(idSchema)
