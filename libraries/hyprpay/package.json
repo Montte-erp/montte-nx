@@ -1,6 +1,6 @@
 {
    "name": "@montte/hyprpay",
-   "version": "0.1.1",
+   "version": "0.1.3",
    "private": false,
    "description": "HyprPay SDK — sincronize o ciclo de vida de clientes com o Montte",
    "keywords": [
