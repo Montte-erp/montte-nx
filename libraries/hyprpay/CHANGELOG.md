@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.6]
+
+### Added
+
+- Better Auth plugin: `databaseHooks.user.update.after` — syncs customer name to Montte when the Better Auth user's name is updated
+
+## [0.1.5]
+
+### Fixed
+
+- Default mapper falls back to `user.email` when `user.name` is empty — magic link sign-ups often have no name set, causing `BAD_REQUEST` from the `name: z.string().min(1)` contract validation
+
 ## [0.1.4]
 
 ### Fixed

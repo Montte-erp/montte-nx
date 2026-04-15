@@ -32,7 +32,7 @@ export function hyprpay(options: HyprPayPluginOptions): BetterAuthPlugin {
       name: string;
       email: string;
    }) => ({
-      name: user.name,
+      name: user.name || user.email,
       email: user.email,
       externalId: user.id,
    });
@@ -72,6 +72,23 @@ export function hyprpay(options: HyprPayPluginOptions): BetterAuthPlugin {
                               console.error(
                                  "[hyprpay] onCustomerCreate threw",
                                  onCreateResult.error,
+                              );
+                           }
+                        },
+                     },
+                     update: {
+                        after: async (user) => {
+                           if (!options.createCustomerOnSignUp) return;
+                           if (!user.name) return;
+
+                           const result = await sdkClient.customers.update(
+                              user.id,
+                              { name: user.name },
+                           );
+                           if (result.isErr()) {
+                              console.error(
+                                 "[hyprpay] customer name sync failed",
+                                 result.error,
                               );
                            }
                         },
