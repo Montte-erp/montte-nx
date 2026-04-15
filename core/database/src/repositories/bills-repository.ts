@@ -163,7 +163,7 @@ export async function listBills(
 
       if (month && year) {
          const start = `${year}-${String(month).padStart(2, "0")}-01`;
-         const end = new Date(year, month, 0).toISOString().substring(0, 10);
+         const end = dayjs(start).endOf("month").format("YYYY-MM-DD");
          conditions.push(gte(bills.dueDate, start));
          conditions.push(lte(bills.dueDate, end));
       }
@@ -298,24 +298,24 @@ export async function generateBillsForSubscription(
    if (billingCycle === "hourly") return;
 
    const amount = subscription.negotiatedPrice;
-   const start = new Date(subscription.startDate);
-   const end = subscription.endDate ? new Date(subscription.endDate) : null;
+   const start = dayjs(subscription.startDate);
+   const end = subscription.endDate ? dayjs(subscription.endDate) : null;
 
-   const formatMonthYear = (d: Date) => {
-      const month = d
-         .toLocaleDateString("pt-BR", { month: "short" })
+   const formatMonthYear = (d: typeof start) => {
+      const month = new Intl.DateTimeFormat("pt-BR", { month: "short" })
+         .format(d.toDate())
          .replace(".", "")
          .replace(/^\w/, (c) => c.toUpperCase());
-      return `${month}/${d.getFullYear()}`;
+      return `${month}/${d.year()}`;
    };
 
-   const makeBill = (dueDate: Date, label: string) => ({
+   const makeBill = (dueDate: typeof start, label: string) => ({
       teamId: subscription.teamId,
       name: `${serviceName} – ${variant.name}`,
       description: `${serviceName} – ${variant.name} (${label})`,
       type: "receivable" as const,
       amount,
-      dueDate: dueDate.toISOString().slice(0, 10),
+      dueDate: dueDate.format("YYYY-MM-DD"),
       contactId: subscription.contactId,
       subscriptionId: subscription.id,
       status: "pending" as const,
@@ -328,19 +328,13 @@ export async function generateBillsForSubscription(
    } else if (billingCycle === "annual") {
       billsToCreate.push(makeBill(start, formatMonthYear(start)));
    } else if (billingCycle === "monthly") {
-      const cursor = new Date(start);
-      const twoYearLimit = (() => {
-         const d = new Date(start);
-         d.setFullYear(d.getFullYear() + 2);
-         return d;
-      })();
+      const twoYearLimit = start.add(2, "year");
       const limit = end ?? twoYearLimit;
       const inclusive = end !== null;
-      while (inclusive ? cursor <= limit : cursor < limit) {
-         billsToCreate.push(
-            makeBill(new Date(cursor), formatMonthYear(cursor)),
-         );
-         cursor.setMonth(cursor.getMonth() + 1);
+      let cursor = start;
+      while (inclusive ? !cursor.isAfter(limit) : cursor.isBefore(limit)) {
+         billsToCreate.push(makeBill(cursor, formatMonthYear(cursor)));
+         cursor = cursor.add(1, "month");
       }
    }
 

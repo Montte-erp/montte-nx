@@ -16,7 +16,7 @@ export type DateLocale = "pt-BR" | "en-US";
 
 export function formatDate(
    date: Date,
-   format: string = "MM/DD/YYYY",
+   format: string = "DD/MM/YYYY",
    options?: { locale?: DateLocale; timezone?: string; useUTC?: boolean },
 ): string {
    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {

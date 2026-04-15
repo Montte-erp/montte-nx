@@ -8,7 +8,7 @@ function usageHashKey(organizationId: string): string {
 
 function msUntilEndOfMonth(): number {
    const now = dayjs();
-   const next = now.add(1, "month").startOf("month").add(1, "day");
+   const next = now.add(1, "month").startOf("month");
    return next.valueOf() - now.valueOf();
 }
 
