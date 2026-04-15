@@ -866,3 +866,28 @@ Used in `libraries/` to produce dual ESM+CJS output.
 CI triggers on `master` pushes touching `libraries/**/CHANGELOG.md` or `libraries/**/package.json` — bump both to trigger a release.
 
 **Every change to a library must update `CHANGELOG.md`** — add an entry under the new version heading before merging. The release script skips libraries where `CHANGELOG.md` version doesn't match `package.json`.
+
+---
+
+## Animations
+
+**Tailwind-first** — use `transition-*` and `animate-*` utilities for hover states, fades, slides, and loading states. Zero runtime cost.
+
+**Framer Motion only for:**
+- State-dependent animations (enter/exit based on component state)
+- Shared layout transitions (`layoutId`)
+- Gesture-driven motion (drag, pan)
+
+**Performance rule** — only animate `transform` and `opacity`. Never animate `width`, `height`, `top`, `left`, `margin`, or `padding` — these trigger layout recalculation and cause jank.
+
+**Client boundary** — Framer Motion components must always live in client components. Never modify shadcn/ui primitives directly; wrap them instead:
+
+```tsx
+// ❌ Modifying primitive directly
+<DialogContent className="animate-...">
+
+// ✅ Wrap with motion
+<motion.div animate={{ opacity: 1 }} initial={{ opacity: 0 }}>
+   <DialogContent>...</DialogContent>
+</motion.div>
+```
