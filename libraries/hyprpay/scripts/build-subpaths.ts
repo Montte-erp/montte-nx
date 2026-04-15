@@ -1,9 +1,11 @@
 import { build } from "esbuild";
 import { glob } from "node:fs/promises";
 
-const betterAuthFiles = await Array.fromAsync(
-   glob("src/better-auth/**/*.ts", { cwd: process.cwd() }),
-);
+const betterAuthFiles = (
+   await Array.fromAsync(
+      glob("src/better-auth/**/*.ts", { cwd: process.cwd() }),
+   )
+).filter((f) => !f.endsWith(".test.ts"));
 
 const contractFiles = await Array.fromAsync(
    glob("src/contract.ts", { cwd: process.cwd() }),

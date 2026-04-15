@@ -12,7 +12,7 @@ import type {
    UpdateCustomerInput,
 } from "./types";
 
-const DEFAULT_BASE_URL = "https://api.montte.com.br";
+const DEFAULT_BASE_URL = "https://app.montte.co";
 
 export interface HyprPayClientConfig {
    apiKey: string;
@@ -38,7 +38,7 @@ export function createHyprPayClient(config: HyprPayClientConfig) {
    const { apiKey, baseUrl = DEFAULT_BASE_URL } = config;
 
    const link = new RPCLink({
-      url: `${baseUrl}/sdk/orpc`,
+      url: `${baseUrl}/api/sdk/hyprpay`,
       headers: { "sdk-api-key": apiKey },
    });
 
