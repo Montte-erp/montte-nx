@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, count, eq, gte, lte } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
@@ -51,7 +52,7 @@ export async function updateSubscription(
    try {
       const [updated] = await db
          .update(contactSubscriptions)
-         .set({ ...validated, updatedAt: new Date() })
+         .set({ ...validated, updatedAt: dayjs().toDate() })
          .where(eq(contactSubscriptions.id, id))
          .returning();
       if (!updated) throw AppError.notFound("Assinatura não encontrada.");
@@ -118,7 +119,7 @@ export async function upsertSubscriptionByExternalId(
                endDate: validated.endDate,
                currentPeriodStart: validated.currentPeriodStart,
                currentPeriodEnd: validated.currentPeriodEnd,
-               updatedAt: new Date(),
+               updatedAt: dayjs().toDate(),
             })
             .where(eq(contactSubscriptions.id, existing.id))
             .returning();
@@ -182,10 +183,8 @@ export async function listExpiringSoon(
    withinDays = 30,
 ) {
    try {
-      const now = new Date().toISOString().split("T")[0]!;
-      const futureDate = new Date(Date.now() + withinDays * 24 * 60 * 60 * 1000)
-         .toISOString()
-         .split("T")[0]!;
+      const now = dayjs().format("YYYY-MM-DD");
+      const futureDate = dayjs().add(withinDays, "day").format("YYYY-MM-DD");
 
       return await db
          .select()

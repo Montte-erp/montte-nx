@@ -59,6 +59,7 @@
       "@core/utils": "workspace:*",
       "@f-o-t/condition-evaluator": "catalog:fot",
       "@f-o-t/money": "catalog:fot",
+      "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",
       "pg": "catalog:database",
       "zod": "catalog:validation"

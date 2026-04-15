@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
 import type { DataTableStoredState } from "@packages/ui/components/data-table";
@@ -101,7 +102,7 @@ interface BillsSummaryProps {
 }
 
 function BillsSummary({ items }: BillsSummaryProps) {
-   const today = new Date().toISOString().substring(0, 10);
+   const today = dayjs().format("YYYY-MM-DD");
 
    const pending = items
       .filter((b) => b.status === "pending" && b.dueDate >= today)

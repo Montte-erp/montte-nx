@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, count, eq, gte, isNull, lte, or, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
@@ -143,7 +144,7 @@ export async function listBills(
          pageSize = 20,
       } = options;
 
-      const today = new Date().toISOString().substring(0, 10);
+      const today = dayjs().format("YYYY-MM-DD");
       const conditions = [eq(bills.teamId, teamId)];
 
       if (type) conditions.push(eq(bills.type, type));
@@ -227,7 +228,7 @@ export async function updateBill(
       const validated = validateInput(updateBillSchema, data);
       const [updated] = await db
          .update(bills)
-         .set({ ...validated, updatedAt: new Date() })
+         .set({ ...validated, updatedAt: dayjs().toDate() })
          .where(eq(bills.id, id))
          .returning();
       if (!updated) throw AppError.database("Bill not found");
@@ -254,7 +255,7 @@ export async function getActiveRecurrenceSettings(
    db: DatabaseInstance,
 ): Promise<RecurrenceSetting[]> {
    try {
-      const today = new Date().toISOString().substring(0, 10);
+      const today = dayjs().format("YYYY-MM-DD");
       return await db
          .select()
          .from(recurrenceSettings)

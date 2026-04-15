@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { eventCatalog } from "@core/database/schemas/event-catalog";
 import { WebAppError } from "@core/logging/errors";
 import {
@@ -142,11 +143,7 @@ export const getMeterUsage = protectedProcedure.handler(async ({ context }) => {
    try {
       const now = Math.floor(Date.now() / 1000);
       const startOfMonth = Math.floor(
-         new Date(
-            new Date().getFullYear(),
-            new Date().getMonth(),
-            1,
-         ).getTime() / 1000,
+         dayjs().startOf("month").valueOf() / 1000,
       );
 
       const meters = await stripeClient.billing.meters.list({ limit: 100 });

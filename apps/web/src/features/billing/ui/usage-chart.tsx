@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import {
    type ChartConfig,
    ChartContainer,
@@ -46,7 +47,7 @@ const CHART_COLORS: Record<string, string> = {
 
 function generateEmptyDateRange(days: number): string[] {
    const dates: string[] = [];
-   const now = new Date();
+   const now = dayjs().toDate();
    for (let i = days - 1; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);

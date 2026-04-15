@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { format, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -23,7 +24,7 @@ function computeDisplayStatus(
 ): "pending" | "paid" | "overdue" | "cancelled" {
    if (row.status === "paid") return "paid";
    if (row.status === "cancelled") return "cancelled";
-   const today = new Date().toISOString().substring(0, 10);
+   const today = dayjs().format("YYYY-MM-DD");
    if (row.dueDate < today) return "overdue";
    return "pending";
 }

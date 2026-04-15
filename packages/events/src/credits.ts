@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import type { Redis } from "@core/redis/connection";
 import { FREE_TIER_LIMITS } from "@core/stripe/constants";
 
@@ -6,9 +7,9 @@ function usageHashKey(organizationId: string): string {
 }
 
 function msUntilEndOfMonth(): number {
-   const now = new Date();
-   const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-   return new Date(next.getTime() + 86_400_000).getTime() - now.getTime();
+   const now = dayjs();
+   const next = now.add(1, "month").startOf("month").add(1, "day");
+   return next.valueOf() - now.valueOf();
 }
 
 export async function isWithinFreeTier(

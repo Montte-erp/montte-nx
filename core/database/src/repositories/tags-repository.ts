@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { eq, inArray, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
@@ -76,7 +77,7 @@ export async function updateTag(
    try {
       const [updated] = await db
          .update(tags)
-         .set({ ...validated, updatedAt: new Date() })
+         .set({ ...validated, updatedAt: dayjs().toDate() })
          .where(eq(tags.id, id))
          .returning();
       if (!updated) throw AppError.notFound("Tag não encontrada.");
@@ -91,7 +92,7 @@ export async function archiveTag(db: DatabaseInstance, id: string) {
    try {
       const [updated] = await db
          .update(tags)
-         .set({ isArchived: true, updatedAt: new Date() })
+         .set({ isArchived: true, updatedAt: dayjs().toDate() })
          .where(eq(tags.id, id))
          .returning();
       if (!updated) throw AppError.notFound("Tag não encontrada.");
@@ -106,7 +107,7 @@ export async function reactivateTag(db: DatabaseInstance, id: string) {
    try {
       const [updated] = await db
          .update(tags)
-         .set({ isArchived: false, updatedAt: new Date() })
+         .set({ isArchived: false, updatedAt: dayjs().toDate() })
          .where(eq(tags.id, id))
          .returning();
       if (!updated) throw AppError.notFound("Tag não encontrada.");

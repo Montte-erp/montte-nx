@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { computeInsightData } from "@packages/analytics/compute-insight";
 import { ensureDashboardOwnership } from "@core/database/repositories/dashboard-repository";
 import {
@@ -162,7 +163,7 @@ export const refreshDashboard = protectedProcedure
                .update(insights)
                .set({
                   cachedResults: freshData,
-                  lastComputedAt: new Date(),
+                  lastComputedAt: dayjs().toDate(),
                })
                .where(eq(insights.id, insightId));
          } catch (error) {

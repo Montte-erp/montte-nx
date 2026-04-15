@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    createBill,
@@ -116,7 +117,7 @@ async function buildRecurrenceBatch(
       endsAt: endsAt ?? null,
    });
 
-   const windowEnd = new Date();
+   const windowEnd = dayjs().toDate();
    windowEnd.setMonth(windowEnd.getMonth() + windowMonths);
    const windowEndStr = windowEnd.toISOString().substring(0, 10);
 
@@ -297,7 +298,7 @@ export const pay = protectedProcedure
 
       return updateBill(db, id, {
          status: "paid",
-         paidAt: new Date(),
+         paidAt: dayjs().toDate(),
          transactionId: transaction.id,
       });
    });

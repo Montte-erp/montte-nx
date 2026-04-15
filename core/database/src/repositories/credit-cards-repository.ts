@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, asc, eq, ilike, inArray, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
@@ -182,7 +183,7 @@ export async function updateCreditCard(
    try {
       const [updated] = await db
          .update(creditCards)
-         .set({ ...validated, updatedAt: new Date() })
+         .set({ ...validated, updatedAt: dayjs().toDate() })
          .where(eq(creditCards.id, id))
          .returning();
       if (!updated)

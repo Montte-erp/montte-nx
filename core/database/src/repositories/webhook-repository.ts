@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { AppError, propagateError } from "@core/logging/errors";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
@@ -130,7 +131,7 @@ export async function updateWebhookLastSuccess(
       await db
          .update(webhookEndpoints)
          .set({
-            lastSuccessAt: new Date(),
+            lastSuccessAt: dayjs().toDate(),
             failureCount: 0,
          })
          .where(eq(webhookEndpoints.id, webhookId));
@@ -149,7 +150,7 @@ export async function incrementWebhookFailureCount(
          .update(webhookEndpoints)
          .set({
             failureCount: sql`${webhookEndpoints.failureCount} + 1`,
-            lastFailureAt: new Date(),
+            lastFailureAt: dayjs().toDate(),
          })
          .where(eq(webhookEndpoints.id, webhookId));
    } catch (err) {

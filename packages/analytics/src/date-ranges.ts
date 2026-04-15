@@ -1,4 +1,8 @@
+import dayjs from "dayjs";
+import quarterOfYear from "dayjs/plugin/quarterOfYear";
 import type { DateRange } from "./types";
+
+dayjs.extend(quarterOfYear);
 
 export interface ResolvedDateRange {
    start: Date;
@@ -17,35 +21,41 @@ export function resolveDateRange(dateRange: DateRange): ResolvedDateRange {
       };
    }
 
-   const now = new Date();
-   const end = startOfDay(addDays(now, 1));
+   const now = dayjs();
+   const end = now.add(1, "day").startOf("day").toDate();
 
    switch (dateRange.value) {
       case "7d":
-         return { start: startOfDay(subDays(now, 7)), end };
+         return { start: now.subtract(7, "day").startOf("day").toDate(), end };
       case "14d":
-         return { start: startOfDay(subDays(now, 14)), end };
+         return { start: now.subtract(14, "day").startOf("day").toDate(), end };
       case "30d":
-         return { start: startOfDay(subDays(now, 30)), end };
+         return { start: now.subtract(30, "day").startOf("day").toDate(), end };
       case "90d":
-         return { start: startOfDay(subDays(now, 90)), end };
+         return { start: now.subtract(90, "day").startOf("day").toDate(), end };
       case "180d":
-         return { start: startOfDay(subDays(now, 180)), end };
-      case "12m":
-         return { start: startOfDay(subMonths(now, 12)), end };
-      case "this_month":
-         return { start: startOfMonth(now), end };
-      case "last_month": {
-         const lastMonth = subMonths(now, 1);
          return {
-            start: startOfMonth(lastMonth),
-            end: startOfMonth(now),
+            start: now.subtract(180, "day").startOf("day").toDate(),
+            end,
+         };
+      case "12m":
+         return {
+            start: now.subtract(12, "month").startOf("day").toDate(),
+            end,
+         };
+      case "this_month":
+         return { start: now.startOf("month").toDate(), end };
+      case "last_month": {
+         const lastMonth = now.subtract(1, "month");
+         return {
+            start: lastMonth.startOf("month").toDate(),
+            end: now.startOf("month").toDate(),
          };
       }
       case "this_quarter":
-         return { start: startOfQuarter(now), end };
+         return { start: now.startOf("quarter").toDate(), end };
       case "this_year":
-         return { start: startOfYear(now), end };
+         return { start: now.startOf("year").toDate(), end };
    }
 }
 
@@ -64,49 +74,4 @@ export function resolveDateRangeWithComparison(
       ...resolved,
       previous,
    };
-}
-
-function startOfDay(date: Date): Date {
-   const d = new Date(date);
-   d.setHours(0, 0, 0, 0);
-   return d;
-}
-
-function addDays(date: Date, days: number): Date {
-   const d = new Date(date);
-   d.setDate(d.getDate() + days);
-   return d;
-}
-
-function subDays(date: Date, days: number): Date {
-   return addDays(date, -days);
-}
-
-function subMonths(date: Date, months: number): Date {
-   const d = new Date(date);
-   d.setMonth(d.getMonth() - months);
-   return d;
-}
-
-function startOfMonth(date: Date): Date {
-   const d = new Date(date);
-   d.setDate(1);
-   d.setHours(0, 0, 0, 0);
-   return d;
-}
-
-function startOfQuarter(date: Date): Date {
-   const d = new Date(date);
-   const month = d.getMonth();
-   const quarterStartMonth = month - (month % 3);
-   d.setMonth(quarterStartMonth, 1);
-   d.setHours(0, 0, 0, 0);
-   return d;
-}
-
-function startOfYear(date: Date): Date {
-   const d = new Date(date);
-   d.setMonth(0, 1);
-   d.setHours(0, 0, 0, 0);
-   return d;
 }

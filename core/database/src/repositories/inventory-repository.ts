@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
@@ -112,7 +113,7 @@ export async function archiveInventoryProduct(
    try {
       const [product] = await db
          .update(inventoryProducts)
-         .set({ archivedAt: new Date() })
+         .set({ archivedAt: dayjs().toDate() })
          .where(eq(inventoryProducts.id, id))
          .returning();
       if (!product)
@@ -274,7 +275,7 @@ export async function upsertInventorySettings(
          .values({ teamId, ...data })
          .onConflictDoUpdate({
             target: inventorySettings.teamId,
-            set: { ...data, updatedAt: new Date() },
+            set: { ...data, updatedAt: dayjs().toDate() },
          })
          .returning();
       if (!settings)

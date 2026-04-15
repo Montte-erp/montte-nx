@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { AppError, propagateError } from "@core/logging/errors";
 import { eq, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
@@ -16,7 +17,7 @@ export async function insertTeamMember(
       await db.insert(teamMember).values({
          teamId,
          userId,
-         createdAt: new Date(),
+         createdAt: dayjs().toDate(),
       });
    } catch (err) {
       propagateError(err);
@@ -214,7 +215,7 @@ export async function updateInsightCache(
    try {
       await db
          .update(insights)
-         .set({ cachedResults, lastComputedAt: new Date() })
+         .set({ cachedResults, lastComputedAt: dayjs().toDate() })
          .where(eq(insights.id, insightId));
    } catch (err) {
       propagateError(err);

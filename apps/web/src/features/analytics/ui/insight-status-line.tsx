@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { Button } from "@packages/ui/components/button";
 
 interface InsightStatusLineProps {
@@ -16,7 +17,7 @@ export function InsightStatusLine({
          return "nunca";
       }
 
-      const now = new Date();
+      const now = dayjs().toDate();
       const diffMs = now.getTime() - lastComputedAt.getTime();
       const diffMins = Math.floor(diffMs / (1000 * 60));
       const diffHours = Math.floor(diffMs / (1000 * 60 * 60));

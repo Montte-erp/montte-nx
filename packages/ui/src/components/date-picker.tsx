@@ -16,7 +16,7 @@ import {
 } from "@packages/ui/components/select";
 
 import { cn } from "@packages/ui/lib/utils";
-import { format } from "date-fns";
+import dayjs from "dayjs";
 import { CalendarIcon } from "lucide-react";
 import type { ChangeEvent, ChangeEventHandler } from "react";
 import { useState } from "react";
@@ -42,10 +42,10 @@ export const DatePicker = ({
 }: DatePickerProps = {}) => {
    const isControlled = dateProp !== undefined || onSelect !== undefined;
    const [internalDate, setInternalDate] = useState<Date | undefined>(
-      new Date(),
+      dayjs().toDate(),
    );
    const date = isControlled ? dateProp : internalDate;
-   const [month, setMonth] = useState<Date>(dateProp ?? new Date());
+   const [month, setMonth] = useState<Date>(dateProp ?? dayjs().toDate());
 
    const handleCalendarChange = (
       value: string | number,
@@ -81,7 +81,7 @@ export const DatePicker = ({
             >
                <CalendarIcon className="mr-2 h-4 w-4" />
                {date ? (
-                  format(date, "dd/MM/yyyy")
+                  dayjs(date).format("DD/MM/YYYY")
                ) : (
                   <span>{placeholder ?? "Pick a date"}</span>
                )}

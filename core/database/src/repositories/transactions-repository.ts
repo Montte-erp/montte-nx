@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import type { Condition, ConditionGroup } from "@f-o-t/condition-evaluator";
 import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
@@ -659,7 +660,7 @@ export async function updateTransactionCategory(
    try {
       await db
          .update(transactions)
-         .set({ ...data, updatedAt: new Date() })
+         .set({ ...data, updatedAt: dayjs().toDate() })
          .where(eq(transactions.id, id));
    } catch (err) {
       propagateError(err);

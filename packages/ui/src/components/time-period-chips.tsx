@@ -1,18 +1,10 @@
 "use client";
 
 import { cn } from "@packages/ui/lib/utils";
-import {
-   endOfDay,
-   endOfMonth,
-   endOfWeek,
-   endOfYear,
-   startOfDay,
-   startOfMonth,
-   startOfWeek,
-   startOfYear,
-   subDays,
-   subMonths,
-} from "date-fns";
+import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek";
+
+dayjs.extend(isoWeek);
 import {
    Calendar,
    CalendarDays,
@@ -92,65 +84,65 @@ const PERIODS: {
 ];
 
 export function getDateRangeForPeriod(period: TimePeriod): TimePeriodDateRange {
-   const today = new Date();
+   const today = dayjs();
 
    switch (period) {
       case "all-time":
          return {
             endDate: null,
-            selectedMonth: today,
+            selectedMonth: today.toDate(),
             startDate: null,
          };
       case "today":
          return {
-            endDate: endOfDay(today),
-            selectedMonth: today,
-            startDate: startOfDay(today),
+            endDate: today.endOf("day").toDate(),
+            selectedMonth: today.toDate(),
+            startDate: today.startOf("day").toDate(),
          };
       case "yesterday": {
-         const yesterday = subDays(today, 1);
+         const yesterday = today.subtract(1, "day");
          return {
-            endDate: endOfDay(yesterday),
-            selectedMonth: yesterday,
-            startDate: startOfDay(yesterday),
+            endDate: yesterday.endOf("day").toDate(),
+            selectedMonth: yesterday.toDate(),
+            startDate: yesterday.startOf("day").toDate(),
          };
       }
       case "this-week":
          return {
-            endDate: endOfWeek(today, { weekStartsOn: 1 }),
-            selectedMonth: today,
-            startDate: startOfWeek(today, { weekStartsOn: 1 }),
+            endDate: today.endOf("isoWeek").toDate(),
+            selectedMonth: today.toDate(),
+            startDate: today.startOf("isoWeek").toDate(),
          };
       case "this-month":
          return {
-            endDate: endOfMonth(today),
-            selectedMonth: today,
-            startDate: startOfMonth(today),
+            endDate: today.endOf("month").toDate(),
+            selectedMonth: today.toDate(),
+            startDate: today.startOf("month").toDate(),
          };
       case "last-month": {
-         const lastMonth = subMonths(today, 1);
+         const lastMonth = today.subtract(1, "month");
          return {
-            endDate: endOfMonth(lastMonth),
-            selectedMonth: lastMonth,
-            startDate: startOfMonth(lastMonth),
+            endDate: lastMonth.endOf("month").toDate(),
+            selectedMonth: lastMonth.toDate(),
+            startDate: lastMonth.startOf("month").toDate(),
          };
       }
       case "this-year":
          return {
-            endDate: endOfYear(today),
-            selectedMonth: today,
-            startDate: startOfYear(today),
+            endDate: today.endOf("year").toDate(),
+            selectedMonth: today.toDate(),
+            startDate: today.startOf("year").toDate(),
          };
       case "custom":
          return {
             endDate: null,
-            selectedMonth: today,
+            selectedMonth: today.toDate(),
             startDate: null,
          };
       default:
          return {
             endDate: null,
-            selectedMonth: today,
+            selectedMonth: today.toDate(),
             startDate: null,
          };
    }
@@ -168,7 +160,7 @@ export function TimePeriodChips({
       if (!newValue) {
          onValueChange(null, {
             endDate: null,
-            selectedMonth: new Date(),
+            selectedMonth: dayjs().toDate(),
             startDate: null,
          });
          return;

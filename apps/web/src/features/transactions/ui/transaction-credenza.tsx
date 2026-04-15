@@ -1921,7 +1921,7 @@ function TransactionCredenzaContent({
                      })}
                   >
                      {({ date, type }) => {
-                        const isFuture = date && date > new Date();
+                        const isFuture = date && dayjs(date).isAfter(dayjs());
                         return (
                            <>
                               {isFuture && (

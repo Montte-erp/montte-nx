@@ -245,7 +245,7 @@ export async function payStatement(
                .update(bills)
                .set({
                   status: "paid",
-                  paidAt: new Date(),
+                  paidAt: dayjs().toDate(),
                   amount,
                   transactionId: paymentTx.id,
                })
@@ -258,7 +258,7 @@ export async function payStatement(
             .set({
                status: "paid",
                paymentTransactionId: paymentTx.id,
-               updatedAt: new Date(),
+               updatedAt: dayjs().toDate(),
             })
             .where(eq(creditCardStatements.id, statementId))
             .returning();

@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
@@ -181,7 +182,7 @@ Se tiver certeza, retorne confidence "high". Se estiver em dúvida, retorne "low
       },
    ) {
       const jobId = notification.jobId ?? crypto.randomUUID();
-      const timestamp = notification.timestamp ?? new Date().toISOString();
+      const timestamp = notification.timestamp ?? dayjs().toISOString();
       DBOS.logger.debug(
          `[categorization] publishStep status=${notification.status} team=${notification.teamId}`,
       );

@@ -1,8 +1,9 @@
+import dayjs from "dayjs";
 import { createFileRoute } from "@tanstack/react-router";
 
 export async function handleGet() {
    return new Response(
-      JSON.stringify({ pong: true, time: new Date().toISOString() }),
+      JSON.stringify({ pong: true, time: dayjs().toISOString() }),
       { status: 200, headers: { "Content-Type": "application/json" } },
    );
 }

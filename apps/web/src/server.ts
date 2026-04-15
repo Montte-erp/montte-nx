@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import "@/integrations/otel/init";
 
 import { DBOS } from "@dbos-inc/dbos-sdk";
@@ -42,7 +43,7 @@ export default createServerEntry({
          if (request.method === "GET") {
             return Response.json({
                pong: true,
-               time: new Date().toISOString(),
+               time: dayjs().toISOString(),
             });
          }
       }

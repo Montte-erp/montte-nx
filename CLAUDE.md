@@ -309,7 +309,7 @@ function ItemDetails({ id }: { id: string }) {
 - **Spacing & sizing scale** — only `2` and `4` suffixes for `p-*`, `px-*`, `py-*`, `size-*`.
 - **Early returns over if/else** — always guard and return early; never use `else` after a `return`.
 - **Minimize `useEffect`** — derive state, use event handlers. Only for external system sync.
-- **Dates** — always `dayjs`. Never raw `Date` math or manual string formatting.
+- **Dates** — always `dayjs`. Never `new Date()`, `date-fns`, or raw `Date` math. Exceptions: Drizzle schema `.$onUpdate(() => new Date())` defaults and test fixture inserts that require a `Date` object (use `new Date()` only there). For Drizzle `.set()` / `.values()`, use `dayjs().toDate()`. For ISO strings, use `dayjs().toISOString()`. For YYYY-MM-DD strings, use `dayjs().format("YYYY-MM-DD")`.
 - **URL search params over local state** — filters, sort, pagination, active tabs, selected IDs live in `validateSearch` on the route. See oRPC + TanStack Query section for the full pattern.
 - **Files:** kebab-case. **Components:** PascalCase `[Feature][Action][Type]`. **Hooks:** `use[Feature][Action]`.
 - **oxlint suppression:** `// oxlint-ignore <rule-name>` above the triggering line.

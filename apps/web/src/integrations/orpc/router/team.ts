@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { cnpjDataSchema } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
 import { WebAppError } from "@core/logging/errors";
@@ -155,7 +156,7 @@ export const addMember = protectedProcedure
          .values({
             teamId: input.teamId,
             userId: input.userId,
-            createdAt: new Date(),
+            createdAt: dayjs().toDate(),
          })
          .returning();
 

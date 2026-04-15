@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { format, fromMinorUnits, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
@@ -120,7 +121,7 @@ function computeMonthlyCost(item: EventWithUsage): number {
 }
 
 function computeProjectedCost(monthToDateCost: number): number {
-   const now = new Date();
+   const now = dayjs().toDate();
    const dayOfMonth = now.getDate();
    const daysInMonth = new Date(
       now.getFullYear(),
@@ -176,7 +177,7 @@ function formatCurrency(value: number): string {
 }
 
 function getBillingPeriodDates(): { start: Date; end: Date } {
-   const now = new Date();
+   const now = dayjs().toDate();
    const start = new Date(now.getFullYear(), now.getMonth(), 1);
    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
    return { start, end };
@@ -191,7 +192,7 @@ function formatPeriodDate(d: Date): string {
 }
 
 function getDaysRemaining(): number {
-   const now = new Date();
+   const now = dayjs().toDate();
    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
    return Math.max(
       0,
