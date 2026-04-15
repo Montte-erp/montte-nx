@@ -1,5 +1,3 @@
-"use client";
-
 import { type LucideIcon, XIcon } from "lucide-react";
 import { useControllableState } from "radix-ui/internal";
 import {
