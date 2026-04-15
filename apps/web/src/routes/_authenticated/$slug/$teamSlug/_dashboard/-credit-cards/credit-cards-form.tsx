@@ -359,8 +359,16 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                      <Field>
                         <FieldLabel htmlFor={field.name}>Bandeira</FieldLabel>
                         <Select
-                           value={field.state.value}
-                           onValueChange={(v) => field.handleChange(v)}
+                           value={field.state.value ?? undefined}
+                           onValueChange={(
+                              v:
+                                 | "visa"
+                                 | "mastercard"
+                                 | "elo"
+                                 | "amex"
+                                 | "hipercard"
+                                 | "other",
+                           ) => field.handleChange(v)}
                         >
                            <SelectTrigger id={field.name} name={field.name}>
                               <SelectValue placeholder="Selecionar bandeira (opcional)" />
@@ -385,7 +393,9 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                            <FieldLabel htmlFor={field.name}>Status</FieldLabel>
                            <Select
                               value={field.state.value}
-                              onValueChange={(v) => field.handleChange(v)}
+                              onValueChange={(
+                                 v: "active" | "blocked" | "cancelled",
+                              ) => field.handleChange(v)}
                            >
                               <SelectTrigger id={field.name} name={field.name}>
                                  <SelectValue />
