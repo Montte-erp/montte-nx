@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.4]
+
+### Fixed
+
+- Rebuild with correct better-auth plugin (databaseHooks) — 0.1.3 dist was built before master merge, still contained old hooks.after code
+
 ## [0.1.3]
 
 ### Fixed
