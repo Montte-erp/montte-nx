@@ -1,5 +1,6 @@
 "use client";
 
+import dayjs from "dayjs";
 import { Button } from "@packages/ui/components/button";
 import { Calendar } from "@packages/ui/components/calendar";
 import {
@@ -227,7 +228,7 @@ export function DateRangePicker({
                      numberOfMonths={2}
                      onSelect={handleCalendarSelect}
                      selected={calendarSelected}
-                     toYear={new Date().getFullYear() + 5}
+                     toYear={dayjs().year() + 5}
                   />
                </div>
             </div>

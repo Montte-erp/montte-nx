@@ -97,6 +97,7 @@
       "@core/stripe": "workspace:*",
       "@f-o-t/money": "catalog:fot",
       "@orpc/server": "catalog:orpc",
+      "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",
       "zod": "catalog:validation"
    },

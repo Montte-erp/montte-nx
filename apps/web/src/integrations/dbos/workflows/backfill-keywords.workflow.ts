@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import {
    listTeamsWithPendingKeywords,
@@ -58,7 +59,7 @@ export class BackfillKeywordsWorkflow {
          }
 
          await DBOS.startWorkflow(DeriveKeywordsWorkflow, {
-            workflowID: `derive-${category.id}-${new Date().toISOString().slice(0, 10)}`,
+            workflowID: `derive-${category.id}-${dayjs().format("YYYY-MM-DD")}`,
          }).run({
             categoryId: category.id,
             teamId: category.teamId,
@@ -78,7 +79,7 @@ export class BackfillKeywordsWorkflow {
             message: `Palavras-chave configuradas para ${processed} categorias.`,
             payload: { count: processed },
             teamId: teamEntry.teamId,
-            timestamp: new Date().toISOString(),
+            timestamp: dayjs().toISOString(),
          };
          await jobPublisher.publish("job.notification", notification);
       }

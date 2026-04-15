@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { getLogger } from "@core/logging/root";
 import { AppError, propagateError } from "@core/logging/errors";
 
@@ -136,7 +137,7 @@ export async function createDefaultOrganization(
       const safeSuffix = String(suffix).trim();
       const orgName = `${safeUserName}${safeSuffix}`;
       const orgSlug = createSlug(orgName);
-      const now = new Date();
+      const now = dayjs().toDate();
 
       const [createdOrganization] = await dbClient
          .insert(organization)
@@ -263,7 +264,7 @@ export async function ensureDefaultProject(
 
       if (existingTeam) return existingTeam;
 
-      const now = new Date();
+      const now = dayjs().toDate();
       const [created] = await dbClient
          .insert(team)
          .values({

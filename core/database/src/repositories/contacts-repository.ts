@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, asc, count, eq } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
@@ -74,7 +75,7 @@ export async function updateContact(
    try {
       const [updated] = await db
          .update(contacts)
-         .set({ ...validated, updatedAt: new Date() })
+         .set({ ...validated, updatedAt: dayjs().toDate() })
          .where(eq(contacts.id, id))
          .returning();
       if (!updated) throw AppError.notFound("Contato não encontrado.");
@@ -89,7 +90,7 @@ export async function archiveContact(db: DatabaseInstance, id: string) {
    try {
       const [updated] = await db
          .update(contacts)
-         .set({ isArchived: true, updatedAt: new Date() })
+         .set({ isArchived: true, updatedAt: dayjs().toDate() })
          .where(eq(contacts.id, id))
          .returning();
       if (!updated) throw AppError.notFound("Contato não encontrado.");
@@ -104,7 +105,7 @@ export async function reactivateContact(db: DatabaseInstance, id: string) {
    try {
       const [updated] = await db
          .update(contacts)
-         .set({ isArchived: false, updatedAt: new Date() })
+         .set({ isArchived: false, updatedAt: dayjs().toDate() })
          .where(eq(contacts.id, id))
          .returning();
       if (!updated) throw AppError.notFound("Contato não encontrado.");

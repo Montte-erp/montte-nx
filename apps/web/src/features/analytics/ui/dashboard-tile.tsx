@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Condition } from "@f-o-t/condition-evaluator";
@@ -298,7 +299,7 @@ function formatDateRange(value: string): string {
 }
 
 function formatLastComputed(date: Date): string {
-   const now = new Date();
+   const now = dayjs().toDate();
    const diffMs = now.getTime() - date.getTime();
    const diffMinutes = Math.floor(diffMs / 60000);
 

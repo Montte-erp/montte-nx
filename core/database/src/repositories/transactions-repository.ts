@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import type { Condition, ConditionGroup } from "@f-o-t/condition-evaluator";
 import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
@@ -138,11 +139,11 @@ export async function validateTransactionReferences(
          throw AppError.validation("Conta bancária inválida.");
       }
       if (account.initialBalanceDate && refs.date) {
-         const txDate = new Date(refs.date);
-         const balanceDate = new Date(account.initialBalanceDate);
-         if (txDate < balanceDate) {
+         const txDate = dayjs(refs.date);
+         const balanceDate = dayjs(account.initialBalanceDate);
+         if (txDate.isBefore(balanceDate)) {
             throw AppError.validation(
-               `Não é possível registrar lançamentos antes da data do saldo inicial (${balanceDate.toLocaleDateString("pt-BR")}).`,
+               `Não é possível registrar lançamentos antes da data do saldo inicial (${balanceDate.format("DD/MM/YYYY")}).`,
             );
          }
       }
@@ -154,11 +155,11 @@ export async function validateTransactionReferences(
          throw AppError.validation("Conta de destino inválida.");
       }
       if (dest.initialBalanceDate && refs.date) {
-         const txDate = new Date(refs.date);
-         const balanceDate = new Date(dest.initialBalanceDate);
-         if (txDate < balanceDate) {
+         const txDate = dayjs(refs.date);
+         const balanceDate = dayjs(dest.initialBalanceDate);
+         if (txDate.isBefore(balanceDate)) {
             throw AppError.validation(
-               `Não é possível registrar lançamentos antes da data do saldo inicial da conta de destino (${balanceDate.toLocaleDateString("pt-BR")}).`,
+               `Não é possível registrar lançamentos antes da data do saldo inicial da conta de destino (${balanceDate.format("DD/MM/YYYY")}).`,
             );
          }
       }
@@ -659,7 +660,7 @@ export async function updateTransactionCategory(
    try {
       await db
          .update(transactions)
-         .set({ ...data, updatedAt: new Date() })
+         .set({ ...data, updatedAt: dayjs().toDate() })
          .where(eq(transactions.id, id));
    } catch (err) {
       propagateError(err);

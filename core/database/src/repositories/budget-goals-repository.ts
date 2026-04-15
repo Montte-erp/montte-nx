@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { of, toDecimal } from "@f-o-t/money";
 import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
@@ -123,7 +124,7 @@ export async function markAlertSent(
    try {
       const [updated] = await db
          .update(budgetGoals)
-         .set({ alertSentAt: new Date() })
+         .set({ alertSentAt: dayjs().toDate() })
          .where(and(eq(budgetGoals.id, id), eq(budgetGoals.teamId, teamId)))
          .returning();
       if (!updated)

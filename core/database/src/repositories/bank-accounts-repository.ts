@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { add, of, subtract, toDecimal } from "@f-o-t/money";
 import { and, eq, or, sql } from "drizzle-orm";
@@ -107,7 +108,7 @@ export async function updateBankAccount(
    try {
       const [updated] = await db
          .update(bankAccounts)
-         .set({ ...validated, updatedAt: new Date() })
+         .set({ ...validated, updatedAt: dayjs().toDate() })
          .where(eq(bankAccounts.id, id))
          .returning();
       if (!updated) throw AppError.notFound("Conta bancária não encontrada.");
@@ -122,7 +123,7 @@ export async function archiveBankAccount(db: DatabaseInstance, id: string) {
    try {
       const [updated] = await db
          .update(bankAccounts)
-         .set({ status: "archived", updatedAt: new Date() })
+         .set({ status: "archived", updatedAt: dayjs().toDate() })
          .where(eq(bankAccounts.id, id))
          .returning();
       if (!updated) throw AppError.notFound("Conta bancária não encontrada.");
@@ -137,7 +138,7 @@ export async function reactivateBankAccount(db: DatabaseInstance, id: string) {
    try {
       const [updated] = await db
          .update(bankAccounts)
-         .set({ status: "active", updatedAt: new Date() })
+         .set({ status: "active", updatedAt: dayjs().toDate() })
          .where(eq(bankAccounts.id, id))
          .returning();
       if (!updated) throw AppError.notFound("Conta bancária não encontrada.");

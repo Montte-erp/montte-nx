@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
@@ -44,7 +45,7 @@ export class DeriveKeywordsWorkflow {
          status: "failed",
          message: error,
          teamId: input.teamId,
-         timestamp: new Date().toISOString(),
+         timestamp: dayjs().toISOString(),
       });
 
       DBOS.logger.info(`${ctx} started name="${input.name}"`);
@@ -55,7 +56,7 @@ export class DeriveKeywordsWorkflow {
          status: "started",
          message: `Gerando palavras-chave para ${input.name}...`,
          teamId: input.teamId,
-         timestamp: new Date().toISOString(),
+         timestamp: dayjs().toISOString(),
       });
 
       try {
@@ -105,7 +106,7 @@ export class DeriveKeywordsWorkflow {
             count: keywords.length,
          },
          teamId: input.teamId,
-         timestamp: new Date().toISOString(),
+         timestamp: dayjs().toISOString(),
       });
 
       DBOS.logger.info(`${ctx} completed`);

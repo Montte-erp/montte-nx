@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import type { ConditionGroup } from "@f-o-t/condition-evaluator";
 import { Button } from "@packages/ui/components/button";
 import { DateRangePicker } from "@packages/ui/components/date-range-picker";
@@ -50,7 +51,7 @@ export interface TransactionFilters {
 }
 
 function getThisMonthRange() {
-   const today = new Date();
+   const today = dayjs().toDate();
    const fmt = (d: Date) => d.toISOString().split("T")[0];
    return {
       dateFrom: fmt(new Date(today.getFullYear(), today.getMonth(), 1)),
@@ -90,7 +91,7 @@ export function presetToDateRange(preset: string): {
    dateFrom: string;
    dateTo: string;
 } {
-   const today = new Date();
+   const today = dayjs().toDate();
    const fmt = (d: Date) => d.toISOString().split("T")[0];
    switch (preset) {
       case "today":

@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import {
    createFileRoute,
    Outlet,
@@ -412,8 +413,7 @@ function AuthLayout() {
 
             {/* Footer */}
             <div className="relative z-10 text-white/50 text-xs">
-               &copy; {new Date().getFullYear()} Montte. Todos os direitos
-               reservados
+               &copy; {dayjs().year()} Montte. Todos os direitos reservados
             </div>
          </aside>
       </div>

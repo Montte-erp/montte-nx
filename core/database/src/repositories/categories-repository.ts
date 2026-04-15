@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
@@ -253,7 +254,7 @@ export async function updateCategory(
 
       const [updated] = await db
          .update(categories)
-         .set({ ...validated, updatedAt: new Date() })
+         .set({ ...validated, updatedAt: dayjs().toDate() })
          .where(eq(categories.id, id))
          .returning();
       if (!updated) throw AppError.notFound("Categoria não encontrada.");
@@ -279,7 +280,7 @@ export async function archiveCategory(db: DatabaseInstance, id: string) {
 
       await db
          .update(categories)
-         .set({ isArchived: true, updatedAt: new Date() })
+         .set({ isArchived: true, updatedAt: dayjs().toDate() })
          .where(inArray(categories.id, allIds));
 
       return await db.query.categories.findFirst({
@@ -295,7 +296,7 @@ export async function reactivateCategory(db: DatabaseInstance, id: string) {
    try {
       const [updated] = await db
          .update(categories)
-         .set({ isArchived: false, updatedAt: new Date() })
+         .set({ isArchived: false, updatedAt: dayjs().toDate() })
          .where(eq(categories.id, id))
          .returning();
       if (!updated) throw AppError.notFound("Categoria não encontrada.");

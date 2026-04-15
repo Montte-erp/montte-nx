@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { AppError, propagateError } from "@core/logging/errors";
 import { eq } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
@@ -35,7 +36,7 @@ export async function upsertFinancialSettings(
          .values({ teamId, ...data })
          .onConflictDoUpdate({
             target: financialSettings.teamId,
-            set: { ...data, updatedAt: new Date() },
+            set: { ...data, updatedAt: dayjs().toDate() },
          })
          .returning();
       if (!settings)

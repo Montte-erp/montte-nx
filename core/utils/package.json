@@ -54,7 +54,8 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@core/logging": "workspace:*"
+      "@core/logging": "workspace:*",
+      "dayjs": "catalog:ui"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",

@@ -716,7 +716,7 @@ export function BankAccountForm({
                                              ),
                                           }}
                                           fromDate={minDate}
-                                          toDate={new Date()}
+                                          toDate={dayjs().toDate()}
                                           hideNavigation
                                           mode="single"
                                           selected={selectedDate}

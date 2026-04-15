@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import type { BudgetGoalWithProgress } from "@core/database/repositories/budget-goals-repository";
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
@@ -51,7 +52,7 @@ const [useGoalsTableState] =
       null,
    );
 
-const now = new Date();
+const now = dayjs().toDate();
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/goals",

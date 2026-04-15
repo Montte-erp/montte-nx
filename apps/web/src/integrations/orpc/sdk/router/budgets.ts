@@ -49,12 +49,12 @@ export const get = sdkProcedure
    .handler(async ({ context, input }) => {
       if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
       await ensureBudgetGoalOwnership(context.db, input.id, context.teamId);
-      const now = new Date();
+      const now = dayjs();
       const goals = await listBudgetGoals(
          context.db,
          context.teamId,
-         now.getMonth() + 1,
-         now.getFullYear(),
+         now.month() + 1,
+         now.year(),
       );
       const goal = goals.find((g) => g.id === input.id);
       if (goal) return mapBudgetGoal(goal);

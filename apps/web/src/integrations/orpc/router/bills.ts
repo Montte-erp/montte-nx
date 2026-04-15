@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    createBill,
@@ -49,25 +50,21 @@ function computeDueDate(
    frequency: string,
    offset: number,
 ): string {
-   const d = new Date(startDate);
+   const d = dayjs(startDate);
    switch (frequency) {
       case "weekly":
-         d.setDate(d.getDate() + 7 * offset);
-         break;
+         return d.add(7 * offset, "day").format("YYYY-MM-DD");
       case "biweekly":
-         d.setDate(d.getDate() + 14 * offset);
-         break;
+         return d.add(14 * offset, "day").format("YYYY-MM-DD");
       case "monthly":
-         d.setMonth(d.getMonth() + offset);
-         break;
+         return d.add(offset, "month").format("YYYY-MM-DD");
       case "quarterly":
-         d.setMonth(d.getMonth() + 3 * offset);
-         break;
+         return d.add(3 * offset, "month").format("YYYY-MM-DD");
       case "yearly":
-         d.setFullYear(d.getFullYear() + offset);
-         break;
+         return d.add(offset, "year").format("YYYY-MM-DD");
+      default:
+         return d.format("YYYY-MM-DD");
    }
-   return d.toISOString().substring(0, 10);
 }
 
 function buildBatch(
@@ -116,9 +113,7 @@ async function buildRecurrenceBatch(
       endsAt: endsAt ?? null,
    });
 
-   const windowEnd = new Date();
-   windowEnd.setMonth(windowEnd.getMonth() + windowMonths);
-   const windowEndStr = windowEnd.toISOString().substring(0, 10);
+   const windowEndStr = dayjs().add(windowMonths, "month").format("YYYY-MM-DD");
 
    const batchData = [];
    let i = 0;
@@ -297,7 +292,7 @@ export const pay = protectedProcedure
 
       return updateBill(db, id, {
          status: "paid",
-         paidAt: new Date(),
+         paidAt: dayjs().toDate(),
          transactionId: transaction.id,
       });
    });

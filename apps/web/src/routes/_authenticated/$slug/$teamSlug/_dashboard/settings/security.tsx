@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Card, CardContent } from "@packages/ui/components/card";
@@ -71,7 +72,7 @@ function getDeviceIcon(userAgent: string | null | undefined) {
 function formatLastActive(date: Date | string | null): string {
    if (!date) return "Agora";
    const d = new Date(date);
-   const now = new Date();
+   const now = dayjs().toDate();
    const diff = now.getTime() - d.getTime();
    const minutes = Math.floor(diff / 60000);
    const hours = Math.floor(diff / 3600000);

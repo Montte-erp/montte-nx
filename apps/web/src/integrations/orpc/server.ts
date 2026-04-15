@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, os } from "@orpc/server";
 import type { AuthInstance } from "@core/authentication/server";
@@ -134,7 +135,7 @@ const otelLogger = logs.getLogger("montte-web-orpc");
 
 const withTelemetry = withErrorHandling.use(
    async ({ context, path, next }, input) => {
-      const startDate = new Date();
+      const startDate = dayjs().toDate();
       const userId = context.session?.user?.id;
       const userEmail = context.session?.user?.email;
       const userName = context.session?.user?.name;
@@ -219,7 +220,7 @@ const withTelemetry = withErrorHandling.use(
                   event: "orpc_request",
                   properties: {
                      durationMs,
-                     endAt: new Date().toISOString(),
+                     endAt: dayjs().toISOString(),
                      input: sanitizeData(input),
                      path: path.join("."),
                      rootPath,

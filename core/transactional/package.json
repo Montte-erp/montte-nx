@@ -34,6 +34,7 @@
       "@core/logging": "workspace:*",
       "@core/utils": "workspace:*",
       "@react-email/components": "catalog:transactional",
+      "dayjs": "catalog:ui",
       "react": "catalog:react",
       "react-dom": "catalog:react",
       "resend": "catalog:transactional"

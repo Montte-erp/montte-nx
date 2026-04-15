@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { Hr, Link, Section, Text } from "@react-email/components";
 
 export const DefaultFooter = () => {
@@ -42,7 +43,7 @@ export const DefaultFooter = () => {
                margin: 0,
             }}
          >
-            {new Date().getFullYear()} Montte. Todos os direitos reservados.
+            {dayjs().year()} Montte. Todos os direitos reservados.
          </Text>
       </Section>
    );

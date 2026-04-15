@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { createDb } from "@core/database/client";
@@ -143,7 +144,7 @@ async function runSeed(
       return;
    }
 
-   const now = new Date();
+   const now = dayjs().toDate();
    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
    for (const addon of toSeed) {

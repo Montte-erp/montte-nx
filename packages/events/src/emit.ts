@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import type { Money } from "@f-o-t/money";
 import { toMajorUnitsString } from "@f-o-t/money";
 import type { DatabaseInstance } from "@core/database/client";
@@ -80,7 +81,7 @@ function buildWebhookPayload(
       id: eventId,
       event: eventName,
       data: properties,
-      created_at: new Date().toISOString(),
+      created_at: dayjs().toISOString(),
       organization_id: organizationId,
    };
 }
