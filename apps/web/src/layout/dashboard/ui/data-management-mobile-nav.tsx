@@ -1,5 +1,5 @@
 import { Input } from "@packages/ui/components/input";
-import { QuickAccessCard } from "@packages/ui/components/quick-access-card";
+import { QuickAccessCard } from "@/components/blocks/quick-access-card";
 import { useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useState } from "react";
