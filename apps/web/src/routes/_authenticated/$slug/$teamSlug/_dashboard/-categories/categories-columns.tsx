@@ -63,6 +63,7 @@ export type CategoryRow = {
    name: string;
    isDefault: boolean;
    isArchived: boolean;
+   description: string | null;
    color: string | null;
    icon: string | null;
    keywords: string[] | null;

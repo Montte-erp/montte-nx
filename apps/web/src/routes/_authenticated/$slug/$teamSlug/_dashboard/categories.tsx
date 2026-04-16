@@ -313,6 +313,7 @@ function CategoriesList({ navigate, view }: CategoriesListProps) {
                      color: category.color,
                      icon: category.icon,
                      type: category.type,
+                     description: category.description,
                   }}
                   mode="edit"
                   onSuccess={closeCredenza}

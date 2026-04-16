@@ -23,6 +23,7 @@ import {
    FieldLabel,
 } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
+import { Textarea } from "@packages/ui/components/textarea";
 import {
    Popover,
    PopoverContent,
@@ -143,6 +144,7 @@ interface CategoryFormProps {
       color?: string | null;
       icon?: string | null;
       type?: string | null;
+      description?: string | null;
    };
    onSuccess: () => void;
 }
@@ -181,6 +183,7 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
          icon: category?.icon ?? (isCreate ? randomIcon() : ""),
          name: category?.name ?? "",
          type: (category?.type ?? "expense") as "income" | "expense",
+         description: category?.description ?? "",
       },
       onSubmit: async ({ value }) => {
          const payload = {
@@ -188,6 +191,7 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
             icon: value.icon || null,
             name: value.name.trim(),
             type: value.type,
+            description: value.description?.trim() || null,
          };
 
          if (isCreate) {
@@ -311,6 +315,25 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                      )}
                   />
                </div>
+
+               <form.Field
+                  name="description"
+                  children={(field) => (
+                     <Field>
+                        <FieldLabel htmlFor={field.name}>Descrição</FieldLabel>
+                        <Textarea
+                           id={field.name}
+                           name={field.name}
+                           aria-invalid={false}
+                           onBlur={field.handleBlur}
+                           onChange={(e) => field.handleChange(e.target.value)}
+                           placeholder="Descreva quando usar esta categoria..."
+                           rows={2}
+                           value={field.state.value}
+                        />
+                     </Field>
+                  )}
+               />
 
                <form.Subscribe
                   selector={(s) => ({

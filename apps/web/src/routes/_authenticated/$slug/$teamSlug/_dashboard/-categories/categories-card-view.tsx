@@ -55,6 +55,14 @@ export function CategoriesCardView({
                            {cat.type === "income" ? "Receita" : "Despesa"}
                         </Badge>
                      )}
+                     {cat.description && (
+                        <p
+                           className="text-xs text-muted-foreground truncate"
+                           title={cat.description}
+                        >
+                           {cat.description}
+                        </p>
+                     )}
                   </div>
                </div>
 
