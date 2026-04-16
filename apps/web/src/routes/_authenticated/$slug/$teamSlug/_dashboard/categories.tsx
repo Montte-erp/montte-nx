@@ -35,6 +35,7 @@ import type {
 } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
+import { createContextState } from "foxact/create-context-state";
 import {
    DropdownMenu,
    DropdownMenuContent,
@@ -100,10 +101,8 @@ const [useCategoriesTableState] =
       null,
    );
 
-const [useCategoriesView] = createLocalStorageState<"table" | "card">(
-   "montte:categories:view",
-   "table",
-);
+const [CategoriesViewProvider, useCategoriesView, useSetCategoriesView] =
+   createContextState<"table" | "card">("table");
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/categories",
@@ -135,27 +134,134 @@ export const Route = createFileRoute(
 
 function CategoriesTableSkeleton() {
    return (
-      <div className="flex flex-col gap-4">
-         <div className="flex flex-col gap-2">
-            <Skeleton className="h-8 w-32" />
-            {Array.from({ length: 3 }).map((_, i) => (
-               <div className="flex flex-col gap-2" key={`parent-${i + 1}`}>
-                  <Skeleton className="h-12 w-full" />
-                  {i < 2 && (
-                     <div className="pl-8 flex flex-col gap-2">
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                     </div>
-                  )}
+      <div className="rounded-md border overflow-hidden">
+         <div className="flex items-center gap-4 px-4 py-4 border-b bg-muted/30">
+            <Skeleton className="size-4 rounded" />
+            <Skeleton className="h-4 w-10" />
+            <div className="flex-1" />
+            <Skeleton className="h-4 w-10" />
+            <div className="flex gap-2">
+               <Skeleton className="size-8 rounded" />
+               <Skeleton className="size-8 rounded" />
+               <Skeleton className="size-8 rounded" />
+               <Skeleton className="size-8 rounded" />
+            </div>
+         </div>
+
+         <div className="flex items-center gap-2 px-4 py-2 bg-muted/10 border-b">
+            <span className="size-2 rounded-full bg-muted-foreground/30 shrink-0" />
+            <Skeleton className="h-4 w-16" />
+         </div>
+         {[
+            { w: "w-32", subs: 2 },
+            { w: "w-44", subs: 0 },
+            { w: "w-24", subs: 0 },
+         ].map(({ w, subs }, i) => (
+            <div key={`income-row-${i + 1}`}>
+               <div className="flex items-center gap-4 px-4 py-4 border-b">
+                  <Skeleton className="size-4 rounded" />
+                  <Skeleton className="size-8 rounded-lg" />
+                  <Skeleton className={`h-4 ${w}`} />
+                  <div className="flex-1" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <div className="flex gap-2">
+                     <Skeleton className="size-8 rounded" />
+                     <Skeleton className="size-8 rounded" />
+                     <Skeleton className="size-8 rounded" />
+                     <Skeleton className="size-8 rounded" />
+                  </div>
                </div>
-            ))}
+               {Array.from({ length: subs }).map((_, si) => (
+                  <div
+                     className="flex items-center gap-4 px-4 py-2 border-b pl-16 bg-muted/10"
+                     key={`income-sub-${i + 1}-${si + 1}`}
+                  >
+                     <Skeleton className="size-4 rounded" />
+                     <Skeleton className="h-4 w-28" />
+                     <div className="flex-1" />
+                     <div className="flex gap-2">
+                        <Skeleton className="size-8 rounded" />
+                        <Skeleton className="size-8 rounded" />
+                     </div>
+                  </div>
+               ))}
+            </div>
+         ))}
+
+         <div className="flex items-center gap-2 px-4 py-2 bg-muted/10 border-b">
+            <span className="size-2 rounded-full bg-muted-foreground/30 shrink-0" />
+            <Skeleton className="h-4 w-20" />
          </div>
-         <div className="flex flex-col gap-2">
-            <Skeleton className="h-8 w-32" />
-            {Array.from({ length: 2 }).map((_, i) => (
-               <Skeleton className="h-12 w-full" key={`parent2-${i + 1}`} />
-            ))}
-         </div>
+         {[
+            { w: "w-36", subs: 0 },
+            { w: "w-28", subs: 1 },
+            { w: "w-40", subs: 0 },
+            { w: "w-24", subs: 0 },
+         ].map(({ w, subs }, i) => (
+            <div key={`expense-row-${i + 1}`}>
+               <div className="flex items-center gap-4 px-4 py-4 border-b last:border-b-0">
+                  <Skeleton className="size-4 rounded" />
+                  <Skeleton className="size-8 rounded-lg" />
+                  <Skeleton className={`h-4 ${w}`} />
+                  <div className="flex-1" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <div className="flex gap-2">
+                     <Skeleton className="size-8 rounded" />
+                     <Skeleton className="size-8 rounded" />
+                     <Skeleton className="size-8 rounded" />
+                     <Skeleton className="size-8 rounded" />
+                  </div>
+               </div>
+               {Array.from({ length: subs }).map((_, si) => (
+                  <div
+                     className="flex items-center gap-4 px-4 py-2 border-b last:border-b-0 pl-16 bg-muted/10"
+                     key={`expense-sub-${i + 1}-${si + 1}`}
+                  >
+                     <Skeleton className="size-4 rounded" />
+                     <Skeleton className="h-4 w-28" />
+                     <div className="flex-1" />
+                     <div className="flex gap-2">
+                        <Skeleton className="size-8 rounded" />
+                        <Skeleton className="size-8 rounded" />
+                     </div>
+                  </div>
+               ))}
+            </div>
+         ))}
+      </div>
+   );
+}
+
+function CategoriesCardSkeleton() {
+   return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+         {Array.from({ length: 6 }).map((_, i) => (
+            <div
+               className="flex flex-col rounded-lg border bg-card overflow-hidden"
+               key={`card-skel-${i + 1}`}
+            >
+               <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                  <Skeleton className="size-4 rounded" />
+                  <Skeleton className="h-5 w-14 rounded-full" />
+               </div>
+               <div className="flex items-center gap-4 px-4 pb-4">
+                  <Skeleton className="size-10 rounded-lg shrink-0" />
+                  <Skeleton className="h-4 w-32" />
+               </div>
+               <div className="border-t px-4 py-2 flex flex-wrap gap-2">
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <Skeleton className="h-5 w-24 rounded-full" />
+               </div>
+               <div className="border-t flex items-center gap-2 px-4 py-2">
+                  <Skeleton className="size-8 rounded" />
+                  <Skeleton className="size-8 rounded" />
+                  <Skeleton className="size-8 rounded" />
+                  <div className="flex-1" />
+                  <Skeleton className="size-8 rounded" />
+               </div>
+            </div>
+         ))}
       </div>
    );
 }
@@ -165,19 +271,23 @@ function CategoriesSkeleton() {
       <div className="flex flex-col gap-4">
          <div className="flex items-center justify-between">
             <div className="flex flex-col gap-2">
-               <Skeleton className="h-7 w-36" />
-               <Skeleton className="h-4 w-56" />
+               <Skeleton className="h-8 w-36" />
+               <Skeleton className="h-4 w-64" />
             </div>
             <div className="flex gap-2">
-               <Skeleton className="h-9 w-28" />
-               <Skeleton className="h-9 w-36" />
+               <Skeleton className="h-9 w-20 rounded-md" />
+               <Skeleton className="h-9 w-9 rounded-md" />
+               <Skeleton className="h-9 w-36 rounded-md" />
             </div>
          </div>
-         <div className="flex flex-col gap-2">
-            <Skeleton className="h-9 w-full" />
-            <div className="flex gap-2">
-               <Skeleton className="h-9 w-48" />
-               <Skeleton className="h-9 w-36" />
+         <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+               <Skeleton className="h-9 flex-1" />
+               <Skeleton className="h-9 w-64 rounded-md" />
+            </div>
+            <div className="flex items-center gap-2">
+               <Skeleton className="h-9 w-28 rounded-md" />
+               <Skeleton className="h-9 w-32 rounded-md" />
             </div>
          </div>
          <CategoriesTableSkeleton />
@@ -579,12 +689,21 @@ function CategoriesList({ navigate, view }: CategoriesListProps) {
 }
 
 function CategoriesPage() {
+   return (
+      <CategoriesViewProvider>
+         <CategoriesPageContent />
+      </CategoriesViewProvider>
+   );
+}
+
+function CategoriesPageContent() {
    const navigate = Route.useNavigate();
    const { type, includeArchived, groupBy, search } = Route.useSearch();
    const { openCredenza, closeCredenza } = useCredenza();
-   const isMobile = useMediaQuery("(max-width: 640px)");
-   const [view, setView] = useCategoriesView();
-   const effectiveView: "table" | "card" = isMobile ? "card" : view;
+   const isMobile = useMediaQuery("(max-width: 640px)", false);
+   const storedView = useCategoriesView();
+   const view = isMobile ? "card" : storedView;
+   const setView = useSetCategoriesView();
 
    const handleIncludeArchivedChange = useCallback(
       (checked: boolean) => {
@@ -747,7 +866,7 @@ function CategoriesPage() {
                         if (v === "table" || v === "card") setView(v);
                      }}
                      type="single"
-                     value={effectiveView}
+                     value={view}
                      variant="outline"
                   >
                      <Tooltip>
@@ -813,10 +932,16 @@ function CategoriesPage() {
             type={type}
          />
          <QueryBoundary
-            fallback={<CategoriesTableSkeleton />}
+            fallback={
+               view === "card" ? (
+                  <CategoriesCardSkeleton />
+               ) : (
+                  <CategoriesTableSkeleton />
+               )
+            }
             errorTitle="Erro ao carregar categorias"
          >
-            <CategoriesList navigate={navigate} view={effectiveView} />
+            <CategoriesList navigate={navigate} view={view} />
          </QueryBoundary>
       </main>
    );
