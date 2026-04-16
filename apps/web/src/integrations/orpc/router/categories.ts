@@ -139,6 +139,7 @@ export const importBatch = protectedProcedure
                      name: sub.name,
                      type: catData.type,
                      parentId: created.id,
+                     participatesDre: false,
                   },
                );
                results.push(createdSub);
