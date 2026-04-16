@@ -161,5 +161,26 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
             return <span className="text-sm text-muted-foreground">—</span>;
          },
       },
+      {
+         id: "subcategories",
+         header: "Subcategorias",
+         cell: ({ row }) => {
+            if (row.depth > 0) return null;
+            const count = row.original.subcategories?.length ?? 0;
+            if (count === 0)
+               return <span className="text-sm text-muted-foreground">—</span>;
+            return <Badge variant="secondary">{count}</Badge>;
+         },
+      },
+      {
+         id: "keywords",
+         header: "Palavras-chave",
+         cell: ({ row }) => {
+            const count = row.original.keywords?.length ?? 0;
+            if (count === 0)
+               return <span className="text-sm text-muted-foreground">—</span>;
+            return <Badge variant="secondary">{count}</Badge>;
+         },
+      },
    ];
 }
