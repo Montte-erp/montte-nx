@@ -38,6 +38,7 @@ import {
 } from "@packages/ui/components/dropdown-menu";
 import {
    Archive,
+   ArchiveRestore,
    Download,
    MoreHorizontal,
    FolderOpen,
@@ -278,6 +279,14 @@ function CategoriesList({ navigate, view }: CategoriesListProps) {
       }),
    );
 
+   const unarchiveMutation = useMutation(
+      orpc.categories.unarchive.mutationOptions({
+         onSuccess: () => toast.success("Categoria desarquivada."),
+         onError: (e) =>
+            toast.error(e.message || "Erro ao desarquivar categoria."),
+      }),
+   );
+
    const handleEdit = useCallback(
       (category: CategoryRow) => {
          if (category.parentId !== null) {
@@ -362,6 +371,13 @@ function CategoriesList({ navigate, view }: CategoriesListProps) {
       [openAlertDialog, archiveMutation],
    );
 
+   const handleUnarchive = useCallback(
+      (category: CategoryRow) => {
+         unarchiveMutation.mutate({ id: category.id });
+      },
+      [unarchiveMutation],
+   );
+
    const handleBulkDelete = useCallback(() => {
       const deletableIds = selectedIds.filter(
          (id) => !categories.find((c) => c.id === id)?.isDefault,
@@ -434,6 +450,7 @@ function CategoriesList({ navigate, view }: CategoriesListProps) {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onArchive={handleArchive}
+            onUnarchive={handleUnarchive}
             onAddSubcategory={handleAddSubcategory}
          />
       );
@@ -462,6 +479,30 @@ function CategoriesList({ navigate, view }: CategoriesListProps) {
             renderActions={({ row }) => {
                if (row.original.isDefault) return null;
                const isSub = row.original.parentId !== null;
+               const isArchived = row.original.isArchived;
+
+               if (isArchived) {
+                  return (
+                     <>
+                        <Button
+                           onClick={() => handleUnarchive(row.original)}
+                           tooltip="Desarquivar"
+                           variant="outline"
+                        >
+                           <ArchiveRestore />
+                        </Button>
+                        <Button
+                           className="text-destructive hover:text-destructive"
+                           onClick={() => handleDelete(row.original)}
+                           tooltip="Excluir"
+                           variant="outline"
+                        >
+                           <Trash2 />
+                        </Button>
+                     </>
+                  );
+               }
+
                return (
                   <>
                      {!isSub && (

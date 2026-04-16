@@ -1,7 +1,7 @@
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Separator } from "@packages/ui/components/separator";
-import { Archive, Pencil, Plus, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, Pencil, Plus, Trash2 } from "lucide-react";
 import type { CategoryRow } from "./categories-columns";
 
 interface CategoriesCardViewProps {
@@ -9,6 +9,7 @@ interface CategoriesCardViewProps {
    onEdit: (category: CategoryRow) => void;
    onDelete: (category: CategoryRow) => void;
    onArchive: (category: CategoryRow) => void;
+   onUnarchive: (category: CategoryRow) => void;
    onAddSubcategory: (category: CategoryRow) => void;
 }
 
@@ -17,6 +18,7 @@ export function CategoriesCardView({
    onEdit,
    onDelete,
    onArchive,
+   onUnarchive,
    onAddSubcategory,
 }: CategoriesCardViewProps) {
    return (
@@ -84,40 +86,65 @@ export function CategoriesCardView({
                   <>
                      <Separator />
                      <div className="flex items-center gap-2 px-4 py-2">
-                        <Button
-                           onClick={() => onAddSubcategory(cat)}
-                           size="sm"
-                           tooltip="Nova subcategoria"
-                           variant="ghost"
-                        >
-                           <Plus />
-                        </Button>
-                        <Button
-                           onClick={() => onEdit(cat)}
-                           size="sm"
-                           tooltip="Editar"
-                           variant="ghost"
-                        >
-                           <Pencil />
-                        </Button>
-                        <Button
-                           onClick={() => onArchive(cat)}
-                           size="sm"
-                           tooltip="Arquivar"
-                           variant="ghost"
-                        >
-                           <Archive />
-                        </Button>
-                        <div className="flex-1" />
-                        <Button
-                           className="text-destructive hover:text-destructive"
-                           onClick={() => onDelete(cat)}
-                           size="sm"
-                           tooltip="Excluir"
-                           variant="ghost"
-                        >
-                           <Trash2 />
-                        </Button>
+                        {cat.isArchived ? (
+                           <>
+                              <Button
+                                 onClick={() => onUnarchive(cat)}
+                                 size="sm"
+                                 tooltip="Desarquivar"
+                                 variant="ghost"
+                              >
+                                 <ArchiveRestore />
+                              </Button>
+                              <div className="flex-1" />
+                              <Button
+                                 className="text-destructive hover:text-destructive"
+                                 onClick={() => onDelete(cat)}
+                                 size="sm"
+                                 tooltip="Excluir"
+                                 variant="ghost"
+                              >
+                                 <Trash2 />
+                              </Button>
+                           </>
+                        ) : (
+                           <>
+                              <Button
+                                 onClick={() => onAddSubcategory(cat)}
+                                 size="sm"
+                                 tooltip="Nova subcategoria"
+                                 variant="ghost"
+                              >
+                                 <Plus />
+                              </Button>
+                              <Button
+                                 onClick={() => onEdit(cat)}
+                                 size="sm"
+                                 tooltip="Editar"
+                                 variant="ghost"
+                              >
+                                 <Pencil />
+                              </Button>
+                              <Button
+                                 onClick={() => onArchive(cat)}
+                                 size="sm"
+                                 tooltip="Arquivar"
+                                 variant="ghost"
+                              >
+                                 <Archive />
+                              </Button>
+                              <div className="flex-1" />
+                              <Button
+                                 className="text-destructive hover:text-destructive"
+                                 onClick={() => onDelete(cat)}
+                                 size="sm"
+                                 tooltip="Excluir"
+                                 variant="ghost"
+                              >
+                                 <Trash2 />
+                              </Button>
+                           </>
+                        )}
                      </div>
                   </>
                )}
