@@ -1,7 +1,13 @@
 import { useCsvFile } from "@/hooks/use-csv-file";
-import { fromPromise } from "neverthrow";
+import { fromPromise, fromThrowable } from "neverthrow";
 import { invariant } from "foxact/invariant";
-import { createContext, useCallback, useContext, useState } from "react";
+import {
+   createContext,
+   useCallback,
+   useContext,
+   useMemo,
+   useState,
+} from "react";
 import type { ReactNode } from "react";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -208,8 +214,10 @@ export function CategoryImportProvider({ children }: { children: ReactNode }) {
    const [rawData, setRawData] = useState<RawData | null>(null);
    const [mapping, setMappingState] = useState<Record<string, string>>({});
    const [savedMappingApplied, setSavedMappingApplied] = useState(false);
-   const [mappedCategories, setMappedCategories] = useState<MappedCategory[]>(
-      [],
+
+   const mappedCategories = useMemo(
+      () => (rawData ? buildMappedCategories(rawData, mapping) : []),
+      [rawData, mapping],
    );
 
    const parseFile = useCallback(
@@ -222,8 +230,14 @@ export function CategoryImportProvider({ children }: { children: ReactNode }) {
 
          const saved = localStorage.getItem(mappingStorageKey(raw.headers));
          if (saved) {
-            const parsedMapping: Record<string, string> = JSON.parse(saved);
-            setMappingState(parsedMapping);
+            const safeParse = fromThrowable(JSON.parse);
+            const parseResult = safeParse(saved);
+            if (parseResult.isErr()) {
+               setMappingState(guessMapping(raw.headers));
+               setSavedMappingApplied(false);
+               return;
+            }
+            setMappingState(parseResult.value as Record<string, string>);
             setSavedMappingApplied(true);
             return;
          }
@@ -245,7 +259,7 @@ export function CategoryImportProvider({ children }: { children: ReactNode }) {
             mappingStorageKey(rawData.headers),
             JSON.stringify(m),
          );
-         setMappedCategories(buildMappedCategories(rawData, m));
+         setMappingState(m);
       },
       [rawData],
    );
