@@ -597,36 +597,6 @@ const filtered = useStore(filteredItemsAtom, (s) => s);
 const active = useStore(activeTabMetaAtom, (s) => s);
 ```
 
-**Async derived** — `createAsyncAtom` for async computations:
-```typescript
-import { createAsyncAtom } from "@tanstack/react-store";
-
-const asyncAtom = createAsyncAtom(async () => {
-   const data = await fetchSomething(store.state.id);
-   return data;
-});
-// Returns { status: "pending" | "done" | "error", data?, error? }
-```
-
-**Batch updates** — `batch()` groups multiple store updates into one notification cycle:
-```typescript
-import { batch } from "@tanstack/react-store";
-
-batch(() => {
-   storeA.setState((s) => ({ ...s, count: 1 }));
-   storeB.setState((s) => ({ ...s, name: "foo" }));
-});
-// Subscribers notified once with final state
-```
-
-**Subscriptions outside React** — `store.subscribe()` for side effects:
-```typescript
-const { unsubscribe } = myStore.subscribe(() => {
-   console.log("State changed:", myStore.state);
-});
-// cleanup: unsubscribe()
-```
-
 **Persisted store** — `createPersistedStore` from `@/lib/store`. Uses `createClientOnlyFn` for SSR safety. Hydrates from localStorage, auto-persists on change, cross-tab sync via `storage` event. No hook needed:
 ```typescript
 import { createPersistedStore } from "@/lib/store";

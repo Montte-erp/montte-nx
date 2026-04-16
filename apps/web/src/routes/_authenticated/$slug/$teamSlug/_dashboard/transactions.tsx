@@ -125,7 +125,7 @@ function TransactionsPage() {
    const handleCreate = useCallback(() => {
       if (!hasBankAccounts) {
          openCredenza({
-            children: (
+            renderChildren: () => (
                <TransactionPrerequisitesBlocker
                   onAction={() => {
                      closeCredenza();
@@ -140,7 +140,7 @@ function TransactionsPage() {
          return;
       }
       openCredenza({
-         children: (
+         renderChildren: () => (
             <TransactionCredenza mode="create" onSuccess={closeCredenza} />
          ),
       });
@@ -152,7 +152,7 @@ function TransactionsPage() {
          label: "Importar",
          onClick: () =>
             openCredenza({
-               children: (
+               renderChildren: () => (
                   <StatementImportCredenza
                      teamId={currentTeam.id}
                      onClose={closeCredenza}
@@ -165,7 +165,7 @@ function TransactionsPage() {
          label: "Exportar",
          onClick: () =>
             openCredenza({
-               children: (
+               renderChildren: () => (
                   <TransactionExportCredenza
                      dateFrom={filters.dateFrom}
                      dateTo={filters.dateTo}

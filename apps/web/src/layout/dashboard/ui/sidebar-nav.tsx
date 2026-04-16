@@ -381,7 +381,7 @@ export function SidebarNav() {
 
    const handleConfigure = useCallback(() => {
       openCredenza({
-         children: <SidebarNavConfigForm onClose={closeCredenza} />,
+         renderChildren: () => <SidebarNavConfigForm onClose={closeCredenza} />,
       });
    }, [openCredenza, closeCredenza]);
 

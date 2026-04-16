@@ -4,10 +4,11 @@ Transactional email system using Resend + React Email. Handles authentication em
 
 ## Exports
 
-| Export     | Purpose                 |
-| ---------- | ----------------------- |
-| `./client` | Email sending functions |
-| `./utils`  | Resend client factory   |
+| Export       | Purpose                          |
+| ------------ | -------------------------------- |
+| `./client`   | Email sending functions          |
+| `./utils`    | Resend client factory            |
+| `./emails/*` | React Email templates            |
 
 ## Email Templates
 

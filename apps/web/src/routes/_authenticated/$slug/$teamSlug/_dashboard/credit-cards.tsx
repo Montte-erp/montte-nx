@@ -195,7 +195,7 @@ function CreditCardsList() {
    const handleEdit = useCallback(
       (card: CreditCardRow) => {
          openCredenza({
-            children: (
+            renderChildren: () => (
                <QueryBoundary
                   fallback={<CreditCardFormSkeleton />}
                   errorTitle="Erro ao carregar cartão"
@@ -337,7 +337,7 @@ function CreditCardsPage() {
 
    function handleCreate() {
       openCredenza({
-         children: (
+         renderChildren: () => (
             <QueryBoundary
                fallback={<CreditCardFormSkeleton />}
                errorTitle="Erro ao carregar formulário"
@@ -350,13 +350,15 @@ function CreditCardsPage() {
 
    function handleImport() {
       openCredenza({
-         children: <CreditCardsImportCredenza onClose={closeCredenza} />,
+         renderChildren: () => (
+            <CreditCardsImportCredenza onClose={closeCredenza} />
+         ),
       });
    }
 
    function handleExport() {
       openCredenza({
-         children: (
+         renderChildren: () => (
             <QueryBoundary
                fallback={
                   <div className="flex items-center justify-center py-4">

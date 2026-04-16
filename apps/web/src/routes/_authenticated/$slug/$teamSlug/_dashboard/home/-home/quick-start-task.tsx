@@ -31,17 +31,19 @@ export function QuickStartTask({
 
       if (task.id === "connect_bank_account") {
          openCredenza({
-            children: (
+            renderChildren: () => (
                <BankAccountForm mode="create" onSuccess={closeCredenza} />
             ),
          });
       } else if (task.id === "create_category") {
          openCredenza({
-            children: <CategoryForm mode="create" onSuccess={closeCredenza} />,
+            renderChildren: () => (
+               <CategoryForm mode="create" onSuccess={closeCredenza} />
+            ),
          });
       } else if (task.id === "add_transaction") {
          openCredenza({
-            children: (
+            renderChildren: () => (
                <TransactionCredenza mode="create" onSuccess={closeCredenza} />
             ),
          });

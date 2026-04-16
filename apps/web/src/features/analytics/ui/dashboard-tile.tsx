@@ -439,7 +439,7 @@ export function DashboardTile({
                               <DropdownMenuItem
                                  onClick={() =>
                                     openCredenza({
-                                       children: (
+                                       renderChildren: () => (
                                           <InsightEditCredenza
                                              insightId={insightId}
                                           />

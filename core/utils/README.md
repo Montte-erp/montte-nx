@@ -1,6 +1,6 @@
 # @core/utils
 
-Shared utility functions used across the entire monorepo. Zero external dependencies — pure TypeScript.
+Shared utility functions used across the entire monorepo.
 
 ## Modules
 

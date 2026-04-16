@@ -1064,19 +1064,20 @@ function TransactionCredenzaContent({
                                                       className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                                       onClick={() =>
                                                          openCredenza({
-                                                            children: (
-                                                               <NovaConta
-                                                                  onSuccess={(
-                                                                     id,
-                                                                  ) => {
-                                                                     form.setFieldValue(
-                                                                        "bankAccountId",
+                                                            renderChildren:
+                                                               () => (
+                                                                  <NovaConta
+                                                                     onSuccess={(
                                                                         id,
-                                                                     );
-                                                                     closeTopCredenza();
-                                                                  }}
-                                                               />
-                                                            ),
+                                                                     ) => {
+                                                                        form.setFieldValue(
+                                                                           "bankAccountId",
+                                                                           id,
+                                                                        );
+                                                                        closeTopCredenza();
+                                                                     }}
+                                                                  />
+                                                               ),
                                                          })
                                                       }
                                                       type="button"
@@ -1146,19 +1147,20 @@ function TransactionCredenzaContent({
                                                       className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                                       onClick={() =>
                                                          openCredenza({
-                                                            children: (
-                                                               <NovaConta
-                                                                  onSuccess={(
-                                                                     id,
-                                                                  ) => {
-                                                                     form.setFieldValue(
-                                                                        "destinationBankAccountId",
+                                                            renderChildren:
+                                                               () => (
+                                                                  <NovaConta
+                                                                     onSuccess={(
                                                                         id,
-                                                                     );
-                                                                     closeTopCredenza();
-                                                                  }}
-                                                               />
-                                                            ),
+                                                                     ) => {
+                                                                        form.setFieldValue(
+                                                                           "destinationBankAccountId",
+                                                                           id,
+                                                                        );
+                                                                        closeTopCredenza();
+                                                                     }}
+                                                                  />
+                                                               ),
                                                          })
                                                       }
                                                       type="button"
@@ -1304,19 +1306,20 @@ function TransactionCredenzaContent({
                                                       className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                                       onClick={() =>
                                                          openCredenza({
-                                                            children: (
-                                                               <NovaConta
-                                                                  onSuccess={(
-                                                                     id,
-                                                                  ) => {
-                                                                     form.setFieldValue(
-                                                                        "bankAccountId",
+                                                            renderChildren:
+                                                               () => (
+                                                                  <NovaConta
+                                                                     onSuccess={(
                                                                         id,
-                                                                     );
-                                                                     closeTopCredenza();
-                                                                  }}
-                                                               />
-                                                            ),
+                                                                     ) => {
+                                                                        form.setFieldValue(
+                                                                           "bankAccountId",
+                                                                           id,
+                                                                        );
+                                                                        closeTopCredenza();
+                                                                     }}
+                                                                  />
+                                                               ),
                                                          })
                                                       }
                                                       type="button"
@@ -1369,7 +1372,7 @@ function TransactionCredenzaContent({
                                              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                              onClick={() =>
                                                 openCredenza({
-                                                   children: (
+                                                   renderChildren: () => (
                                                       <QueryBoundary
                                                          fallback={
                                                             <Skeleton className="h-40 w-full" />
@@ -1434,7 +1437,7 @@ function TransactionCredenzaContent({
                                                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                                    onClick={() =>
                                                       openCredenza({
-                                                         children: (
+                                                         renderChildren: () => (
                                                             <NovaCategoria
                                                                transactionType={
                                                                   type ===
@@ -1597,7 +1600,7 @@ function TransactionCredenzaContent({
                                        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                        onClick={() =>
                                           openCredenza({
-                                             children: (
+                                             renderChildren: () => (
                                                 <NovaTag
                                                    onSuccess={(id) => {
                                                       form.setFieldValue(
@@ -1655,7 +1658,7 @@ function TransactionCredenzaContent({
                                           className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                           onClick={() =>
                                              openCredenza({
-                                                children: (
+                                                renderChildren: () => (
                                                    <NovoContato
                                                       onSuccess={(id) => {
                                                          form.setFieldValue(

@@ -188,7 +188,7 @@ function DashboardsList() {
             <Button
                onClick={() =>
                   openCredenza({
-                     children: (
+                     renderChildren: () => (
                         <CreateDashboardForm onSuccess={closeCredenza} />
                      ),
                   })
@@ -234,7 +234,9 @@ function DashboardsPage() {
 
    const handleCreateDashboard = useCallback(() => {
       openCredenza({
-         children: <CreateDashboardForm onSuccess={closeCredenza} />,
+         renderChildren: () => (
+            <CreateDashboardForm onSuccess={closeCredenza} />
+         ),
       });
    }, [openCredenza, closeCredenza]);
 

@@ -150,7 +150,7 @@ function TagsList({ navigate }: TagsListProps) {
    const handleEdit = useCallback(
       (tag: TagRow) => {
          openCredenza({
-            children: (
+            renderChildren: () => (
                <TagForm
                   mode="edit"
                   onSuccess={closeCredenza}
@@ -287,7 +287,9 @@ function TagsPage() {
 
    const handleCreate = useCallback(() => {
       openCredenza({
-         children: <TagForm mode="create" onSuccess={closeCredenza} />,
+         renderChildren: () => (
+            <TagForm mode="create" onSuccess={closeCredenza} />
+         ),
       });
    }, [openCredenza, closeCredenza]);
 

@@ -221,7 +221,7 @@ function SidebarScopeSwitcherContent() {
 
          if (projectLimit !== null && teams.length >= projectLimit) {
             openCredenza({
-               children: (
+               renderChildren: () => (
                   <>
                      <CredenzaHeader>
                         <CredenzaTitle>Limite de espaços</CredenzaTitle>
@@ -256,7 +256,7 @@ function SidebarScopeSwitcherContent() {
             return;
          }
 
-         openCredenza({ children: <CreateTeamForm /> });
+         openCredenza({ renderChildren: () => <CreateTeamForm /> });
       },
       [
          openCredenza,
@@ -272,7 +272,7 @@ function SidebarScopeSwitcherContent() {
    const handleNewOrganization = useCallback(
       (e?: React.MouseEvent) => {
          e?.stopPropagation();
-         openCredenza({ children: <ManageOrganizationForm /> });
+         openCredenza({ renderChildren: () => <ManageOrganizationForm /> });
       },
       [openCredenza],
    );

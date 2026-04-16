@@ -217,7 +217,7 @@ function ServicesList({ filters }: { filters: FiltersState }) {
    const handleEdit = useCallback(
       (row: ServiceRow) => {
          openCredenza({
-            children: (
+            renderChildren: () => (
                <ServiceForm
                   mode="edit"
                   onSuccess={closeCredenza}
@@ -328,14 +328,14 @@ function ServicesPage() {
 
    const handleCreate = useCallback(() => {
       openCredenza({
-         children: <ServiceForm mode="create" onSuccess={closeCredenza} />,
+         renderChildren: () => (
+            <ServiceForm mode="create" onSuccess={closeCredenza} />
+         ),
       });
    }, [openCredenza, closeCredenza]);
 
    const handleImport = useCallback(() => {
-      openCredenza({
-         children: <ServiceImportCredenza />,
-      });
+      openCredenza({ renderChildren: () => <ServiceImportCredenza /> });
    }, [openCredenza]);
 
    const handleExport = useCallback(() => {

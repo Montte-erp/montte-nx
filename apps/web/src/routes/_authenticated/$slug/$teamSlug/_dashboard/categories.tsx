@@ -211,7 +211,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          if (category.parentId !== null) {
             const parent = result.find((c) => c.id === category.parentId);
             openCredenza({
-               children: (
+               renderChildren: () => (
                   <SubcategoryForm
                      mode="edit"
                      id={category.id}
@@ -224,7 +224,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
             return;
          }
          openCredenza({
-            children: (
+            renderChildren: () => (
                <CategoryForm
                   category={{
                      id: category.id,
@@ -245,7 +245,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
    const handleAddSubcategory = useCallback(
       (category: CategoryRow) => {
          openCredenza({
-            children: (
+            renderChildren: () => (
                <SubcategoryForm
                   mode="create"
                   onSuccess={closeCredenza}
@@ -450,13 +450,17 @@ function CategoriesPage() {
 
    const handleCreate = useCallback(() => {
       openCredenza({
-         children: <CategoryForm mode="create" onSuccess={closeCredenza} />,
+         renderChildren: () => (
+            <CategoryForm mode="create" onSuccess={closeCredenza} />
+         ),
       });
    }, [openCredenza, closeCredenza]);
 
    const handleImport = useCallback(() => {
       openCredenza({
-         children: <CategoryImportCredenza onSuccess={closeCredenza} />,
+         renderChildren: () => (
+            <CategoryImportCredenza onSuccess={closeCredenza} />
+         ),
       });
    }, [openCredenza, closeCredenza]);
 

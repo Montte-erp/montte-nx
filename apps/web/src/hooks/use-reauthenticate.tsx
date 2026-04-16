@@ -86,7 +86,7 @@ export function useReauthenticate() {
    const reauthenticate = useCallback(
       (onSuccess: () => void, onCancel?: () => void) => {
          openCredenza({
-            children: (
+            renderChildren: () => (
                <ReauthContent
                   onCancel={() => {
                      closeCredenza();

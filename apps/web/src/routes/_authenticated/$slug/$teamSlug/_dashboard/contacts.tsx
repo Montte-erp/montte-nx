@@ -180,7 +180,7 @@ function ContactsList() {
    const handleEdit = useCallback(
       (contact: ContactRow) => {
          openCredenza({
-            children: (
+            renderChildren: () => (
                <ContactForm
                   contact={contact}
                   mode="edit"
@@ -298,7 +298,9 @@ function ContactsPage() {
 
    const handleCreate = useCallback(() => {
       openCredenza({
-         children: <ContactForm mode="create" onSuccess={closeCredenza} />,
+         renderChildren: () => (
+            <ContactForm mode="create" onSuccess={closeCredenza} />
+         ),
       });
    }, [openCredenza, closeCredenza]);
 

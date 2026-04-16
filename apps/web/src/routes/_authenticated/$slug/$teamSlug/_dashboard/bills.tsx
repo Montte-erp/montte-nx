@@ -190,7 +190,9 @@ function BillsList({ type, tableState, onTableStateChange }: BillsListProps) {
    const handlePay = useCallback(
       (bill: BillRow) => {
          openCredenza({
-            children: <BillPayCredenza bill={bill} onSuccess={closeCredenza} />,
+            renderChildren: () => (
+               <BillPayCredenza bill={bill} onSuccess={closeCredenza} />
+            ),
          });
       },
       [openCredenza, closeCredenza],
@@ -199,7 +201,9 @@ function BillsList({ type, tableState, onTableStateChange }: BillsListProps) {
    const handleEdit = useCallback(
       (bill: BillRow) => {
          openCredenza({
-            children: <BillForm bill={bill} onSuccess={closeCredenza} />,
+            renderChildren: () => (
+               <BillForm bill={bill} onSuccess={closeCredenza} />
+            ),
          });
       },
       [openCredenza, closeCredenza],

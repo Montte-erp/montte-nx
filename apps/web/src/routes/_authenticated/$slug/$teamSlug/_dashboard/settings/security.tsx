@@ -175,7 +175,10 @@ function SessionsSection({
    sessions: SessionType[];
    currentSessionId: string | undefined;
    currentSessionLoginMethod: string | null;
-   openCredenza: (options: { children: React.ReactNode }) => void;
+   openCredenza: (options: {
+      renderChildren: () => React.ReactNode;
+      className?: string;
+   }) => void;
 }) {
    return (
       <section className="space-y-3">
@@ -255,7 +258,7 @@ function SessionsSection({
                               <Button
                                  onClick={() =>
                                     openCredenza({
-                                       children: (
+                                       renderChildren: () => (
                                           <SessionDetailsForm
                                              currentSessionId={
                                                 currentSessionId || null
