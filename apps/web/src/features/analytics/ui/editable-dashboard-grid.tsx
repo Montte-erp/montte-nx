@@ -19,7 +19,7 @@ import {
 import {
    DataTable,
    type DataTableStoredState,
-} from "@packages/ui/components/data-table";
+} from "@/features/data-view/data-table";
 import {
    useMutation,
    useSuspenseQuery,

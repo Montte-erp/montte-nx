@@ -1,8 +1,8 @@
 import dayjs from "dayjs";
 import type { BudgetGoalWithProgress } from "@core/database/repositories/budget-goals-repository";
 import { Button } from "@packages/ui/components/button";
-import { DataTable } from "@packages/ui/components/data-table";
-import type { DataTableStoredState } from "@packages/ui/components/data-table";
+import { DataTable } from "@/features/data-view/data-table";
+import type { DataTableStoredState } from "@/features/data-view/data-table";
 import {
    DropdownMenu,
    DropdownMenuContent,

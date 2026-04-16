@@ -2,7 +2,7 @@ import { Button } from "@packages/ui/components/button";
 import {
    DataTable,
    type DataTableStoredState,
-} from "@packages/ui/components/data-table";
+} from "@/features/data-view/data-table";
 import { Input } from "@packages/ui/components/input";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { InviteMemberForm } from "./-members/invite-member-form";

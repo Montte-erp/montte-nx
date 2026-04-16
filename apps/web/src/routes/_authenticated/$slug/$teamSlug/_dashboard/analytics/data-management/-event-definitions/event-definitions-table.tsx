@@ -2,7 +2,7 @@ import { Badge } from "@packages/ui/components/badge";
 import {
    DataTable,
    type DataTableStoredState,
-} from "@packages/ui/components/data-table";
+} from "@/features/data-view/data-table";
 import { Switch } from "@packages/ui/components/switch";
 import type {
    ColumnDef,

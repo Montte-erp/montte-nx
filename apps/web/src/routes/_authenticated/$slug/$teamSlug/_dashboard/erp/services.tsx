@@ -1,7 +1,10 @@
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
-import { DataTable } from "@packages/ui/components/data-table";
-import type { DataTableStoredState } from "@packages/ui/components/data-table";
+import { DataTable } from "@/features/data-view/data-table";
+import type {
+   DataTableStoredState,
+   ImportConfig,
+} from "@/features/data-view/data-table";
 import {
    Empty,
    EmptyDescription,
@@ -23,15 +26,7 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnFiltersState, SortingState } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
-import {
-   Briefcase,
-   Download,
-   Pencil,
-   Plus,
-   Search,
-   Trash2,
-   Upload,
-} from "lucide-react";
+import { Briefcase, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
@@ -39,14 +34,12 @@ import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
-import { ServiceImportCredenza } from "@/features/services/ui/service-import-credenza";
 import { ServicesAnalyticsHeader } from "@/features/services/ui/services-analytics-header";
 import {
    buildServiceColumns,
    type ServiceRow,
 } from "@/features/services/ui/services-columns";
 import { ServiceForm } from "@/features/services/ui/services-form";
-import { exportServicesCsv } from "@/features/services/utils/export-services-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -198,6 +191,26 @@ function ServicesList({ filters }: { filters: FiltersState }) {
       }),
    );
 
+   const bulkCreateMutation = useMutation(
+      orpc.services.bulkCreate.mutationOptions({
+         onError: (e) => toast.error(e.message || "Erro ao importar serviços."),
+      }),
+   );
+
+   const importConfig: ImportConfig = {
+      label: "Serviços",
+      onImport: async (rows) => {
+         const result = await bulkCreateMutation.mutateAsync({
+            services: rows.map((r) => ({
+               name: r.name ?? "",
+               basePrice: r.basePrice ?? "0",
+               description: r.description || null,
+            })),
+         });
+         return { imported: result.created };
+      },
+   };
+
    const filtered = useMemo(() => {
       let result = servicesList as ServiceRow[];
       if (filters.search) {
@@ -272,6 +285,8 @@ function ServicesList({ filters }: { filters: FiltersState }) {
             <DataTable
                columns={columns}
                data={filtered}
+               exportConfig={{ filename: "servicos" }}
+               importConfig={importConfig}
                getRowId={(row) => row.id}
                sorting={sorting}
                onSortingChange={setSorting}
@@ -322,10 +337,6 @@ function ServicesPage() {
    );
    const categories = categoriesResult;
 
-   const { data: servicesList } = useSuspenseQuery(
-      orpc.services.getAll.queryOptions({}),
-   );
-
    const handleCreate = useCallback(() => {
       openCredenza({
          renderChildren: () => (
@@ -334,41 +345,14 @@ function ServicesPage() {
       });
    }, [openCredenza, closeCredenza]);
 
-   const handleImport = useCallback(() => {
-      openCredenza({
-         renderChildren: () => (
-            <ServiceImportCredenza onClose={closeCredenza} />
-         ),
-      });
-   }, [openCredenza, closeCredenza]);
-
-   const handleExport = useCallback(() => {
-      if (servicesList && servicesList.length > 0) {
-         exportServicesCsv(servicesList as ServiceRow[]);
-         toast.success("CSV exportado.");
-      } else {
-         toast.info("Nenhum serviço para exportar.");
-      }
-   }, [servicesList]);
-
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
-               <div className="flex items-center gap-2">
-                  <Button onClick={handleImport} variant="outline">
-                     <Upload className="size-4 mr-1" />
-                     Importar
-                  </Button>
-                  <Button onClick={handleExport} variant="outline">
-                     <Download className="size-4 mr-1" />
-                     Exportar
-                  </Button>
-                  <Button onClick={handleCreate}>
-                     <Plus className="size-4 mr-1" />
-                     Novo Serviço
-                  </Button>
-               </div>
+               <Button onClick={handleCreate}>
+                  <Plus className="size-4 mr-1" />
+                  Novo Serviço
+               </Button>
             }
             description="Gerencie o catálogo de serviços"
             title="Serviços"

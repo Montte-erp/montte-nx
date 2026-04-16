@@ -21,6 +21,13 @@ export function buildServiceColumns(): ColumnDef<ServiceRow>[] {
       {
          accessorKey: "name",
          header: "Nome",
+         meta: {
+            label: "Nome",
+            exportable: true,
+            importable: true,
+            required: true,
+            fieldPatterns: ["nome", "name", "servico", "service"],
+         },
          cell: ({ row }) => (
             <span className="font-medium">{row.original.name}</span>
          ),
@@ -28,13 +35,36 @@ export function buildServiceColumns(): ColumnDef<ServiceRow>[] {
       {
          accessorKey: "basePrice",
          header: "Preço padrão",
+         meta: {
+            label: "Preço padrão",
+            exportable: true,
+            importable: true,
+            required: true,
+            fieldPatterns: ["preco", "price", "valor", "value", "baseprice"],
+         },
          cell: ({ row }) => (
             <span>{format(of(row.original.basePrice, "BRL"), "pt-BR")}</span>
          ),
       },
       {
+         accessorKey: "description",
+         header: "Descrição",
+         meta: {
+            label: "Descrição",
+            exportable: true,
+            importable: true,
+            fieldPatterns: ["descricao", "description", "obs"],
+         },
+         cell: ({ row }) => (
+            <span className="text-muted-foreground">
+               {row.original.description ?? "—"}
+            </span>
+         ),
+      },
+      {
          accessorKey: "categoryName",
          header: "Categoria",
+         meta: { label: "Categoria", exportable: true },
          cell: ({ row }) =>
             row.original.categoryName ? (
                <Badge
@@ -56,7 +86,8 @@ export function buildServiceColumns(): ColumnDef<ServiceRow>[] {
       },
       {
          accessorKey: "tagName",
-         header: "Tag",
+         header: "Centro de Custo",
+         meta: { label: "Centro de Custo", exportable: true },
          cell: ({ row }) =>
             row.original.tagName ? (
                <Badge

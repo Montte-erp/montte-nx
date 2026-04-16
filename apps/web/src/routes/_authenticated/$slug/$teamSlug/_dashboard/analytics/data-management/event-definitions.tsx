@@ -5,7 +5,7 @@ import {
    CardHeader,
    CardTitle,
 } from "@packages/ui/components/card";
-import type { DataTableStoredState } from "@packages/ui/components/data-table";
+import type { DataTableStoredState } from "@/features/data-view/data-table";
 import { Input } from "@packages/ui/components/input";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";

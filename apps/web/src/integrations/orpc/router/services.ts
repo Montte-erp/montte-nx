@@ -79,6 +79,27 @@ export const exportAll = protectedProcedure.handler(async ({ context }) => {
    return listServices(context.db, context.teamId);
 });
 
+export const bulkCreate = protectedProcedure
+   .input(
+      z.object({
+         services: z.array(createServiceSchema).min(1),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      const results = await Promise.allSettled(
+         input.services.map((s) =>
+            createService(context.db, context.teamId, s),
+         ),
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      if (failed > 0) {
+         throw AppError.internal(
+            `${failed} serviço(s) não puderam ser importados.`,
+         );
+      }
+      return { created: input.services.length };
+   });
+
 export const getVariants = protectedProcedure
    .input(z.object({ serviceId: z.string().uuid() }))
    .handler(async ({ context, input }) => {

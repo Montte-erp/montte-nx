@@ -1,6 +1,6 @@
 import { Button } from "@packages/ui/components/button";
-import { DataTable } from "@packages/ui/components/data-table";
-import type { DataTableStoredState } from "@packages/ui/components/data-table";
+import { DataTable } from "@/features/data-view/data-table";
+import type { DataTableStoredState } from "@/features/data-view/data-table";
 import {
    Empty,
    EmptyDescription,

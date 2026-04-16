@@ -5,8 +5,8 @@ import { KeyRound, Plus, Trash2 } from "lucide-react";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import type { DataTableStoredState } from "@packages/ui/components/data-table";
-import { DataTable } from "@packages/ui/components/data-table";
+import type { DataTableStoredState } from "@/features/data-view/data-table";
+import { DataTable } from "@/features/data-view/data-table";
 import {
    Empty,
    EmptyDescription,

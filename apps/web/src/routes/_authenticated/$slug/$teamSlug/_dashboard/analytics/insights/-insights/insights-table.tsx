@@ -3,7 +3,7 @@ import { Button } from "@packages/ui/components/button";
 import {
    DataTable,
    type DataTableStoredState,
-} from "@packages/ui/components/data-table";
+} from "@/features/data-view/data-table";
 import {
    Empty,
    EmptyContent,

@@ -5,7 +5,7 @@ import {
    ContextPanelHeader,
    ContextPanelTitle,
 } from "@packages/ui/components/context-panel";
-import type { DataTableStoredState } from "@packages/ui/components/data-table";
+import type { DataTableStoredState } from "@/features/data-view/data-table";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import {
    useMutation,

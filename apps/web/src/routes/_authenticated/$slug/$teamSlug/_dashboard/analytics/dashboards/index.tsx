@@ -6,7 +6,7 @@ import {
    ContextPanelHeader,
    ContextPanelTitle,
 } from "@packages/ui/components/context-panel";
-import { DataTable } from "@packages/ui/components/data-table";
+import { DataTable } from "@/features/data-view/data-table";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import {
    useMutation,
