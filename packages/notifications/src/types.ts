@@ -2,6 +2,7 @@ export const NOTIFICATION_TYPES = {
    AI_KEYWORD_DERIVED: "ai.keyword_derived",
    AI_TRANSACTION_CATEGORIZED: "ai.transaction_categorized",
    CRON_KEYWORDS_BACKFILL: "cron.keywords_backfill",
+   IMPORT_BATCH: "import.batch",
 } as const;
 
 export type NotificationType =
@@ -18,6 +19,11 @@ export type NotificationPayloadMap = {
    };
    "cron.keywords_backfill": {
       count: number;
+   };
+   "import.batch": {
+      importId: string;
+      created: number;
+      total: number;
    };
 };
 

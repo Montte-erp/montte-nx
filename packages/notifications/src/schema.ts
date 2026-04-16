@@ -5,6 +5,7 @@ export const jobNotificationSchema = z.object({
    type: z.string(),
    status: z.union([
       z.literal("started"),
+      z.literal("progress"),
       z.literal("completed"),
       z.literal("failed"),
    ]),

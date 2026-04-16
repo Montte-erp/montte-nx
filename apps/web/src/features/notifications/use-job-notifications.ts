@@ -18,7 +18,7 @@ export function useJobNotifications() {
    useEffect(() => {
       if (!data) return;
 
-      if (data.status === "started") {
+      if (data.status === "started" || data.status === "progress") {
          toast.loading(data.message, { id: TOAST_ID });
          return;
       }
@@ -31,7 +31,9 @@ export function useJobNotifications() {
       toast.info(data.message, { id: TOAST_ID });
       if (
          data.type === NOTIFICATION_TYPES.AI_KEYWORD_DERIVED ||
-         data.type === NOTIFICATION_TYPES.CRON_KEYWORDS_BACKFILL
+         data.type === NOTIFICATION_TYPES.CRON_KEYWORDS_BACKFILL ||
+         (data.type === NOTIFICATION_TYPES.IMPORT_BATCH &&
+            data.status === "completed")
       ) {
          queryClient.invalidateQueries({
             queryKey: orpc.categories.getAll.queryKey(),

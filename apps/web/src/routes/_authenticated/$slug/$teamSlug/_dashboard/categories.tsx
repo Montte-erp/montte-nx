@@ -14,7 +14,11 @@ import {
 } from "@packages/ui/components/selection-action-bar";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import {
+   useMutation,
+   useQueryClient,
+   useSuspenseQuery,
+} from "@tanstack/react-query";
 import type {
    ColumnFiltersState,
    OnChangeFn,
@@ -23,24 +27,12 @@ import type {
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import {
-   DropdownMenu,
-   DropdownMenuContent,
-   DropdownMenuItem,
-   DropdownMenuSub,
-   DropdownMenuSubContent,
-   DropdownMenuSubTrigger,
-   DropdownMenuTrigger,
-} from "@packages/ui/components/dropdown-menu";
-import {
    Archive,
    ArchiveRestore,
-   Download,
-   MoreHorizontal,
    FolderOpen,
    Pencil,
    Plus,
    Trash2,
-   Upload,
 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { fromPromise } from "neverthrow";
@@ -54,14 +46,17 @@ import {
 import { CategoryForm } from "@/features/categories/ui/categories-form";
 import { SubcategoryForm } from "@/features/categories/ui/subcategory-form";
 import { CategoryFilterBar } from "./-categories/category-filter-bar";
-import { CategoryImportCredenza } from "./-categories/category-import-credenza";
 import {
    buildExportRows,
-   exportCategoriesCsv,
+   buildImportPayload,
+   createCategoryImportConfig,
    EXPORT_HEADERS,
-} from "./-categories/export-categories-csv";
+} from "./-categories/category-import-config";
+import { ImportWizard } from "@/features/import/import-wizard";
+import type { ImportStep } from "@/features/import/types";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
+import { useCsvFile } from "@/hooks/use-csv-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { useFileDownload } from "@/hooks/use-file-download";
 import { orpc } from "@/integrations/orpc/client";
@@ -80,6 +75,11 @@ const categoriesSearchSchema = z.object({
    includeArchived: z.boolean().catch(false).default(false),
    groupBy: z.boolean().catch(true).default(true),
    search: z.string().catch("").default(""),
+   importOpen: z.enum(["true"]).optional(),
+   importStep: z
+      .enum(["upload", "map", "preview", "confirm"])
+      .catch("upload")
+      .default("upload"),
 });
 
 export type CategoriesSearch = z.infer<typeof categoriesSearchSchema>;
@@ -624,8 +624,10 @@ function CategoriesPage() {
 
 function CategoriesPageContent() {
    const navigate = Route.useNavigate();
-   const { type, includeArchived, groupBy, search } = Route.useSearch();
+   const { type, includeArchived, groupBy, search, importOpen, importStep } =
+      Route.useSearch();
    const { openCredenza, closeCredenza } = useCredenza();
+   const queryClient = useQueryClient();
 
    const handleIncludeArchivedChange = useCallback(
       (checked: boolean) => {
@@ -693,90 +695,96 @@ function CategoriesPageContent() {
    }, [openCredenza, closeCredenza]);
 
    const handleImport = useCallback(() => {
-      openCredenza({
-         renderChildren: () => (
-            <CategoryImportCredenza onSuccess={closeCredenza} />
-         ),
+      navigate({
+         search: (prev: CategoriesSearch) => ({
+            ...prev,
+            importOpen: "true",
+            importStep: "upload",
+         }),
       });
-   }, [openCredenza, closeCredenza]);
+   }, [navigate]);
 
+   const importBatchMutation = useMutation(
+      orpc.categories.importBatch.mutationOptions(),
+   );
+   const checkDupsMutation = useMutation(
+      orpc.categories.checkDuplicates.mutationOptions(),
+   );
+
+   const closeImport = useCallback(() => {
+      navigate({
+         search: (prev: CategoriesSearch) => ({
+            ...prev,
+            importOpen: undefined,
+            importStep: undefined,
+         }),
+      });
+   }, [navigate]);
+
+   const importConfig = useMemo(
+      () =>
+         createCategoryImportConfig(
+            (rows) =>
+               importBatchMutation
+                  .mutateAsync({ categories: buildImportPayload(rows) })
+                  .then(() => undefined),
+            closeImport,
+            closeImport,
+            (rows) =>
+               checkDupsMutation.mutateAsync({
+                  names: rows.map((r) => r.name),
+               }),
+         ),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [],
+   );
+
+   const exportMutation = useMutation({
+      mutationFn: () =>
+         queryClient.fetchQuery(orpc.categories.exportAll.queryOptions()),
+      meta: { skipGlobalInvalidation: true },
+   });
+
+   const csv = useCsvFile();
    const { generate: generateXlsx } = useXlsxFile();
    const { download } = useFileDownload();
 
-   const handleExport = useCallback(async () => {
-      const result = await fromPromise(
-         orpc.categories.exportAll.call({}),
-         (e) => e,
-      );
+   const handleExportCsv = useCallback(async () => {
+      const result = await fromPromise(exportMutation.mutateAsync(), (e) => e);
       if (result.isErr()) {
          toast.error("Erro ao exportar categorias.");
          return;
       }
-      exportCategoriesCsv(result.value);
+      const rows = buildExportRows(result.value);
+      download(csv.generate(rows, [...EXPORT_HEADERS]), "categorias.csv");
       toast.success("Categorias exportadas com sucesso.");
-   }, []);
+   }, [exportMutation, csv, download]);
 
    const handleExportXlsx = useCallback(async () => {
-      const result = await fromPromise(
-         orpc.categories.exportAll.call({}),
-         (e) => e,
-      );
+      const result = await fromPromise(exportMutation.mutateAsync(), (e) => e);
       if (result.isErr()) {
          toast.error("Erro ao exportar categorias.");
          return;
       }
-
       const rows = buildExportRows(result.value);
-      const blob = generateXlsx(rows, [...EXPORT_HEADERS]);
-      download(blob, "categorias.xlsx");
+      download(generateXlsx(rows, [...EXPORT_HEADERS]), "categorias.xlsx");
       toast.success("Categorias exportadas com sucesso.");
-   }, [generateXlsx, download]);
+   }, [exportMutation, generateXlsx, download]);
 
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
-               <div className="flex gap-2">
-                  <DropdownMenu>
-                     <DropdownMenuTrigger asChild>
-                        <Button
-                           className="data-[state=open]:bg-accent data-[state=open]:text-accent-foreground data-[state=open]:border-accent"
-                           size="icon"
-                           tooltip="Importar / Exportar"
-                           variant="outline"
-                        >
-                           <MoreHorizontal />
-                        </Button>
-                     </DropdownMenuTrigger>
-                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={handleImport}>
-                           <Upload />
-                           Importar
-                        </DropdownMenuItem>
-                        <DropdownMenuSub>
-                           <DropdownMenuSubTrigger>
-                              <Download />
-                              Exportar
-                           </DropdownMenuSubTrigger>
-                           <DropdownMenuSubContent>
-                              <DropdownMenuItem onClick={handleExport}>
-                                 CSV
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={handleExportXlsx}>
-                                 XLSX
-                              </DropdownMenuItem>
-                           </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-                     </DropdownMenuContent>
-                  </DropdownMenu>
-                  <Button onClick={handleCreate}>
-                     <Plus />
-                     Nova Categoria
-                  </Button>
-               </div>
+               <Button onClick={handleCreate}>
+                  <Plus />
+                  Nova Categoria
+               </Button>
             }
             description="Gerencie as categorias das suas transações"
             title="Categorias"
+            onImport={handleImport}
+            onExportCsv={handleExportCsv}
+            onExportXlsx={handleExportXlsx}
          />
          <CategoryFilterBar
             groupBy={groupBy}
@@ -795,6 +803,22 @@ function CategoriesPageContent() {
          >
             <CategoriesList navigate={navigate} />
          </QueryBoundary>
+         {importOpen === "true" && (
+            <ImportWizard
+               config={importConfig}
+               step={importStep as ImportStep}
+               onStepChange={(s) =>
+                  navigate({
+                     search: (prev: CategoriesSearch) => ({
+                        ...prev,
+                        importStep: s,
+                     }),
+                     replace: true,
+                  })
+               }
+               onClose={closeImport}
+            />
+         )}
       </main>
    );
 }

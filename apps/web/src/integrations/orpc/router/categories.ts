@@ -16,7 +16,11 @@ import {
 import { user as userTable } from "@core/database/schemas/auth";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { startDeriveKeywordsWorkflow } from "@/integrations/dbos/workflows/runner";
+import {
+   startDeriveKeywordsWorkflow,
+   startImportBatchWorkflow,
+} from "@/integrations/dbos/workflows/runner";
+import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
 import { protectedProcedure } from "../server";
 
 const idSchema = z.object({ id: z.string().uuid() });
@@ -148,58 +152,35 @@ export const importBatch = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const userRecord = await context.db.query.user.findFirst({
-         where: eq(userTable.id, context.userId),
-         columns: { stripeCustomerId: true },
+      const [userRecord] = await Promise.all([
+         context.db.query.user.findFirst({
+            where: eq(userTable.id, context.userId),
+            columns: { stripeCustomerId: true },
+         }),
+      ]);
+
+      const importId = crypto.randomUUID();
+      startImportBatchWorkflow({
+         importId,
+         teamId: context.teamId,
+         organizationId: context.organizationId,
+         userId: context.userId,
+         stripeCustomerId: userRecord?.stripeCustomerId ?? null,
+         categories: input.categories.map((cat) => ({
+            name: cat.name,
+            type: cat.type,
+            color: cat.color ?? null,
+            icon: cat.icon ?? null,
+            keywords: cat.keywords ?? null,
+            participatesDre: cat.participatesDre,
+            subcategories: (cat.subcategories ?? []).map((s) => ({
+               name: s.name,
+               keywords: s.keywords ?? undefined,
+            })),
+         })),
       });
 
-      const { allResults, parentCategories } = await context.db.transaction(
-         async (tx) => {
-            const allResults = [];
-            const parentCategories = [];
-            for (const cat of input.categories) {
-               const { subcategories, ...catData } = cat;
-               const created = await createCategory(
-                  tx,
-                  context.teamId,
-                  catData,
-               );
-               parentCategories.push(created);
-               allResults.push(created);
-               if (subcategories && subcategories.length > 0) {
-                  for (const sub of subcategories) {
-                     const createdSub = await createCategory(
-                        tx,
-                        context.teamId,
-                        {
-                           name: sub.name,
-                           type: catData.type,
-                           parentId: created.id,
-                           participatesDre: false,
-                           keywords: sub.keywords ?? null,
-                        },
-                     );
-                     allResults.push(createdSub);
-                  }
-               }
-            }
-            return { allResults, parentCategories };
-         },
-      );
-
-      for (const created of parentCategories) {
-         startDeriveKeywordsWorkflow({
-            categoryId: created.id,
-            teamId: context.teamId,
-            organizationId: context.organizationId,
-            userId: context.userId,
-            name: created.name,
-            description: created.description,
-            stripeCustomerId: userRecord?.stripeCustomerId ?? null,
-         });
-      }
-
-      return allResults;
+      return { importId };
    });
 
 export const archive = protectedProcedure
@@ -228,4 +209,38 @@ export const bulkArchive = protectedProcedure
    .handler(async ({ context, input }) => {
       await bulkArchiveCategories(context.db, input.ids, context.teamId);
       return { archived: input.ids.length };
+   });
+
+export const checkDuplicates = protectedProcedure
+   .input(z.object({ names: z.array(z.string().min(1)) }))
+   .handler(async ({ context, input }) => {
+      const existing = await listCategories(context.db, context.teamId, {
+         includeArchived: false,
+      });
+      const parents = existing.filter((c) => c.parentId === null);
+      return input.names.map((name) => {
+         if (parents.length === 0) return 0;
+         const evalContext = { data: { name: name.toLowerCase() } };
+         return Math.max(
+            ...parents.map((e) => {
+               const group = {
+                  id: e.id,
+                  operator: "OR" as const,
+                  scoringMode: "weighted" as const,
+                  conditions: [
+                     {
+                        id: `${e.id}-name`,
+                        type: "string" as const,
+                        field: "name",
+                        operator: "ilike" as const,
+                        value: e.name.toLowerCase(),
+                        options: { weight: 1.0 },
+                     },
+                  ],
+               };
+               const result = evaluateConditionGroup(group, evalContext);
+               return result.scorePercentage ?? (result.passed ? 1 : 0);
+            }),
+         );
+      });
    });
