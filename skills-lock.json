@@ -11,6 +11,16 @@
          "sourceType": "github",
          "computedHash": "0ea184b3ade54eedfd7109e041ec44803b12f7abc89116d9fab21a47ef40f295"
       },
+      "paradedb-skill": {
+         "source": "paradedb/agent-skills",
+         "sourceType": "github",
+         "computedHash": "7045a6e531ab5b35de1dfbbed1e8e66b12946c0d2521f145666a3bc3534f1a5d"
+      },
+      "redis-best-practices": {
+         "source": "mindrally/skills",
+         "sourceType": "github",
+         "computedHash": "c362f644a6e3ed9b69a86fef4aa41ebcb4ff15552f03b7431f00642af5d3d5f1"
+      },
       "tanstack-ai": {
          "source": "tanstack-skills/tanstack-skills",
          "sourceType": "github",
