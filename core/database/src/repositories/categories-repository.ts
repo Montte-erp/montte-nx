@@ -619,11 +619,23 @@ export async function bulkArchiveCategories(
    teamId: string,
 ) {
    try {
+      const existing = await db.query.categories.findMany({
+         where: (fields, { and, inArray, eq }) =>
+            and(inArray(fields.id, ids), eq(fields.teamId, teamId)),
+      });
+      const defaultOne = existing.find((c) => c.isDefault);
+      if (defaultOne) {
+         throw AppError.conflict("Categorias padrão não podem ser arquivadas.");
+      }
+      const allDescendantIds = (
+         await Promise.all(ids.map((id) => getDescendantIds(db, id)))
+      ).flat();
+      const allIds = [...new Set([...ids, ...allDescendantIds])];
       await db
          .update(categories)
          .set({ isArchived: true, updatedAt: dayjs().toDate() })
          .where(
-            and(inArray(categories.id, ids), eq(categories.teamId, teamId)),
+            and(inArray(categories.id, allIds), eq(categories.teamId, teamId)),
          );
    } catch (err) {
       propagateError(err);

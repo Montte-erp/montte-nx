@@ -32,22 +32,25 @@ export const create = protectedProcedure
    .handler(async ({ context, input }) => {
       const { subcategories, ...catData } = input;
       const [category, userRecord] = await Promise.all([
-         createCategory(context.db, context.teamId, catData),
+         context.db.transaction(async (tx) => {
+            const created = await createCategory(tx, context.teamId, catData);
+            if (subcategories && subcategories.length > 0) {
+               for (const sub of subcategories) {
+                  await createCategory(tx, context.teamId, {
+                     name: sub.name,
+                     type: catData.type,
+                     parentId: created.id,
+                     participatesDre: false,
+                  });
+               }
+            }
+            return created;
+         }),
          context.db.query.user.findFirst({
             where: eq(userTable.id, context.userId),
             columns: { stripeCustomerId: true },
          }),
       ]);
-      if (subcategories && subcategories.length > 0) {
-         for (const sub of subcategories) {
-            await createCategory(context.db, context.teamId, {
-               name: sub.name,
-               type: catData.type,
-               parentId: category.id,
-               participatesDre: false,
-            });
-         }
-      }
       startDeriveKeywordsWorkflow({
          categoryId: category.id,
          teamId: context.teamId,
@@ -150,46 +153,53 @@ export const importBatch = protectedProcedure
          columns: { stripeCustomerId: true },
       });
 
-      const results = await context.db.transaction(async (tx) => {
-         const txResults = [];
-         for (const cat of input.categories) {
-            const { subcategories, ...catData } = cat;
-            const created = await createCategory(tx, context.teamId, catData);
-            txResults.push(created);
-            if (subcategories && subcategories.length > 0) {
-               for (const sub of subcategories) {
-                  const createdSub = await createCategory(tx, context.teamId, {
-                     name: sub.name,
-                     type: catData.type,
-                     parentId: created.id,
-                     participatesDre: false,
-                     keywords: sub.keywords ?? null,
-                  });
-                  txResults.push(createdSub);
+      const { allResults, parentCategories } = await context.db.transaction(
+         async (tx) => {
+            const allResults = [];
+            const parentCategories = [];
+            for (const cat of input.categories) {
+               const { subcategories, ...catData } = cat;
+               const created = await createCategory(
+                  tx,
+                  context.teamId,
+                  catData,
+               );
+               parentCategories.push(created);
+               allResults.push(created);
+               if (subcategories && subcategories.length > 0) {
+                  for (const sub of subcategories) {
+                     const createdSub = await createCategory(
+                        tx,
+                        context.teamId,
+                        {
+                           name: sub.name,
+                           type: catData.type,
+                           parentId: created.id,
+                           participatesDre: false,
+                           keywords: sub.keywords ?? null,
+                        },
+                     );
+                     allResults.push(createdSub);
+                  }
                }
             }
-         }
-         return txResults;
-      });
+            return { allResults, parentCategories };
+         },
+      );
 
-      for (const cat of input.categories) {
-         const created = results.find(
-            (r) => r.parentId === null && r.name === cat.name,
-         );
-         if (created) {
-            startDeriveKeywordsWorkflow({
-               categoryId: created.id,
-               teamId: context.teamId,
-               organizationId: context.organizationId,
-               userId: context.userId,
-               name: created.name,
-               description: created.description,
-               stripeCustomerId: userRecord?.stripeCustomerId ?? null,
-            });
-         }
+      for (const created of parentCategories) {
+         startDeriveKeywordsWorkflow({
+            categoryId: created.id,
+            teamId: context.teamId,
+            organizationId: context.organizationId,
+            userId: context.userId,
+            name: created.name,
+            description: created.description,
+            stripeCustomerId: userRecord?.stripeCustomerId ?? null,
+         });
       }
 
-      return results;
+      return allResults;
    });
 
 export const archive = protectedProcedure

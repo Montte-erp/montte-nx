@@ -12,8 +12,6 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 
-// ── Types ──────────────────────────────────────────────────────────────────
-
 export type RawData = { headers: string[]; rows: string[][] };
 
 export type MappedCategory = {
@@ -34,8 +32,6 @@ export type ImportPayloadItem = {
    keywords: string[] | null;
    subcategories: { name: string; keywords?: string[] }[];
 };
-
-// ── Constants ──────────────────────────────────────────────────────────────
 
 export const FIELD_OPTIONS = [
    { value: "__skip__", label: "Ignorar" },
@@ -87,8 +83,6 @@ export const TEMPLATE_ROWS: Record<string, string>[] = [
       "palavras-chave-sub": "",
    },
 ];
-
-// ── Pure helpers ───────────────────────────────────────────────────────────
 
 const MAPPING_PATTERNS: Record<string, RegExp> = {
    name: /^(nome|name|categoria|category)$/i,
@@ -185,22 +179,31 @@ function buildMappedCategories(
 
       if (subName) {
          const existing = categoryMap.get(name);
-         if (
-            existing &&
-            !existing.subcategories.some((s) => s.name === subName)
-         ) {
-            existing.subcategories.push({
-               name: subName,
-               keywords: subKeywords,
-            });
+         if (existing) {
+            const existingSub = existing.subcategories.find(
+               (s) => s.name === subName,
+            );
+            if (existingSub) {
+               if (subKeywords) {
+                  existingSub.keywords = [
+                     ...new Set([
+                        ...(existingSub.keywords ?? []),
+                        ...subKeywords,
+                     ]),
+                  ];
+               }
+            } else {
+               existing.subcategories.push({
+                  name: subName,
+                  keywords: subKeywords,
+               });
+            }
          }
       }
    }
 
    return Array.from(categoryMap.values());
 }
-
-// ── Context ────────────────────────────────────────────────────────────────
 
 type CategoryImportContextValue = {
    rawData: RawData | null;

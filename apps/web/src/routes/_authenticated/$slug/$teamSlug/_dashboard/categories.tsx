@@ -481,7 +481,11 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          return cat !== undefined && !cat.isDefault;
       });
       if (archivableIds.length === 0) return;
-      await bulkArchiveMutation.mutateAsync({ ids: archivableIds });
+      const result = await fromPromise(
+         bulkArchiveMutation.mutateAsync({ ids: archivableIds }),
+         (e) => e,
+      );
+      if (result.isErr()) return;
       toast.success(
          `${archivableIds.length} ${archivableIds.length === 1 ? "categoria arquivada" : "categorias arquivadas"}.`,
       );

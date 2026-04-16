@@ -93,13 +93,11 @@ export function CategoriesCardView({
                   className={`rounded-xl border overflow-hidden flex flex-col shadow-sm transition-shadow duration-200 hover:shadow-md${cat.isArchived ? " opacity-60" : ""}`}
                   key={cat.id}
                >
-                  {/* Accent strip — category color identity */}
                   <div
                      className="h-1 shrink-0"
                      style={{ backgroundColor: accentColor }}
                   />
 
-                  {/* Header */}
                   <Item>
                      <ItemMedia
                         className="size-10 rounded-lg font-bold text-white text-sm"
@@ -145,7 +143,6 @@ export function CategoriesCardView({
                      )}
                   </Item>
 
-                  {/* Subcategories */}
                   {hasSubs && (
                      <>
                         <ItemSeparator />
@@ -188,7 +185,6 @@ export function CategoriesCardView({
                      </>
                   )}
 
-                  {/* Actions */}
                   {!cat.isDefault && (
                      <>
                         <ItemSeparator />
