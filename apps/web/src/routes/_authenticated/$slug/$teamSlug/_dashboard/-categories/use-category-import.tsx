@@ -56,7 +56,7 @@ export const TEMPLATE_HEADERS = [
    "palavras-chave-sub",
 ] as const;
 
-export const TEMPLATE_ROWS = [
+export const TEMPLATE_ROWS: Record<string, string>[] = [
    {
       nome: "Alimentação",
       tipo: "despesa",

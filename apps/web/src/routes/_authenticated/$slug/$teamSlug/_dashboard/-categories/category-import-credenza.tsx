@@ -79,10 +79,7 @@ function TemplateCredenza({ onClose }: { onClose?: () => void }) {
                      className="flex flex-col gap-2 w-full cursor-pointer"
                      onClick={() => {
                         download(
-                           csv.generate(
-                              TEMPLATE_ROWS as Record<string, string>[],
-                              [...TEMPLATE_HEADERS],
-                           ),
+                           csv.generate(TEMPLATE_ROWS, [...TEMPLATE_HEADERS]),
                            "modelo-categorias.csv",
                         );
                         onClose?.();
@@ -104,10 +101,7 @@ function TemplateCredenza({ onClose }: { onClose?: () => void }) {
                      className="flex flex-col gap-2 w-full cursor-pointer"
                      onClick={() => {
                         download(
-                           xlsx.generate(
-                              TEMPLATE_ROWS as Record<string, string>[],
-                              [...TEMPLATE_HEADERS],
-                           ),
+                           xlsx.generate(TEMPLATE_ROWS, [...TEMPLATE_HEADERS]),
                            "modelo-categorias.xlsx",
                         );
                         onClose?.();
@@ -244,14 +238,14 @@ function MapStep({ methods }: { methods: StepperMethods }) {
       applyColumnMapping,
    } = useCategoryImportContext();
 
-   if (!rawData) return null;
-
-   const canProceed = Object.values(mapping).some((v) => v === "name");
-
    const handleNext = useCallback(() => {
       applyColumnMapping(mapping);
       methods.navigation.next();
    }, [applyColumnMapping, mapping, methods.navigation]);
+
+   if (!rawData) return null;
+
+   const canProceed = Object.values(mapping).some((v) => v === "name");
 
    return (
       <>
@@ -284,7 +278,7 @@ function MapStep({ methods }: { methods: StepperMethods }) {
                   </div>
                )}
 
-               <div className="flex flex-col gap-1">
+               <div className="flex flex-col gap-2">
                   {rawData.headers.map((header) => {
                      const sample = getSampleValues(rawData, header);
                      return (
