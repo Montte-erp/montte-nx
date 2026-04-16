@@ -141,6 +141,11 @@
          "sourceType": "github",
          "computedHash": "7e297aaf887e11fdc03e52bdbf44974e161e8f7c393170ced7dc66cace4f6d46"
       },
+      "ui-ux-expert": {
+         "source": "martinholovsky/claude-skills-generator",
+         "sourceType": "github",
+         "computedHash": "c8d244c733101670bf2909f2af53d468380269cfc6172938dbaa97111a9848e1"
+      },
       "ui-ux-polish": {
          "source": "dicklesworthstone/agent_flywheel_clawdbot_skills_and_integrations",
          "sourceType": "github",
@@ -150,6 +155,11 @@
          "source": "nextlevelbuilder/ui-ux-pro-max-skill",
          "sourceType": "github",
          "computedHash": "e688fcd4c5693e14ebd00d48e982dbd2be060fbea89f5f60531e79c704a1bc28"
+      },
+      "wcag-audit-patterns": {
+         "source": "wshobson/agents",
+         "sourceType": "github",
+         "computedHash": "df495bdd3466d293e019fa191422d0a3e6cb9c50f275189a70d9da25add075ac"
       },
       "web-design-guidelines": {
          "source": "vercel-labs/agent-skills",
