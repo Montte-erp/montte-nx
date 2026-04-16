@@ -1,4 +1,5 @@
 import { useCsvFile } from "@/hooks/use-csv-file";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { fromPromise, fromThrowable } from "neverthrow";
 import { invariant } from "foxact/invariant";
 import { z } from "zod";
@@ -211,7 +212,8 @@ const CategoryImportContext = createContext<CategoryImportContextValue | null>(
 );
 
 export function CategoryImportProvider({ children }: { children: ReactNode }) {
-   const { parse } = useCsvFile();
+   const { parse: parseCsv } = useCsvFile();
+   const { parse: parseXlsx } = useXlsxFile();
    const [rawData, setRawData] = useState<RawData | null>(null);
    const [mapping, setMappingState] = useState<Record<string, string>>({});
    const [savedMappingApplied, setSavedMappingApplied] = useState(false);
@@ -223,7 +225,14 @@ export function CategoryImportProvider({ children }: { children: ReactNode }) {
 
    const parseFile = useCallback(
       async (file: File): Promise<void> => {
-         const result = await fromPromise(parse(file), (e) => e);
+         const isXlsx =
+            file.name.endsWith(".xlsx") ||
+            file.type ===
+               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+         const result = await fromPromise(
+            isXlsx ? parseXlsx(file) : parseCsv(file),
+            (e) => e,
+         );
          if (result.isErr())
             throw new Error("Arquivo CSV inválido ou corrompido.");
          const raw = result.value;
@@ -250,7 +259,7 @@ export function CategoryImportProvider({ children }: { children: ReactNode }) {
          setMappingState(guessMapping(raw.headers));
          setSavedMappingApplied(false);
       },
-      [parse],
+      [parseCsv, parseXlsx],
    );
 
    const setMapping = useCallback((m: Record<string, string>) => {

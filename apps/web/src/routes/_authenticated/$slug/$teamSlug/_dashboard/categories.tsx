@@ -40,6 +40,9 @@ import {
    DropdownMenu,
    DropdownMenuContent,
    DropdownMenuItem,
+   DropdownMenuSub,
+   DropdownMenuSubContent,
+   DropdownMenuSubTrigger,
    DropdownMenuTrigger,
 } from "@packages/ui/components/dropdown-menu";
 import {
@@ -904,6 +907,7 @@ function CategoriesPageContent() {
                   <DropdownMenu>
                      <DropdownMenuTrigger asChild>
                         <Button
+                           className="data-[state=open]:bg-accent data-[state=open]:text-accent-foreground data-[state=open]:border-accent"
                            size="icon"
                            tooltip="Importar / Exportar"
                            variant="outline"
@@ -914,16 +918,22 @@ function CategoriesPageContent() {
                      <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={handleImport}>
                            <Upload />
-                           Importar CSV
+                           Importar
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleExport}>
-                           <Download />
-                           Exportar CSV
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleExportXlsx}>
-                           <Download />
-                           Exportar XLSX
-                        </DropdownMenuItem>
+                        <DropdownMenuSub>
+                           <DropdownMenuSubTrigger>
+                              <Download />
+                              Exportar
+                           </DropdownMenuSubTrigger>
+                           <DropdownMenuSubContent>
+                              <DropdownMenuItem onClick={handleExport}>
+                                 CSV
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={handleExportXlsx}>
+                                 XLSX
+                              </DropdownMenuItem>
+                           </DropdownMenuSubContent>
+                        </DropdownMenuSub>
                      </DropdownMenuContent>
                   </DropdownMenu>
                   <Button onClick={handleCreate}>

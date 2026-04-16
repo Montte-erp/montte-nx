@@ -181,7 +181,11 @@ function UploadStep({ methods }: { methods: StepperMethods }) {
                <StepBar methods={methods} />
 
                <Dropzone
-                  accept={{ "text/csv": [".csv"] }}
+                  accept={{
+                     "text/csv": [".csv"],
+                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                        [".xlsx"],
+                  }}
                   disabled={isPending}
                   maxFiles={1}
                   onDrop={([file]) => {
@@ -201,12 +205,25 @@ function UploadStep({ methods }: { methods: StepperMethods }) {
                            <p className="font-medium text-sm">
                               Arraste e solte ou clique para selecionar
                            </p>
-                           <div className="flex items-center gap-2 rounded-md border bg-background px-2.5 py-1">
-                              <FileSpreadsheet
-                                 aria-hidden="true"
-                                 className="size-3.5 text-emerald-600"
-                              />
-                              <span className="text-xs font-medium">CSV</span>
+                           <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 rounded-md border bg-background px-2.5 py-1">
+                                 <FileSpreadsheet
+                                    aria-hidden="true"
+                                    className="size-3.5 text-emerald-600"
+                                 />
+                                 <span className="text-xs font-medium">
+                                    CSV
+                                 </span>
+                              </div>
+                              <div className="flex items-center gap-2 rounded-md border bg-background px-2.5 py-1">
+                                 <FileSpreadsheet
+                                    aria-hidden="true"
+                                    className="size-3.5 text-green-600"
+                                 />
+                                 <span className="text-xs font-medium">
+                                    XLSX
+                                 </span>
+                              </div>
                            </div>
                         </>
                      )}
