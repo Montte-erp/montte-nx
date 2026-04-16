@@ -38,8 +38,8 @@ import {
 } from "@packages/ui/components/dropdown-menu";
 import {
    Archive,
-   ChevronDown,
    Download,
+   MoreHorizontal,
    FolderOpen,
    LayoutGrid,
    LayoutList,
@@ -630,9 +630,12 @@ function CategoriesPage() {
                   </ToggleGroup>
                   <DropdownMenu>
                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
-                           Importar / Exportar
-                           <ChevronDown />
+                        <Button
+                           size="icon"
+                           tooltip="Importar / Exportar"
+                           variant="outline"
+                        >
+                           <MoreHorizontal />
                         </Button>
                      </DropdownMenuTrigger>
                      <DropdownMenuContent align="end">
