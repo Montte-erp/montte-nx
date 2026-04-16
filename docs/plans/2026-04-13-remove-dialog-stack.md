@@ -13,49 +13,52 @@
 ## Context: File Inventory
 
 ### Files to DELETE
+
 - `packages/ui/src/components/dialog-stack.tsx`
 - `apps/web/src/hooks/use-dialog-stack.tsx`
 
 ### Files to RENAME (`*-dialog-stack.tsx` → `*-credenza.tsx`)
 
-| Old path | New path |
-|---|---|
-| `apps/web/src/features/transactions/ui/transaction-dialog-stack.tsx` | `apps/web/src/features/transactions/ui/transaction-credenza.tsx` |
-| `apps/web/src/features/transactions/ui/transaction-import-dialog-stack.tsx` | `apps/web/src/features/transactions/ui/transaction-import-credenza.tsx` |
-| `apps/web/src/features/bills/ui/bill-pay-dialog-stack.tsx` | `apps/web/src/features/bills/ui/bill-pay-credenza.tsx` |
-| `apps/web/src/features/bills/ui/bill-from-transaction-dialog-stack.tsx` | `apps/web/src/features/bills/ui/bill-from-transaction-credenza.tsx` |
-| `apps/web/src/features/budget-goals/ui/budget-goal-dialog-stack.tsx` | `apps/web/src/features/budget-goals/ui/budget-goal-credenza.tsx` |
-| `apps/web/src/features/services/ui/service-import-dialog-stack.tsx` | `apps/web/src/features/services/ui/service-import-credenza.tsx` |
-| `apps/web/src/features/analytics/ui/insight-edit-dialog-stack.tsx` | `apps/web/src/features/analytics/ui/insight-edit-credenza.tsx` |
-| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/-categories/category-import-dialog-stack.tsx` | `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/-categories/category-import-credenza.tsx` |
+| Old path                                                                                                                 | New path                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `apps/web/src/features/transactions/ui/transaction-dialog-stack.tsx`                                                     | `apps/web/src/features/transactions/ui/transaction-credenza.tsx`                                                     |
+| `apps/web/src/features/transactions/ui/transaction-import-dialog-stack.tsx`                                              | `apps/web/src/features/transactions/ui/transaction-import-credenza.tsx`                                              |
+| `apps/web/src/features/bills/ui/bill-pay-dialog-stack.tsx`                                                               | `apps/web/src/features/bills/ui/bill-pay-credenza.tsx`                                                               |
+| `apps/web/src/features/bills/ui/bill-from-transaction-dialog-stack.tsx`                                                  | `apps/web/src/features/bills/ui/bill-from-transaction-credenza.tsx`                                                  |
+| `apps/web/src/features/budget-goals/ui/budget-goal-dialog-stack.tsx`                                                     | `apps/web/src/features/budget-goals/ui/budget-goal-credenza.tsx`                                                     |
+| `apps/web/src/features/services/ui/service-import-dialog-stack.tsx`                                                      | `apps/web/src/features/services/ui/service-import-credenza.tsx`                                                      |
+| `apps/web/src/features/analytics/ui/insight-edit-dialog-stack.tsx`                                                       | `apps/web/src/features/analytics/ui/insight-edit-credenza.tsx`                                                       |
+| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/-categories/category-import-dialog-stack.tsx`             | `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/-categories/category-import-credenza.tsx`             |
 | `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/inventory/-inventory/inventory-movement-dialog-stack.tsx` | `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/inventory/-inventory/inventory-movement-credenza.tsx` |
 
 ### Files that import the above (need import path updates)
 
-| File | What changes |
-|---|---|
-| `apps/web/src/routes/__root.tsx` | Remove `GlobalDialogStack` import + render |
-| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/transactions.tsx` | `TransactionDialogStack` → `TransactionCredenza` from new path |
-| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/bills.tsx` | `BillPayDialogStack` → `BillPayCredenza` from new path |
-| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/goals.tsx` | `BudgetGoalDialogStack` → `BudgetGoalCredenza` from new path |
-| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/categories.tsx` | `CategoryImportDialogStack` → `CategoryImportCredenza` from new path |
-| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/inventory/index.tsx` | `InventoryMovementDialogStack` → `InventoryMovementCredenza` from new path |
-| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/erp/services.tsx` | `ServiceImportDialogStack` → `ServiceImportCredenza` from new path |
-| `apps/web/src/features/analytics/ui/dashboard-tile.tsx` | `InsightEditDialogStack` → `InsightEditCredenza` from new path |
-| `apps/web/src/features/transactions/ui/transactions-list.tsx` | Both `TransactionDialogStack` and `BillFromTransactionDialogStack` → new names/paths |
-| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/home/-home/quick-start-task.tsx` | `TransactionDialogStack` → `TransactionCredenza` |
+| File                                                                                            | What changes                                                                         |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `apps/web/src/routes/__root.tsx`                                                                | Remove `GlobalDialogStack` import + render                                           |
+| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/transactions.tsx`                | `TransactionDialogStack` → `TransactionCredenza` from new path                       |
+| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/bills.tsx`                       | `BillPayDialogStack` → `BillPayCredenza` from new path                               |
+| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/goals.tsx`                       | `BudgetGoalDialogStack` → `BudgetGoalCredenza` from new path                         |
+| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/categories.tsx`                  | `CategoryImportDialogStack` → `CategoryImportCredenza` from new path                 |
+| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/inventory/index.tsx`             | `InventoryMovementDialogStack` → `InventoryMovementCredenza` from new path           |
+| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/erp/services.tsx`                | `ServiceImportDialogStack` → `ServiceImportCredenza` from new path                   |
+| `apps/web/src/features/analytics/ui/dashboard-tile.tsx`                                         | `InsightEditDialogStack` → `InsightEditCredenza` from new path                       |
+| `apps/web/src/features/transactions/ui/transactions-list.tsx`                                   | Both `TransactionDialogStack` and `BillFromTransactionDialogStack` → new names/paths |
+| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/home/-home/quick-start-task.tsx` | `TransactionDialogStack` → `TransactionCredenza`                                     |
 
 ---
 
 ## Task 1: Delete dead code — `use-dialog-stack.tsx` + `GlobalDialogStack`
 
 **Files:**
+
 - Delete: `apps/web/src/hooks/use-dialog-stack.tsx`
 - Modify: `apps/web/src/routes/__root.tsx`
 
 **Step 1: Remove GlobalDialogStack from `__root.tsx`**
 
 In `apps/web/src/routes/__root.tsx`:
+
 - Remove import: `import { GlobalDialogStack } from "@/hooks/use-dialog-stack";`
 - Remove render: `<GlobalDialogStack />` (line ~100)
 
@@ -91,6 +94,7 @@ git commit -m "chore: remove dead dialog-stack infrastructure"
 ## Task 2: Rename `transaction-dialog-stack.tsx` → `transaction-credenza.tsx` (rename only, no logic changes yet)
 
 **Files:**
+
 - Rename: `apps/web/src/features/transactions/ui/transaction-dialog-stack.tsx` → `transaction-credenza.tsx`
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/transactions.tsx`
 - Modify: `apps/web/src/features/transactions/ui/transactions-list.tsx`
@@ -106,36 +110,43 @@ mv apps/web/src/features/transactions/ui/transaction-dialog-stack.tsx \
 **Step 2: Rename exports inside the new file**
 
 In `apps/web/src/features/transactions/ui/transaction-credenza.tsx`:
+
 - `TransactionDialogStackContent` → `TransactionCredenzaContent` (internal, line ~717)
 - `TransactionDialogStack` → `TransactionCredenza` (exported, line ~2012)
 
 **Step 3: Update imports in callers**
 
 In `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/transactions.tsx`:
+
 ```typescript
 // Before
 import { TransactionDialogStack } from "@/features/transactions/ui/transaction-dialog-stack";
 // After
 import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
 ```
+
 Also update the JSX: `<TransactionDialogStack` → `<TransactionCredenza`
 
 In `apps/web/src/features/transactions/ui/transactions-list.tsx`:
+
 ```typescript
 // Before
 import { TransactionDialogStack } from "@/features/transactions/ui/transaction-dialog-stack";
 // After
 import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
 ```
+
 Also update the JSX.
 
 In `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/home/-home/quick-start-task.tsx`:
+
 ```typescript
 // Before
 import { TransactionDialogStack } from "@/features/transactions/ui/transaction-dialog-stack";
 // After
 import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
 ```
+
 Also update the JSX.
 
 **Step 4: Verify typecheck**
@@ -176,6 +187,7 @@ import { closeTopCredenza, openCredenza } from "@/hooks/use-credenza";
 **Step 3: Remove `secondaryForm` state and `SecondaryForm` type**
 
 Remove:
+
 ```typescript
 type SecondaryForm =
    | { type: "bankAccount" }
@@ -187,6 +199,7 @@ type SecondaryForm =
 ```
 
 Remove from `TransactionCredenzaContent`:
+
 ```typescript
 const [secondaryForm, setSecondaryForm] = useState<SecondaryForm>(null);
 ```
@@ -194,6 +207,7 @@ const [secondaryForm, setSecondaryForm] = useState<SecondaryForm>(null);
 **Step 4: Remove the `if (secondaryForm) { return (...) }` block (lines ~874–934)**
 
 Delete the entire block:
+
 ```typescript
 if (secondaryForm) {
    return (
@@ -213,6 +227,7 @@ if (secondaryForm) {
 Find each `setSecondaryForm(...)` call using grep, then replace:
 
 **BankAccount** (previously `setSecondaryForm({ type: "bankAccount" })`):
+
 ```typescript
 openCredenza({
    children: (
@@ -227,6 +242,7 @@ openCredenza({
 ```
 
 **CreditCard** (previously `setSecondaryForm({ type: "creditCard" })`):
+
 ```typescript
 openCredenza({
    children: (
@@ -243,6 +259,7 @@ openCredenza({
 ```
 
 **Contact** (previously `setSecondaryForm({ type: "contact" })`):
+
 ```typescript
 openCredenza({
    children: (
@@ -257,6 +274,7 @@ openCredenza({
 ```
 
 **Category** (previously `setSecondaryForm({ type: "category", transactionType: ... })`):
+
 ```typescript
 openCredenza({
    children: (
@@ -274,6 +292,7 @@ openCredenza({
 Where `currentTransactionType` is the current `form.getFieldValue("type")` as `"income" | "expense"`.
 
 **Tag** (previously `setSecondaryForm({ type: "tag" })`):
+
 ```typescript
 openCredenza({
    children: (
@@ -291,6 +310,7 @@ openCredenza({
 **Step 6: Remove `onBack` props from secondary form components**
 
 The components `NovaConta`, `NovoCartao`, `NovoContato`, `NovaCategoria`, `NovaTag` all accept `onBack: () => void`. Since closing the top credenza is now handled by the user pressing the credenza close button (or `closeTopCredenza` after success), remove `onBack` from:
+
 - Their prop interface definitions
 - Their internal usage (the back `<Button onClick={onBack}>` in the header)
 - The `onBack` props passed at call sites (no longer needed)
@@ -321,6 +341,7 @@ For each file in this list, the operation is identical: rename file, rename expo
 ### 4a: `transaction-import-dialog-stack.tsx` → `transaction-import-credenza.tsx`
 
 **Files:**
+
 - Rename: `apps/web/src/features/transactions/ui/transaction-import-dialog-stack.tsx` → `transaction-import-credenza.tsx`
 - Find callers: `grep -r "transaction-import-dialog-stack\|TransactionImportDialogStack" apps/web/src --include="*.tsx" -l`
 - Update each caller's import path and component name.
@@ -330,6 +351,7 @@ Export rename: `TransactionImportDialogStack` → `TransactionImportCredenza`
 ### 4b: `bill-pay-dialog-stack.tsx` → `bill-pay-credenza.tsx`
 
 **Files:**
+
 - Rename: `apps/web/src/features/bills/ui/bill-pay-dialog-stack.tsx` → `bill-pay-credenza.tsx`
 - Caller: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/bills.tsx`
 - Export rename: `BillPayDialogStack` → `BillPayCredenza`, `BillPayDialogStackProps` → `BillPayCredenzaProps`
@@ -337,6 +359,7 @@ Export rename: `TransactionImportDialogStack` → `TransactionImportCredenza`
 ### 4c: `bill-from-transaction-dialog-stack.tsx` → `bill-from-transaction-credenza.tsx`
 
 **Files:**
+
 - Rename: `apps/web/src/features/bills/ui/bill-from-transaction-dialog-stack.tsx` → `bill-from-transaction-credenza.tsx`
 - Caller: `apps/web/src/features/transactions/ui/transactions-list.tsx`
 - Export rename: `BillFromTransactionDialogStack` → `BillFromTransactionCredenza`
@@ -344,6 +367,7 @@ Export rename: `TransactionImportDialogStack` → `TransactionImportCredenza`
 ### 4d: `budget-goal-dialog-stack.tsx` → `budget-goal-credenza.tsx`
 
 **Files:**
+
 - Rename: `apps/web/src/features/budget-goals/ui/budget-goal-dialog-stack.tsx` → `budget-goal-credenza.tsx`
 - Caller: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/goals.tsx`
 - Export rename: `BudgetGoalDialogStack` → `BudgetGoalCredenza`, `BudgetGoalDialogStackProps` → `BudgetGoalCredenzaProps`
@@ -351,6 +375,7 @@ Export rename: `TransactionImportDialogStack` → `TransactionImportCredenza`
 ### 4e: `service-import-dialog-stack.tsx` → `service-import-credenza.tsx`
 
 **Files:**
+
 - Rename: `apps/web/src/features/services/ui/service-import-dialog-stack.tsx` → `service-import-credenza.tsx`
 - Caller: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/erp/services.tsx`
 - Export rename: `ServiceImportDialogStack` → `ServiceImportCredenza`
@@ -358,6 +383,7 @@ Export rename: `TransactionImportDialogStack` → `TransactionImportCredenza`
 ### 4f: `insight-edit-dialog-stack.tsx` → `insight-edit-credenza.tsx`
 
 **Files:**
+
 - Rename: `apps/web/src/features/analytics/ui/insight-edit-dialog-stack.tsx` → `insight-edit-credenza.tsx`
 - Caller: `apps/web/src/features/analytics/ui/dashboard-tile.tsx`
 - Export rename: `InsightEditDialogStack` → `InsightEditCredenza`
@@ -365,6 +391,7 @@ Export rename: `TransactionImportDialogStack` → `TransactionImportCredenza`
 ### 4g: `category-import-dialog-stack.tsx` → `category-import-credenza.tsx`
 
 **Files:**
+
 - Rename: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/-categories/category-import-dialog-stack.tsx` → `category-import-credenza.tsx`
 - Caller: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/categories.tsx`
 - Export rename: `CategoryImportDialogStack` → `CategoryImportCredenza`
@@ -372,6 +399,7 @@ Export rename: `TransactionImportDialogStack` → `TransactionImportCredenza`
 ### 4h: `inventory-movement-dialog-stack.tsx` → `inventory-movement-credenza.tsx`
 
 **Files:**
+
 - Rename: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/inventory/-inventory/inventory-movement-dialog-stack.tsx` → `inventory-movement-credenza.tsx`
 - Caller: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/inventory/index.tsx`
 - Export rename: `InventoryMovementDialogStack` → `InventoryMovementCredenza`

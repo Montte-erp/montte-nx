@@ -1,4 +1,5 @@
-import { Store } from "@tanstack/react-store";
+import { createStore, createAtom } from "@tanstack/react-store";
+import { Info } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type React from "react";
 
@@ -6,7 +7,7 @@ export interface ContextPanelTab {
    id: string;
    icon: React.ElementType;
    label: string;
-   content: React.ReactNode;
+   renderContent: () => React.ReactNode;
    order?: number;
 }
 
@@ -32,16 +33,50 @@ interface ContextPanelState {
    isOpen: boolean;
    activeTabId: string;
    dynamicTabs: ContextPanelTab[];
-   infoContent: React.ReactNode;
+   renderInfoContent: (() => React.ReactNode) | null;
    pageActions: PanelAction[] | null;
    pageViewSwitch: PageViewSwitchConfig | null;
 }
 
-export const contextPanelStore = new Store<ContextPanelState>({
+export interface ContextPanelTabMeta {
+   id: string;
+   icon: React.ElementType;
+   label: string;
+   order?: number;
+}
+
+const INFO_TAB_META: ContextPanelTabMeta = {
+   id: "info",
+   icon: Info,
+   label: "Informações",
+   order: 0,
+};
+
+export const contextPanelStore = createStore<ContextPanelState>({
    isOpen: false,
    activeTabId: "info",
    dynamicTabs: [],
-   infoContent: null,
+   renderInfoContent: null,
    pageActions: null,
    pageViewSwitch: null,
+});
+
+export const allTabMetasAtom = createAtom(() => {
+   const { dynamicTabs } = contextPanelStore.state;
+   const dynamicMetas: ContextPanelTabMeta[] = dynamicTabs.map((t) => ({
+      id: t.id,
+      icon: t.icon,
+      label: t.label,
+      order: t.order,
+   }));
+   return [
+      INFO_TAB_META,
+      ...dynamicMetas.sort((a, b) => (a.order ?? 99) - (b.order ?? 99)),
+   ];
+});
+
+export const activeTabMetaAtom = createAtom(() => {
+   const allMetas = allTabMetasAtom.get();
+   const { activeTabId } = contextPanelStore.state;
+   return allMetas.find((t) => t.id === activeTabId) ?? allMetas[0] ?? null;
 });

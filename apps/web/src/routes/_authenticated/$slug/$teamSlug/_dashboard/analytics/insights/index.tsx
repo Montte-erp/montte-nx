@@ -146,7 +146,7 @@ function InsightsListPage() {
       });
    };
 
-   useContextPanelInfo(
+   useContextPanelInfo(() => (
       <ContextPanel>
          <ContextPanelHeader>
             <ContextPanelTitle>Ações</ContextPanelTitle>
@@ -158,8 +158,8 @@ function InsightsListPage() {
                onClick={handleCreate}
             />
          </ContextPanelContent>
-      </ContextPanel>,
-   );
+      </ContextPanel>
+   ));
 
    const { data: insights } = useSuspenseQuery(
       orpc.insights.list.queryOptions({}),

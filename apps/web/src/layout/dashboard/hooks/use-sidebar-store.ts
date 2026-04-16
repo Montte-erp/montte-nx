@@ -1,5 +1,4 @@
-import { useStore } from "@tanstack/react-store";
-import { Store } from "@tanstack/react-store";
+import { createStore, useStore } from "@tanstack/react-store";
 import { useCallback, useEffect } from "react";
 import { createPersistedStore } from "@/lib/persisted-store";
 
@@ -25,7 +24,7 @@ const { store: sidebarStore, useStorePersistence } =
       pinnedItems: [],
    });
 
-const transientStore = new Store<SidebarTransientState>({
+const transientStore = createStore<SidebarTransientState>({
    activeSection: null,
    searchQuery: "",
 });

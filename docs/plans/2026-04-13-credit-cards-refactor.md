@@ -12,25 +12,27 @@
 
 ## Arquitetura — o que muda
 
-| Camada | Hoje | Depois |
-|--------|------|--------|
-| Route `credit-cards.tsx` | inline `CreditCardsList()` fn, sem paginação | `validateSearch` com page/pageSize/search/status, `loaderDeps`, `prefetchQuery` paginado |
-| oRPC `credit-cards.ts` | `getAll` sem paginação, sem filtros | `getAll` com page/pageSize/search/status, novo `getSummary` |
-| Repo `credit-cards-repository.ts` | `listCreditCards(db, teamId)` simples | `listCreditCards` com filtros + paginação + totalCount |
-| `CreditCardsList` | inline no route | `features/credit-cards/ui/credit-cards-list.tsx` |
-| Colunas | 4 colunas, sem status/brand | + status + brand + utilization |
-| Import | não existe | credenza multi-step CSV/XLSX (mesmo padrão de transactions) |
-| Export | não existe | credenza CSV/XLSX com date range |
-| Summary bar | não existe | barra com totalLimit / totalUsed / qtd cards |
+| Camada                            | Hoje                                         | Depois                                                                                   |
+| --------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Route `credit-cards.tsx`          | inline `CreditCardsList()` fn, sem paginação | `validateSearch` com page/pageSize/search/status, `loaderDeps`, `prefetchQuery` paginado |
+| oRPC `credit-cards.ts`            | `getAll` sem paginação, sem filtros          | `getAll` com page/pageSize/search/status, novo `getSummary`                              |
+| Repo `credit-cards-repository.ts` | `listCreditCards(db, teamId)` simples        | `listCreditCards` com filtros + paginação + totalCount                                   |
+| `CreditCardsList`                 | inline no route                              | `features/credit-cards/ui/credit-cards-list.tsx`                                         |
+| Colunas                           | 4 colunas, sem status/brand                  | + status + brand + utilization                                                           |
+| Import                            | não existe                                   | credenza multi-step CSV/XLSX (mesmo padrão de transactions)                              |
+| Export                            | não existe                                   | credenza CSV/XLSX com date range                                                         |
+| Summary bar                       | não existe                                   | barra com totalLimit / totalUsed / qtd cards                                             |
 
 ---
 
 ## Task 1 — Repositório: paginação + filtros
 
 **Files:**
+
 - Modify: `core/database/src/repositories/credit-cards-repository.ts`
 
 ### Step 1: Ler o arquivo atual
+
 ```bash
 cat core/database/src/repositories/credit-cards-repository.ts
 ```
@@ -41,54 +43,52 @@ Substitua a assinatura e implementação de `listCreditCards`:
 
 ```typescript
 export type ListCreditCardsFilter = {
-  page?: number;
-  pageSize?: number;
-  search?: string;
-  status?: "active" | "blocked" | "cancelled";
+   page?: number;
+   pageSize?: number;
+   search?: string;
+   status?: "active" | "blocked" | "cancelled";
 };
 
 export async function listCreditCards(
-  db: DatabaseClient,
-  teamId: string,
-  filter: ListCreditCardsFilter = {},
+   db: DatabaseClient,
+   teamId: string,
+   filter: ListCreditCardsFilter = {},
 ) {
-  const { page = 1, pageSize = 20, search, status } = filter;
-  const offset = (page - 1) * pageSize;
+   const { page = 1, pageSize = 20, search, status } = filter;
+   const offset = (page - 1) * pageSize;
 
-  try {
-    const where = and(
-      eq(creditCards.teamId, teamId),
-      status ? eq(creditCards.status, status) : undefined,
-      search
-        ? or(ilike(creditCards.name, `%${search}%`))
-        : undefined,
-    );
+   try {
+      const where = and(
+         eq(creditCards.teamId, teamId),
+         status ? eq(creditCards.status, status) : undefined,
+         search ? or(ilike(creditCards.name, `%${search}%`)) : undefined,
+      );
 
-    const [data, [{ count }]] = await Promise.all([
-      db
-        .select()
-        .from(creditCards)
-        .where(where)
-        .orderBy(asc(creditCards.name))
-        .limit(pageSize)
-        .offset(offset),
-      db
-        .select({ count: sql<number>`cast(count(*) as int)` })
-        .from(creditCards)
-        .where(where),
-    ]);
+      const [data, [{ count }]] = await Promise.all([
+         db
+            .select()
+            .from(creditCards)
+            .where(where)
+            .orderBy(asc(creditCards.name))
+            .limit(pageSize)
+            .offset(offset),
+         db
+            .select({ count: sql<number>`cast(count(*) as int)` })
+            .from(creditCards)
+            .where(where),
+      ]);
 
-    return {
-      data,
-      totalCount: count,
-      page,
-      pageSize,
-      totalPages: Math.ceil(count / pageSize),
-    };
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Falha ao listar cartões de crédito");
-  }
+      return {
+         data,
+         totalCount: count,
+         page,
+         pageSize,
+         totalPages: Math.ceil(count / pageSize),
+      };
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Falha ao listar cartões de crédito");
+   }
 }
 ```
 
@@ -97,30 +97,34 @@ Adicione os imports necessários no topo: `and`, `or`, `ilike`, `asc`, `sql` de 
 ### Step 3: Adicionar `getCreditCardsSummary`
 
 ```typescript
-export async function getCreditCardsSummary(db: DatabaseClient, teamId: string) {
-  try {
-    const [row] = await db
-      .select({
-        totalCards: sql<number>`cast(count(*) as int)`,
-        totalLimit: sql<string>`coalesce(sum(credit_limit), 0)`,
-        activeCards: sql<number>`cast(count(*) filter (where status = 'active') as int)`,
-      })
-      .from(creditCards)
-      .where(eq(creditCards.teamId, teamId));
+export async function getCreditCardsSummary(
+   db: DatabaseClient,
+   teamId: string,
+) {
+   try {
+      const [row] = await db
+         .select({
+            totalCards: sql<number>`cast(count(*) as int)`,
+            totalLimit: sql<string>`coalesce(sum(credit_limit), 0)`,
+            activeCards: sql<number>`cast(count(*) filter (where status = 'active') as int)`,
+         })
+         .from(creditCards)
+         .where(eq(creditCards.teamId, teamId));
 
-    return {
-      totalCards: row?.totalCards ?? 0,
-      totalLimit: row?.totalLimit ?? "0",
-      activeCards: row?.activeCards ?? 0,
-    };
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Falha ao carregar resumo de cartões");
-  }
+      return {
+         totalCards: row?.totalCards ?? 0,
+         totalLimit: row?.totalLimit ?? "0",
+         activeCards: row?.activeCards ?? 0,
+      };
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Falha ao carregar resumo de cartões");
+   }
 }
 ```
 
 ### Step 4: Commit
+
 ```bash
 git add core/database/src/repositories/credit-cards-repository.ts
 git commit -m "feat(credit-cards): add pagination, filters and summary to repository"
@@ -131,9 +135,11 @@ git commit -m "feat(credit-cards): add pagination, filters and summary to reposi
 ## Task 2 — oRPC Router: paginação + getSummary
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/orpc/router/credit-cards.ts`
 
 ### Step 1: Ler o arquivo atual
+
 ```bash
 cat apps/web/src/integrations/orpc/router/credit-cards.ts
 ```
@@ -142,24 +148,24 @@ cat apps/web/src/integrations/orpc/router/credit-cards.ts
 
 ```typescript
 const listCreditCardsSchema = z.object({
-  page: z.number().int().positive().catch(1).default(1),
-  pageSize: z.number().int().positive().max(100).catch(20).default(20),
-  search: z.string().max(100).optional(),
-  status: z.enum(["active", "blocked", "cancelled"]).optional(),
+   page: z.number().int().positive().catch(1).default(1),
+   pageSize: z.number().int().positive().max(100).catch(20).default(20),
+   search: z.string().max(100).optional(),
+   status: z.enum(["active", "blocked", "cancelled"]).optional(),
 });
 
 export const getAll = protectedProcedure
-  .input(listCreditCardsSchema)
-  .handler(async ({ context, input }) => {
-    return listCreditCards(context.db, context.teamId, input);
-  });
+   .input(listCreditCardsSchema)
+   .handler(async ({ context, input }) => {
+      return listCreditCards(context.db, context.teamId, input);
+   });
 ```
 
 ### Step 3: Adicionar `getSummary`
 
 ```typescript
 export const getSummary = protectedProcedure.handler(async ({ context }) => {
-  return getCreditCardsSummary(context.db, context.teamId);
+   return getCreditCardsSummary(context.db, context.teamId);
 });
 ```
 
@@ -170,6 +176,7 @@ Atualize o import do repositório para incluir `getCreditCardsSummary` e `ListCr
 Verifique se `apps/web/src/integrations/orpc/router/index.ts` (ou similar) exporta `creditCards`. Se `getSummary` não aparecer automaticamente, adicione-o ao objeto exportado.
 
 ### Step 5: Commit
+
 ```bash
 git add apps/web/src/integrations/orpc/router/credit-cards.ts
 git commit -m "feat(credit-cards): add pagination, search filter and getSummary procedure"
@@ -180,9 +187,11 @@ git commit -m "feat(credit-cards): add pagination, search filter and getSummary 
 ## Task 3 — Colunas: adicionar status, brand, utilization
 
 **Files:**
+
 - Modify: `apps/web/src/features/credit-cards/ui/credit-cards-columns.tsx`
 
 ### Step 1: Ler o arquivo atual
+
 ```bash
 cat apps/web/src/features/credit-cards/ui/credit-cards-columns.tsx
 ```
@@ -241,6 +250,7 @@ columnHelper.accessor("brand", {
 ```
 
 ### Step 4: Commit
+
 ```bash
 git add apps/web/src/features/credit-cards/ui/credit-cards-columns.tsx
 git commit -m "feat(credit-cards): add status and brand columns"
@@ -251,10 +261,12 @@ git commit -m "feat(credit-cards): add status and brand columns"
 ## Task 4 — Extrair `CreditCardsList` para componente separado
 
 **Files:**
+
 - Create: `apps/web/src/features/credit-cards/ui/credit-cards-list.tsx`
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/credit-cards.tsx`
 
 ### Step 1: Ler a route atual completa
+
 ```bash
 cat "apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/credit-cards.tsx"
 ```
@@ -412,6 +424,7 @@ return (
 ```
 
 ### Step 4: Commit
+
 ```bash
 git add apps/web/src/features/credit-cards/ui/credit-cards-list.tsx
 git add "apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/credit-cards.tsx"
@@ -423,6 +436,7 @@ git commit -m "refactor(credit-cards): extract CreditCardsList to standalone com
 ## Task 5 — Route: validateSearch com paginação + loaderDeps
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/credit-cards.tsx`
 
 ### Step 1: Atualizar `validateSearch`
@@ -431,12 +445,21 @@ Substitua o schema atual pelo completo:
 
 ```typescript
 const creditCardsSearchSchema = z.object({
-  sorting: z.array(z.object({ id: z.string(), desc: z.boolean() })).catch([]).default([]),
-  columnFilters: z.array(z.object({ id: z.string(), value: z.unknown() })).catch([]).default([]),
-  search: z.string().max(100).catch("").default(""),
-  status: z.enum(["active", "blocked", "cancelled"]).optional().catch(undefined),
-  page: z.number().int().min(1).catch(1).default(1),
-  pageSize: z.number().int().catch(20).default(20),
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .catch([])
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .catch([])
+      .default([]),
+   search: z.string().max(100).catch("").default(""),
+   status: z
+      .enum(["active", "blocked", "cancelled"])
+      .optional()
+      .catch(undefined),
+   page: z.number().int().min(1).catch(1).default(1),
+   pageSize: z.number().int().catch(20).default(20),
 });
 ```
 
@@ -457,6 +480,7 @@ pendingComponent: CreditCardsSkeleton,
 ```
 
 ### Step 3: Commit
+
 ```bash
 git add "apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/credit-cards.tsx"
 git commit -m "feat(credit-cards): add pagination URL params, loaderDeps and prefetch"
@@ -467,6 +491,7 @@ git commit -m "feat(credit-cards): add pagination URL params, loaderDeps and pre
 ## Task 6 — Summary Bar: total de limite, qtd cartões ativos
 
 **Files:**
+
 - Create: `apps/web/src/features/credit-cards/ui/credit-cards-summary.tsx`
 
 ### Step 1: Criar o componente
@@ -505,11 +530,12 @@ export function CreditCardsSummary() {
 
 ```tsx
 <QueryBoundary fallback={null}>
-  <CreditCardsSummary />
+   <CreditCardsSummary />
 </QueryBoundary>
 ```
 
 ### Step 3: Commit
+
 ```bash
 git add apps/web/src/features/credit-cards/ui/credit-cards-summary.tsx
 git add apps/web/src/features/credit-cards/ui/credit-cards-list.tsx
@@ -521,9 +547,11 @@ git commit -m "feat(credit-cards): add summary bar with total limit and active c
 ## Task 7 — Export: credenza CSV/XLSX
 
 **Files:**
+
 - Create: `apps/web/src/features/credit-cards/ui/credit-cards-export-credenza.tsx`
 
 ### Step 1: Ver como transaction-export-credenza.tsx é implementado (referência)
+
 ```bash
 cat apps/web/src/features/transactions/ui/transaction-export-credenza.tsx
 ```
@@ -533,6 +561,7 @@ cat apps/web/src/features/transactions/ui/transaction-export-credenza.tsx
 O componente exporta todos os cartões (sem filtro de data, já que cartões não são time-series). Formatos: CSV, XLSX.
 
 Headers CSV (em português):
+
 ```
 nome, limite_credito, dia_fechamento, dia_vencimento, status, bandeira, conta_bancaria, criado_em
 ```
@@ -667,6 +696,7 @@ import { CreditCardsExportCredenza } from "@/features/credit-cards/ui/credit-car
 ```
 
 ### Step 4: Commit
+
 ```bash
 git add apps/web/src/features/credit-cards/ui/credit-cards-export-credenza.tsx
 git add "apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/credit-cards.tsx"
@@ -678,9 +708,11 @@ git commit -m "feat(credit-cards): add export credenza with CSV and XLSX support
 ## Task 8 — Import: credenza multi-step CSV/XLSX
 
 **Files:**
+
 - Create: `apps/web/src/features/credit-cards/ui/credit-cards-import-credenza.tsx`
 
 ### Step 1: Ver referência de transactions import
+
 ```bash
 cat apps/web/src/features/transactions/ui/transaction-import-credenza.tsx
 ```
@@ -688,12 +720,14 @@ cat apps/web/src/features/transactions/ui/transaction-import-credenza.tsx
 ### Step 2: Criar credenza de import com stepper
 
 O import de cartões é mais simples que transactions (sem duplicatas, sem OFX). Passos:
+
 1. **Upload** — usuário faz upload de CSV/XLSX
 2. **Mapeamento** — usuário mapeia colunas do arquivo para campos do cartão
 3. **Preview** — tabela de preview com validação inline
 4. **Confirmar** — chama `bulkCreate` (criar no oRPC — ver Task 9)
 
 Campos mapeáveis:
+
 - `nome` (obrigatório)
 - `limite_credito` (obrigatório, número)
 - `dia_fechamento` (obrigatório, 1-31)
@@ -879,6 +913,7 @@ import { CreditCardsImportCredenza } from "@/features/credit-cards/ui/credit-car
 ```
 
 ### Step 4: Commit
+
 ```bash
 git add apps/web/src/features/credit-cards/ui/credit-cards-import-credenza.tsx
 git add "apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/credit-cards.tsx"
@@ -890,6 +925,7 @@ git commit -m "feat(credit-cards): add import credenza with CSV/XLSX column mapp
 ## Task 9 — oRPC + Repositório: `bulkCreate`
 
 **Files:**
+
 - Modify: `core/database/src/repositories/credit-cards-repository.ts`
 - Modify: `apps/web/src/integrations/orpc/router/credit-cards.ts`
 
@@ -897,39 +933,42 @@ git commit -m "feat(credit-cards): add import credenza with CSV/XLSX column mapp
 
 ```typescript
 export type BulkCreateCreditCardInput = {
-  name: string;
-  creditLimit: string;
-  closingDay: number;
-  dueDay: number;
-  color?: string;
-  status?: "active" | "blocked" | "cancelled";
-  brand?: "visa" | "mastercard" | "elo" | "amex" | "hipercard" | "other";
+   name: string;
+   creditLimit: string;
+   closingDay: number;
+   dueDay: number;
+   color?: string;
+   status?: "active" | "blocked" | "cancelled";
+   brand?: "visa" | "mastercard" | "elo" | "amex" | "hipercard" | "other";
 };
 
 export async function bulkCreateCreditCards(
-  db: DatabaseClient,
-  teamId: string,
-  cards: BulkCreateCreditCardInput[],
+   db: DatabaseClient,
+   teamId: string,
+   cards: BulkCreateCreditCardInput[],
 ) {
-  try {
-    const rows = cards.map((c) => ({
-      teamId,
-      name: c.name,
-      creditLimit: c.creditLimit,
-      closingDay: c.closingDay,
-      dueDay: c.dueDay,
-      color: c.color ?? "#6366f1",
-      status: (c.status as "active" | "blocked" | "cancelled") ?? "active",
-      brand: c.brand,
-    }));
+   try {
+      const rows = cards.map((c) => ({
+         teamId,
+         name: c.name,
+         creditLimit: c.creditLimit,
+         closingDay: c.closingDay,
+         dueDay: c.dueDay,
+         color: c.color ?? "#6366f1",
+         status: (c.status as "active" | "blocked" | "cancelled") ?? "active",
+         brand: c.brand,
+      }));
 
-    const created = await db.insert(creditCards).values(rows).returning({ id: creditCards.id });
+      const created = await db
+         .insert(creditCards)
+         .values(rows)
+         .returning({ id: creditCards.id });
 
-    return { created: created.length };
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Falha ao importar cartões");
-  }
+      return { created: created.length };
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Falha ao importar cartões");
+   }
 }
 ```
 
@@ -937,30 +976,40 @@ export async function bulkCreateCreditCards(
 
 ```typescript
 const bulkCreateSchema = z.object({
-  cards: z
-    .array(
-      z.object({
-        name: z.string().min(2).max(80),
-        creditLimit: z.string(),
-        closingDay: z.number().int().min(1).max(31),
-        dueDay: z.number().int().min(1).max(31),
-        status: z.enum(["active", "blocked", "cancelled"]).optional(),
-        brand: z.enum(["visa", "mastercard", "elo", "amex", "hipercard", "other"]).optional(),
-        color: z.string().optional(),
-      }),
-    )
-    .min(1)
-    .max(500),
+   cards: z
+      .array(
+         z.object({
+            name: z.string().min(2).max(80),
+            creditLimit: z.string(),
+            closingDay: z.number().int().min(1).max(31),
+            dueDay: z.number().int().min(1).max(31),
+            status: z.enum(["active", "blocked", "cancelled"]).optional(),
+            brand: z
+               .enum([
+                  "visa",
+                  "mastercard",
+                  "elo",
+                  "amex",
+                  "hipercard",
+                  "other",
+               ])
+               .optional(),
+            color: z.string().optional(),
+         }),
+      )
+      .min(1)
+      .max(500),
 });
 
 export const bulkCreate = protectedProcedure
-  .input(bulkCreateSchema)
-  .handler(async ({ context, input }) => {
-    return bulkCreateCreditCards(context.db, context.teamId, input.cards);
-  });
+   .input(bulkCreateSchema)
+   .handler(async ({ context, input }) => {
+      return bulkCreateCreditCards(context.db, context.teamId, input.cards);
+   });
 ```
 
 ### Step 3: Commit
+
 ```bash
 git add core/database/src/repositories/credit-cards-repository.ts
 git add apps/web/src/integrations/orpc/router/credit-cards.ts
@@ -972,16 +1021,19 @@ git commit -m "feat(credit-cards): add bulkCreate procedure and repository funct
 ## Task 10 — Typecheck + ajustes finais
 
 ### Step 1: Rodar typecheck
+
 ```bash
 bun run typecheck
 ```
 
 Corrigir todos os erros de tipo. Os mais comuns serão:
+
 - `Outputs["creditCards"]["getAll"]` mudou de formato (adicionou `data`, `totalCount`, etc.) — qualquer lugar que usava `getAll` diretamente precisa usar `.data`
 - Imports faltando
 - `variant` de Badge com valor não existente (verifique quais variants existem em `@packages/ui/components/badge`)
 
 ### Step 2: Verificar todos os usos de `creditCards.getAll` no frontend
+
 ```bash
 grep -r "creditCards.getAll" apps/web/src --include="*.tsx" --include="*.ts" -n
 ```
@@ -989,6 +1041,7 @@ grep -r "creditCards.getAll" apps/web/src --include="*.tsx" --include="*.ts" -n
 Atualizar todos para usar `.data` se consumiam array direto.
 
 ### Step 3: Rodar oxlint
+
 ```bash
 bun run check
 ```
@@ -996,6 +1049,7 @@ bun run check
 Corrigir todos os erros.
 
 ### Step 4: Commit final
+
 ```bash
 git add -p
 git commit -m "fix(credit-cards): resolve typecheck and lint errors after refactor"
@@ -1006,9 +1060,11 @@ git commit -m "fix(credit-cards): resolve typecheck and lint errors after refact
 ## Task 11 — Teste de integração: `getAll` paginado + `getSummary`
 
 **Files:**
+
 - Create: `apps/web/__tests__/integrations/orpc/router/credit-cards.test.ts`
 
 ### Step 1: Ver um teste de router existente como referência
+
 ```bash
 ls apps/web/__tests__/integrations/orpc/router/
 cat apps/web/__tests__/integrations/orpc/router/bank-accounts.test.ts  # ou similar
@@ -1018,42 +1074,44 @@ cat apps/web/__tests__/integrations/orpc/router/bank-accounts.test.ts  # ou simi
 
 ```typescript
 describe("credit-cards router", () => {
-  describe("getAll", () => {
-    it("returns paginated results", async () => {
-      // arrange: create 25 credit cards
-      // act: call getAll with page=1, pageSize=10
-      // assert: data.length === 10, totalCount === 25, totalPages === 3
-    });
+   describe("getAll", () => {
+      it("returns paginated results", async () => {
+         // arrange: create 25 credit cards
+         // act: call getAll with page=1, pageSize=10
+         // assert: data.length === 10, totalCount === 25, totalPages === 3
+      });
 
-    it("filters by search", async () => {
-      // arrange: create cards "Nubank", "Inter", "Bradesco"
-      // act: call getAll with search="nub"
-      // assert: data.length === 1, data[0].name === "Nubank"
-    });
+      it("filters by search", async () => {
+         // arrange: create cards "Nubank", "Inter", "Bradesco"
+         // act: call getAll with search="nub"
+         // assert: data.length === 1, data[0].name === "Nubank"
+      });
 
-    it("filters by status", async () => {
-      // arrange: create 1 active, 1 blocked
-      // act: call getAll with status="blocked"
-      // assert: data.length === 1
-    });
-  });
+      it("filters by status", async () => {
+         // arrange: create 1 active, 1 blocked
+         // act: call getAll with status="blocked"
+         // assert: data.length === 1
+      });
+   });
 
-  describe("getSummary", () => {
-    it("returns correct totalCards and activeCards", async () => {
-      // arrange: create 2 active + 1 cancelled
-      // act: call getSummary
-      // assert: totalCards === 3, activeCards === 2
-    });
-  });
+   describe("getSummary", () => {
+      it("returns correct totalCards and activeCards", async () => {
+         // arrange: create 2 active + 1 cancelled
+         // act: call getSummary
+         // assert: totalCards === 3, activeCards === 2
+      });
+   });
 });
 ```
 
 ### Step 3: Rodar o teste
+
 ```bash
 npx vitest run apps/web/__tests__/integrations/orpc/router/credit-cards.test.ts
 ```
 
 ### Step 4: Commit
+
 ```bash
 git add apps/web/__tests__/integrations/orpc/router/credit-cards.test.ts
 git commit -m "test(credit-cards): add integration tests for paginated getAll and getSummary"

@@ -217,7 +217,7 @@ function EditInsightPage() {
       });
    }, [queryClient, parsed, insightId]);
 
-   useContextPanelInfo(
+   useContextPanelInfo(() => (
       <ContextPanel>
          <ContextPanelHeader>
             <ContextPanelTitle>{name || insight.name}</ContextPanelTitle>
@@ -259,8 +259,8 @@ function EditInsightPage() {
                variant="destructive"
             />
          </ContextPanelContent>
-      </ContextPanel>,
-   );
+      </ContextPanel>
+   ));
 
    return (
       <>

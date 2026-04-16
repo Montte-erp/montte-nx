@@ -4,11 +4,11 @@ TanStack AI-powered agent framework with multi-model support via OpenRouter.
 
 ## Exports
 
-| Export     | Purpose                                      |
-| ---------- | -------------------------------------------- |
-| `.`        | `chatRubi()` — streaming chat function       |
-| `./models` | Model ID types and available model presets   |
-| `./utils`  | Agent utility functions                      |
+| Export     | Purpose                                    |
+| ---------- | ------------------------------------------ |
+| `.`        | `chatRubi()` — streaming chat function     |
+| `./models` | Model ID types and available model presets |
+| `./utils`  | Agent utility functions                    |
 
 ## Usage
 

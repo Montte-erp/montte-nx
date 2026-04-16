@@ -1,4 +1,4 @@
-import { useStore } from "@tanstack/react-store";
+import { useStore, shallow } from "@tanstack/react-store";
 import type React from "react";
 import { useEffect } from "react";
 import {
@@ -36,11 +36,11 @@ export const unregisterTab = (id: string) =>
       return { ...s, dynamicTabs: remaining, activeTabId };
    });
 
-export const setInfoContent = (content: React.ReactNode) =>
-   contextPanelStore.setState((s) => ({ ...s, infoContent: content }));
+export const setInfoContent = (render: (() => React.ReactNode) | null) =>
+   contextPanelStore.setState((s) => ({ ...s, renderInfoContent: render }));
 
 export const clearInfoContent = () =>
-   contextPanelStore.setState((s) => ({ ...s, infoContent: null }));
+   contextPanelStore.setState((s) => ({ ...s, renderInfoContent: null }));
 
 export const setPageActions = (actions: PanelAction[] | null) =>
    contextPanelStore.setState((s) => ({ ...s, pageActions: actions }));
@@ -54,10 +54,10 @@ export const setPageViewSwitch = (config: PageViewSwitchConfig | null) =>
 export const clearPageViewSwitch = () =>
    contextPanelStore.setState((s) => ({ ...s, pageViewSwitch: null }));
 
-export const useContextPanelInfo = (content: React.ReactNode) => {
+export const useContextPanelInfo = (render: () => React.ReactNode) => {
    // oxlint-ignore exhaustive-deps
    useEffect(() => {
-      setInfoContent(content);
+      setInfoContent(render);
       return () => clearInfoContent();
    }, []);
 };
@@ -83,20 +83,36 @@ export const usePageViewSwitch = (config: PageViewSwitchConfig | null) => {
    }, []);
 };
 
+export const useContextPanelOpen = () =>
+   useStore(contextPanelStore, (s) => s.isOpen);
+
+export const useContextPanelTabs = () =>
+   useStore(
+      contextPanelStore,
+      (s) => ({
+         activeTabId: s.activeTabId,
+         dynamicTabs: s.dynamicTabs,
+      }),
+      shallow,
+   );
+
+export const useContextPanelActiveTabId = () =>
+   useStore(contextPanelStore, (s) => s.activeTabId);
+
 export const useContextPanel = () => {
    const {
       isOpen,
       activeTabId,
       dynamicTabs,
-      infoContent,
+      renderInfoContent,
       pageActions,
       pageViewSwitch,
-   } = useStore(contextPanelStore, (s) => s);
+   } = useStore(contextPanelStore, (s) => s, shallow);
    return {
       isOpen,
       activeTabId,
       dynamicTabs,
-      infoContent,
+      renderInfoContent,
       pageActions,
       pageViewSwitch,
       openContextPanel,

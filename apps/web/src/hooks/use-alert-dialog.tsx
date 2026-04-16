@@ -11,7 +11,7 @@ import {
 import { buttonVariants } from "@packages/ui/components/button";
 import { Spinner } from "@packages/ui/components/spinner";
 import { cn } from "@packages/ui/lib/utils";
-import { Store, useStore } from "@tanstack/react-store";
+import { createStore, useStore, shallow } from "@tanstack/react-store";
 import { useTransition } from "react";
 import { toast } from "sonner";
 
@@ -37,7 +37,7 @@ const initialState: AlertDialogState = {
    variant: "default",
 };
 
-const alertDialogStore = new Store<AlertDialogState>(initialState);
+const alertDialogStore = createStore<AlertDialogState>(initialState);
 
 interface OpenAlertDialogOptions {
    title: string;
@@ -67,7 +67,7 @@ export const useAlertDialog = () => {
 };
 
 export function GlobalAlertDialog() {
-   const state = useStore(alertDialogStore, (s) => s);
+   const state = useStore(alertDialogStore, (s) => s, shallow);
    const [isPending, startTransition] = useTransition();
 
    const handleAction = async () => {

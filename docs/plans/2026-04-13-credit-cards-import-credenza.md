@@ -13,6 +13,7 @@
 ### Task 1: Create the import credenza file
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/-credit-cards/credit-cards-import-credenza.tsx`
 
 **Step 1: Write the full component**
@@ -117,7 +118,12 @@ function guessMapping(headers: string[]): Partial<ColumnMapping> {
    const patterns: Record<keyof ColumnMapping, string[]> = {
       nome: ["nome", "name", "cartao", "card"],
       limite_credito: ["limite", "credito", "credit_limit", "limite_credito"],
-      dia_fechamento: ["fechamento", "closing", "dia_fechamento", "closing_day"],
+      dia_fechamento: [
+         "fechamento",
+         "closing",
+         "dia_fechamento",
+         "closing_day",
+      ],
       dia_vencimento: ["vencimento", "due", "dia_vencimento", "due_day"],
       conta_bancaria_id: ["conta", "bank", "conta_bancaria", "bank_account"],
       status: ["status", "estado"],
@@ -125,9 +131,7 @@ function guessMapping(headers: string[]): Partial<ColumnMapping> {
    };
 
    for (const [field, candidates] of Object.entries(patterns)) {
-      const idx = lower.findIndex((h) =>
-         candidates.some((c) => h.includes(c)),
-      );
+      const idx = lower.findIndex((h) => candidates.some((c) => h.includes(c)));
       if (idx !== -1) {
          mapping[field as keyof ColumnMapping] = headers[idx];
       }
@@ -169,7 +173,16 @@ function parseCards(
          errors.push("Dia de vencimento inválido (1-31)");
       if (!bankAccountId) errors.push("ID da conta bancária obrigatório");
 
-      return { nome, creditLimit, closingDay, dueDay, bankAccountId, status, brand, errors };
+      return {
+         nome,
+         creditLimit,
+         closingDay,
+         dueDay,
+         bankAccountId,
+         status,
+         brand,
+         errors,
+      };
    });
 }
 
@@ -225,7 +238,11 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
    return (
       <div className="flex flex-col gap-4">
          <Dropzone
-            accept={{ "text/csv": [".csv"], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"] }}
+            accept={{
+               "text/csv": [".csv"],
+               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                  [".xlsx"],
+            }}
             maxFiles={1}
             onDropAccepted={(files) => {
                const file = files[0];
@@ -241,7 +258,12 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
             </p>
          )}
          <CredenzaFooter>
-            <Button disabled={isParsing} onClick={() => methods.next()} type="button" variant="outline">
+            <Button
+               disabled={isParsing}
+               onClick={() => methods.next()}
+               type="button"
+               variant="outline"
+            >
                Próximo
             </Button>
          </CredenzaFooter>
@@ -257,7 +279,13 @@ interface MapStepProps {
    onNext: () => void;
 }
 
-function MapStep({ methods, headers, mapping, onMappingChange, onNext }: MapStepProps) {
+function MapStep({
+   methods,
+   headers,
+   mapping,
+   onMappingChange,
+   onNext,
+}: MapStepProps) {
    const NONE = "__none__";
 
    function canProceed() {
@@ -267,35 +295,41 @@ function MapStep({ methods, headers, mapping, onMappingChange, onNext }: MapStep
    return (
       <div className="flex flex-col gap-4">
          <FieldGroup>
-            {(Object.keys(FIELD_LABELS) as (keyof ColumnMapping)[]).map((field) => (
-               <Field key={field}>
-                  <FieldLabel>{FIELD_LABELS[field]}</FieldLabel>
-                  <Select
-                     onValueChange={(val) =>
-                        onMappingChange({
-                           ...mapping,
-                           [field]: val === NONE ? "" : val,
-                        })
-                     }
-                     value={mapping[field] ?? NONE}
-                  >
-                     <SelectTrigger>
-                        <SelectValue placeholder="Selecionar coluna" />
-                     </SelectTrigger>
-                     <SelectContent>
-                        <SelectItem value={NONE}>— Não mapear —</SelectItem>
-                        {headers.map((h) => (
-                           <SelectItem key={h} value={h}>
-                              {h}
-                           </SelectItem>
-                        ))}
-                     </SelectContent>
-                  </Select>
-               </Field>
-            ))}
+            {(Object.keys(FIELD_LABELS) as (keyof ColumnMapping)[]).map(
+               (field) => (
+                  <Field key={field}>
+                     <FieldLabel>{FIELD_LABELS[field]}</FieldLabel>
+                     <Select
+                        onValueChange={(val) =>
+                           onMappingChange({
+                              ...mapping,
+                              [field]: val === NONE ? "" : val,
+                           })
+                        }
+                        value={mapping[field] ?? NONE}
+                     >
+                        <SelectTrigger>
+                           <SelectValue placeholder="Selecionar coluna" />
+                        </SelectTrigger>
+                        <SelectContent>
+                           <SelectItem value={NONE}>— Não mapear —</SelectItem>
+                           {headers.map((h) => (
+                              <SelectItem key={h} value={h}>
+                                 {h}
+                              </SelectItem>
+                           ))}
+                        </SelectContent>
+                     </Select>
+                  </Field>
+               ),
+            )}
          </FieldGroup>
          <CredenzaFooter>
-            <Button onClick={() => methods.prev()} type="button" variant="outline">
+            <Button
+               onClick={() => methods.prev()}
+               type="button"
+               variant="outline"
+            >
                Voltar
             </Button>
             <Button disabled={!canProceed()} onClick={onNext} type="button">
@@ -321,7 +355,9 @@ function PreviewStep({ methods, cards, onNext }: PreviewStepProps) {
          <div className="flex gap-4 text-sm">
             <span className="text-green-600">{validCount} válidos</span>
             {invalidCount > 0 && (
-               <span className="text-destructive">{invalidCount} com erros</span>
+               <span className="text-destructive">
+                  {invalidCount} com erros
+               </span>
             )}
          </div>
          <div className="max-h-64 overflow-auto rounded-md border">
@@ -342,7 +378,10 @@ function PreviewStep({ methods, cards, onNext }: PreviewStepProps) {
                            {card.errors.length === 0 ? (
                               <CheckCircle2 className="size-4 text-green-600" />
                            ) : (
-                              <AlertCircle className="size-4 text-destructive" title={card.errors.join(", ")} />
+                              <AlertCircle
+                                 className="size-4 text-destructive"
+                                 title={card.errors.join(", ")}
+                              />
                            )}
                         </TableCell>
                         <TableCell>{card.nome}</TableCell>
@@ -355,7 +394,11 @@ function PreviewStep({ methods, cards, onNext }: PreviewStepProps) {
             </Table>
          </div>
          <CredenzaFooter>
-            <Button onClick={() => methods.prev()} type="button" variant="outline">
+            <Button
+               onClick={() => methods.prev()}
+               type="button"
+               variant="outline"
+            >
                Voltar
             </Button>
             <Button disabled={validCount === 0} onClick={onNext} type="button">
@@ -378,7 +421,9 @@ function ImportStep({ cards, onClose }: ImportStepProps) {
       orpc.creditCards.bulkCreate.mutationOptions({
          onSuccess: (data) => {
             setResult(data);
-            toast.success(`${data.created} cartão${data.created !== 1 ? "ões" : ""} importado${data.created !== 1 ? "s" : ""} com sucesso.`);
+            toast.success(
+               `${data.created} cartão${data.created !== 1 ? "ões" : ""} importado${data.created !== 1 ? "s" : ""} com sucesso.`,
+            );
          },
          onError: (error) => {
             toast.error(error.message || "Erro ao importar cartões.");
@@ -407,7 +452,10 @@ function ImportStep({ cards, onClose }: ImportStepProps) {
          <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2 text-green-600">
                <CheckCircle2 className="size-5" />
-               <p>{result.created} cartão{result.created !== 1 ? "ões" : ""} importado{result.created !== 1 ? "s" : ""} com sucesso.</p>
+               <p>
+                  {result.created} cartão{result.created !== 1 ? "ões" : ""}{" "}
+                  importado{result.created !== 1 ? "s" : ""} com sucesso.
+               </p>
             </div>
             <CredenzaFooter>
                <Button onClick={onClose} type="button">
@@ -421,7 +469,8 @@ function ImportStep({ cards, onClose }: ImportStepProps) {
    return (
       <div className="flex flex-col gap-4">
          <p className="text-muted-foreground text-sm">
-            {validCards.length} cartão{validCards.length !== 1 ? "ões" : ""} pronto{validCards.length !== 1 ? "s" : ""} para importação.
+            {validCards.length} cartão{validCards.length !== 1 ? "ões" : ""}{" "}
+            pronto{validCards.length !== 1 ? "s" : ""} para importação.
          </p>
          <CredenzaFooter>
             <Button
@@ -429,7 +478,9 @@ function ImportStep({ cards, onClose }: ImportStepProps) {
                onClick={handleImport}
                type="button"
             >
-               {importMutation.isPending ? "Importando..." : "Confirmar Importação"}
+               {importMutation.isPending
+                  ? "Importando..."
+                  : "Confirmar Importação"}
             </Button>
          </CredenzaFooter>
       </div>
@@ -440,7 +491,9 @@ interface CreditCardsImportCredenzaProps {
    onClose: () => void;
 }
 
-export function CreditCardsImportCredenza({ onClose }: CreditCardsImportCredenzaProps) {
+export function CreditCardsImportCredenza({
+   onClose,
+}: CreditCardsImportCredenzaProps) {
    const [rawData, setRawData] = useState<RawFileData | null>(null);
    const [mapping, setMapping] = useState<Partial<ColumnMapping>>({});
    const [parsedCards, setParsedCards] = useState<ParsedCard[]>([]);
@@ -467,7 +520,10 @@ export function CreditCardsImportCredenza({ onClose }: CreditCardsImportCredenza
                </CredenzaHeader>
                <CredenzaBody>
                   <Stepper.Step of="upload">
-                     <UploadStep methods={methods} onFileReady={handleFileReady} />
+                     <UploadStep
+                        methods={methods}
+                        onFileReady={handleFileReady}
+                     />
                   </Stepper.Step>
                   <Stepper.Step of="map">
                      <MapStep
@@ -519,6 +575,7 @@ git commit -m "feat(credit-cards): add import credenza with CSV/XLSX column mapp
 ### Task 2: Wire Upload button into credit-cards route
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/credit-cards.tsx`
 
 **Step 1: Add Upload import from lucide-react**
@@ -528,6 +585,7 @@ In the existing import `{ CreditCard, Download, Pencil, Plus, Trash2 }` from `lu
 **Step 2: Add CreditCardsImportCredenza import**
 
 Add after the existing `./-credit-cards/credit-cards-export-credenza` import:
+
 ```tsx
 import { CreditCardsImportCredenza } from "./-credit-cards/credit-cards-import-credenza";
 ```
@@ -535,6 +593,7 @@ import { CreditCardsImportCredenza } from "./-credit-cards/credit-cards-import-c
 **Step 3: Add handleImport function inside CreditCardsPage**
 
 After the `handleExport` function, add:
+
 ```tsx
 function handleImport() {
    openCredenza({
@@ -546,12 +605,9 @@ function handleImport() {
 **Step 4: Add Upload button to DefaultHeader actions**
 
 Inside the `<div className="flex gap-2">` in `DefaultHeader actions`, add an Upload button before the Export button:
+
 ```tsx
-<Button
-   variant="outline"
-   onClick={handleImport}
-   type="button"
->
+<Button variant="outline" onClick={handleImport} type="button">
    <Upload className="size-4" />
    Importar
 </Button>
@@ -577,6 +633,7 @@ npx tsgo --project apps/web/tsconfig.json 2>&1 | grep "error TS" | head -20
 **Step 2: Fix any errors found**
 
 Common issues to watch for:
+
 - `Stepper.Provider` vs `Stepper` — check actual API from `defineStepper` return. The transaction credenza wraps `<Stepper>` directly as a function child `{({ methods }) => ...}`. Use the same approach.
 - `Stepper.Step of="..."` syntax — exact prop name from stepper component.
 - `bulkCreate` input types — ensure `creditLimit` matches what the router expects (string vs number).
@@ -593,16 +650,21 @@ git commit -m "fix(credit-cards): fix typecheck errors in import credenza"
 ## Key Implementation Notes
 
 ### Stepper API
+
 From `packages/ui/src/components/stepper.tsx`, `defineStepper` returns `{ Stepper, useStepper, steps }`. `Stepper` has sub-components. The transaction import credenza uses:
+
 ```tsx
 const { Stepper, useStepper } = defineStepper(...)
 // ...
 <Stepper>{({ methods }) => (...)}</Stepper>
 ```
+
 Note: In the transaction import, `Stepper` itself is the container with a function child. `useStepper()` is used inside child components for step control. Check whether `Stepper.Provider`, `Stepper.Step` etc exist or whether the pattern is different.
 
 ### bulkCreate input type
+
 The procedure accepts `cards: Array<{ name, creditLimit, closingDay, dueDay, bankAccountId, status?, brand?, color? }>`. Verify if `creditLimit` is string or number in the schema — adjust the parsed value accordingly.
 
 ### No `as` casts
+
 When accessing `mapping` fields that are `Partial<ColumnMapping>`, use type guards or ensure required fields are present before calling `parseCards`. The `canProceed()` check gates the next button, but TypeScript may still complain — use early returns or non-null assertions only if the value was already checked.

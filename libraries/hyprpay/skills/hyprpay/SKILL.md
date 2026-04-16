@@ -1,16 +1,16 @@
 ---
 name: "@montte/hyprpay/overview"
 description: >
-  Use when integrating @montte/hyprpay SDK to sync customer lifecycle with Montte.
-  Covers createHyprPayClient setup, customers.create/get/update/list, HyprPayError handling,
-  and the better-auth plugin for automatic customer creation on signup.
+   Use when integrating @montte/hyprpay SDK to sync customer lifecycle with Montte.
+   Covers createHyprPayClient setup, customers.create/get/update/list, HyprPayError handling,
+   and the better-auth plugin for automatic customer creation on signup.
 type: core
 library: "@montte/hyprpay"
 library_version: "0.1.0"
 sources:
-  - "Montte-erp/montte-nx:libraries/hyprpay/src/index.ts"
-  - "Montte-erp/montte-nx:libraries/hyprpay/src/client.ts"
-  - "Montte-erp/montte-nx:libraries/hyprpay/src/errors.ts"
+   - "Montte-erp/montte-nx:libraries/hyprpay/src/index.ts"
+   - "Montte-erp/montte-nx:libraries/hyprpay/src/client.ts"
+   - "Montte-erp/montte-nx:libraries/hyprpay/src/errors.ts"
 ---
 
 # HyprPay SDK
@@ -21,8 +21,8 @@ sources:
 import { createHyprPayClient } from "@montte/hyprpay";
 
 const hyprpay = createHyprPayClient({
-  apiKey: process.env.MONTTE_API_KEY, // generate at Montte → Settings → API Keys
-  // baseUrl: "https://api.montte.com.br" (default)
+   apiKey: process.env.MONTTE_API_KEY, // generate at Montte → Settings → API Keys
+   // baseUrl: "https://api.montte.com.br" (default)
 });
 ```
 
@@ -31,9 +31,9 @@ const hyprpay = createHyprPayClient({
 ```typescript
 // Create — always pass externalId (your app's user ID) for idempotent lookups
 await hyprpay.customers.create({
-  name: "Maria Silva",
-  email: "maria@exemplo.com",
-  externalId: user.id,
+   name: "Maria Silva",
+   email: "maria@exemplo.com",
+   externalId: user.id,
 });
 
 // Get by externalId
@@ -54,12 +54,12 @@ All errors are `HyprPayError` with typed `code` and `statusCode`:
 import { HyprPayError } from "@montte/hyprpay";
 
 try {
-  await hyprpay.customers.get("unknown");
+   await hyprpay.customers.get("unknown");
 } catch (err) {
-  if (err instanceof HyprPayError) {
-    err.code;       // "NOT_FOUND" | "UNAUTHORIZED" | ...
-    err.statusCode; // 404
-  }
+   if (err instanceof HyprPayError) {
+      err.code; // "NOT_FOUND" | "UNAUTHORIZED" | ...
+      err.statusCode; // 404
+   }
 }
 ```
 
@@ -69,17 +69,17 @@ try {
 import { hyprpay } from "@montte/hyprpay/better-auth";
 
 betterAuth({
-  plugins: [
-    hyprpay({
-      apiKey: process.env.MONTTE_API_KEY,
-      createCustomerOnSignUp: true, // zero-config hook on afterSignUp
-      customerData: (user) => ({
-        name: user.name,
-        email: user.email,
-        externalId: user.id,
+   plugins: [
+      hyprpay({
+         apiKey: process.env.MONTTE_API_KEY,
+         createCustomerOnSignUp: true, // zero-config hook on afterSignUp
+         customerData: (user) => ({
+            name: user.name,
+            email: user.email,
+            externalId: user.id,
+         }),
       }),
-    }),
-  ],
+   ],
 });
 ```
 

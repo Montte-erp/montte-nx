@@ -102,11 +102,11 @@ import { createClient } from "@montte/cli";
 const client = createClient("your-api-key");
 
 const { data, total } = await client.transactions.list({
-  type: "expense",
-  dateFrom: "2024-01-01",
-  dateTo: "2024-01-31",
-  page: 1,
-  pageSize: 25,
+   type: "expense",
+   dateFrom: "2024-01-01",
+   dateTo: "2024-01-31",
+   page: 1,
+   pageSize: 25,
 });
 ```
 

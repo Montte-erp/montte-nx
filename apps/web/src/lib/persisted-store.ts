@@ -1,6 +1,6 @@
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
-import { Store } from "@tanstack/react-store";
+import { createStore } from "@tanstack/react-store";
 import { useEffect } from "react";
 
 export function createPersistedStore<T>(
@@ -11,7 +11,7 @@ export function createPersistedStore<T>(
       key,
       initialState,
    );
-   const store = new Store<NonNullable<T>>(initialState);
+   const store = createStore<NonNullable<T>>(initialState);
 
    function useStorePersistence() {
       const [storedValue, setStoredValue] = useStoredState();

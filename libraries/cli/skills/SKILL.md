@@ -1,14 +1,14 @@
 ---
 name: "@montte/cli/overview"
 description: >
-  Use when an agent needs to install, set up, or run any montte CLI command.
-  Covers authentication, global flags, and available command groups.
+   Use when an agent needs to install, set up, or run any montte CLI command.
+   Covers authentication, global flags, and available command groups.
 type: core
 library: "@montte/cli"
 library_version: "0.1.0"
 sources:
-  - "Montte-erp/montte-nx:libraries/cli/src/index.ts"
-  - "Montte-erp/montte-nx:libraries/cli/src/config.ts"
+   - "Montte-erp/montte-nx:libraries/cli/src/index.ts"
+   - "Montte-erp/montte-nx:libraries/cli/src/config.ts"
 ---
 
 # Montte CLI
@@ -59,19 +59,19 @@ MONTTE_API_KEY=<key> MONTTE_HOST=<host> montte <command>
 
 All commands support:
 
-| Flag | Description |
-|------|-------------|
+| Flag     | Description                                  |
+| -------- | -------------------------------------------- |
 | `--json` | Output raw JSON instead of a formatted table |
-| `--help` | Show help for the command |
+| `--help` | Show help for the command                    |
 
 ## Command Groups
 
-| Group | Description |
-|-------|-------------|
+| Group                 | Description                                       |
+| --------------------- | ------------------------------------------------- |
 | `montte transactions` | List, get, create, summarize, remove transactions |
-| `montte accounts` | List, get, create bank accounts |
-| `montte categories` | List, create, archive, remove categories |
-| `montte budgets` | List, get, create, remove monthly budget goals |
+| `montte accounts`     | List, get, create bank accounts                   |
+| `montte categories`   | List, create, archive, remove categories          |
+| `montte budgets`      | List, get, create, remove monthly budget goals    |
 
 ## Quick Start Example
 

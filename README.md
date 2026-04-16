@@ -92,19 +92,19 @@ Usage-based billing powered by Stripe meter events. Each billable event (AI chat
 
 Built as an **Nx** monorepo with **Bun**.
 
-| Category      | Technology                                                                           |
-| :------------ | :----------------------------------------------------------------------------------- |
+| Category      | Technology                                                                                           |
+| :------------ | :--------------------------------------------------------------------------------------------------- |
 | **Frontend**  | React 19, TanStack Start (SSR), TanStack Router, TanStack Query, shadcn/ui, Tailwind CSS, TypeScript |
-| **AI**        | Mastra (Agent orchestration)                                                         |
-| **Backend**   | oRPC (type-safe API), DBOS (durable workflows), Drizzle ORM, PostgreSQL              |
-| **Auth**      | Better Auth                                                                          |
-| **Jobs**      | DBOS (durable workflows, cron, retries), Redis (rate limiting, credit counters)      |
-| **Storage**   | MinIO (S3-compatible)                                                                |
-| **Security**  | Arcjet (Rate limiting & bot detection)                                               |
-| **Analytics** | PostHog                                                                              |
-| **Email**     | Resend (React Email templates)                                                       |
-| **Payments**  | Stripe                                                                               |
-| **Tooling**   | Nx, oxlint, oxfmt                                                                    |
+| **AI**        | Mastra (Agent orchestration)                                                                         |
+| **Backend**   | oRPC (type-safe API), DBOS (durable workflows), Drizzle ORM, PostgreSQL                              |
+| **Auth**      | Better Auth                                                                                          |
+| **Jobs**      | DBOS (durable workflows, cron, retries), Redis (rate limiting, credit counters)                      |
+| **Storage**   | MinIO (S3-compatible)                                                                                |
+| **Security**  | Arcjet (Rate limiting & bot detection)                                                               |
+| **Analytics** | PostHog                                                                                              |
+| **Email**     | Resend (React Email templates)                                                                       |
+| **Payments**  | Stripe                                                                                               |
+| **Tooling**   | Nx, oxlint, oxfmt                                                                                    |
 
 ---
 

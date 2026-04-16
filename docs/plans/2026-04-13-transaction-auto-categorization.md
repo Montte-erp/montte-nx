@@ -13,6 +13,7 @@
 ### Task 1: Add `suggestedCategoryId` column to transactions schema
 
 **Files:**
+
 - Modify: `core/database/src/schemas/transactions.ts`
 
 **Step 1: Add column to transactions table**
@@ -48,6 +49,7 @@ git commit -m "feat(schema): add suggestedCategoryId to transactions"
 ### Task 2: Add `updateTransactionCategory` to transactions repository
 
 **Files:**
+
 - Modify: `core/database/src/repositories/transactions-repository.ts`
 
 **Step 1: Add the function**
@@ -56,22 +58,22 @@ At the bottom of `core/database/src/repositories/transactions-repository.ts`:
 
 ```typescript
 export async function updateTransactionCategory(
-  db: DatabaseInstance,
-  id: string,
-  data: {
-    categoryId?: string | null;
-    suggestedCategoryId?: string | null;
-  },
+   db: DatabaseInstance,
+   id: string,
+   data: {
+      categoryId?: string | null;
+      suggestedCategoryId?: string | null;
+   },
 ) {
-  try {
-    await db
-      .update(transactions)
-      .set({ ...data, updatedAt: new Date() })
-      .where(eq(transactions.id, id));
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to update transaction category");
-  }
+   try {
+      await db
+         .update(transactions)
+         .set({ ...data, updatedAt: new Date() })
+         .where(eq(transactions.id, id));
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to update transaction category");
+   }
 }
 ```
 
@@ -87,6 +89,7 @@ git commit -m "feat(repo): add updateTransactionCategory"
 ### Task 3: Add `findCategoryByKeywords` to categories repository
 
 **Files:**
+
 - Modify: `core/database/src/repositories/categories-repository.ts`
 
 **Step 1: Add query function**
@@ -95,36 +98,40 @@ This does one DB round-trip: checks if any keyword in the category's `keywords` 
 
 ```typescript
 export async function findCategoryByKeywords(
-  db: DatabaseInstance,
-  teamId: string,
-  opts: {
-    name: string;
-    type: "income" | "expense";
-  },
+   db: DatabaseInstance,
+   teamId: string,
+   opts: {
+      name: string;
+      type: "income" | "expense";
+   },
 ): Promise<{ id: string; name: string } | null> {
-  try {
-    const rows = await db
-      .select({ id: categories.id, name: categories.name, level: categories.level })
-      .from(categories)
-      .where(
-        and(
-          eq(categories.teamId, teamId),
-          eq(categories.type, opts.type),
-          eq(categories.isArchived, false),
-          sql`EXISTS (
+   try {
+      const rows = await db
+         .select({
+            id: categories.id,
+            name: categories.name,
+            level: categories.level,
+         })
+         .from(categories)
+         .where(
+            and(
+               eq(categories.teamId, teamId),
+               eq(categories.type, opts.type),
+               eq(categories.isArchived, false),
+               sql`EXISTS (
             SELECT 1 FROM unnest(${categories.keywords}) k
             WHERE ${opts.name} ILIKE '%' || k || '%'
           )`,
-        ),
-      )
-      .orderBy(desc(categories.level))
-      .limit(1);
+            ),
+         )
+         .orderBy(desc(categories.level))
+         .limit(1);
 
-    return rows[0] ?? null;
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to find category by keywords");
-  }
+      return rows[0] ?? null;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to find category by keywords");
+   }
 }
 ```
 
@@ -142,6 +149,7 @@ git commit -m "feat(repo): add findCategoryByKeywords"
 ### Task 4: Create the categorization DBOS workflow
 
 **Files:**
+
 - Create: `apps/web/src/integrations/dbos/workflows/categorization.workflow.ts`
 - Modify: `apps/web/src/integrations/dbos/workflows/index.ts`
 
@@ -159,71 +167,75 @@ import { updateTransactionCategory } from "@core/database/repositories/transacti
 import { env } from "@core/environment/server";
 
 export type CategorizationInput = {
-  transactionId: string;
-  teamId: string;
-  name: string;
-  type: "income" | "expense";
-  contactName?: string | null;
+   transactionId: string;
+   teamId: string;
+   name: string;
+   type: "income" | "expense";
+   contactName?: string | null;
 };
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
 
 const outputSchema = z.object({
-  categoryName: z.string().nullable(),
-  confidence: z.enum(["high", "low"]),
+   categoryName: z.string().nullable(),
+   confidence: z.enum(["high", "low"]),
 });
 
 export class CategorizationWorkflow {
-  @DBOS.workflow()
-  static async run(input: CategorizationInput) {
-    const keywordMatch = await CategorizationWorkflow.matchKeywordsStep(input);
+   @DBOS.workflow()
+   static async run(input: CategorizationInput) {
+      const keywordMatch =
+         await CategorizationWorkflow.matchKeywordsStep(input);
 
-    if (keywordMatch) {
-      await CategorizationWorkflow.applyStep(input.transactionId, {
-        categoryId: keywordMatch.id,
+      if (keywordMatch) {
+         await CategorizationWorkflow.applyStep(input.transactionId, {
+            categoryId: keywordMatch.id,
+         });
+         return;
+      }
+
+      const aiResult = await CategorizationWorkflow.inferWithAIStep(input);
+      if (!aiResult) return;
+
+      if (aiResult.confidence === "high") {
+         await CategorizationWorkflow.applyStep(input.transactionId, {
+            categoryId: aiResult.categoryId,
+         });
+      } else {
+         await CategorizationWorkflow.applyStep(input.transactionId, {
+            suggestedCategoryId: aiResult.categoryId,
+         });
+      }
+   }
+
+   @DBOS.step()
+   static async matchKeywordsStep(
+      input: Pick<CategorizationInput, "teamId" | "name" | "type">,
+   ): Promise<{ id: string } | null> {
+      return findCategoryByKeywords(db, input.teamId, {
+         name: input.name,
+         type: input.type,
       });
-      return;
-    }
+   }
 
-    const aiResult = await CategorizationWorkflow.inferWithAIStep(input);
-    if (!aiResult) return;
-
-    if (aiResult.confidence === "high") {
-      await CategorizationWorkflow.applyStep(input.transactionId, {
-        categoryId: aiResult.categoryId,
+   @DBOS.step()
+   static async inferWithAIStep(
+      input: CategorizationInput,
+   ): Promise<{ categoryId: string; confidence: "high" | "low" } | null> {
+      const categories = await listCategories(db, input.teamId, {
+         type: input.type,
+         includeArchived: false,
       });
-    } else {
-      await CategorizationWorkflow.applyStep(input.transactionId, {
-        suggestedCategoryId: aiResult.categoryId,
-      });
-    }
-  }
+      if (categories.length === 0) return null;
 
-  @DBOS.step()
-  static async matchKeywordsStep(
-    input: Pick<CategorizationInput, "teamId" | "name" | "type">,
-  ): Promise<{ id: string } | null> {
-    return findCategoryByKeywords(db, input.teamId, {
-      name: input.name,
-      type: input.type,
-    });
-  }
+      const categoryList = categories
+         .map(
+            (c) =>
+               `- ${c.name}${c.keywords?.length ? ` (palavras: ${c.keywords.join(", ")})` : ""}`,
+         )
+         .join("\n");
 
-  @DBOS.step()
-  static async inferWithAIStep(
-    input: CategorizationInput,
-  ): Promise<{ categoryId: string; confidence: "high" | "low" } | null> {
-    const categories = await listCategories(db, input.teamId, {
-      type: input.type,
-      includeArchived: false,
-    });
-    if (categories.length === 0) return null;
-
-    const categoryList = categories
-      .map((c) => `- ${c.name}${c.keywords?.length ? ` (palavras: ${c.keywords.join(", ")})` : ""}`)
-      .join("\n");
-
-    const prompt = `Você é um assistente financeiro brasileiro. Classifique a transação abaixo na categoria mais adequada.
+      const prompt = `Você é um assistente financeiro brasileiro. Classifique a transação abaixo na categoria mais adequada.
 
 Transação:
 - Nome: ${input.name}${input.contactName ? `\n- Contato: ${input.contactName}` : ""}
@@ -235,28 +247,30 @@ ${categoryList}
 Retorne o nome exato de uma categoria da lista acima, ou null se nenhuma for adequada.
 Se tiver certeza, retorne confidence "high". Se estiver em dúvida, retorne "low".`;
 
-    const result = await chat({
-      adapter: openRouterText(MODEL, { apiKey: env.OPENROUTER_API_KEY }),
-      messages: [{ role: "user", content: [{ type: "text", content: prompt }] }],
-      outputSchema,
-      stream: false,
-    });
+      const result = await chat({
+         adapter: openRouterText(MODEL, { apiKey: env.OPENROUTER_API_KEY }),
+         messages: [
+            { role: "user", content: [{ type: "text", content: prompt }] },
+         ],
+         outputSchema,
+         stream: false,
+      });
 
-    if (!result.categoryName) return null;
+      if (!result.categoryName) return null;
 
-    const match = categories.find((c) => c.name === result.categoryName);
-    if (!match) return null;
+      const match = categories.find((c) => c.name === result.categoryName);
+      if (!match) return null;
 
-    return { categoryId: match.id, confidence: result.confidence };
-  }
+      return { categoryId: match.id, confidence: result.confidence };
+   }
 
-  @DBOS.step()
-  static async applyStep(
-    transactionId: string,
-    data: { categoryId?: string; suggestedCategoryId?: string },
-  ) {
-    await updateTransactionCategory(db, transactionId, data);
-  }
+   @DBOS.step()
+   static async applyStep(
+      transactionId: string,
+      data: { categoryId?: string; suggestedCategoryId?: string },
+   ) {
+      await updateTransactionCategory(db, transactionId, data);
+   }
 }
 ```
 
@@ -281,6 +295,7 @@ git commit -m "feat(workflow): add CategorizationWorkflow"
 ### Task 5: Wire workflow into transactions.create router
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/orpc/router/transactions.ts`
 
 **Step 1: Add trigger helper**
@@ -293,20 +308,20 @@ import { CategorizationWorkflow } from "../../../integrations/dbos/workflows/cat
 import { logger } from "@core/logging";
 
 function enqueueCategorization(input: {
-  transactionId: string;
-  teamId: string;
-  name: string;
-  type: "income" | "expense";
-  contactName?: string | null;
+   transactionId: string;
+   teamId: string;
+   name: string;
+   type: "income" | "expense";
+   contactName?: string | null;
 }): void {
-  void DBOS.startWorkflow(CategorizationWorkflow)
-    .run(input)
-    .catch((err) => {
-      logger.error(
-        { err, transactionId: input.transactionId },
-        "Failed to start categorization workflow",
-      );
-    });
+   void DBOS.startWorkflow(CategorizationWorkflow)
+      .run(input)
+      .catch((err) => {
+         logger.error(
+            { err, transactionId: input.transactionId },
+            "Failed to start categorization workflow",
+         );
+      });
 }
 ```
 
@@ -316,13 +331,13 @@ Inside the `create` procedure handler, after the transaction is created and **on
 
 ```typescript
 if (!input.categoryId) {
-  enqueueCategorization({
-    transactionId: transaction.id,
-    teamId: context.teamId,
-    name: input.name,
-    type: input.type as "income" | "expense",
-    contactName: input.contactName ?? null,
-  });
+   enqueueCategorization({
+      transactionId: transaction.id,
+      teamId: context.teamId,
+      name: input.name,
+      type: input.type as "income" | "expense",
+      contactName: input.contactName ?? null,
+   });
 }
 ```
 
@@ -348,6 +363,7 @@ git commit -m "feat(router): trigger categorization workflow on transaction crea
 ### Task 6: Add "sugestão IA" badge to transaction UI
 
 **Files:**
+
 - Find the transaction list/row component — likely in `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/transactions.tsx` or colocated `-transactions/` folder
 - Modify the component that renders each transaction row
 
@@ -364,16 +380,20 @@ Ensure `getAll` or `getById` oRPC procedure returns `suggestedCategoryId`. Check
 In the transaction row component, where category is displayed:
 
 ```tsx
-{transaction.suggestedCategoryId && !transaction.categoryId && (
-  <Tooltip>
-    <TooltipTrigger>
-      <Badge variant="outline" className="text-xs">sugestão IA</Badge>
-    </TooltipTrigger>
-    <TooltipContent>
-      Categoria sugerida pela IA. Clique para revisar.
-    </TooltipContent>
-  </Tooltip>
-)}
+{
+   transaction.suggestedCategoryId && !transaction.categoryId && (
+      <Tooltip>
+         <TooltipTrigger>
+            <Badge variant="outline" className="text-xs">
+               sugestão IA
+            </Badge>
+         </TooltipTrigger>
+         <TooltipContent>
+            Categoria sugerida pela IA. Clique para revisar.
+         </TooltipContent>
+      </Tooltip>
+   );
+}
 ```
 
 Import `Badge` from `@packages/ui/components/badge`, `Tooltip`/`TooltipTrigger`/`TooltipContent` from `@packages/ui/components/tooltip`.
@@ -392,6 +412,7 @@ git commit -m "feat(ui): add sugestão IA badge to transactions"
 **Goal:** When user clicks the "sugestão IA" badge, show them the suggested category name and let them accept or dismiss it.
 
 **Files:**
+
 - Modify: transaction row or a colocated action component
 - Modify: `apps/web/src/integrations/orpc/router/transactions.ts` — add `acceptSuggestedCategory` procedure
 
@@ -399,20 +420,21 @@ git commit -m "feat(ui): add sugestão IA badge to transactions"
 
 ```typescript
 export const acceptSuggestedCategory = protectedProcedure
-  .input(z.object({ id: z.string().uuid() }))
-  .handler(async ({ context, input }) => {
-    const tx = await getTransactionById(context.db, input.id);
-    if (!tx) throw WebAppError.notFound("Transaction not found");
-    if (tx.teamId !== context.teamId) throw WebAppError.forbidden();
-    if (!tx.suggestedCategoryId) throw WebAppError.badRequest("No suggestion");
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      const tx = await getTransactionById(context.db, input.id);
+      if (!tx) throw WebAppError.notFound("Transaction not found");
+      if (tx.teamId !== context.teamId) throw WebAppError.forbidden();
+      if (!tx.suggestedCategoryId)
+         throw WebAppError.badRequest("No suggestion");
 
-    await updateTransactionCategory(context.db, input.id, {
-      categoryId: tx.suggestedCategoryId,
-      suggestedCategoryId: null,
-    });
+      await updateTransactionCategory(context.db, input.id, {
+         categoryId: tx.suggestedCategoryId,
+         suggestedCategoryId: null,
+      });
 
-    return { ok: true };
-  });
+      return { ok: true };
+   });
 ```
 
 Add `dismissSuggestedCategory` the same way but sets `suggestedCategoryId: null` without setting `categoryId`.
@@ -424,6 +446,7 @@ Make sure both procedures are exported in the transactions router object.
 **Step 3: Add UI actions**
 
 In the tooltip or a popover triggered by the badge, add two buttons:
+
 - "Aceitar" → calls `acceptSuggestedCategory` mutation
 - "Ignorar" → calls `dismissSuggestedCategory` mutation
 
@@ -442,5 +465,5 @@ git commit -m "feat: accept/dismiss suggested category for transactions"
 
 - `agentSettings.dataSourceTransactions` toggle: if this setting exists on the team, check it in the `enqueueCategorization` helper before calling `DBOS.startWorkflow`. Skip if disabled.
 - Keyword match is free (no AI cost). AI only fires when no keyword matches.
-- The workflow is idempotent-safe — DBOS deduplicates on `workflowID`. Add `{ workflowID: \`categorize-${transactionId}\` }` to `DBOS.startWorkflow` options to prevent double-runs on retries.
+- The workflow is idempotent-safe — DBOS deduplicates on `workflowID`. Add `{ workflowID: \`categorize-${transactionId}\` }`to`DBOS.startWorkflow` options to prevent double-runs on retries.
 - `importBulk` and `importStatement` procedures also create transactions — wire `enqueueCategorization` there too after Task 5 is verified working.

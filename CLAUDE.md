@@ -23,6 +23,7 @@ bun run scripts/doctor.ts check
 ```
 
 **First-time setup:**
+
 ```bash
 bun run setup                           # Interactive env setup wizard
 cd apps/web && docker compose up -d     # Start Postgres (ParadeDB), Redis, MinIO
@@ -30,6 +31,7 @@ bun run db:push && bun run seed:addons && bun run setup:stripe
 ```
 
 **Other useful:**
+
 ```bash
 bun run check-boundaries  # Enforce monorepo layer import rules
 bun run clean             # Remove all build artifacts
@@ -39,6 +41,7 @@ bun run web:start         # Start production build locally
 ```
 
 **⚠️ Gotchas:**
+
 - `bun dev` seeds event catalog on every start — if seeding fails, dev won't launch. Debug: `bun run scripts/seed-event-catalog.ts run --env local`
 - Typecheck "Module has no exported member"? Dist is stale — `cd core/<package> && bun run build`
 - NEVER use `NODE_OPTIONS` to increase memory for builds — fix the root cause
@@ -97,6 +100,7 @@ export const getAll = protectedProcedure
 `notFound` · `forbidden` · `unauthorized` · `badRequest` · `conflict` · `internal` · `tooManyRequests` · `fromAppError(appError)`
 
 **Repository errors** (`core/database/src/repositories/`) — `AppError` + `propagateError()`:
+
 ```typescript
 try {
    const [row] = await db.insert(...).returning();
@@ -107,9 +111,11 @@ try {
    throw AppError.database("Failed");
 }
 ```
+
 Factories: `database`, `validation`, `notFound`, `unauthorized`, `forbidden`, `conflict`, `tooManyRequests`, `internal`
 
 **Bulk operations** — dedicated procedure, never loop `mutateAsync` on client:
+
 ```typescript
 export const bulkRemove = protectedProcedure
    .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
@@ -136,36 +142,51 @@ export const bulkRemove = protectedProcedure
 - Always `orpc.procedure.mutationKey()` / `orpc.procedure.queryKey()` — never manual string arrays.
 
 **Route slug hooks** — never raw `useParams`:
+
 ```typescript
-import { useDashboardSlugs, useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
+import {
+   useDashboardSlugs,
+   useOrgSlug,
+   useTeamSlug,
+} from "@/hooks/use-dashboard-slugs";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
 ```
 
 **Hook selection:**
 
-| Need | Hook |
-| ---- | ---- |
-| Single query | `useSuspenseQuery` |
-| 2+ independent queries | `useSuspenseQueries` |
-| Conditional query | `useQuery` + `skipToken`, or child component for `useSuspenseQuery` |
-| Partial query data | `useSuspenseQuery` + `select` |
-| Prefetch | `queryClient.prefetchQuery` in route loader |
-| Mutation state cross-component | `useMutationState` + `orpc.procedure.mutationKey()` |
-| SSE / live stream | `useQuery` + `experimental_liveOptions` |
+| Need                           | Hook                                                                |
+| ------------------------------ | ------------------------------------------------------------------- |
+| Single query                   | `useSuspenseQuery`                                                  |
+| 2+ independent queries         | `useSuspenseQueries`                                                |
+| Conditional query              | `useQuery` + `skipToken`, or child component for `useSuspenseQuery` |
+| Partial query data             | `useSuspenseQuery` + `select`                                       |
+| Prefetch                       | `queryClient.prefetchQuery` in route loader                         |
+| Mutation state cross-component | `useMutationState` + `orpc.procedure.mutationKey()`                 |
+| SSE / live stream              | `useQuery` + `experimental_liveOptions`                             |
 
 **SSE / Live queries:**
+
 ```tsx
-const { data } = useQuery(orpc.notifications.subscribe.experimental_liveOptions({ retry: true }));
-useEffect(() => { if (!data) return; /* handle latest event */ }, [data]);
+const { data } = useQuery(
+   orpc.notifications.subscribe.experimental_liveOptions({ retry: true }),
+);
+useEffect(() => {
+   if (!data) return; /* handle latest event */
+}, [data]);
 ```
+
 Never use `consumeEventIterator` + `useEffect` manually.
 
 **Type inference** — never manual interfaces:
+
 ```typescript
 import type { Inputs, Outputs } from "@/integrations/orpc/client";
-type CnpjData = NonNullable<Inputs["onboarding"]["createWorkspace"]["cnpjData"]>;
+type CnpjData = NonNullable<
+   Inputs["onboarding"]["createWorkspace"]["cnpjData"]
+>;
 ```
+
 Frontend never imports backend schemas or `@core/*` packages.
 
 ---
@@ -177,21 +198,26 @@ Frontend never imports backend schemas or `@core/*` packages.
 - Always set `id`, `name`, `aria-invalid` on inputs; `htmlFor` on `<FieldLabel>`.
 - Always `children={(field) => ...}` as explicit JSX prop.
 - `onSubmitAsync` only when server conflict maps to a visible field. Generic CRUD → plain `onSubmit` + `toast.error`. Use `fromPromise` from `neverthrow`:
-  ```tsx
-  const result = await fromPromise(createMutation.mutateAsync(value), (e) => e);
-  if (result.isErr()) {
-    if (err instanceof ORPCError && err.code === "CONFLICT")
-      return { fields: { fieldName: "Já existe um registro com esse valor." } };
-    return err instanceof Error ? err.message : "Erro inesperado.";
-  }
-  ```
+   ```tsx
+   const result = await fromPromise(
+      createMutation.mutateAsync(value),
+      (e) => e,
+   );
+   if (result.isErr()) {
+      if (err instanceof ORPCError && err.code === "CONFLICT")
+         return {
+            fields: { fieldName: "Já existe um registro com esse valor." },
+         };
+      return err instanceof Error ? err.message : "Erro inesperado.";
+   }
+   ```
 - Server field error → `{ fields: { fieldName: "message" } }` from `onSubmitAsync`. No footer error paragraph — use `toast.error` for generic errors.
 - Multi-step forms: local React context via factory function (never `ReturnType<typeof useForm<T>>`):
-  ```tsx
-  function createMyForm() { return useForm({ ... }); }
-  type MyFormApi = ReturnType<typeof createMyForm>;
-  const FormCtx = createContext<MyFormApi | null>(null);
-  ```
+   ```tsx
+   function createMyForm() { return useForm({ ... }); }
+   type MyFormApi = ReturnType<typeof createMyForm>;
+   const FormCtx = createContext<MyFormApi | null>(null);
+   ```
 - `form.Subscribe` — always specific selector, never `selector={(state) => state}`.
 - Navigation guard — `useBlocker` with `withResolver: true`. Optional chain `blocker.proceed?.()` / `blocker.reset?.()`. Set `disabled: isCreate`.
 
@@ -200,17 +226,22 @@ Frontend never imports backend schemas or `@core/*` packages.
 ## Suspense, Error Boundaries & Empty States
 
 Always wrap `useSuspenseQuery` in `<QueryBoundary>` — never raw `ErrorBoundary + Suspense`:
+
 ```tsx
 <QueryBoundary fallback={<MyPageSkeleton />} errorTitle="Erro ao carregar">
    <MyPageContent />
 </QueryBoundary>
 ```
+
 Use `errorFallback` for custom fallback. `fallback={null}` only for invisible-while-loading.
 
 Conditional `useSuspenseQuery` — child component pattern (not `skipToken`):
+
 ```tsx
 function ItemDetails({ id }: { id: string }) {
-   const { data } = useSuspenseQuery(orpc.procedure.queryOptions({ input: { id } }));
+   const { data } = useSuspenseQuery(
+      orpc.procedure.queryOptions({ input: { id } }),
+   );
    return <div>{data.name}</div>;
 }
 // Parent: {selectedId && <Suspense fallback={<Skeleton />}><ItemDetails id={selectedId} /></Suspense>}
@@ -236,7 +267,7 @@ Empty states — always `Empty`/`EmptyHeader`/`EmptyMedia`/`EmptyTitle`/`EmptyDe
 - Minimize `useEffect` — derive state, use event handlers. Only for external system sync.
 - Dates: always `dayjs`. Never `new Date()` (exception: Drizzle `.$onUpdate()` and test fixture inserts). `.toDate()` for Drizzle values, `.toISOString()` for ISO, `.format("YYYY-MM-DD")` for date strings.
 - Files: kebab-case. Components: PascalCase `[Feature][Action][Type]`. Hooks: `use[Feature][Action]`.
-- oxlint suppress: `// oxlint-ignore <rule-name>`. Array index keys: `` key={`step-${index + 1}`} ``.
+- oxlint suppress: `// oxlint-ignore <rule-name>`. Array index keys: ``key={`step-${index + 1}`}``.
 
 ---
 
@@ -249,9 +280,11 @@ Tags are always **"Centro de Custo"** — app is business-only.
 ## PostHog
 
 All config in `@core/posthog/config`:
+
 ```typescript
 import { POSTHOG_SURVEYS, FEATURE_FLAG_KEYS } from "@core/posthog/config";
 ```
+
 - Import `usePostHog` from `posthog-js/react` directly — never re-export.
 - `posthog.identify` + `posthog.group` called in `_dashboard.tsx` loader only.
 - `opt_in_site_apps: true` required for `posthog.renderSurvey()`.
@@ -269,6 +302,7 @@ Use `DataTable` from `@packages/ui/components/data-table`. Never wrap in `Card`/
 Required props: `getRowId`, `sorting`, `onSortingChange`, `columnFilters`, `onColumnFiltersChange`, `tableState`, `onTableStateChange`.
 
 Every usage needs:
+
 1. `createLocalStorageState<DataTableStoredState | null>("montte:datatable:<feature>", null)` at module level
 2. `validateSearch` on route with `sorting` + `columnFilters` arrays
 
@@ -328,10 +362,17 @@ const result = await chat({
 **DBOS workflows** — always use repositories (`@core/database/repositories/*`). Never raw `db` in workflow steps.
 
 Single agent `rubiAgent`:
+
 ```typescript
 import { mastra, createRequestContext } from "@packages/agents";
 const agent = mastra.getAgent("rubiAgent");
-const context = createRequestContext({ userId, teamId, organizationId, model: "openrouter/moonshotai/kimi-k2.5", language: "pt-BR" });
+const context = createRequestContext({
+   userId,
+   teamId,
+   organizationId,
+   model: "openrouter/moonshotai/kimi-k2.5",
+   language: "pt-BR",
+});
 const result = await agent.generate("...", { requestContext: context });
 ```
 
@@ -348,12 +389,13 @@ const result = await agent.generate("...", { requestContext: context });
 ## TanStack Start
 
 Vite config — plugin order critical:
+
 ```typescript
 plugins: [
    tanstackStart({ router: { autoCodeSplitting: true } }), // MUST be first
    nitro({ preset: "bun" }),
    viteReact(),
-]
+];
 ```
 
 `createServerFn` for HTTP-pure ops needing `process.env` or request context. NOT a replacement for oRPC domain queries.
@@ -378,6 +420,7 @@ apps/web/src/routes/
 ```
 
 Required on every route:
+
 - `head()` — format: `"Page Name — Montte"` in Brazilian Portuguese
 - `pendingMs: 300` + `pendingComponent` when loader does `prefetchQuery`
 - `errorComponent` when loader uses blocking `ensureQueryData`
@@ -387,21 +430,32 @@ Required on every route:
 Pagination: `page` + `pageSize` in `validateSearch` with `.catch()` defaults. `loaderDeps` to make loader reactive. Navigate to change page.
 
 **Full route pattern:**
+
 ```typescript
-export const Route = createFileRoute('/feature')({
+export const Route = createFileRoute("/feature")({
    validateSearch: z.object({
-      sorting: z.array(z.object({ id: z.string(), desc: z.boolean() })).catch([]).default([]),
-      columnFilters: z.array(z.object({ id: z.string(), value: z.unknown() })).catch([]).default([]),
+      sorting: z
+         .array(z.object({ id: z.string(), desc: z.boolean() }))
+         .catch([])
+         .default([]),
+      columnFilters: z
+         .array(z.object({ id: z.string(), value: z.unknown() }))
+         .catch([])
+         .default([]),
       page: z.number().int().min(1).catch(1).default(1),
       pageSize: z.number().int().catch(20).default(20),
    }),
    loaderDeps: ({ search: { page, pageSize } }) => ({ page, pageSize }),
    loader: ({ context, deps }) => {
-      context.queryClient.prefetchQuery(orpc.feature.getAll.queryOptions({ input: { page: deps.page, pageSize: deps.pageSize } }));
+      context.queryClient.prefetchQuery(
+         orpc.feature.getAll.queryOptions({
+            input: { page: deps.page, pageSize: deps.pageSize },
+         }),
+      );
    },
    pendingMs: 300,
    pendingComponent: FeatureSkeleton,
-   head: () => ({ meta: [{ title: 'Feature — Montte' }] }),
+   head: () => ({ meta: [{ title: "Feature — Montte" }] }),
    component: FeaturePage,
 });
 ```
@@ -413,8 +467,14 @@ export const Route = createFileRoute('/feature')({
 Schemas: `core/database/src/schemas/`
 
 **PostgreSQL schema namespaces** — never `pgTable(...)` directly:
+
 ```typescript
-import { financeSchema, crmSchema, inventorySchema, platformSchema } from "@core/database/schemas/schemas";
+import {
+   financeSchema,
+   crmSchema,
+   inventorySchema,
+   platformSchema,
+} from "@core/database/schemas/schemas";
 // finance → transactions, bank-accounts, bills, credit-cards, financial-goals, financial-settings
 // crm → contacts, contact-settings, tags
 // inventory → inventory items
@@ -443,9 +503,9 @@ Config: `core/authentication/src/server.ts`. Plugins: Google OAuth, Magic Link, 
 
 **Never import Sheet/Dialog/Drawer/AlertDialog/Credenza directly.**
 
-| Hook | Use For |
-| ---- | ------- |
-| `useCredenza` | All modals and overlays |
+| Hook             | Use For                   |
+| ---------------- | ------------------------- |
+| `useCredenza`    | All modals and overlays   |
 | `useAlertDialog` | Destructive confirmations |
 
 `useSheet` is NOT used. Always `useCredenza`.
@@ -455,29 +515,30 @@ Config: `core/authentication/src/server.ts`. Plugins: Google OAuth, Magic Link, 
 ## Input Masking (Maskito)
 
 `@maskito/core` + `@maskito/react` for all structured inputs. Never manual handlers.
+
 - `onInput` not `onChange`. `defaultValue` not `value`.
 - `MaskitoOptions` at module scope. Dynamic (CPF/CNPJ): `useMemo`.
 - Strip before API: `value.replace(/\D/g, "")`.
 - Currency: `MoneyInput` from `@packages/ui/components/money-input`.
 
-| Field | Mask |
-|-------|------|
-| Telefone | `["(", /\d/, /\d/, ")", " ", /\d/, /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/, /\d/, /\d/]` |
-| CPF | `[/\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "-", /\d/, /\d/]` |
-| CNPJ | `[/\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "/", /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/]` |
-| Agência | `mask: /^\d{0,4}(-\d{0,1})?$/` |
-| Conta | `mask: /^\d{0,12}(-\d{0,1})?$/` |
+| Field    | Mask                                                                                                       |
+| -------- | ---------------------------------------------------------------------------------------------------------- |
+| Telefone | `["(", /\d/, /\d/, ")", " ", /\d/, /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/, /\d/, /\d/]`                   |
+| CPF      | `[/\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "-", /\d/, /\d/]`                        |
+| CNPJ     | `[/\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "/", /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/]` |
+| Agência  | `mask: /^\d{0,4}(-\d{0,1})?$/`                                                                             |
+| Conta    | `mask: /^\d{0,12}(-\d{0,1})?$/`                                                                            |
 
 ---
 
 ## F-O-T Libraries (`catalog:fot`)
 
-| Library | Use for |
-| ------- | ------- |
-| `@f-o-t/money` | All money: parsing, formatting, arithmetic, conversion |
-| `@f-o-t/csv` | CSV parsing + generation |
-| `@f-o-t/ofx` | OFX parsing + generation |
-| `@f-o-t/condition-evaluator` | Rule/condition evaluation |
+| Library                      | Use for                                                |
+| ---------------------------- | ------------------------------------------------------ |
+| `@f-o-t/money`               | All money: parsing, formatting, arithmetic, conversion |
+| `@f-o-t/csv`                 | CSV parsing + generation                               |
+| `@f-o-t/ofx`                 | OFX parsing + generation                               |
+| `@f-o-t/condition-evaluator` | Rule/condition evaluation                              |
 
 - CSV in UI: `useCsvFile` from `@/hooks/use-csv-file` — never `FileReader.readAsText`.
 - XLSX in UI: `useXlsxFile` from `@/hooks/use-xlsx-file` — never manual `FileReader`.
@@ -487,19 +548,84 @@ Config: `core/authentication/src/server.ts`. Plugins: Google OAuth, Magic Link, 
 
 ---
 
+## TanStack Store
+
+`@tanstack/store` + `@tanstack/react-store` for all client-side global state. Never Zustand, Jotai, or React context for shared mutable state.
+
+**Store creation** — always `createStore()`, never `new Store()`:
+```typescript
+import { createStore } from "@tanstack/react-store";
+
+const myStore = createStore<MyState>({ count: 0, name: "" });
+```
+
+**Reading state in React** — always `useStore` with a selector:
+```typescript
+import { useStore, shallow } from "@tanstack/react-store";
+
+// Primitive selector — no comparator needed
+const count = useStore(myStore, (s) => s.count);
+
+// Object selector — always pass `shallow` as 3rd arg to avoid new-ref re-renders
+const { count, name } = useStore(myStore, (s) => ({ count: s.count, name: s.name }), shallow);
+```
+
+**Updating state:**
+```typescript
+myStore.setState((s) => ({ ...s, count: s.count + 1 }));
+```
+
+**Derived state** — `createAtom` for computed values, never inline derivation in components:
+```typescript
+import { createStore, createAtom } from "@tanstack/react-store";
+
+const store = createStore<{ items: Item[]; filter: string }>({ items: [], filter: "" });
+
+// Recomputes only when dependencies change — multiple consumers share the result
+const filteredItemsAtom = createAtom(() => {
+   const { items, filter } = store.state;
+   return items.filter((i) => i.name.includes(filter));
+});
+
+// In component:
+const filtered = useStore(filteredItemsAtom, (s) => s);
+```
+
+**Persisted store** — `createPersistedStore` from `@/lib/persisted-store` for localStorage sync:
+```typescript
+import { createPersistedStore } from "@/lib/persisted-store";
+
+const { store, useStorePersistence } = createPersistedStore<MyState>("montte:my-key", initialState);
+
+// Call useStorePersistence() once in the component tree that owns this store
+function MyRoot() {
+   useStorePersistence();
+   // ...
+}
+```
+
+**Rules:**
+- Never store `React.ReactNode` in store state — use render functions `() => React.ReactNode` instead.
+- Never `useStore(store, (s) => s)` without `shallow` — full-state subscriptions re-render on any change.
+- Prefer narrow selectors over full-state subscriptions. Split monolithic hooks into focused sub-hooks.
+- `batch()` from `@tanstack/react-store` to group updates across multiple stores into one notification cycle.
+- Per-instance stores (inside `useState`) can use `new Store()` — only global/module-level stores use `createStore()`.
+
+---
+
 ## Foxact Hooks
 
 SSR-safe — import from subpaths. Never `@uidotdev/usehooks`.
 
-| Need | Import |
-| ---- | ------ |
-| localStorage (dynamic key) | `foxact/use-local-storage` |
-| localStorage (fixed key, syncs tabs) | `foxact/create-local-storage-state` |
-| sessionStorage | `foxact/use-session-storage` |
-| Media queries | `foxact/use-media-query` |
-| Context guard | `foxact/invariant` |
-| Merge refs | `foxact/merge-refs` |
-| SSR-safe layout effect | `foxact/use-isomorphic-layout-effect` |
+| Need                                 | Import                                |
+| ------------------------------------ | ------------------------------------- |
+| localStorage (dynamic key)           | `foxact/use-local-storage`            |
+| localStorage (fixed key, syncs tabs) | `foxact/create-local-storage-state`   |
+| sessionStorage                       | `foxact/use-session-storage`          |
+| Media queries                        | `foxact/use-media-query`              |
+| Context guard                        | `foxact/invariant`                    |
+| Merge refs                           | `foxact/merge-refs`                   |
+| SSR-safe layout effect               | `foxact/use-isomorphic-layout-effect` |
 
 All localStorage keys prefixed `montte:`. Prefer `createClientOnlyFn`/`createIsomorphicFn` over `typeof window` guards.
 
@@ -509,13 +635,13 @@ All localStorage keys prefixed `montte:`. Prefer `createClientOnlyFn`/`createIso
 
 `@tanstack/react-pacer` for all debounce/throttle/rate-limiting. Never `foxact/use-debounced-value`.
 
-| Hook | Use for |
-| ---- | ------- |
-| `useDebouncedCallback` | Sync callbacks |
+| Hook                        | Use for                                                   |
+| --------------------------- | --------------------------------------------------------- |
+| `useDebouncedCallback`      | Sync callbacks                                            |
 | `useAsyncDebouncedCallback` | Async callbacks / `mutateAsync` — handles race conditions |
-| `useThrottledCallback` | Limited frequency callbacks |
-| `useThrottledValue` | Throttled derived values |
-| `useRateLimiter` | Hard action frequency limit |
+| `useThrottledCallback`      | Limited frequency callbacks                               |
+| `useThrottledValue`         | Throttled derived values                                  |
+| `useRateLimiter`            | Hard action frequency limit                               |
 
 - Async or `mutateAsync` → always `useAsyncDebouncedCallback`.
 - Options: `{ wait: 350 }` (object, not positional).
@@ -531,6 +657,7 @@ Files in `packages/events/`: `finance.ts`, `ai.ts`, `contact.ts`, `inventory.ts`
 - In generators: emit/track BEFORE final yield.
 
 **Billable procedures** — `createBillableProcedure(eventName)` instead of base procedure:
+
 ```typescript
 export const create = createBillableProcedure("finance.transaction_created")
    .input(CreateTransactionSchema)
@@ -540,6 +667,7 @@ export const create = createBillableProcedure("finance.transaction_created")
       return mapTransaction(tx);
    });
 ```
+
 Pre-handler enforces budget. Post-handler (success only) runs `scheduleEmit`.
 
 **Free-tier limits** (from `@core/stripe/constants`): `finance.transaction_created` (500), `webhook.delivered` (500), `contact.created` (50), `inventory.item_created` (50), `service.created` (20), `finance.statement_imported` (10).
@@ -554,6 +682,7 @@ npx vitest run <path-to-test-file>
 ```
 
 **Three layers:**
+
 1. oRPC router integration tests (`apps/web/__tests__/integrations/orpc/router/`) — every DB procedure
 2. Repository tests (`core/database/__tests__/repositories/`) — non-trivial queries only
 3. Pure logic unit tests — Zod transforms, date/math utilities, analytics, credits logic
@@ -561,6 +690,7 @@ npx vitest run <path-to-test-file>
 **Don't test:** React components, hooks wrapping `useSuspenseQuery`/`usePostHog`, singleton init, file existence.
 
 **⚠️ Gotchas:**
+
 - `member` and `team` tables have no `.defaultNow()` on `createdAt` — always provide `createdAt: new Date()` in test inserts.
 - Tests use **PGlite** (in-memory Postgres) — no real DB needed. Pattern in `apps/web/__tests__/helpers/setup-integration-test.ts`.
 - `vi.mock('@dbos-inc/dbos-sdk')` required in any test file importing workflow files.
@@ -601,10 +731,14 @@ Procedures: `apps/web/src/integrations/orpc/router/onboarding.ts`
 ## TanStack Intent (Agent Skills)
 
 ```json
-{ "keywords": ["tanstack-intent"], "files": ["dist", "skills", "!skills/_artifacts"] }
+{
+   "keywords": ["tanstack-intent"],
+   "files": ["dist", "skills", "!skills/_artifacts"]
+}
 ```
 
 Skill file `skills/<domain>/SKILL.md`:
+
 ```yaml
 ---
 name: "@montte/cli/<domain>"
@@ -629,6 +763,7 @@ npx @tanstack/intent@latest stale      # after modifying source files
 ## TanStack Config (`@tanstack/vite-config`)
 
 Used in `libraries/` for dual ESM+CJS output.
+
 - Single `entry` string — cannot override via `mergeConfig`.
 - Extra subpath entries: separate esbuild script after main build.
 - `publint --strict` validates exports map.
@@ -640,6 +775,7 @@ Used in `libraries/` for dual ESM+CJS output.
 ## Library Releases (`libraries/`)
 
 Auto-published when no GitHub tag exists. Requirements:
+
 1. `package.json` not `"private": true`
 2. `CHANGELOG.md` exists
 3. Latest version heading matches `package.json` version

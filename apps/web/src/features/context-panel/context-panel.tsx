@@ -22,13 +22,15 @@ import {
    SidebarManager,
 } from "@packages/ui/components/sidebar";
 import { cn } from "@packages/ui/lib/utils";
-import { useStore } from "@tanstack/react-store";
+import { useStore, shallow } from "@tanstack/react-store";
 import { Check, ChevronDown, Info, X } from "lucide-react";
 import type React from "react";
 import { ContextPanelAction } from "./context-panel-info";
 import {
    type ContextPanelTab,
    contextPanelStore,
+   allTabMetasAtom,
+   activeTabMetaAtom,
    type PageViewSwitchConfig,
 } from "./context-panel-store";
 import {
@@ -79,14 +81,17 @@ function ViewSwitchPanelAction({ config }: { config: PageViewSwitchConfig }) {
 }
 
 function InfoContent() {
-   const { infoContent, pageActions, pageViewSwitch } = useStore(
+   const { renderInfoContent, pageActions, pageViewSwitch } = useStore(
       contextPanelStore,
       (s) => ({
-         infoContent: s.infoContent,
+         renderInfoContent: s.renderInfoContent,
          pageActions: s.pageActions,
          pageViewSwitch: s.pageViewSwitch,
       }),
+      shallow,
    );
+
+   const infoContent = renderInfoContent?.() ?? null;
 
    const emptyState = (
       <ContextPanel>
@@ -129,22 +134,19 @@ const INFO_TAB: ContextPanelTab = {
    id: "info",
    icon: Info,
    label: "Informações",
-   content: <InfoContent />,
+   renderContent: () => <InfoContent />,
    order: 0,
 };
 
 function ContextPanelInner() {
-   const { activeTabId, dynamicTabs } = useStore(contextPanelStore, (s) => ({
-      activeTabId: s.activeTabId,
-      dynamicTabs: s.dynamicTabs,
-   }));
+   const allTabMetas = useStore(allTabMetasAtom, (s) => s);
+   const activeTabMeta = useStore(activeTabMetaAtom, (s) => s);
 
-   const allTabs: ContextPanelTab[] = [
-      INFO_TAB,
-      ...dynamicTabs.sort((a, b) => (a.order ?? 99) - (b.order ?? 99)),
-   ];
-
-   const activeTab = allTabs.find((t) => t.id === activeTabId) ?? allTabs[0];
+   const dynamicTabs = useStore(contextPanelStore, (s) => s.dynamicTabs);
+   const activeTab: ContextPanelTab | undefined =
+      activeTabMeta?.id === "info"
+         ? INFO_TAB
+         : dynamicTabs.find((t) => t.id === activeTabMeta?.id);
 
    return (
       <Sidebar
@@ -154,41 +156,38 @@ function ContextPanelInner() {
          variant="inset"
       >
          <SidebarHeader className="bg-background rounded-t-xl">
-            <div className="flex-row flex  items-center gap-2 ">
-               <>
-                  {allTabs.map((tab) => (
-                     <Button
-                        className={cn(
-                           "",
-                           activeTabId === tab.id &&
-                              "bg-accent text-accent-foreground",
-                        )}
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        tooltip={tab.label}
-                        tooltipSide="bottom"
-                        type="button"
-                        variant="outline"
-                     >
-                        <tab.icon className="" />
-                     </Button>
-                  ))}
-                  <div className="flex-1" />
+            <div className="flex-row flex items-center gap-2">
+               {allTabMetas.map((tab) => (
                   <Button
-                     onClick={closeContextPanel}
-                     tooltip="Fechar painel"
+                     className={cn(
+                        "",
+                        activeTabMeta?.id === tab.id &&
+                           "bg-accent text-accent-foreground",
+                     )}
+                     key={tab.id}
+                     onClick={() => setActiveTab(tab.id)}
+                     tooltip={tab.label}
+                     tooltipSide="bottom"
                      type="button"
                      variant="outline"
                   >
-                     <X className="" />
+                     <tab.icon className="" />
                   </Button>
-               </>
+               ))}
+               <div className="flex-1" />
+               <Button
+                  onClick={closeContextPanel}
+                  tooltip="Fechar painel"
+                  type="button"
+                  variant="outline"
+               >
+                  <X className="" />
+               </Button>
             </div>
          </SidebarHeader>
 
-         {/* Active tab content — inset rounded card on bg-muted */}
          <SidebarContent className="h-full overflow-hidden rounded-b-xl bg-muted">
-            {activeTab?.content}
+            {activeTab?.renderContent()}
          </SidebarContent>
       </Sidebar>
    );

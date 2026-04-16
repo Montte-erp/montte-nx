@@ -238,7 +238,7 @@ function DashboardsPage() {
       });
    }, [openCredenza, closeCredenza]);
 
-   useContextPanelInfo(
+   useContextPanelInfo(() => (
       <ContextPanel>
          <ContextPanelHeader>
             <ContextPanelTitle>Ações</ContextPanelTitle>
@@ -250,8 +250,8 @@ function DashboardsPage() {
                onClick={handleCreateDashboard}
             />
          </ContextPanelContent>
-      </ContextPanel>,
-   );
+      </ContextPanel>
+   ));
 
    return (
       <main className="flex flex-col gap-4">

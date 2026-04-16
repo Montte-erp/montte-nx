@@ -12,15 +12,15 @@
 
 ## Component inventory
 
-| Component | Source | Consumers |
-|-----------|--------|-----------|
-| `announcement.tsx` | `packages/ui/src/components/` | 4 files |
-| `banner.tsx` | `packages/ui/src/components/` | 0 direct `@packages/ui` imports (already used via feature wrappers only) |
-| `quick-access-card.tsx` | `packages/ui/src/components/` | 2 files |
-| `feature-stage-badge.tsx` | `packages/ui/src/components/` | 5 files |
-| `feature-stage-badge-showcase.tsx` | `packages/ui/src/components/` | showcase — delete outright |
-| `stats-card.tsx` | `packages/ui/src/components/` | 0 `@packages/ui` imports found — may be unused externally |
-| `time-period-chips.tsx` | `packages/ui/src/components/` | 0 `@packages/ui` imports found — used via url search / route files |
+| Component                          | Source                        | Consumers                                                                |
+| ---------------------------------- | ----------------------------- | ------------------------------------------------------------------------ |
+| `announcement.tsx`                 | `packages/ui/src/components/` | 4 files                                                                  |
+| `banner.tsx`                       | `packages/ui/src/components/` | 0 direct `@packages/ui` imports (already used via feature wrappers only) |
+| `quick-access-card.tsx`            | `packages/ui/src/components/` | 2 files                                                                  |
+| `feature-stage-badge.tsx`          | `packages/ui/src/components/` | 5 files                                                                  |
+| `feature-stage-badge-showcase.tsx` | `packages/ui/src/components/` | showcase — delete outright                                               |
+| `stats-card.tsx`                   | `packages/ui/src/components/` | 0 `@packages/ui` imports found — may be unused externally                |
+| `time-period-chips.tsx`            | `packages/ui/src/components/` | 0 `@packages/ui` imports found — used via url search / route files       |
 
 > Verify consumers for `stats-card` and `time-period-chips` before deleting from `packages/ui` in Tasks 6-7.
 
@@ -29,6 +29,7 @@
 ### Task 1: Create `apps/web/src/components/blocks/` and copy `announcement.tsx`
 
 **Files:**
+
 - Create: `apps/web/src/components/blocks/announcement.tsx`
 
 **Step 1: Copy component**
@@ -133,6 +134,7 @@ git commit -m "refactor: move announcement component to apps/web blocks"
 ### Task 2: Move `banner.tsx`
 
 **Files:**
+
 - Create: `apps/web/src/components/blocks/banner.tsx`
 
 **Step 1: Verify no direct `@packages/ui/components/banner` imports remain**
@@ -188,6 +190,7 @@ git commit -m "refactor: move banner component to apps/web blocks"
 ### Task 3: Move `quick-access-card.tsx`
 
 **Files:**
+
 - Create: `apps/web/src/components/blocks/quick-access-card.tsx`
 
 **Step 1: Copy component**
@@ -233,6 +236,7 @@ git commit -m "refactor: move quick-access-card component to apps/web blocks"
 ### Task 4: Move `feature-stage-badge.tsx` and delete `feature-stage-badge-showcase.tsx`
 
 **Files:**
+
 - Create: `apps/web/src/components/blocks/feature-stage-badge.tsx`
 
 **Step 1: Copy component**
@@ -301,7 +305,12 @@ grep -rn 'stats-card\|StatsCard' apps/web/src --include="*.tsx" --include="*.ts"
 Create `apps/web/src/components/blocks/stats-card.tsx`:
 
 ```tsx
-import { Card, CardDescription, CardHeader, CardTitle } from "@packages/ui/components/card";
+import {
+   Card,
+   CardDescription,
+   CardHeader,
+   CardTitle,
+} from "@packages/ui/components/card";
 
 type Values = {
    title: string;

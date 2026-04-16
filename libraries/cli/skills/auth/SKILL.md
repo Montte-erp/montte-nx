@@ -1,14 +1,14 @@
 ---
 name: "@montte/cli/auth"
 description: >
-  Use when authenticating the CLI, managing API keys, or handling
-  "Not logged in" errors. Covers login, logout, whoami, and env var auth.
+   Use when authenticating the CLI, managing API keys, or handling
+   "Not logged in" errors. Covers login, logout, whoami, and env var auth.
 type: sub-skill
 library: "@montte/cli"
 library_version: "0.1.0"
 sources:
-  - "Montte-erp/montte-nx:libraries/cli/src/config.ts"
-  - "Montte-erp/montte-nx:libraries/cli/src/commands/auth.ts"
+   - "Montte-erp/montte-nx:libraries/cli/src/config.ts"
+   - "Montte-erp/montte-nx:libraries/cli/src/commands/auth.ts"
 ---
 
 # Authentication
@@ -24,10 +24,10 @@ montte login --key <api-key>
 montte login --key <api-key> --host https://api.staging.montte.com
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `--key` | Yes | Your Montte API key (starts with `mnt_live_` or `mnt_test_`) |
-| `--host` | No | Override the API base URL (default: `https://api.montte.com`) |
+| Option   | Required | Description                                                   |
+| -------- | -------- | ------------------------------------------------------------- |
+| `--key`  | Yes      | Your Montte API key (starts with `mnt_live_` or `mnt_test_`)  |
+| `--host` | No       | Override the API base URL (default: `https://api.montte.com`) |
 
 ### `montte logout`
 
@@ -51,10 +51,10 @@ montte whoami
 
 Environment variables take precedence over the config file:
 
-| Variable | Description |
-|----------|-------------|
-| `MONTTE_API_KEY` | API key |
-| `MONTTE_HOST` | API base URL override |
+| Variable         | Description           |
+| ---------------- | --------------------- |
+| `MONTTE_API_KEY` | API key               |
+| `MONTTE_HOST`    | API base URL override |
 
 Useful for CI/CD pipelines:
 

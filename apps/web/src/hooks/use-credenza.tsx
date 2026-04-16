@@ -1,10 +1,10 @@
 import { Credenza, CredenzaContent } from "@packages/ui/components/credenza";
-import { Store, useStore } from "@tanstack/react-store";
+import { createStore, useStore } from "@tanstack/react-store";
 import type React from "react";
 
 type CredenzaOptions = { children: React.ReactNode; className?: string };
 
-const credenzaStore = new Store<{ stack: CredenzaOptions[] }>({
+const credenzaStore = createStore<{ stack: CredenzaOptions[] }>({
    stack: [],
 });
 
