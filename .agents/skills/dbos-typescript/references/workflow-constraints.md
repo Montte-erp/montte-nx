@@ -53,13 +53,13 @@ Additional constraints:
 
 ```typescript
 // CORRECT - deterministic start order
-const results = await Promise.allSettled([
+const results = await Promise.all([
   DBOS.runStep(() => step1("arg1"), { name: "step1" }),
   DBOS.runStep(() => step2("arg2"), { name: "step2" }),
   DBOS.runStep(() => step3("arg3"), { name: "step3" }),
 ]);
 ```
 
-Use `Promise.allSettled` instead of `Promise.all` to safely handle errors without crashing the Node.js process.
+Use `Promise.all` so that step failures propagate to the workflow, allowing DBOS to retry the workflow correctly. `Promise.allSettled` would silently swallow step failures and prevent workflow recovery.
 
 Reference: [Workflow Guarantees](https://docs.dbos.dev/typescript/tutorials/workflow-tutorial#workflow-guarantees)

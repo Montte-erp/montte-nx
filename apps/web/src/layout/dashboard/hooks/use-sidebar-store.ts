@@ -32,7 +32,11 @@ const transientStore = createStore<SidebarTransientState>({
 });
 
 createStoreEffect(transientStore, (next, prev) => {
-   if (prev.activeSection !== null && next.activeSection === null) {
+   if (
+      prev.activeSection !== null &&
+      next.activeSection === null &&
+      next.searchQuery !== ""
+   ) {
       transientStore.setState((s) => ({ ...s, searchQuery: "" }));
    }
 });

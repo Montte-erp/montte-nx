@@ -13,9 +13,9 @@ Job notification types, schemas, and publisher for DBOS durable workflows.
 ## Usage
 
 ```typescript
-import { notificationSchema } from "@packages/notifications/schema";
+import { jobNotificationSchema } from "@packages/notifications/schema";
 import type { NotificationType } from "@packages/notifications/types";
-import { publisher } from "@packages/notifications/publisher";
+import { createJobPublisher } from "@packages/notifications/publisher";
 ```
 
 ## How It Works

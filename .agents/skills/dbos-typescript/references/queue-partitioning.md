@@ -24,6 +24,11 @@ const queue = new WorkflowQueue("tasks", {
   concurrency: 1,
 });
 
+async function processTaskFn(task: string) {
+  // ...
+}
+const processTask = DBOS.registerWorkflow(processTaskFn);
+
 async function onUserTask(userID: string, task: string) {
   // Each user gets their own partition - at most 1 task per user
   // but tasks from different users can run concurrently

@@ -54,6 +54,6 @@ async function processAllTasksFn(tasks: string[]) {
 const processAllTasks = DBOS.registerWorkflow(processAllTasksFn);
 ```
 
-Queues process workflows in FIFO order. All queues should be created before `DBOS.launch()`.
+Queues process workflows in FIFO order among workflows with the same priority. When priority is enabled, higher-priority workflows are dequeued first regardless of arrival order. All queues should be created before `DBOS.launch()`.
 
 Reference: [DBOS Queues](https://docs.dbos.dev/typescript/tutorials/queue-tutorial)

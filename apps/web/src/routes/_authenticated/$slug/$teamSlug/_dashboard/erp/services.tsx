@@ -335,8 +335,12 @@ function ServicesPage() {
    }, [openCredenza, closeCredenza]);
 
    const handleImport = useCallback(() => {
-      openCredenza({ renderChildren: () => <ServiceImportCredenza /> });
-   }, [openCredenza]);
+      openCredenza({
+         renderChildren: () => (
+            <ServiceImportCredenza onClose={closeCredenza} />
+         ),
+      });
+   }, [openCredenza, closeCredenza]);
 
    const handleExport = useCallback(() => {
       if (servicesList && servicesList.length > 0) {

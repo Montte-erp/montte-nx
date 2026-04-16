@@ -46,10 +46,10 @@ async function myWorkflowFn() {
 }
 ```
 
-Alternatively, you can use `DBOS.registerStep` to pre-register a step or `@DBOS.step()` as a class decorator, but `DBOS.runStep` is preferred for most use cases.
+Alternatively, you can use `DBOS.registerStep` to pre-register a step or `@DBOS.step()` as a method decorator, but `DBOS.runStep` is preferred for most use cases.
 
 Step requirements:
-- Inputs and outputs must be serializable to JSON
+- Inputs and outputs must be serializable (SuperJSON by default; portable JSON when configured)
 - Cannot call, start, or enqueue workflows from within steps
 - Calling a step from another step makes the called step part of the calling step's execution
 

@@ -22,7 +22,8 @@ Event catalog, emission, credit tracking, webhook delivery, and analytics integr
 | `./insight`              | Insight domain events                         |
 | `./nfe`                  | NFe domain events                             |
 | `./document`             | Document domain events                        |
-| `./queues/*`             | BullMQ queue abstractions (webhook, alerts)   |
+| `./queues/webhook-delivery` | BullMQ webhook delivery queue               |
+| `./queues/budget-alerts`    | BullMQ budget alerts queue                  |
 
 ## Usage
 
