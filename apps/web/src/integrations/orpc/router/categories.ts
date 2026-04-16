@@ -96,7 +96,13 @@ export const exportAll = protectedProcedure.handler(async ({ context }) => {
 export const importBatch = protectedProcedure
    .input(
       z.object({
-         categories: z.array(createCategorySchema),
+         categories: z.array(
+            createCategorySchema.extend({
+               subcategories: z
+                  .array(z.object({ name: z.string().min(1).max(100) }))
+                  .optional(),
+            }),
+         ),
       }),
    )
    .handler(async ({ context, input }) => {
@@ -106,7 +112,12 @@ export const importBatch = protectedProcedure
       });
       const results = [];
       for (const cat of input.categories) {
-         const created = await createCategory(context.db, context.teamId, cat);
+         const { subcategories, ...catData } = cat;
+         const created = await createCategory(
+            context.db,
+            context.teamId,
+            catData,
+         );
          results.push(created);
          startDeriveKeywordsWorkflow({
             categoryId: created.id,
@@ -115,8 +126,22 @@ export const importBatch = protectedProcedure
             userId: context.userId,
             name: created.name,
             description: created.description,
-            stripeCustomerId: userRecord?.stripeCustomerId,
+            stripeCustomerId: userRecord?.stripeCustomerId ?? null,
          });
+         if (subcategories && subcategories.length > 0) {
+            for (const sub of subcategories) {
+               const createdSub = await createCategory(
+                  context.db,
+                  context.teamId,
+                  {
+                     name: sub.name,
+                     type: catData.type,
+                     parentId: created.id,
+                  },
+               );
+               results.push(createdSub);
+            }
+         }
       }
       return results;
    });
