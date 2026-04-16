@@ -133,15 +133,18 @@ export function SubcategoryForm(props: SubcategoryFormProps) {
          </CredenzaBody>
 
          <CredenzaFooter>
-            <form.Subscribe selector={(s) => s}>
-               {(state) => (
+            <form.Subscribe
+               selector={(s) => ({
+                  canSubmit: s.canSubmit,
+                  isSubmitting: s.isSubmitting,
+               })}
+            >
+               {({ canSubmit, isSubmitting }) => (
                   <Button
-                     disabled={
-                        !state.canSubmit || state.isSubmitting || isPending
-                     }
+                     disabled={!canSubmit || isSubmitting || isPending}
                      type="submit"
                   >
-                     {(state.isSubmitting || isPending) && (
+                     {(isSubmitting || isPending) && (
                         <Spinner className="size-4" />
                      )}
                      {props.mode === "create" ? "Criar Subcategoria" : "Salvar"}
