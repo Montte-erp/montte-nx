@@ -23,7 +23,14 @@ import type {
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import {
+   DropdownMenu,
+   DropdownMenuContent,
+   DropdownMenuItem,
+   DropdownMenuTrigger,
+} from "@packages/ui/components/dropdown-menu";
+import {
    Archive,
+   ChevronDown,
    Download,
    FolderOpen,
    Pencil,
@@ -525,14 +532,24 @@ function CategoriesPage() {
          <DefaultHeader
             actions={
                <div className="flex gap-2">
-                  <Button onClick={handleImport} variant="outline">
-                     <Upload />
-                     Importar
-                  </Button>
-                  <Button onClick={handleExport} variant="outline">
-                     <Download />
-                     Exportar
-                  </Button>
+                  <DropdownMenu>
+                     <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                           Importar / Exportar
+                           <ChevronDown />
+                        </Button>
+                     </DropdownMenuTrigger>
+                     <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={handleImport}>
+                           <Upload />
+                           Importar CSV
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleExport}>
+                           <Download />
+                           Exportar CSV
+                        </DropdownMenuItem>
+                     </DropdownMenuContent>
+                  </DropdownMenu>
                   <Button onClick={handleCreate}>
                      <Plus />
                      Nova Categoria
