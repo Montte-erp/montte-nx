@@ -1,12 +1,25 @@
-import type { CategoriesSearch } from "../categories";
-import { Button } from "@packages/ui/components/button";
 import { Input } from "@packages/ui/components/input";
-import { Label } from "@packages/ui/components/label";
-import { Switch } from "@packages/ui/components/switch";
-import { cn } from "@packages/ui/lib/utils";
-import { Link, useRouter } from "@tanstack/react-router";
+import { Toggle } from "@packages/ui/components/toggle";
+import {
+   ToggleGroup,
+   ToggleGroupItem,
+} from "@packages/ui/components/toggle-group";
+import {
+   Tooltip,
+   TooltipContent,
+   TooltipTrigger,
+} from "@packages/ui/components/tooltip";
+import { useRouter } from "@tanstack/react-router";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
-import { LayoutList, Search, X } from "lucide-react";
+import {
+   Archive,
+   Layers,
+   LayoutList,
+   Search,
+   TrendingDown,
+   TrendingUp,
+   X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface CategoryFilterBarProps {
@@ -15,19 +28,11 @@ interface CategoryFilterBarProps {
    includeArchived: boolean;
    groupBy: boolean;
    onSearchChange: (value: string) => void;
+   onTypeChange: (value: "income" | "expense" | undefined) => void;
    onIncludeArchivedChange: (checked: boolean) => void;
    onGroupByChange: (checked: boolean) => void;
    onClear: () => void;
 }
-
-const TYPE_OPTIONS: {
-   label: string;
-   value: "income" | "expense" | undefined;
-}[] = [
-   { label: "Todos", value: undefined },
-   { label: "Receitas", value: "income" },
-   { label: "Despesas", value: "expense" },
-];
 
 export function CategoryFilterBar({
    search,
@@ -35,6 +40,7 @@ export function CategoryFilterBar({
    includeArchived,
    groupBy,
    onSearchChange,
+   onTypeChange,
    onIncludeArchivedChange,
    onGroupByChange,
    onClear,
@@ -54,95 +60,106 @@ export function CategoryFilterBar({
       type !== undefined || includeArchived || search !== "";
 
    return (
-      <div className="flex flex-col gap-2">
-         <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-            <Input
-               className="pl-9"
-               onChange={(e) => {
-                  setInputValue(e.target.value);
-                  debouncedOnSearchChange(e.target.value);
+      <div className="flex flex-col gap-4">
+         <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+               <Input
+                  aria-label="Buscar categorias"
+                  className="pl-9"
+                  onChange={(e) => {
+                     setInputValue(e.target.value);
+                     debouncedOnSearchChange(e.target.value);
+                  }}
+                  placeholder="Buscar por nome ou palavra-chave..."
+                  value={inputValue}
+               />
+            </div>
+            <ToggleGroup
+               aria-label="Filtrar por tipo"
+               onValueChange={(v) => {
+                  if (v === "income" || v === "expense") {
+                     onTypeChange(v);
+                  } else {
+                     onTypeChange(undefined);
+                  }
                }}
-               placeholder="Buscar por nome ou palavra-chave..."
-               value={inputValue}
-            />
+               type="single"
+               value={type ?? "all"}
+               variant="outline"
+            >
+               <ToggleGroupItem className="gap-2 px-4" value="all">
+                  <Layers aria-hidden="true" className="size-4" />
+                  Todos
+               </ToggleGroupItem>
+               <ToggleGroupItem className="gap-2 px-4" value="income">
+                  <TrendingUp aria-hidden="true" className="size-4" />
+                  Receitas
+               </ToggleGroupItem>
+               <ToggleGroupItem className="gap-2 px-4" value="expense">
+                  <TrendingDown aria-hidden="true" className="size-4" />
+                  Despesas
+               </ToggleGroupItem>
+            </ToggleGroup>
          </div>
 
-         <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center rounded-md border bg-background p-0.5 gap-0.5">
-               {TYPE_OPTIONS.map((opt) => (
-                  <Link
-                     className={cn(
-                        "px-3 py-1.5 text-sm rounded-sm font-medium transition-colors",
-                        type === opt.value
-                           ? "bg-primary text-primary-foreground shadow-sm"
-                           : "text-muted-foreground hover:text-foreground hover:bg-muted",
-                     )}
-                     from="/$slug/$teamSlug/categories"
-                     key={opt.label}
-                     preload="intent"
-                     search={(prev: CategoriesSearch) => ({
-                        ...prev,
-                        type: opt.value,
-                     })}
+         <div className="flex items-center gap-2 flex-wrap">
+            <Tooltip>
+               <TooltipTrigger asChild>
+                  <Toggle
+                     aria-label="Mostrar arquivadas"
+                     onPressedChange={(pressed) => {
+                        onIncludeArchivedChange(pressed);
+                        router.preloadRoute({
+                           to: ".",
+                           search: { includeArchived: pressed },
+                        });
+                     }}
+                     pressed={includeArchived}
+                     variant="outline"
                   >
-                     {opt.label}
-                  </Link>
-               ))}
-            </div>
+                     <Archive aria-hidden="true" className="size-4" />
+                     Arquivadas
+                  </Toggle>
+               </TooltipTrigger>
+               <TooltipContent>
+                  Exibir categorias arquivadas na lista
+               </TooltipContent>
+            </Tooltip>
 
-            <div className="h-5 w-px bg-border" />
-
-            <div className="flex items-center gap-2">
-               <Switch
-                  checked={includeArchived}
-                  id="show-archived"
-                  onCheckedChange={onIncludeArchivedChange}
-                  onMouseEnter={() =>
-                     router.preloadRoute({
-                        to: ".",
-                        search: { includeArchived: !includeArchived },
-                     })
-                  }
-               />
-               <Label
-                  className="cursor-pointer text-sm"
-                  htmlFor="show-archived"
-               >
-                  Mostrar arquivadas
-               </Label>
-            </div>
-
-            <div className="h-5 w-px bg-border" />
-
-            <div className="flex items-center gap-2">
-               <Switch
-                  checked={groupBy}
-                  id="group-by-type"
-                  onCheckedChange={onGroupByChange}
-               />
-               <Label
-                  className="cursor-pointer text-sm flex items-center gap-1.5"
-                  htmlFor="group-by-type"
-               >
-                  <LayoutList className="size-3.5 text-muted-foreground" />
-                  Agrupar por tipo
-               </Label>
-            </div>
+            <Tooltip>
+               <TooltipTrigger asChild>
+                  <Toggle
+                     aria-label="Agrupar por tipo"
+                     onPressedChange={onGroupByChange}
+                     pressed={groupBy}
+                     variant="outline"
+                  >
+                     <LayoutList aria-hidden="true" className="size-4" />
+                     Agrupar por tipo
+                  </Toggle>
+               </TooltipTrigger>
+               <TooltipContent>
+                  Separar categorias em grupos de Receita e Despesa
+               </TooltipContent>
+            </Tooltip>
 
             {hasActiveFilters && (
-               <>
-                  <div className="h-5 w-px bg-border" />
-                  <Button
-                     className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
-                     onClick={onClear}
-                     size="sm"
-                     variant="ghost"
-                  >
-                     <X className="size-3.5" />
-                     Limpar filtros
-                  </Button>
-               </>
+               <Tooltip>
+                  <TooltipTrigger asChild>
+                     <button
+                        className="inline-flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={onClear}
+                        type="button"
+                     >
+                        <X aria-hidden="true" className="size-3" />
+                        Limpar filtros
+                     </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                     Remover todos os filtros ativos
+                  </TooltipContent>
+               </Tooltip>
             )}
          </div>
       </div>

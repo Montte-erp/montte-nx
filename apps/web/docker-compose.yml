@@ -3,6 +3,7 @@
 #   podman-compose restart electric
 #   podman-compose logs electric -f
 
+name: montte_web
 services:
    minio:
       image: docker.io/minio/minio:latest

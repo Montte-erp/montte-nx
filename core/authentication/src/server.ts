@@ -101,6 +101,7 @@ export function createAuth(deps: CreateAuthDeps) {
 
       advanced: {
          database: { generateId: "uuid" },
+         cookiePrefix: "montte",
       },
 
       secondaryStorage: {

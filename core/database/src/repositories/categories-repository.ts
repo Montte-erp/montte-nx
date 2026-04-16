@@ -17,7 +17,14 @@ type CategorySeed = {
    type: "income" | "expense";
    icon?: string;
    color?: string;
-   children?: Array<{ name: string; icon?: string }>;
+   description?: string;
+   keywords?: string[];
+   children?: Array<{
+      name: string;
+      icon?: string;
+      description?: string;
+      keywords?: string[];
+   }>;
 };
 
 const EMPRESARIAL_CATEGORIES: CategorySeed[] = [
@@ -26,9 +33,55 @@ const EMPRESARIAL_CATEGORIES: CategorySeed[] = [
       type: "income",
       icon: "briefcase",
       color: "#22c55e",
+      description:
+         "Receitas provenientes da venda de produtos e serviços da empresa.",
+      keywords: [
+         "recebimento de cliente",
+         "pagamento de cliente",
+         "PIX recebido",
+         "depósito de cliente",
+         "nota fiscal",
+         "NF",
+         "fatura recebida",
+         "venda",
+         "receita de venda",
+      ],
       children: [
-         { name: "Produtos", icon: "package" },
-         { name: "Serviços", icon: "briefcase" },
+         {
+            name: "Produtos",
+            icon: "package",
+            description:
+               "Receitas de vendas de mercadorias e produtos físicos ou digitais.",
+            keywords: [
+               "venda de produto",
+               "venda de mercadoria",
+               "NF produto",
+               "nota fiscal produto",
+               "Mercado Livre",
+               "Shopee",
+               "Shopify",
+               "e-commerce",
+               "loja virtual",
+               "marketplace",
+               "pedido",
+               "frete recebido",
+            ],
+         },
+         {
+            name: "Serviços",
+            icon: "briefcase",
+            description: "Receitas de prestação de serviços aos clientes.",
+            keywords: [
+               "prestação de serviço",
+               "NFS-e",
+               "nota fiscal serviço",
+               "honorários recebidos",
+               "consultoria recebida",
+               "contrato de serviço",
+               "projeto",
+               "recebimento de serviço",
+            ],
+         },
       ],
    },
    {
@@ -36,15 +89,76 @@ const EMPRESARIAL_CATEGORIES: CategorySeed[] = [
       type: "income",
       icon: "wallet",
       color: "#14b8a6",
+      description:
+         "Receitas não operacionais ou diversas que não se enquadram em vendas.",
+      keywords: [
+         "rendimento de aplicação",
+         "juros recebidos",
+         "CDB",
+         "LCI",
+         "LCA",
+         "poupança",
+         "dividendos",
+         "aluguel recebido",
+         "receita financeira",
+         "reembolso recebido",
+         "devolução recebida",
+         "comissão recebida",
+         "bonificação recebida",
+      ],
    },
    {
       name: "Custos",
       type: "expense",
       icon: "shopping-cart",
       color: "#ef4444",
+      description:
+         "Custos diretos relacionados à produção ou entrega dos produtos e serviços.",
+      keywords: [
+         "custo de produção",
+         "compra para revenda",
+         "insumo",
+         "matéria-prima",
+         "nota fiscal compra",
+         "NF compra",
+         "fornecedor",
+      ],
       children: [
-         { name: "CMV", icon: "package" },
-         { name: "Serviços de Terceiros", icon: "briefcase" },
+         {
+            name: "CMV",
+            icon: "package",
+            description:
+               "Custo das Mercadorias Vendidas — valor dos produtos vendidos.",
+            keywords: [
+               "compra de mercadoria",
+               "reposição de estoque",
+               "compra de produto",
+               "nota fiscal de compra",
+               "NF de compra",
+               "fornecedor produto",
+               "atacado",
+               "distribuidora",
+               "importação",
+               "custo de mercadoria",
+            ],
+         },
+         {
+            name: "Serviços de Terceiros",
+            icon: "briefcase",
+            description:
+               "Custos com contratação de terceiros para execução de serviços.",
+            keywords: [
+               "freelancer",
+               "autônomo",
+               "RPA",
+               "recibo de pagamento autônomo",
+               "subcontratado",
+               "terceirização",
+               "nota fiscal serviço pago",
+               "contrato terceiro",
+               "prestador de serviço",
+            ],
+         },
       ],
    },
    {
@@ -52,27 +166,208 @@ const EMPRESARIAL_CATEGORIES: CategorySeed[] = [
       type: "expense",
       icon: "briefcase",
       color: "#f97316",
+      description:
+         "Despesas recorrentes necessárias para o funcionamento da operação.",
+      keywords: [
+         "despesa operacional",
+         "custeio",
+         "despesa fixa",
+         "despesa variável",
+      ],
       children: [
-         { name: "Administrativo", icon: "briefcase" },
-         { name: "Comercial", icon: "shopping-cart" },
-         { name: "Marketing", icon: "gift" },
+         {
+            name: "Administrativo",
+            icon: "briefcase",
+            description:
+               "Despesas com atividades administrativas e de gestão da empresa.",
+            keywords: [
+               "aluguel",
+               "condomínio",
+               "energia elétrica",
+               "água",
+               "luz",
+               "IPTU",
+               "limpeza",
+               "manutenção",
+               "material de escritório",
+               "correios",
+               "contador",
+               "contabilidade",
+               "jurídico",
+               "advogado",
+               "seguro",
+               "telefone fixo",
+               "despesa administrativa",
+            ],
+         },
+         {
+            name: "Comercial",
+            icon: "shopping-cart",
+            description:
+               "Despesas com atividades comerciais, vendas e atendimento ao cliente.",
+            keywords: [
+               "comissão de vendas",
+               "representante comercial",
+               "frete de venda",
+               "logística",
+               "entrega",
+               "Correios",
+               "transportadora",
+               "embalagem",
+               "comissionamento",
+            ],
+         },
+         {
+            name: "Marketing",
+            icon: "gift",
+            description:
+               "Despesas com marketing, publicidade e divulgação da empresa.",
+            keywords: [
+               "Google Ads",
+               "Meta Ads",
+               "Facebook Ads",
+               "Instagram",
+               "agência de marketing",
+               "publicidade",
+               "propaganda",
+               "impulsionamento",
+               "influenciador",
+               "criação de conteúdo",
+               "design gráfico",
+               "panfleto",
+               "brinde",
+               "patrocínio",
+            ],
+         },
       ],
    },
-   { name: "Pessoal", type: "expense", icon: "heart", color: "#ec4899" },
-   { name: "Impostos", type: "expense", icon: "wallet", color: "#f59e0b" },
+   {
+      name: "Pessoal",
+      type: "expense",
+      icon: "heart",
+      color: "#ec4899",
+      description:
+         "Despesas com colaboradores, folha de pagamento e encargos trabalhistas.",
+      keywords: [
+         "salário",
+         "folha de pagamento",
+         "pro-labore",
+         "pró-labore",
+         "FGTS",
+         "INSS patronal",
+         "GPS",
+         "férias",
+         "13º salário",
+         "décimo terceiro",
+         "rescisão",
+         "vale transporte",
+         "vale refeição",
+         "plano de saúde",
+         "benefícios",
+         "holerite",
+         "funcionário",
+         "colaborador",
+         "encargos trabalhistas",
+         "eSocial",
+      ],
+   },
+   {
+      name: "Impostos",
+      type: "expense",
+      icon: "wallet",
+      color: "#f59e0b",
+      description:
+         "Tributos e impostos pagos ao governo federal, estadual e municipal.",
+      keywords: [
+         "DAS",
+         "Simples Nacional",
+         "DARF",
+         "IRPJ",
+         "CSLL",
+         "PIS",
+         "COFINS",
+         "ISS",
+         "ICMS",
+         "IOF",
+         "guia de imposto",
+         "recolhimento de tributo",
+         "pagamento INSS",
+         "contribuição previdenciária",
+         "nota de débito fiscal",
+         "imposto federal",
+         "imposto estadual",
+         "imposto municipal",
+      ],
+   },
    {
       name: "Tarifas Bancárias",
       type: "expense",
       icon: "credit-card",
       color: "#78716c",
+      description: "Tarifas e taxas cobradas por instituições financeiras.",
+      keywords: [
+         "tarifa bancária",
+         "taxa de manutenção de conta",
+         "anuidade de cartão",
+         "taxa de TED",
+         "taxa de DOC",
+         "tarifa de transferência",
+         "tarifa de boleto",
+         "taxa de saque",
+         "encargo bancário",
+         "cobrança bancária",
+         "pacote de serviços bancários",
+         "IOF operação financeira",
+         "taxa de câmbio",
+         "multa bancária",
+      ],
    },
    {
       name: "Tecnologia",
       type: "expense",
       icon: "smartphone",
       color: "#6366f1",
+      description:
+         "Despesas com software, hardware, internet e infraestrutura tecnológica.",
+      keywords: [
+         "assinatura de software",
+         "SaaS",
+         "licença de software",
+         "AWS",
+         "Google Cloud",
+         "Azure",
+         "hospedagem",
+         "domínio",
+         "internet",
+         "provedor de internet",
+         "celular corporativo",
+         "computador",
+         "notebook",
+         "equipamento de TI",
+         "suporte técnico",
+         "Adobe",
+         "Microsoft 365",
+         "antivírus",
+         "backup",
+      ],
    },
-   { name: "Transferências", type: "expense", icon: "zap", color: "#06b6d4" },
+   {
+      name: "Transferências",
+      type: "expense",
+      icon: "zap",
+      color: "#06b6d4",
+      description: "Movimentações entre contas e transferências internas.",
+      keywords: [
+         "transferência entre contas",
+         "TED própria",
+         "PIX entre contas",
+         "movimentação interna",
+         "aporte de caixa",
+         "retirada de caixa",
+         "sangria",
+         "suprimento de caixa",
+      ],
+   },
 ];
 
 export async function createCategory(
@@ -133,6 +428,8 @@ export async function seedEmpresarialCategories(
                type: root.type,
                icon: root.icon ?? null,
                color: root.color ?? null,
+               description: root.description ?? null,
+               keywords: root.keywords ?? null,
                level: 1,
                isDefault: true,
             })
@@ -146,6 +443,8 @@ export async function seedEmpresarialCategories(
                   name: child.name,
                   type: root.type,
                   icon: child.icon ?? null,
+                  description: child.description ?? null,
+                  keywords: child.keywords ?? null,
                   parentId: parent.id,
                   level: 2,
                   isDefault: true,
@@ -168,34 +467,17 @@ export async function listCategories(
    },
 ) {
    try {
+      const conditions: SQL[] = [eq(categories.teamId, teamId)];
+
       if (opts?.type) {
-         const type = opts.type;
-         if (opts.includeArchived) {
-            return await db.query.categories.findMany({
-               where: (fields, { and, eq }) =>
-                  and(eq(fields.teamId, teamId), eq(fields.type, type)),
-               orderBy: (fields, { asc }) => [asc(fields.name)],
-            });
-         }
-         return await db.query.categories.findMany({
-            where: (fields, { and, eq }) =>
-               and(
-                  eq(fields.teamId, teamId),
-                  eq(fields.type, type),
-                  eq(fields.isArchived, false),
-               ),
-            orderBy: (fields, { asc }) => [asc(fields.name)],
-         });
+         conditions.push(eq(categories.type, opts.type));
       }
-      if (opts?.includeArchived) {
-         return await db.query.categories.findMany({
-            where: (fields, { eq }) => eq(fields.teamId, teamId),
-            orderBy: (fields, { asc }) => [asc(fields.name)],
-         });
+      if (!opts?.includeArchived) {
+         conditions.push(eq(categories.isArchived, false));
       }
+
       return await db.query.categories.findMany({
-         where: (fields, { and, eq }) =>
-            and(eq(fields.teamId, teamId), eq(fields.isArchived, false)),
+         where: and(...conditions),
          orderBy: (fields, { asc }) => [asc(fields.name)],
       });
    } catch (err) {
@@ -328,6 +610,36 @@ export async function deleteCategory(db: DatabaseInstance, id: string) {
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to delete category");
+   }
+}
+
+export async function bulkArchiveCategories(
+   db: DatabaseInstance,
+   ids: string[],
+   teamId: string,
+) {
+   try {
+      const existing = await db.query.categories.findMany({
+         where: (fields, { and, inArray, eq }) =>
+            and(inArray(fields.id, ids), eq(fields.teamId, teamId)),
+      });
+      const defaultOne = existing.find((c) => c.isDefault);
+      if (defaultOne) {
+         throw AppError.conflict("Categorias padrão não podem ser arquivadas.");
+      }
+      const allDescendantIds = (
+         await Promise.all(ids.map((id) => getDescendantIds(db, id)))
+      ).flat();
+      const allIds = [...new Set([...ids, ...allDescendantIds])];
+      await db
+         .update(categories)
+         .set({ isArchived: true, updatedAt: dayjs().toDate() })
+         .where(
+            and(inArray(categories.id, allIds), eq(categories.teamId, teamId)),
+         );
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to bulk archive categories");
    }
 }
 

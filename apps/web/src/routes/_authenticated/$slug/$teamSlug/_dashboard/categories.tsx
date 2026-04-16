@@ -23,8 +23,19 @@ import type {
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import {
+   DropdownMenu,
+   DropdownMenuContent,
+   DropdownMenuItem,
+   DropdownMenuSub,
+   DropdownMenuSubContent,
+   DropdownMenuSubTrigger,
+   DropdownMenuTrigger,
+} from "@packages/ui/components/dropdown-menu";
+import {
    Archive,
+   ArchiveRestore,
    Download,
+   MoreHorizontal,
    FolderOpen,
    Pencil,
    Plus,
@@ -32,6 +43,7 @@ import {
    Upload,
 } from "lucide-react";
 import { useCallback, useMemo } from "react";
+import { fromPromise } from "neverthrow";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
@@ -43,9 +55,15 @@ import { CategoryForm } from "@/features/categories/ui/categories-form";
 import { SubcategoryForm } from "@/features/categories/ui/subcategory-form";
 import { CategoryFilterBar } from "./-categories/category-filter-bar";
 import { CategoryImportCredenza } from "./-categories/category-import-credenza";
-import { exportCategoriesCsv } from "./-categories/export-categories-csv";
+import {
+   buildExportRows,
+   exportCategoriesCsv,
+   EXPORT_HEADERS,
+} from "./-categories/export-categories-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
+import { useFileDownload } from "@/hooks/use-file-download";
 import { orpc } from "@/integrations/orpc/client";
 import { QueryBoundary } from "@/components/query-boundary";
 
@@ -76,9 +94,10 @@ export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/categories",
 )({
    validateSearch: categoriesSearchSchema,
-   loaderDeps: ({ search: { type, includeArchived } }) => ({
+   loaderDeps: ({ search: { type, includeArchived, search } }) => ({
       type,
       includeArchived,
+      search,
    }),
    loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
@@ -86,6 +105,7 @@ export const Route = createFileRoute(
             input: {
                type: deps.type,
                includeArchived: deps.includeArchived || undefined,
+               search: deps.search || undefined,
             },
          }),
       );
@@ -98,12 +118,131 @@ export const Route = createFileRoute(
    component: CategoriesPage,
 });
 
+function CategoriesTableSkeleton() {
+   return (
+      <div className="rounded-md border overflow-hidden">
+         <div className="flex items-center gap-4 px-4 py-4 border-b bg-muted/30">
+            <Skeleton className="size-4 rounded" />
+            <Skeleton className="h-4 w-10" />
+            <div className="flex-1" />
+            <Skeleton className="h-4 w-10" />
+            <div className="flex gap-2">
+               <Skeleton className="size-8 rounded" />
+               <Skeleton className="size-8 rounded" />
+               <Skeleton className="size-8 rounded" />
+               <Skeleton className="size-8 rounded" />
+            </div>
+         </div>
+
+         <div className="flex items-center gap-2 px-4 py-2 bg-muted/10 border-b">
+            <span className="size-2 rounded-full bg-muted-foreground/30 shrink-0" />
+            <Skeleton className="h-4 w-16" />
+         </div>
+         {[
+            { w: "w-32", subs: 2 },
+            { w: "w-44", subs: 0 },
+            { w: "w-24", subs: 0 },
+         ].map(({ w, subs }, i) => (
+            <div key={`income-row-${i + 1}`}>
+               <div className="flex items-center gap-4 px-4 py-4 border-b">
+                  <Skeleton className="size-4 rounded" />
+                  <Skeleton className="size-8 rounded-lg" />
+                  <Skeleton className={`h-4 ${w}`} />
+                  <div className="flex-1" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <div className="flex gap-2">
+                     <Skeleton className="size-8 rounded" />
+                     <Skeleton className="size-8 rounded" />
+                     <Skeleton className="size-8 rounded" />
+                     <Skeleton className="size-8 rounded" />
+                  </div>
+               </div>
+               {Array.from({ length: subs }).map((_, si) => (
+                  <div
+                     className="flex items-center gap-4 px-4 py-2 border-b pl-16 bg-muted/10"
+                     key={`income-sub-${i + 1}-${si + 1}`}
+                  >
+                     <Skeleton className="size-4 rounded" />
+                     <Skeleton className="h-4 w-28" />
+                     <div className="flex-1" />
+                     <div className="flex gap-2">
+                        <Skeleton className="size-8 rounded" />
+                        <Skeleton className="size-8 rounded" />
+                     </div>
+                  </div>
+               ))}
+            </div>
+         ))}
+
+         <div className="flex items-center gap-2 px-4 py-2 bg-muted/10 border-b">
+            <span className="size-2 rounded-full bg-muted-foreground/30 shrink-0" />
+            <Skeleton className="h-4 w-20" />
+         </div>
+         {[
+            { w: "w-36", subs: 0 },
+            { w: "w-28", subs: 1 },
+            { w: "w-40", subs: 0 },
+            { w: "w-24", subs: 0 },
+         ].map(({ w, subs }, i) => (
+            <div key={`expense-row-${i + 1}`}>
+               <div className="flex items-center gap-4 px-4 py-4 border-b last:border-b-0">
+                  <Skeleton className="size-4 rounded" />
+                  <Skeleton className="size-8 rounded-lg" />
+                  <Skeleton className={`h-4 ${w}`} />
+                  <div className="flex-1" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <div className="flex gap-2">
+                     <Skeleton className="size-8 rounded" />
+                     <Skeleton className="size-8 rounded" />
+                     <Skeleton className="size-8 rounded" />
+                     <Skeleton className="size-8 rounded" />
+                  </div>
+               </div>
+               {Array.from({ length: subs }).map((_, si) => (
+                  <div
+                     className="flex items-center gap-4 px-4 py-2 border-b last:border-b-0 pl-16 bg-muted/10"
+                     key={`expense-sub-${i + 1}-${si + 1}`}
+                  >
+                     <Skeleton className="size-4 rounded" />
+                     <Skeleton className="h-4 w-28" />
+                     <div className="flex-1" />
+                     <div className="flex gap-2">
+                        <Skeleton className="size-8 rounded" />
+                        <Skeleton className="size-8 rounded" />
+                     </div>
+                  </div>
+               ))}
+            </div>
+         ))}
+      </div>
+   );
+}
+
 function CategoriesSkeleton() {
    return (
       <div className="flex flex-col gap-4">
-         {Array.from({ length: 5 }).map((_, index) => (
-            <Skeleton className="h-12 w-full" key={`skeleton-${index + 1}`} />
-         ))}
+         <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2">
+               <Skeleton className="h-8 w-36" />
+               <Skeleton className="h-4 w-64" />
+            </div>
+            <div className="flex gap-2">
+               <Skeleton className="h-9 w-20 rounded-md" />
+               <Skeleton className="h-9 w-9 rounded-md" />
+               <Skeleton className="h-9 w-36 rounded-md" />
+            </div>
+         </div>
+         <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+               <Skeleton className="h-9 flex-1" />
+               <Skeleton className="h-9 w-64 rounded-md" />
+            </div>
+            <div className="flex items-center gap-2">
+               <Skeleton className="h-9 w-28 rounded-md" />
+               <Skeleton className="h-9 w-32 rounded-md" />
+            </div>
+         </div>
+         <CategoriesTableSkeleton />
       </div>
    );
 }
@@ -158,6 +297,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          input: {
             type,
             includeArchived: includeArchived || undefined,
+            search: search || undefined,
          },
       }),
    );
@@ -169,15 +309,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          subcategories: result.filter((c) => c.parentId === parent.id),
       }));
 
-   const categories = search
-      ? parentCategories.filter(
-           (c) =>
-              c.name.toLowerCase().includes(search.toLowerCase()) ||
-              c.subcategories?.some((s) =>
-                 s.name.toLowerCase().includes(search.toLowerCase()),
-              ),
-        )
-      : parentCategories;
+   const categories = parentCategories;
 
    const deleteMutation = useMutation(
       orpc.categories.remove.mutationOptions({
@@ -203,6 +335,21 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          onSuccess: () => toast.success("Categoria arquivada."),
          onError: (e) =>
             toast.error(e.message || "Erro ao arquivar categoria."),
+      }),
+   );
+
+   const bulkArchiveMutation = useMutation(
+      orpc.categories.bulkArchive.mutationOptions({
+         onError: (e) =>
+            toast.error(e.message || "Erro ao arquivar categorias."),
+      }),
+   );
+
+   const unarchiveMutation = useMutation(
+      orpc.categories.unarchive.mutationOptions({
+         onSuccess: () => toast.success("Categoria desarquivada."),
+         onError: (e) =>
+            toast.error(e.message || "Erro ao desarquivar categoria."),
       }),
    );
 
@@ -232,6 +379,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
                      color: category.color,
                      icon: category.icon,
                      type: category.type,
+                     description: category.description,
                   }}
                   mode="edit"
                   onSuccess={closeCredenza}
@@ -277,9 +425,32 @@ function CategoriesList({ navigate }: CategoriesListProps) {
 
    const handleArchive = useCallback(
       (category: CategoryRow) => {
-         archiveMutation.mutate({ id: category.id });
+         openAlertDialog({
+            title: "Arquivar categoria",
+            description: `Arquivar "${category.name}" irá ocultá-la das listas e impedir novos lançamentos nesta categoria. Você poderá desarquivá-la a qualquer momento.`,
+            actionLabel: "Arquivar",
+            cancelLabel: "Cancelar",
+            onAction: async () => {
+               await archiveMutation.mutateAsync({ id: category.id });
+            },
+         });
       },
-      [archiveMutation],
+      [openAlertDialog, archiveMutation],
+   );
+
+   const handleUnarchive = useCallback(
+      (category: CategoryRow) => {
+         openAlertDialog({
+            title: "Desarquivar categoria",
+            description: `Desarquivar "${category.name}" irá torná-la visível nas listas novamente e permitir novos lançamentos nesta categoria.`,
+            actionLabel: "Desarquivar",
+            cancelLabel: "Cancelar",
+            onAction: async () => {
+               await unarchiveMutation.mutateAsync({ id: category.id });
+            },
+         });
+      },
+      [openAlertDialog, unarchiveMutation],
    );
 
    const handleBulkDelete = useCallback(() => {
@@ -303,6 +474,23 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          },
       });
    }, [openAlertDialog, selectedIds, categories, bulkDeleteMutation, onClear]);
+
+   const handleBulkArchive = useCallback(async () => {
+      const archivableIds = selectedIds.filter((id) => {
+         const cat = categories.find((c) => c.id === id);
+         return cat !== undefined && !cat.isDefault;
+      });
+      if (archivableIds.length === 0) return;
+      const result = await fromPromise(
+         bulkArchiveMutation.mutateAsync({ ids: archivableIds }),
+         (e) => e,
+      );
+      if (result.isErr()) return;
+      toast.success(
+         `${archivableIds.length} ${archivableIds.length === 1 ? "categoria arquivada" : "categorias arquivadas"}.`,
+      );
+      onClear();
+   }, [selectedIds, categories, bulkArchiveMutation, onClear]);
 
    const columns = useMemo(() => buildCategoryColumns(), []);
 
@@ -347,6 +535,30 @@ function CategoriesList({ navigate }: CategoriesListProps) {
             renderActions={({ row }) => {
                if (row.original.isDefault) return null;
                const isSub = row.original.parentId !== null;
+               const isArchived = row.original.isArchived;
+
+               if (isArchived) {
+                  return (
+                     <>
+                        <Button
+                           onClick={() => handleUnarchive(row.original)}
+                           tooltip="Desarquivar"
+                           variant="outline"
+                        >
+                           <ArchiveRestore />
+                        </Button>
+                        <Button
+                           className="text-destructive hover:text-destructive"
+                           onClick={() => handleDelete(row.original)}
+                           tooltip="Excluir"
+                           variant="outline"
+                        >
+                           <Trash2 />
+                        </Button>
+                     </>
+                  );
+               }
+
                return (
                   <>
                      {!isSub && (
@@ -355,7 +567,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
                            tooltip="Nova subcategoria"
                            variant="outline"
                         >
-                           <Plus className="size-4" />
+                           <Plus />
                         </Button>
                      )}
                      <Button
@@ -363,7 +575,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
                         tooltip="Editar"
                         variant="outline"
                      >
-                        <Pencil className="size-4" />
+                        <Pencil />
                      </Button>
                      {!isSub && (
                         <Button
@@ -371,7 +583,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
                            tooltip="Arquivar"
                            variant="outline"
                         >
-                           <Archive className="size-4" />
+                           <Archive />
                         </Button>
                      )}
                      <Button
@@ -380,7 +592,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
                         tooltip="Excluir"
                         variant="outline"
                      >
-                        <Trash2 className="size-4" />
+                        <Trash2 />
                      </Button>
                   </>
                );
@@ -389,7 +601,13 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          />
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
             <SelectionActionButton
-               icon={<Trash2 className="size-3.5" />}
+               icon={<Archive />}
+               onClick={handleBulkArchive}
+            >
+               Arquivar
+            </SelectionActionButton>
+            <SelectionActionButton
+               icon={<Trash2 />}
                onClick={handleBulkDelete}
                variant="destructive"
             >
@@ -401,6 +619,10 @@ function CategoriesList({ navigate }: CategoriesListProps) {
 }
 
 function CategoriesPage() {
+   return <CategoriesPageContent />;
+}
+
+function CategoriesPageContent() {
    const navigate = Route.useNavigate();
    const { type, includeArchived, groupBy, search } = Route.useSearch();
    const { openCredenza, closeCredenza } = useCredenza();
@@ -412,6 +634,7 @@ function CategoriesPage() {
                ...prev,
                includeArchived: checked,
             }),
+            replace: true,
          });
       },
       [navigate],
@@ -421,6 +644,7 @@ function CategoriesPage() {
       (checked: boolean) => {
          navigate({
             search: (prev: CategoriesSearch) => ({ ...prev, groupBy: checked }),
+            replace: true,
          });
       },
       [navigate],
@@ -430,6 +654,7 @@ function CategoriesPage() {
       (value: string) => {
          navigate({
             search: (prev: CategoriesSearch) => ({ ...prev, search: value }),
+            replace: true,
          });
       },
       [navigate],
@@ -444,7 +669,18 @@ function CategoriesPage() {
                includeArchived: false,
                search: "",
             }),
+            replace: true,
          }),
+      [navigate],
+   );
+
+   const handleTypeChange = useCallback(
+      (value: "income" | "expense" | undefined) => {
+         navigate({
+            search: (prev: CategoriesSearch) => ({ ...prev, type: value }),
+            replace: true,
+         });
+      },
       [navigate],
    );
 
@@ -464,31 +700,77 @@ function CategoriesPage() {
       });
    }, [openCredenza, closeCredenza]);
 
+   const { generate: generateXlsx } = useXlsxFile();
+   const { download } = useFileDownload();
+
    const handleExport = useCallback(async () => {
-      try {
-         const data = await orpc.categories.exportAll.call({});
-         exportCategoriesCsv(data);
-         toast.success("Categorias exportadas com sucesso.");
-      } catch {
+      const result = await fromPromise(
+         orpc.categories.exportAll.call({}),
+         (e) => e,
+      );
+      if (result.isErr()) {
          toast.error("Erro ao exportar categorias.");
+         return;
       }
+      exportCategoriesCsv(result.value);
+      toast.success("Categorias exportadas com sucesso.");
    }, []);
+
+   const handleExportXlsx = useCallback(async () => {
+      const result = await fromPromise(
+         orpc.categories.exportAll.call({}),
+         (e) => e,
+      );
+      if (result.isErr()) {
+         toast.error("Erro ao exportar categorias.");
+         return;
+      }
+
+      const rows = buildExportRows(result.value);
+      const blob = generateXlsx(rows, [...EXPORT_HEADERS]);
+      download(blob, "categorias.xlsx");
+      toast.success("Categorias exportadas com sucesso.");
+   }, [generateXlsx, download]);
 
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
                <div className="flex gap-2">
-                  <Button onClick={handleImport} variant="outline">
-                     <Upload className="size-4 " />
-                     Importar
-                  </Button>
-                  <Button onClick={handleExport} variant="outline">
-                     <Download className="size-4 " />
-                     Exportar
-                  </Button>
+                  <DropdownMenu>
+                     <DropdownMenuTrigger asChild>
+                        <Button
+                           className="data-[state=open]:bg-accent data-[state=open]:text-accent-foreground data-[state=open]:border-accent"
+                           size="icon"
+                           tooltip="Importar / Exportar"
+                           variant="outline"
+                        >
+                           <MoreHorizontal />
+                        </Button>
+                     </DropdownMenuTrigger>
+                     <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={handleImport}>
+                           <Upload />
+                           Importar
+                        </DropdownMenuItem>
+                        <DropdownMenuSub>
+                           <DropdownMenuSubTrigger>
+                              <Download />
+                              Exportar
+                           </DropdownMenuSubTrigger>
+                           <DropdownMenuSubContent>
+                              <DropdownMenuItem onClick={handleExport}>
+                                 CSV
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={handleExportXlsx}>
+                                 XLSX
+                              </DropdownMenuItem>
+                           </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                     </DropdownMenuContent>
+                  </DropdownMenu>
                   <Button onClick={handleCreate}>
-                     <Plus className="size-4 " />
+                     <Plus />
                      Nova Categoria
                   </Button>
                </div>
@@ -503,11 +785,12 @@ function CategoriesPage() {
             onGroupByChange={handleGroupByChange}
             onIncludeArchivedChange={handleIncludeArchivedChange}
             onSearchChange={handleSearchChange}
+            onTypeChange={handleTypeChange}
             search={search}
             type={type}
          />
          <QueryBoundary
-            fallback={<CategoriesSkeleton />}
+            fallback={<CategoriesTableSkeleton />}
             errorTitle="Erro ao carregar categorias"
          >
             <CategoriesList navigate={navigate} />

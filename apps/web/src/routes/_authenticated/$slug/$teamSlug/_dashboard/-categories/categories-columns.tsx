@@ -1,4 +1,5 @@
 import { Badge } from "@packages/ui/components/badge";
+import type { Outputs } from "@/integrations/orpc/client";
 import {
    Announcement,
    AnnouncementTag,
@@ -11,6 +12,7 @@ import {
 } from "@packages/ui/components/tooltip";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
+   Archive,
    Baby,
    BookOpen,
    Briefcase,
@@ -58,17 +60,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
    fuel: Fuel,
 };
 
-export type CategoryRow = {
-   id: string;
-   name: string;
-   isDefault: boolean;
-   color: string | null;
-   icon: string | null;
-   keywords: string[] | null;
-   type: "income" | "expense" | null;
-   parentId: string | null;
+export type CategoryRow = Outputs["categories"]["getAll"][number] & {
    subcategories?: CategoryRow[];
-   createdAt: string | Date;
 };
 
 export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
@@ -77,19 +70,20 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
          accessorKey: "name",
          header: "Nome",
          cell: ({ row }) => {
-            const { name, color, icon, isDefault, keywords } = row.original;
+            const { name, color, icon, isDefault } = row.original;
             const IconComponent = icon ? ICON_MAP[icon] : null;
-            const hasKeywords = keywords && keywords.length > 0;
 
-            const keywordsTooltip = hasKeywords ? (
+            const archivedIndicator = row.original.isArchived ? (
                <Tooltip>
                   <TooltipTrigger asChild>
-                     <Tags className="size-4 text-muted-foreground shrink-0" />
+                     <span
+                        className="inline-flex shrink-0 cursor-default"
+                        tabIndex={0}
+                     >
+                        <Archive className="size-3.5 text-muted-foreground" />
+                     </span>
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-64">
-                     <p className="font-medium">Palavras-chave IA</p>
-                     <p className="text-xs">{keywords.join(", ")}</p>
-                  </TooltipContent>
+                  <TooltipContent>Arquivada</TooltipContent>
                </Tooltip>
             ) : null;
 
@@ -109,12 +103,17 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                         {isDefault && (
                            <Tooltip>
                               <TooltipTrigger asChild>
-                                 <ShieldCheck className="size-4 text-muted-foreground" />
+                                 <span
+                                    className="inline-flex cursor-default"
+                                    tabIndex={0}
+                                 >
+                                    <ShieldCheck className="size-4 text-muted-foreground" />
+                                 </span>
                               </TooltipTrigger>
                               <TooltipContent>Padrão</TooltipContent>
                            </Tooltip>
                         )}
-                        {keywordsTooltip}
+                        {archivedIndicator}
                      </AnnouncementTitle>
                   </Announcement>
                );
@@ -122,9 +121,16 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
 
             return (
                <div className="flex items-center gap-2 min-w-0">
+                  {row.depth > 0 && (
+                     <div className="flex items-center gap-2 pl-2 border-l-2 border-muted-foreground/20">
+                        <span className="size-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
+                     </div>
+                  )}
                   <span
                      className={
-                        row.depth > 0 ? "truncate" : "font-medium truncate"
+                        row.depth > 0
+                           ? "truncate text-muted-foreground"
+                           : "font-medium truncate"
                      }
                   >
                      {name}
@@ -132,12 +138,17 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                   {isDefault && row.depth === 0 && (
                      <Tooltip>
                         <TooltipTrigger asChild>
-                           <Star className="size-3 text-muted-foreground" />
+                           <span
+                              className="inline-flex cursor-default"
+                              tabIndex={0}
+                           >
+                              <Star className="size-3 text-muted-foreground" />
+                           </span>
                         </TooltipTrigger>
                         <TooltipContent>Padrão</TooltipContent>
                      </Tooltip>
                   )}
-                  {keywordsTooltip}
+                  {archivedIndicator}
                </div>
             );
          },
@@ -159,6 +170,50 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
             if (type === "expense")
                return <Badge variant="destructive">Despesa</Badge>;
             return <span className="text-sm text-muted-foreground">—</span>;
+         },
+      },
+      {
+         id: "subcategories",
+         header: "Subcategorias",
+         cell: ({ row }) => {
+            if (row.depth > 0)
+               return <span className="text-sm text-muted-foreground">—</span>;
+            const count = row.original.subcategories?.length ?? 0;
+            if (count === 0)
+               return <span className="text-sm text-muted-foreground">—</span>;
+            return <Badge variant="secondary">{count}</Badge>;
+         },
+      },
+      {
+         id: "keywords",
+         header: "Palavras-chave",
+         cell: ({ row }) => {
+            const keywords = row.original.keywords;
+            const count = keywords?.length ?? 0;
+            if (count === 0)
+               return <span className="text-sm text-muted-foreground">—</span>;
+            return (
+               <Tooltip>
+                  <TooltipTrigger asChild>
+                     <Announcement className="cursor-default w-fit">
+                        <AnnouncementTag>
+                           <Tags className="size-3" />
+                        </AnnouncementTag>
+                        <AnnouncementTitle className="text-xs">
+                           {count} {count === 1 ? "palavra" : "palavras"}
+                        </AnnouncementTitle>
+                     </Announcement>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-72">
+                     <p className="font-semibold text-sm">Palavras-chave IA</p>
+                     <p className="text-xs text-muted-foreground">
+                        Geradas automaticamente com base no nome e descrição da
+                        categoria.
+                     </p>
+                     <p className="text-xs">{keywords!.join(", ")}</p>
+                  </TooltipContent>
+               </Tooltip>
+            );
          },
       },
    ];
