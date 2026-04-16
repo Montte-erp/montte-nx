@@ -2,15 +2,6 @@ import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
 import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import {
-   Tooltip,
-   TooltipContent,
-   TooltipTrigger,
-} from "@packages/ui/components/tooltip";
-import {
-   ToggleGroup,
-   ToggleGroupItem,
-} from "@packages/ui/components/toggle-group";
-import {
    Empty,
    EmptyDescription,
    EmptyHeader,
@@ -35,7 +26,6 @@ import type {
 } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
-import { createContextState } from "foxact/create-context-state";
 import {
    DropdownMenu,
    DropdownMenuContent,
@@ -51,15 +41,12 @@ import {
    Download,
    MoreHorizontal,
    FolderOpen,
-   LayoutGrid,
-   LayoutList,
    Pencil,
    Plus,
    Trash2,
    Upload,
 } from "lucide-react";
 import { useCallback, useMemo } from "react";
-import { useMediaQuery } from "foxact/use-media-query";
 import { fromPromise } from "neverthrow";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -68,7 +55,6 @@ import {
    buildCategoryColumns,
    type CategoryRow,
 } from "./-categories/categories-columns";
-import { CategoriesCardView } from "./-categories/categories-card-view";
 import { CategoryForm } from "@/features/categories/ui/categories-form";
 import { SubcategoryForm } from "@/features/categories/ui/subcategory-form";
 import { CategoryFilterBar } from "./-categories/category-filter-bar";
@@ -103,9 +89,6 @@ const [useCategoriesTableState] =
       "montte:datatable:categories",
       null,
    );
-
-const [CategoriesViewProvider, useCategoriesView, useSetCategoriesView] =
-   createContextState<"table" | "card">("table");
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/categories",
@@ -235,40 +218,6 @@ function CategoriesTableSkeleton() {
    );
 }
 
-function CategoriesCardSkeleton() {
-   return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-         {Array.from({ length: 6 }).map((_, i) => (
-            <div
-               className="flex flex-col rounded-lg border bg-card overflow-hidden"
-               key={`card-skel-${i + 1}`}
-            >
-               <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                  <Skeleton className="size-4 rounded" />
-                  <Skeleton className="h-5 w-14 rounded-full" />
-               </div>
-               <div className="flex items-center gap-4 px-4 pb-4">
-                  <Skeleton className="size-10 rounded-lg shrink-0" />
-                  <Skeleton className="h-4 w-32" />
-               </div>
-               <div className="border-t px-4 py-2 flex flex-wrap gap-2">
-                  <Skeleton className="h-5 w-20 rounded-full" />
-                  <Skeleton className="h-5 w-16 rounded-full" />
-                  <Skeleton className="h-5 w-24 rounded-full" />
-               </div>
-               <div className="border-t flex items-center gap-2 px-4 py-2">
-                  <Skeleton className="size-8 rounded" />
-                  <Skeleton className="size-8 rounded" />
-                  <Skeleton className="size-8 rounded" />
-                  <div className="flex-1" />
-                  <Skeleton className="size-8 rounded" />
-               </div>
-            </div>
-         ))}
-      </div>
-   );
-}
-
 function CategoriesSkeleton() {
    return (
       <div className="flex flex-col gap-4">
@@ -300,10 +249,9 @@ function CategoriesSkeleton() {
 
 interface CategoriesListProps {
    navigate: ReturnType<typeof Route.useNavigate>;
-   view: "table" | "card";
 }
 
-function CategoriesList({ navigate, view }: CategoriesListProps) {
+function CategoriesList({ navigate }: CategoriesListProps) {
    const { sorting, columnFilters, type, includeArchived, groupBy, search } =
       Route.useSearch();
    const [tableState, setTableState] = useCategoriesTableState();
@@ -572,19 +520,6 @@ function CategoriesList({ navigate, view }: CategoriesListProps) {
       );
    }
 
-   if (view === "card") {
-      return (
-         <CategoriesCardView
-            categories={categories}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onArchive={handleArchive}
-            onUnarchive={handleUnarchive}
-            onAddSubcategory={handleAddSubcategory}
-         />
-      );
-   }
-
    return (
       <>
          <DataTable
@@ -692,21 +627,13 @@ function CategoriesList({ navigate, view }: CategoriesListProps) {
 }
 
 function CategoriesPage() {
-   return (
-      <CategoriesViewProvider>
-         <CategoriesPageContent />
-      </CategoriesViewProvider>
-   );
+   return <CategoriesPageContent />;
 }
 
 function CategoriesPageContent() {
    const navigate = Route.useNavigate();
    const { type, includeArchived, groupBy, search } = Route.useSearch();
    const { openCredenza, closeCredenza } = useCredenza();
-   const isMobile = useMediaQuery("(max-width: 640px)", false);
-   const storedView = useCategoriesView();
-   const view = isMobile ? "card" : storedView;
-   const setView = useSetCategoriesView();
 
    const handleIncludeArchivedChange = useCallback(
       (checked: boolean) => {
@@ -864,46 +791,6 @@ function CategoriesPageContent() {
          <DefaultHeader
             actions={
                <div className="flex gap-2">
-                  <ToggleGroup
-                     aria-label="Modo de visualização"
-                     onValueChange={(v) => {
-                        if (v === "table" || v === "card") setView(v);
-                     }}
-                     type="single"
-                     value={view}
-                     variant="outline"
-                  >
-                     <Tooltip>
-                        <TooltipTrigger asChild>
-                           <ToggleGroupItem
-                              aria-label="Visualização em lista"
-                              className="size-9"
-                              value="table"
-                           >
-                              <LayoutList
-                                 aria-hidden="true"
-                                 className="size-4"
-                              />
-                           </ToggleGroupItem>
-                        </TooltipTrigger>
-                        <TooltipContent>Visualização em lista</TooltipContent>
-                     </Tooltip>
-                     <Tooltip>
-                        <TooltipTrigger asChild>
-                           <ToggleGroupItem
-                              aria-label="Visualização em cartões"
-                              className="size-9"
-                              value="card"
-                           >
-                              <LayoutGrid
-                                 aria-hidden="true"
-                                 className="size-4"
-                              />
-                           </ToggleGroupItem>
-                        </TooltipTrigger>
-                        <TooltipContent>Visualização em cartões</TooltipContent>
-                     </Tooltip>
-                  </ToggleGroup>
                   <DropdownMenu>
                      <DropdownMenuTrigger asChild>
                         <Button
@@ -957,16 +844,10 @@ function CategoriesPageContent() {
             type={type}
          />
          <QueryBoundary
-            fallback={
-               view === "card" ? (
-                  <CategoriesCardSkeleton />
-               ) : (
-                  <CategoriesTableSkeleton />
-               )
-            }
+            fallback={<CategoriesTableSkeleton />}
             errorTitle="Erro ao carregar categorias"
          >
-            <CategoriesList navigate={navigate} view={view} />
+            <CategoriesList navigate={navigate} />
          </QueryBoundary>
       </main>
    );
