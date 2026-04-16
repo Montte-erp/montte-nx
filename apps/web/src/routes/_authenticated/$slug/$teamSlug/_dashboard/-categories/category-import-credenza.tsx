@@ -1,168 +1,476 @@
+import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import {
+   Choicebox,
+   ChoiceboxItem,
+   ChoiceboxItemHeader,
+   ChoiceboxItemTitle,
+   ChoiceboxItemDescription,
+   ChoiceboxIndicator,
+} from "@packages/ui/components/choicebox";
+import { Combobox } from "@packages/ui/components/combobox";
 import {
    CredenzaBody,
    CredenzaDescription,
-   CredenzaFooter,
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
 import {
-   Select,
-   SelectContent,
-   SelectItem,
-   SelectTrigger,
-   SelectValue,
-} from "@packages/ui/components/select";
-import { Separator } from "@packages/ui/components/separator";
-import { Spinner } from "@packages/ui/components/spinner";
-import {
-   Table,
-   TableBody,
-   TableCell,
-   TableHead,
-   TableHeader,
-   TableRow,
-} from "@packages/ui/components/table";
+   Dropzone,
+   DropzoneContent,
+   DropzoneEmptyState,
+} from "@packages/ui/components/dropzone";
 import { defineStepper } from "@packages/ui/components/stepper";
 import { useMutation } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { AlertCircle, CheckCircle2, Upload } from "lucide-react";
+import {
+   AlertCircle,
+   CheckCircle2,
+   ChevronRight,
+   FileSpreadsheet,
+   Loader2,
+   Undo2,
+} from "lucide-react";
 import { fromPromise } from "neverthrow";
-import { useCallback, useRef, useState } from "react";
-import { useCsvFile } from "@/hooks/use-csv-file";
+import { useCallback, useRef, useTransition, useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
-import { cn } from "@packages/ui/lib/utils";
+import { useCredenza } from "@/hooks/use-credenza";
+import { useCsvFile } from "@/hooks/use-csv-file";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
+import { useFileDownload } from "@/hooks/use-file-download";
+import {
+   CategoryImportProvider,
+   useCategoryImportContext,
+   FIELD_OPTIONS,
+   TEMPLATE_HEADERS,
+   TEMPLATE_ROWS,
+   getSampleValues,
+} from "./use-category-import";
 
-const { Stepper, steps } = defineStepper(
-   { id: "upload", label: "Upload" },
-   { id: "mapping", label: "Mapeamento" },
-   { id: "preview", label: "Revisão" },
+const { Stepper, useStepper } = defineStepper(
+   { id: "upload", title: "Arquivo" },
+   { id: "map", title: "Colunas" },
+   { id: "preview", title: "Prévia" },
+   { id: "confirm", title: "Importar" },
 );
 
-type ParsedRow = Record<string, string>;
+type StepperMethods = ReturnType<typeof useStepper>;
 
-const FIELD_OPTIONS = [
-   { value: "__skip__", label: "Ignorar" },
-   { value: "name", label: "Nome" },
-   { value: "type", label: "Tipo" },
-   { value: "color", label: "Cor" },
-   { value: "icon", label: "Ícone" },
-   { value: "keywords", label: "Palavras-chave" },
-   { value: "subcategory", label: "Subcategoria" },
-   { value: "subcategoryKeywords", label: "Palavras-chave (Sub)" },
-];
+function TemplateCredenza({ onClose }: { onClose?: () => void }) {
+   const csv = useCsvFile();
+   const xlsx = useXlsxFile();
+   const { download } = useFileDownload();
 
-function guessMapping(headers: string[]): Record<string, string> {
-   const mapping: Record<string, string> = {};
-   const patterns: Record<string, RegExp> = {
-      name: /^(nome|name|categoria|category)$/i,
-      type: /^(tipo|type)$/i,
-      color: /^(cor|color)$/i,
-      icon: /^(icone|ícone|icon)$/i,
-      keywords: /^(palavras?.?chave|keywords?)$/i,
-      subcategory: /^(subcategoria|subcategory|sub)$/i,
-      subcategoryKeywords: /^(palavras?.?chave.*sub|sub.*keywords?)$/i,
-   };
-   for (const header of headers) {
-      let matched = false;
-      for (const [field, regex] of Object.entries(patterns)) {
-         if (regex.test(header)) {
-            mapping[header] = field;
-            matched = true;
-            break;
-         }
-      }
-      if (!matched) mapping[header] = "__skip__";
-   }
-   return mapping;
+   return (
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Baixar modelo</CredenzaTitle>
+            <CredenzaDescription>
+               Use como referência para formatar seu arquivo antes de importar
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody>
+            <Choicebox className="grid grid-cols-2 gap-2">
+               <ChoiceboxItem value="csv" id="template-csv">
+                  <ChoiceboxIndicator id="template-csv" className="sr-only" />
+                  <button
+                     type="button"
+                     className="flex flex-col gap-2 w-full cursor-pointer"
+                     onClick={() => {
+                        download(
+                           csv.generate(
+                              TEMPLATE_ROWS as Record<string, string>[],
+                              [...TEMPLATE_HEADERS],
+                           ),
+                           "modelo-categorias.csv",
+                        );
+                        onClose?.();
+                     }}
+                  >
+                     <FileSpreadsheet className="size-5 shrink-0 text-emerald-600" />
+                     <ChoiceboxItemHeader>
+                        <ChoiceboxItemTitle>CSV</ChoiceboxItemTitle>
+                        <ChoiceboxItemDescription>
+                           Compatível com qualquer planilha ou editor de texto
+                        </ChoiceboxItemDescription>
+                     </ChoiceboxItemHeader>
+                  </button>
+               </ChoiceboxItem>
+               <ChoiceboxItem value="xlsx" id="template-xlsx">
+                  <ChoiceboxIndicator id="template-xlsx" className="sr-only" />
+                  <button
+                     type="button"
+                     className="flex flex-col gap-2 w-full cursor-pointer"
+                     onClick={() => {
+                        download(
+                           xlsx.generate(
+                              TEMPLATE_ROWS as Record<string, string>[],
+                              [...TEMPLATE_HEADERS],
+                           ),
+                           "modelo-categorias.xlsx",
+                        );
+                        onClose?.();
+                     }}
+                  >
+                     <FileSpreadsheet className="size-5 shrink-0 text-green-600" />
+                     <ChoiceboxItemHeader>
+                        <ChoiceboxItemTitle>XLSX</ChoiceboxItemTitle>
+                        <ChoiceboxItemDescription>
+                           Excel e Google Sheets — com formatação de colunas
+                        </ChoiceboxItemDescription>
+                     </ChoiceboxItemHeader>
+                  </button>
+               </ChoiceboxItem>
+            </Choicebox>
+         </CredenzaBody>
+      </>
+   );
 }
 
-interface MappedCategory {
-   name: string;
-   type: "income" | "expense" | null;
-   color: string | null;
-   icon: string | null;
-   keywords: string[] | null;
-   subcategories: { name: string; keywords: string[] | null }[];
-   valid: boolean;
+function StepBar({ methods }: { methods: StepperMethods }) {
+   const steps = methods.state.all;
+   const current = methods.lookup.getIndex(methods.state.current.data.id);
+   return (
+      <div className="flex items-center gap-2">
+         {steps.map((_s, i) => (
+            <div
+               className={[
+                  "h-1 rounded-full flex-1 transition-all",
+                  i === current
+                     ? "bg-primary"
+                     : i < current
+                       ? "bg-primary/40"
+                       : "bg-muted",
+               ].join(" ")}
+               key={`step-${i + 1}`}
+            />
+         ))}
+      </div>
+   );
 }
 
-function applyMapping(
-   rows: ParsedRow[],
-   headers: string[],
-   mapping: Record<string, string>,
-): MappedCategory[] {
-   const getField = (row: ParsedRow, field: string): string => {
-      const header = headers.find((h) => mapping[h] === field);
-      return header ? (row[header] ?? "").trim() : "";
-   };
+function UploadStep({ methods }: { methods: StepperMethods }) {
+   const { parseFile } = useCategoryImportContext();
+   const [isPending, startTransition] = useTransition();
+   const [selectedFile, setSelectedFile] = useState<File | undefined>();
+   const { openCredenza, closeCredenza } = useCredenza();
 
-   const categoryMap = new Map<string, MappedCategory>();
-
-   for (const row of rows) {
-      const name = getField(row, "name");
-      if (!name) continue;
-
-      const typeRaw = getField(row, "type").toLowerCase();
-      let type: "income" | "expense" | null = null;
-      if (typeRaw === "receita" || typeRaw === "income") type = "income";
-      else if (typeRaw === "despesa" || typeRaw === "expense") type = "expense";
-
-      const color = getField(row, "color") || null;
-      const icon = getField(row, "icon") || null;
-      const keywordsRaw = getField(row, "keywords");
-      const keywords = keywordsRaw
-         ? keywordsRaw
-              .split(/[;,]/)
-              .map((k) => k.trim())
-              .filter(Boolean)
-         : null;
-
-      const subName = getField(row, "subcategory");
-      const subKeywordsRaw = getField(row, "subcategoryKeywords");
-      const subKeywords = subKeywordsRaw
-         ? subKeywordsRaw
-              .split(/[;,]/)
-              .map((k) => k.trim())
-              .filter(Boolean)
-         : null;
-
-      if (!categoryMap.has(name)) {
-         categoryMap.set(name, {
-            name,
-            type,
-            color,
-            icon,
-            keywords,
-            subcategories: [],
-            valid: type !== null,
+   const handleFile = useCallback(
+      (file: File) => {
+         setSelectedFile(file);
+         startTransition(async () => {
+            const result = await fromPromise(parseFile(file), (e) => e);
+            if (result.isErr()) {
+               toast.error("Arquivo CSV inválido ou corrompido.");
+               setSelectedFile(undefined);
+               return;
+            }
+            methods.navigation.next();
          });
-      }
+      },
+      [parseFile, methods.navigation],
+   );
 
-      if (subName) {
-         categoryMap
-            .get(name)
-            ?.subcategories.push({ name: subName, keywords: subKeywords });
-      }
-   }
+   return (
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Importar categorias</CredenzaTitle>
+            <CredenzaDescription>
+               Envie um arquivo CSV com suas categorias
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-   return Array.from(categoryMap.values());
+         <CredenzaBody>
+            <div className="flex flex-col gap-4">
+               <StepBar methods={methods} />
+
+               <Dropzone
+                  accept={{ "text/csv": [".csv"] }}
+                  disabled={isPending}
+                  maxFiles={1}
+                  onDrop={([file]) => {
+                     if (file) handleFile(file);
+                  }}
+                  src={selectedFile ? [selectedFile] : undefined}
+               >
+                  <DropzoneEmptyState>
+                     {isPending ? (
+                        <Loader2 className="size-8 text-primary animate-spin" />
+                     ) : (
+                        <>
+                           <FileSpreadsheet className="size-8 text-muted-foreground" />
+                           <p className="font-medium text-sm">
+                              Arraste e solte ou clique para selecionar
+                           </p>
+                           <div className="flex items-center gap-2 rounded-md border bg-background px-2.5 py-1">
+                              <FileSpreadsheet className="size-3.5 text-emerald-600" />
+                              <span className="text-xs font-medium">CSV</span>
+                           </div>
+                        </>
+                     )}
+                  </DropzoneEmptyState>
+                  <DropzoneContent />
+               </Dropzone>
+
+               <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="self-start px-0 text-muted-foreground"
+                  onClick={() =>
+                     openCredenza({
+                        renderChildren: () => (
+                           <TemplateCredenza onClose={closeCredenza} />
+                        ),
+                     })
+                  }
+               >
+                  Baixar modelo
+               </Button>
+            </div>
+         </CredenzaBody>
+      </>
+   );
 }
 
-interface CategoryImportCredenzaProps {
-   onSuccess: () => void;
+function MapStep({ methods }: { methods: StepperMethods }) {
+   const {
+      rawData,
+      mapping,
+      setMapping,
+      savedMappingApplied,
+      resetMapping,
+      applyColumnMapping,
+   } = useCategoryImportContext();
+
+   if (!rawData) return null;
+
+   const canProceed = Object.values(mapping).some((v) => v === "name");
+
+   const handleNext = useCallback(() => {
+      applyColumnMapping(mapping);
+      methods.navigation.next();
+   }, [applyColumnMapping, mapping, methods.navigation]);
+
+   return (
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Mapeie as colunas</CredenzaTitle>
+            <CredenzaDescription>
+               Diga ao sistema o que cada coluna representa
+            </CredenzaDescription>
+         </CredenzaHeader>
+
+         <CredenzaBody>
+            <div className="flex flex-col gap-4">
+               <StepBar methods={methods} />
+
+               {savedMappingApplied && (
+                  <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2">
+                     <p className="text-xs text-muted-foreground">
+                        Mapeamento anterior aplicado
+                     </p>
+                     <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-muted-foreground h-auto py-0 px-1"
+                        onClick={resetMapping}
+                     >
+                        <Undo2 className="size-3" />
+                        Redefinir
+                     </Button>
+                  </div>
+               )}
+
+               <div className="flex flex-col gap-1">
+                  {rawData.headers.map((header) => {
+                     const sample = getSampleValues(rawData, header);
+                     return (
+                        <div
+                           className="grid grid-cols-[10rem_1fr] items-start gap-2 rounded-lg border bg-muted/20 px-3 py-2.5 overflow-hidden"
+                           key={header}
+                        >
+                           <div className="flex flex-col gap-1 pt-1">
+                              <span className="text-sm font-medium">
+                                 {header}
+                              </span>
+                              {sample && (
+                                 <span className="text-xs text-muted-foreground truncate">
+                                    {sample}
+                                 </span>
+                              )}
+                           </div>
+                           <Combobox
+                              options={FIELD_OPTIONS}
+                              value={mapping[header] ?? "__skip__"}
+                              onValueChange={(v) =>
+                                 setMapping({ ...mapping, [header]: v })
+                              }
+                           />
+                        </div>
+                     );
+                  })}
+               </div>
+
+               <div className="flex gap-2">
+                  <Button
+                     className="flex-none"
+                     onClick={() => methods.navigation.prev()}
+                     type="button"
+                     variant="outline"
+                  >
+                     Voltar
+                  </Button>
+                  <Button
+                     className="flex-1"
+                     disabled={!canProceed}
+                     onClick={handleNext}
+                     type="button"
+                  >
+                     <span className="flex items-center gap-2">
+                        Continuar
+                        <ChevronRight className="size-4" />
+                     </span>
+                  </Button>
+               </div>
+            </div>
+         </CredenzaBody>
+      </>
+   );
 }
 
-export function CategoryImportCredenza({
-   onSuccess,
-}: CategoryImportCredenzaProps) {
-   const [headers, setHeaders] = useState<string[]>([]);
-   const [rows, setRows] = useState<ParsedRow[]>([]);
-   const [mapping, setMapping] = useState<Record<string, string>>({});
-   const [mapped, setMapped] = useState<MappedCategory[]>([]);
-   const [isDragging, setIsDragging] = useState(false);
+function PreviewStep({ methods }: { methods: StepperMethods }) {
+   const { mappedCategories } = useCategoryImportContext();
    const previewRef = useRef<HTMLDivElement>(null);
+
+   const virtualizer = useVirtualizer({
+      count: mappedCategories.length,
+      getScrollElement: () => previewRef.current,
+      estimateSize: () => 56,
+      overscan: 8,
+   });
+
+   const validCount = mappedCategories.filter((c) => c.valid).length;
+
+   return (
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Prévia</CredenzaTitle>
+            <CredenzaDescription>
+               Revise as categorias antes de importar
+            </CredenzaDescription>
+         </CredenzaHeader>
+
+         <CredenzaBody>
+            <div className="flex flex-col gap-4">
+               <StepBar methods={methods} />
+
+               <div className="h-56 overflow-auto" ref={previewRef}>
+                  <div
+                     style={{
+                        height: `${virtualizer.getTotalSize()}px`,
+                        position: "relative",
+                     }}
+                  >
+                     {virtualizer.getVirtualItems().map((virtualRow) => {
+                        const cat = mappedCategories[virtualRow.index];
+                        if (!cat) return null;
+                        return (
+                           <div
+                              key={cat.name}
+                              style={{
+                                 position: "absolute",
+                                 top: 0,
+                                 left: 0,
+                                 width: "100%",
+                                 height: `${virtualRow.size}px`,
+                                 transform: `translateY(${virtualRow.start}px)`,
+                              }}
+                              className="grid grid-cols-[1fr_6rem_6rem_2rem] items-center gap-2 border-b px-3 py-2"
+                           >
+                              <span className="text-sm font-medium truncate">
+                                 {cat.name}
+                              </span>
+                              <span>
+                                 {cat.type === "income" ? (
+                                    <Badge
+                                       variant="outline"
+                                       className="text-green-600 border-green-600"
+                                    >
+                                       Receita
+                                    </Badge>
+                                 ) : cat.type === "expense" ? (
+                                    <Badge variant="destructive">Despesa</Badge>
+                                 ) : (
+                                    <span className="text-sm text-muted-foreground">
+                                       —
+                                    </span>
+                                 )}
+                              </span>
+                              <span>
+                                 {cat.subcategories.length > 0 ? (
+                                    <Badge variant="secondary">
+                                       {cat.subcategories.length}
+                                    </Badge>
+                                 ) : (
+                                    <span className="text-sm text-muted-foreground">
+                                       —
+                                    </span>
+                                 )}
+                              </span>
+                              <span>
+                                 {cat.valid ? (
+                                    <CheckCircle2 className="size-4 text-green-600" />
+                                 ) : (
+                                    <AlertCircle className="size-4 text-destructive" />
+                                 )}
+                              </span>
+                           </div>
+                        );
+                     })}
+                  </div>
+               </div>
+
+               <div className="flex gap-2">
+                  <Button
+                     className="flex-none"
+                     onClick={() => methods.navigation.prev()}
+                     type="button"
+                     variant="outline"
+                  >
+                     Voltar
+                  </Button>
+                  <Button
+                     className="flex-1"
+                     disabled={validCount === 0}
+                     onClick={() => methods.navigation.next()}
+                     type="button"
+                  >
+                     <span className="flex items-center gap-2">
+                        Continuar
+                        <ChevronRight className="size-4" />
+                     </span>
+                  </Button>
+               </div>
+            </div>
+         </CredenzaBody>
+      </>
+   );
+}
+
+function ConfirmStep({
+   methods,
+   onSuccess,
+}: {
+   methods: StepperMethods;
+   onSuccess: () => void;
+}) {
+   const { mappedCategories, buildImportPayload } = useCategoryImportContext();
+
+   const validCount = mappedCategories.filter((c) => c.valid).length;
+   const invalidCount = mappedCategories.filter((c) => !c.valid).length;
 
    const importMutation = useMutation(
       orpc.categories.importBatch.mutationOptions({
@@ -176,348 +484,114 @@ export function CategoryImportCredenza({
       }),
    );
 
-   const { parse } = useCsvFile();
-
-   const processFile = useCallback(
-      (file: File, onSuccess: () => void) => {
-         fromPromise(parse(file), (e) => e).then((result) => {
-            if (result.isErr()) {
-               toast.error("Arquivo CSV inválido ou corrompido.");
-               return;
-            }
-            const { headers: parsedHeaders, rows: parsedRows } = result.value;
-            const parsed = parsedRows.map((fields) => {
-               const row: ParsedRow = {};
-               for (let i = 0; i < parsedHeaders.length; i++) {
-                  row[parsedHeaders[i]] = fields[i] ?? "";
-               }
-               return row;
-            });
-            setHeaders(parsedHeaders);
-            setRows(parsed);
-            setMapping(guessMapping(parsedHeaders));
-            onSuccess();
-         });
-      },
-      [parse],
-   );
-
-   const validCount = mapped.filter((c) => c.valid).length;
-   const invalidCount = mapped.filter((c) => !c.valid).length;
-
-   const rowVirtualizer = useVirtualizer({
-      count: mapped.length,
-      getScrollElement: () => previewRef.current,
-      estimateSize: () => 48,
-      overscan: 5,
-   });
+   const handleImport = useCallback(() => {
+      importMutation.mutate({ categories: buildImportPayload() });
+   }, [importMutation, buildImportPayload]);
 
    return (
-      <Stepper.Provider>
-         {({ methods }) => {
-            const currentStepId = methods.state.current.data.id;
-            const currentIndex = methods.lookup.getIndex(currentStepId);
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Tudo certo?</CredenzaTitle>
+            <CredenzaDescription>
+               Confira o resumo e clique em importar quando estiver pronto
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-            return (
-               <>
-                  <CredenzaHeader>
-                     <CredenzaTitle>Importar Categorias</CredenzaTitle>
-                     <CredenzaDescription>
-                        {currentStepId === "upload" &&
-                           "Faça upload de um arquivo CSV com suas categorias."}
-                        {currentStepId === "mapping" &&
-                           "Mapeie as colunas do CSV para os campos corretos."}
-                        {currentStepId === "preview" &&
-                           `${validCount} categorias serão importadas${invalidCount > 0 ? `, ${invalidCount} inválidas` : ""}.`}
-                     </CredenzaDescription>
-                     <div className="flex items-center gap-2 pt-4">
-                        {steps.map((step, index) => {
-                           const isActive = currentStepId === step.id;
-                           const isCompleted = index < currentIndex;
-                           return (
-                              <div
-                                 className="flex items-center gap-2"
-                                 key={step.id}
-                              >
-                                 <div
-                                    className={cn(
-                                       "flex size-6 items-center justify-center rounded-full text-xs font-medium",
-                                       isActive
-                                          ? "bg-primary text-primary-foreground"
-                                          : isCompleted
-                                            ? "bg-primary/20 text-primary"
-                                            : "bg-muted text-muted-foreground",
-                                    )}
-                                 >
-                                    {index + 1}
-                                 </div>
-                                 <span
-                                    className={cn(
-                                       "text-sm",
-                                       isActive
-                                          ? "font-medium"
-                                          : "text-muted-foreground",
-                                    )}
-                                 >
-                                    {step.label}
-                                 </span>
-                                 {index < steps.length - 1 && (
-                                    <Separator
-                                       orientation="horizontal"
-                                       className="w-8"
-                                    />
-                                 )}
-                              </div>
-                           );
-                        })}
+         <CredenzaBody>
+            <div className="flex flex-col gap-4">
+               <StepBar methods={methods} />
+
+               <div className="rounded-xl border overflow-hidden">
+                  <div className="divide-y">
+                     <div className="flex items-center justify-between px-4 py-2.5">
+                        <span className="text-sm text-muted-foreground">
+                           Total no arquivo
+                        </span>
+                        <span className="text-sm font-medium">
+                           {mappedCategories.length}
+                        </span>
                      </div>
-                  </CredenzaHeader>
-
-                  <CredenzaBody className="px-4">
-                     {currentStepId === "upload" && (
-                        <label
-                           className={cn(
-                              "flex flex-col items-center gap-4 rounded-lg border-2 border-dashed p-8 cursor-pointer transition-colors",
-                              isDragging
-                                 ? "border-primary bg-primary/5"
-                                 : "hover:border-primary",
-                           )}
-                           onDragEnter={(e) => {
-                              e.preventDefault();
-                              setIsDragging(true);
-                           }}
-                           onDragLeave={() => setIsDragging(false)}
-                           onDragOver={(e) => e.preventDefault()}
-                           onDrop={(e) => {
-                              e.preventDefault();
-                              setIsDragging(false);
-                              const file = e.dataTransfer.files?.[0];
-                              if (file?.name.endsWith(".csv")) {
-                                 processFile(file, () =>
-                                    methods.navigation.next(),
-                                 );
-                              }
-                           }}
-                        >
-                           <Upload className="size-8 text-muted-foreground" />
-                           <span className="text-sm text-muted-foreground text-center">
-                              Clique para selecionar ou arraste um arquivo CSV
+                     {invalidCount > 0 && (
+                        <div className="flex items-center justify-between px-4 py-2.5">
+                           <span className="text-sm text-muted-foreground">
+                              Com erro (ignoradas)
                            </span>
-                           <input
-                              accept=".csv"
-                              className="hidden"
-                              onChange={(e) => {
-                                 const file = e.target.files?.[0];
-                                 if (file) {
-                                    processFile(file, () =>
-                                       methods.navigation.next(),
-                                    );
-                                 }
-                              }}
-                              type="file"
-                           />
-                        </label>
+                           <Badge variant="destructive">{invalidCount}</Badge>
+                        </div>
                      )}
+                     <div className="flex items-center justify-between bg-primary/5 px-4 py-2.5">
+                        <span className="text-sm font-medium">
+                           Serão importadas
+                        </span>
+                        <span className="text-sm font-bold text-primary">
+                           {validCount}
+                        </span>
+                     </div>
+                  </div>
+               </div>
 
-                     {currentStepId === "mapping" && (
-                        <div className="flex flex-col gap-4">
-                           <p className="text-sm text-muted-foreground">
-                              {rows.length} linhas encontradas. Mapeie as
-                              colunas:
-                           </p>
-                           {headers.map((header) => (
-                              <div
-                                 className="flex items-center gap-4"
-                                 key={header}
-                              >
-                                 <span className="text-sm font-medium w-1/3 truncate">
-                                    {header}
-                                 </span>
-                                 <Select
-                                    onValueChange={(v) =>
-                                       setMapping((prev) => ({
-                                          ...prev,
-                                          [header]: v,
-                                       }))
-                                    }
-                                    value={mapping[header] ?? "__skip__"}
-                                 >
-                                    <SelectTrigger className="w-2/3">
-                                       <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                       {FIELD_OPTIONS.map((opt) => (
-                                          <SelectItem
-                                             key={opt.value}
-                                             value={opt.value}
-                                          >
-                                             {opt.label}
-                                          </SelectItem>
-                                       ))}
-                                    </SelectContent>
-                                 </Select>
-                              </div>
-                           ))}
-                        </div>
-                     )}
+               <div className="flex gap-2">
+                  <Button
+                     className="flex-none"
+                     disabled={importMutation.isPending}
+                     onClick={() => methods.navigation.prev()}
+                     type="button"
+                     variant="outline"
+                  >
+                     Voltar
+                  </Button>
+                  <Button
+                     className="flex-1"
+                     disabled={importMutation.isPending || validCount === 0}
+                     onClick={handleImport}
+                     type="button"
+                  >
+                     <span className="flex items-center gap-2">
+                        {importMutation.isPending && (
+                           <Loader2 className="size-4 animate-spin" />
+                        )}
+                        Importar {validCount} categoria(s)
+                     </span>
+                  </Button>
+               </div>
+            </div>
+         </CredenzaBody>
+      </>
+   );
+}
 
-                     {currentStepId === "preview" && (
-                        <div className="flex flex-col gap-4">
-                           <div className="flex gap-4 text-sm">
-                              <span className="text-muted-foreground">
-                                 Total: <strong>{mapped.length}</strong>
-                              </span>
-                              {invalidCount > 0 && (
-                                 <span className="text-destructive">
-                                    Inválidas: <strong>{invalidCount}</strong>
-                                 </span>
-                              )}
-                           </div>
-                           <div className="h-72 overflow-auto" ref={previewRef}>
-                              <Table>
-                                 <TableHeader>
-                                    <TableRow>
-                                       <TableHead>Nome</TableHead>
-                                       <TableHead>Tipo</TableHead>
-                                       <TableHead>Subcategorias</TableHead>
-                                       <TableHead>Status</TableHead>
-                                    </TableRow>
-                                 </TableHeader>
-                                 <TableBody
-                                    style={{
-                                       height: `${rowVirtualizer.getTotalSize()}px`,
-                                       position: "relative",
-                                       display: "block",
-                                    }}
-                                 >
-                                    {rowVirtualizer
-                                       .getVirtualItems()
-                                       .map((virtualRow) => {
-                                          const cat = mapped[virtualRow.index];
-                                          return (
-                                             <TableRow
-                                                key={cat.name}
-                                                style={{
-                                                   position: "absolute",
-                                                   top: 0,
-                                                   width: "100%",
-                                                   transform: `translateY(${virtualRow.start}px)`,
-                                                   display: "table",
-                                                   tableLayout: "fixed",
-                                                }}
-                                             >
-                                                <TableCell className="font-medium">
-                                                   {cat.name}
-                                                </TableCell>
-                                                <TableCell>
-                                                   {cat.type === "income"
-                                                      ? "Receita"
-                                                      : cat.type === "expense"
-                                                        ? "Despesa"
-                                                        : "—"}
-                                                </TableCell>
-                                                <TableCell>
-                                                   {cat.subcategories.length}
-                                                </TableCell>
-                                                <TableCell>
-                                                   {cat.valid ? (
-                                                      <CheckCircle2 className="size-4 text-green-600" />
-                                                   ) : (
-                                                      <AlertCircle className="size-4 text-destructive" />
-                                                   )}
-                                                </TableCell>
-                                             </TableRow>
-                                          );
-                                       })}
-                                 </TableBody>
-                              </Table>
-                           </div>
-                        </div>
-                     )}
-                  </CredenzaBody>
+function ImportWizard({
+   methods,
+   onSuccess,
+}: {
+   methods: StepperMethods;
+   onSuccess: () => void;
+}) {
+   const currentId = methods.state.current.data.id;
+   return (
+      <>
+         {currentId === "upload" && <UploadStep methods={methods} />}
+         {currentId === "map" && <MapStep methods={methods} />}
+         {currentId === "preview" && <PreviewStep methods={methods} />}
+         {currentId === "confirm" && (
+            <ConfirmStep methods={methods} onSuccess={onSuccess} />
+         )}
+      </>
+   );
+}
 
-                  <CredenzaFooter>
-                     {currentStepId === "mapping" && (
-                        <div className="flex gap-2 w-full">
-                           <Button
-                              className="flex-1"
-                              onClick={() => methods.navigation.prev()}
-                              variant="outline"
-                           >
-                              Voltar
-                           </Button>
-                           <Button
-                              className="flex-1"
-                              onClick={() => {
-                                 const result = applyMapping(
-                                    rows,
-                                    headers,
-                                    mapping,
-                                 );
-                                 setMapped(result);
-                                 methods.navigation.next();
-                              }}
-                           >
-                              Continuar
-                           </Button>
-                        </div>
-                     )}
-                     {currentStepId === "preview" && (
-                        <div className="flex gap-2 w-full">
-                           <Button
-                              className="flex-1"
-                              onClick={() => methods.navigation.prev()}
-                              variant="outline"
-                           >
-                              Voltar
-                           </Button>
-                           <Button
-                              className="flex-1 gap-2"
-                              disabled={
-                                 importMutation.isPending || validCount === 0
-                              }
-                              onClick={() => {
-                                 const payload = mapped
-                                    .filter((cat) => cat.valid)
-                                    .map((cat) => {
-                                       if (
-                                          cat.type !== "income" &&
-                                          cat.type !== "expense"
-                                       )
-                                          return null;
-                                       return {
-                                          name: cat.name,
-                                          type: cat.type,
-                                          color: cat.color,
-                                          icon: cat.icon,
-                                          keywords: cat.keywords,
-                                          subcategories: cat.subcategories.map(
-                                             (s) => ({
-                                                name: s.name,
-                                             }),
-                                          ),
-                                       };
-                                    })
-                                    .filter(
-                                       (
-                                          item,
-                                       ): item is NonNullable<typeof item> =>
-                                          item !== null,
-                                    );
-                                 importMutation.mutate({ categories: payload });
-                              }}
-                           >
-                              {importMutation.isPending && (
-                                 <Spinner className="size-4" />
-                              )}
-                              Importar {validCount} categorias
-                           </Button>
-                        </div>
-                     )}
-                  </CredenzaFooter>
-               </>
-            );
-         }}
-      </Stepper.Provider>
+export function CategoryImportCredenza({
+   onSuccess,
+}: {
+   onSuccess: () => void;
+}) {
+   return (
+      <CategoryImportProvider>
+         <Stepper.Provider variant="line">
+            {({ methods }) => (
+               <ImportWizard methods={methods} onSuccess={onSuccess} />
+            )}
+         </Stepper.Provider>
+      </CategoryImportProvider>
    );
 }
