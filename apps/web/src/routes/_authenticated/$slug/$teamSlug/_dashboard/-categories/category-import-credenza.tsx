@@ -27,6 +27,7 @@ import { defineStepper } from "@packages/ui/components/stepper";
 import { useMutation } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { AlertCircle, CheckCircle2, Upload } from "lucide-react";
+import { fromPromise } from "neverthrow";
 import { useCallback, useRef, useState } from "react";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { toast } from "sonner";
@@ -178,8 +179,13 @@ export function CategoryImportCredenza({
    const { parse } = useCsvFile();
 
    const processFile = useCallback(
-      (file: File) => {
-         parse(file).then(({ headers: parsedHeaders, rows: parsedRows }) => {
+      (file: File, onSuccess: () => void) => {
+         fromPromise(parse(file), (e) => e).then((result) => {
+            if (result.isErr()) {
+               toast.error("Arquivo CSV inválido ou corrompido.");
+               return;
+            }
+            const { headers: parsedHeaders, rows: parsedRows } = result.value;
             const parsed = parsedRows.map((fields) => {
                const row: ParsedRow = {};
                for (let i = 0; i < parsedHeaders.length; i++) {
@@ -190,6 +196,7 @@ export function CategoryImportCredenza({
             setHeaders(parsedHeaders);
             setRows(parsed);
             setMapping(guessMapping(parsedHeaders));
+            onSuccess();
          });
       },
       [parse],
@@ -286,8 +293,9 @@ export function CategoryImportCredenza({
                               setIsDragging(false);
                               const file = e.dataTransfer.files?.[0];
                               if (file?.name.endsWith(".csv")) {
-                                 processFile(file);
-                                 methods.navigation.next();
+                                 processFile(file, () =>
+                                    methods.navigation.next(),
+                                 );
                               }
                            }}
                         >
@@ -301,8 +309,9 @@ export function CategoryImportCredenza({
                               onChange={(e) => {
                                  const file = e.target.files?.[0];
                                  if (file) {
-                                    processFile(file);
-                                    methods.navigation.next();
+                                    processFile(file, () =>
+                                       methods.navigation.next(),
+                                    );
                                  }
                               }}
                               type="file"
@@ -374,56 +383,52 @@ export function CategoryImportCredenza({
                                        <TableHead>Status</TableHead>
                                     </TableRow>
                                  </TableHeader>
-                                 <TableBody>
-                                    <tr
-                                       style={{
-                                          height: `${rowVirtualizer.getTotalSize()}px`,
-                                          position: "relative",
-                                          display: "block",
-                                       }}
-                                    >
-                                       {rowVirtualizer
-                                          .getVirtualItems()
-                                          .map((virtualRow) => {
-                                             const cat =
-                                                mapped[virtualRow.index];
-                                             return (
-                                                <TableRow
-                                                   key={cat.name}
-                                                   style={{
-                                                      position: "absolute",
-                                                      top: 0,
-                                                      width: "100%",
-                                                      transform: `translateY(${virtualRow.start}px)`,
-                                                      display: "table",
-                                                      tableLayout: "fixed",
-                                                   }}
-                                                >
-                                                   <TableCell className="font-medium">
-                                                      {cat.name}
-                                                   </TableCell>
-                                                   <TableCell>
-                                                      {cat.type === "income"
-                                                         ? "Receita"
-                                                         : cat.type ===
-                                                             "expense"
-                                                           ? "Despesa"
-                                                           : "—"}
-                                                   </TableCell>
-                                                   <TableCell>
-                                                      {cat.subcategories.length}
-                                                   </TableCell>
-                                                   <TableCell>
-                                                      {cat.valid ? (
-                                                         <CheckCircle2 className="size-4 text-green-600" />
-                                                      ) : (
-                                                         <AlertCircle className="size-4 text-destructive" />
-                                                      )}
-                                                   </TableCell>
-                                                </TableRow>
-                                             );
-                                          })}
-                                    </tr>
+                                 <TableBody
+                                    style={{
+                                       height: `${rowVirtualizer.getTotalSize()}px`,
+                                       position: "relative",
+                                       display: "block",
+                                    }}
+                                 >
+                                    {rowVirtualizer
+                                       .getVirtualItems()
+                                       .map((virtualRow) => {
+                                          const cat = mapped[virtualRow.index];
+                                          return (
+                                             <TableRow
+                                                key={cat.name}
+                                                style={{
+                                                   position: "absolute",
+                                                   top: 0,
+                                                   width: "100%",
+                                                   transform: `translateY(${virtualRow.start}px)`,
+                                                   display: "table",
+                                                   tableLayout: "fixed",
+                                                }}
+                                             >
+                                                <TableCell className="font-medium">
+                                                   {cat.name}
+                                                </TableCell>
+                                                <TableCell>
+                                                   {cat.type === "income"
+                                                      ? "Receita"
+                                                      : cat.type === "expense"
+                                                        ? "Despesa"
+                                                        : "—"}
+                                                </TableCell>
+                                                <TableCell>
+                                                   {cat.subcategories.length}
+                                                </TableCell>
+                                                <TableCell>
+                                                   {cat.valid ? (
+                                                      <CheckCircle2 className="size-4 text-green-600" />
+                                                   ) : (
+                                                      <AlertCircle className="size-4 text-destructive" />
+                                                   )}
+                                                </TableCell>
+                                             </TableRow>
+                                          );
+                                       })}
                                  </TableBody>
                               </Table>
                            </div>

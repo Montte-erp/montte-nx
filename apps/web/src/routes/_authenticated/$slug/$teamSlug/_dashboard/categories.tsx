@@ -377,9 +377,10 @@ function CategoriesList({ navigate, view }: CategoriesListProps) {
    }, [openAlertDialog, selectedIds, categories, bulkDeleteMutation, onClear]);
 
    const handleBulkArchive = useCallback(async () => {
-      const archivableIds = selectedIds.filter(
-         (id) => !categories.find((c) => c.id === id)?.isDefault,
-      );
+      const archivableIds = selectedIds.filter((id) => {
+         const cat = categories.find((c) => c.id === id);
+         return cat !== undefined && !cat.isDefault;
+      });
       if (archivableIds.length === 0) return;
       const results = await Promise.allSettled(
          archivableIds.map((id) => bulkArchiveMutation.mutateAsync({ id })),
@@ -527,6 +528,7 @@ function CategoriesPage() {
                ...prev,
                includeArchived: checked,
             }),
+            replace: true,
          });
       },
       [navigate],
@@ -536,6 +538,7 @@ function CategoriesPage() {
       (checked: boolean) => {
          navigate({
             search: (prev: CategoriesSearch) => ({ ...prev, groupBy: checked }),
+            replace: true,
          });
       },
       [navigate],
@@ -545,6 +548,7 @@ function CategoriesPage() {
       (value: string) => {
          navigate({
             search: (prev: CategoriesSearch) => ({ ...prev, search: value }),
+            replace: true,
          });
       },
       [navigate],
@@ -559,6 +563,7 @@ function CategoriesPage() {
                includeArchived: false,
                search: "",
             }),
+            replace: true,
          }),
       [navigate],
    );
@@ -567,6 +572,7 @@ function CategoriesPage() {
       (value: "income" | "expense" | undefined) => {
          navigate({
             search: (prev: CategoriesSearch) => ({ ...prev, type: value }),
+            replace: true,
          });
       },
       [navigate],
