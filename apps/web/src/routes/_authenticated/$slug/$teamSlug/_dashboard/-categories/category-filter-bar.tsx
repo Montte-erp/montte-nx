@@ -65,6 +65,7 @@ export function CategoryFilterBar({
             <div className="relative flex-1">
                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                <Input
+                  aria-label="Buscar categorias"
                   className="pl-9"
                   onChange={(e) => {
                      setInputValue(e.target.value);
@@ -75,6 +76,7 @@ export function CategoryFilterBar({
                />
             </div>
             <ToggleGroup
+               aria-label="Filtrar por tipo"
                onValueChange={(v) => {
                   if (v === "income" || v === "expense") {
                      onTypeChange(v);
@@ -87,15 +89,15 @@ export function CategoryFilterBar({
                variant="outline"
             >
                <ToggleGroupItem className="gap-2 px-4" value="all">
-                  <Layers className="size-4" />
+                  <Layers aria-hidden="true" className="size-4" />
                   Todos
                </ToggleGroupItem>
                <ToggleGroupItem className="gap-2 px-4" value="income">
-                  <TrendingUp className="size-4" />
+                  <TrendingUp aria-hidden="true" className="size-4" />
                   Receitas
                </ToggleGroupItem>
                <ToggleGroupItem className="gap-2 px-4" value="expense">
-                  <TrendingDown className="size-4" />
+                  <TrendingDown aria-hidden="true" className="size-4" />
                   Despesas
                </ToggleGroupItem>
             </ToggleGroup>
@@ -116,7 +118,7 @@ export function CategoryFilterBar({
                      pressed={includeArchived}
                      variant="outline"
                   >
-                     <Archive className="size-4" />
+                     <Archive aria-hidden="true" className="size-4" />
                      Arquivadas
                   </Toggle>
                </TooltipTrigger>
@@ -133,7 +135,7 @@ export function CategoryFilterBar({
                      pressed={groupBy}
                      variant="outline"
                   >
-                     <LayoutList className="size-4" />
+                     <LayoutList aria-hidden="true" className="size-4" />
                      Agrupar por tipo
                   </Toggle>
                </TooltipTrigger>
@@ -150,7 +152,7 @@ export function CategoryFilterBar({
                         onClick={onClear}
                         type="button"
                      >
-                        <X className="size-3" />
+                        <X aria-hidden="true" className="size-3" />
                         Limpar filtros
                      </button>
                   </TooltipTrigger>
