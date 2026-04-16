@@ -5,6 +5,7 @@ import {
    deleteCategory,
    ensureCategoryOwnership,
    listCategories,
+   reactivateCategory,
    updateCategory,
 } from "@core/database/repositories/categories-repository";
 import {
@@ -154,6 +155,13 @@ export const archive = protectedProcedure
    .handler(async ({ context, input }) => {
       await ensureCategoryOwnership(context.db, input.id, context.teamId);
       return archiveCategory(context.db, input.id);
+   });
+
+export const unarchive = protectedProcedure
+   .input(idSchema)
+   .handler(async ({ context, input }) => {
+      await ensureCategoryOwnership(context.db, input.id, context.teamId);
+      return reactivateCategory(context.db, input.id);
    });
 
 export const bulkRemove = protectedProcedure
