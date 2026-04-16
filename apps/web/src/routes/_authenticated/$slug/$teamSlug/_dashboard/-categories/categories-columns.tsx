@@ -62,6 +62,7 @@ export type CategoryRow = {
    id: string;
    name: string;
    isDefault: boolean;
+   isArchived: boolean;
    color: string | null;
    icon: string | null;
    keywords: string[] | null;
@@ -110,6 +111,14 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                      </AnnouncementTag>
                      <AnnouncementTitle>
                         {name}
+                        {row.original.isArchived && (
+                           <Badge
+                              variant="secondary"
+                              className="text-xs shrink-0 opacity-70 pointer-events-none"
+                           >
+                              Arquivada
+                           </Badge>
+                        )}
                         {isDefault && (
                            <Tooltip>
                               <TooltipTrigger asChild>
@@ -140,6 +149,14 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                   >
                      {name}
                   </span>
+                  {row.original.isArchived && (
+                     <Badge
+                        variant="secondary"
+                        className="text-xs shrink-0 opacity-70 pointer-events-none"
+                     >
+                        Arquivada
+                     </Badge>
+                  )}
                   {isDefault && row.depth === 0 && (
                      <Tooltip>
                         <TooltipTrigger asChild>

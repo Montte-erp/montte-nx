@@ -23,7 +23,11 @@ export function CategoriesCardView({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
          {categories.map((cat) => (
             <div
-               className="flex flex-col rounded-lg border bg-card"
+               className={
+                  cat.isArchived
+                     ? "flex flex-col rounded-lg border bg-muted/30 opacity-60"
+                     : "flex flex-col rounded-lg border bg-card"
+               }
                key={cat.id}
             >
                <div className="flex items-center gap-4 p-4">
