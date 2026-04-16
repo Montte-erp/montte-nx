@@ -35,8 +35,12 @@ const initialState: SidebarNavState = {
 
 const sidebarNavStore = new Store<SidebarNavState>(initialState);
 
-createStoreEffect(sidebarNavStore, (next, prev) => {
-   if (prev.activeSection !== null && next.activeSection === null) {
+void createStoreEffect(sidebarNavStore, (next, prev) => {
+   if (
+      prev.activeSection !== null &&
+      next.activeSection === null &&
+      next.searchQuery !== ""
+   ) {
       sidebarNavStore.setState((s) => ({ ...s, searchQuery: "" }));
    }
 });

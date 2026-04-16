@@ -4,7 +4,7 @@ type Cleanup = () => void;
 
 export function createStoreEffect<T>(
    store: Store<T>,
-   effect: (state: T, prevState: T) => void,
+   effect: (nextState: T, prevState: T) => void,
 ): Cleanup {
    let prevState = store.state;
 
