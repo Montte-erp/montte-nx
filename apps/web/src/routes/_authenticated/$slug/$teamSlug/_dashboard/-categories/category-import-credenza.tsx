@@ -286,7 +286,7 @@ function MapStep({ methods }: { methods: StepperMethods }) {
                            className="grid grid-cols-[10rem_1fr] items-start gap-2 rounded-lg border bg-muted/20 px-3 py-2.5 overflow-hidden"
                            key={header}
                         >
-                           <div className="flex flex-col gap-1 pt-1">
+                           <div className="flex flex-col gap-2 pt-1">
                               <span className="text-sm font-medium">
                                  {header}
                               </span>
