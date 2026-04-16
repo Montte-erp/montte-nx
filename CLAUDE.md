@@ -204,11 +204,11 @@ Frontend never imports backend schemas or `@core/*` packages.
       (e) => e,
    );
    if (result.isErr()) {
-      if (err instanceof ORPCError && err.code === "CONFLICT")
+      if (result.error instanceof ORPCError && result.error.code === "CONFLICT")
          return {
             fields: { fieldName: "Já existe um registro com esse valor." },
          };
-      return err instanceof Error ? err.message : "Erro inesperado.";
+      return result.error instanceof Error ? result.error.message : "Erro inesperado.";
    }
    ```
 - Server field error → `{ fields: { fieldName: "message" } }` from `onSubmitAsync`. No footer error paragraph — use `toast.error` for generic errors.

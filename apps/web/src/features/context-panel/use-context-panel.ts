@@ -54,10 +54,13 @@ export const setPageViewSwitch = (config: PageViewSwitchConfig | null) =>
 export const clearPageViewSwitch = () =>
    contextPanelStore.setState((s) => ({ ...s, pageViewSwitch: null }));
 
+// No dep array — always stores the latest render function so values
+// closed over by the callback (e.g. name, type, isCreating) stay fresh.
 export const useContextPanelInfo = (render: () => React.ReactNode) => {
-   // oxlint-ignore exhaustive-deps
    useEffect(() => {
       setInfoContent(render);
+   });
+   useEffect(() => {
       return () => clearInfoContent();
    }, []);
 };

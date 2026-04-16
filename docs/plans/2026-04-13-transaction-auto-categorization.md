@@ -314,7 +314,9 @@ function enqueueCategorization(input: {
    type: "income" | "expense";
    contactName?: string | null;
 }): void {
-   void DBOS.startWorkflow(CategorizationWorkflow)
+   void DBOS.startWorkflow(CategorizationWorkflow, {
+         workflowID: `categorize-${input.transactionId}`,
+      })
       .run(input)
       .catch((err) => {
          logger.error(

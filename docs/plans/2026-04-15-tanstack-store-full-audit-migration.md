@@ -12,101 +12,50 @@
 
 ## Audit Results
 
-### All TanStack Store instances in the codebase
+### All TanStack Store instances in the codebase (updated 2026-04-15)
 
-| #   | Store               | File                                             | Persisted    | Issues                                                         |
-| --- | ------------------- | ------------------------------------------------ | ------------ | -------------------------------------------------------------- |
-| 1   | `contextPanelStore` | `features/context-panel/context-panel-store.ts`  | No           | ReactNode in state, no derived atoms, full-state subscriptions |
-| 2   | `sidebarStore`      | `layout/dashboard/hooks/use-sidebar-store.ts`    | Yes (foxact) | Good selectors, no derived atoms for `isVisible`/`isWanted`    |
-| 3   | `transientStore`    | `layout/dashboard/hooks/use-sidebar-store.ts`    | No           | Good — narrow selectors                                        |
-| 4   | `credenzaStore`     | `hooks/use-credenza.tsx`                         | No           | OK — simple stack                                              |
-| 5   | `alertDialogStore`  | `hooks/use-alert-dialog.tsx`                     | No           | `(s) => s` full subscription in GlobalAlertDialog              |
-| 6   | `surveyModalStore`  | `hooks/use-survey-modal.tsx`                     | No           | `(s) => s` full subscription in GlobalSurveyModal              |
-| 7   | `toolbarStore`      | `hooks/use-selection-toolbar.tsx`                | No           | `(s) => s` full subscription in GlobalSelectionToolbar         |
-| 8   | per-instance store  | `features/analytics/hooks/use-insight-config.ts` | No           | `(s) => s` full subscription, `as` casts in mergeConfig        |
+| #   | Store               | File                                             | Persisted         | Status |
+| --- | ------------------- | ------------------------------------------------ | ----------------- | ------ |
+| 1   | `contextPanelStore` | `features/context-panel/context-panel-store.ts`  | No                | ✅ `createStore()`, render functions (not ReactNode), derived stores (`allTabMetasStore`, `activeTabMetaStore`) |
+| 2   | `sidebarStore`      | `layout/dashboard/hooks/use-sidebar-store.ts`    | Yes (`createPersistedStore`) | ✅ Narrow selectors, `createStoreEffect` for transient sync |
+| 3   | `transientStore`    | `layout/dashboard/hooks/use-sidebar-store.ts`    | No                | ✅ `createStore()`, narrow selectors |
+| 4   | `credenzaStore`     | `hooks/use-credenza.tsx`                         | No                | ✅ Simple stack |
+| 5   | `alertDialogStore`  | `hooks/use-alert-dialog.tsx`                     | No                | ✅ `createStore()`, `shallow` on `(s) => s` |
+| 6   | `surveyModalStore`  | `hooks/use-survey-modal.tsx`                     | No                | ✅ `createStore()`, `shallow` on `(s) => s` |
+| 7   | `toolbarStore`      | `hooks/use-selection-toolbar.tsx`                | No                | ✅ `createStore()`, `shallow` on `(s) => s` |
+| 8   | per-instance store  | `features/analytics/hooks/use-insight-config.ts` | No                | ✅ `new Store()` (per-instance — allowed), `shallow`, no `as` casts |
 
-### TanStack Store features NOT being used
+### TanStack Store features adoption
 
-| Feature                           | Available in 0.9.3                 | Current usage                                      |
-| --------------------------------- | ---------------------------------- | -------------------------------------------------- |
-| `createStore()` functional API    | Yes                                | Not used — all `new Store()`                       |
-| `createAtom()` derived/computed   | Yes                                | Not used — all inline derivation                   |
-| `createAsyncAtom()` async derived | Yes                                | Not used                                           |
-| `batch()` grouped updates         | Yes                                | Not used                                           |
-| `shallow` comparator              | Yes (from `@tanstack/react-store`) | Not used — object selectors cause extra re-renders |
-| `ReadonlyStore`                   | Yes                                | Not used                                           |
-| `effect()`                        | Yes                                | Not used                                           |
+| Feature                           | Available in 0.9.3                 | Current status                                      |
+| --------------------------------- | ---------------------------------- | --------------------------------------------------- |
+| `createStore()` functional API    | Yes                                | ✅ Used everywhere (per-instance stores use `new Store()` per convention) |
+| `createAtom()` derived/computed   | Yes                                | ✅ Used in context-panel (`allTabMetasStore`, `activeTabMetaStore`) |
+| `createAsyncAtom()` async derived | Yes                                | Not yet needed                                      |
+| `batch()` grouped updates         | Yes                                | Not yet needed                                      |
+| `shallow` comparator              | Yes (from `@tanstack/react-store`) | ✅ Used on all `(s) => s` full-state selectors      |
+| `ReadonlyStore`                   | Yes                                | Not yet needed                                      |
+| `effect()`                        | Yes                                | ✅ `createStoreEffect` wrapper in `lib/store.ts`    |
 
-### Anti-patterns found
+### Anti-patterns — all resolved
 
-1. **Full-state subscriptions `(s) => s`** — 5 stores subscribe to entire state, re-rendering on any field change
-2. **ReactNode in store state** — context panel stores `React.ReactNode` directly (stale closures, non-serializable)
-3. **Inline derived state** — `allTabs`/`activeTab` recomputed every render in `ContextPanelInner`
-4. **No `shallow` on object selectors** — `useStore(store, (s) => ({ a: s.a, b: s.b }))` creates new object ref each time
-5. **`as` casts in `mergeConfig`** — `use-insight-config.ts:65-78` uses `as KpiConfig`, `as TimeSeriesConfig`, `as BreakdownConfig`
-
----
-
-## Task 1: Upgrade `createPersistedStore` utility
-
-**Files:**
-
-- Modify: `apps/web/src/lib/persisted-store.ts`
-
-**Why:** Current `createPersistedStore` uses `new Store()`. Migrate to `createStore()` and return the atom directly for `createAtom` compatibility. Also simplify the hydration pattern.
-
-**Step 1: Rewrite `persisted-store.ts`**
-
-```typescript
-import { createLocalStorageState } from "foxact/create-local-storage-state";
-import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
-import { createStore } from "@tanstack/react-store";
-import { useEffect } from "react";
-
-export function createPersistedStore<T>(
-   key: string,
-   initialState: NonNullable<T>,
-) {
-   const [useStoredState] = createLocalStorageState<NonNullable<T>>(
-      key,
-      initialState,
-   );
-   const store = createStore<NonNullable<T>>(initialState);
-
-   function useStorePersistence() {
-      const [storedValue, setStoredValue] = useStoredState();
-
-      useIsomorphicLayoutEffect(() => {
-         if (storedValue != null) store.setState(() => storedValue);
-      }, []);
-
-      useEffect(() => {
-         const subscription = store.subscribe(() =>
-            setStoredValue(store.state),
-         );
-         return () => subscription.unsubscribe();
-      }, [setStoredValue]);
-   }
-
-   return { store, useStorePersistence };
-}
-```
-
-**Step 2: Verify no type errors**
-
-Run: `cd apps/web && bunx tsc --noEmit --pretty 2>&1 | head -30`
-Expected: No errors related to persisted-store
-
-**Step 3: Commit**
-
-```bash
-git add apps/web/src/lib/persisted-store.ts
-git commit -m "refactor(store): migrate createPersistedStore from new Store() to createStore()"
-```
+1. ~~**Full-state subscriptions `(s) => s`**~~ — all now have `shallow` comparator
+2. ~~**ReactNode in store state**~~ — context panel stores `() => React.ReactNode` render functions
+3. ~~**Inline derived state**~~ — moved to derived stores (`allTabMetasStore`, `activeTabMetaStore`)
+4. ~~**No `shallow` on object selectors**~~ — added everywhere
+5. ~~**`as` casts in `mergeConfig`**~~ — removed via discriminated union narrowing
 
 ---
 
-## Task 2: Add `shallow` comparator to all object selectors
+## ~~Task 1: Upgrade `createPersistedStore` utility~~ — COMPLETED
+
+Already done. `apps/web/src/lib/store.ts` uses `createStore()`, returns the store directly, handles cross-tab sync via `storage` event, and uses `createClientOnlyFn` for SSR safety. No foxact hooks needed.
+
+---
+
+## ~~Task 2: Add `shallow` comparator to all object selectors~~ — COMPLETED
+
+Already done. All `(s) => s` subscriptions and object selectors use `shallow`.
 
 **Files:**
 
@@ -165,7 +114,7 @@ git commit -m "perf(context-panel): add shallow comparator to object selectors"
 
 ---
 
-## Task 3: Fix full-state subscriptions `(s) => s`
+## ~~Task 3: Fix full-state subscriptions `(s) => s`~~ — COMPLETED
 
 **Files:**
 
@@ -282,7 +231,7 @@ git commit -m "perf(store): add shallow comparator to full-state subscriptions"
 
 ---
 
-## Task 4: Add focused sub-hooks for context panel (MON-261 prep)
+## ~~Task 4: Add focused sub-hooks for context panel (MON-261 prep)~~ — COMPLETED
 
 **Files:**
 
@@ -326,7 +275,7 @@ git commit -m "feat(context-panel): add focused sub-hooks for narrow subscriptio
 
 ---
 
-## Task 5: Introduce `createAtom` for context panel derived state (MON-257)
+## ~~Task 5: Introduce `createAtom` for context panel derived state (MON-257)~~ — COMPLETED
 
 **Files:**
 
@@ -461,7 +410,7 @@ git commit -m "perf(context-panel): use createAtom for derived allTabs/activeTab
 
 ---
 
-## Task 6: Replace ReactNode with render functions in context panel (MON-261)
+## ~~Task 6: Replace ReactNode with render functions in context panel (MON-261)~~ — COMPLETED
 
 **Files:**
 
