@@ -1,15 +1,20 @@
-import { Button } from "@packages/ui/components/button";
 import { Input } from "@packages/ui/components/input";
+import { Toggle } from "@packages/ui/components/toggle";
 import {
    ToggleGroup,
    ToggleGroupItem,
 } from "@packages/ui/components/toggle-group";
+import {
+   Tooltip,
+   TooltipContent,
+   TooltipTrigger,
+} from "@packages/ui/components/tooltip";
 import { useRouter } from "@tanstack/react-router";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import {
    Archive,
-   LayoutList,
    Layers,
+   LayoutList,
    Search,
    TrendingDown,
    TrendingUp,
@@ -55,7 +60,7 @@ export function CategoryFilterBar({
       type !== undefined || includeArchived || search !== "";
 
    return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-4">
          <div className="flex items-center gap-2">
             <div className="relative flex-1">
                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
@@ -97,48 +102,62 @@ export function CategoryFilterBar({
          </div>
 
          <div className="flex items-center gap-2 flex-wrap">
-            <button
-               className={
-                  includeArchived
-                     ? "inline-flex items-center gap-2 rounded-full border border-foreground/20 bg-foreground/5 px-3 py-1 text-xs font-medium text-foreground transition-colors"
-                     : "inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
-               }
-               onClick={() => {
-                  onIncludeArchivedChange(!includeArchived);
-                  router.preloadRoute({
-                     to: ".",
-                     search: { includeArchived: !includeArchived },
-                  });
-               }}
-               type="button"
-            >
-               <Archive className="size-3" />
-               Arquivadas
-            </button>
+            <Tooltip>
+               <TooltipTrigger asChild>
+                  <Toggle
+                     aria-label="Mostrar arquivadas"
+                     onPressedChange={(pressed) => {
+                        onIncludeArchivedChange(pressed);
+                        router.preloadRoute({
+                           to: ".",
+                           search: { includeArchived: pressed },
+                        });
+                     }}
+                     pressed={includeArchived}
+                     variant="outline"
+                  >
+                     <Archive className="size-4" />
+                     Arquivadas
+                  </Toggle>
+               </TooltipTrigger>
+               <TooltipContent>
+                  Exibir categorias arquivadas na lista
+               </TooltipContent>
+            </Tooltip>
 
-            <button
-               className={
-                  groupBy
-                     ? "inline-flex items-center gap-2 rounded-full border border-foreground/20 bg-foreground/5 px-3 py-1 text-xs font-medium text-foreground transition-colors"
-                     : "inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
-               }
-               onClick={() => onGroupByChange(!groupBy)}
-               type="button"
-            >
-               <LayoutList className="size-3" />
-               Agrupar por tipo
-            </button>
+            <Tooltip>
+               <TooltipTrigger asChild>
+                  <Toggle
+                     aria-label="Agrupar por tipo"
+                     onPressedChange={onGroupByChange}
+                     pressed={groupBy}
+                     variant="outline"
+                  >
+                     <LayoutList className="size-4" />
+                     Agrupar por tipo
+                  </Toggle>
+               </TooltipTrigger>
+               <TooltipContent>
+                  Separar categorias em grupos de Receita e Despesa
+               </TooltipContent>
+            </Tooltip>
 
             {hasActiveFilters && (
-               <Button
-                  className="h-7 rounded-full gap-2 text-muted-foreground hover:text-foreground text-xs px-3"
-                  onClick={onClear}
-                  size="sm"
-                  variant="ghost"
-               >
-                  <X className="size-3" />
-                  Limpar filtros
-               </Button>
+               <Tooltip>
+                  <TooltipTrigger asChild>
+                     <button
+                        className="inline-flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={onClear}
+                        type="button"
+                     >
+                        <X className="size-3" />
+                        Limpar filtros
+                     </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                     Remover todos os filtros ativos
+                  </TooltipContent>
+               </Tooltip>
             )}
          </div>
       </div>

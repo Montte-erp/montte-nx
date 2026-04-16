@@ -2,6 +2,11 @@ import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
 import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import {
+   Tooltip,
+   TooltipContent,
+   TooltipTrigger,
+} from "@packages/ui/components/tooltip";
+import {
    ToggleGroup,
    ToggleGroupItem,
 } from "@packages/ui/components/toggle-group";
@@ -674,17 +679,26 @@ function CategoriesPage() {
                      onValueChange={(v) => {
                         if (v === "table" || v === "card") setView(v);
                      }}
-                     size="sm"
                      type="single"
                      value={effectiveView}
                      variant="outline"
                   >
-                     <ToggleGroupItem value="table">
-                        <LayoutList />
-                     </ToggleGroupItem>
-                     <ToggleGroupItem value="card">
-                        <LayoutGrid />
-                     </ToggleGroupItem>
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                           <ToggleGroupItem className="size-9" value="table">
+                              <LayoutList className="size-4" />
+                           </ToggleGroupItem>
+                        </TooltipTrigger>
+                        <TooltipContent>Visualização em lista</TooltipContent>
+                     </Tooltip>
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                           <ToggleGroupItem className="size-9" value="card">
+                              <LayoutGrid className="size-4" />
+                           </ToggleGroupItem>
+                        </TooltipTrigger>
+                        <TooltipContent>Visualização em cartões</TooltipContent>
+                     </Tooltip>
                   </ToggleGroup>
                   <DropdownMenu>
                      <DropdownMenuTrigger asChild>
