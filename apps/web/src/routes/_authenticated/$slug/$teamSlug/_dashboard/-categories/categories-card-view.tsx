@@ -55,12 +55,23 @@ export function CategoriesCardView({
                {cat.subcategories && cat.subcategories.length > 0 && (
                   <>
                      <Separator />
-                     <div className="px-4 py-2 flex flex-wrap gap-2">
-                        {cat.subcategories.map((sub) => (
-                           <Badge key={sub.id} variant="secondary">
-                              {sub.name}
-                           </Badge>
-                        ))}
+                     <div className="px-4 py-3 flex flex-col gap-1.5 bg-muted/20">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                           Subcategorias
+                        </p>
+                        <div className="flex flex-col gap-1">
+                           {cat.subcategories.map((sub) => (
+                              <div
+                                 key={sub.id}
+                                 className="flex items-center gap-2 pl-3 border-l-2 border-muted-foreground/20"
+                              >
+                                 <span className="size-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
+                                 <span className="text-sm text-muted-foreground truncate">
+                                    {sub.name}
+                                 </span>
+                              </div>
+                           ))}
+                        </div>
                      </div>
                   </>
                )}

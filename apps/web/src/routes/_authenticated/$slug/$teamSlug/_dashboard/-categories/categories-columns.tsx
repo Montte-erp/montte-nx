@@ -126,9 +126,16 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
 
             return (
                <div className="flex items-center gap-2 min-w-0">
+                  {row.depth > 0 && (
+                     <div className="flex items-center gap-2 pl-2 border-l-2 border-muted-foreground/20">
+                        <span className="size-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
+                     </div>
+                  )}
                   <span
                      className={
-                        row.depth > 0 ? "truncate" : "font-medium truncate"
+                        row.depth > 0
+                           ? "truncate text-muted-foreground"
+                           : "font-medium truncate"
                      }
                   >
                      {name}
