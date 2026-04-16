@@ -862,6 +862,7 @@ function CategoriesPageContent() {
             actions={
                <div className="flex gap-2">
                   <ToggleGroup
+                     aria-label="Modo de visualização"
                      onValueChange={(v) => {
                         if (v === "table" || v === "card") setView(v);
                      }}
@@ -871,16 +872,30 @@ function CategoriesPageContent() {
                   >
                      <Tooltip>
                         <TooltipTrigger asChild>
-                           <ToggleGroupItem className="size-9" value="table">
-                              <LayoutList className="size-4" />
+                           <ToggleGroupItem
+                              aria-label="Visualização em lista"
+                              className="size-9"
+                              value="table"
+                           >
+                              <LayoutList
+                                 aria-hidden="true"
+                                 className="size-4"
+                              />
                            </ToggleGroupItem>
                         </TooltipTrigger>
                         <TooltipContent>Visualização em lista</TooltipContent>
                      </Tooltip>
                      <Tooltip>
                         <TooltipTrigger asChild>
-                           <ToggleGroupItem className="size-9" value="card">
-                              <LayoutGrid className="size-4" />
+                           <ToggleGroupItem
+                              aria-label="Visualização em cartões"
+                              className="size-9"
+                              value="card"
+                           >
+                              <LayoutGrid
+                                 aria-hidden="true"
+                                 className="size-4"
+                              />
                            </ToggleGroupItem>
                         </TooltipTrigger>
                         <TooltipContent>Visualização em cartões</TooltipContent>
