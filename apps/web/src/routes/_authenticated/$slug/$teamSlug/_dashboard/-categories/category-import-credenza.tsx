@@ -373,7 +373,7 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                         if (!cat) return null;
                         return (
                            <div
-                              key={cat.name}
+                              key={virtualRow.key}
                               style={{
                                  position: "absolute",
                                  top: 0,

@@ -1,6 +1,7 @@
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { fromPromise, fromThrowable } from "neverthrow";
 import { invariant } from "foxact/invariant";
+import { z } from "zod";
 import {
    createContext,
    useCallback,
@@ -232,12 +233,16 @@ export function CategoryImportProvider({ children }: { children: ReactNode }) {
          if (saved) {
             const safeParse = fromThrowable(JSON.parse);
             const parseResult = safeParse(saved);
-            if (parseResult.isErr()) {
+            const mappingSchema = z.record(z.string(), z.string());
+            const validated = parseResult.isOk()
+               ? mappingSchema.safeParse(parseResult.value)
+               : null;
+            if (!validated?.success) {
                setMappingState(guessMapping(raw.headers));
                setSavedMappingApplied(false);
                return;
             }
-            setMappingState(parseResult.value as Record<string, string>);
+            setMappingState(validated.data);
             setSavedMappingApplied(true);
             return;
          }
