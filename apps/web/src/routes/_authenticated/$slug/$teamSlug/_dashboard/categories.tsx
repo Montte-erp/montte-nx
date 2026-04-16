@@ -14,7 +14,11 @@ import {
 } from "@packages/ui/components/selection-action-bar";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import {
+   useMutation,
+   useSuspenseQuery,
+   useQueryClient,
+} from "@tanstack/react-query";
 import type {
    ColumnFiltersState,
    OnChangeFn,
@@ -193,6 +197,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          [columnFilters, navigate],
       );
 
+   const queryClient = useQueryClient();
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const {
@@ -253,6 +258,14 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          onSuccess: () => toast.success("Categoria arquivada."),
          onError: (e) =>
             toast.error(e.message || "Erro ao arquivar categoria."),
+      }),
+   );
+
+   const bulkArchiveMutation = useMutation(
+      orpc.categories.archive.mutationOptions({
+         meta: { skipGlobalInvalidation: true },
+         onError: (e) =>
+            toast.error(e.message || "Erro ao arquivar categorias."),
       }),
    );
 
@@ -354,6 +367,28 @@ function CategoriesList({ navigate }: CategoriesListProps) {
       });
    }, [openAlertDialog, selectedIds, categories, bulkDeleteMutation, onClear]);
 
+   const handleBulkArchive = useCallback(async () => {
+      const archivableIds = selectedIds.filter(
+         (id) => !categories.find((c) => c.id === id)?.isDefault,
+      );
+      if (archivableIds.length === 0) return;
+      const results = await Promise.allSettled(
+         archivableIds.map((id) => bulkArchiveMutation.mutateAsync({ id })),
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      if (failed > 0) {
+         toast.error(`${failed} categoria(s) não puderam ser arquivadas.`);
+      } else {
+         toast.success(
+            `${archivableIds.length} ${archivableIds.length === 1 ? "categoria arquivada" : "categorias arquivadas"}.`,
+         );
+      }
+      onClear();
+      queryClient.invalidateQueries({
+         queryKey: orpc.categories.getAll.queryKey(),
+      });
+   }, [selectedIds, categories, bulkArchiveMutation, onClear, queryClient]);
+
    const columns = useMemo(() => buildCategoryColumns(), []);
 
    if (categories.length === 0) {
@@ -438,6 +473,12 @@ function CategoriesList({ navigate }: CategoriesListProps) {
             rowSelection={rowSelection}
          />
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
+            <SelectionActionButton
+               icon={<Archive />}
+               onClick={handleBulkArchive}
+            >
+               Arquivar
+            </SelectionActionButton>
             <SelectionActionButton
                icon={<Trash2 />}
                onClick={handleBulkDelete}
