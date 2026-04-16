@@ -539,6 +539,15 @@ function CategoriesPage() {
       [navigate],
    );
 
+   const handleTypeChange = useCallback(
+      (value: "income" | "expense" | undefined) => {
+         navigate({
+            search: (prev: CategoriesSearch) => ({ ...prev, type: value }),
+         });
+      },
+      [navigate],
+   );
+
    const handleCreate = useCallback(() => {
       openCredenza({
          renderChildren: () => (
@@ -607,6 +616,7 @@ function CategoriesPage() {
             onGroupByChange={handleGroupByChange}
             onIncludeArchivedChange={handleIncludeArchivedChange}
             onSearchChange={handleSearchChange}
+            onTypeChange={handleTypeChange}
             search={search}
             type={type}
          />

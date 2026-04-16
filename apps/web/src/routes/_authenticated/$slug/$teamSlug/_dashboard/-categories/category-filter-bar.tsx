@@ -1,11 +1,13 @@
-import type { CategoriesSearch } from "../categories";
 import { Button } from "@packages/ui/components/button";
 import { Input } from "@packages/ui/components/input";
 import { Label } from "@packages/ui/components/label";
 import { Separator } from "@packages/ui/components/separator";
 import { Switch } from "@packages/ui/components/switch";
-import { cn } from "@packages/ui/lib/utils";
-import { Link, useRouter } from "@tanstack/react-router";
+import {
+   ToggleGroup,
+   ToggleGroupItem,
+} from "@packages/ui/components/toggle-group";
+import { useRouter } from "@tanstack/react-router";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import { LayoutList, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -16,19 +18,11 @@ interface CategoryFilterBarProps {
    includeArchived: boolean;
    groupBy: boolean;
    onSearchChange: (value: string) => void;
+   onTypeChange: (value: "income" | "expense" | undefined) => void;
    onIncludeArchivedChange: (checked: boolean) => void;
    onGroupByChange: (checked: boolean) => void;
    onClear: () => void;
 }
-
-const TYPE_OPTIONS: {
-   label: string;
-   value: "income" | "expense" | undefined;
-}[] = [
-   { label: "Todos", value: undefined },
-   { label: "Receitas", value: "income" },
-   { label: "Despesas", value: "expense" },
-];
 
 export function CategoryFilterBar({
    search,
@@ -36,6 +30,7 @@ export function CategoryFilterBar({
    includeArchived,
    groupBy,
    onSearchChange,
+   onTypeChange,
    onIncludeArchivedChange,
    onGroupByChange,
    onClear,
@@ -70,27 +65,23 @@ export function CategoryFilterBar({
          </div>
 
          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center rounded-md border bg-background p-0.5 gap-2">
-               {TYPE_OPTIONS.map((opt) => (
-                  <Link
-                     className={cn(
-                        "px-3 py-1.5 text-sm rounded-sm font-medium transition-colors",
-                        type === opt.value
-                           ? "bg-primary text-primary-foreground shadow-sm"
-                           : "text-muted-foreground hover:text-foreground hover:bg-muted",
-                     )}
-                     from="/$slug/$teamSlug/categories"
-                     key={opt.label}
-                     preload="intent"
-                     search={(prev: CategoriesSearch) => ({
-                        ...prev,
-                        type: opt.value,
-                     })}
-                  >
-                     {opt.label}
-                  </Link>
-               ))}
-            </div>
+            <ToggleGroup
+               onValueChange={(v) => {
+                  if (v === "income" || v === "expense") {
+                     onTypeChange(v);
+                  } else {
+                     onTypeChange(undefined);
+                  }
+               }}
+               size="sm"
+               type="single"
+               value={type ?? "all"}
+               variant="outline"
+            >
+               <ToggleGroupItem value="all">Todos</ToggleGroupItem>
+               <ToggleGroupItem value="income">Receitas</ToggleGroupItem>
+               <ToggleGroupItem value="expense">Despesas</ToggleGroupItem>
+            </ToggleGroup>
 
             <Separator orientation="vertical" className="h-5" />
 
