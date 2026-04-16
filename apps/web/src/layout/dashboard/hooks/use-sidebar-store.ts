@@ -16,13 +16,15 @@ interface SidebarTransientState {
    searchQuery: string;
 }
 
-const { store: sidebarStore, useStorePersistence } =
-   createPersistedStore<SidebarPersistedState>("montte:sidebar", {
+const sidebarStore = createPersistedStore<SidebarPersistedState>(
+   "montte:sidebar",
+   {
       isCollapsed: false,
       hiddenItems: [],
       financeNavPrefs: [],
       pinnedItems: [],
-   });
+   },
+);
 
 const transientStore = createStore<SidebarTransientState>({
    activeSection: null,
@@ -51,7 +53,6 @@ export function togglePinnedItem(itemId: string) {
 }
 
 export function useSidebarCollapsed() {
-   useStorePersistence();
    const isCollapsed = useStore(sidebarStore, (s) => s.isCollapsed);
    const setCollapsed = useCallback((collapsed: boolean) => {
       sidebarStore.setState((s) => ({ ...s, isCollapsed: collapsed }));

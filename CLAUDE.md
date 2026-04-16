@@ -264,6 +264,7 @@ Empty states — always `Empty`/`EmptyHeader`/`EmptyMedia`/`EmptyTitle`/`EmptyDe
 - No margin utilities (`m-`, `mt-`, `mb-`, `mx-`, `my-`, `space-x-*`, `space-y-*`) — use `gap-*`.
 - Gap: `gap-2` or `gap-4` only. Spacing/sizing: `2` and `4` suffixes only (`p-*`, `px-*`, `py-*`, `size-*`).
 - Early returns over if/else — never `else` after `return`.
+- No `try/catch` — use `neverthrow` (`fromThrowable`, `fromPromise`, `ok`, `err`, `Result`, `ResultAsync`). Exception: test files and scripts.
 - Minimize `useEffect` — derive state, use event handlers. Only for external system sync.
 - Dates: always `dayjs`. Never `new Date()` (exception: Drizzle `.$onUpdate()` and test fixture inserts). `.toDate()` for Drizzle values, `.toISOString()` for ISO, `.format("YYYY-MM-DD")` for date strings.
 - Files: kebab-case. Components: PascalCase `[Feature][Action][Type]`. Hooks: `use[Feature][Action]`.
@@ -559,18 +560,15 @@ import { createStore } from "@tanstack/react-store";
 const myStore = createStore<MyState>({ count: 0, name: "" });
 ```
 
-**Reading state in React** — always `useStore` with a selector:
+**Reading in React** — `useStore` with selector. Primitive selectors need no comparator. Object selectors always pass `shallow`:
 ```typescript
 import { useStore, shallow } from "@tanstack/react-store";
 
-// Primitive selector — no comparator needed
 const count = useStore(myStore, (s) => s.count);
-
-// Object selector — always pass `shallow` as 3rd arg to avoid new-ref re-renders
 const { count, name } = useStore(myStore, (s) => ({ count: s.count, name: s.name }), shallow);
 ```
 
-**Updating state:**
+**Updating:**
 ```typescript
 myStore.setState((s) => ({ ...s, count: s.count + 1 }));
 ```
@@ -581,35 +579,101 @@ import { createStore, createAtom } from "@tanstack/react-store";
 
 const store = createStore<{ items: Item[]; filter: string }>({ items: [], filter: "" });
 
-// Recomputes only when dependencies change — multiple consumers share the result
 const filteredItemsAtom = createAtom(() => {
    const { items, filter } = store.state;
    return items.filter((i) => i.name.includes(filter));
 });
 
-// In component:
+// Atoms chain — activeTabMetaAtom depends on allTabMetasAtom
+const allTabMetasAtom = createAtom(() => { /* reads store.state */ });
+const activeTabMetaAtom = createAtom(() => {
+   const all = allTabMetasAtom.get(); // reactive dependency
+   const { activeId } = store.state;
+   return all.find((t) => t.id === activeId) ?? all[0] ?? null;
+});
+
+// In component — useStore works with atoms directly
 const filtered = useStore(filteredItemsAtom, (s) => s);
+const active = useStore(activeTabMetaAtom, (s) => s);
 ```
 
-**Persisted store** — `createPersistedStore` from `@/lib/persisted-store` for localStorage sync:
+**Async derived** — `createAsyncAtom` for async computations:
+```typescript
+import { createAsyncAtom } from "@tanstack/react-store";
+
+const asyncAtom = createAsyncAtom(async () => {
+   const data = await fetchSomething(store.state.id);
+   return data;
+});
+// Returns { status: "pending" | "done" | "error", data?, error? }
+```
+
+**Batch updates** — `batch()` groups multiple store updates into one notification cycle:
+```typescript
+import { batch } from "@tanstack/react-store";
+
+batch(() => {
+   storeA.setState((s) => ({ ...s, count: 1 }));
+   storeB.setState((s) => ({ ...s, name: "foo" }));
+});
+// Subscribers notified once with final state
+```
+
+**Subscriptions outside React** — `store.subscribe()` for side effects:
+```typescript
+const { unsubscribe } = myStore.subscribe(() => {
+   console.log("State changed:", myStore.state);
+});
+// cleanup: unsubscribe()
+```
+
+**Persisted store** — `createPersistedStore` from `@/lib/persisted-store`. Uses `createClientOnlyFn` for SSR safety. Hydrates from localStorage, auto-persists on change, cross-tab sync via `storage` event. No hook needed:
 ```typescript
 import { createPersistedStore } from "@/lib/persisted-store";
 
-const { store, useStorePersistence } = createPersistedStore<MyState>("montte:my-key", initialState);
+const sidebarStore = createPersistedStore<SidebarState>("montte:sidebar", { isCollapsed: false });
 
-// Call useStorePersistence() once in the component tree that owns this store
-function MyRoot() {
-   useStorePersistence();
-   // ...
-}
+// Use like any other store — persistence is automatic
+const isCollapsed = useStore(sidebarStore, (s) => s.isCollapsed);
+```
+
+**Subscriptions outside React** — `store.subscribe()` for side effects:
+```typescript
+const { unsubscribe } = myStore.subscribe(() => {
+   console.log("State changed:", myStore.state);
+});
+```
+
+**Batch updates** — `batch()` groups multiple store updates into one notification cycle:
+```typescript
+import { batch } from "@tanstack/react-store";
+
+batch(() => {
+   storeA.setState((s) => ({ ...s, count: 1 }));
+   storeB.setState((s) => ({ ...s, name: "foo" }));
+});
+// Subscribers notified once with final state
+```
+
+**Async derived** — `createAsyncAtom` for async computations:
+```typescript
+import { createAsyncAtom } from "@tanstack/react-store";
+
+const asyncAtom = createAsyncAtom(async () => {
+   const data = await fetchSomething(store.state.id);
+   return data;
+});
+// Returns { status: "pending" | "done" | "error", data?, error? }
 ```
 
 **Rules:**
-- Never store `React.ReactNode` in store state — use render functions `() => React.ReactNode` instead.
+- Never store `React.ReactNode` in store state — use render functions `() => React.ReactNode`.
 - Never `useStore(store, (s) => s)` without `shallow` — full-state subscriptions re-render on any change.
-- Prefer narrow selectors over full-state subscriptions. Split monolithic hooks into focused sub-hooks.
-- `batch()` from `@tanstack/react-store` to group updates across multiple stores into one notification cycle.
+- Prefer narrow selectors. Split monolithic hooks into focused sub-hooks.
+- Derived state in `createAtom`, never computed inline in components.
 - Per-instance stores (inside `useState`) can use `new Store()` — only global/module-level stores use `createStore()`.
+- All localStorage keys prefixed `montte:`.
+- SSR safety: `createClientOnlyFn` / `createIsomorphicFn` from `@tanstack/react-start` for browser-only code. Never `typeof window !== "undefined"`.
 
 ---
 

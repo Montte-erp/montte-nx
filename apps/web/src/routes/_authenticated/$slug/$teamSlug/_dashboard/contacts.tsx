@@ -37,14 +37,22 @@ import { ContactForm } from "@/features/contacts/ui/contacts-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
-import { tableSearchSchema } from "@/lib/table-search-schema";
 import type {
    ColumnFiltersState,
    OnChangeFn,
    SortingState,
 } from "@tanstack/react-table";
 import { z } from "zod";
-
+const tableSearchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .catch([])
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .catch([])
+      .default([]),
+});
 const [useContactsTableState] =
    createLocalStorageState<DataTableStoredState | null>(
       "montte:datatable:contacts",
