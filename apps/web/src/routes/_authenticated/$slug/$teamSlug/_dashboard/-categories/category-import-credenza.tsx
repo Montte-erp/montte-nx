@@ -467,7 +467,7 @@ export function CategoryImportCredenza({
                               Voltar
                            </Button>
                            <Button
-                              className="flex-1"
+                              className="flex-1 gap-2"
                               disabled={
                                  importMutation.isPending || validCount === 0
                               }
@@ -503,7 +503,7 @@ export function CategoryImportCredenza({
                               }}
                            >
                               {importMutation.isPending && (
-                                 <Spinner className="size-4 mr-2" />
+                                 <Spinner className="size-4" />
                               )}
                               Importar {validCount} categorias
                            </Button>
