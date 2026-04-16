@@ -11,6 +11,7 @@ import {
 } from "@packages/ui/components/tooltip";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
+   Archive,
    Baby,
    BookOpen,
    Briefcase,
@@ -79,23 +80,15 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
          accessorKey: "name",
          header: "Nome",
          cell: ({ row }) => {
-            const { name, color, icon, isDefault, keywords } = row.original;
+            const { name, color, icon, isDefault } = row.original;
             const IconComponent = icon ? ICON_MAP[icon] : null;
-            const hasKeywords = keywords && keywords.length > 0;
 
-            const keywordsTooltip = hasKeywords ? (
+            const archivedIndicator = row.original.isArchived ? (
                <Tooltip>
                   <TooltipTrigger asChild>
-                     <Tags className="size-4 text-muted-foreground shrink-0 cursor-default" />
+                     <Archive className="size-3.5 text-muted-foreground shrink-0 cursor-default" />
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-72">
-                     <p className="font-semibold text-sm">Palavras-chave IA</p>
-                     <p className="text-xs text-muted-foreground mb-1">
-                        Geradas automaticamente com base no nome e descrição da
-                        categoria.
-                     </p>
-                     <p className="text-xs">{keywords!.join(", ")}</p>
-                  </TooltipContent>
+                  <TooltipContent>Arquivada</TooltipContent>
                </Tooltip>
             ) : null;
 
@@ -112,14 +105,6 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                      </AnnouncementTag>
                      <AnnouncementTitle>
                         {name}
-                        {row.original.isArchived && (
-                           <Badge
-                              variant="secondary"
-                              className="text-xs shrink-0 opacity-70 pointer-events-none"
-                           >
-                              Arquivada
-                           </Badge>
-                        )}
                         {isDefault && (
                            <Tooltip>
                               <TooltipTrigger asChild>
@@ -128,7 +113,7 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                               <TooltipContent>Padrão</TooltipContent>
                            </Tooltip>
                         )}
-                        {keywordsTooltip}
+                        {archivedIndicator}
                      </AnnouncementTitle>
                   </Announcement>
                );
@@ -150,14 +135,6 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                   >
                      {name}
                   </span>
-                  {row.original.isArchived && (
-                     <Badge
-                        variant="secondary"
-                        className="text-xs shrink-0 opacity-70 pointer-events-none"
-                     >
-                        Arquivada
-                     </Badge>
-                  )}
                   {isDefault && row.depth === 0 && (
                      <Tooltip>
                         <TooltipTrigger asChild>
@@ -166,7 +143,7 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                         <TooltipContent>Padrão</TooltipContent>
                      </Tooltip>
                   )}
-                  {keywordsTooltip}
+                  {archivedIndicator}
                </div>
             );
          },
