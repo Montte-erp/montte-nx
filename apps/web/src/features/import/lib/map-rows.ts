@@ -11,9 +11,10 @@ export function applyMapping(
    return rawData.rows
       .filter((row) => row.some((cell) => cell.trim() !== ""))
       .map((row) =>
-         Object.fromEntries(
-            entries.map(({ field, idx }) => [field, (row[idx] ?? "").trim()]),
-         ),
+         entries.reduce<Record<string, string>>((acc, { field, idx }) => {
+            if (!(field in acc)) acc[field] = (row[idx] ?? "").trim();
+            return acc;
+         }, {}),
       );
 }
 

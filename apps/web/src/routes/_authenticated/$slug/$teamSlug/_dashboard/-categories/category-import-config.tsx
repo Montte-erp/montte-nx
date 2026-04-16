@@ -159,9 +159,9 @@ export function buildMappedCategories(
 ): MappedCategory[] {
    const map = new Map<string, MappedCategory>();
    for (const fields of fieldRecords) {
-      const name = fields["name"] ?? "";
+      const name = (fields["name"] ?? "").trim();
       if (!name) continue;
-      const typeRaw = (fields["type"] ?? "").toLowerCase();
+      const typeRaw = (fields["type"] ?? "").trim().toLowerCase();
       const type =
          typeRaw === "receita" || typeRaw === "income"
             ? "income"

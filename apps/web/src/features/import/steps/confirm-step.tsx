@@ -43,7 +43,7 @@ export function ConfirmStep<T>({
             toast.error(msg);
             return;
          }
-         toast.success(`${validRows.length} item(s) importado(s) com sucesso.`);
+         toast.loading("Importando...", { id: "import-batch" });
          config.onSuccess();
       });
    }, [config, validRows]);

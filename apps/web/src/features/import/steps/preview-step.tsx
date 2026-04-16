@@ -8,7 +8,7 @@ import {
 } from "@packages/ui/components/credenza";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { AlertCircle, CheckCircle2, ChevronRight } from "lucide-react";
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import type { ReactNode } from "react";
 import { getDedupStatus } from "../lib/dedup";
 import type { ImportConfig } from "../types";
@@ -39,7 +39,10 @@ export function PreviewStep<T>({
       overscan: 8,
    });
 
-   const validCount = rows.filter((r) => config.isValid(r)).length;
+   const validCount = useMemo(
+      () => rows.filter((r) => config.isValid(r)).length,
+      [rows, config],
+   );
 
    return (
       <>

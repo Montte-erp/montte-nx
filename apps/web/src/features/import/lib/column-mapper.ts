@@ -12,5 +12,5 @@ export function guessMapping(headers: string[], columnDefs: ColumnDef[]) {
 }
 
 export function mappingStorageKey(featureKey: string, headers: string[]) {
-   return `montte:${featureKey}:import:mapping:${[...headers].sort().join(",")}`;
+   return `montte:${featureKey}:import:mapping:${[...headers].sort().join("\0")}`;
 }

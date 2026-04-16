@@ -732,7 +732,10 @@ function CategoriesPageContent() {
             closeImport,
             (rows) =>
                checkDupsMutation.mutateAsync({
-                  names: rows.map((r) => r.name),
+                  items: rows.map((r) => ({
+                     name: r.name,
+                     type: r.type ?? undefined,
+                  })),
                }),
          ),
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -806,7 +809,7 @@ function CategoriesPageContent() {
          {importOpen === "true" && (
             <ImportWizard
                config={importConfig}
-               step={importStep as ImportStep}
+               step={importStep}
                onStepChange={(s) =>
                   navigate({
                      search: (prev: CategoriesSearch) => ({

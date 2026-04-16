@@ -177,6 +177,7 @@ export function UploadStep<T>({
                   onDrop={([file]) => {
                      if (file) handleFile(file);
                   }}
+                  onError={(e) => toast.error(e.message)}
                   src={selectedFile ? [selectedFile] : undefined}
                >
                   <DropzoneEmptyState>

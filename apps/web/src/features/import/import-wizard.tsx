@@ -1,6 +1,6 @@
 import { Credenza, CredenzaContent } from "@packages/ui/components/credenza";
 import { Store, useStore } from "@tanstack/react-store";
-import { fromThrowable } from "neverthrow";
+import { fromPromise, fromThrowable } from "neverthrow";
 import {
    useCallback,
    useEffect,
@@ -8,6 +8,7 @@ import {
    useState,
    useTransition,
 } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
 import { guessMapping, mappingStorageKey } from "./lib/column-mapper";
 import { applyMapping } from "./lib/map-rows";
@@ -101,6 +102,8 @@ export function ImportWizard<T>({
                   rawData: raw,
                   mapping: validated.data,
                   savedMappingApplied: true,
+                  mappedRows: [],
+                  dedupScores: null,
                }));
                onStepChange("map");
                return;
@@ -111,6 +114,8 @@ export function ImportWizard<T>({
             rawData: raw,
             mapping: guessMapping(raw.headers, config.columns),
             savedMappingApplied: false,
+            mappedRows: [],
+            dedupScores: null,
          }));
          onStepChange("map");
       },
@@ -126,9 +131,20 @@ export function ImportWizard<T>({
                finalMapping,
             );
             const rows = config.mapRows(fieldRecords);
-            const scores = config.dedup
-               ? await config.dedup.checkDuplicates(rows)
-               : null;
+
+            let scores: number[] | null = null;
+            if (config.dedup) {
+               const result = await fromPromise(
+                  config.dedup.checkDuplicates(rows),
+                  (e) => e,
+               );
+               if (result.isErr()) {
+                  toast.error("Erro ao verificar duplicatas.");
+                  return;
+               }
+               scores = result.value;
+            }
+
             store.setState((s) => ({
                ...s,
                mapping: finalMapping,

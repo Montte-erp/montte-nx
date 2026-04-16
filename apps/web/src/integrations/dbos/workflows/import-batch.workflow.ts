@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { DBOS } from "@dbos-inc/dbos-sdk";
-import { createCategory } from "@core/database/repositories/categories-repository";
+import { importCategoryBatch } from "@core/database/repositories/categories-repository";
 import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import type { JobNotification } from "@packages/notifications/schema";
 import { jobPublisher } from "@/integrations/dbos/publisher";
@@ -115,39 +115,7 @@ export class ImportBatchWorkflow {
       DBOS.logger.debug(
          `[import-batch] batchStep offset=${offset} size=${batch.length}`,
       );
-      const parentCategories: {
-         id: string;
-         name: string;
-         description: string | null;
-      }[] = [];
-
-      await db.transaction(async (tx) => {
-         for (const cat of batch) {
-            const { subcategories, ...catData } = cat;
-            const created = await createCategory(tx, teamId, {
-               ...catData,
-               participatesDre: catData.participatesDre ?? false,
-            });
-            parentCategories.push({
-               id: created.id,
-               name: created.name,
-               description: created.description,
-            });
-            if (subcategories && subcategories.length > 0) {
-               for (const sub of subcategories) {
-                  await createCategory(tx, teamId, {
-                     name: sub.name,
-                     type: catData.type,
-                     parentId: created.id,
-                     participatesDre: false,
-                     keywords: sub.keywords ?? null,
-                  });
-               }
-            }
-         }
-      });
-
-      return parentCategories;
+      return importCategoryBatch(db, teamId, batch);
    }
 
    @DBOS.step()

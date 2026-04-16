@@ -803,6 +803,59 @@ export async function validateKeywordsUniqueness(
    }
 }
 
+type ImportCategoryItem = {
+   name: string;
+   type: "income" | "expense";
+   color: string | null;
+   icon: string | null;
+   keywords: string[] | null;
+   participatesDre?: boolean;
+   subcategories: { name: string; keywords?: string[] }[];
+};
+
+export async function importCategoryBatch(
+   db: DatabaseInstance,
+   teamId: string,
+   batch: ImportCategoryItem[],
+): Promise<{ id: string; name: string; description: string | null }[]> {
+   const parentCategories: {
+      id: string;
+      name: string;
+      description: string | null;
+   }[] = [];
+   try {
+      await db.transaction(async (tx) => {
+         for (const cat of batch) {
+            const { subcategories, ...catData } = cat;
+            const created = await createCategory(tx, teamId, {
+               ...catData,
+               participatesDre: catData.participatesDre ?? false,
+            });
+            parentCategories.push({
+               id: created.id,
+               name: created.name,
+               description: created.description,
+            });
+            if (subcategories.length > 0) {
+               for (const sub of subcategories) {
+                  await createCategory(tx, teamId, {
+                     name: sub.name,
+                     type: catData.type,
+                     parentId: created.id,
+                     participatesDre: false,
+                     keywords: sub.keywords ?? null,
+                  });
+               }
+            }
+         }
+      });
+      return parentCategories;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to import category batch");
+   }
+}
+
 export async function findCategoryByKeywords(
    db: DatabaseInstance,
    teamId: string,

@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { useCsvFile } from "./use-csv-file";
 import { useXlsxFile } from "./use-xlsx-file";
@@ -16,7 +16,7 @@ export function useExport<T>({
    const csv = useCsvFile();
    const xlsx = useXlsxFile();
    const { download } = useFileDownload();
-   const headers = columns.map((c) => c.label);
+   const headers = useMemo(() => columns.map((c) => c.label), [columns]);
 
    const buildRows = useCallback(
       () =>

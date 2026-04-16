@@ -212,17 +212,29 @@ export const bulkArchive = protectedProcedure
    });
 
 export const checkDuplicates = protectedProcedure
-   .input(z.object({ names: z.array(z.string().min(1)) }))
+   .input(
+      z.object({
+         items: z.array(
+            z.object({
+               name: z.string().min(1),
+               type: z.enum(["income", "expense"]).optional(),
+            }),
+         ),
+      }),
+   )
    .handler(async ({ context, input }) => {
       const existing = await listCategories(context.db, context.teamId, {
          includeArchived: false,
       });
       const parents = existing.filter((c) => c.parentId === null);
-      return input.names.map((name) => {
-         if (parents.length === 0) return 0;
-         const evalContext = { data: { name: name.toLowerCase() } };
+      return input.items.map((item) => {
+         const candidates = item.type
+            ? parents.filter((e) => e.type === item.type)
+            : parents;
+         if (candidates.length === 0) return 0;
+         const evalContext = { data: { name: item.name.toLowerCase() } };
          return Math.max(
-            ...parents.map((e) => {
+            ...candidates.map((e) => {
                const group = {
                   id: e.id,
                   operator: "OR" as const,
