@@ -261,6 +261,12 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                <div className="grid grid-cols-2 gap-4">
                   <form.Field
                      name="name"
+                     validators={{
+                        onChange: ({ value }) =>
+                           !value.trim() ? "Nome é obrigatório" : undefined,
+                        onSubmit: ({ value }) =>
+                           !value.trim() ? "Nome é obrigatório" : undefined,
+                     }}
                      children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
@@ -299,6 +305,9 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                               onValueChange={(v) =>
                                  field.handleChange(v as "income" | "expense")
                               }
+                              onOpenChange={(open) => {
+                                 if (!open) field.handleBlur();
+                              }}
                               value={field.state.value}
                            >
                               <SelectTrigger>
@@ -363,16 +372,19 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                               </span>
                            </div>
                            <Button
+                              aria-label="Aleatorizar ícone e cor"
                               onClick={() => {
                                  form.setFieldValue("icon", randomIcon());
                                  form.setFieldValue("color", randomColor());
                               }}
                               size="sm"
-                              title="Aleatorizar ícone e cor"
                               type="button"
                               variant="ghost"
                            >
-                              <Shuffle className="size-3.5" />
+                              <Shuffle
+                                 aria-hidden="true"
+                                 className="size-3.5"
+                              />
                            </Button>
                         </div>
                      );
@@ -485,6 +497,7 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                            >
                               {name}
                               <button
+                                 aria-label={`Remover subcategoria ${name}`}
                                  className="text-secondary-foreground/50 hover:text-secondary-foreground transition-colors"
                                  onClick={(e) => {
                                     e.stopPropagation();
@@ -492,11 +505,12 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                                  }}
                                  type="button"
                               >
-                                 <X className="size-3" />
+                                 <X aria-hidden="true" className="size-3" />
                               </button>
                            </span>
                         ))}
                         <input
+                           aria-label="Adicionar subcategoria"
                            className="flex-1 min-w-[120px] bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                            onKeyDown={(e) => {
                               if (e.key === "Enter" || e.key === ",") {

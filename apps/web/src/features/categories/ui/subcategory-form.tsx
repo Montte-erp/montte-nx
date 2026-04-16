@@ -103,6 +103,12 @@ export function SubcategoryForm(props: SubcategoryFormProps) {
             <FieldGroup>
                <form.Field
                   name="name"
+                  validators={{
+                     onChange: ({ value }) =>
+                        !value.trim() ? "Nome é obrigatório" : undefined,
+                     onSubmit: ({ value }) =>
+                        !value.trim() ? "Nome é obrigatório" : undefined,
+                  }}
                   children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
