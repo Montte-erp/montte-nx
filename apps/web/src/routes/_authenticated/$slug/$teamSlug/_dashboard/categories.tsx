@@ -2,6 +2,10 @@ import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
 import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import {
+   ToggleGroup,
+   ToggleGroupItem,
+} from "@packages/ui/components/toggle-group";
+import {
    Empty,
    EmptyDescription,
    EmptyHeader,
@@ -37,12 +41,15 @@ import {
    ChevronDown,
    Download,
    FolderOpen,
+   LayoutGrid,
+   LayoutList,
    Pencil,
    Plus,
    Trash2,
    Upload,
 } from "lucide-react";
 import { useCallback, useMemo } from "react";
+import { useMediaQuery } from "foxact/use-media-query";
 import { fromPromise } from "neverthrow";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -51,6 +58,7 @@ import {
    buildCategoryColumns,
    type CategoryRow,
 } from "./-categories/categories-columns";
+import { CategoriesCardView } from "./-categories/categories-card-view";
 import { CategoryForm } from "@/features/categories/ui/categories-form";
 import { SubcategoryForm } from "@/features/categories/ui/subcategory-form";
 import { CategoryFilterBar } from "./-categories/category-filter-bar";
@@ -83,6 +91,11 @@ const [useCategoriesTableState] =
       "montte:datatable:categories",
       null,
    );
+
+const [useCategoriesView] = createLocalStorageState<"table" | "card">(
+   "montte:categories:view",
+   "table",
+);
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/categories",
@@ -166,9 +179,10 @@ function CategoriesSkeleton() {
 
 interface CategoriesListProps {
    navigate: ReturnType<typeof Route.useNavigate>;
+   view: "table" | "card";
 }
 
-function CategoriesList({ navigate }: CategoriesListProps) {
+function CategoriesList({ navigate, view }: CategoriesListProps) {
    const { sorting, columnFilters, type, includeArchived, groupBy, search } =
       Route.useSearch();
    const [tableState, setTableState] = useCategoriesTableState();
@@ -404,6 +418,18 @@ function CategoriesList({ navigate }: CategoriesListProps) {
       );
    }
 
+   if (view === "card") {
+      return (
+         <CategoriesCardView
+            categories={categories}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onArchive={handleArchive}
+            onAddSubcategory={handleAddSubcategory}
+         />
+      );
+   }
+
    return (
       <>
          <DataTable
@@ -490,6 +516,9 @@ function CategoriesPage() {
    const navigate = Route.useNavigate();
    const { type, includeArchived, groupBy, search } = Route.useSearch();
    const { openCredenza, closeCredenza } = useCredenza();
+   const isMobile = useMediaQuery("(max-width: 640px)");
+   const [view, setView] = useCategoriesView();
+   const effectiveView: "table" | "card" = isMobile ? "card" : view;
 
    const handleIncludeArchivedChange = useCallback(
       (checked: boolean) => {
@@ -577,6 +606,22 @@ function CategoriesPage() {
          <DefaultHeader
             actions={
                <div className="flex gap-2">
+                  <ToggleGroup
+                     onValueChange={(v) => {
+                        if (v === "table" || v === "card") setView(v);
+                     }}
+                     size="sm"
+                     type="single"
+                     value={effectiveView}
+                     variant="outline"
+                  >
+                     <ToggleGroupItem value="table">
+                        <LayoutList />
+                     </ToggleGroupItem>
+                     <ToggleGroupItem value="card">
+                        <LayoutGrid />
+                     </ToggleGroupItem>
+                  </ToggleGroup>
                   <DropdownMenu>
                      <DropdownMenuTrigger asChild>
                         <Button variant="outline">
@@ -619,7 +664,7 @@ function CategoriesPage() {
             fallback={<CategoriesTableSkeleton />}
             errorTitle="Erro ao carregar categorias"
          >
-            <CategoriesList navigate={navigate} />
+            <CategoriesList navigate={navigate} view={effectiveView} />
          </QueryBoundary>
       </main>
    );
