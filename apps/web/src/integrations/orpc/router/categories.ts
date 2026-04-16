@@ -45,6 +45,7 @@ const getAllInput = z
    .object({
       type: z.enum(["income", "expense"]).optional(),
       includeArchived: z.boolean().optional(),
+      search: z.string().optional(),
    })
    .optional();
 
@@ -54,6 +55,7 @@ export const getAll = protectedProcedure
       return listCategories(context.db, context.teamId, {
          type: input?.type,
          includeArchived: input?.includeArchived,
+         search: input?.search,
       });
    });
 

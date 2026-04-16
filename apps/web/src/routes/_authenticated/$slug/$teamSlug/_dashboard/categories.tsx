@@ -88,9 +88,10 @@ export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/categories",
 )({
    validateSearch: categoriesSearchSchema,
-   loaderDeps: ({ search: { type, includeArchived } }) => ({
+   loaderDeps: ({ search: { type, includeArchived, search } }) => ({
       type,
       includeArchived,
+      search,
    }),
    loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
@@ -98,6 +99,7 @@ export const Route = createFileRoute(
             input: {
                type: deps.type,
                includeArchived: deps.includeArchived || undefined,
+               search: deps.search || undefined,
             },
          }),
       );
@@ -213,6 +215,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          input: {
             type,
             includeArchived: includeArchived || undefined,
+            search: search || undefined,
          },
       }),
    );
@@ -224,15 +227,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          subcategories: result.filter((c) => c.parentId === parent.id),
       }));
 
-   const categories = search
-      ? parentCategories.filter(
-           (c) =>
-              c.name.toLowerCase().includes(search.toLowerCase()) ||
-              c.subcategories?.some((s) =>
-                 s.name.toLowerCase().includes(search.toLowerCase()),
-              ),
-        )
-      : parentCategories;
+   const categories = parentCategories;
 
    const deleteMutation = useMutation(
       orpc.categories.remove.mutationOptions({

@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -165,37 +165,24 @@ export async function listCategories(
    opts?: {
       type?: "income" | "expense";
       includeArchived?: boolean;
+      search?: string;
    },
 ) {
    try {
+      const conditions: SQL[] = [eq(categories.teamId, teamId)];
+
       if (opts?.type) {
-         const type = opts.type;
-         if (opts.includeArchived) {
-            return await db.query.categories.findMany({
-               where: (fields, { and, eq }) =>
-                  and(eq(fields.teamId, teamId), eq(fields.type, type)),
-               orderBy: (fields, { asc }) => [asc(fields.name)],
-            });
-         }
-         return await db.query.categories.findMany({
-            where: (fields, { and, eq }) =>
-               and(
-                  eq(fields.teamId, teamId),
-                  eq(fields.type, type),
-                  eq(fields.isArchived, false),
-               ),
-            orderBy: (fields, { asc }) => [asc(fields.name)],
-         });
+         conditions.push(eq(categories.type, opts.type));
       }
-      if (opts?.includeArchived) {
-         return await db.query.categories.findMany({
-            where: (fields, { eq }) => eq(fields.teamId, teamId),
-            orderBy: (fields, { asc }) => [asc(fields.name)],
-         });
+      if (!opts?.includeArchived) {
+         conditions.push(eq(categories.isArchived, false));
       }
+      if (opts?.search) {
+         conditions.push(ilike(categories.name, `%${opts.search}%`));
+      }
+
       return await db.query.categories.findMany({
-         where: (fields, { and, eq }) =>
-            and(eq(fields.teamId, teamId), eq(fields.isArchived, false)),
+         where: and(...conditions),
          orderBy: (fields, { asc }) => [asc(fields.name)],
       });
    } catch (err) {
