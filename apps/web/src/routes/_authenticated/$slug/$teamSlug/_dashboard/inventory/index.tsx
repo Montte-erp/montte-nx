@@ -173,7 +173,7 @@ function InventoryList() {
    const handleMovement = useCallback(
       (product: InventoryProductRow) => {
          openCredenza({
-            children: (
+            renderChildren: () => (
                <InventoryMovementCredenza
                   onSuccess={closeCredenza}
                   product={product}
@@ -187,7 +187,7 @@ function InventoryList() {
    const handleHistory = useCallback(
       (product: InventoryProductRow) => {
          openCredenza({
-            children: <InventoryHistorySheet product={product} />,
+            renderChildren: () => <InventoryHistorySheet product={product} />,
          });
       },
       [openCredenza],
@@ -196,7 +196,7 @@ function InventoryList() {
    const handleEdit = useCallback(
       (product: InventoryProductRow) => {
          openCredenza({
-            children: (
+            renderChildren: () => (
                <InventoryProductForm
                   defaultValues={{
                      id: product.id,
@@ -307,7 +307,7 @@ function InventoryPage() {
 
    const handleCreate = useCallback(() => {
       openCredenza({
-         children: (
+         renderChildren: () => (
             <InventoryProductForm mode="create" onSuccess={closeCredenza} />
          ),
       });

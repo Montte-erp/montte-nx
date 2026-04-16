@@ -287,7 +287,7 @@ function GoalsList() {
    const handleEdit = useCallback(
       (goal: BudgetGoalWithProgress) => {
          openCredenza({
-            children: (
+            renderChildren: () => (
                <BudgetGoalCredenza
                   goal={goal}
                   mode="edit"
@@ -406,7 +406,7 @@ function GoalsPage() {
 
    const handleCreate = useCallback(() => {
       openCredenza({
-         children: (
+         renderChildren: () => (
             <BudgetGoalCredenza
                mode="create"
                month={month}

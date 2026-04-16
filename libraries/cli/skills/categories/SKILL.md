@@ -1,13 +1,13 @@
 ---
 name: "@montte/cli/categories"
 description: >
-  Use when managing transaction categories via the montte CLI: listing by type,
-  creating parent or subcategories, archiving (soft delete), or permanently removing.
+   Use when managing transaction categories via the montte CLI: listing by type,
+   creating parent or subcategories, archiving (soft delete), or permanently removing.
 type: sub-skill
 library: "@montte/cli"
 library_version: "0.1.0"
 sources:
-  - "Montte-erp/montte-nx:libraries/cli/src/commands/categories.ts"
+   - "Montte-erp/montte-nx:libraries/cli/src/commands/categories.ts"
 ---
 
 # Categories
@@ -22,11 +22,11 @@ montte categories list --type expense
 montte categories list --archived --json
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--type <type>` | `income` or `expense` |
-| `--archived` | Include archived categories |
-| `--json` | Output raw JSON |
+| Option          | Description                 |
+| --------------- | --------------------------- |
+| `--type <type>` | `income` or `expense`       |
+| `--archived`    | Include archived categories |
+| `--json`        | Output raw JSON             |
 
 Output columns: `id`, `name`, `type`, `level`, `archived`
 
@@ -39,13 +39,13 @@ montte categories create --name "Alimentação" --type expense
 montte categories create --name "Restaurantes" --type expense --parent <parent-id> --color "#FF6B35"
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `--name` | Yes | Category name |
-| `--type` | Yes | `income` or `expense` |
-| `--parent` | No | Parent category ID (creates a subcategory) |
-| `--color` | No | Hex color (e.g. `#FF6B35`) |
-| `--json` | No | Output raw JSON |
+| Option     | Required | Description                                |
+| ---------- | -------- | ------------------------------------------ |
+| `--name`   | Yes      | Category name                              |
+| `--type`   | Yes      | `income` or `expense`                      |
+| `--parent` | No       | Parent category ID (creates a subcategory) |
+| `--color`  | No       | Hex color (e.g. `#FF6B35`)                 |
+| `--json`   | No       | Output raw JSON                            |
 
 ## `montte categories archive <id>`
 

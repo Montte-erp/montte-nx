@@ -327,7 +327,9 @@ function UploadStep({ methods }: { methods: StepperMethods }) {
                   className="self-start px-0 text-muted-foreground"
                   onClick={() =>
                      openCredenza({
-                        children: <TemplateCredenza onClose={closeCredenza} />,
+                        renderChildren: () => (
+                           <TemplateCredenza onClose={closeCredenza} />
+                        ),
                      })
                   }
                >
@@ -1276,7 +1278,7 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                         onClick={() =>
                            openCredenza({
                               className: "sm:max-w-sm",
-                              children: (
+                              renderChildren: () => (
                                  <BulkDateCredenza
                                     selectedCount={selectedIndices.size}
                                     onApply={(date) => {
@@ -1299,7 +1301,7 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                         onClick={() =>
                            openCredenza({
                               className: "sm:max-w-sm",
-                              children: (
+                              renderChildren: () => (
                                  <BulkCategoryCredenza
                                     selectedCount={selectedIndices.size}
                                     categoryOptions={categoryOptions}

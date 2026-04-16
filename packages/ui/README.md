@@ -10,7 +10,6 @@ Shared component library, hooks, and styling built on Radix, Tailwind, and CVA.
 | `./blocks/*`       | Composite UI blocks                                                |
 | `./hooks/*`        | SSR-safe hooks (`useMediaQuery`, `useIsMobile`, `useLocalStorage`) |
 | `./lib/*`          | Utility functions (`cn`, formatters)                               |
-| `./globals.css`    | Tailwind stylesheet                                                |
 | `./postcss.config` | PostCSS configuration                                              |
 
 ## Usage

@@ -94,7 +94,7 @@ function ApiKeysContent() {
    function handleOpenCreate() {
       if (!organizationId || !teamId) return;
       openCredenza({
-         children: (
+         renderChildren: () => (
             <CreateApiKeyForm
                organizationId={organizationId}
                teamId={teamId}

@@ -1,13 +1,13 @@
 ---
 name: "@montte/cli/budgets"
 description: >
-  Use when creating or checking monthly budget goals per category via the montte CLI.
-  Covers listing progress (percent used), alert thresholds, and removing goals.
+   Use when creating or checking monthly budget goals per category via the montte CLI.
+   Covers listing progress (percent used), alert thresholds, and removing goals.
 type: sub-skill
 library: "@montte/cli"
 library_version: "0.1.0"
 sources:
-  - "Montte-erp/montte-nx:libraries/cli/src/commands/budgets.ts"
+   - "Montte-erp/montte-nx:libraries/cli/src/commands/budgets.ts"
 ---
 
 # Budget Goals
@@ -23,11 +23,11 @@ montte budgets list --month 1 --year 2024
 montte budgets list --month 3 --year 2024 --json
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `--month` | Yes | Month number `1-12` |
-| `--year` | Yes | Four-digit year |
-| `--json` | No | Output raw JSON |
+| Option    | Required | Description         |
+| --------- | -------- | ------------------- |
+| `--month` | Yes      | Month number `1-12` |
+| `--year`  | Yes      | Four-digit year     |
+| `--json`  | No       | Output raw JSON     |
 
 Output columns: `id`, `category`, `limit`, `spent`, `percent`
 
@@ -53,14 +53,14 @@ montte budgets create \
   --alert 80
 ```
 
-| Option | Required | Description |
-|--------|----------|-------------|
-| `--category` | Yes | Category ID |
-| `--month` | Yes | Month `1-12` |
-| `--year` | Yes | Four-digit year |
-| `--limit` | Yes | Spending limit as decimal |
-| `--alert` | No | Alert threshold `1-100` (percentage of limit) |
-| `--json` | No | Output raw JSON |
+| Option       | Required | Description                                   |
+| ------------ | -------- | --------------------------------------------- |
+| `--category` | Yes      | Category ID                                   |
+| `--month`    | Yes      | Month `1-12`                                  |
+| `--year`     | Yes      | Four-digit year                               |
+| `--limit`    | Yes      | Spending limit as decimal                     |
+| `--alert`    | No       | Alert threshold `1-100` (percentage of limit) |
+| `--json`     | No       | Output raw JSON                               |
 
 ## `montte budgets remove <id>`
 

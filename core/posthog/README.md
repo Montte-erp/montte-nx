@@ -7,6 +7,7 @@ PostHog analytics client for server-side event tracking, feature flags, and erro
 | Export     | Purpose                                               |
 | ---------- | ----------------------------------------------------- |
 | `./server` | PostHog client initialization and analytics functions |
+| `./config` | Survey IDs, feature flag keys, and shared config      |
 
 ## Usage
 

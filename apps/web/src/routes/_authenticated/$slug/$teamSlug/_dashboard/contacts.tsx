@@ -21,7 +21,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Pencil, Plus, Trash2, Users } from "lucide-react";
 
-import { Suspense, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import {
@@ -36,15 +36,24 @@ import {
 import { ContactForm } from "@/features/contacts/ui/contacts-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
+import { QueryBoundary } from "@/components/query-boundary";
 import { orpc } from "@/integrations/orpc/client";
-import { tableSearchSchema } from "@/lib/table-search-schema";
 import type {
    ColumnFiltersState,
    OnChangeFn,
    SortingState,
 } from "@tanstack/react-table";
 import { z } from "zod";
-
+const tableSearchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .catch([])
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .catch([])
+      .default([]),
+});
 const [useContactsTableState] =
    createLocalStorageState<DataTableStoredState | null>(
       "montte:datatable:contacts",
@@ -172,7 +181,7 @@ function ContactsList() {
    const handleEdit = useCallback(
       (contact: ContactRow) => {
          openCredenza({
-            children: (
+            renderChildren: () => (
                <ContactForm
                   contact={contact}
                   mode="edit"
@@ -200,6 +209,18 @@ function ContactsList() {
       [openAlertDialog, deleteMutation],
    );
 
+   const bulkDeleteMutation = useMutation(
+      orpc.contacts.bulkRemove.mutationOptions({
+         onSuccess: () => {
+            toast.success("Contatos excluídos com sucesso");
+            onClear();
+         },
+         onError: () => {
+            toast.error("Erro ao excluir contatos");
+         },
+      }),
+   );
+
    const handleBulkDelete = useCallback(() => {
       openAlertDialog({
          title: `Excluir ${selectedCount} ${selectedCount === 1 ? "contato" : "contatos"}`,
@@ -209,13 +230,10 @@ function ContactsList() {
          cancelLabel: "Cancelar",
          variant: "destructive",
          onAction: async () => {
-            await Promise.all(
-               selectedIds.map((id) => deleteMutation.mutateAsync({ id })),
-            );
-            onClear();
+            await bulkDeleteMutation.mutateAsync({ ids: selectedIds });
          },
       });
-   }, [openAlertDialog, selectedCount, selectedIds, deleteMutation, onClear]);
+   }, [openAlertDialog, selectedCount, selectedIds, bulkDeleteMutation]);
 
    const columns = useMemo(() => buildContactColumns(), []);
 
@@ -290,7 +308,9 @@ function ContactsPage() {
 
    const handleCreate = useCallback(() => {
       openCredenza({
-         children: <ContactForm mode="create" onSuccess={closeCredenza} />,
+         renderChildren: () => (
+            <ContactForm mode="create" onSuccess={closeCredenza} />
+         ),
       });
    }, [openCredenza, closeCredenza]);
 
@@ -328,9 +348,9 @@ function ContactsPage() {
             ))}
          </div>
 
-         <Suspense fallback={<ContactsSkeleton />}>
+         <QueryBoundary fallback={<ContactsSkeleton />}>
             <ContactsList />
-         </Suspense>
+         </QueryBoundary>
       </main>
    );
 }

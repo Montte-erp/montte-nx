@@ -4,7 +4,7 @@ import type {
    KpiConfig,
    TimeSeriesConfig,
 } from "@packages/analytics/types";
-import { Store, useStore } from "@tanstack/react-store";
+import { Store, useStore, shallow } from "@tanstack/react-store";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import { useCallback, useState } from "react";
 
@@ -64,16 +64,16 @@ function mergeConfig(
    if (state.type === "kpi")
       return {
          type: "kpi",
-         config: { ...state.config, ...updates } as KpiConfig,
+         config: { ...state.config, ...updates, type: "kpi" },
       };
    if (state.type === "time_series")
       return {
          type: "time_series",
-         config: { ...state.config, ...updates } as TimeSeriesConfig,
+         config: { ...state.config, ...updates, type: "time_series" },
       };
    return {
       type: "breakdown",
-      config: { ...state.config, ...updates } as BreakdownConfig,
+      config: { ...state.config, ...updates, type: "breakdown" },
    };
 }
 
@@ -82,7 +82,7 @@ export function useInsightConfig(initialConfig?: InsightConfig) {
       () => new Store<InsightState>(buildInitialState(initialConfig)),
    );
 
-   const state = useStore(store, (s) => s);
+   const state = useStore(store, (s) => s, shallow);
 
    const setType = useCallback(
       (newType: InsightType) => {

@@ -1,5 +1,5 @@
 import { Dialog, DialogContent } from "@packages/ui/components/dialog";
-import { Store, useStore } from "@tanstack/react-store";
+import { createStore, useStore, shallow } from "@tanstack/react-store";
 import { SurveyModalContent } from "@/features/feedback/ui/survey-modal-content";
 
 interface SurveyModalState {
@@ -12,7 +12,7 @@ interface SurveyModalState {
 
 const initialState: SurveyModalState = { isOpen: false, surveyId: null };
 
-const surveyModalStore = new Store<SurveyModalState>(initialState);
+const surveyModalStore = createStore<SurveyModalState>(initialState);
 
 type OpenSurveyOptions = {
    title?: string;
@@ -38,7 +38,7 @@ export function useSurveyModal() {
 }
 
 export function GlobalSurveyModal() {
-   const state = useStore(surveyModalStore, (s) => s);
+   const state = useStore(surveyModalStore, (s) => s, shallow);
 
    const close = () => surveyModalStore.setState(() => initialState);
 

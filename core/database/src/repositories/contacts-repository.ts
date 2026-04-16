@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateContactInput,
@@ -128,6 +128,42 @@ export async function deleteContact(db: DatabaseInstance, id: string) {
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to delete contact");
+   }
+}
+
+export async function bulkDeleteContacts(
+   db: DatabaseInstance,
+   ids: string[],
+   teamId: string,
+) {
+   try {
+      const existing = await db
+         .select({ id: contacts.id })
+         .from(contacts)
+         .where(and(inArray(contacts.id, ids), eq(contacts.teamId, teamId)));
+      if (existing.length !== ids.length) {
+         throw AppError.notFound("Um ou mais contatos não foram encontrados.");
+      }
+      const results = await Promise.allSettled(
+         ids.map(async (id) => {
+            const hasLinks = await contactHasLinks(db, id);
+            if (hasLinks) {
+               throw AppError.conflict(
+                  "Contato possui lançamentos vinculados. Arquive em vez de excluir.",
+               );
+            }
+            await db.delete(contacts).where(eq(contacts.id, id));
+         }),
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      if (failed > 0) {
+         throw AppError.database(
+            `${failed} contato(s) não puderam ser excluídos.`,
+         );
+      }
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to bulk delete contacts");
    }
 }
 

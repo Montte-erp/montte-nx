@@ -51,11 +51,11 @@ const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
 const insightsSearchSchema = z.object({
    sorting: z
       .array(z.object({ id: z.string(), desc: z.boolean() }))
-      .optional()
+      .catch([])
       .default([]),
    columnFilters: z
       .array(z.object({ id: z.string(), value: z.unknown() }))
-      .optional()
+      .catch([])
       .default([]),
 });
 
@@ -146,7 +146,7 @@ function InsightsListPage() {
       });
    };
 
-   useContextPanelInfo(
+   useContextPanelInfo(() => (
       <ContextPanel>
          <ContextPanelHeader>
             <ContextPanelTitle>Ações</ContextPanelTitle>
@@ -158,8 +158,8 @@ function InsightsListPage() {
                onClick={handleCreate}
             />
          </ContextPanelContent>
-      </ContextPanel>,
-   );
+      </ContextPanel>
+   ));
 
    const { data: insights } = useSuspenseQuery(
       orpc.insights.list.queryOptions({}),

@@ -60,7 +60,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for staging setup and all available comma
 ### AI Assistant (Rubi)
 
 - **Chat Interface**: Natural language financial assistant accessible from any screen
-- **Agent Network**: Multi-agent system powered by Mastra for intelligent routing and specialized tasks
+- **Multi-Model Support**: Powered by TanStack AI with OpenRouter for flexible model selection
 - **Context-Aware**: Understands your financial data and provides relevant insights
 
 ### Integrations & Webhooks
@@ -92,19 +92,19 @@ Usage-based billing powered by Stripe meter events. Each billable event (AI chat
 
 Built as an **Nx** monorepo with **Bun**.
 
-| Category      | Technology                                                                           |
-| :------------ | :----------------------------------------------------------------------------------- |
+| Category      | Technology                                                                                           |
+| :------------ | :--------------------------------------------------------------------------------------------------- |
 | **Frontend**  | React 19, TanStack Start (SSR), TanStack Router, TanStack Query, shadcn/ui, Tailwind CSS, TypeScript |
-| **AI**        | Mastra (Agent orchestration)                                                         |
-| **Backend**   | oRPC (type-safe API), DBOS (durable workflows), Drizzle ORM, PostgreSQL              |
-| **Auth**      | Better Auth                                                                          |
-| **Jobs**      | DBOS (durable workflows, cron, retries), Redis (rate limiting, credit counters)      |
-| **Storage**   | MinIO (S3-compatible)                                                                |
-| **Security**  | Arcjet (Rate limiting & bot detection)                                               |
-| **Analytics** | PostHog                                                                              |
-| **Email**     | Resend (React Email templates)                                                       |
-| **Payments**  | Stripe                                                                               |
-| **Tooling**   | Nx, oxlint, oxfmt                                                                    |
+| **AI**        | TanStack AI + OpenRouter (Agent orchestration)                                                       |
+| **Backend**   | oRPC (type-safe API), DBOS (durable workflows), Drizzle ORM, PostgreSQL                              |
+| **Auth**      | Better Auth                                                                                          |
+| **Jobs**      | DBOS (durable workflows, cron, retries), Redis (rate limiting, credit counters)                      |
+| **Storage**   | MinIO (S3-compatible)                                                                                |
+| **Security**  | Arcjet (Rate limiting & bot detection)                                                               |
+| **Analytics** | PostHog                                                                                              |
+| **Email**     | Resend (React Email templates)                                                                       |
+| **Payments**  | Stripe                                                                                               |
+| **Tooling**   | Nx, oxlint, oxfmt                                                                                    |
 
 ---
 
@@ -129,6 +129,7 @@ montte-nx/
 ├── packages/
 │   ├── analytics/       # Analytics engine
 │   ├── events/          # Event catalog, schemas, credits
+│   ├── notifications/   # Job notification types & schema
 │   └── ui/              # Radix + Tailwind component library
 ├── libraries/
 │   ├── cli/             # @montte/cli — TanStack Intent skills + CLI tooling

@@ -288,7 +288,7 @@ export function EditableDashboardGrid({
    const handleOpenAddInsight = useCallback(() => {
       const existingIds = new Set(localTiles.map((t) => t.insightId));
       openCredenza({
-         children: (
+         renderChildren: () => (
             <AddInsightCredenza
                existingInsightIds={existingIds}
                onAdd={handleAddInsight}

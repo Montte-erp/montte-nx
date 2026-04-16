@@ -146,7 +146,7 @@ function BankAccountsList({ navigate }: BankAccountsListProps) {
    const handleEdit = useCallback(
       (account: BankAccountRow) => {
          openCredenza({
-            children: (
+            renderChildren: () => (
                <BankAccountForm
                   account={account}
                   mode="edit"
@@ -235,7 +235,9 @@ function BankAccountsPage() {
 
    const handleCreate = useCallback(() => {
       openCredenza({
-         children: <BankAccountForm mode="create" onSuccess={closeCredenza} />,
+         renderChildren: () => (
+            <BankAccountForm mode="create" onSuccess={closeCredenza} />
+         ),
       });
    }, [openCredenza, closeCredenza]);
 
@@ -245,7 +247,9 @@ function BankAccountsPage() {
          label: "Importar",
          onClick: () =>
             openCredenza({
-               children: <BankAccountImportCredenza onClose={closeCredenza} />,
+               renderChildren: () => (
+                  <BankAccountImportCredenza onClose={closeCredenza} />
+               ),
             }),
       },
       {
@@ -253,7 +257,9 @@ function BankAccountsPage() {
          label: "Exportar",
          onClick: () =>
             openCredenza({
-               children: <BankAccountExportCredenza onClose={closeCredenza} />,
+               renderChildren: () => (
+                  <BankAccountExportCredenza onClose={closeCredenza} />
+               ),
             }),
       },
    ];

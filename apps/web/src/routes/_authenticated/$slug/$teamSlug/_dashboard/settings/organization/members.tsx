@@ -140,7 +140,7 @@ function MembersContent() {
 
    function handleOpenInviteCredenza() {
       openCredenza({
-         children: (
+         renderChildren: () => (
             <InviteMemberForm
                onSuccess={closeCredenza}
                organizationId={organizationId}

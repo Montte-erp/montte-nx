@@ -170,7 +170,7 @@ export function TransactionsList({
    const handleEdit = useCallback(
       (transaction: TransactionRow) => {
          openCredenza({
-            children: (
+            renderChildren: () => (
                <TransactionCredenza
                   mode="edit"
                   onSuccess={closeCredenza}
@@ -202,7 +202,7 @@ export function TransactionsList({
    const handleRecurring = useCallback(
       (tx: TransactionRow) => {
          openCredenza({
-            children: (
+            renderChildren: () => (
                <BillFromTransactionCredenza
                   bankAccountId={tx.bankAccountId}
                   categoryId={tx.categoryId}
@@ -239,7 +239,7 @@ export function TransactionsList({
 
    const handleBulkCategorize = useCallback(() => {
       openCredenza({
-         children: (
+         renderChildren: () => (
             <BulkCategorizeForm
                onApply={async (categoryId) => {
                   await Promise.all(
@@ -269,7 +269,7 @@ export function TransactionsList({
 
    const handleBulkMoveAccount = useCallback(() => {
       openCredenza({
-         children: (
+         renderChildren: () => (
             <BulkMoveAccountForm
                bankAccounts={bankAccounts}
                onApply={async (bankAccountId, destinationBankAccountId) => {

@@ -281,7 +281,9 @@ function UploadStep({ methods }: { methods: StepperMethods }) {
                   className="self-start px-0 text-muted-foreground"
                   onClick={() =>
                      openCredenza({
-                        children: <TemplateCredenza onClose={closeCredenza} />,
+                        renderChildren: () => (
+                           <TemplateCredenza onClose={closeCredenza} />
+                        ),
                      })
                   }
                >

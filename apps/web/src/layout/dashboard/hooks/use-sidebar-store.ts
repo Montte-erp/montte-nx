@@ -1,7 +1,6 @@
-import { useStore } from "@tanstack/react-store";
-import { Store } from "@tanstack/react-store";
+import { createStore, useStore } from "@tanstack/react-store";
 import { useCallback, useEffect } from "react";
-import { createPersistedStore } from "@/lib/persisted-store";
+import { createPersistedStore, createStoreEffect } from "@/lib/store";
 
 export type SubSidebarSection = "dashboards" | "insights" | "data-management";
 
@@ -17,25 +16,33 @@ interface SidebarTransientState {
    searchQuery: string;
 }
 
-const { store: sidebarStore, useStorePersistence } =
-   createPersistedStore<SidebarPersistedState>("montte:sidebar", {
+const sidebarStore = createPersistedStore<SidebarPersistedState>(
+   "montte:sidebar",
+   {
       isCollapsed: false,
       hiddenItems: [],
       financeNavPrefs: [],
       pinnedItems: [],
-   });
+   },
+);
 
-const transientStore = new Store<SidebarTransientState>({
+const transientStore = createStore<SidebarTransientState>({
    activeSection: null,
    searchQuery: "",
 });
 
+createStoreEffect(transientStore, (next, prev) => {
+   if (
+      prev.activeSection !== null &&
+      next.activeSection === null &&
+      next.searchQuery !== ""
+   ) {
+      transientStore.setState((s) => ({ ...s, searchQuery: "" }));
+   }
+});
+
 export function setActiveSection(section: SubSidebarSection | null) {
-   transientStore.setState((state) => ({
-      ...state,
-      activeSection: section,
-      searchQuery: "",
-   }));
+   transientStore.setState((state) => ({ ...state, activeSection: section }));
 }
 
 export function setSearchQuery(query: string) {
@@ -52,7 +59,6 @@ export function togglePinnedItem(itemId: string) {
 }
 
 export function useSidebarCollapsed() {
-   useStorePersistence();
    const isCollapsed = useStore(sidebarStore, (s) => s.isCollapsed);
    const setCollapsed = useCallback((collapsed: boolean) => {
       sidebarStore.setState((s) => ({ ...s, isCollapsed: collapsed }));
@@ -112,13 +118,9 @@ export function useSidebarSection(section: SubSidebarSection) {
    useEffect(() => {
       setActiveSection(section);
       return () => {
-         transientStore.setState((state) => ({
-            ...state,
-            activeSection:
-               state.activeSection === section ? null : state.activeSection,
-            searchQuery:
-               state.activeSection === section ? "" : state.searchQuery,
-         }));
+         if (transientStore.state.activeSection === section) {
+            setActiveSection(null);
+         }
       };
    }, [section]);
 }

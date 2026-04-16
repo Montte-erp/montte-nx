@@ -1,4 +1,4 @@
-import { Store, useStore } from "@tanstack/react-store";
+import { createStore, useStore, shallow } from "@tanstack/react-store";
 import type React from "react";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useCallback, useRef } from "react";
@@ -19,7 +19,7 @@ type ToolbarState = {
       | null;
 };
 
-const toolbarStore = new Store<ToolbarState>({
+const toolbarStore = createStore<ToolbarState>({
    selectedIndices: new Set<number>(),
    renderActions: null,
 });
@@ -91,7 +91,11 @@ export function useSelectionToolbar(
 }
 
 export function GlobalSelectionToolbar() {
-   const { selectedIndices, renderActions } = useStore(toolbarStore, (s) => s);
+   const { selectedIndices, renderActions } = useStore(
+      toolbarStore,
+      (s) => s,
+      shallow,
+   );
    if (!renderActions) return null;
    return (
       <SelectionActionBar
