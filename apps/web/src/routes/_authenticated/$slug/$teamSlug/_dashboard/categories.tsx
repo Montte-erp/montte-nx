@@ -32,6 +32,7 @@ import {
    Upload,
 } from "lucide-react";
 import { useCallback, useMemo } from "react";
+import { fromPromise } from "neverthrow";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
@@ -507,13 +508,16 @@ function CategoriesPage() {
    }, [openCredenza, closeCredenza]);
 
    const handleExport = useCallback(async () => {
-      try {
-         const data = await orpc.categories.exportAll.call({});
-         exportCategoriesCsv(data);
-         toast.success("Categorias exportadas com sucesso.");
-      } catch {
+      const result = await fromPromise(
+         orpc.categories.exportAll.call({}),
+         (e) => e,
+      );
+      if (result.isErr()) {
          toast.error("Erro ao exportar categorias.");
+         return;
       }
+      exportCategoriesCsv(result.value);
+      toast.success("Categorias exportadas com sucesso.");
    }, []);
 
    return (
