@@ -100,23 +100,27 @@ export const Route = createFileRoute(
 
 function CategoriesTableSkeleton() {
    return (
-      <div className="flex flex-col gap-2">
-         <Skeleton className="h-8 w-32" />
-         {Array.from({ length: 3 }).map((_, i) => (
-            <div className="flex flex-col gap-2" key={`parent-${i + 1}`}>
-               <Skeleton className="h-12 w-full" />
-               {i < 2 && (
-                  <div className="pl-8 flex flex-col gap-2">
-                     <Skeleton className="h-10 w-full" />
-                     <Skeleton className="h-10 w-full" />
-                  </div>
-               )}
-            </div>
-         ))}
-         <Skeleton className="h-8 w-32 mt-2" />
-         {Array.from({ length: 2 }).map((_, i) => (
-            <Skeleton className="h-12 w-full" key={`parent2-${i + 1}`} />
-         ))}
+      <div className="flex flex-col gap-4">
+         <div className="flex flex-col gap-2">
+            <Skeleton className="h-8 w-32" />
+            {Array.from({ length: 3 }).map((_, i) => (
+               <div className="flex flex-col gap-2" key={`parent-${i + 1}`}>
+                  <Skeleton className="h-12 w-full" />
+                  {i < 2 && (
+                     <div className="pl-8 flex flex-col gap-2">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                     </div>
+                  )}
+               </div>
+            ))}
+         </div>
+         <div className="flex flex-col gap-2">
+            <Skeleton className="h-8 w-32" />
+            {Array.from({ length: 2 }).map((_, i) => (
+               <Skeleton className="h-12 w-full" key={`parent2-${i + 1}`} />
+            ))}
+         </div>
       </div>
    );
 }

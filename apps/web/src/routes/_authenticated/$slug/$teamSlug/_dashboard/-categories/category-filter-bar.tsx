@@ -123,7 +123,7 @@ export function CategoryFilterBar({
                   onCheckedChange={onGroupByChange}
                />
                <Label
-                  className="cursor-pointer text-sm flex items-center gap-1.5"
+                  className="cursor-pointer text-sm flex items-center gap-2"
                   htmlFor="group-by-type"
                >
                   <LayoutList className="size-3.5 text-muted-foreground" />
@@ -135,7 +135,7 @@ export function CategoryFilterBar({
                <>
                   <Separator orientation="vertical" className="h-5" />
                   <Button
-                     className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
+                     className="h-8 gap-2 text-muted-foreground hover:text-foreground"
                      onClick={onClear}
                      size="sm"
                      variant="ghost"
