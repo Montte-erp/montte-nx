@@ -349,9 +349,17 @@ function CategoriesList({ navigate, view }: CategoriesListProps) {
 
    const handleArchive = useCallback(
       (category: CategoryRow) => {
-         archiveMutation.mutate({ id: category.id });
+         openAlertDialog({
+            title: "Arquivar categoria",
+            description: `Arquivar "${category.name}" irá ocultá-la das listas e impedir novos lançamentos nesta categoria. Você poderá desarquivá-la a qualquer momento.`,
+            actionLabel: "Arquivar",
+            cancelLabel: "Cancelar",
+            onAction: async () => {
+               await archiveMutation.mutateAsync({ id: category.id });
+            },
+         });
       },
-      [archiveMutation],
+      [openAlertDialog, archiveMutation],
    );
 
    const handleBulkDelete = useCallback(() => {
