@@ -84,11 +84,15 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
             const keywordsTooltip = hasKeywords ? (
                <Tooltip>
                   <TooltipTrigger asChild>
-                     <Tags className="size-4 text-muted-foreground shrink-0" />
+                     <Tags className="size-4 text-muted-foreground shrink-0 cursor-default" />
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-64">
-                     <p className="font-medium">Palavras-chave IA</p>
-                     <p className="text-xs">{keywords.join(", ")}</p>
+                  <TooltipContent className="max-w-72">
+                     <p className="font-semibold text-sm">Palavras-chave IA</p>
+                     <p className="text-xs text-muted-foreground mb-1">
+                        Geradas automaticamente com base no nome e descrição da
+                        categoria.
+                     </p>
+                     <p className="text-xs">{keywords!.join(", ")}</p>
                   </TooltipContent>
                </Tooltip>
             ) : null;
@@ -176,10 +180,32 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
          id: "keywords",
          header: "Palavras-chave",
          cell: ({ row }) => {
-            const count = row.original.keywords?.length ?? 0;
+            const keywords = row.original.keywords;
+            const count = keywords?.length ?? 0;
             if (count === 0)
                return <span className="text-sm text-muted-foreground">—</span>;
-            return <Badge variant="secondary">{count}</Badge>;
+            return (
+               <Tooltip>
+                  <TooltipTrigger asChild>
+                     <Announcement className="cursor-default w-fit">
+                        <AnnouncementTag>
+                           <Tags className="size-3" />
+                        </AnnouncementTag>
+                        <AnnouncementTitle className="text-xs">
+                           {count} {count === 1 ? "palavra" : "palavras"}
+                        </AnnouncementTitle>
+                     </Announcement>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-72">
+                     <p className="font-semibold text-sm">Palavras-chave IA</p>
+                     <p className="text-xs text-muted-foreground mb-1">
+                        Geradas automaticamente com base no nome e descrição da
+                        categoria.
+                     </p>
+                     <p className="text-xs">{keywords!.join(", ")}</p>
+                  </TooltipContent>
+               </Tooltip>
+            );
          },
       },
    ];
