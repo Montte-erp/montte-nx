@@ -1,6 +1,6 @@
 import { createStore, useStore } from "@tanstack/react-store";
 import { useCallback, useEffect } from "react";
-import { createPersistedStore } from "@/lib/persisted-store";
+import { createPersistedStore, createStoreEffect } from "@/lib/store";
 
 export type SubSidebarSection = "dashboards" | "insights" | "data-management";
 
@@ -31,12 +31,14 @@ const transientStore = createStore<SidebarTransientState>({
    searchQuery: "",
 });
 
+createStoreEffect(transientStore, (next, prev) => {
+   if (prev.activeSection !== null && next.activeSection === null) {
+      transientStore.setState((s) => ({ ...s, searchQuery: "" }));
+   }
+});
+
 export function setActiveSection(section: SubSidebarSection | null) {
-   transientStore.setState((state) => ({
-      ...state,
-      activeSection: section,
-      searchQuery: "",
-   }));
+   transientStore.setState((state) => ({ ...state, activeSection: section }));
 }
 
 export function setSearchQuery(query: string) {
@@ -112,13 +114,9 @@ export function useSidebarSection(section: SubSidebarSection) {
    useEffect(() => {
       setActiveSection(section);
       return () => {
-         transientStore.setState((state) => ({
-            ...state,
-            activeSection:
-               state.activeSection === section ? null : state.activeSection,
-            searchQuery:
-               state.activeSection === section ? "" : state.searchQuery,
-         }));
+         if (transientStore.state.activeSection === section) {
+            setActiveSection(null);
+         }
       };
    }, [section]);
 }

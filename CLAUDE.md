@@ -627,9 +627,9 @@ const { unsubscribe } = myStore.subscribe(() => {
 // cleanup: unsubscribe()
 ```
 
-**Persisted store** — `createPersistedStore` from `@/lib/persisted-store`. Uses `createClientOnlyFn` for SSR safety. Hydrates from localStorage, auto-persists on change, cross-tab sync via `storage` event. No hook needed:
+**Persisted store** — `createPersistedStore` from `@/lib/store`. Uses `createClientOnlyFn` for SSR safety. Hydrates from localStorage, auto-persists on change, cross-tab sync via `storage` event. No hook needed:
 ```typescript
-import { createPersistedStore } from "@/lib/persisted-store";
+import { createPersistedStore } from "@/lib/store";
 
 const sidebarStore = createPersistedStore<SidebarState>("montte:sidebar", { isCollapsed: false });
 
@@ -637,12 +637,18 @@ const sidebarStore = createPersistedStore<SidebarState>("montte:sidebar", { isCo
 const isCollapsed = useStore(sidebarStore, (s) => s.isCollapsed);
 ```
 
-**Subscriptions outside React** — `store.subscribe()` for side effects:
+**Store effects** — `createStoreEffect` from `@/lib/store` for store-to-store coordination outside React. Replaces `useEffect` bridges between stores with deterministic subscriptions:
 ```typescript
-const { unsubscribe } = myStore.subscribe(() => {
-   console.log("State changed:", myStore.state);
+import { createStoreEffect } from "@/lib/store";
+
+// Guarantee: when activeSection becomes null, searchQuery auto-clears
+createStoreEffect(transientStore, (next, prev) => {
+   if (prev.activeSection !== null && next.activeSection === null) {
+      transientStore.setState((s) => ({ ...s, searchQuery: "" }));
+   }
 });
 ```
+Effects run synchronously after `setState`, before React render. Guard with `prev !== next` comparisons to avoid infinite loops. Return a cleanup function from the effect callback if needed.
 
 **Batch updates** — `batch()` groups multiple store updates into one notification cycle:
 ```typescript

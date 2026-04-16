@@ -37,3 +37,32 @@ export function createPersistedStore<T>(
    initClientPersistence(key, store);
    return store;
 }
+
+// --- Store Effects ---
+
+type Cleanup = () => void;
+
+interface Subscribable<T> {
+   state: T;
+   subscribe: (fn: () => void) => { unsubscribe: () => void };
+}
+
+export function createStoreEffect<T>(
+   store: Subscribable<T>,
+   effect: (state: T, prevState: T) => Cleanup | void,
+) {
+   let prevState = store.state;
+   let cleanup: Cleanup | void;
+
+   const { unsubscribe } = store.subscribe(() => {
+      const nextState = store.state;
+      cleanup?.();
+      cleanup = effect(nextState, prevState);
+      prevState = nextState;
+   });
+
+   return () => {
+      cleanup?.();
+      unsubscribe();
+   };
+}

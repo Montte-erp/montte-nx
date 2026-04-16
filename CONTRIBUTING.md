@@ -31,8 +31,7 @@ Placeholder values are pre-filled for external services (Stripe, PostHog, Google
 ```bash
 bun dev           # Local dev — auto-setup on first run
 bun dev:staging   # Dev against staging cloud services (needs apps/web/.env.staging.local)
-bun dev:all       # Web + server + all packages
-bun dev:server    # Server only (Elysia + DBOS workflows)
+bun dev:all       # Web + all packages
 ```
 
 ## Staging Environment
@@ -84,9 +83,9 @@ bun setup        # Re-run first-time setup manually
 
 Nx monorepo — see [README.md](README.md) for the full structure.
 
-**Apps:** `web/` (TanStack Start SSR), `server/` (Elysia + DBOS workflows)
-**Core:** `authentication/`, `database/`, `environment/`, `files/`, `logging/`, `redis/`, `stripe/`, `transactional/`, `utils/`
-**Packages:** `analytics/`, `events/`, `ui/`
+**Apps:** `web/` (TanStack Start SSR)
+**Core:** `agents/`, `authentication/`, `database/`, `environment/`, `files/`, `logging/`, `posthog/`, `redis/`, `stripe/`, `transactional/`, `utils/`
+**Packages:** `analytics/`, `events/`, `notifications/`, `ui/`
 
 ## Code Standards
 
