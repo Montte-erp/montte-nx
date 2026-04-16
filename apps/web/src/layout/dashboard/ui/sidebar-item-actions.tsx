@@ -10,7 +10,7 @@ import { useNavigate, useRouter } from "@tanstack/react-router";
 import { openInNewTab } from "foxact/open-new-tab";
 import { ExternalLink, MoreHorizontal, Pin, Plus } from "lucide-react";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
-import { togglePinnedItem, useSidebarNav } from "../hooks/use-sidebar-nav";
+import { togglePinnedItem, useSidebarNav } from "../hooks/use-sidebar-store";
 import type { NavItemDef } from "./sidebar-nav-items";
 import { SubSidebarNewMenu } from "./sub-sidebar-new-menu";
 

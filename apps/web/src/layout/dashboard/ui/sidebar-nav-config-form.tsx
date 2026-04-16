@@ -9,8 +9,10 @@ import {
 import { FeatureStageBadge } from "@packages/ui/components/feature-stage-badge";
 import { useMemo } from "react";
 import { useEarlyAccess } from "@/hooks/use-early-access";
-import { useFinanceNavPreferences } from "@/layout/dashboard/hooks/use-finance-nav-preferences";
-import { useSidebarVisibility } from "@/layout/dashboard/hooks/use-sidebar-visibility";
+import {
+   useFinanceNavPreferences,
+   useSidebarVisibility,
+} from "@/layout/dashboard/hooks/use-sidebar-store";
 import type { NavItemDef } from "@/layout/dashboard/ui/sidebar-nav-items";
 import { navGroups } from "@/layout/dashboard/ui/sidebar-nav-items";
 
