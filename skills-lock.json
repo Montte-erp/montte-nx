@@ -6,20 +6,40 @@
          "sourceType": "github",
          "computedHash": "1584c0740971e96f6c88cfc7b4671d9907b3d94297e4a6232941f869c73ac24a"
       },
+      "better-auth-best-practices": {
+         "source": "better-auth/skills",
+         "sourceType": "github",
+         "computedHash": "a4c830509e85557b59339d8d93a4e243e9e59c686e7678854d39230e12c2a6dc"
+      },
       "brainstorming": {
          "source": "obra/superpowers",
          "sourceType": "github",
          "computedHash": "5cafa1558b0b6bd4d4c71f23d5567b7fcbbcdb4b0a50b0c5f69a80a3cebaf9b8"
+      },
+      "create-auth-skill": {
+         "source": "better-auth/skills",
+         "sourceType": "github",
+         "computedHash": "31c027d02dbf1faa37f58191f574b9443143042fb2b684fe32df53ab0270487c"
       },
       "dbos-typescript": {
          "source": "dbos-inc/agent-skills",
          "sourceType": "github",
          "computedHash": "0ea184b3ade54eedfd7109e041ec44803b12f7abc89116d9fab21a47ef40f295"
       },
+      "email-and-password-best-practices": {
+         "source": "better-auth/skills",
+         "sourceType": "github",
+         "computedHash": "747d7f73bd9e2ec5317b8ef88dc70f97df716d00e3d02de4051feebaa48b062d"
+      },
       "linear-cli": {
          "source": "schpet/linear-cli",
          "sourceType": "github",
          "computedHash": "5f8516b9aa8157e7710ec5d029e1c44a0e55be1c3f834f844d0c7f27dae62580"
+      },
+      "organization-best-practices": {
+         "source": "better-auth/skills",
+         "sourceType": "github",
+         "computedHash": "79a5a85b43d10e9fe37582b3506b051a33a991817b938f349099baa5ddba21aa"
       },
       "paradedb-skill": {
          "source": "paradedb/agent-skills",
@@ -115,6 +135,11 @@
          "source": "tanstack-skills/tanstack-skills",
          "sourceType": "github",
          "computedHash": "987d0fcffeac700cea1303a13a9cecd8a4583985dd675f97ebbca27bfa592b47"
+      },
+      "two-factor-authentication-best-practices": {
+         "source": "better-auth/skills",
+         "sourceType": "github",
+         "computedHash": "7e297aaf887e11fdc03e52bdbf44974e161e8f7c393170ced7dc66cace4f6d46"
       },
       "ui-ux-polish": {
          "source": "dicklesworthstone/agent_flywheel_clawdbot_skills_and_integrations",
