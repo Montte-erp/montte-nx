@@ -98,12 +98,50 @@ export const Route = createFileRoute(
    component: CategoriesPage,
 });
 
+function CategoriesTableSkeleton() {
+   return (
+      <div className="flex flex-col gap-2">
+         <Skeleton className="h-8 w-32" />
+         {Array.from({ length: 3 }).map((_, i) => (
+            <div className="flex flex-col gap-2" key={`parent-${i + 1}`}>
+               <Skeleton className="h-12 w-full" />
+               {i < 2 && (
+                  <div className="pl-8 flex flex-col gap-2">
+                     <Skeleton className="h-10 w-full" />
+                     <Skeleton className="h-10 w-full" />
+                  </div>
+               )}
+            </div>
+         ))}
+         <Skeleton className="h-8 w-32 mt-2" />
+         {Array.from({ length: 2 }).map((_, i) => (
+            <Skeleton className="h-12 w-full" key={`parent2-${i + 1}`} />
+         ))}
+      </div>
+   );
+}
+
 function CategoriesSkeleton() {
    return (
       <div className="flex flex-col gap-4">
-         {Array.from({ length: 5 }).map((_, index) => (
-            <Skeleton className="h-12 w-full" key={`skeleton-${index + 1}`} />
-         ))}
+         <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2">
+               <Skeleton className="h-7 w-36" />
+               <Skeleton className="h-4 w-56" />
+            </div>
+            <div className="flex gap-2">
+               <Skeleton className="h-9 w-28" />
+               <Skeleton className="h-9 w-36" />
+            </div>
+         </div>
+         <div className="flex flex-col gap-2">
+            <Skeleton className="h-9 w-full" />
+            <div className="flex gap-2">
+               <Skeleton className="h-9 w-48" />
+               <Skeleton className="h-9 w-36" />
+            </div>
+         </div>
+         <CategoriesTableSkeleton />
       </div>
    );
 }
@@ -355,7 +393,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
                            tooltip="Nova subcategoria"
                            variant="outline"
                         >
-                           <Plus className="size-4" />
+                           <Plus />
                         </Button>
                      )}
                      <Button
@@ -363,7 +401,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
                         tooltip="Editar"
                         variant="outline"
                      >
-                        <Pencil className="size-4" />
+                        <Pencil />
                      </Button>
                      {!isSub && (
                         <Button
@@ -371,7 +409,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
                            tooltip="Arquivar"
                            variant="outline"
                         >
-                           <Archive className="size-4" />
+                           <Archive />
                         </Button>
                      )}
                      <Button
@@ -380,7 +418,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
                         tooltip="Excluir"
                         variant="outline"
                      >
-                        <Trash2 className="size-4" />
+                        <Trash2 />
                      </Button>
                   </>
                );
@@ -389,7 +427,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          />
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
             <SelectionActionButton
-               icon={<Trash2 className="size-3.5" />}
+               icon={<Trash2 />}
                onClick={handleBulkDelete}
                variant="destructive"
             >
@@ -480,15 +518,15 @@ function CategoriesPage() {
             actions={
                <div className="flex gap-2">
                   <Button onClick={handleImport} variant="outline">
-                     <Upload className="size-4 " />
+                     <Upload />
                      Importar
                   </Button>
                   <Button onClick={handleExport} variant="outline">
-                     <Download className="size-4 " />
+                     <Download />
                      Exportar
                   </Button>
                   <Button onClick={handleCreate}>
-                     <Plus className="size-4 " />
+                     <Plus />
                      Nova Categoria
                   </Button>
                </div>
@@ -507,7 +545,7 @@ function CategoriesPage() {
             type={type}
          />
          <QueryBoundary
-            fallback={<CategoriesSkeleton />}
+            fallback={<CategoriesTableSkeleton />}
             errorTitle="Erro ao carregar categorias"
          >
             <CategoriesList navigate={navigate} />

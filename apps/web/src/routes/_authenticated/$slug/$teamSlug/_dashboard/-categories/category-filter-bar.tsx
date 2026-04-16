@@ -2,6 +2,7 @@ import type { CategoriesSearch } from "../categories";
 import { Button } from "@packages/ui/components/button";
 import { Input } from "@packages/ui/components/input";
 import { Label } from "@packages/ui/components/label";
+import { Separator } from "@packages/ui/components/separator";
 import { Switch } from "@packages/ui/components/switch";
 import { cn } from "@packages/ui/lib/utils";
 import { Link, useRouter } from "@tanstack/react-router";
@@ -69,7 +70,7 @@ export function CategoryFilterBar({
          </div>
 
          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center rounded-md border bg-background p-0.5 gap-0.5">
+            <div className="flex items-center rounded-md border bg-background p-0.5 gap-2">
                {TYPE_OPTIONS.map((opt) => (
                   <Link
                      className={cn(
@@ -91,7 +92,7 @@ export function CategoryFilterBar({
                ))}
             </div>
 
-            <div className="h-5 w-px bg-border" />
+            <Separator orientation="vertical" className="h-5" />
 
             <div className="flex items-center gap-2">
                <Switch
@@ -113,7 +114,7 @@ export function CategoryFilterBar({
                </Label>
             </div>
 
-            <div className="h-5 w-px bg-border" />
+            <Separator orientation="vertical" className="h-5" />
 
             <div className="flex items-center gap-2">
                <Switch
@@ -132,7 +133,7 @@ export function CategoryFilterBar({
 
             {hasActiveFilters && (
                <>
-                  <div className="h-5 w-px bg-border" />
+                  <Separator orientation="vertical" className="h-5" />
                   <Button
                      className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
                      onClick={onClear}
