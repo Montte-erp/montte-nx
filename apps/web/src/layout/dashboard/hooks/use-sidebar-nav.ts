@@ -1,5 +1,6 @@
 import { Store, useStore } from "@tanstack/react-store";
 import { useEffect } from "react";
+import { createStoreEffect } from "@/lib/store-effects";
 
 export type SubSidebarSection = "dashboards" | "insights" | "data-management";
 
@@ -33,6 +34,12 @@ const initialState: SidebarNavState = {
 };
 
 const sidebarNavStore = new Store<SidebarNavState>(initialState);
+
+createStoreEffect(sidebarNavStore, (next, prev) => {
+   if (prev.activeSection !== null && next.activeSection === null) {
+      sidebarNavStore.setState((s) => ({ ...s, searchQuery: "" }));
+   }
+});
 
 export function setActiveSection(section: SubSidebarSection | null) {
    sidebarNavStore.setState((state) => ({
@@ -74,13 +81,9 @@ export function useSidebarSection(section: SubSidebarSection) {
    useEffect(() => {
       setActiveSection(section);
       return () => {
-         sidebarNavStore.setState((state) => ({
-            ...state,
-            activeSection:
-               state.activeSection === section ? null : state.activeSection,
-            searchQuery:
-               state.activeSection === section ? "" : state.searchQuery,
-         }));
+         if (sidebarNavStore.state.activeSection === section) {
+            setActiveSection(null);
+         }
       };
    }, [section]);
 }
