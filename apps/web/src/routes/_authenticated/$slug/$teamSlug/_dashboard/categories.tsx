@@ -72,6 +72,8 @@ import { CategoryImportCredenza } from "./-categories/category-import-credenza";
 import { exportCategoriesCsv } from "./-categories/export-categories-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
+import { useFileDownload } from "@/hooks/use-file-download";
 import { orpc } from "@/integrations/orpc/client";
 import { QueryBoundary } from "@/components/query-boundary";
 
@@ -657,6 +659,9 @@ function CategoriesPage() {
       });
    }, [openCredenza, closeCredenza]);
 
+   const { generate: generateXlsx } = useXlsxFile();
+   const { download } = useFileDownload();
+
    const handleExport = useCallback(async () => {
       const result = await fromPromise(
          orpc.categories.exportAll.call({}),
@@ -669,6 +674,68 @@ function CategoriesPage() {
       exportCategoriesCsv(result.value);
       toast.success("Categorias exportadas com sucesso.");
    }, []);
+
+   const handleExportXlsx = useCallback(async () => {
+      const result = await fromPromise(
+         orpc.categories.exportAll.call({}),
+         (e) => e,
+      );
+      if (result.isErr()) {
+         toast.error("Erro ao exportar categorias.");
+         return;
+      }
+
+      const categories = result.value;
+      const parents = categories.filter((c) => c.parentId === null);
+      const rows: Record<string, string>[] = [];
+
+      for (const parent of parents) {
+         const subs = categories.filter((c) => c.parentId === parent.id);
+         const typeLabel =
+            parent.type === "income"
+               ? "Receita"
+               : parent.type === "expense"
+                 ? "Despesa"
+                 : "";
+
+         if (subs.length === 0) {
+            rows.push({
+               Nome: parent.name,
+               Tipo: typeLabel,
+               Cor: parent.color ?? "",
+               Ícone: parent.icon ?? "",
+               "Palavras-chave": parent.keywords?.join("; ") ?? "",
+               Subcategoria: "",
+               "Palavras-chave-Sub": "",
+            });
+         } else {
+            for (const sub of subs) {
+               rows.push({
+                  Nome: parent.name,
+                  Tipo: typeLabel,
+                  Cor: parent.color ?? "",
+                  Ícone: parent.icon ?? "",
+                  "Palavras-chave": parent.keywords?.join("; ") ?? "",
+                  Subcategoria: sub.name,
+                  "Palavras-chave-Sub": sub.keywords?.join("; ") ?? "",
+               });
+            }
+         }
+      }
+
+      const headers = [
+         "Nome",
+         "Tipo",
+         "Cor",
+         "Ícone",
+         "Palavras-chave",
+         "Subcategoria",
+         "Palavras-chave-Sub",
+      ];
+      const blob = generateXlsx(rows, headers);
+      download(blob, "categorias.xlsx");
+      toast.success("Categorias exportadas com sucesso.");
+   }, [generateXlsx, download]);
 
    return (
       <main className="flex flex-col gap-4">
@@ -718,6 +785,10 @@ function CategoriesPage() {
                         <DropdownMenuItem onClick={handleExport}>
                            <Download />
                            Exportar CSV
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleExportXlsx}>
+                           <Download />
+                           Exportar XLSX
                         </DropdownMenuItem>
                      </DropdownMenuContent>
                   </DropdownMenu>
