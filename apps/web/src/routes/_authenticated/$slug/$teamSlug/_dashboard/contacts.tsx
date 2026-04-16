@@ -21,7 +21,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Pencil, Plus, Trash2, Users } from "lucide-react";
 
-import { Suspense, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import {
@@ -36,6 +36,7 @@ import {
 import { ContactForm } from "@/features/contacts/ui/contacts-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
+import { QueryBoundary } from "@/components/query-boundary";
 import { orpc } from "@/integrations/orpc/client";
 import type {
    ColumnFiltersState,
@@ -208,6 +209,18 @@ function ContactsList() {
       [openAlertDialog, deleteMutation],
    );
 
+   const bulkDeleteMutation = useMutation(
+      orpc.contacts.bulkRemove.mutationOptions({
+         onSuccess: () => {
+            toast.success("Contatos excluídos com sucesso");
+            onClear();
+         },
+         onError: () => {
+            toast.error("Erro ao excluir contatos");
+         },
+      }),
+   );
+
    const handleBulkDelete = useCallback(() => {
       openAlertDialog({
          title: `Excluir ${selectedCount} ${selectedCount === 1 ? "contato" : "contatos"}`,
@@ -217,13 +230,10 @@ function ContactsList() {
          cancelLabel: "Cancelar",
          variant: "destructive",
          onAction: async () => {
-            await Promise.all(
-               selectedIds.map((id) => deleteMutation.mutateAsync({ id })),
-            );
-            onClear();
+            await bulkDeleteMutation.mutateAsync({ ids: selectedIds });
          },
       });
-   }, [openAlertDialog, selectedCount, selectedIds, deleteMutation, onClear]);
+   }, [openAlertDialog, selectedCount, selectedIds, bulkDeleteMutation]);
 
    const columns = useMemo(() => buildContactColumns(), []);
 
@@ -338,9 +348,9 @@ function ContactsPage() {
             ))}
          </div>
 
-         <Suspense fallback={<ContactsSkeleton />}>
+         <QueryBoundary fallback={<ContactsSkeleton />}>
             <ContactsList />
-         </Suspense>
+         </QueryBoundary>
       </main>
    );
 }

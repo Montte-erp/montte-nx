@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@packages/ui/components/button";
 import {
    ContextPanel,

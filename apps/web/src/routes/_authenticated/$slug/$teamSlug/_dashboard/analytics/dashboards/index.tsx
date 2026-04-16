@@ -15,6 +15,7 @@ import {
 } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
+import dayjs from "dayjs";
 import { Home, LayoutDashboard, Plus } from "lucide-react";
 import { Suspense, useCallback, useMemo } from "react";
 import { PageHeader } from "@/components/page-header";
@@ -74,7 +75,7 @@ interface DashboardRow {
 
 function DashboardsPageSkeleton() {
    return (
-      <div className="space-y-3">
+      <div className="flex flex-col gap-4">
          {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton className="h-14 w-full" key={`dash-skeleton-${i + 1}`} />
          ))}
@@ -166,7 +167,7 @@ function DashboardsList() {
             header: "Atualizado",
             cell: ({ row }) => (
                <span className="text-sm text-muted-foreground">
-                  {new Date(row.original.updatedAt).toLocaleDateString("pt-BR")}
+                  {dayjs(row.original.updatedAt).format("DD/MM/YYYY")}
                </span>
             ),
          },
@@ -176,12 +177,10 @@ function DashboardsList() {
 
    if (dashboards.length === 0) {
       return (
-         <div className="flex flex-col items-center justify-center py-16 text-center">
-            <LayoutDashboard className="size-12 text-muted-foreground mb-4" />
-            <h2 className="text-lg font-semibold mb-2">
-               Nenhum dashboard ainda
-            </h2>
-            <p className="text-muted-foreground mb-4 max-w-md">
+         <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+            <LayoutDashboard className="size-12 text-muted-foreground" />
+            <h2 className="text-lg font-semibold">Nenhum dashboard ainda</h2>
+            <p className="text-muted-foreground max-w-md">
                Crie seu primeiro dashboard para organizar seus insights em um
                painel visual.
             </p>

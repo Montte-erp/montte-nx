@@ -56,3 +56,5 @@ storybook-static
 .github/instructions/nx.instructions.md
 .worktrees
 worktrees
+
+.nx/polygraph

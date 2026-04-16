@@ -12,6 +12,7 @@ import {
    useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import dayjs from "dayjs";
 import { Clock, Copy, RefreshCw, Tag, Trash2, TrendingUp } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -233,10 +234,7 @@ function EditInsightPage() {
                label="Calculado"
                value={
                   insight.lastComputedAt
-                     ? new Date(insight.lastComputedAt).toLocaleDateString(
-                          "pt-BR",
-                          { day: "2-digit", month: "short", year: "numeric" },
-                       )
+                     ? dayjs(insight.lastComputedAt).format("DD MMM YYYY")
                      : "—"
                }
             />
