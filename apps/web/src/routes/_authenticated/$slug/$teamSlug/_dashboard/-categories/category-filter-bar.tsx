@@ -6,7 +6,15 @@ import {
 } from "@packages/ui/components/toggle-group";
 import { useRouter } from "@tanstack/react-router";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
-import { Archive, LayoutList, Search, X } from "lucide-react";
+import {
+   Archive,
+   LayoutList,
+   Layers,
+   Search,
+   TrendingDown,
+   TrendingUp,
+   X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface CategoryFilterBarProps {
@@ -69,14 +77,22 @@ export function CategoryFilterBar({
                      onTypeChange(undefined);
                   }
                }}
-               size="sm"
                type="single"
                value={type ?? "all"}
                variant="outline"
             >
-               <ToggleGroupItem value="all">Todos</ToggleGroupItem>
-               <ToggleGroupItem value="income">Receitas</ToggleGroupItem>
-               <ToggleGroupItem value="expense">Despesas</ToggleGroupItem>
+               <ToggleGroupItem className="gap-2 px-4" value="all">
+                  <Layers className="size-4" />
+                  Todos
+               </ToggleGroupItem>
+               <ToggleGroupItem className="gap-2 px-4" value="income">
+                  <TrendingUp className="size-4" />
+                  Receitas
+               </ToggleGroupItem>
+               <ToggleGroupItem className="gap-2 px-4" value="expense">
+                  <TrendingDown className="size-4" />
+                  Despesas
+               </ToggleGroupItem>
             </ToggleGroup>
          </div>
 

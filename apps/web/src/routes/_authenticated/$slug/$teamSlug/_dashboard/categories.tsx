@@ -374,9 +374,17 @@ function CategoriesList({ navigate, view }: CategoriesListProps) {
 
    const handleUnarchive = useCallback(
       (category: CategoryRow) => {
-         unarchiveMutation.mutate({ id: category.id });
+         openAlertDialog({
+            title: "Desarquivar categoria",
+            description: `Desarquivar "${category.name}" irá torná-la visível nas listas novamente e permitir novos lançamentos nesta categoria.`,
+            actionLabel: "Desarquivar",
+            cancelLabel: "Cancelar",
+            onAction: async () => {
+               await unarchiveMutation.mutateAsync({ id: category.id });
+            },
+         });
       },
-      [unarchiveMutation],
+      [openAlertDialog, unarchiveMutation],
    );
 
    const handleBulkDelete = useCallback(() => {
