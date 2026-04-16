@@ -29,8 +29,8 @@ import { ContextPanelAction } from "./context-panel-info";
 import {
    type ContextPanelTab,
    contextPanelStore,
-   allTabMetasAtom,
-   activeTabMetaAtom,
+   allTabMetasStore,
+   activeTabMetaStore,
    type PageViewSwitchConfig,
 } from "./context-panel-store";
 import {
@@ -139,8 +139,8 @@ const INFO_TAB: ContextPanelTab = {
 };
 
 function ContextPanelInner() {
-   const allTabMetas = useStore(allTabMetasAtom, (s) => s);
-   const activeTabMeta = useStore(activeTabMetaAtom, (s) => s);
+   const allTabMetas = useStore(allTabMetasStore, (s) => s);
+   const activeTabMeta = useStore(activeTabMetaStore, (s) => s);
 
    const dynamicTabs = useStore(contextPanelStore, (s) => s.dynamicTabs);
    const activeTab: ContextPanelTab | undefined =

@@ -1,4 +1,4 @@
-import { createStore, createAtom } from "@tanstack/react-store";
+import { createStore } from "@tanstack/react-store";
 import { Info } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type React from "react";
@@ -61,7 +61,7 @@ export const contextPanelStore = createStore<ContextPanelState>({
    pageViewSwitch: null,
 });
 
-export const allTabMetasAtom = createAtom(() => {
+export const allTabMetasStore = createStore(() => {
    const { dynamicTabs } = contextPanelStore.state;
    const dynamicMetas: ContextPanelTabMeta[] = dynamicTabs.map((t) => ({
       id: t.id,
@@ -75,8 +75,8 @@ export const allTabMetasAtom = createAtom(() => {
    ];
 });
 
-export const activeTabMetaAtom = createAtom(() => {
-   const allMetas = allTabMetasAtom.get();
+export const activeTabMetaStore = createStore(() => {
+   const allMetas = allTabMetasStore.state;
    const { activeTabId } = contextPanelStore.state;
    return allMetas.find((t) => t.id === activeTabId) ?? allMetas[0] ?? null;
 });
