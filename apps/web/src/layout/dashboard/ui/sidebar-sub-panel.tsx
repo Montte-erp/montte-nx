@@ -12,7 +12,7 @@ import {
    type SubSidebarSection,
    setActiveSection,
    useSidebarNav,
-} from "../hooks/use-sidebar-nav";
+} from "../hooks/use-sidebar-store";
 import { SubSidebarItemList } from "./sub-sidebar-item-list";
 import { SubSidebarNewMenu } from "./sub-sidebar-new-menu";
 

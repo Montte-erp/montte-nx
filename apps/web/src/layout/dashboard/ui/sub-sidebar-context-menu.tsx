@@ -23,7 +23,7 @@ import {
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
-import type { SubSidebarSection } from "../hooks/use-sidebar-nav";
+import type { SubSidebarSection } from "../hooks/use-sidebar-store";
 
 interface SubSidebarContextMenuProps {
    item: { id: string; name: string };

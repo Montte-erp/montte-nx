@@ -31,7 +31,7 @@ import {
 import { Suspense, useMemo, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { orpc } from "@/integrations/orpc/client";
-import type { SubSidebarSection } from "../hooks/use-sidebar-nav";
+import type { SubSidebarSection } from "../hooks/use-sidebar-store";
 import { dataManagementNavSections } from "./data-management-nav-items";
 import type {
    SettingsNavItemDef,

@@ -17,7 +17,7 @@ import { FolderPlus, LayoutDashboard, Lightbulb, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { orpc } from "@/integrations/orpc/client";
-import type { SubSidebarSection } from "../hooks/use-sidebar-nav";
+import type { SubSidebarSection } from "../hooks/use-sidebar-store";
 
 interface SubSidebarNewMenuProps {
    section: SubSidebarSection;

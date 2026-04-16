@@ -18,8 +18,8 @@ import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { EarlyAccessProvider } from "@/hooks/use-early-access";
 import { useLastOrganization } from "@/hooks/use-last-organization";
-import { useLocalStorage } from "foxact/use-local-storage";
 import { authClient } from "@/integrations/better-auth/auth-client";
+import { useSidebarCollapsed } from "@/layout/dashboard/hooks/use-sidebar-store";
 import { orpc } from "@/integrations/orpc/client";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarSubPanel } from "./sidebar-sub-panel";
@@ -33,13 +33,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
    useJobNotifications();
    const { pathname } = useLocation();
 
-   const [sidebarCollapsed, setSidebarCollapsed] = useLocalStorage<boolean>(
-      "montte:sidebar-collapsed",
-      false,
-   );
-   const sidebarOpen = !sidebarCollapsed;
+   const { isCollapsed, setCollapsed } = useSidebarCollapsed();
+   const sidebarOpen = !isCollapsed;
    const handleSidebarChange = (open: boolean) => {
-      setSidebarCollapsed(!open);
+      setCollapsed(!open);
    };
 
    const isSettingsPage = pathname.includes("/settings");

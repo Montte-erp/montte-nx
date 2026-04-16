@@ -28,13 +28,13 @@ import { ChevronRight, Settings2 } from "lucide-react";
 import { useCallback } from "react";
 import { useCredenza } from "@/hooks/use-credenza";
 import { useEarlyAccess } from "@/hooks/use-early-access";
-import { useFinanceNavPreferences } from "@/layout/dashboard/hooks/use-finance-nav-preferences";
-import type { SubSidebarSection } from "@/layout/dashboard/hooks/use-sidebar-nav";
 import {
+   useFinanceNavPreferences,
    setActiveSection,
    useSidebarNav,
-} from "@/layout/dashboard/hooks/use-sidebar-nav";
-import { useSidebarVisibility } from "@/layout/dashboard/hooks/use-sidebar-visibility";
+   useSidebarVisibility,
+} from "@/layout/dashboard/hooks/use-sidebar-store";
+import type { SubSidebarSection } from "@/layout/dashboard/hooks/use-sidebar-store";
 import { SidebarNavConfigForm } from "@/layout/dashboard/ui/sidebar-nav-config-form";
 import type {
    NavGroupDef,

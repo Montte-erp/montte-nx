@@ -15,7 +15,7 @@ import {
    Target,
    Users,
 } from "lucide-react";
-import type { SubSidebarSection } from "../hooks/use-sidebar-nav";
+import type { SubSidebarSection } from "../hooks/use-sidebar-store";
 
 export type NavItemAction = {
    type: "create";
