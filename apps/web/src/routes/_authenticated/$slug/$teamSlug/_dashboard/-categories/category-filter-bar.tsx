@@ -1,15 +1,12 @@
 import { Button } from "@packages/ui/components/button";
 import { Input } from "@packages/ui/components/input";
-import { Label } from "@packages/ui/components/label";
-import { Separator } from "@packages/ui/components/separator";
-import { Switch } from "@packages/ui/components/switch";
 import {
    ToggleGroup,
    ToggleGroupItem,
 } from "@packages/ui/components/toggle-group";
 import { useRouter } from "@tanstack/react-router";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
-import { LayoutList, Search, X } from "lucide-react";
+import { Archive, LayoutList, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface CategoryFilterBarProps {
@@ -51,20 +48,19 @@ export function CategoryFilterBar({
 
    return (
       <div className="flex flex-col gap-2">
-         <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-            <Input
-               className="pl-9"
-               onChange={(e) => {
-                  setInputValue(e.target.value);
-                  debouncedOnSearchChange(e.target.value);
-               }}
-               placeholder="Buscar por nome ou palavra-chave..."
-               value={inputValue}
-            />
-         </div>
-
-         <div className="flex flex-wrap items-center gap-2">
+         <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+               <Input
+                  className="pl-9"
+                  onChange={(e) => {
+                     setInputValue(e.target.value);
+                     debouncedOnSearchChange(e.target.value);
+                  }}
+                  placeholder="Buscar por nome ou palavra-chave..."
+                  value={inputValue}
+               />
+            </div>
             <ToggleGroup
                onValueChange={(v) => {
                   if (v === "income" || v === "expense") {
@@ -82,59 +78,51 @@ export function CategoryFilterBar({
                <ToggleGroupItem value="income">Receitas</ToggleGroupItem>
                <ToggleGroupItem value="expense">Despesas</ToggleGroupItem>
             </ToggleGroup>
+         </div>
 
-            <Separator orientation="vertical" className="h-5" />
+         <div className="flex items-center gap-2 flex-wrap">
+            <button
+               className={
+                  includeArchived
+                     ? "inline-flex items-center gap-2 rounded-full border border-foreground/20 bg-foreground/5 px-3 py-1 text-xs font-medium text-foreground transition-colors"
+                     : "inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+               }
+               onClick={() => {
+                  onIncludeArchivedChange(!includeArchived);
+                  router.preloadRoute({
+                     to: ".",
+                     search: { includeArchived: !includeArchived },
+                  });
+               }}
+               type="button"
+            >
+               <Archive className="size-3" />
+               Arquivadas
+            </button>
 
-            <div className="flex items-center gap-2">
-               <Switch
-                  checked={includeArchived}
-                  id="show-archived"
-                  onCheckedChange={onIncludeArchivedChange}
-                  onMouseEnter={() =>
-                     router.preloadRoute({
-                        to: ".",
-                        search: { includeArchived: !includeArchived },
-                     })
-                  }
-               />
-               <Label
-                  className="cursor-pointer text-sm"
-                  htmlFor="show-archived"
-               >
-                  Mostrar arquivadas
-               </Label>
-            </div>
-
-            <Separator orientation="vertical" className="h-5" />
-
-            <div className="flex items-center gap-2">
-               <Switch
-                  checked={groupBy}
-                  id="group-by-type"
-                  onCheckedChange={onGroupByChange}
-               />
-               <Label
-                  className="cursor-pointer text-sm flex items-center gap-2"
-                  htmlFor="group-by-type"
-               >
-                  <LayoutList className="size-3.5 text-muted-foreground" />
-                  Agrupar por tipo
-               </Label>
-            </div>
+            <button
+               className={
+                  groupBy
+                     ? "inline-flex items-center gap-2 rounded-full border border-foreground/20 bg-foreground/5 px-3 py-1 text-xs font-medium text-foreground transition-colors"
+                     : "inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+               }
+               onClick={() => onGroupByChange(!groupBy)}
+               type="button"
+            >
+               <LayoutList className="size-3" />
+               Agrupar por tipo
+            </button>
 
             {hasActiveFilters && (
-               <>
-                  <Separator orientation="vertical" className="h-5" />
-                  <Button
-                     className="h-8 gap-2 text-muted-foreground hover:text-foreground"
-                     onClick={onClear}
-                     size="sm"
-                     variant="ghost"
-                  >
-                     <X className="size-3.5" />
-                     Limpar filtros
-                  </Button>
-               </>
+               <Button
+                  className="h-7 rounded-full gap-2 text-muted-foreground hover:text-foreground text-xs px-3"
+                  onClick={onClear}
+                  size="sm"
+                  variant="ghost"
+               >
+                  <X className="size-3" />
+                  Limpar filtros
+               </Button>
             )}
          </div>
       </div>
