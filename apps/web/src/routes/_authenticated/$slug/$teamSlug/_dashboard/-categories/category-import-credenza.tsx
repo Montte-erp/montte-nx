@@ -1,5 +1,6 @@
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import { ScrollArea } from "@packages/ui/components/scroll-area";
 import {
    Choicebox,
    ChoiceboxItem,
@@ -193,12 +194,18 @@ function UploadStep({ methods }: { methods: StepperMethods }) {
                         <Loader2 className="size-8 text-primary animate-spin" />
                      ) : (
                         <>
-                           <FileSpreadsheet className="size-8 text-muted-foreground" />
+                           <FileSpreadsheet
+                              aria-hidden="true"
+                              className="size-8 text-muted-foreground"
+                           />
                            <p className="font-medium text-sm">
                               Arraste e solte ou clique para selecionar
                            </p>
                            <div className="flex items-center gap-2 rounded-md border bg-background px-2.5 py-1">
-                              <FileSpreadsheet className="size-3.5 text-emerald-600" />
+                              <FileSpreadsheet
+                                 aria-hidden="true"
+                                 className="size-3.5 text-emerald-600"
+                              />
                               <span className="text-xs font-medium">CSV</span>
                            </div>
                         </>
@@ -278,35 +285,42 @@ function MapStep({ methods }: { methods: StepperMethods }) {
                   </div>
                )}
 
-               <div className="flex flex-col gap-2">
-                  {rawData.headers.map((header) => {
-                     const sample = getSampleValues(rawData, header);
-                     return (
-                        <div
-                           className="grid grid-cols-[10rem_1fr] items-start gap-2 rounded-lg border bg-muted/20 px-3 py-2.5 overflow-hidden"
-                           key={header}
-                        >
-                           <div className="flex flex-col gap-2 pt-1">
-                              <span className="text-sm font-medium">
-                                 {header}
-                              </span>
-                              {sample && (
-                                 <span className="text-xs text-muted-foreground truncate">
-                                    {sample}
+               <ScrollArea className="max-h-80">
+                  <div className="flex flex-col gap-2">
+                     {rawData.headers.map((header) => {
+                        const sample = getSampleValues(rawData, header);
+                        return (
+                           <div
+                              className="grid grid-cols-[10rem_1fr] items-start gap-2 rounded-lg border bg-muted/20 px-3 py-2.5 overflow-hidden"
+                              key={header}
+                           >
+                              <div className="flex flex-col gap-2 pt-1">
+                                 <span className="text-sm font-medium">
+                                    {header}
                                  </span>
-                              )}
+                                 {sample && (
+                                    <span className="text-xs text-muted-foreground truncate">
+                                       {sample}
+                                    </span>
+                                 )}
+                              </div>
+                              <div
+                                 aria-label={`Mapear coluna "${header}"`}
+                                 role="group"
+                              >
+                                 <Combobox
+                                    options={FIELD_OPTIONS}
+                                    value={mapping[header] ?? "__skip__"}
+                                    onValueChange={(v) =>
+                                       setMapping({ ...mapping, [header]: v })
+                                    }
+                                 />
+                              </div>
                            </div>
-                           <Combobox
-                              options={FIELD_OPTIONS}
-                              value={mapping[header] ?? "__skip__"}
-                              onValueChange={(v) =>
-                                 setMapping({ ...mapping, [header]: v })
-                              }
-                           />
-                        </div>
-                     );
-                  })}
-               </div>
+                        );
+                     })}
+                  </div>
+               </ScrollArea>
 
                <div className="flex gap-2">
                   <Button
@@ -416,9 +430,23 @@ function PreviewStep({ methods }: { methods: StepperMethods }) {
                               </span>
                               <span>
                                  {cat.valid ? (
-                                    <CheckCircle2 className="size-4 text-green-600" />
+                                    <>
+                                       <CheckCircle2
+                                          aria-hidden="true"
+                                          className="size-4 text-green-600"
+                                       />
+                                       <span className="sr-only">Válido</span>
+                                    </>
                                  ) : (
-                                    <AlertCircle className="size-4 text-destructive" />
+                                    <>
+                                       <AlertCircle
+                                          aria-hidden="true"
+                                          className="size-4 text-destructive"
+                                       />
+                                       <span className="sr-only">
+                                          Inválido: sem tipo definido
+                                       </span>
+                                    </>
                                  )}
                               </span>
                            </div>
