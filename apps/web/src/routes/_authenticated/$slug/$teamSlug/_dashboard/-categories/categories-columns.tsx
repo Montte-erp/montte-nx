@@ -1,4 +1,5 @@
 import { Badge } from "@packages/ui/components/badge";
+import type { Outputs } from "@/integrations/orpc/client";
 import {
    Announcement,
    AnnouncementTag,
@@ -59,19 +60,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
    fuel: Fuel,
 };
 
-export type CategoryRow = {
-   id: string;
-   name: string;
-   isDefault: boolean;
-   isArchived: boolean;
-   description: string | null;
-   color: string | null;
-   icon: string | null;
-   keywords: string[] | null;
-   type: "income" | "expense" | null;
-   parentId: string | null;
+export type CategoryRow = Outputs["categories"]["getAll"][number] & {
    subcategories?: CategoryRow[];
-   createdAt: string | Date;
 };
 
 export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
