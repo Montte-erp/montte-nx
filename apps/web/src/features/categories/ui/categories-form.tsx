@@ -195,24 +195,10 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
          };
 
          if (isCreate) {
-            const created = await createMutation.mutateAsync(payload);
-            if (pendingSubcategories.length > 0) {
-               const results = await Promise.allSettled(
-                  pendingSubcategories.map((name) =>
-                     createMutation.mutateAsync({
-                        name,
-                        parentId: created.id,
-                        type: value.type,
-                     }),
-                  ),
-               );
-               const failed = results.filter((r) => r.status === "rejected");
-               if (failed.length > 0) {
-                  toast.error(
-                     `${failed.length} subcategoria(s) não puderam ser criadas.`,
-                  );
-               }
-            }
+            await createMutation.mutateAsync({
+               ...payload,
+               subcategories: pendingSubcategories.map((name) => ({ name })),
+            });
             toast.success("Categoria criada com sucesso.");
             onSuccess();
          } else if (category) {
@@ -333,7 +319,10 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                         <Textarea
                            id={field.name}
                            name={field.name}
-                           aria-invalid={false}
+                           aria-invalid={
+                              field.state.meta.isTouched &&
+                              field.state.meta.errors.length > 0
+                           }
                            onBlur={field.handleBlur}
                            onChange={(e) => field.handleChange(e.target.value)}
                            placeholder="Descreva quando usar esta categoria..."

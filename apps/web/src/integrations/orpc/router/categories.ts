@@ -1,5 +1,6 @@
 import {
    archiveCategory,
+   bulkArchiveCategories,
    bulkDeleteCategories,
    createCategory,
    deleteCategory,
@@ -21,15 +22,32 @@ import { protectedProcedure } from "../server";
 const idSchema = z.object({ id: z.string().uuid() });
 
 export const create = protectedProcedure
-   .input(createCategorySchema)
+   .input(
+      createCategorySchema.extend({
+         subcategories: z
+            .array(z.object({ name: z.string().min(1).max(100) }))
+            .optional(),
+      }),
+   )
    .handler(async ({ context, input }) => {
+      const { subcategories, ...catData } = input;
       const [category, userRecord] = await Promise.all([
-         createCategory(context.db, context.teamId, input),
+         createCategory(context.db, context.teamId, catData),
          context.db.query.user.findFirst({
             where: eq(userTable.id, context.userId),
             columns: { stripeCustomerId: true },
          }),
       ]);
+      if (subcategories && subcategories.length > 0) {
+         for (const sub of subcategories) {
+            await createCategory(context.db, context.teamId, {
+               name: sub.name,
+               type: catData.type,
+               parentId: category.id,
+               participatesDre: false,
+            });
+         }
+      }
       startDeriveKeywordsWorkflow({
          categoryId: category.id,
          teamId: context.teamId,
@@ -53,11 +71,24 @@ const getAllInput = z
 export const getAll = protectedProcedure
    .input(getAllInput)
    .handler(async ({ context, input }) => {
-      return listCategories(context.db, context.teamId, {
+      const all = await listCategories(context.db, context.teamId, {
          type: input?.type,
          includeArchived: input?.includeArchived,
-         search: input?.search,
       });
+      if (!input?.search) return all;
+      const q = input.search.toLowerCase();
+      const matchingParentIds = new Set<string>();
+      for (const c of all) {
+         if (c.name.toLowerCase().includes(q)) {
+            if (c.parentId === null) matchingParentIds.add(c.id);
+            else matchingParentIds.add(c.parentId);
+         }
+      }
+      return all.filter((c) =>
+         c.parentId === null
+            ? matchingParentIds.has(c.id)
+            : matchingParentIds.has(c.parentId),
+      );
    });
 
 export const update = protectedProcedure
@@ -102,7 +133,12 @@ export const importBatch = protectedProcedure
          categories: z.array(
             createCategorySchema.extend({
                subcategories: z
-                  .array(z.object({ name: z.string().min(1).max(100) }))
+                  .array(
+                     z.object({
+                        name: z.string().min(1).max(100),
+                        keywords: z.array(z.string()).optional(),
+                     }),
+                  )
                   .optional(),
             }),
          ),
@@ -113,40 +149,46 @@ export const importBatch = protectedProcedure
          where: eq(userTable.id, context.userId),
          columns: { stripeCustomerId: true },
       });
-      const results = [];
-      for (const cat of input.categories) {
-         const { subcategories, ...catData } = cat;
-         const created = await createCategory(
-            context.db,
-            context.teamId,
-            catData,
-         );
-         results.push(created);
-         startDeriveKeywordsWorkflow({
-            categoryId: created.id,
-            teamId: context.teamId,
-            organizationId: context.organizationId,
-            userId: context.userId,
-            name: created.name,
-            description: created.description,
-            stripeCustomerId: userRecord?.stripeCustomerId ?? null,
-         });
-         if (subcategories && subcategories.length > 0) {
-            for (const sub of subcategories) {
-               const createdSub = await createCategory(
-                  context.db,
-                  context.teamId,
-                  {
+
+      const results = await context.db.transaction(async (tx) => {
+         const txResults = [];
+         for (const cat of input.categories) {
+            const { subcategories, ...catData } = cat;
+            const created = await createCategory(tx, context.teamId, catData);
+            txResults.push(created);
+            if (subcategories && subcategories.length > 0) {
+               for (const sub of subcategories) {
+                  const createdSub = await createCategory(tx, context.teamId, {
                      name: sub.name,
                      type: catData.type,
                      parentId: created.id,
                      participatesDre: false,
-                  },
-               );
-               results.push(createdSub);
+                     keywords: sub.keywords ?? null,
+                  });
+                  txResults.push(createdSub);
+               }
             }
          }
+         return txResults;
+      });
+
+      for (const cat of input.categories) {
+         const created = results.find(
+            (r) => r.parentId === null && r.name === cat.name,
+         );
+         if (created) {
+            startDeriveKeywordsWorkflow({
+               categoryId: created.id,
+               teamId: context.teamId,
+               organizationId: context.organizationId,
+               userId: context.userId,
+               name: created.name,
+               description: created.description,
+               stripeCustomerId: userRecord?.stripeCustomerId ?? null,
+            });
+         }
       }
+
       return results;
    });
 
@@ -169,4 +211,11 @@ export const bulkRemove = protectedProcedure
    .handler(async ({ context, input }) => {
       await bulkDeleteCategories(context.db, input.ids, context.teamId);
       return { deleted: input.ids.length };
+   });
+
+export const bulkArchive = protectedProcedure
+   .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
+   .handler(async ({ context, input }) => {
+      await bulkArchiveCategories(context.db, input.ids, context.teamId);
+      return { archived: input.ids.length };
    });

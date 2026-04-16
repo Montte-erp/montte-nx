@@ -14,11 +14,7 @@ import {
 } from "@packages/ui/components/selection-action-bar";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
-import {
-   useMutation,
-   useSuspenseQuery,
-   useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import type {
    ColumnFiltersState,
    OnChangeFn,
@@ -59,7 +55,11 @@ import { CategoryForm } from "@/features/categories/ui/categories-form";
 import { SubcategoryForm } from "@/features/categories/ui/subcategory-form";
 import { CategoryFilterBar } from "./-categories/category-filter-bar";
 import { CategoryImportCredenza } from "./-categories/category-import-credenza";
-import { exportCategoriesCsv } from "./-categories/export-categories-csv";
+import {
+   buildExportRows,
+   exportCategoriesCsv,
+   EXPORT_HEADERS,
+} from "./-categories/export-categories-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
@@ -282,7 +282,6 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          [columnFilters, navigate],
       );
 
-   const queryClient = useQueryClient();
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const {
@@ -340,8 +339,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
    );
 
    const bulkArchiveMutation = useMutation(
-      orpc.categories.archive.mutationOptions({
-         meta: { skipGlobalInvalidation: true },
+      orpc.categories.bulkArchive.mutationOptions({
          onError: (e) =>
             toast.error(e.message || "Erro ao arquivar categorias."),
       }),
@@ -483,22 +481,12 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          return cat !== undefined && !cat.isDefault;
       });
       if (archivableIds.length === 0) return;
-      const results = await Promise.allSettled(
-         archivableIds.map((id) => bulkArchiveMutation.mutateAsync({ id })),
+      await bulkArchiveMutation.mutateAsync({ ids: archivableIds });
+      toast.success(
+         `${archivableIds.length} ${archivableIds.length === 1 ? "categoria arquivada" : "categorias arquivadas"}.`,
       );
-      const failed = results.filter((r) => r.status === "rejected").length;
-      if (failed > 0) {
-         toast.error(`${failed} categoria(s) não puderam ser arquivadas.`);
-      } else {
-         toast.success(
-            `${archivableIds.length} ${archivableIds.length === 1 ? "categoria arquivada" : "categorias arquivadas"}.`,
-         );
-      }
       onClear();
-      queryClient.invalidateQueries({
-         queryKey: orpc.categories.getAll.queryKey(),
-      });
-   }, [selectedIds, categories, bulkArchiveMutation, onClear, queryClient]);
+   }, [selectedIds, categories, bulkArchiveMutation, onClear]);
 
    const columns = useMemo(() => buildCategoryColumns(), []);
 
@@ -734,54 +722,8 @@ function CategoriesPageContent() {
          return;
       }
 
-      const categories = result.value;
-      const parents = categories.filter((c) => c.parentId === null);
-      const rows: Record<string, string>[] = [];
-
-      for (const parent of parents) {
-         const subs = categories.filter((c) => c.parentId === parent.id);
-         const typeLabel =
-            parent.type === "income"
-               ? "Receita"
-               : parent.type === "expense"
-                 ? "Despesa"
-                 : "";
-
-         if (subs.length === 0) {
-            rows.push({
-               Nome: parent.name,
-               Tipo: typeLabel,
-               Cor: parent.color ?? "",
-               Ícone: parent.icon ?? "",
-               "Palavras-chave": parent.keywords?.join("; ") ?? "",
-               Subcategoria: "",
-               "Palavras-chave-Sub": "",
-            });
-         } else {
-            for (const sub of subs) {
-               rows.push({
-                  Nome: parent.name,
-                  Tipo: typeLabel,
-                  Cor: parent.color ?? "",
-                  Ícone: parent.icon ?? "",
-                  "Palavras-chave": parent.keywords?.join("; ") ?? "",
-                  Subcategoria: sub.name,
-                  "Palavras-chave-Sub": sub.keywords?.join("; ") ?? "",
-               });
-            }
-         }
-      }
-
-      const headers = [
-         "Nome",
-         "Tipo",
-         "Cor",
-         "Ícone",
-         "Palavras-chave",
-         "Subcategoria",
-         "Palavras-chave-Sub",
-      ];
-      const blob = generateXlsx(rows, headers);
+      const rows = buildExportRows(result.value);
+      const blob = generateXlsx(rows, [...EXPORT_HEADERS]);
       download(blob, "categorias.xlsx");
       toast.success("Categorias exportadas com sucesso.");
    }, [generateXlsx, download]);

@@ -172,7 +172,7 @@ function UploadStep({ methods }: { methods: StepperMethods }) {
          <CredenzaHeader>
             <CredenzaTitle>Importar categorias</CredenzaTitle>
             <CredenzaDescription>
-               Envie um arquivo CSV com suas categorias
+               Envie um arquivo CSV ou XLSX com suas categorias
             </CredenzaDescription>
          </CredenzaHeader>
 

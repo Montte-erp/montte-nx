@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { and, desc, eq, ilike, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -464,7 +464,6 @@ export async function listCategories(
    opts?: {
       type?: "income" | "expense";
       includeArchived?: boolean;
-      search?: string;
    },
 ) {
    try {
@@ -475,9 +474,6 @@ export async function listCategories(
       }
       if (!opts?.includeArchived) {
          conditions.push(eq(categories.isArchived, false));
-      }
-      if (opts?.search) {
-         conditions.push(ilike(categories.name, `%${opts.search}%`));
       }
 
       return await db.query.categories.findMany({
@@ -614,6 +610,24 @@ export async function deleteCategory(db: DatabaseInstance, id: string) {
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to delete category");
+   }
+}
+
+export async function bulkArchiveCategories(
+   db: DatabaseInstance,
+   ids: string[],
+   teamId: string,
+) {
+   try {
+      await db
+         .update(categories)
+         .set({ isArchived: true, updatedAt: dayjs().toDate() })
+         .where(
+            and(inArray(categories.id, ids), eq(categories.teamId, teamId)),
+         );
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to bulk archive categories");
    }
 }
 

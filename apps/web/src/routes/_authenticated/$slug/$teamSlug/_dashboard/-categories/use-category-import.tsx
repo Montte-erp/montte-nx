@@ -32,7 +32,7 @@ export type ImportPayloadItem = {
    color: string | null;
    icon: string | null;
    keywords: string[] | null;
-   subcategories: { name: string }[];
+   subcategories: { name: string; keywords?: string[] }[];
 };
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -184,9 +184,16 @@ function buildMappedCategories(
       }
 
       if (subName) {
-         categoryMap
-            .get(name)
-            ?.subcategories.push({ name: subName, keywords: subKeywords });
+         const existing = categoryMap.get(name);
+         if (
+            existing &&
+            !existing.subcategories.some((s) => s.name === subName)
+         ) {
+            existing.subcategories.push({
+               name: subName,
+               keywords: subKeywords,
+            });
+         }
       }
    }
 
@@ -226,7 +233,7 @@ export function CategoryImportProvider({ children }: { children: ReactNode }) {
    const parseFile = useCallback(
       async (file: File): Promise<void> => {
          const isXlsx =
-            file.name.endsWith(".xlsx") ||
+            file.name.toLowerCase().endsWith(".xlsx") ||
             file.type ===
                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
          const result = await fromPromise(
@@ -296,7 +303,10 @@ export function CategoryImportProvider({ children }: { children: ReactNode }) {
             color: c.color,
             icon: c.icon,
             keywords: c.keywords,
-            subcategories: c.subcategories.map((s) => ({ name: s.name })),
+            subcategories: c.subcategories.map((s) => ({
+               name: s.name,
+               keywords: s.keywords ?? undefined,
+            })),
          });
       }
       return result;

@@ -76,7 +76,12 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
             const archivedIndicator = row.original.isArchived ? (
                <Tooltip>
                   <TooltipTrigger asChild>
-                     <Archive className="size-3.5 text-muted-foreground shrink-0 cursor-default" />
+                     <span
+                        className="inline-flex shrink-0 cursor-default"
+                        tabIndex={0}
+                     >
+                        <Archive className="size-3.5 text-muted-foreground" />
+                     </span>
                   </TooltipTrigger>
                   <TooltipContent>Arquivada</TooltipContent>
                </Tooltip>
@@ -98,7 +103,12 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                         {isDefault && (
                            <Tooltip>
                               <TooltipTrigger asChild>
-                                 <ShieldCheck className="size-4 text-muted-foreground" />
+                                 <span
+                                    className="inline-flex cursor-default"
+                                    tabIndex={0}
+                                 >
+                                    <ShieldCheck className="size-4 text-muted-foreground" />
+                                 </span>
                               </TooltipTrigger>
                               <TooltipContent>Padrão</TooltipContent>
                            </Tooltip>
@@ -128,7 +138,12 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                   {isDefault && row.depth === 0 && (
                      <Tooltip>
                         <TooltipTrigger asChild>
-                           <Star className="size-3 text-muted-foreground" />
+                           <span
+                              className="inline-flex cursor-default"
+                              tabIndex={0}
+                           >
+                              <Star className="size-3 text-muted-foreground" />
+                           </span>
                         </TooltipTrigger>
                         <TooltipContent>Padrão</TooltipContent>
                      </Tooltip>
@@ -161,7 +176,8 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
          id: "subcategories",
          header: "Subcategorias",
          cell: ({ row }) => {
-            if (row.depth > 0) return null;
+            if (row.depth > 0)
+               return <span className="text-sm text-muted-foreground">—</span>;
             const count = row.original.subcategories?.length ?? 0;
             if (count === 0)
                return <span className="text-sm text-muted-foreground">—</span>;
@@ -190,7 +206,7 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                   </TooltipTrigger>
                   <TooltipContent className="max-w-72">
                      <p className="font-semibold text-sm">Palavras-chave IA</p>
-                     <p className="text-xs text-muted-foreground mb-1">
+                     <p className="text-xs text-muted-foreground">
                         Geradas automaticamente com base no nome e descrição da
                         categoria.
                      </p>
