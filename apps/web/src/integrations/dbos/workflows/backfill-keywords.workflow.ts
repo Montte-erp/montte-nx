@@ -24,15 +24,21 @@ export class BackfillKeywordsWorkflow {
 
    @DBOS.step()
    static async fetchTeamsWithPendingStep() {
-      const rowsResult = await listTeamsWithPendingKeywords(db);
-      if (rowsResult.isErr()) throw rowsResult.error;
-      const teamIds = [...new Set(rowsResult.value.map((r) => r.teamId))];
-      const teamRowsResult = await listTeamMetadataByIds(db, teamIds);
-      if (teamRowsResult.isErr()) throw teamRowsResult.error;
-      return teamRowsResult.value.map((t) => ({
-         teamId: t.id,
-         organizationId: t.organizationId,
-      }));
+      return (
+         await listTeamsWithPendingKeywords(db).andThen((rows) => {
+            const teamIds = [...new Set(rows.map((r) => r.teamId))];
+            return listTeamMetadataByIds(db, teamIds);
+         })
+      ).match(
+         (teamRows) =>
+            teamRows.map((t) => ({
+               teamId: t.id,
+               organizationId: t.organizationId,
+            })),
+         (e) => {
+            throw e;
+         },
+      );
    }
 
    @DBOS.step()
@@ -40,13 +46,14 @@ export class BackfillKeywordsWorkflow {
       teamId: string;
       organizationId: string;
    }) {
-      const pendingResult = await listCategoriesWithNullKeywords(
-         db,
-         teamEntry.teamId,
-         50,
+      const pending = (
+         await listCategoriesWithNullKeywords(db, teamEntry.teamId, 50)
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
       );
-      if (pendingResult.isErr()) throw pendingResult.error;
-      const pending = pendingResult.value;
 
       let processed = 0;
 

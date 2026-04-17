@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import { AppError, validateInput } from "@core/logging/errors";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
-import { fromPromise, type ResultAsync } from "neverthrow";
+import { fromPromise, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateCategoryInput,
@@ -377,7 +377,7 @@ export function createCategory(
    db: DatabaseInstance,
    teamId: string,
    data: CreateCategoryInput,
-): ResultAsync<Category, AppError> {
+) {
    return fromPromise(
       (async () => {
          const validated = validateInput(createCategorySchema, data);
@@ -435,7 +435,7 @@ export function createCategoryWithSubcategories(
    db: DatabaseInstance,
    teamId: string,
    data: CreateWithSubsInput,
-): ResultAsync<{ category: Category; subcategories: Category[] }, AppError> {
+) {
    const { subcategories, ...catData } = data;
    return fromPromise(
       db.transaction(async (tx) => {
@@ -475,7 +475,7 @@ export function importCategoriesBatch(
    db: DatabaseInstance,
    teamId: string,
    items: ImportBatchItem[],
-): ResultAsync<{ all: Category[]; parents: Category[] }, AppError> {
+) {
    return fromPromise(
       db.transaction(async (tx) => {
          const all: Category[] = [];
@@ -515,7 +515,7 @@ export function importCategoriesBatch(
 export function seedEmpresarialCategories(
    db: DatabaseInstance,
    teamId: string,
-): ResultAsync<void, AppError> {
+) {
    return fromPromise(
       (async () => {
          for (const root of EMPRESARIAL_CATEGORIES) {
@@ -568,7 +568,7 @@ export function listCategories(
       type?: "income" | "expense";
       includeArchived?: boolean;
    },
-): ResultAsync<Category[], AppError> {
+) {
    return fromPromise(
       (async () => {
          const conditions: SQL[] = [eq(categories.teamId, teamId)];
@@ -596,49 +596,31 @@ export function ensureCategoryOwnership(
    db: DatabaseInstance,
    id: string,
    teamId: string,
-): ResultAsync<Category, AppError> {
-   return fromPromise(
-      (async () => {
-         const catResult = await getCategory(db, id);
-         if (catResult.isErr()) throw catResult.error;
-         const category = catResult.value;
-         if (!category || category.teamId !== teamId) {
-            throw AppError.notFound("Categoria não encontrada.");
-         }
-         return category;
-      })(),
-      (e) =>
-         e instanceof AppError
-            ? e
-            : AppError.database("Failed to ensure category ownership", {
-                 cause: e,
-              }),
-   );
+) {
+   return getCategory(db, id).andThen((category) => {
+      if (!category || category.teamId !== teamId)
+         return err(AppError.notFound("Categoria não encontrada."));
+      return ok(category);
+   });
 }
 
-export function getCategory(
-   db: DatabaseInstance,
-   id: string,
-): ResultAsync<Category | null, AppError> {
+export function getCategory(db: DatabaseInstance, id: string) {
    return fromPromise(
-      (async () => {
-         const category = await db.query.categories.findFirst({
-            where: (fields, { eq }) => eq(fields.id, id),
-         });
-         return category ?? null;
-      })(),
+      db.query.categories.findFirst({
+         where: (fields, { eq }) => eq(fields.id, id),
+      }),
       (e) =>
          e instanceof AppError
             ? e
             : AppError.database("Failed to get category", { cause: e }),
-   );
+   ).map((category) => category ?? null);
 }
 
 export function updateCategory(
    db: DatabaseInstance,
    id: string,
    data: UpdateCategoryInput,
-): ResultAsync<Category, AppError> {
+) {
    return fromPromise(
       (async () => {
          const validated = validateInput(updateCategorySchema, data);
@@ -677,10 +659,7 @@ export function updateCategory(
    );
 }
 
-export function archiveCategory(
-   db: DatabaseInstance,
-   id: string,
-): ResultAsync<Category | undefined, AppError> {
+export function archiveCategory(db: DatabaseInstance, id: string) {
    return fromPromise(
       (async () => {
          const existing = await db.query.categories.findFirst({
@@ -712,10 +691,7 @@ export function archiveCategory(
    );
 }
 
-export function reactivateCategory(
-   db: DatabaseInstance,
-   id: string,
-): ResultAsync<Category, AppError> {
+export function reactivateCategory(db: DatabaseInstance, id: string) {
    return fromPromise(
       (async () => {
          const [updated] = await db
@@ -733,10 +709,7 @@ export function reactivateCategory(
    );
 }
 
-export function deleteCategory(
-   db: DatabaseInstance,
-   id: string,
-): ResultAsync<void, AppError> {
+export function deleteCategory(db: DatabaseInstance, id: string) {
    return fromPromise(
       (async () => {
          const existing = await db.query.categories.findFirst({
@@ -773,7 +746,7 @@ export function bulkArchiveCategories(
    db: DatabaseInstance,
    ids: string[],
    teamId: string,
-): ResultAsync<void, AppError> {
+) {
    return fromPromise(
       (async () => {
          const existing = await db.query.categories.findMany({
@@ -813,7 +786,7 @@ export function bulkDeleteCategories(
    db: DatabaseInstance,
    ids: string[],
    teamId: string,
-): ResultAsync<void, AppError> {
+) {
    return fromPromise(
       (async () => {
          const existing = await db.query.categories.findMany({
@@ -858,7 +831,7 @@ export function bulkDeleteCategories(
 export function categoryTreeHasTransactions(
    db: DatabaseInstance,
    categoryId: string,
-): ResultAsync<boolean, AppError> {
+) {
    return fromPromise(
       (async () => {
          const descendantIds = await getDescendantIds(db, categoryId);
@@ -899,10 +872,7 @@ async function getDescendantIds(
    return [...level2Ids, ...level3.map((r) => r.id)];
 }
 
-export function listTeamMetadataByIds(
-   db: DatabaseInstance,
-   teamIds: string[],
-): ResultAsync<Array<{ id: string; organizationId: string }>, AppError> {
+export function listTeamMetadataByIds(db: DatabaseInstance, teamIds: string[]) {
    return fromPromise(
       (async () => {
          if (teamIds.length === 0) return [];
@@ -918,9 +888,7 @@ export function listTeamMetadataByIds(
    );
 }
 
-export function listTeamsWithPendingKeywords(
-   db: DatabaseInstance,
-): ResultAsync<{ teamId: string }[], AppError> {
+export function listTeamsWithPendingKeywords(db: DatabaseInstance) {
    return fromPromise(
       db.query.categories.findMany({
          columns: { teamId: true },
@@ -941,7 +909,7 @@ export function listCategoriesWithNullKeywords(
    db: DatabaseInstance,
    teamId: string,
    limit = 50,
-): ResultAsync<Category[], AppError> {
+) {
    return fromPromise(
       db.query.categories.findMany({
          where: (fields, { and, eq, isNull }) =>
@@ -967,7 +935,7 @@ export function validateKeywordsUniqueness(
    teamId: string,
    keywords: string[],
    excludeCategoryId?: string,
-): ResultAsync<void, AppError> {
+) {
    return fromPromise(
       (async () => {
          const conditions: SQL[] = [
@@ -1010,7 +978,7 @@ export function findCategoryByKeywords(
       name: string;
       type: "income" | "expense";
    },
-): ResultAsync<{ id: string; name: string } | null, AppError> {
+) {
    return fromPromise(
       (async () => {
          const rows = await db

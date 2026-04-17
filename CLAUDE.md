@@ -49,6 +49,80 @@ bun run web:start         # Start production build locally
 
 ---
 
+## Agent Skills (`.agents/skills/`)
+
+Before touching any domain below, load the relevant skill from `.agents/skills/<name>/SKILL.md`. Skills contain full API docs, Montte-specific conventions, and pitfalls. Reference them by name when implementing, reviewing, or debugging within the listed trigger areas.
+
+### Error handling
+
+| Skill         | Use when                                                                                                                           |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `neverthrow`  | Any code using `Result`, `ResultAsync`, `fromPromise`, `fromThrowable`, `ok`, `err`, `safeTry`. All repository and router error handling. |
+
+### Nx
+
+| Skill                     | Use when                                                                                           |
+| ------------------------- | -------------------------------------------------------------------------------------------------- |
+| `nx-workspace`            | Exploring projects, targets, dependencies; debugging task failures; checking configuration.       |
+| `nx-generate`             | Scaffolding apps, libs, project structure. **Invoke BEFORE** `nx_docs` or manual exploration.      |
+| `nx-run-tasks`            | Running build, test, lint, serve, or any workspace task.                                           |
+| `nx-plugins`              | Finding or adding Nx plugins for new frameworks/technologies.                                      |
+| `nx-import`               | Importing/merging repos into the workspace via `nx import`.                                        |
+| `link-workspace-packages` | Wiring up workspace deps after creating packages; fixing `TS2307`/"cannot find module" for `@core/*`, `@packages/*`, `@montte/*`. |
+| `monitor-ci`              | Monitoring Nx Cloud CI, self-healing fixes. Prefer over `gh`/`glab` for CI checks.                |
+
+### TanStack
+
+| Skill               | Use when                                                                                            |
+| ------------------- | --------------------------------------------------------------------------------------------------- |
+| `tanstack-start`    | SSR, server functions, streaming, root layout, Vite plugin order, `createServerFn`, `createClientOnlyFn`. |
+| `tanstack-router`   | Routes, `validateSearch`, `loaderDeps`, `createFileRoute`, pending/error boundaries, search params. |
+| `tanstack-query`    | Any `useSuspenseQuery`, `useQuery`, `useMutation`, `queryOptions`, `mutationOptions`, invalidation. |
+| `tanstack-form`     | Any `useForm`, field schemas, `onSubmitAsync`, multi-step forms, `form.Subscribe`, navigation guards. |
+| `tanstack-store`    | Any `createStore`, `useStore`, `createAtom`, `createPersistedStore`, `createStoreEffect`, `batch`.  |
+| `tanstack-table`    | Building data tables. Pair with project `data-table-pattern`.                                      |
+| `tanstack-virtual`  | Virtualizing long lists at 60fps.                                                                   |
+| `tanstack-db`       | Reactive client store, collections, live queries, optimistic mutations.                            |
+| `tanstack-ai`       | Any AI agent code. `@tanstack/ai` + `@tanstack/ai-openrouter`. Never Vercel AI SDK.                |
+| `tanstack-devtools` | Adding/configuring TanStack devtools panel.                                                        |
+
+### Authentication (Better Auth)
+
+| Skill                                      | Use when                                                                          |
+| ------------------------------------------ | --------------------------------------------------------------------------------- |
+| `better-auth-best-practices`               | Configuring Better Auth server/client, adapters, sessions, plugins, env vars.     |
+| `create-auth-skill`                        | Scaffolding auth from scratch, OAuth providers, route handlers, UI pages.        |
+| `email-and-password-best-practices`        | Email verification, password reset, password policies, hashing.                   |
+| `two-factor-authentication-best-practices` | TOTP, OTP email/SMS, backup codes, trusted devices, 2FA sign-in flows.           |
+| `organization-best-practices`              | Multi-tenant orgs, members, invitations, roles/permissions, teams, RBAC.         |
+
+### Database
+
+| Skill              | Use when                                                                                       |
+| ------------------ | ---------------------------------------------------------------------------------------------- |
+| `postgres-drizzle` | Writing schemas, queries, migrations, relations, joins, transactions, JSONB, indexes, RLS.    |
+| `paradedb-skill`   | Full-text search, BM25, tantivy indexes — local uses `paradedb/paradedb` image.               |
+| `redis-best-practices` | Caching, data structures, key-value ops, TTL patterns.                                    |
+
+### UI / UX
+
+| Skill                 | Use when                                                                                 |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| `shadcn`              | Adding/searching/debugging shadcn components, `components.json`, presets, registries.   |
+| `ui-ux-expert`        | Designing screens, design systems, responsive interfaces, usability review.             |
+| `wcag-audit-patterns` | Accessibility audits, WCAG 2.2 compliance, remediation.                                 |
+
+### Workflows / infra
+
+| Skill             | Use when                                                                                  |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| `dbos-typescript` | Any DBOS workflow, step, queue, `DBOSClient`, durable execution code.                    |
+| `linear-cli`      | Managing Linear issues from CLI (reading, creating, updating MON-* tickets).             |
+
+**Rule:** If a task touches a domain above, open the corresponding `SKILL.md` first. The skill supersedes stale assumptions from prior conversations.
+
+---
+
 ## Monorepo Structure
 
 ```

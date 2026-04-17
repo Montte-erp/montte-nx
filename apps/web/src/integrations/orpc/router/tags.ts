@@ -17,71 +17,78 @@ const idSchema = z.object({ id: z.string().uuid() });
 export const create = protectedProcedure
    .input(createTagSchema)
    .handler(async ({ context, input }) => {
-      const result = await createTag(context.db, context.teamId, input);
-      if (result.isErr()) throw WebAppError.fromAppError(result.error);
-      return result.value;
+      return (await createTag(context.db, context.teamId, input)).match(
+         (tag) => tag,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
    });
 
 export const getAll = protectedProcedure.handler(async ({ context }) => {
-   const result = await listTags(context.db, context.teamId);
-   if (result.isErr()) throw WebAppError.fromAppError(result.error);
-   return result.value;
+   return (await listTags(context.db, context.teamId)).match(
+      (tags) => tags,
+      (e) => {
+         throw WebAppError.fromAppError(e);
+      },
+   );
 });
 
 export const update = protectedProcedure
    .input(idSchema.merge(updateTagSchema))
    .handler(async ({ context, input }) => {
-      const ownershipResult = await ensureTagOwnership(
-         context.db,
-         input.id,
-         context.teamId,
-      );
-      if (ownershipResult.isErr())
-         throw WebAppError.fromAppError(ownershipResult.error);
       const { id, ...data } = input;
-      const result = await updateTag(context.db, id, data);
-      if (result.isErr()) throw WebAppError.fromAppError(result.error);
-      return result.value;
+      return (
+         await ensureTagOwnership(context.db, input.id, context.teamId).andThen(
+            () => updateTag(context.db, id, data),
+         )
+      ).match(
+         (tag) => tag,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
    });
 
 export const remove = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      const ownershipResult = await ensureTagOwnership(
-         context.db,
-         input.id,
-         context.teamId,
+      (
+         await ensureTagOwnership(context.db, input.id, context.teamId).andThen(
+            () => deleteTag(context.db, input.id),
+         )
+      ).match(
+         () => null,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
       );
-      if (ownershipResult.isErr())
-         throw WebAppError.fromAppError(ownershipResult.error);
-      const result = await deleteTag(context.db, input.id);
-      if (result.isErr()) throw WebAppError.fromAppError(result.error);
       return { success: true };
    });
 
 export const archive = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      const ownershipResult = await ensureTagOwnership(
-         context.db,
-         input.id,
-         context.teamId,
+      return (
+         await ensureTagOwnership(context.db, input.id, context.teamId).andThen(
+            () => archiveTag(context.db, input.id),
+         )
+      ).match(
+         (tag) => tag,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
       );
-      if (ownershipResult.isErr())
-         throw WebAppError.fromAppError(ownershipResult.error);
-      const result = await archiveTag(context.db, input.id);
-      if (result.isErr()) throw WebAppError.fromAppError(result.error);
-      return result.value;
    });
 
 export const bulkRemove = protectedProcedure
    .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
    .handler(async ({ context, input }) => {
-      const result = await bulkDeleteTags(
-         context.db,
-         input.ids,
-         context.teamId,
+      (await bulkDeleteTags(context.db, input.ids, context.teamId)).match(
+         () => null,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
       );
-      if (result.isErr()) throw WebAppError.fromAppError(result.error);
       return { deleted: input.ids.length };
    });

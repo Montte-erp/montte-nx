@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { AppError, validateInput } from "@core/logging/errors";
 import { eq, inArray, sql } from "drizzle-orm";
-import { fromPromise, type ResultAsync } from "neverthrow";
+import { fromPromise, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateTagInput,
@@ -12,22 +12,17 @@ import {
 } from "@core/database/schemas/tags";
 import { transactionTags } from "@core/database/schemas/transactions";
 
-type Tag = typeof tags.$inferSelect;
-
 export function createTag(
    db: DatabaseInstance,
    teamId: string,
    data: CreateTagInput,
-): ResultAsync<Tag, AppError> {
+) {
    return fromPromise(
       (async () => {
          const validated = validateInput(createTagSchema, data);
          const [tag] = await db
             .insert(tags)
-            .values({
-               ...validated,
-               teamId,
-            })
+            .values({ ...validated, teamId })
             .returning();
          if (!tag) throw AppError.database("Failed to create tag");
          return tag;
@@ -43,7 +38,7 @@ export function listTags(
    db: DatabaseInstance,
    teamId: string,
    opts?: { includeArchived?: boolean },
-): ResultAsync<Tag[], AppError> {
+) {
    return fromPromise(
       (async () => {
          if (opts?.includeArchived) {
@@ -65,29 +60,21 @@ export function listTags(
    );
 }
 
-export function getTag(
-   db: DatabaseInstance,
-   id: string,
-): ResultAsync<Tag | null, AppError> {
+export function getTag(db: DatabaseInstance, id: string) {
    return fromPromise(
-      (async () => {
-         const tag = await db.query.tags.findFirst({
-            where: (fields, { eq }) => eq(fields.id, id),
-         });
-         return tag ?? null;
-      })(),
+      db.query.tags.findFirst({ where: (fields, { eq }) => eq(fields.id, id) }),
       (e) =>
          e instanceof AppError
             ? e
             : AppError.database("Failed to get tag", { cause: e }),
-   );
+   ).map((tag) => tag ?? null);
 }
 
 export function updateTag(
    db: DatabaseInstance,
    id: string,
    data: UpdateTagInput,
-): ResultAsync<Tag, AppError> {
+) {
    return fromPromise(
       (async () => {
          const validated = validateInput(updateTagSchema, data);
@@ -106,10 +93,7 @@ export function updateTag(
    );
 }
 
-export function archiveTag(
-   db: DatabaseInstance,
-   id: string,
-): ResultAsync<Tag, AppError> {
+export function archiveTag(db: DatabaseInstance, id: string) {
    return fromPromise(
       (async () => {
          const [updated] = await db
@@ -127,10 +111,7 @@ export function archiveTag(
    );
 }
 
-export function reactivateTag(
-   db: DatabaseInstance,
-   id: string,
-): ResultAsync<Tag, AppError> {
+export function reactivateTag(db: DatabaseInstance, id: string) {
    return fromPromise(
       (async () => {
          const [updated] = await db
@@ -148,10 +129,7 @@ export function reactivateTag(
    );
 }
 
-export function tagHasTransactions(
-   db: DatabaseInstance,
-   tagId: string,
-): ResultAsync<boolean, AppError> {
+export function tagHasTransactions(db: DatabaseInstance, tagId: string) {
    return fromPromise(
       (async () => {
          const [row] = await db
@@ -169,10 +147,7 @@ export function tagHasTransactions(
    );
 }
 
-export function deleteTag(
-   db: DatabaseInstance,
-   id: string,
-): ResultAsync<void, AppError> {
+export function deleteTag(db: DatabaseInstance, id: string) {
    return fromPromise(
       (async () => {
          const existing = await db.query.tags.findFirst({
@@ -201,7 +176,7 @@ export function bulkDeleteTags(
    db: DatabaseInstance,
    ids: string[],
    teamId: string,
-): ResultAsync<void, AppError> {
+) {
    return fromPromise(
       (async () => {
          const existing = await db.query.tags.findMany({
@@ -233,20 +208,10 @@ export function ensureTagOwnership(
    db: DatabaseInstance,
    id: string,
    teamId: string,
-): ResultAsync<Tag, AppError> {
-   return fromPromise(
-      (async () => {
-         const tagResult = await getTag(db, id);
-         if (tagResult.isErr()) throw tagResult.error;
-         const tag = tagResult.value;
-         if (!tag || tag.teamId !== teamId) {
-            throw AppError.notFound("Tag não encontrada.");
-         }
-         return tag;
-      })(),
-      (e) =>
-         e instanceof AppError
-            ? e
-            : AppError.database("Failed to ensure tag ownership", { cause: e }),
-   );
+) {
+   return getTag(db, id).andThen((tag) => {
+      if (!tag || tag.teamId !== teamId)
+         return err(AppError.notFound("Tag não encontrada."));
+      return ok(tag);
+   });
 }
