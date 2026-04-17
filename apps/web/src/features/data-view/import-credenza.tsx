@@ -12,6 +12,11 @@ import {
 } from "@packages/ui/components/dropzone";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
+   Popover,
+   PopoverContent,
+   PopoverTrigger,
+} from "@packages/ui/components/popover";
+import {
    Table,
    TableBody,
    TableCell,
@@ -31,6 +36,7 @@ import {
 import { Suspense, useTransition, useState } from "react";
 import { toast } from "sonner";
 import { useCsvFile } from "@/hooks/use-csv-file";
+import { useFileDownload } from "@/hooks/use-file-download";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import type {
    ImportConfig,
@@ -139,18 +145,27 @@ function UploadStep({
    const [isParsing, setIsParsing] = useState(false);
    const [selectedFile, setSelectedFile] = useState<File | undefined>();
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
-   const { parse: parseXlsx } = useXlsxFile();
+   const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
+   const { download } = useFileDownload();
 
-   function handleTemplateDownload() {
+   const templateSlug = config.label.toLowerCase().replace(/\s+/g, "-");
+
+   function handleTemplateCsv() {
       const headers = columns.map((c) => c.key);
       const exampleRow = Object.fromEntries(columns.map((c) => [c.key, ""]));
-      const blob = generateCsv([exampleRow], headers);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `modelo-${config.label.toLowerCase().replace(/\s+/g, "-")}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      download(
+         generateCsv([exampleRow], headers),
+         `modelo-${templateSlug}.csv`,
+      );
+   }
+
+   function handleTemplateXlsx() {
+      const headers = columns.map((c) => c.key);
+      const exampleRow = Object.fromEntries(columns.map((c) => [c.key, ""]));
+      download(
+         generateXlsx([exampleRow], headers),
+         `modelo-${templateSlug}.xlsx`,
+      );
    }
 
    async function processFile(file: File) {
@@ -230,17 +245,33 @@ function UploadStep({
                </Dropzone>
             </div>
          </CredenzaBody>
-         <CredenzaFooter>
-            <Button
-               className="w-full"
-               onClick={handleTemplateDownload}
-               size="sm"
-               type="button"
-               variant="outline"
-            >
-               <FileSpreadsheet className="size-4" />
-               Baixar modelo CSV
-            </Button>
+         <CredenzaFooter className="justify-start">
+            <Popover>
+               <PopoverTrigger asChild>
+                  <Button size="sm" type="button" variant="ghost">
+                     <FileSpreadsheet className="size-4" />
+                     Baixar modelo
+                  </Button>
+               </PopoverTrigger>
+               <PopoverContent align="start" className="w-40 p-1">
+                  <button
+                     className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                     onClick={handleTemplateCsv}
+                     type="button"
+                  >
+                     <FileSpreadsheet className="size-4 text-emerald-600" />
+                     CSV
+                  </button>
+                  <button
+                     className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                     onClick={handleTemplateXlsx}
+                     type="button"
+                  >
+                     <FileText className="size-4 text-blue-600" />
+                     XLSX
+                  </button>
+               </PopoverContent>
+            </Popover>
          </CredenzaFooter>
       </>
    );

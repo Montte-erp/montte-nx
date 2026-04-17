@@ -258,6 +258,8 @@ function ServicesList({ filters }: { filters: FiltersState }) {
       [openAlertDialog, deleteMutation],
    );
 
+   const columns = useMemo(() => buildServiceColumns(), []);
+
    if (servicesList.length === 0) {
       return (
          <Empty>
@@ -273,8 +275,6 @@ function ServicesList({ filters }: { filters: FiltersState }) {
          </Empty>
       );
    }
-
-   const columns = useMemo(() => buildServiceColumns(), []);
 
    return (
       <div className="space-y-2">

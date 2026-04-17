@@ -59,6 +59,7 @@ import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { generateFromObjects } from "@f-o-t/csv";
 import { utils as xlsxUtils, write as xlsxWrite } from "xlsx";
 import { useCredenza } from "@/hooks/use-credenza";
+import { useFileDownload } from "@/hooks/use-file-download";
 import { ImportCredenza } from "@/features/data-view/import-credenza";
 
 import { cn } from "@packages/ui/lib/utils";
@@ -750,6 +751,7 @@ function DataTableExportButton<TData, TValue>({
    data: TData[];
    columns: ColumnDef<TData, TValue>[];
 }) {
+   const { download } = useFileDownload();
    const exportableColumns = columns.filter((col) => col.meta?.exportable);
 
    function getRows() {
@@ -772,22 +774,13 @@ function DataTableExportButton<TData, TValue>({
       );
    }
 
-   function downloadBlob(blob: Blob, name: string) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = name;
-      a.click();
-      URL.revokeObjectURL(url);
-   }
-
    function handleExportCsv() {
       const headers = exportableColumns.map(
          (col) =>
             col.meta?.label ??
             ("accessorKey" in col ? String(col.accessorKey) : (col.id ?? "")),
       );
-      downloadBlob(
+      download(
          new Blob([generateFromObjects(getRows(), { headers })], {
             type: "text/csv;charset=utf-8;",
          }),
@@ -804,7 +797,7 @@ function DataTableExportButton<TData, TValue>({
       const ws = xlsxUtils.json_to_sheet(getRows(), { header: headers });
       const wb = xlsxUtils.book_new();
       xlsxUtils.book_append_sheet(wb, ws, filename);
-      downloadBlob(
+      download(
          new Blob([xlsxWrite(wb, { type: "array", bookType: "xlsx" })], {
             type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
          }),
