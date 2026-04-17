@@ -20,13 +20,9 @@
          "types": "./dist/utils.d.ts",
          "default": "./dist/utils.js"
       },
-      "./actions/categorize": {
-         "types": "./dist/actions/categorize.d.ts",
-         "default": "./dist/actions/categorize.js"
-      },
-      "./actions/keywords": {
-         "types": "./dist/actions/keywords.d.ts",
-         "default": "./dist/actions/keywords.js"
+      "./actions/*": {
+         "types": "./dist/actions/*.d.ts",
+         "default": "./dist/actions/*.js"
       }
    },
    "scripts": {
