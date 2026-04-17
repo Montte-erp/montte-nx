@@ -34,7 +34,7 @@ import {
    Loader2,
 } from "lucide-react";
 import { cn } from "@packages/ui/lib/utils";
-import { useTransition, useState, useRef, useCallback } from "react";
+import { useTransition, useState, useRef, useCallback, useEffect } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { toast } from "sonner";
 import { useCsvFile } from "@/hooks/use-csv-file";
@@ -409,8 +409,8 @@ function MappingBody({
    onMappingChange: (m: ColumnMapping) => void;
    onRowsChange: (rows: ParsedRow[]) => void;
 }) {
-   const [editRows, setEditRows] = useState<ParsedRow[]>(() => {
-      const initial = raw.rows.map((row) =>
+   const [editRows, setEditRows] = useState<ParsedRow[]>(() =>
+      raw.rows.map((row) =>
          Object.fromEntries(
             columns.map((col) => {
                const header = mapping[col.key];
@@ -418,10 +418,13 @@ function MappingBody({
                return [col.key, idx >= 0 ? (row[idx] ?? "") : ""];
             }),
          ),
-      );
-      onRowsChange(initial);
-      return initial;
-   });
+      ),
+   );
+
+   useEffect(() => {
+      onRowsChange(editRows);
+      // oxlint-ignore react-hooks/exhaustive-deps
+   }, []);
 
    const [editingCell, setEditingCell] = useState<{
       rowIdx: number;
