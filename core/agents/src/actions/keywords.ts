@@ -1,8 +1,18 @@
+import { fromPromise } from "neverthrow";
 import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
 import { z } from "zod";
+import { AppError } from "@core/logging/errors";
 
 type OpenRouterModelId = Parameters<typeof openRouterText>[0];
+
+export const deriveKeywordsAIInputSchema = z.object({
+   name: z.string(),
+   description: z.string().nullish(),
+   model: z.custom<OpenRouterModelId>(),
+});
+
+export type DeriveKeywordsAIInput = z.infer<typeof deriveKeywordsAIInputSchema>;
 
 const outputSchema = z.object({
    keywords: z
@@ -14,34 +24,28 @@ const outputSchema = z.object({
       ),
 });
 
-export type DeriveKeywordsAIInput = {
-   name: string;
-   description?: string | null;
-   model: OpenRouterModelId;
-};
-
-export async function deriveKeywordsWithAI(
-   input: DeriveKeywordsAIInput,
-): Promise<string[]> {
-   const result = await chat({
-      adapter: openRouterText(input.model),
-      messages: [
-         {
-            role: "user",
-            content: [
-               {
-                  type: "text",
-                  content: `Você é um assistente financeiro brasileiro. Gere palavras-chave para a categoria financeira abaixo. As palavras-chave devem ser termos comuns que aparecem em descrições de transações bancárias.
+export function deriveKeywordsWithAI(input: DeriveKeywordsAIInput) {
+   return fromPromise(
+      chat({
+         adapter: openRouterText(input.model),
+         messages: [
+            {
+               role: "user",
+               content: [
+                  {
+                     type: "text",
+                     content: `Você é um assistente financeiro brasileiro. Gere palavras-chave para a categoria financeira abaixo. As palavras-chave devem ser termos comuns que aparecem em descrições de transações bancárias.
 
 Categoria: ${input.name}${input.description ? `\nDescrição: ${input.description}` : ""}
 
 Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua variações, abreviações e termos relacionados.`,
-               },
-            ],
-         },
-      ],
-      outputSchema,
-      stream: false,
-   });
-   return result.keywords;
+                  },
+               ],
+            },
+         ],
+         outputSchema,
+         stream: false,
+      }).then((result) => result.keywords),
+      (e) => AppError.internal("AI keyword derivation failed", { cause: e }),
+   );
 }

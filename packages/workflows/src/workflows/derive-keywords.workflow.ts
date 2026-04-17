@@ -1,3 +1,4 @@
+import { fromPromise } from "neverthrow";
 import dayjs from "dayjs";
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { updateCategory } from "@core/database/repositories/categories-repository";
@@ -21,6 +22,26 @@ export type DeriveKeywordsInput = {
    stripeCustomerId?: string | null;
 };
 
+async function publishFailed(
+   publisher: ReturnType<typeof getPublisher>,
+   teamId: string,
+   msg: string,
+   stepName: string,
+) {
+   await DBOS.runStep(
+      () =>
+         publisher.publish("job.notification", {
+            jobId: crypto.randomUUID(),
+            type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
+            status: "failed",
+            message: msg,
+            teamId,
+            timestamp: dayjs().toISOString(),
+         } satisfies JobNotification),
+      { name: stepName },
+   );
+}
+
 async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
    const { db, redis, posthog, stripeClient } = getDeps();
    const publisher = getPublisher();
@@ -41,8 +62,8 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
       { name: "publishStarted" },
    );
 
-   try {
-      await DBOS.runStep(
+   const budgetResult = await fromPromise(
+      DBOS.runStep(
          () =>
             enforceCreditBudget(
                input.organizationId,
@@ -51,87 +72,81 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
                input.stripeCustomerId,
             ),
          { name: "enforceBudget" },
-      );
-   } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      DBOS.logger.warn(`${ctx} budget exceeded: ${msg}`);
-      await DBOS.runStep(
-         () =>
-            publisher.publish("job.notification", {
-               jobId: crypto.randomUUID(),
-               type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
-               status: "failed",
-               message: msg,
-               teamId: input.teamId,
-               timestamp: dayjs().toISOString(),
-            } satisfies JobNotification),
-         { name: "publishFailed" },
+      ),
+      (e) => (e instanceof Error ? e.message : String(e)),
+   );
+
+   if (budgetResult.isErr()) {
+      DBOS.logger.warn(`${ctx} budget exceeded: ${budgetResult.error}`);
+      await publishFailed(
+         publisher,
+         input.teamId,
+         budgetResult.error,
+         "publishFailed",
       );
       return;
    }
 
-   let keywords: string[];
-   try {
-      keywords = await DBOS.runStep(
+   const keywordsResult = await fromPromise(
+      DBOS.runStep(
          () =>
             deriveKeywordsWithAI({
                name: input.name,
                description: input.description,
                model: MODEL,
-            }),
+            }).match(
+               (v) => v,
+               (e) => {
+                  throw e;
+               },
+            ),
          { name: "deriveKeywords" },
-      );
-      DBOS.logger.info(
-         `${ctx} derived ${keywords.length} keywords: [${keywords.join(", ")}]`,
-      );
-   } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      DBOS.logger.error(`${ctx} derive failed: ${msg}`);
-      await DBOS.runStep(
-         () =>
-            publisher.publish("job.notification", {
-               jobId: crypto.randomUUID(),
-               type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
-               status: "failed",
-               message: msg,
-               teamId: input.teamId,
-               timestamp: dayjs().toISOString(),
-            } satisfies JobNotification),
-         { name: "publishFailed" },
+      ),
+      (e) => (e instanceof Error ? e.message : String(e)),
+   );
+
+   if (keywordsResult.isErr()) {
+      DBOS.logger.error(`${ctx} derive failed: ${keywordsResult.error}`);
+      await publishFailed(
+         publisher,
+         input.teamId,
+         keywordsResult.error,
+         "publishFailed",
       );
       return;
    }
 
-   try {
-      await DBOS.runStep(
-         async () => {
+   const keywords = keywordsResult.value;
+   DBOS.logger.info(
+      `${ctx} derived ${keywords.length} keywords: [${keywords.join(", ")}]`,
+   );
+
+   const saveResult = await fromPromise(
+      DBOS.runStep(
+         async () =>
             (await updateCategory(db, input.categoryId, { keywords })).match(
                () => null,
                (e) => {
                   throw e;
                },
-            );
-         },
+            ),
          { name: "saveKeywords" },
-      );
-      DBOS.logger.info(`${ctx} saved`);
-   } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      DBOS.logger.error(`${ctx} save failed: ${msg}`);
-      await DBOS.runStep(
-         () =>
-            publisher.publish("job.notification", {
-               jobId: crypto.randomUUID(),
-               type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
-               status: "failed",
-               message: msg,
-               teamId: input.teamId,
-               timestamp: dayjs().toISOString(),
-            } satisfies JobNotification),
-         { name: "publishFailed" },
+      ),
+      (e) => (e instanceof Error ? e.message : String(e)),
+   );
+
+   if (saveResult.isErr()) {
+      DBOS.logger.error(`${ctx} save failed: ${saveResult.error}`);
+      await publishFailed(
+         publisher,
+         input.teamId,
+         saveResult.error,
+         "publishFailed",
       );
       return;
    }
+
+   DBOS.logger.info(`${ctx} saved`);
 
    await DBOS.runStep(
       async () => {

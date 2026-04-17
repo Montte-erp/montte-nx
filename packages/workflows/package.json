@@ -32,6 +32,7 @@
       "@packages/notifications": "workspace:*",
       "@tanstack/store": "catalog:tanstack",
       "dayjs": "catalog:ui",
+      "neverthrow": "catalog:validation",
       "zod": "catalog:validation"
    },
    "devDependencies": {

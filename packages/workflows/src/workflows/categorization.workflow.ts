@@ -1,3 +1,4 @@
+import { fromPromise } from "neverthrow";
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import {
    findCategoryByKeywords,
@@ -19,6 +20,26 @@ export type CategorizationInput = {
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
 
+async function publishFailed(
+   publisher: ReturnType<typeof getPublisher>,
+   teamId: string,
+   msg: string,
+   stepName: string,
+) {
+   await DBOS.runStep(
+      () =>
+         publisher.publish("job.notification", {
+            jobId: crypto.randomUUID(),
+            timestamp: new Date().toISOString(),
+            type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
+            status: "failed",
+            message: msg,
+            teamId,
+         } satisfies JobNotification),
+      { name: stepName },
+   );
+}
+
 async function categorizationWorkflowFn(input: CategorizationInput) {
    const { db } = getDeps();
    const publisher = getPublisher();
@@ -39,36 +60,39 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
       { name: "publishStarted" },
    );
 
-   let keywordMatch: { id: string } | null;
-   try {
-      keywordMatch = await DBOS.runStep(
-         async () => {
-            const result = await findCategoryByKeywords(db, input.teamId, {
-               name: input.name,
-               type: input.type,
-            });
-            if (result.isErr()) throw result.error;
-            return result.value;
-         },
+   const keywordMatchResult = await fromPromise(
+      DBOS.runStep(
+         async () =>
+            (
+               await findCategoryByKeywords(db, input.teamId, {
+                  name: input.name,
+                  type: input.type,
+               })
+            ).match(
+               (v) => v,
+               (e) => {
+                  throw e;
+               },
+            ),
          { name: "matchKeywords" },
+      ),
+      (e) => (e instanceof Error ? e.message : String(e)),
+   );
+
+   if (keywordMatchResult.isErr()) {
+      DBOS.logger.error(
+         `${ctx} keyword match failed: ${keywordMatchResult.error}`,
       );
-   } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      DBOS.logger.error(`${ctx} keyword match failed: ${msg}`);
-      await DBOS.runStep(
-         () =>
-            publisher.publish("job.notification", {
-               jobId: crypto.randomUUID(),
-               timestamp: new Date().toISOString(),
-               type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
-               status: "failed",
-               message: msg,
-               teamId: input.teamId,
-            } satisfies JobNotification),
-         { name: "publishFailed" },
+      await publishFailed(
+         publisher,
+         input.teamId,
+         keywordMatchResult.error,
+         "publishFailed",
       );
       return;
    }
+
+   const keywordMatch = keywordMatchResult.value;
 
    if (keywordMatch) {
       await DBOS.runStep(
@@ -95,50 +119,57 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
       return;
    }
 
-   let aiResult: { categoryId: string; confidence: "high" | "low" } | null;
-   try {
-      aiResult = await DBOS.runStep(
+   const aiResult = await fromPromise(
+      DBOS.runStep(
          async () => {
             const catsResult = await listCategories(db, input.teamId, {
                type: input.type,
                includeArchived: false,
             });
-            if (catsResult.isErr()) throw catsResult.error;
-            return inferCategoryWithAI(catsResult.value, input, MODEL);
+            return catsResult.match(
+               (cats) =>
+                  inferCategoryWithAI(cats, input, MODEL).match(
+                     (v) => v,
+                     (e) => {
+                        throw e;
+                     },
+                  ),
+               (e) => {
+                  throw e;
+               },
+            );
          },
          { name: "inferWithAI" },
-      );
-   } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      DBOS.logger.error(`${ctx} AI inference failed: ${msg}`);
-      await DBOS.runStep(
-         () =>
-            publisher.publish("job.notification", {
-               jobId: crypto.randomUUID(),
-               timestamp: new Date().toISOString(),
-               type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
-               status: "failed",
-               message: msg,
-               teamId: input.teamId,
-            } satisfies JobNotification),
-         { name: "publishFailed" },
+      ),
+      (e) => (e instanceof Error ? e.message : String(e)),
+   );
+
+   if (aiResult.isErr()) {
+      DBOS.logger.error(`${ctx} AI inference failed: ${aiResult.error}`);
+      await publishFailed(
+         publisher,
+         input.teamId,
+         aiResult.error,
+         "publishFailed",
       );
       return;
    }
 
-   if (!aiResult) {
+   if (!aiResult.value) {
       DBOS.logger.info(`${ctx} no category match found`);
       return;
    }
+
+   const { categoryId, confidence } = aiResult.value;
 
    await DBOS.runStep(
       () =>
          updateTransactionCategory(
             db,
             input.transactionId,
-            aiResult.confidence === "high"
-               ? { categoryId: aiResult.categoryId }
-               : { suggestedCategoryId: aiResult.categoryId },
+            confidence === "high"
+               ? { categoryId }
+               : { suggestedCategoryId: categoryId },
          ),
       { name: "applyCategory" },
    );

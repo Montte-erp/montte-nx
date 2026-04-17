@@ -1,36 +1,42 @@
+import { fromPromise } from "neverthrow";
 import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
 import { z } from "zod";
+import { AppError } from "@core/logging/errors";
 
 type OpenRouterModelId = Parameters<typeof openRouterText>[0];
 
-type CategoryOption = {
-   id: string;
-   name: string;
-   keywords?: string[] | null;
-};
+export const categoryOptionSchema = z.object({
+   id: z.string(),
+   name: z.string(),
+   keywords: z.array(z.string()).nullish(),
+});
+
+export const inferCategoryInputSchema = z.object({
+   name: z.string(),
+   type: z.enum(["income", "expense"]),
+   contactName: z.string().nullish(),
+});
+
+export const inferCategoryResultSchema = z.object({
+   categoryId: z.string(),
+   confidence: z.enum(["high", "low"]),
+});
+
+export type CategoryOption = z.infer<typeof categoryOptionSchema>;
+export type InferCategoryInput = z.infer<typeof inferCategoryInputSchema>;
+export type InferCategoryResult = z.infer<typeof inferCategoryResultSchema>;
 
 const outputSchema = z.object({
    categoryName: z.string().nullable(),
    confidence: z.enum(["high", "low"]),
 });
 
-export type InferCategoryInput = {
-   name: string;
-   type: "income" | "expense";
-   contactName?: string | null;
-};
-
-export type InferCategoryResult = {
-   categoryId: string;
-   confidence: "high" | "low";
-};
-
-export async function inferCategoryWithAI(
+export function inferCategoryWithAI(
    cats: CategoryOption[],
    input: InferCategoryInput,
    model: OpenRouterModelId,
-): Promise<InferCategoryResult | null> {
+) {
    const categoryList = cats
       .map(
          (c) =>
@@ -50,19 +56,20 @@ ${categoryList}
 Retorne o nome exato de uma categoria da lista acima, ou null se nenhuma for adequada.
 Se tiver certeza, retorne confidence "high". Se estiver em dúvida, retorne "low".`;
 
-   const result = await chat({
-      adapter: openRouterText(model),
-      messages: [
-         { role: "user", content: [{ type: "text", content: prompt }] },
-      ],
-      outputSchema,
-      stream: false,
-   });
-
-   if (!result.categoryName) return null;
-
-   const match = cats.find((c) => c.name === result.categoryName);
-   if (!match) return null;
-
-   return { categoryId: match.id, confidence: result.confidence };
+   return fromPromise(
+      chat({
+         adapter: openRouterText(model),
+         messages: [
+            { role: "user", content: [{ type: "text", content: prompt }] },
+         ],
+         outputSchema,
+         stream: false,
+      }).then((result): InferCategoryResult | null => {
+         if (!result.categoryName) return null;
+         const match = cats.find((c) => c.name === result.categoryName);
+         if (!match) return null;
+         return { categoryId: match.id, confidence: result.confidence };
+      }),
+      (e) => AppError.internal("AI category inference failed", { cause: e }),
+   );
 }
