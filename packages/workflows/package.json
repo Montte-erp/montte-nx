@@ -30,6 +30,7 @@
       "@dbos-inc/dbos-sdk": "catalog:workers",
       "@packages/events": "workspace:*",
       "@packages/notifications": "workspace:*",
+      "@tanstack/store": "catalog:tanstack",
       "dayjs": "catalog:ui",
       "zod": "catalog:validation"
    },

@@ -1,3 +1,4 @@
+import { createStore } from "@tanstack/store";
 import type { DatabaseInstance } from "@core/database/client";
 import type { Redis } from "@core/redis/connection";
 import type { PostHog } from "@core/posthog/server";
@@ -11,20 +12,31 @@ export type WorkflowDeps = {
    stripeClient: StripeClient;
 };
 
-let _deps: WorkflowDeps | null = null;
-let _publisher: ReturnType<typeof createJobPublisher> | null = null;
+type WorkflowContext = {
+   deps: WorkflowDeps | null;
+   publisher: ReturnType<typeof createJobPublisher> | null;
+};
+
+const workflowStore = createStore<WorkflowContext>({
+   deps: null,
+   publisher: null,
+});
 
 export function initContext(deps: WorkflowDeps) {
-   _deps = deps;
-   _publisher = createJobPublisher(deps.redis);
+   workflowStore.setState(() => ({
+      deps,
+      publisher: createJobPublisher(deps.redis),
+   }));
 }
 
 export function getDeps(): WorkflowDeps {
-   if (!_deps) throw new Error("Workflow context not initialized");
-   return _deps;
+   const { deps } = workflowStore.state;
+   if (!deps) throw new Error("Workflow context not initialized");
+   return deps;
 }
 
 export function getPublisher(): ReturnType<typeof createJobPublisher> {
-   if (!_publisher) throw new Error("Workflow context not initialized");
-   return _publisher;
+   const { publisher } = workflowStore.state;
+   if (!publisher) throw new Error("Workflow context not initialized");
+   return publisher;
 }

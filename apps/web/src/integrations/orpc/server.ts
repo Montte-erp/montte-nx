@@ -14,6 +14,7 @@ import {
 import type { Redis } from "@core/redis/connection";
 import type { StripeClient } from "@core/stripe";
 import { sanitizeData } from "@core/utils/sanitization";
+import { createJobPublisher } from "@packages/notifications/publisher";
 import {
    auth,
    db,
@@ -21,6 +22,8 @@ import {
    redis,
    stripeClient,
 } from "@/integrations/singletons";
+
+const jobPublisher = createJobPublisher(redis);
 
 export interface ORPCContext {
    headers: Headers;
@@ -34,6 +37,7 @@ export interface ORPCContextWithAuth extends ORPCContext {
    posthog?: PostHog;
    stripeClient?: StripeClient;
    redis?: Redis;
+   jobPublisher: ReturnType<typeof createJobPublisher>;
 }
 
 export interface ORPCContextAuthenticated extends ORPCContextWithAuth {
@@ -71,6 +75,7 @@ const withDeps = base.use(async ({ context, next }) => {
          posthog: ctx.posthog ?? posthog,
          stripeClient: ctx.stripeClient ?? stripeClient,
          redis: ctx.redis ?? redis,
+         jobPublisher: ctx.jobPublisher ?? jobPublisher,
       },
    });
 });
