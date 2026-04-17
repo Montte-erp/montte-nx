@@ -10,18 +10,12 @@ import {
    DropzoneContent,
    DropzoneEmptyState,
 } from "@packages/ui/components/dropzone";
+import { Combobox } from "@packages/ui/components/combobox";
 import {
    Popover,
    PopoverContent,
    PopoverTrigger,
 } from "@packages/ui/components/popover";
-import {
-   Select,
-   SelectContent,
-   SelectItem,
-   SelectTrigger,
-   SelectValue,
-} from "@packages/ui/components/select";
 import {
    Table,
    TableBody,
@@ -35,14 +29,21 @@ import { Button } from "@packages/ui/components/button";
 import {
    AlertTriangle,
    Check,
+   ChevronDown,
    ChevronRight,
    FileSpreadsheet,
    FileText,
    Loader2,
 } from "lucide-react";
 import { cn } from "@packages/ui/lib/utils";
-import { useTransition, useState } from "react";
+import { useTransition, useState, useMemo } from "react";
 import { toast } from "sonner";
+import {
+   flexRender,
+   getCoreRowModel,
+   useReactTable,
+   type ColumnDef,
+} from "@tanstack/react-table";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useFileDownload } from "@/hooks/use-file-download";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
@@ -251,8 +252,91 @@ function UploadFooter({
 }
 
 // =============================================================================
+// MappingColumnHeader
+// =============================================================================
+
+function MappingColumnHeader({
+   sourceHeader,
+   destColumns,
+   mapping,
+   onSelect,
+}: {
+   sourceHeader: string;
+   destColumns: ImportableColumn[];
+   mapping: ColumnMapping;
+   onSelect: (destKey: string) => void;
+}) {
+   const [open, setOpen] = useState(false);
+   const currentDestKey =
+      Object.entries(mapping).find(([, src]) => src === sourceHeader)?.[0] ??
+      "__none__";
+   const destCol = destColumns.find((c) => c.key === currentDestKey);
+   const isMapped = currentDestKey !== "__none__";
+
+   const options = useMemo(
+      () => [
+         { value: "__none__", label: "— Ignorar coluna —" },
+         ...destColumns.map((c) => ({
+            value: c.key,
+            label: c.required ? `${c.label} *` : c.label,
+         })),
+      ],
+      [destColumns],
+   );
+
+   return (
+      <Popover onOpenChange={setOpen} open={open}>
+         <PopoverTrigger asChild>
+            <button
+               className={cn(
+                  "flex w-full flex-col gap-1 px-3 py-2 text-left transition-colors",
+                  "hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                  isMapped && destCol?.required && "bg-primary/5",
+               )}
+               type="button"
+            >
+               <span className="truncate text-xs text-muted-foreground">
+                  {sourceHeader}
+               </span>
+               <div className="flex items-center gap-1">
+                  <span
+                     className={cn(
+                        "flex-1 truncate text-xs font-medium",
+                        isMapped ? "text-foreground" : "text-muted-foreground",
+                        destCol?.required && "text-primary",
+                     )}
+                  >
+                     {isMapped
+                        ? `→ ${destCol?.label}${destCol?.required ? " *" : ""}`
+                        : "Ignorar"}
+                  </span>
+                  <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
+               </div>
+            </button>
+         </PopoverTrigger>
+         <PopoverContent align="start" className="w-52 p-2">
+            <Combobox
+               className="w-full"
+               emptyMessage="Nenhum campo"
+               onValueChange={(v) => {
+                  onSelect(v);
+                  setOpen(false);
+               }}
+               options={options}
+               placeholder="Mapear para..."
+               searchPlaceholder="Buscar campo..."
+               value={currentDestKey}
+            />
+         </PopoverContent>
+      </Popover>
+   );
+}
+
+// =============================================================================
 // MappingBody
 // =============================================================================
+
+type MappingRow = Record<string, string>;
 
 function MappingBody({
    raw,
@@ -265,13 +349,6 @@ function MappingBody({
    mapping: ColumnMapping;
    onMappingChange: (m: ColumnMapping) => void;
 }) {
-   function getDestKeyForSource(sourceHeader: string): string {
-      return (
-         Object.entries(mapping).find(([, src]) => src === sourceHeader)?.[0] ??
-         "__none__"
-      );
-   }
-
    function handleSelect(sourceHeader: string, destKey: string) {
       const next = { ...mapping };
       for (const key of Object.keys(next)) {
@@ -280,6 +357,50 @@ function MappingBody({
       if (destKey !== "__none__") next[destKey] = sourceHeader;
       onMappingChange(next);
    }
+
+   const tableData = useMemo<MappingRow[]>(
+      () =>
+         raw.rows
+            .slice(0, 6)
+            .map((row) =>
+               Object.fromEntries(raw.headers.map((h, i) => [h, row[i] ?? ""])),
+            ),
+      [raw],
+   );
+
+   const tableCols = useMemo<ColumnDef<MappingRow>[]>(
+      () =>
+         raw.headers.map((header) => ({
+            id: header,
+            accessorKey: header,
+            enableSorting: false,
+            enableHiding: false,
+            header: () => (
+               <MappingColumnHeader
+                  destColumns={columns}
+                  mapping={mapping}
+                  onSelect={(destKey) => handleSelect(header, destKey)}
+                  sourceHeader={header}
+               />
+            ),
+            cell: ({ getValue }) => {
+               const val = getValue() as string;
+               return val ? (
+                  <span className="text-xs">{val}</span>
+               ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+               );
+            },
+         })),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [raw.headers, columns, mapping],
+   );
+
+   const table = useReactTable({
+      data: tableData,
+      columns: tableCols,
+      getCoreRowModel: getCoreRowModel(),
+   });
 
    const requiredColumns = columns.filter((c) => c.required);
 
@@ -310,67 +431,36 @@ function MappingBody({
                })}
             </div>
          )}
-         <div className="overflow-auto rounded-lg border">
-            <Table>
+         <div className="overflow-auto rounded-md border">
+            <Table className="border-separate border-spacing-0">
                <TableHeader>
-                  <TableRow className="hover:bg-transparent align-top">
-                     {raw.headers.map((header) => {
-                        const destKey = getDestKeyForSource(header);
-                        const destCol = columns.find((c) => c.key === destKey);
-                        return (
+                  {table.getHeaderGroups().map((hg) => (
+                     <TableRow
+                        className="bg-muted/50 hover:bg-muted/50"
+                        key={hg.id}
+                     >
+                        {hg.headers.map((header) => (
                            <TableHead
-                              className={cn(
-                                 "min-w-[140px] p-2 align-top",
-                                 destCol?.required && "bg-primary/5",
-                              )}
-                              key={header}
+                              className="p-0 min-w-[160px]"
+                              key={header.id}
                            >
-                              <div className="flex flex-col gap-2">
-                                 <span className="truncate text-xs font-normal text-muted-foreground">
-                                    {header}
-                                 </span>
-                                 <Select
-                                    onValueChange={(v) =>
-                                       handleSelect(header, v)
-                                    }
-                                    value={destKey}
-                                 >
-                                    <SelectTrigger className="h-7 text-xs">
-                                       <SelectValue placeholder="— Ignorar —" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                       <SelectItem value="__none__">
-                                          — Ignorar —
-                                       </SelectItem>
-                                       {columns.map((col) => (
-                                          <SelectItem
-                                             key={col.key}
-                                             value={col.key}
-                                          >
-                                             {col.label}
-                                             {col.required && " *"}
-                                          </SelectItem>
-                                       ))}
-                                    </SelectContent>
-                                 </Select>
-                              </div>
+                              {flexRender(
+                                 header.column.columnDef.header,
+                                 header.getContext(),
+                              )}
                            </TableHead>
-                        );
-                     })}
-                  </TableRow>
+                        ))}
+                     </TableRow>
+                  ))}
                </TableHeader>
                <TableBody>
-                  {raw.rows.slice(0, 5).map((row, i) => (
-                     <TableRow key={`row-${i + 1}`}>
-                        {raw.headers.map((_, j) => (
-                           <TableCell
-                              className="max-w-[200px] truncate p-2 text-xs"
-                              key={`cell-${i + 1}-${j + 1}`}
-                           >
-                              {row[j] || (
-                                 <span className="text-muted-foreground">
-                                    —
-                                 </span>
+                  {table.getRowModel().rows.map((row) => (
+                     <TableRow key={row.id}>
+                        {row.getVisibleCells().map((cell) => (
+                           <TableCell className="truncate p-2" key={cell.id}>
+                              {flexRender(
+                                 cell.column.columnDef.cell,
+                                 cell.getContext(),
                               )}
                            </TableCell>
                         ))}
