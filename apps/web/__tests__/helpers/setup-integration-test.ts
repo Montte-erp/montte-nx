@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { pushSchema } from "drizzle-kit/api";
 import { vi } from "vitest";
+import type { createJobPublisher } from "@packages/notifications/publisher";
 import { createTestAuth } from "./create-test-auth";
 import { testStore } from "./test-store";
 import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
@@ -132,6 +133,10 @@ export async function setupIntegrationTest() {
             shutdown: vi.fn(),
          } as unknown as ORPCContextWithAuth["posthog"],
          stripeClient: undefined,
+         jobPublisher: {
+            publish: vi.fn(),
+            subscribe: vi.fn(),
+         } as unknown as ReturnType<typeof createJobPublisher>,
       };
    }
 
