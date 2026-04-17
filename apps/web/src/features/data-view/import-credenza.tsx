@@ -34,7 +34,8 @@ import {
    Loader2,
 } from "lucide-react";
 import { cn } from "@packages/ui/lib/utils";
-import { useTransition, useState } from "react";
+import { useTransition, useState, useRef, useCallback } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { toast } from "sonner";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useFileDownload } from "@/hooks/use-file-download";
@@ -400,12 +401,54 @@ function MappingBody({
    columns,
    mapping,
    onMappingChange,
+   onRowsChange,
 }: {
    raw: RawData;
    columns: ImportableColumn[];
    mapping: ColumnMapping;
    onMappingChange: (m: ColumnMapping) => void;
+   onRowsChange: (rows: ParsedRow[]) => void;
 }) {
+   const [editRows, setEditRows] = useState<ParsedRow[]>(() => {
+      const initial = raw.rows.map((row) =>
+         Object.fromEntries(
+            columns.map((col) => {
+               const header = mapping[col.key];
+               const idx = header ? raw.headers.indexOf(header) : -1;
+               return [col.key, idx >= 0 ? (row[idx] ?? "") : ""];
+            }),
+         ),
+      );
+      onRowsChange(initial);
+      return initial;
+   });
+
+   const [editingCell, setEditingCell] = useState<{
+      rowIdx: number;
+      colKey: string;
+   } | null>(null);
+
+   const parentRef = useRef<HTMLDivElement>(null);
+
+   const rowVirtualizer = useVirtualizer({
+      count: editRows.length,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => 36,
+      overscan: 10,
+   });
+
+   const handleCellChange = useCallback(
+      (rowIdx: number, colKey: string, value: string) => {
+         setEditRows((prev) => {
+            const next = [...prev];
+            next[rowIdx] = { ...next[rowIdx], [colKey]: value };
+            onRowsChange(next);
+            return next;
+         });
+      },
+      [onRowsChange],
+   );
+
    function getDestKeyForSource(sourceHeader: string): string {
       return (
          Object.entries(mapping).find(([, src]) => src === sourceHeader)?.[0] ??
@@ -413,7 +456,7 @@ function MappingBody({
       );
    }
 
-   function handleSelect(sourceHeader: string, destKey: string) {
+   function handleMappingSelect(sourceHeader: string, destKey: string) {
       const next = { ...mapping };
       for (const key of Object.keys(next)) {
          if (next[key] === sourceHeader) next[key] = "";
@@ -430,7 +473,7 @@ function MappingBody({
       })),
    ];
 
-   const previewRows = raw.rows.slice(0, 6);
+   const virtualItems = rowVirtualizer.getVirtualItems();
 
    return (
       <div className="overflow-auto rounded-md border">
@@ -444,7 +487,9 @@ function MappingBody({
                            <Combobox
                               className="h-10 w-full justify-start rounded-none border-0 bg-transparent px-2 text-xs font-medium shadow-none"
                               emptyMessage="Nenhum campo"
-                              onValueChange={(v) => handleSelect(header, v)}
+                              onValueChange={(v) =>
+                                 handleMappingSelect(header, v)
+                              }
                               options={destOptions}
                               placeholder={header}
                               renderSelected={() => (
@@ -458,27 +503,82 @@ function MappingBody({
                   })}
                </TableRow>
             </TableHeader>
-            <TableBody>
-               {previewRows.map((row, rowIdx) => (
-                  <TableRow key={`row-${rowIdx + 1}`}>
-                     {raw.headers.map((header, colIdx) => {
-                        const val = row[colIdx] ?? "";
-                        return (
-                           <TableCell className="truncate p-2" key={header}>
-                              {val ? (
-                                 <span className="text-xs">{val}</span>
-                              ) : (
-                                 <span className="text-xs text-muted-foreground">
-                                    —
-                                 </span>
-                              )}
-                           </TableCell>
-                        );
-                     })}
-                  </TableRow>
-               ))}
-            </TableBody>
          </Table>
+         <div
+            ref={parentRef}
+            className="overflow-auto"
+            style={{ maxHeight: "360px" }}
+         >
+            <div
+               style={{
+                  height: `${rowVirtualizer.getTotalSize()}px`,
+                  position: "relative",
+               }}
+            >
+               {virtualItems.map((virtualRow) => {
+                  const rowIdx = virtualRow.index;
+                  const parsedRow = editRows[rowIdx];
+                  return (
+                     <div
+                        key={virtualRow.key}
+                        style={{
+                           position: "absolute",
+                           top: 0,
+                           left: 0,
+                           width: "100%",
+                           height: `${virtualRow.size}px`,
+                           transform: `translateY(${virtualRow.start}px)`,
+                        }}
+                     >
+                        <Table className="border-separate border-spacing-0">
+                           <TableBody>
+                              <TableRow
+                                 className={
+                                    rowIdx % 2 === 0 ? "" : "bg-muted/20"
+                                 }
+                              >
+                                 {columns.map((col) => {
+                                    const isEditing =
+                                       editingCell?.rowIdx === rowIdx &&
+                                       editingCell?.colKey === col.key;
+                                    const value = parsedRow?.[col.key] ?? "";
+                                    return (
+                                       <TableCell
+                                          className="p-0 min-w-[160px]"
+                                          key={col.key}
+                                       >
+                                          <EditCell
+                                             col={col}
+                                             isEditing={isEditing}
+                                             onActivate={() =>
+                                                setEditingCell({
+                                                   rowIdx,
+                                                   colKey: col.key,
+                                                })
+                                             }
+                                             onChange={(v) =>
+                                                handleCellChange(
+                                                   rowIdx,
+                                                   col.key,
+                                                   v,
+                                                )
+                                             }
+                                             onDeactivate={() =>
+                                                setEditingCell(null)
+                                             }
+                                             value={value}
+                                          />
+                                       </TableCell>
+                                    );
+                                 })}
+                              </TableRow>
+                           </TableBody>
+                        </Table>
+                     </div>
+                  );
+               })}
+            </div>
+         </div>
       </div>
    );
 }
@@ -687,6 +787,7 @@ function ImportWizard({
                      columns={columns}
                      mapping={mapping}
                      onMappingChange={setMapping}
+                     onRowsChange={setRows}
                      raw={rawData}
                   />
                )}
