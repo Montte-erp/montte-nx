@@ -358,16 +358,10 @@ function ColumnVisibilityToggle<TData>({
 function DataTableHeaderRow<TData>({
    headerGroup,
    columnIds,
-   effectiveColumnVisibility,
-   onColumnVisibilityChange,
    table,
 }: {
    headerGroup: ReturnType<TanStackTable<TData>["getHeaderGroups"]>[number];
    columnIds: UniqueIdentifier[];
-   effectiveColumnVisibility: VisibilityState;
-   onColumnVisibilityChange: (
-      updater: VisibilityState | ((old: VisibilityState) => VisibilityState),
-   ) => void;
    table: TanStackTable<TData>;
 }) {
    const headers = headerGroup.headers.map((header) => {
@@ -1148,13 +1142,7 @@ export function DataTable<TData, TValue>({
                         >
                            <DataTableHeaderRow
                               columnIds={columnIds}
-                              effectiveColumnVisibility={
-                                 effectiveColumnVisibility
-                              }
                               headerGroup={headerGroup}
-                              onColumnVisibilityChange={
-                                 handleColumnVisibilityChange
-                              }
                               table={table}
                            />
                         </TableRow>
