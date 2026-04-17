@@ -41,6 +41,7 @@ export function buildServiceColumns(): ColumnDef<ServiceRow>[] {
             importable: true,
             required: true,
             fieldPatterns: ["preco", "price", "valor", "value", "baseprice"],
+            editType: "money",
          },
          cell: ({ row }) => (
             <span>{format(of(row.original.basePrice, "BRL"), "pt-BR")}</span>
