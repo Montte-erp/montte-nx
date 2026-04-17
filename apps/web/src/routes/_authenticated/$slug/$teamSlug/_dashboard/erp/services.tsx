@@ -173,12 +173,20 @@ function ServiceFilters({
 // List
 // =============================================================================
 
-function ServicesList({ filters }: { filters: FiltersState }) {
+function ServicesList() {
    const [sorting, setSorting] = useState<SortingState>([]);
    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
    const [tableState, setTableState] = useServicesTableState();
+   const [filters, setFilters] = useState<FiltersState>({
+      search: "",
+      type: "",
+      categoryId: "",
+   });
    const { data: servicesList } = useSuspenseQuery(
       orpc.services.getAll.queryOptions({}),
+   );
+   const { data: categories } = useSuspenseQuery(
+      orpc.categories.getAll.queryOptions({}),
    );
 
    const { openCredenza, closeCredenza } = useCredenza();
@@ -277,7 +285,7 @@ function ServicesList({ filters }: { filters: FiltersState }) {
    }
 
    return (
-      <div className="space-y-2">
+      <div className="flex flex-col gap-4">
          <div className="flex items-center gap-2">
             <Badge variant="secondary">{filtered.length} serviços</Badge>
          </div>
@@ -294,6 +302,13 @@ function ServicesList({ filters }: { filters: FiltersState }) {
                onColumnFiltersChange={setColumnFilters}
                tableState={tableState}
                onTableStateChange={setTableState}
+               renderToolbar={
+                  <ServiceFilters
+                     categories={categories}
+                     filters={filters}
+                     onChange={setFilters}
+                  />
+               }
                renderActions={({ row }) => (
                   <>
                      <Button
@@ -326,17 +341,6 @@ function ServicesList({ filters }: { filters: FiltersState }) {
 function ServicesPage() {
    const { openCredenza, closeCredenza } = useCredenza();
 
-   const [filters, setFilters] = useState<FiltersState>({
-      search: "",
-      type: "",
-      categoryId: "",
-   });
-
-   const { data: categoriesResult } = useSuspenseQuery(
-      orpc.categories.getAll.queryOptions({}),
-   );
-   const categories = categoriesResult;
-
    const handleCreate = useCallback(() => {
       openCredenza({
          renderChildren: () => (
@@ -359,13 +363,8 @@ function ServicesPage() {
          />
          <ServicesAnalyticsHeader />
          <EarlyAccessBanner template={SERVICES_BANNER} />
-         <ServiceFilters
-            categories={categories}
-            filters={filters}
-            onChange={setFilters}
-         />
          <Suspense fallback={<ServicesSkeleton />}>
-            <ServicesList filters={filters} />
+            <ServicesList />
          </Suspense>
       </main>
    );

@@ -1,5 +1,6 @@
 import {
    CredenzaBody,
+   CredenzaDescription,
    CredenzaFooter,
    CredenzaHeader,
    CredenzaTitle,
@@ -79,14 +80,29 @@ function guessMapping(
 }
 
 // =============================================================================
-// Step titles
+// Step metadata
 // =============================================================================
 
-const STEP_TITLES: Record<string, string> = {
-   upload: "Arquivo",
-   mapping: "Mapear Colunas",
-   preview: "Prévia dos Dados",
-   confirm: "Confirmar Importação",
+const STEP_META: Record<
+   string,
+   { title: (label: string) => string; description: string }
+> = {
+   upload: {
+      title: (label) => `Importar ${label}`,
+      description: "Selecione um arquivo CSV ou XLSX para importar.",
+   },
+   mapping: {
+      title: () => "Mapear Colunas",
+      description: "Associe as colunas do arquivo aos campos do sistema.",
+   },
+   preview: {
+      title: () => "Prévia dos Dados",
+      description: "Confira os dados antes de importar.",
+   },
+   confirm: {
+      title: () => "Confirmar Importação",
+      description: "Revise o resumo e confirme a importação.",
+   },
 };
 
 // =============================================================================
@@ -574,6 +590,10 @@ function ImportWizard({
    );
    const [rows, setRows] = useState<ParsedRow[]>([]);
 
+   const stepMeta = STEP_META[currentId];
+   const stepTitle = stepMeta?.title(config.label) ?? currentId;
+   const stepDescription = stepMeta?.description ?? "";
+
    function handleReady(data: RawData) {
       setRawData(data);
       setMapping((prev) => ({
@@ -585,35 +605,34 @@ function ImportWizard({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               {currentId === "upload"
-                  ? `Importar ${config.label}`
-                  : STEP_TITLES[currentId]}
-            </CredenzaTitle>
-            <Stepper.Navigation>
-               <Stepper.Step of="upload" />
-               <Stepper.Step of="mapping" />
-               <Stepper.Step of="preview" />
-               <Stepper.Step of="confirm" />
-            </Stepper.Navigation>
+            <CredenzaTitle>{stepTitle}</CredenzaTitle>
+            <CredenzaDescription>{stepDescription}</CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody>
-            {currentId === "upload" && (
-               <UploadBody methods={methods} onReady={handleReady} />
-            )}
-            {currentId === "mapping" && rawData && (
-               <MappingBody
-                  columns={columns}
-                  mapping={mapping}
-                  onMappingChange={setMapping}
-                  raw={rawData}
-               />
-            )}
-            {currentId === "preview" && (
-               <PreviewBody columns={columns} rows={rows} />
-            )}
-            {currentId === "confirm" && <ConfirmBody rows={rows} />}
+            <div className="flex flex-col gap-4">
+               <Stepper.Navigation>
+                  <Stepper.Step of="upload" />
+                  <Stepper.Step of="mapping" />
+                  <Stepper.Step of="preview" />
+                  <Stepper.Step of="confirm" />
+               </Stepper.Navigation>
+               {currentId === "upload" && (
+                  <UploadBody methods={methods} onReady={handleReady} />
+               )}
+               {currentId === "mapping" && rawData && (
+                  <MappingBody
+                     columns={columns}
+                     mapping={mapping}
+                     onMappingChange={setMapping}
+                     raw={rawData}
+                  />
+               )}
+               {currentId === "preview" && (
+                  <PreviewBody columns={columns} rows={rows} />
+               )}
+               {currentId === "confirm" && <ConfirmBody rows={rows} />}
+            </div>
          </CredenzaBody>
 
          <CredenzaFooter className="justify-start">

@@ -171,6 +171,7 @@ interface DataTableProps<TData, TValue> {
    getSubRows?: (row: TData) => TData[] | undefined;
    exportConfig?: { filename: string };
    importConfig?: ImportConfig;
+   renderToolbar?: React.ReactNode;
 }
 
 // =============================================================================
@@ -371,17 +372,7 @@ function DataTableHeaderRow<TData>({
 }) {
    const headers = headerGroup.headers.map((header) => {
       if (header.column.id === "__actions") {
-         return (
-            <TableHead className="w-0" key={header.id}>
-               <div className="flex items-center justify-end">
-                  <ColumnVisibilityToggle
-                     columnVisibility={effectiveColumnVisibility}
-                     onColumnVisibilityChange={onColumnVisibilityChange}
-                     table={table}
-                  />
-               </div>
-            </TableHead>
-         );
+         return <TableHead className="w-0" key={header.id} />;
       }
 
       const content =
@@ -891,6 +882,7 @@ export function DataTable<TData, TValue>({
    getSubRows,
    exportConfig,
    importConfig,
+   renderToolbar,
 }: DataTableProps<TData, TValue>) {
    const [internalSorting, setInternalSorting] = useState<SortingState>([]);
    const [internalColumnFilters, setInternalColumnFilters] =
@@ -1116,9 +1108,10 @@ export function DataTable<TData, TValue>({
    }, []);
 
    return (
-      <div>
-         {(exportConfig || importConfig) && (
-            <div className="flex items-center justify-end gap-2 pb-2">
+      <div className="flex flex-col gap-4">
+         <div className="flex items-center gap-4 px-4 py-2.5 bg-background border border-border rounded-lg">
+            <div className="flex-1 min-w-0">{renderToolbar}</div>
+            <div className="flex items-center gap-2 shrink-0">
                {importConfig && (
                   <DataTableImportButton
                      columns={columns}
@@ -1132,8 +1125,13 @@ export function DataTable<TData, TValue>({
                      filename={exportConfig.filename}
                   />
                )}
+               <ColumnVisibilityToggle
+                  columnVisibility={effectiveColumnVisibility}
+                  onColumnVisibilityChange={handleColumnVisibilityChange}
+                  table={table}
+               />
             </div>
-         )}
+         </div>
          <DndContext
             collisionDetection={closestCenter}
             modifiers={[restrictToHorizontalAxis]}
