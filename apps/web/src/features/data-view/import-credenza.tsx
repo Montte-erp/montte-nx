@@ -18,8 +18,6 @@ import {
 } from "@packages/ui/components/popover";
 import {
    Table,
-   TableBody,
-   TableCell,
    TableHead,
    TableHeader,
    TableRow,
@@ -33,7 +31,6 @@ import {
    FileText,
    Loader2,
 } from "lucide-react";
-import { cn } from "@packages/ui/lib/utils";
 import { useTransition, useState, useRef, useCallback, useEffect } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { toast } from "sonner";
@@ -319,7 +316,7 @@ function MoneyEditCell({
 // EditCell
 // =============================================================================
 
-export function EditCell({
+function EditCell({
    col,
    isEditing,
    value,
@@ -426,6 +423,21 @@ function MappingBody({
       // oxlint-ignore react-hooks/exhaustive-deps
    }, []);
 
+   useEffect(() => {
+      const derived = raw.rows.map((row) =>
+         Object.fromEntries(
+            columns.map((col) => {
+               const header = mapping[col.key];
+               const idx = header ? raw.headers.indexOf(header) : -1;
+               return [col.key, idx >= 0 ? (row[idx] ?? "") : ""];
+            }),
+         ),
+      );
+      setEditRows(derived);
+      onRowsChange(derived);
+      // oxlint-ignore react-hooks/exhaustive-deps
+   }, [mapping]);
+
    const [editingCell, setEditingCell] = useState<{
       rowIdx: number;
       colKey: string;
@@ -524,6 +536,7 @@ function MappingBody({
                   return (
                      <div
                         key={virtualRow.key}
+                        className={`flex border-b ${rowIdx % 2 !== 0 ? "bg-muted/20" : ""}`}
                         style={{
                            position: "absolute",
                            top: 0,
@@ -533,50 +546,35 @@ function MappingBody({
                            transform: `translateY(${virtualRow.start}px)`,
                         }}
                      >
-                        <Table className="border-separate border-spacing-0">
-                           <TableBody>
-                              <TableRow
-                                 className={
-                                    rowIdx % 2 === 0 ? "" : "bg-muted/20"
-                                 }
+                        {columns.map((col) => {
+                           const isEditing =
+                              editingCell?.rowIdx === rowIdx &&
+                              editingCell?.colKey === col.key;
+                           const value = parsedRow?.[col.key] ?? "";
+                           return (
+                              <div
+                                 key={col.key}
+                                 className="flex items-center"
+                                 style={{ minWidth: 160, flex: "0 0 160px" }}
                               >
-                                 {columns.map((col) => {
-                                    const isEditing =
-                                       editingCell?.rowIdx === rowIdx &&
-                                       editingCell?.colKey === col.key;
-                                    const value = parsedRow?.[col.key] ?? "";
-                                    return (
-                                       <TableCell
-                                          className="p-0 min-w-[160px]"
-                                          key={col.key}
-                                       >
-                                          <EditCell
-                                             col={col}
-                                             isEditing={isEditing}
-                                             onActivate={() =>
-                                                setEditingCell({
-                                                   rowIdx,
-                                                   colKey: col.key,
-                                                })
-                                             }
-                                             onChange={(v) =>
-                                                handleCellChange(
-                                                   rowIdx,
-                                                   col.key,
-                                                   v,
-                                                )
-                                             }
-                                             onDeactivate={() =>
-                                                setEditingCell(null)
-                                             }
-                                             value={value}
-                                          />
-                                       </TableCell>
-                                    );
-                                 })}
-                              </TableRow>
-                           </TableBody>
-                        </Table>
+                                 <EditCell
+                                    col={col}
+                                    isEditing={isEditing}
+                                    onActivate={() =>
+                                       setEditingCell({
+                                          rowIdx,
+                                          colKey: col.key,
+                                       })
+                                    }
+                                    onChange={(v) =>
+                                       handleCellChange(rowIdx, col.key, v)
+                                    }
+                                    onDeactivate={() => setEditingCell(null)}
+                                    value={value}
+                                 />
+                              </div>
+                           );
+                        })}
                      </div>
                   );
                })}
