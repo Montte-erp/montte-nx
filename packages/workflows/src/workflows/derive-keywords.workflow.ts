@@ -4,11 +4,10 @@ import { updateCategory } from "@core/database/repositories/categories-repositor
 import { emitAiKeywordDerived } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
 import { enforceCreditBudget } from "@packages/events/credits";
-import { deriveKeywordsWithAI } from "@core/agents/keywords";
+import { deriveKeywordsWithAI } from "@core/agents/actions/keywords";
 import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import type { JobNotification } from "@packages/notifications/schema";
-import { jobPublisher } from "../publisher";
-import { db, redis, posthog, stripeClient } from "../singletons";
+import { getDeps, getPublisher } from "../context";
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
 
@@ -23,13 +22,15 @@ export type DeriveKeywordsInput = {
 };
 
 async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
+   const { db, redis, posthog, stripeClient } = getDeps();
+   const publisher = getPublisher();
    const ctx = `[derive-keywords] category=${input.categoryId} team=${input.teamId}`;
 
    DBOS.logger.info(`${ctx} started name="${input.name}"`);
 
    await DBOS.runStep(
       () =>
-         jobPublisher.publish("job.notification", {
+         publisher.publish("job.notification", {
             jobId: crypto.randomUUID(),
             type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
             status: "started",
@@ -56,7 +57,7 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
       DBOS.logger.warn(`${ctx} budget exceeded: ${msg}`);
       await DBOS.runStep(
          () =>
-            jobPublisher.publish("job.notification", {
+            publisher.publish("job.notification", {
                jobId: crypto.randomUUID(),
                type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
                status: "failed",
@@ -88,7 +89,7 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
       DBOS.logger.error(`${ctx} derive failed: ${msg}`);
       await DBOS.runStep(
          () =>
-            jobPublisher.publish("job.notification", {
+            publisher.publish("job.notification", {
                jobId: crypto.randomUUID(),
                type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
                status: "failed",
@@ -119,7 +120,7 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
       DBOS.logger.error(`${ctx} save failed: ${msg}`);
       await DBOS.runStep(
          () =>
-            jobPublisher.publish("job.notification", {
+            publisher.publish("job.notification", {
                jobId: crypto.randomUUID(),
                type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
                status: "failed",
@@ -161,7 +162,7 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
 
    await DBOS.runStep(
       () =>
-         jobPublisher.publish("job.notification", {
+         publisher.publish("job.notification", {
             jobId: crypto.randomUUID(),
             type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
             status: "completed",

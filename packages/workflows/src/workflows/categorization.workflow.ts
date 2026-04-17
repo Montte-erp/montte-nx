@@ -4,11 +4,10 @@ import {
    listCategories,
 } from "@core/database/repositories/categories-repository";
 import { updateTransactionCategory } from "@core/database/repositories/transactions-repository";
-import { inferCategoryWithAI } from "@core/agents/categorize";
+import { inferCategoryWithAI } from "@core/agents/actions/categorize";
 import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import type { JobNotification } from "@packages/notifications/schema";
-import { jobPublisher } from "../publisher";
-import { db } from "../singletons";
+import { getDeps, getPublisher } from "../context";
 
 export type CategorizationInput = {
    transactionId: string;
@@ -21,13 +20,15 @@ export type CategorizationInput = {
 const MODEL = "google/gemini-3.1-flash-lite-preview";
 
 async function categorizationWorkflowFn(input: CategorizationInput) {
+   const { db } = getDeps();
+   const publisher = getPublisher();
    const ctx = `[categorization] tx=${input.transactionId} team=${input.teamId}`;
 
    DBOS.logger.info(`${ctx} started name="${input.name}"`);
 
    await DBOS.runStep(
       () =>
-         jobPublisher.publish("job.notification", {
+         publisher.publish("job.notification", {
             jobId: crypto.randomUUID(),
             timestamp: new Date().toISOString(),
             type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
@@ -56,7 +57,7 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
       DBOS.logger.error(`${ctx} keyword match failed: ${msg}`);
       await DBOS.runStep(
          () =>
-            jobPublisher.publish("job.notification", {
+            publisher.publish("job.notification", {
                jobId: crypto.randomUUID(),
                timestamp: new Date().toISOString(),
                type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
@@ -79,7 +80,7 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
       );
       await DBOS.runStep(
          () =>
-            jobPublisher.publish("job.notification", {
+            publisher.publish("job.notification", {
                jobId: crypto.randomUUID(),
                timestamp: new Date().toISOString(),
                type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
@@ -112,7 +113,7 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
       DBOS.logger.error(`${ctx} AI inference failed: ${msg}`);
       await DBOS.runStep(
          () =>
-            jobPublisher.publish("job.notification", {
+            publisher.publish("job.notification", {
                jobId: crypto.randomUUID(),
                timestamp: new Date().toISOString(),
                type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
@@ -144,7 +145,7 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
 
    await DBOS.runStep(
       () =>
-         jobPublisher.publish("job.notification", {
+         publisher.publish("job.notification", {
             jobId: crypto.randomUUID(),
             timestamp: new Date().toISOString(),
             type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,

@@ -8,17 +8,9 @@
    ],
    "type": "module",
    "exports": {
-      "./init": {
-         "types": "./dist/init.d.ts",
-         "default": "./dist/init.js"
-      },
-      "./runner": {
-         "types": "./dist/runner.d.ts",
-         "default": "./dist/runner.js"
-      },
-      "./workflows": {
-         "types": "./dist/workflows/index.d.ts",
-         "default": "./dist/workflows/index.js"
+      "./setup": {
+         "types": "./dist/setup.d.ts",
+         "default": "./dist/setup.js"
       }
    },
    "scripts": {
@@ -31,7 +23,6 @@
    "dependencies": {
       "@core/agents": "workspace:*",
       "@core/database": "workspace:*",
-      "@core/environment": "workspace:*",
       "@core/logging": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",

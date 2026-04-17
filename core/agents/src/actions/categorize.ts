@@ -2,6 +2,8 @@ import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
 import { z } from "zod";
 
+type OpenRouterModelId = Parameters<typeof openRouterText>[0];
+
 type CategoryOption = {
    id: string;
    name: string;
@@ -27,7 +29,7 @@ export type InferCategoryResult = {
 export async function inferCategoryWithAI(
    cats: CategoryOption[],
    input: InferCategoryInput,
-   model: string,
+   model: OpenRouterModelId,
 ): Promise<InferCategoryResult | null> {
    const categoryList = cats
       .map(

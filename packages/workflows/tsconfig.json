@@ -1,13 +1,11 @@
 {
    "extends": "@tooling/typescript/tsconfig.package.json",
    "compilerOptions": {
-      "experimentalDecorators": true,
       "paths": {
          "@core/agents": ["../../core/agents/src/agent.ts"],
          "@core/agents/*": ["../../core/agents/src/*"],
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],
-         "@core/environment/*": ["../../core/environment/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],

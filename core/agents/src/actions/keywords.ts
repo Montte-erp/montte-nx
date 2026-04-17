@@ -2,6 +2,8 @@ import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
 import { z } from "zod";
 
+type OpenRouterModelId = Parameters<typeof openRouterText>[0];
+
 const outputSchema = z.object({
    keywords: z
       .array(z.string().min(1).max(60))
@@ -15,7 +17,7 @@ const outputSchema = z.object({
 export type DeriveKeywordsAIInput = {
    name: string;
    description?: string | null;
-   model: string;
+   model: OpenRouterModelId;
 };
 
 export async function deriveKeywordsWithAI(

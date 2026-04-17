@@ -1,8 +1,11 @@
 import { eventIterator } from "@orpc/server";
 import { jobNotificationSchema } from "@packages/notifications/schema";
+import { createJobPublisher } from "@packages/notifications/publisher";
 import { getLogger } from "@core/logging/root";
 import { protectedProcedure } from "../server";
-import { jobPublisher } from "@/integrations/dbos/publisher";
+import { redis } from "@/integrations/singletons";
+
+const jobPublisher = createJobPublisher(redis);
 
 const logger = getLogger().child({ module: "notifications.subscribe" });
 

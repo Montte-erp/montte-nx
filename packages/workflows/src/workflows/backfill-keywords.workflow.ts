@@ -8,14 +8,16 @@ import {
 import { enforceCreditBudget } from "@packages/events/credits";
 import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import type { JobNotification } from "@packages/notifications/schema";
-import { jobPublisher } from "../publisher";
-import { db, redis } from "../singletons";
+import { getDeps, getPublisher } from "../context";
 import { deriveKeywordsWorkflow } from "./derive-keywords.workflow";
 
 async function backfillKeywordsWorkflowFn(
    scheduledTime: Date,
    _context: unknown,
 ) {
+   const { db, redis } = getDeps();
+   const publisher = getPublisher();
+
    const teams = await DBOS.runStep(
       async () =>
          (
@@ -72,7 +74,7 @@ async function backfillKeywordsWorkflowFn(
 
          await DBOS.startWorkflow(deriveKeywordsWorkflow, {
             workflowID: `derive-${category.id}-${dayjs(scheduledTime).format("YYYY-MM-DD")}`,
-         }).run({
+         })({
             categoryId: category.id,
             teamId: category.teamId,
             organizationId: team.organizationId,
@@ -86,7 +88,7 @@ async function backfillKeywordsWorkflowFn(
       if (processed > 0) {
          await DBOS.runStep(
             () =>
-               jobPublisher.publish("job.notification", {
+               publisher.publish("job.notification", {
                   jobId: crypto.randomUUID(),
                   type: NOTIFICATION_TYPES.CRON_KEYWORDS_BACKFILL,
                   status: "completed",
