@@ -688,8 +688,10 @@ describe("reactivateCategory (repository)", () => {
       );
 
       const result = await reactivateCategory(ctx.db, created.id);
-
-      expect(result.isArchived).toBe(false);
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+         expect(result.value.isArchived).toBe(false);
+      }
 
       const fromDb = await ctx.db.query.categories.findFirst({
          where: (fields, { eq }) => eq(fields.id, created.id),
@@ -697,9 +699,14 @@ describe("reactivateCategory (repository)", () => {
       expect(fromDb!.isArchived).toBe(false);
    });
 
-   it("throws NOT_FOUND when category does not exist", async () => {
-      await expect(
-         reactivateCategory(ctx.db, "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"),
-      ).rejects.toThrow("Categoria não encontrada.");
+   it("returns Err with NOT_FOUND when category does not exist", async () => {
+      const result = await reactivateCategory(
+         ctx.db,
+         "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+      );
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+         expect(result.error.message).toContain("Categoria não encontrada.");
+      }
    });
 });

@@ -61,6 +61,7 @@
       "@f-o-t/money": "catalog:fot",
       "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",
+      "neverthrow": "catalog:validation",
       "pg": "catalog:database",
       "zod": "catalog:validation"
    },

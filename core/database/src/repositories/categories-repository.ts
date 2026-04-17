@@ -1,7 +1,8 @@
 import dayjs from "dayjs";
-import { AppError, propagateError, validateInput } from "@core/logging/errors";
+import { AppError, validateInput } from "@core/logging/errors";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
+import { fromPromise, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateCategoryInput,
@@ -11,6 +12,8 @@ import {
    updateCategorySchema,
 } from "@core/database/schemas/categories";
 import { transactions } from "@core/database/schemas/transactions";
+
+type Category = typeof categories.$inferSelect;
 
 type CategorySeed = {
    name: string;
@@ -370,95 +373,195 @@ const EMPRESARIAL_CATEGORIES: CategorySeed[] = [
    },
 ];
 
-export async function createCategory(
+export function createCategory(
    db: DatabaseInstance,
    teamId: string,
    data: CreateCategoryInput,
 ) {
-   const validated = validateInput(createCategorySchema, data);
-   try {
-      let level = 1;
-      let type = validated.type;
+   return fromPromise(
+      (async () => {
+         const validated = validateInput(createCategorySchema, data);
+         let level = 1;
+         let type = validated.type;
 
-      if (validated.parentId) {
-         const parentId = validated.parentId;
-         const parent = await db.query.categories.findFirst({
-            where: (fields, { eq }) => eq(fields.id, parentId),
-         });
-         if (!parent) throw AppError.notFound("Categoria pai não encontrada.");
-         if (parent.level >= 3) {
-            throw AppError.validation("Limite de 3 níveis atingido.");
+         if (validated.parentId) {
+            const parentId = validated.parentId;
+            const parent = await db.query.categories.findFirst({
+               where: (fields, { eq }) => eq(fields.id, parentId),
+            });
+            if (!parent)
+               throw AppError.notFound("Categoria pai não encontrada.");
+            if (parent.level >= 3) {
+               throw AppError.validation("Limite de 3 níveis atingido.");
+            }
+            level = parent.level + 1;
+            type = parent.type;
          }
-         level = parent.level + 1;
-         type = parent.type;
-      }
 
-      if (validated.keywords?.length) {
-         await validateKeywordsUniqueness(db, teamId, validated.keywords);
-      }
+         if (validated.keywords?.length) {
+            const vResult = await validateKeywordsUniqueness(
+               db,
+               teamId,
+               validated.keywords,
+            );
+            if (vResult.isErr()) throw vResult.error;
+         }
 
-      const [category] = await db
-         .insert(categories)
-         .values({
-            ...validated,
-            teamId,
-            level,
-            type,
-         })
-         .returning();
-      if (!category) throw AppError.database("Failed to create category");
-      return category;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to create category");
-   }
+         const [category] = await db
+            .insert(categories)
+            .values({
+               ...validated,
+               teamId,
+               level,
+               type,
+            })
+            .returning();
+         if (!category) throw AppError.database("Failed to create category");
+         return category;
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to create category", { cause: e }),
+   );
 }
 
-export async function seedEmpresarialCategories(
+type SubcategoryInput = { name: string };
+type CreateWithSubsInput = CreateCategoryInput & {
+   subcategories?: SubcategoryInput[];
+};
+
+export function createCategoryWithSubcategories(
+   db: DatabaseInstance,
+   teamId: string,
+   data: CreateWithSubsInput,
+) {
+   const { subcategories, ...catData } = data;
+   return fromPromise(
+      db.transaction(async (tx) => {
+         const createdResult = await createCategory(tx, teamId, catData);
+         if (createdResult.isErr()) throw createdResult.error;
+         const category = createdResult.value;
+         const subs: Category[] = [];
+         if (subcategories && subcategories.length > 0) {
+            for (const sub of subcategories) {
+               const subResult = await createCategory(tx, teamId, {
+                  name: sub.name,
+                  type: catData.type,
+                  parentId: category.id,
+                  participatesDre: false,
+               });
+               if (subResult.isErr()) throw subResult.error;
+               subs.push(subResult.value);
+            }
+         }
+         return { category, subcategories: subs };
+      }),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database(
+                 "Failed to create category with subcategories",
+                 { cause: e },
+              ),
+   );
+}
+
+type ImportBatchItem = CreateCategoryInput & {
+   subcategories?: Array<{ name: string; keywords?: string[] | null }>;
+};
+
+export function importCategoriesBatch(
+   db: DatabaseInstance,
+   teamId: string,
+   items: ImportBatchItem[],
+) {
+   return fromPromise(
+      db.transaction(async (tx) => {
+         const all: Category[] = [];
+         const parents: Category[] = [];
+         for (const item of items) {
+            const { subcategories, ...catData } = item;
+            const catResult = await createCategory(tx, teamId, catData);
+            if (catResult.isErr()) throw catResult.error;
+            const created = catResult.value;
+            parents.push(created);
+            all.push(created);
+            if (subcategories && subcategories.length > 0) {
+               for (const sub of subcategories) {
+                  const subResult = await createCategory(tx, teamId, {
+                     name: sub.name,
+                     type: catData.type,
+                     parentId: created.id,
+                     participatesDre: false,
+                     keywords: sub.keywords ?? null,
+                  });
+                  if (subResult.isErr()) throw subResult.error;
+                  all.push(subResult.value);
+               }
+            }
+         }
+         return { all, parents };
+      }),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to import categories batch", {
+                 cause: e,
+              }),
+   );
+}
+
+export function seedEmpresarialCategories(
    db: DatabaseInstance,
    teamId: string,
 ) {
-   try {
-      for (const root of EMPRESARIAL_CATEGORIES) {
-         const [parent] = await db
-            .insert(categories)
-            .values({
-               teamId,
-               name: root.name,
-               type: root.type,
-               icon: root.icon ?? null,
-               color: root.color ?? null,
-               description: root.description ?? null,
-               keywords: root.keywords ?? null,
-               level: 1,
-               isDefault: true,
-            })
-            .returning();
-         if (!parent) throw AppError.database("Failed to seed category");
-
-         if (root.children?.length) {
-            await db.insert(categories).values(
-               root.children.map((child) => ({
+   return fromPromise(
+      (async () => {
+         for (const root of EMPRESARIAL_CATEGORIES) {
+            const [parent] = await db
+               .insert(categories)
+               .values({
                   teamId,
-                  name: child.name,
+                  name: root.name,
                   type: root.type,
-                  icon: child.icon ?? null,
-                  description: child.description ?? null,
-                  keywords: child.keywords ?? null,
-                  parentId: parent.id,
-                  level: 2,
+                  icon: root.icon ?? null,
+                  color: root.color ?? null,
+                  description: root.description ?? null,
+                  keywords: root.keywords ?? null,
+                  level: 1,
                   isDefault: true,
-               })),
-            );
+               })
+               .returning();
+            if (!parent) throw AppError.database("Failed to seed category");
+
+            if (root.children?.length) {
+               await db.insert(categories).values(
+                  root.children.map((child) => ({
+                     teamId,
+                     name: child.name,
+                     type: root.type,
+                     icon: child.icon ?? null,
+                     description: child.description ?? null,
+                     keywords: child.keywords ?? null,
+                     parentId: parent.id,
+                     level: 2,
+                     isDefault: true,
+                  })),
+               );
+            }
          }
-      }
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to seed empresarial categories");
-   }
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to seed empresarial categories", {
+                 cause: e,
+              }),
+   );
 }
 
-export async function listCategories(
+export function listCategories(
    db: DatabaseInstance,
    teamId: string,
    opts?: {
@@ -466,239 +569,287 @@ export async function listCategories(
       includeArchived?: boolean;
    },
 ) {
-   try {
-      const conditions: SQL[] = [eq(categories.teamId, teamId)];
+   return fromPromise(
+      (async () => {
+         const conditions: SQL[] = [eq(categories.teamId, teamId)];
 
-      if (opts?.type) {
-         conditions.push(eq(categories.type, opts.type));
-      }
-      if (!opts?.includeArchived) {
-         conditions.push(eq(categories.isArchived, false));
-      }
+         if (opts?.type) {
+            conditions.push(eq(categories.type, opts.type));
+         }
+         if (!opts?.includeArchived) {
+            conditions.push(eq(categories.isArchived, false));
+         }
 
-      return await db.query.categories.findMany({
-         where: and(...conditions),
-         orderBy: (fields, { asc }) => [asc(fields.name)],
-      });
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to list categories");
-   }
+         return await db.query.categories.findMany({
+            where: and(...conditions),
+            orderBy: (fields, { asc }) => [asc(fields.name)],
+         });
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to list categories", { cause: e }),
+   );
 }
 
-export async function ensureCategoryOwnership(
+export function ensureCategoryOwnership(
    db: DatabaseInstance,
    id: string,
    teamId: string,
 ) {
-   const category = await getCategory(db, id);
-   if (!category || category.teamId !== teamId) {
-      throw AppError.notFound("Categoria não encontrada.");
-   }
-   return category;
+   return getCategory(db, id).andThen((category) => {
+      if (!category || category.teamId !== teamId)
+         return err(AppError.notFound("Categoria não encontrada."));
+      return ok(category);
+   });
 }
 
-export async function getCategory(db: DatabaseInstance, id: string) {
-   try {
-      const category = await db.query.categories.findFirst({
+export function getCategory(db: DatabaseInstance, id: string) {
+   return fromPromise(
+      db.query.categories.findFirst({
          where: (fields, { eq }) => eq(fields.id, id),
-      });
-      return category ?? null;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to get category");
-   }
+      }),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to get category", { cause: e }),
+   ).map((category) => category ?? null);
 }
 
-export async function updateCategory(
+export function updateCategory(
    db: DatabaseInstance,
    id: string,
    data: UpdateCategoryInput,
 ) {
-   const validated = validateInput(updateCategorySchema, data);
-   try {
-      const existing = await db.query.categories.findFirst({
-         where: (fields, { eq }) => eq(fields.id, id),
-      });
-      if (!existing) throw AppError.notFound("Categoria não encontrada.");
-      if (existing.isDefault) {
-         throw AppError.conflict("Categorias padrão não podem ser editadas.");
-      }
+   return fromPromise(
+      (async () => {
+         const validated = validateInput(updateCategorySchema, data);
+         const existing = await db.query.categories.findFirst({
+            where: (fields, { eq }) => eq(fields.id, id),
+         });
+         if (!existing) throw AppError.notFound("Categoria não encontrada.");
+         if (existing.isDefault) {
+            throw AppError.conflict(
+               "Categorias padrão não podem ser editadas.",
+            );
+         }
 
-      if (validated.keywords?.length) {
-         await validateKeywordsUniqueness(
+         if (validated.keywords?.length) {
+            const vResult = await validateKeywordsUniqueness(
+               db,
+               existing.teamId,
+               validated.keywords,
+               id,
+            );
+            if (vResult.isErr()) throw vResult.error;
+         }
+
+         const [updated] = await db
+            .update(categories)
+            .set({ ...validated, updatedAt: dayjs().toDate() })
+            .where(eq(categories.id, id))
+            .returning();
+         if (!updated) throw AppError.notFound("Categoria não encontrada.");
+         return updated;
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to update category", { cause: e }),
+   );
+}
+
+export function archiveCategory(db: DatabaseInstance, id: string) {
+   return fromPromise(
+      (async () => {
+         const existing = await db.query.categories.findFirst({
+            where: (fields, { eq }) => eq(fields.id, id),
+         });
+         if (!existing) throw AppError.notFound("Categoria não encontrada.");
+         if (existing.isDefault) {
+            throw AppError.conflict(
+               "Categorias padrão não podem ser arquivadas.",
+            );
+         }
+
+         const descendantIds = await getDescendantIds(db, id);
+         const allIds = [id, ...descendantIds];
+
+         await db
+            .update(categories)
+            .set({ isArchived: true, updatedAt: dayjs().toDate() })
+            .where(inArray(categories.id, allIds));
+
+         return await db.query.categories.findFirst({
+            where: (fields, { eq }) => eq(fields.id, id),
+         });
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to archive category", { cause: e }),
+   );
+}
+
+export function reactivateCategory(db: DatabaseInstance, id: string) {
+   return fromPromise(
+      (async () => {
+         const [updated] = await db
+            .update(categories)
+            .set({ isArchived: false, updatedAt: dayjs().toDate() })
+            .where(eq(categories.id, id))
+            .returning();
+         if (!updated) throw AppError.notFound("Categoria não encontrada.");
+         return updated;
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to reactivate category", { cause: e }),
+   );
+}
+
+export function deleteCategory(db: DatabaseInstance, id: string) {
+   return fromPromise(
+      (async () => {
+         const existing = await db.query.categories.findFirst({
+            where: (fields, { eq }) => eq(fields.id, id),
+         });
+         if (!existing) throw AppError.notFound("Categoria não encontrada.");
+         if (existing.isDefault) {
+            throw AppError.conflict(
+               "Categorias padrão não podem ser excluídas.",
+            );
+         }
+
+         const hasTransactionsResult = await categoryTreeHasTransactions(
             db,
-            existing.teamId,
-            validated.keywords,
             id,
          );
-      }
+         if (hasTransactionsResult.isErr()) throw hasTransactionsResult.error;
+         if (hasTransactionsResult.value) {
+            throw AppError.conflict(
+               "Categoria com lançamentos não pode ser excluída. Use arquivamento.",
+            );
+         }
 
-      const [updated] = await db
-         .update(categories)
-         .set({ ...validated, updatedAt: dayjs().toDate() })
-         .where(eq(categories.id, id))
-         .returning();
-      if (!updated) throw AppError.notFound("Categoria não encontrada.");
-      return updated;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to update category");
-   }
+         await db.delete(categories).where(eq(categories.id, id));
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to delete category", { cause: e }),
+   );
 }
 
-export async function archiveCategory(db: DatabaseInstance, id: string) {
-   try {
-      const existing = await db.query.categories.findFirst({
-         where: (fields, { eq }) => eq(fields.id, id),
-      });
-      if (!existing) throw AppError.notFound("Categoria não encontrada.");
-      if (existing.isDefault) {
-         throw AppError.conflict("Categorias padrão não podem ser arquivadas.");
-      }
-
-      const descendantIds = await getDescendantIds(db, id);
-      const allIds = [id, ...descendantIds];
-
-      await db
-         .update(categories)
-         .set({ isArchived: true, updatedAt: dayjs().toDate() })
-         .where(inArray(categories.id, allIds));
-
-      return await db.query.categories.findFirst({
-         where: (fields, { eq }) => eq(fields.id, id),
-      });
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to archive category");
-   }
-}
-
-export async function reactivateCategory(db: DatabaseInstance, id: string) {
-   try {
-      const [updated] = await db
-         .update(categories)
-         .set({ isArchived: false, updatedAt: dayjs().toDate() })
-         .where(eq(categories.id, id))
-         .returning();
-      if (!updated) throw AppError.notFound("Categoria não encontrada.");
-      return updated;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to reactivate category");
-   }
-}
-
-export async function deleteCategory(db: DatabaseInstance, id: string) {
-   try {
-      const existing = await db.query.categories.findFirst({
-         where: (fields, { eq }) => eq(fields.id, id),
-      });
-      if (!existing) throw AppError.notFound("Categoria não encontrada.");
-      if (existing.isDefault) {
-         throw AppError.conflict("Categorias padrão não podem ser excluídas.");
-      }
-
-      const hasTransactions = await categoryTreeHasTransactions(db, id);
-      if (hasTransactions) {
-         throw AppError.conflict(
-            "Categoria com lançamentos não pode ser excluída. Use arquivamento.",
-         );
-      }
-
-      await db.delete(categories).where(eq(categories.id, id));
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to delete category");
-   }
-}
-
-export async function bulkArchiveCategories(
+export function bulkArchiveCategories(
    db: DatabaseInstance,
    ids: string[],
    teamId: string,
 ) {
-   try {
-      const existing = await db.query.categories.findMany({
-         where: (fields, { and, inArray, eq }) =>
-            and(inArray(fields.id, ids), eq(fields.teamId, teamId)),
-      });
-      const defaultOne = existing.find((c) => c.isDefault);
-      if (defaultOne) {
-         throw AppError.conflict("Categorias padrão não podem ser arquivadas.");
-      }
-      const allDescendantIds = (
-         await Promise.all(ids.map((id) => getDescendantIds(db, id)))
-      ).flat();
-      const allIds = [...new Set([...ids, ...allDescendantIds])];
-      await db
-         .update(categories)
-         .set({ isArchived: true, updatedAt: dayjs().toDate() })
-         .where(
-            and(inArray(categories.id, allIds), eq(categories.teamId, teamId)),
-         );
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to bulk archive categories");
-   }
+   return fromPromise(
+      (async () => {
+         const existing = await db.query.categories.findMany({
+            where: (fields, { and, inArray, eq }) =>
+               and(inArray(fields.id, ids), eq(fields.teamId, teamId)),
+         });
+         const defaultOne = existing.find((c) => c.isDefault);
+         if (defaultOne) {
+            throw AppError.conflict(
+               "Categorias padrão não podem ser arquivadas.",
+            );
+         }
+         const allDescendantIds = (
+            await Promise.all(ids.map((id) => getDescendantIds(db, id)))
+         ).flat();
+         const allIds = [...new Set([...ids, ...allDescendantIds])];
+         await db
+            .update(categories)
+            .set({ isArchived: true, updatedAt: dayjs().toDate() })
+            .where(
+               and(
+                  inArray(categories.id, allIds),
+                  eq(categories.teamId, teamId),
+               ),
+            );
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to bulk archive categories", {
+                 cause: e,
+              }),
+   );
 }
 
-export async function bulkDeleteCategories(
+export function bulkDeleteCategories(
    db: DatabaseInstance,
    ids: string[],
    teamId: string,
 ) {
-   try {
-      const existing = await db.query.categories.findMany({
-         where: (fields, { and, inArray, eq }) =>
-            and(inArray(fields.id, ids), eq(fields.teamId, teamId)),
-      });
-      if (existing.length !== ids.length) {
-         throw AppError.notFound(
-            "Uma ou mais categorias não foram encontradas.",
-         );
-      }
-      const defaultOne = existing.find((c) => c.isDefault);
-      if (defaultOne) {
-         throw AppError.conflict("Categorias padrão não podem ser excluídas.");
-      }
-      const allDescendantIds = (
-         await Promise.all(ids.map((id) => getDescendantIds(db, id)))
-      ).flat();
-      const allIds = [...new Set([...ids, ...allDescendantIds])];
-      const [row] = await db
-         .select({ count: sql<number>`count(*)::int` })
-         .from(transactions)
-         .where(inArray(transactions.categoryId, allIds));
-      if ((row?.count ?? 0) > 0) {
-         throw AppError.conflict(
-            "Categorias com lançamentos não podem ser excluídas. Use arquivamento.",
-         );
-      }
-      await db.delete(categories).where(inArray(categories.id, ids));
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to bulk delete categories");
-   }
+   return fromPromise(
+      (async () => {
+         const existing = await db.query.categories.findMany({
+            where: (fields, { and, inArray, eq }) =>
+               and(inArray(fields.id, ids), eq(fields.teamId, teamId)),
+         });
+         if (existing.length !== ids.length) {
+            throw AppError.notFound(
+               "Uma ou mais categorias não foram encontradas.",
+            );
+         }
+         const defaultOne = existing.find((c) => c.isDefault);
+         if (defaultOne) {
+            throw AppError.conflict(
+               "Categorias padrão não podem ser excluídas.",
+            );
+         }
+         const allDescendantIds = (
+            await Promise.all(ids.map((id) => getDescendantIds(db, id)))
+         ).flat();
+         const allIds = [...new Set([...ids, ...allDescendantIds])];
+         const [row] = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(transactions)
+            .where(inArray(transactions.categoryId, allIds));
+         if ((row?.count ?? 0) > 0) {
+            throw AppError.conflict(
+               "Categorias com lançamentos não podem ser excluídas. Use arquivamento.",
+            );
+         }
+         await db.delete(categories).where(inArray(categories.id, ids));
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to bulk delete categories", {
+                 cause: e,
+              }),
+   );
 }
 
-export async function categoryTreeHasTransactions(
+export function categoryTreeHasTransactions(
    db: DatabaseInstance,
    categoryId: string,
-): Promise<boolean> {
-   try {
-      const descendantIds = await getDescendantIds(db, categoryId);
-      const allIds = [categoryId, ...descendantIds];
+) {
+   return fromPromise(
+      (async () => {
+         const descendantIds = await getDescendantIds(db, categoryId);
+         const allIds = [categoryId, ...descendantIds];
 
-      const [row] = await db
-         .select({ count: sql<number>`count(*)::int` })
-         .from(transactions)
-         .where(inArray(transactions.categoryId, allIds));
-      return (row?.count ?? 0) > 0;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to check category transactions");
-   }
+         const [row] = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(transactions)
+            .where(inArray(transactions.categoryId, allIds));
+         return (row?.count ?? 0) > 0;
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to check category transactions", {
+                 cause: e,
+              }),
+   );
 }
 
 async function getDescendantIds(
@@ -721,43 +872,46 @@ async function getDescendantIds(
    return [...level2Ids, ...level3.map((r) => r.id)];
 }
 
-export async function listTeamMetadataByIds(
-   db: DatabaseInstance,
-   teamIds: string[],
-) {
-   try {
-      if (teamIds.length === 0) return [];
-      return await db.query.team.findMany({
-         where: (fields, { inArray }) => inArray(fields.id, teamIds),
-         columns: { id: true, organizationId: true },
-      });
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to list team metadata");
-   }
+export function listTeamMetadataByIds(db: DatabaseInstance, teamIds: string[]) {
+   return fromPromise(
+      (async () => {
+         if (teamIds.length === 0) return [];
+         return await db.query.team.findMany({
+            where: (fields, { inArray }) => inArray(fields.id, teamIds),
+            columns: { id: true, organizationId: true },
+         });
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to list team metadata", { cause: e }),
+   );
 }
 
-export async function listTeamsWithPendingKeywords(db: DatabaseInstance) {
-   try {
-      return await db.query.categories.findMany({
+export function listTeamsWithPendingKeywords(db: DatabaseInstance) {
+   return fromPromise(
+      db.query.categories.findMany({
          columns: { teamId: true },
          where: (fields, { isNull, eq, and }) =>
             and(isNull(fields.keywords), eq(fields.isDefault, false)),
          limit: 500,
-      });
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to list teams with pending keywords");
-   }
+      }),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to list teams with pending keywords", {
+                 cause: e,
+              }),
+   );
 }
 
-export async function listCategoriesWithNullKeywords(
+export function listCategoriesWithNullKeywords(
    db: DatabaseInstance,
    teamId: string,
    limit = 50,
 ) {
-   try {
-      return await db.query.categories.findMany({
+   return fromPromise(
+      db.query.categories.findMany({
          where: (fields, { and, eq, isNull }) =>
             and(
                eq(fields.teamId, teamId),
@@ -765,77 +919,96 @@ export async function listCategoriesWithNullKeywords(
                eq(fields.isDefault, false),
             ),
          limit,
-      });
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to list categories with null keywords");
-   }
+      }),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database(
+                 "Failed to list categories with null keywords",
+                 { cause: e },
+              ),
+   );
 }
 
-export async function validateKeywordsUniqueness(
+export function validateKeywordsUniqueness(
    db: DatabaseInstance,
    teamId: string,
    keywords: string[],
    excludeCategoryId?: string,
 ) {
-   const conditions: SQL[] = [
-      eq(categories.teamId, teamId),
-      eq(categories.isArchived, false),
-      sql`${categories.keywords} && ARRAY[${sql.join(
-         keywords.map((k) => sql`${k}`),
-         sql`,`,
-      )}]::text[]`,
-   ];
+   return fromPromise(
+      (async () => {
+         const conditions: SQL[] = [
+            eq(categories.teamId, teamId),
+            eq(categories.isArchived, false),
+            sql`${categories.keywords} && ARRAY[${sql.join(
+               keywords.map((k) => sql`${k}`),
+               sql`,`,
+            )}]::text[]`,
+         ];
 
-   if (excludeCategoryId) {
-      conditions.push(sql`${categories.id} != ${excludeCategoryId}`);
-   }
+         if (excludeCategoryId) {
+            conditions.push(sql`${categories.id} != ${excludeCategoryId}`);
+         }
 
-   const [row] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(categories)
-      .where(and(...conditions));
+         const [row] = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(categories)
+            .where(and(...conditions));
 
-   if ((row?.count ?? 0) > 0) {
-      throw AppError.conflict(
-         "Palavras-chave já utilizadas em outra categoria ativa.",
-      );
-   }
+         if ((row?.count ?? 0) > 0) {
+            throw AppError.conflict(
+               "Palavras-chave já utilizadas em outra categoria ativa.",
+            );
+         }
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to validate keywords uniqueness", {
+                 cause: e,
+              }),
+   );
 }
 
-export async function findCategoryByKeywords(
+export function findCategoryByKeywords(
    db: DatabaseInstance,
    teamId: string,
    opts: {
       name: string;
       type: "income" | "expense";
    },
-): Promise<{ id: string; name: string } | null> {
-   try {
-      const rows = await db
-         .select({
-            id: categories.id,
-            name: categories.name,
-            level: categories.level,
-         })
-         .from(categories)
-         .where(
-            and(
-               eq(categories.teamId, teamId),
-               eq(categories.type, opts.type),
-               eq(categories.isArchived, false),
-               sql`EXISTS (
-                  SELECT 1 FROM unnest(${categories.keywords}) k
-                  WHERE ${opts.name} ILIKE '%' || k || '%'
-               )`,
-            ),
-         )
-         .orderBy(desc(categories.level))
-         .limit(1);
+) {
+   return fromPromise(
+      (async () => {
+         const rows = await db
+            .select({
+               id: categories.id,
+               name: categories.name,
+               level: categories.level,
+            })
+            .from(categories)
+            .where(
+               and(
+                  eq(categories.teamId, teamId),
+                  eq(categories.type, opts.type),
+                  eq(categories.isArchived, false),
+                  sql`EXISTS (
+                     SELECT 1 FROM unnest(${categories.keywords}) k
+                     WHERE ${opts.name} ILIKE '%' || k || '%'
+                  )`,
+               ),
+            )
+            .orderBy(desc(categories.level))
+            .limit(1);
 
-      return rows[0] ?? null;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to find category by keywords");
-   }
+         return rows[0] ?? null;
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to find category by keywords", {
+                 cause: e,
+              }),
+   );
 }

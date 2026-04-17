@@ -85,7 +85,12 @@ async function runOnboardingCompletion({
    await insertTeamMember(db, teamId, userId);
 
    logger.info("Seeding empresarial categories");
-   await seedEmpresarialCategories(db, teamId);
+   await seedEmpresarialCategories(db, teamId).match(
+      () => null,
+      (e) => {
+         throw WebAppError.fromAppError(e);
+      },
+   );
 
    logger.info("Updating team");
    await markTeamOnboardingComplete(db, teamId, {

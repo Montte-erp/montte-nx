@@ -24,13 +24,21 @@ export class BackfillKeywordsWorkflow {
 
    @DBOS.step()
    static async fetchTeamsWithPendingStep() {
-      const rows = await listTeamsWithPendingKeywords(db);
-      const teamIds = [...new Set(rows.map((r) => r.teamId))];
-      const teamRows = await listTeamMetadataByIds(db, teamIds);
-      return teamRows.map((t) => ({
-         teamId: t.id,
-         organizationId: t.organizationId,
-      }));
+      return (
+         await listTeamsWithPendingKeywords(db).andThen((rows) => {
+            const teamIds = [...new Set(rows.map((r) => r.teamId))];
+            return listTeamMetadataByIds(db, teamIds);
+         })
+      ).match(
+         (teamRows) =>
+            teamRows.map((t) => ({
+               teamId: t.id,
+               organizationId: t.organizationId,
+            })),
+         (e) => {
+            throw e;
+         },
+      );
    }
 
    @DBOS.step()
@@ -38,10 +46,13 @@ export class BackfillKeywordsWorkflow {
       teamId: string;
       organizationId: string;
    }) {
-      const pending = await listCategoriesWithNullKeywords(
-         db,
-         teamEntry.teamId,
-         50,
+      const pending = (
+         await listCategoriesWithNullKeywords(db, teamEntry.teamId, 50)
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
       );
 
       let processed = 0;

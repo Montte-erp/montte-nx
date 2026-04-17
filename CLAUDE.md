@@ -49,6 +49,14 @@ bun run web:start         # Start production build locally
 
 ---
 
+## Agent Skills — How to Use
+
+Skills live in `.agents/skills/<name>/SKILL.md`. Each section below calls out its skill inline (e.g., "Use the `tanstack-store` skill..."). Open that `SKILL.md` before writing code in the domain — it has the full API, Montte conventions, and pitfalls. Skill supersedes stale assumptions from prior conversations.
+
+CI checks → `monitor-ci` skill (prefer over `gh`/`glab`). Linear tickets (MON-*) → `linear-cli` skill.
+
+---
+
 ## Monorepo Structure
 
 ```
@@ -82,6 +90,8 @@ montte-nx/
 
 ## API Layer — oRPC (NOT tRPC)
 
+Repository/router error handling → use the `neverthrow` skill. Schema/query code → `postgres-drizzle` skill.
+
 Routers: `apps/web/src/integrations/orpc/router/`
 Available: account, agent-settings, analytics, api-keys, bank-accounts, billing, bills, budget-goals, categories, contact-settings, contacts, credit-cards, dashboards, financial-settings, insights, inventory, notifications, onboarding, organization, services, services-bills, session, tags, team, transactions
 
@@ -99,20 +109,33 @@ export const getAll = protectedProcedure
 **Router errors** — `WebAppError` only (NOT `ORPCError`, `Error`, `AppError`):
 `notFound` · `forbidden` · `unauthorized` · `badRequest` · `conflict` · `internal` · `tooManyRequests` · `fromAppError(appError)`
 
-**Repository errors** (`core/database/src/repositories/`) — `AppError` + `propagateError()`:
+**Repository errors** (`core/database/src/repositories/`) — `neverthrow` + `AppError`. Return `ResultAsync<T, AppError>` via `fromPromise`:
 
 ```typescript
-try {
-   const [row] = await db.insert(...).returning();
-   if (!row) throw AppError.database("Failed");
-   return row;
-} catch (err) {
-   propagateError(err);
-   throw AppError.database("Failed");
+import { fromPromise } from "neverthrow";
+
+export function createItem(db: DatabaseInstance, data: CreateItemInput) {
+   return fromPromise(
+      (async () => {
+         const [row] = await db.insert(...).values(data).returning();
+         if (!row) throw AppError.database("Failed");
+         return row;
+      })(),
+      (e) => (e instanceof AppError ? e : AppError.database("Failed", { cause: e })),
+   );
 }
 ```
 
-Factories: `database`, `validation`, `notFound`, `unauthorized`, `forbidden`, `conflict`, `tooManyRequests`, `internal`
+**Router consumption** — `.match()` or `safeTry`, convert to `WebAppError`:
+
+```typescript
+return (await createItem(context.db, input)).match(
+   (item) => item,
+   (e) => { throw WebAppError.fromAppError(e); },
+);
+```
+
+`AppError` factories: `database`, `validation`, `notFound`, `unauthorized`, `forbidden`, `conflict`, `tooManyRequests`, `internal`
 
 **Bulk operations** — dedicated procedure, never loop `mutateAsync` on client:
 
@@ -130,6 +153,8 @@ export const bulkRemove = protectedProcedure
 ---
 
 ## Client-Side Patterns (oRPC + TanStack Query)
+
+Use the `tanstack-query` skill for query/mutation API details, cache, invalidation, `experimental_liveOptions`.
 
 - Always `useSuspenseQuery` — not `useQuery`. Exceptions: `experimental_liveOptions` and `skipToken` conditionals.
 - `input` inside `queryOptions()`. Callbacks inside `mutationOptions()`.
@@ -193,6 +218,8 @@ Frontend never imports backend schemas or `@core/*` packages.
 
 ## TanStack Form Pattern
 
+Full API → `tanstack-form` skill.
+
 - Schema at module level — never `z.object({...})` inside a component.
 - `isInvalid`: `field.state.meta.isTouched && field.state.meta.errors.length > 0` for client fields. Drop `isTouched` for server-error fields (`onSubmitAsync` conflict).
 - Always set `id`, `name`, `aria-invalid` on inputs; `htmlFor` on `<FieldLabel>`.
@@ -253,6 +280,8 @@ Empty states — always `Empty`/`EmptyHeader`/`EmptyMedia`/`EmptyTitle`/`EmptyDe
 
 ## Code Style
 
+Error handling rules below use `neverthrow` — open the `neverthrow` skill for `Result`, `ResultAsync`, `fromPromise`, `fromThrowable`, `safeTry` patterns.
+
 - No `as` casts — fix source types.
 - No redundant type annotations — only function params and exported boundaries.
 - No unused params — remove entirely, never `_foo`.
@@ -297,6 +326,8 @@ import { POSTHOG_SURVEYS, FEATURE_FLAG_KEYS } from "@core/posthog/config";
 ---
 
 ## Data Table Pattern
+
+Pair with `tanstack-table` skill (column defs, sorting, filtering). Long lists → `tanstack-virtual` skill. Adding/debugging shadcn primitives → `shadcn` skill.
 
 Use `DataTable` from `@packages/ui/components/data-table`. Never wrap in `Card`/`CardContent`.
 
@@ -346,6 +377,8 @@ Internal: `"@core/database": "workspace:*"`
 
 ## AI Agents
 
+Use the `tanstack-ai` skill. Durable execution (DBOS workflows, steps, queues, `DBOSClient`) → `dbos-typescript` skill.
+
 Always `@tanstack/ai` + `@tanstack/ai-openrouter` (`catalog:tanstack-ai`). Never Vercel AI SDK (`ai`, `@openrouter/ai-sdk-provider`).
 
 ```typescript
@@ -389,6 +422,8 @@ const result = await agent.generate("...", { requestContext: context });
 
 ## TanStack Start
 
+Use the `tanstack-start` skill for SSR, server functions, streaming, plugin order, `createServerFn`, `createClientOnlyFn`, `createIsomorphicFn`. Devtools panel → `tanstack-devtools` skill.
+
 Vite config — plugin order critical:
 
 ```typescript
@@ -411,6 +446,8 @@ plugins: [
 ---
 
 ## Routes
+
+Use the `tanstack-router` skill for `validateSearch`, `loaderDeps`, `createFileRoute`, pending/error boundaries, search params.
 
 ```
 apps/web/src/routes/
@@ -465,6 +502,8 @@ export const Route = createFileRoute("/feature")({
 
 ## Database (Drizzle ORM + PostgreSQL)
 
+Use the `postgres-drizzle` skill for schemas, queries, relations, joins, transactions, JSONB, indexes, RLS. Full-text search / BM25 → `paradedb-skill`. Redis caching/TTL → `redis-best-practices` skill.
+
 Schemas: `core/database/src/schemas/`
 
 **PostgreSQL schema namespaces** — never `pgTable(...)` directly:
@@ -491,6 +530,8 @@ Repositories: `core/database/src/repositories/` — always `validateInput()`, `A
 
 ## Authentication (Better Auth)
 
+Use `better-auth-best-practices` skill for server/client config, adapters, sessions, plugins. Email/password flows → `email-and-password-best-practices`. 2FA (TOTP, OTP, backup codes) → `two-factor-authentication-best-practices`. Multi-tenant orgs/teams/invitations/RBAC → `organization-best-practices`. Scaffolding auth from scratch (OAuth providers, route handlers, UI pages) → `create-auth-skill`.
+
 Config: `core/authentication/src/server.ts`. Plugins: Google OAuth, Magic Link, Email OTP, 2FA, Anonymous.
 
 - **Auth tables read-only.** Never edit `core/database/src/schemas/auth.ts` — use `additionalFields` in auth config.
@@ -501,6 +542,8 @@ Config: `core/authentication/src/server.ts`. Plugins: Google OAuth, Magic Link, 
 ---
 
 ## Global UI Hooks
+
+Design review, screen/flow design, responsive patterns → `ui-ux-expert` skill. Accessibility/WCAG 2.2 audits → `wcag-audit-patterns` skill. Adding or debugging shadcn primitives → `shadcn` skill.
 
 **Never import Sheet/Dialog/Drawer/AlertDialog/Credenza directly.**
 
@@ -550,6 +593,8 @@ Config: `core/authentication/src/server.ts`. Plugins: Google OAuth, Magic Link, 
 ---
 
 ## TanStack Store
+
+Use the `tanstack-store` skill for full API (`createStore`, `useStore`, `createAtom`, `createPersistedStore`, `createStoreEffect`, `batch`, `createAsyncAtom`). Reactive collections / live queries / optimistic mutations → `tanstack-db` skill.
 
 `@tanstack/store` + `@tanstack/react-store` for all client-side global state. Never Zustand, Jotai, or React context for shared mutable state.
 
@@ -768,7 +813,9 @@ Procedures: `apps/web/src/integrations/orpc/router/onboarding.ts`
 
 ---
 
-## TanStack Intent (Agent Skills)
+## Montte CLI Skills (`@montte/cli` via TanStack Intent)
+
+Skills *authored* by `libraries/cli/` and published as `@montte/cli`. Distinct from `.agents/skills/` (which are consumed in this repo). Built with TanStack Intent.
 
 ```json
 {
@@ -848,6 +895,10 @@ Framer Motion components in client components only. Never modify shadcn/ui primi
 ## Scaffolding & Generators
 
 - For scaffolding tasks (creating apps, libs, project structure, setup), ALWAYS invoke the `nx-generate` skill FIRST before exploring or calling MCP tools
+- Running any workspace task (build/test/lint/serve) → `nx-run-tasks` skill
+- New package created, getting `TS2307` / "cannot find module" for `@core/*`, `@packages/*`, `@montte/*` → `link-workspace-packages` skill
+- Adding a new Nx plugin (new framework/tech) → `nx-plugins` skill
+- Importing/merging another repo via `nx import` → `nx-import` skill
 
 ## When to use nx_docs
 

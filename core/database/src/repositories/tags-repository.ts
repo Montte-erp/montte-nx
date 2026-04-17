@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
-import { AppError, propagateError, validateInput } from "@core/logging/errors";
+import { AppError, validateInput } from "@core/logging/errors";
 import { eq, inArray, sql } from "drizzle-orm";
+import { fromPromise, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateTagInput,
@@ -11,187 +12,206 @@ import {
 } from "@core/database/schemas/tags";
 import { transactionTags } from "@core/database/schemas/transactions";
 
-export async function createTag(
+export function createTag(
    db: DatabaseInstance,
    teamId: string,
    data: CreateTagInput,
 ) {
-   const validated = validateInput(createTagSchema, data);
-   try {
-      const [tag] = await db
-         .insert(tags)
-         .values({
-            ...validated,
-            teamId,
-         })
-         .returning();
-      if (!tag) throw AppError.database("Failed to create tag");
-      return tag;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to create tag");
-   }
+   return fromPromise(
+      (async () => {
+         const validated = validateInput(createTagSchema, data);
+         const [tag] = await db
+            .insert(tags)
+            .values({ ...validated, teamId })
+            .returning();
+         if (!tag) throw AppError.database("Failed to create tag");
+         return tag;
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to create tag", { cause: e }),
+   );
 }
 
-export async function listTags(
+export function listTags(
    db: DatabaseInstance,
    teamId: string,
    opts?: { includeArchived?: boolean },
 ) {
-   try {
-      if (opts?.includeArchived) {
+   return fromPromise(
+      (async () => {
+         if (opts?.includeArchived) {
+            return await db.query.tags.findMany({
+               where: (fields, { eq }) => eq(fields.teamId, teamId),
+               orderBy: (fields, { asc }) => [asc(fields.name)],
+            });
+         }
          return await db.query.tags.findMany({
-            where: (fields, { eq }) => eq(fields.teamId, teamId),
+            where: (fields, { and, eq }) =>
+               and(eq(fields.teamId, teamId), eq(fields.isArchived, false)),
             orderBy: (fields, { asc }) => [asc(fields.name)],
          });
-      }
-      return await db.query.tags.findMany({
-         where: (fields, { and, eq }) =>
-            and(eq(fields.teamId, teamId), eq(fields.isArchived, false)),
-         orderBy: (fields, { asc }) => [asc(fields.name)],
-      });
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to list tags");
-   }
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to list tags", { cause: e }),
+   );
 }
 
-export async function getTag(db: DatabaseInstance, id: string) {
-   try {
-      const tag = await db.query.tags.findFirst({
-         where: (fields, { eq }) => eq(fields.id, id),
-      });
-      return tag ?? null;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to get tag");
-   }
+export function getTag(db: DatabaseInstance, id: string) {
+   return fromPromise(
+      db.query.tags.findFirst({ where: (fields, { eq }) => eq(fields.id, id) }),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to get tag", { cause: e }),
+   ).map((tag) => tag ?? null);
 }
 
-export async function updateTag(
+export function updateTag(
    db: DatabaseInstance,
    id: string,
    data: UpdateTagInput,
 ) {
-   const validated = validateInput(updateTagSchema, data);
-   try {
-      const [updated] = await db
-         .update(tags)
-         .set({ ...validated, updatedAt: dayjs().toDate() })
-         .where(eq(tags.id, id))
-         .returning();
-      if (!updated) throw AppError.notFound("Tag não encontrada.");
-      return updated;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to update tag");
-   }
+   return fromPromise(
+      (async () => {
+         const validated = validateInput(updateTagSchema, data);
+         const [updated] = await db
+            .update(tags)
+            .set({ ...validated, updatedAt: dayjs().toDate() })
+            .where(eq(tags.id, id))
+            .returning();
+         if (!updated) throw AppError.notFound("Tag não encontrada.");
+         return updated;
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to update tag", { cause: e }),
+   );
 }
 
-export async function archiveTag(db: DatabaseInstance, id: string) {
-   try {
-      const [updated] = await db
-         .update(tags)
-         .set({ isArchived: true, updatedAt: dayjs().toDate() })
-         .where(eq(tags.id, id))
-         .returning();
-      if (!updated) throw AppError.notFound("Tag não encontrada.");
-      return updated;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to archive tag");
-   }
+export function archiveTag(db: DatabaseInstance, id: string) {
+   return fromPromise(
+      (async () => {
+         const [updated] = await db
+            .update(tags)
+            .set({ isArchived: true, updatedAt: dayjs().toDate() })
+            .where(eq(tags.id, id))
+            .returning();
+         if (!updated) throw AppError.notFound("Tag não encontrada.");
+         return updated;
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to archive tag", { cause: e }),
+   );
 }
 
-export async function reactivateTag(db: DatabaseInstance, id: string) {
-   try {
-      const [updated] = await db
-         .update(tags)
-         .set({ isArchived: false, updatedAt: dayjs().toDate() })
-         .where(eq(tags.id, id))
-         .returning();
-      if (!updated) throw AppError.notFound("Tag não encontrada.");
-      return updated;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to reactivate tag");
-   }
+export function reactivateTag(db: DatabaseInstance, id: string) {
+   return fromPromise(
+      (async () => {
+         const [updated] = await db
+            .update(tags)
+            .set({ isArchived: false, updatedAt: dayjs().toDate() })
+            .where(eq(tags.id, id))
+            .returning();
+         if (!updated) throw AppError.notFound("Tag não encontrada.");
+         return updated;
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to reactivate tag", { cause: e }),
+   );
 }
 
-export async function deleteTag(db: DatabaseInstance, id: string) {
-   try {
-      const existing = await db.query.tags.findFirst({
-         where: (fields, { eq }) => eq(fields.id, id),
-      });
-      if (!existing) throw AppError.notFound("Tag não encontrada.");
-
-      const hasTransactions = await tagHasTransactions(db, id);
-      if (hasTransactions) {
-         throw AppError.conflict(
-            "Tag com lançamentos não pode ser excluída. Use arquivamento.",
-         );
-      }
-
-      await db.delete(tags).where(eq(tags.id, id));
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to delete tag");
-   }
+export function tagHasTransactions(db: DatabaseInstance, tagId: string) {
+   return fromPromise(
+      (async () => {
+         const [row] = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(transactionTags)
+            .where(eq(transactionTags.tagId, tagId));
+         return (row?.count ?? 0) > 0;
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to check tag transactions", {
+                 cause: e,
+              }),
+   );
 }
 
-export async function bulkDeleteTags(
+export function deleteTag(db: DatabaseInstance, id: string) {
+   return fromPromise(
+      (async () => {
+         const existing = await db.query.tags.findFirst({
+            where: (fields, { eq }) => eq(fields.id, id),
+         });
+         if (!existing) throw AppError.notFound("Tag não encontrada.");
+
+         const hasResult = await tagHasTransactions(db, id);
+         if (hasResult.isErr()) throw hasResult.error;
+         if (hasResult.value) {
+            throw AppError.conflict(
+               "Tag com lançamentos não pode ser excluída. Use arquivamento.",
+            );
+         }
+
+         await db.delete(tags).where(eq(tags.id, id));
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to delete tag", { cause: e }),
+   );
+}
+
+export function bulkDeleteTags(
    db: DatabaseInstance,
    ids: string[],
    teamId: string,
 ) {
-   try {
-      const existing = await db.query.tags.findMany({
-         where: (fields, { and, inArray, eq }) =>
-            and(inArray(fields.id, ids), eq(fields.teamId, teamId)),
-      });
-      if (existing.length !== ids.length) {
-         throw AppError.notFound("Uma ou mais tags não foram encontradas.");
-      }
-      const withTransactions = await db
-         .select({ count: sql<number>`count(*)::int` })
-         .from(transactionTags)
-         .where(inArray(transactionTags.tagId, ids));
-      if ((withTransactions[0]?.count ?? 0) > 0) {
-         throw AppError.conflict(
-            "Centros de custo com lançamentos não podem ser excluídos. Use arquivamento.",
-         );
-      }
-      await db.delete(tags).where(inArray(tags.id, ids));
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to bulk delete tags");
-   }
+   return fromPromise(
+      (async () => {
+         const existing = await db.query.tags.findMany({
+            where: (fields, { and, inArray, eq }) =>
+               and(inArray(fields.id, ids), eq(fields.teamId, teamId)),
+         });
+         if (existing.length !== ids.length) {
+            throw AppError.notFound("Uma ou mais tags não foram encontradas.");
+         }
+         const withTransactions = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(transactionTags)
+            .where(inArray(transactionTags.tagId, ids));
+         if ((withTransactions[0]?.count ?? 0) > 0) {
+            throw AppError.conflict(
+               "Centros de custo com lançamentos não podem ser excluídos. Use arquivamento.",
+            );
+         }
+         await db.delete(tags).where(inArray(tags.id, ids));
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to bulk delete tags", { cause: e }),
+   );
 }
 
-export async function ensureTagOwnership(
+export function ensureTagOwnership(
    db: DatabaseInstance,
    id: string,
    teamId: string,
 ) {
-   const tag = await getTag(db, id);
-   if (!tag || tag.teamId !== teamId) {
-      throw AppError.notFound("Tag não encontrada.");
-   }
-   return tag;
-}
-
-export async function tagHasTransactions(
-   db: DatabaseInstance,
-   tagId: string,
-): Promise<boolean> {
-   try {
-      const [row] = await db
-         .select({ count: sql<number>`count(*)::int` })
-         .from(transactionTags)
-         .where(eq(transactionTags.tagId, tagId));
-      return (row?.count ?? 0) > 0;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to check tag transactions");
-   }
+   return getTag(db, id).andThen((tag) => {
+      if (!tag || tag.teamId !== teamId)
+         return err(AppError.notFound("Tag não encontrada."));
+      return ok(tag);
+   });
 }

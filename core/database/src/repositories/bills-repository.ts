@@ -52,7 +52,9 @@ export async function validateBillReferences(
    }
 
    if (refs.categoryId) {
-      const cat = await getCategory(db, refs.categoryId);
+      const catResult = await getCategory(db, refs.categoryId);
+      if (catResult.isErr()) throw catResult.error;
+      const cat = catResult.value;
       if (!cat || cat.teamId !== teamId) {
          throw AppError.validation("Categoria inválida.");
       }
