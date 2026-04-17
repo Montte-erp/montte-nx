@@ -44,6 +44,13 @@ import type {
    ImportableColumn,
    ParsedRow,
 } from "@/features/data-view/data-table";
+import { format, of } from "@f-o-t/money";
+import { MoneyInput } from "@packages/ui/components/money-input";
+import {
+   Announcement,
+   AnnouncementTag,
+   AnnouncementTitle,
+} from "@/components/blocks/announcement";
 
 const { Stepper, useStepper } = defineStepper(
    { id: "upload", title: "Arquivo" },
@@ -240,6 +247,147 @@ function UploadFooter({
             </button>
          </PopoverContent>
       </Popover>
+   );
+}
+
+// =============================================================================
+// CellDisplay
+// =============================================================================
+
+function CellDisplay({ col, value }: { col: ImportableColumn; value: string }) {
+   if (!value) {
+      return <span className="text-xs text-muted-foreground">—</span>;
+   }
+
+   if (col.editType === "money") {
+      return (
+         <span className="text-xs">{format(of(value, "BRL"), "pt-BR")}</span>
+      );
+   }
+
+   if (col.editType === "combobox") {
+      const match = col.editOptions?.find((o) => o.value === value);
+      if (match) {
+         return (
+            <Announcement className="cursor-pointer">
+               <AnnouncementTag>{match.label.charAt(0)}</AnnouncementTag>
+               <AnnouncementTitle className="text-xs">
+                  {match.label}
+               </AnnouncementTitle>
+            </Announcement>
+         );
+      }
+      return <span className="text-xs text-muted-foreground">{value}</span>;
+   }
+
+   return <span className="text-xs">{value}</span>;
+}
+
+function MoneyEditCell({
+   value,
+   onChange,
+   onDeactivate,
+}: {
+   value: string;
+   onChange: (v: string) => void;
+   onDeactivate: () => void;
+}) {
+   const [draft, setDraft] = useState<number | undefined>(
+      value ? Number.parseFloat(value) : undefined,
+   );
+
+   return (
+      <MoneyInput
+         autoFocus
+         className="rounded-none border-0 shadow-none"
+         onChange={setDraft}
+         onBlur={() => {
+            onChange(draft != null ? String(draft) : "0");
+            onDeactivate();
+         }}
+         onKeyDown={(e) => {
+            if (e.key === "Escape") onDeactivate();
+         }}
+         value={draft}
+         valueInCents={false}
+      />
+   );
+}
+
+// =============================================================================
+// EditCell
+// =============================================================================
+
+export function EditCell({
+   col,
+   isEditing,
+   value,
+   onActivate,
+   onChange,
+   onDeactivate,
+}: {
+   col: ImportableColumn;
+   isEditing: boolean;
+   value: string;
+   onActivate: () => void;
+   onChange: (v: string) => void;
+   onDeactivate: () => void;
+}) {
+   if (!isEditing) {
+      return (
+         <div
+            className="px-2 py-1 min-h-8 flex items-center cursor-pointer hover:bg-muted/50 rounded"
+            onClick={onActivate}
+         >
+            <CellDisplay col={col} value={value} />
+         </div>
+      );
+   }
+
+   if (col.editType === "money") {
+      return (
+         <MoneyEditCell
+            value={value}
+            onChange={onChange}
+            onDeactivate={onDeactivate}
+         />
+      );
+   }
+
+   if (col.editType === "combobox") {
+      return (
+         <Combobox
+            className="h-8 w-full justify-start rounded-none border-0 bg-transparent px-2 text-xs shadow-none"
+            emptyMessage="Nenhuma opção"
+            onValueChange={(v) => {
+               onChange(v);
+               onDeactivate();
+            }}
+            options={col.editOptions ?? []}
+            placeholder="Selecionar..."
+            searchPlaceholder="Buscar..."
+            value={value}
+         />
+      );
+   }
+
+   return (
+      <input
+         autoFocus
+         className="w-full px-2 py-1 text-xs bg-transparent border-0 outline-none ring-1 ring-primary/50 rounded"
+         defaultValue={value}
+         onBlur={(e) => {
+            onChange(e.target.value);
+            onDeactivate();
+         }}
+         onKeyDown={(e) => {
+            if (e.key === "Enter") {
+               onChange(e.currentTarget.value);
+               onDeactivate();
+            }
+            if (e.key === "Escape") onDeactivate();
+         }}
+      />
    );
 }
 
