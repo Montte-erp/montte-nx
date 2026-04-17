@@ -332,52 +332,60 @@ function EditCell({
    onDeactivate: () => void;
 }) {
    return (
-      <div className="relative w-full min-h-8 flex items-center">
-         <div className="px-2 py-1 cursor-pointer w-full" onClick={onActivate}>
-            <CellDisplay col={col} value={value} />
-         </div>
-         {isEditing && (
-            <div className="absolute left-0 top-full z-20 min-w-full bg-background border shadow-lg rounded-md">
-               {col.editType === "money" ? (
-                  <MoneyEditCell
-                     onChange={onChange}
-                     onDeactivate={onDeactivate}
-                     value={value}
-                  />
-               ) : col.editType === "combobox" ? (
-                  <Combobox
-                     className="h-8 w-full justify-start rounded border-0 bg-transparent px-2 text-xs shadow-none"
-                     emptyMessage="Nenhuma opção"
-                     onValueChange={(v) => {
-                        onChange(v);
-                        onDeactivate();
-                     }}
-                     options={col.editOptions ?? []}
-                     placeholder="Selecionar..."
-                     searchPlaceholder="Buscar..."
-                     value={value}
-                  />
-               ) : (
-                  <input
-                     autoFocus
-                     className="w-full px-2 py-1.5 text-xs bg-transparent border-0 outline-none"
-                     defaultValue={value}
-                     onBlur={(e) => {
-                        onChange(e.target.value);
-                        onDeactivate();
-                     }}
-                     onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                           onChange(e.currentTarget.value);
-                           onDeactivate();
-                        }
-                        if (e.key === "Escape") onDeactivate();
-                     }}
-                  />
-               )}
+      <Popover
+         open={isEditing}
+         onOpenChange={(open) => {
+            if (!open) onDeactivate();
+         }}
+      >
+         <PopoverTrigger asChild>
+            <div
+               className="px-2 py-1 cursor-pointer w-full min-h-8 flex items-center"
+               onClick={onActivate}
+            >
+               <CellDisplay col={col} value={value} />
             </div>
-         )}
-      </div>
+         </PopoverTrigger>
+         <PopoverContent className="w-72 p-2" align="start">
+            {col.editType === "money" ? (
+               <MoneyEditCell
+                  onChange={onChange}
+                  onDeactivate={onDeactivate}
+                  value={value}
+               />
+            ) : col.editType === "combobox" ? (
+               <Combobox
+                  className="h-8 w-full justify-start rounded border-0 bg-transparent px-2 text-xs shadow-none"
+                  emptyMessage="Nenhuma opção"
+                  onValueChange={(v) => {
+                     onChange(v);
+                     onDeactivate();
+                  }}
+                  options={col.editOptions ?? []}
+                  placeholder="Selecionar..."
+                  searchPlaceholder="Buscar..."
+                  value={value}
+               />
+            ) : (
+               <input
+                  autoFocus
+                  className="w-full px-2 py-1.5 text-xs bg-transparent border-0 outline-none ring-1 ring-primary/50 rounded"
+                  defaultValue={value}
+                  onBlur={(e) => {
+                     onChange(e.target.value);
+                     onDeactivate();
+                  }}
+                  onKeyDown={(e) => {
+                     if (e.key === "Enter") {
+                        onChange(e.currentTarget.value);
+                        onDeactivate();
+                     }
+                     if (e.key === "Escape") onDeactivate();
+                  }}
+               />
+            )}
+         </PopoverContent>
+      </Popover>
    );
 }
 
