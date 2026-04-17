@@ -109,20 +109,33 @@ export const getAll = protectedProcedure
 **Router errors** — `WebAppError` only (NOT `ORPCError`, `Error`, `AppError`):
 `notFound` · `forbidden` · `unauthorized` · `badRequest` · `conflict` · `internal` · `tooManyRequests` · `fromAppError(appError)`
 
-**Repository errors** (`core/database/src/repositories/`) — `AppError` + `propagateError()`:
+**Repository errors** (`core/database/src/repositories/`) — `neverthrow` + `AppError`. Return `ResultAsync<T, AppError>` via `fromPromise`:
 
 ```typescript
-try {
-   const [row] = await db.insert(...).returning();
-   if (!row) throw AppError.database("Failed");
-   return row;
-} catch (err) {
-   propagateError(err);
-   throw AppError.database("Failed");
+import { fromPromise } from "neverthrow";
+
+export function createItem(db: DatabaseInstance, data: CreateItemInput) {
+   return fromPromise(
+      (async () => {
+         const [row] = await db.insert(...).values(data).returning();
+         if (!row) throw AppError.database("Failed");
+         return row;
+      })(),
+      (e) => (e instanceof AppError ? e : AppError.database("Failed", { cause: e })),
+   );
 }
 ```
 
-Factories: `database`, `validation`, `notFound`, `unauthorized`, `forbidden`, `conflict`, `tooManyRequests`, `internal`
+**Router consumption** — `.match()` or `safeTry`, convert to `WebAppError`:
+
+```typescript
+return (await createItem(context.db, input)).match(
+   (item) => item,
+   (e) => { throw WebAppError.fromAppError(e); },
+);
+```
+
+`AppError` factories: `database`, `validation`, `notFound`, `unauthorized`, `forbidden`, `conflict`, `tooManyRequests`, `internal`
 
 **Bulk operations** — dedicated procedure, never loop `mutateAsync` on client:
 
