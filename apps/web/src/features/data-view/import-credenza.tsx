@@ -590,13 +590,13 @@ function MappingFooter({
    methods,
    columns,
    mapping,
-   raw,
+   rows,
    onApply,
 }: {
    methods: ImportStepperMethods;
    columns: ImportableColumn[];
    mapping: ColumnMapping;
-   raw: RawData;
+   rows: ParsedRow[];
    onApply: (rows: ParsedRow[]) => void;
 }) {
    const canProceed = columns
@@ -604,16 +604,6 @@ function MappingFooter({
       .every((c) => !!mapping[c.key]);
 
    function handleContinue() {
-      const rows: ParsedRow[] = raw.rows.map((row) =>
-         Object.fromEntries(
-            columns.map((col) => {
-               const header = mapping[col.key];
-               if (!header) return [col.key, ""];
-               const idx = raw.headers.indexOf(header);
-               return [col.key, idx >= 0 ? (row[idx] ?? "") : ""];
-            }),
-         ),
-      );
       onApply(rows);
       methods.navigation.next();
    }
@@ -755,6 +745,7 @@ function ImportWizard({
       Object.fromEntries(columns.map((c) => [c.key, ""])),
    );
    const [rows, setRows] = useState<ParsedRow[]>([]);
+   const [editedRows, setEditedRows] = useState<ParsedRow[]>([]);
 
    const stepMeta = STEP_META[currentId];
    const stepTitle = stepMeta?.title(config.label) ?? currentId;
@@ -790,7 +781,7 @@ function ImportWizard({
                      columns={columns}
                      mapping={mapping}
                      onMappingChange={setMapping}
-                     onRowsChange={setRows}
+                     onRowsChange={setEditedRows}
                      raw={rawData}
                   />
                )}
@@ -808,7 +799,7 @@ function ImportWizard({
                   mapping={mapping}
                   methods={methods}
                   onApply={setRows}
-                  raw={rawData}
+                  rows={editedRows}
                />
             )}
             {currentId === "confirm" && (
