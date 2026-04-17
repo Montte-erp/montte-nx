@@ -300,11 +300,9 @@ function MappingStep({
       { value: "__none__", label: "— Ignorar —" },
       ...raw.headers.map((h) => ({ value: h, label: h })),
    ];
-   const requiredCols = columns.filter((c) => c.required);
-   const optionalCols = columns.filter((c) => !c.required);
-   const canProceed = requiredCols.every(
-      (c) => mapping[c.key] && mapping[c.key] !== "__none__",
-   );
+   const canProceed = columns
+      .filter((c) => c.required)
+      .every((c) => mapping[c.key] && mapping[c.key] !== "__none__");
 
    function handleApply() {
       const rows: ParsedRow[] = raw.rows.map((row) =>
@@ -369,57 +367,32 @@ function MappingStep({
                      </Table>
                   </div>
                </div>
-               {requiredCols.length > 0 && (
-                  <div className="grid gap-4 grid-cols-4">
-                     {requiredCols.map((col) => (
-                        <div className="flex flex-col gap-2" key={col.key}>
-                           <label className="text-xs font-medium text-muted-foreground">
-                              {col.label}
+               <div className="grid grid-cols-3 gap-4">
+                  {columns.map((col) => (
+                     <div className="flex flex-col gap-2" key={col.key}>
+                        <label className="text-xs font-medium text-muted-foreground">
+                           {col.label}
+                           {col.required && (
                               <span className="text-destructive ml-0.5">*</span>
-                           </label>
-                           <Combobox
-                              className="w-full h-8 text-xs"
-                              emptyMessage="Nenhuma coluna"
-                              onValueChange={(v) =>
-                                 onMappingChange({
-                                    ...mapping,
-                                    [col.key]: v === "__none__" ? "" : v,
-                                 })
-                              }
-                              options={headerOptions}
-                              placeholder="Selecionar coluna..."
-                              searchPlaceholder="Buscar coluna..."
-                              value={mapping[col.key] || "__none__"}
-                           />
-                        </div>
-                     ))}
-                  </div>
-               )}
-               {optionalCols.length > 0 && (
-                  <div className="grid grid-cols-3 gap-4">
-                     {optionalCols.map((col) => (
-                        <div className="flex flex-col gap-2" key={col.key}>
-                           <label className="text-xs font-medium text-muted-foreground">
-                              {col.label}
-                           </label>
-                           <Combobox
-                              className="w-full h-8 text-xs"
-                              emptyMessage="Nenhuma coluna"
-                              onValueChange={(v) =>
-                                 onMappingChange({
-                                    ...mapping,
-                                    [col.key]: v === "__none__" ? "" : v,
-                                 })
-                              }
-                              options={headerOptions}
-                              placeholder="— Ignorar —"
-                              searchPlaceholder="Buscar coluna..."
-                              value={mapping[col.key] || "__none__"}
-                           />
-                        </div>
-                     ))}
-                  </div>
-               )}
+                           )}
+                        </label>
+                        <Combobox
+                           className="w-full h-8 text-xs"
+                           emptyMessage="Nenhuma coluna"
+                           onValueChange={(v) =>
+                              onMappingChange({
+                                 ...mapping,
+                                 [col.key]: v === "__none__" ? "" : v,
+                              })
+                           }
+                           options={headerOptions}
+                           placeholder="— Ignorar —"
+                           searchPlaceholder="Buscar coluna..."
+                           value={mapping[col.key] || "__none__"}
+                        />
+                     </div>
+                  ))}
+               </div>
             </div>
          </CredenzaBody>
          <CredenzaFooter>
