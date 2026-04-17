@@ -114,6 +114,8 @@ declare module "@tanstack/react-table" {
       importable?: boolean;
       required?: boolean;
       fieldPatterns?: string[];
+      editType?: "text" | "money" | "combobox";
+      editOptions?: { value: string; label: string }[];
    }
 }
 
@@ -122,6 +124,8 @@ export type ImportableColumn = {
    label: string;
    required: boolean;
    fieldPatterns: string[];
+   editType?: "text" | "money" | "combobox";
+   editOptions?: { value: string; label: string }[];
 };
 
 export type ParsedRow = Record<string, string>;
@@ -831,6 +835,8 @@ function DataTableImportButton<TData, TValue>({
             ("accessorKey" in col ? String(col.accessorKey) : (col.id ?? "")),
          required: col.meta?.required ?? false,
          fieldPatterns: col.meta?.fieldPatterns ?? [],
+         editType: col.meta?.editType,
+         editOptions: col.meta?.editOptions,
       }));
 
    function handleOpen() {
