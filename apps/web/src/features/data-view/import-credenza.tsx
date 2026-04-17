@@ -331,61 +331,53 @@ function EditCell({
    onChange: (v: string) => void;
    onDeactivate: () => void;
 }) {
-   if (!isEditing) {
-      return (
-         <div
-            className="px-2 py-1 min-h-8 flex items-center cursor-pointer hover:bg-muted/50 rounded"
-            onClick={onActivate}
-         >
+   return (
+      <div className="relative w-full min-h-8 flex items-center">
+         <div className="px-2 py-1 cursor-pointer w-full" onClick={onActivate}>
             <CellDisplay col={col} value={value} />
          </div>
-      );
-   }
-
-   if (col.editType === "money") {
-      return (
-         <MoneyEditCell
-            value={value}
-            onChange={onChange}
-            onDeactivate={onDeactivate}
-         />
-      );
-   }
-
-   if (col.editType === "combobox") {
-      return (
-         <Combobox
-            className="h-8 w-full justify-start rounded-none border-0 bg-transparent px-2 text-xs shadow-none"
-            emptyMessage="Nenhuma opção"
-            onValueChange={(v) => {
-               onChange(v);
-               onDeactivate();
-            }}
-            options={col.editOptions ?? []}
-            placeholder="Selecionar..."
-            searchPlaceholder="Buscar..."
-            value={value}
-         />
-      );
-   }
-
-   return (
-      <input
-         autoFocus
-         className="w-full px-2 py-1 text-xs bg-transparent border-0 outline-none ring-1 ring-primary/50 rounded"
-         defaultValue={value}
-         onBlur={(e) => {
-            onChange(e.target.value);
-            onDeactivate();
-         }}
-         onKeyDown={(e) => {
-            if (e.key === "Enter") {
-               onChange(e.currentTarget.value);
-               onDeactivate();
-            }
-            if (e.key === "Escape") onDeactivate();
-         }}
-      />
+         {isEditing && (
+            <div className="absolute left-0 top-0 z-20 min-w-full bg-background border shadow-md rounded">
+               {col.editType === "money" ? (
+                  <MoneyEditCell
+                     onChange={onChange}
+                     onDeactivate={onDeactivate}
+                     value={value}
+                  />
+               ) : col.editType === "combobox" ? (
+                  <Combobox
+                     className="h-8 w-full justify-start rounded border-0 bg-transparent px-2 text-xs shadow-none"
+                     emptyMessage="Nenhuma opção"
+                     onValueChange={(v) => {
+                        onChange(v);
+                        onDeactivate();
+                     }}
+                     options={col.editOptions ?? []}
+                     placeholder="Selecionar..."
+                     searchPlaceholder="Buscar..."
+                     value={value}
+                  />
+               ) : (
+                  <input
+                     autoFocus
+                     className="w-full px-2 py-1.5 text-xs bg-transparent border-0 outline-none"
+                     defaultValue={value}
+                     onBlur={(e) => {
+                        onChange(e.target.value);
+                        onDeactivate();
+                     }}
+                     onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                           onChange(e.currentTarget.value);
+                           onDeactivate();
+                        }
+                        if (e.key === "Escape") onDeactivate();
+                     }}
+                  />
+               )}
+            </div>
+         )}
+      </div>
    );
 }
 
