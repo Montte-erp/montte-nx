@@ -43,6 +43,7 @@ import type {
    ParsedRow,
 } from "@/features/data-view/data-table";
 import { format, of } from "@f-o-t/money";
+import { Input } from "@packages/ui/components/input";
 import { MoneyInput } from "@packages/ui/components/money-input";
 import {
    Announcement,
@@ -367,9 +368,8 @@ function EditCell({
                   value={value}
                />
             ) : (
-               <input
+               <Input
                   autoFocus
-                  className="w-full px-2 py-1.5 text-xs bg-transparent border-0 outline-none ring-1 ring-primary/50 rounded"
                   defaultValue={value}
                   onBlur={(e) => {
                      onChange(e.target.value);
