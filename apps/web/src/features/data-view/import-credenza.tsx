@@ -10,12 +10,18 @@ import {
    DropzoneContent,
    DropzoneEmptyState,
 } from "@packages/ui/components/dropzone";
-import { Combobox } from "@packages/ui/components/combobox";
 import {
    Popover,
    PopoverContent,
    PopoverTrigger,
 } from "@packages/ui/components/popover";
+import {
+   Select,
+   SelectContent,
+   SelectItem,
+   SelectTrigger,
+   SelectValue,
+} from "@packages/ui/components/select";
 import {
    Table,
    TableBody,
@@ -28,11 +34,13 @@ import { defineStepper } from "@packages/ui/components/stepper";
 import { Button } from "@packages/ui/components/button";
 import {
    AlertTriangle,
+   Check,
    ChevronRight,
    FileSpreadsheet,
    FileText,
    Loader2,
 } from "lucide-react";
+import { cn } from "@packages/ui/lib/utils";
 import { useTransition, useState } from "react";
 import { toast } from "sonner";
 import { useCsvFile } from "@/hooks/use-csv-file";
@@ -47,7 +55,6 @@ import type {
 const { Stepper, useStepper } = defineStepper(
    { id: "upload", title: "Arquivo" },
    { id: "mapping", title: "Colunas" },
-   { id: "preview", title: "Prévia" },
    { id: "confirm", title: "Importar" },
 );
 
@@ -93,11 +100,8 @@ const STEP_META: Record<
    },
    mapping: {
       title: () => "Mapear Colunas",
-      description: "Associe as colunas do arquivo aos campos do sistema.",
-   },
-   preview: {
-      title: () => "Prévia dos Dados",
-      description: "Confira os dados antes de importar.",
+      description:
+         "Associe cada coluna do arquivo ao campo correspondente. Os dados são exibidos abaixo para referência.",
    },
    confirm: {
       title: () => "Confirmar Importação",
@@ -261,75 +265,119 @@ function MappingBody({
    mapping: ColumnMapping;
    onMappingChange: (m: ColumnMapping) => void;
 }) {
-   const headerOptions = [
-      { value: "__none__", label: "— Ignorar —" },
-      ...raw.headers.map((h) => ({ value: h, label: h })),
-   ];
+   function getDestKeyForSource(sourceHeader: string): string {
+      return (
+         Object.entries(mapping).find(([, src]) => src === sourceHeader)?.[0] ??
+         "__none__"
+      );
+   }
+
+   function handleSelect(sourceHeader: string, destKey: string) {
+      const next = { ...mapping };
+      for (const key of Object.keys(next)) {
+         if (next[key] === sourceHeader) next[key] = "";
+      }
+      if (destKey !== "__none__") next[destKey] = sourceHeader;
+      onMappingChange(next);
+   }
+
+   const requiredColumns = columns.filter((c) => c.required);
 
    return (
       <div className="flex flex-col gap-4">
-         <div className="rounded-lg border overflow-hidden">
-            <div className="bg-muted/50 px-3 py-2 border-b">
-               <p className="text-xs font-medium text-muted-foreground">
-                  Prévia do arquivo ({raw.rows.length} linhas encontradas)
-               </p>
+         {requiredColumns.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+               {requiredColumns.map((col) => {
+                  const mapped = !!mapping[col.key];
+                  return (
+                     <div
+                        className={cn(
+                           "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
+                           mapped
+                              ? "border-primary/20 bg-primary/10 text-primary"
+                              : "border-destructive/20 bg-destructive/10 text-destructive",
+                        )}
+                        key={col.key}
+                     >
+                        {mapped ? (
+                           <Check className="size-3" />
+                        ) : (
+                           <AlertTriangle className="size-3" />
+                        )}
+                        {col.label}
+                     </div>
+                  );
+               })}
             </div>
-            <div className="overflow-auto max-h-24">
-               <Table>
-                  <TableHeader>
-                     <TableRow>
-                        {raw.headers.map((h) => (
+         )}
+         <div className="overflow-auto rounded-lg border">
+            <Table>
+               <TableHeader>
+                  <TableRow className="hover:bg-transparent align-top">
+                     {raw.headers.map((header) => {
+                        const destKey = getDestKeyForSource(header);
+                        const destCol = columns.find((c) => c.key === destKey);
+                        return (
                            <TableHead
-                              className="text-xs whitespace-nowrap"
-                              key={h}
+                              className={cn(
+                                 "min-w-[140px] p-2 align-top",
+                                 destCol?.required && "bg-primary/5",
+                              )}
+                              key={header}
                            >
-                              {h}
+                              <div className="flex flex-col gap-2">
+                                 <span className="truncate text-xs font-normal text-muted-foreground">
+                                    {header}
+                                 </span>
+                                 <Select
+                                    onValueChange={(v) =>
+                                       handleSelect(header, v)
+                                    }
+                                    value={destKey}
+                                 >
+                                    <SelectTrigger className="h-7 text-xs">
+                                       <SelectValue placeholder="— Ignorar —" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                       <SelectItem value="__none__">
+                                          — Ignorar —
+                                       </SelectItem>
+                                       {columns.map((col) => (
+                                          <SelectItem
+                                             key={col.key}
+                                             value={col.key}
+                                          >
+                                             {col.label}
+                                             {col.required && " *"}
+                                          </SelectItem>
+                                       ))}
+                                    </SelectContent>
+                                 </Select>
+                              </div>
                            </TableHead>
+                        );
+                     })}
+                  </TableRow>
+               </TableHeader>
+               <TableBody>
+                  {raw.rows.slice(0, 5).map((row, i) => (
+                     <TableRow key={`row-${i + 1}`}>
+                        {raw.headers.map((_, j) => (
+                           <TableCell
+                              className="max-w-[200px] truncate p-2 text-xs"
+                              key={`cell-${i + 1}-${j + 1}`}
+                           >
+                              {row[j] || (
+                                 <span className="text-muted-foreground">
+                                    —
+                                 </span>
+                              )}
+                           </TableCell>
                         ))}
                      </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                     {raw.rows.slice(0, 3).map((row, i) => (
-                        <TableRow key={`preview-${i + 1}`}>
-                           {row.map((cell, j) => (
-                              <TableCell
-                                 className="text-xs whitespace-nowrap"
-                                 key={`cell-${i + 1}-${j + 1}`}
-                              >
-                                 {cell || "—"}
-                              </TableCell>
-                           ))}
-                        </TableRow>
-                     ))}
-                  </TableBody>
-               </Table>
-            </div>
-         </div>
-         <div className="grid grid-cols-3 gap-4">
-            {columns.map((col) => (
-               <div className="flex flex-col gap-2" key={col.key}>
-                  <label className="text-xs font-medium text-muted-foreground">
-                     {col.label}
-                     {col.required && (
-                        <span className="text-destructive ml-0.5">*</span>
-                     )}
-                  </label>
-                  <Combobox
-                     className="w-full h-8 text-xs"
-                     emptyMessage="Nenhuma coluna"
-                     onValueChange={(v) =>
-                        onMappingChange({
-                           ...mapping,
-                           [col.key]: v === "__none__" ? "" : v,
-                        })
-                     }
-                     options={headerOptions}
-                     placeholder="— Ignorar —"
-                     searchPlaceholder="Buscar coluna..."
-                     value={mapping[col.key] || "__none__"}
-                  />
-               </div>
-            ))}
+                  ))}
+               </TableBody>
+            </Table>
          </div>
       </div>
    );
@@ -350,14 +398,14 @@ function MappingFooter({
 }) {
    const canProceed = columns
       .filter((c) => c.required)
-      .every((c) => mapping[c.key] && mapping[c.key] !== "__none__");
+      .every((c) => !!mapping[c.key]);
 
-   function handleApply() {
+   function handleContinue() {
       const rows: ParsedRow[] = raw.rows.map((row) =>
          Object.fromEntries(
             columns.map((col) => {
                const header = mapping[col.key];
-               if (!header || header === "__none__") return [col.key, ""];
+               if (!header) return [col.key, ""];
                const idx = raw.headers.indexOf(header);
                return [col.key, idx >= 0 ? (row[idx] ?? "") : ""];
             }),
@@ -380,92 +428,7 @@ function MappingFooter({
          <Button
             className="flex-1"
             disabled={!canProceed}
-            onClick={handleApply}
-            type="button"
-         >
-            Aplicar mapeamento
-            <ChevronRight className="size-4" />
-         </Button>
-      </div>
-   );
-}
-
-// =============================================================================
-// PreviewBody
-// =============================================================================
-
-function PreviewBody({
-   rows,
-   columns,
-}: {
-   rows: ParsedRow[];
-   columns: ImportableColumn[];
-}) {
-   const visibleColumns = columns.filter(
-      (c) => c.required || rows.some((r) => r[c.key]),
-   );
-
-   return (
-      <div className="overflow-auto max-h-52 rounded-lg border">
-         <Table>
-            <TableHeader>
-               <TableRow>
-                  {visibleColumns.map((col) => (
-                     <TableHead className="text-xs p-2" key={col.key}>
-                        {col.label}
-                     </TableHead>
-                  ))}
-               </TableRow>
-            </TableHeader>
-            <TableBody>
-               {rows.map((row, i) => (
-                  <TableRow key={`row-${i + 1}`}>
-                     {visibleColumns.map((col) => (
-                        <TableCell className="p-2 text-xs" key={col.key}>
-                           {row[col.key] || (
-                              <span className="text-muted-foreground">—</span>
-                           )}
-                        </TableCell>
-                     ))}
-                  </TableRow>
-               ))}
-               {rows.length === 0 && (
-                  <TableRow>
-                     <TableCell
-                        className="py-6 text-center text-xs text-muted-foreground"
-                        colSpan={visibleColumns.length}
-                     >
-                        Nenhum dado para importar
-                     </TableCell>
-                  </TableRow>
-               )}
-            </TableBody>
-         </Table>
-      </div>
-   );
-}
-
-function PreviewFooter({
-   methods,
-   rows,
-}: {
-   methods: ImportStepperMethods;
-   rows: ParsedRow[];
-}) {
-   return (
-      <div className="flex gap-2 w-full">
-         <Button
-            className="flex-none"
-            onClick={() => methods.navigation.prev()}
-            type="button"
-            variant="outline"
-         >
-            Voltar
-         </Button>
-         <Button
-            className="flex-1"
-            disabled={rows.length === 0}
-            onClick={() => methods.navigation.next()}
+            onClick={handleContinue}
             type="button"
          >
             Continuar
@@ -614,7 +577,6 @@ function ImportWizard({
                <Stepper.Navigation>
                   <Stepper.Step of="upload" />
                   <Stepper.Step of="mapping" />
-                  <Stepper.Step of="preview" />
                   <Stepper.Step of="confirm" />
                </Stepper.Navigation>
                {currentId === "upload" && (
@@ -627,9 +589,6 @@ function ImportWizard({
                      onMappingChange={setMapping}
                      raw={rawData}
                   />
-               )}
-               {currentId === "preview" && (
-                  <PreviewBody columns={columns} rows={rows} />
                )}
                {currentId === "confirm" && <ConfirmBody rows={rows} />}
             </div>
@@ -647,9 +606,6 @@ function ImportWizard({
                   onApply={setRows}
                   raw={rawData}
                />
-            )}
-            {currentId === "preview" && (
-               <PreviewFooter methods={methods} rows={rows} />
             )}
             {currentId === "confirm" && (
                <ConfirmFooter config={config} onClose={onClose} rows={rows} />
