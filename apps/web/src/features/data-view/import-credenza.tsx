@@ -337,7 +337,7 @@ function EditCell({
             <CellDisplay col={col} value={value} />
          </div>
          {isEditing && (
-            <div className="absolute left-0 top-0 z-20 min-w-full bg-background border shadow-md rounded">
+            <div className="absolute left-0 top-full z-20 min-w-full bg-background border shadow-lg rounded-md">
                {col.editType === "money" ? (
                   <MoneyEditCell
                      onChange={onChange}
