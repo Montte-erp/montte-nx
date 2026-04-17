@@ -164,7 +164,8 @@ Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua 
       DBOS.logger.debug(
          `[derive-keywords] saveStep category=${categoryId} count=${keywords.length}`,
       );
-      await updateCategory(db, categoryId, { keywords });
+      const result = await updateCategory(db, categoryId, { keywords });
+      if (result.isErr()) throw result.error;
    }
 
    @DBOS.step()

@@ -2,9 +2,10 @@ import {
    archiveCategory,
    bulkArchiveCategories,
    bulkDeleteCategories,
-   createCategory,
+   createCategoryWithSubcategories,
    deleteCategory,
    ensureCategoryOwnership,
+   importCategoriesBatch,
    listCategories,
    reactivateCategory,
    updateCategory,
@@ -14,6 +15,7 @@ import {
    updateCategorySchema,
 } from "@core/database/schemas/categories";
 import { user as userTable } from "@core/database/schemas/auth";
+import { WebAppError } from "@core/logging/errors";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { startDeriveKeywordsWorkflow } from "@/integrations/dbos/workflows/runner";
@@ -30,27 +32,15 @@ export const create = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const { subcategories, ...catData } = input;
-      const [category, userRecord] = await Promise.all([
-         context.db.transaction(async (tx) => {
-            const created = await createCategory(tx, context.teamId, catData);
-            if (subcategories && subcategories.length > 0) {
-               for (const sub of subcategories) {
-                  await createCategory(tx, context.teamId, {
-                     name: sub.name,
-                     type: catData.type,
-                     parentId: created.id,
-                     participatesDre: false,
-                  });
-               }
-            }
-            return created;
-         }),
+      const [result, userRecord] = await Promise.all([
+         createCategoryWithSubcategories(context.db, context.teamId, input),
          context.db.query.user.findFirst({
             where: eq(userTable.id, context.userId),
             columns: { stripeCustomerId: true },
          }),
       ]);
+      if (result.isErr()) throw WebAppError.fromAppError(result.error);
+      const { category } = result.value;
       startDeriveKeywordsWorkflow({
          categoryId: category.id,
          teamId: context.teamId,
@@ -74,10 +64,12 @@ const getAllInput = z
 export const getAll = protectedProcedure
    .input(getAllInput)
    .handler(async ({ context, input }) => {
-      const all = await listCategories(context.db, context.teamId, {
+      const result = await listCategories(context.db, context.teamId, {
          type: input?.type,
          includeArchived: input?.includeArchived,
       });
+      if (result.isErr()) throw WebAppError.fromAppError(result.error);
+      const all = result.value;
       if (!input?.search) return all;
       const q = input.search.toLowerCase();
       const matchingParentIds = new Set<string>();
@@ -97,9 +89,18 @@ export const getAll = protectedProcedure
 export const update = protectedProcedure
    .input(idSchema.merge(updateCategorySchema))
    .handler(async ({ context, input }) => {
-      await ensureCategoryOwnership(context.db, input.id, context.teamId);
+      const ownershipResult = await ensureCategoryOwnership(
+         context.db,
+         input.id,
+         context.teamId,
+      );
+      if (ownershipResult.isErr())
+         throw WebAppError.fromAppError(ownershipResult.error);
       const { id, ...data } = input;
-      const category = await updateCategory(context.db, id, data);
+      const updateResult = await updateCategory(context.db, id, data);
+      if (updateResult.isErr())
+         throw WebAppError.fromAppError(updateResult.error);
+      const category = updateResult.value;
       if (data.name !== undefined || data.description !== undefined) {
          const userRecord = await context.db.query.user.findFirst({
             where: eq(userTable.id, context.userId),
@@ -121,13 +122,25 @@ export const update = protectedProcedure
 export const remove = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      await ensureCategoryOwnership(context.db, input.id, context.teamId);
-      await deleteCategory(context.db, input.id);
+      const ownershipResult = await ensureCategoryOwnership(
+         context.db,
+         input.id,
+         context.teamId,
+      );
+      if (ownershipResult.isErr())
+         throw WebAppError.fromAppError(ownershipResult.error);
+      const deleteResult = await deleteCategory(context.db, input.id);
+      if (deleteResult.isErr())
+         throw WebAppError.fromAppError(deleteResult.error);
       return { success: true };
    });
 
 export const exportAll = protectedProcedure.handler(async ({ context }) => {
-   return listCategories(context.db, context.teamId, { includeArchived: true });
+   const result = await listCategories(context.db, context.teamId, {
+      includeArchived: true,
+   });
+   if (result.isErr()) throw WebAppError.fromAppError(result.error);
+   return result.value;
 });
 
 export const importBatch = protectedProcedure
@@ -152,42 +165,14 @@ export const importBatch = protectedProcedure
          where: eq(userTable.id, context.userId),
          columns: { stripeCustomerId: true },
       });
-
-      const { allResults, parentCategories } = await context.db.transaction(
-         async (tx) => {
-            const allResults = [];
-            const parentCategories = [];
-            for (const cat of input.categories) {
-               const { subcategories, ...catData } = cat;
-               const created = await createCategory(
-                  tx,
-                  context.teamId,
-                  catData,
-               );
-               parentCategories.push(created);
-               allResults.push(created);
-               if (subcategories && subcategories.length > 0) {
-                  for (const sub of subcategories) {
-                     const createdSub = await createCategory(
-                        tx,
-                        context.teamId,
-                        {
-                           name: sub.name,
-                           type: catData.type,
-                           parentId: created.id,
-                           participatesDre: false,
-                           keywords: sub.keywords ?? null,
-                        },
-                     );
-                     allResults.push(createdSub);
-                  }
-               }
-            }
-            return { allResults, parentCategories };
-         },
+      const result = await importCategoriesBatch(
+         context.db,
+         context.teamId,
+         input.categories,
       );
-
-      for (const created of parentCategories) {
+      if (result.isErr()) throw WebAppError.fromAppError(result.error);
+      const { all, parents } = result.value;
+      for (const created of parents) {
          startDeriveKeywordsWorkflow({
             categoryId: created.id,
             teamId: context.teamId,
@@ -198,34 +183,61 @@ export const importBatch = protectedProcedure
             stripeCustomerId: userRecord?.stripeCustomerId ?? null,
          });
       }
-
-      return allResults;
+      return all;
    });
 
 export const archive = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      await ensureCategoryOwnership(context.db, input.id, context.teamId);
-      return archiveCategory(context.db, input.id);
+      const ownershipResult = await ensureCategoryOwnership(
+         context.db,
+         input.id,
+         context.teamId,
+      );
+      if (ownershipResult.isErr())
+         throw WebAppError.fromAppError(ownershipResult.error);
+      const archiveResult = await archiveCategory(context.db, input.id);
+      if (archiveResult.isErr())
+         throw WebAppError.fromAppError(archiveResult.error);
+      return archiveResult.value;
    });
 
 export const unarchive = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      await ensureCategoryOwnership(context.db, input.id, context.teamId);
-      return reactivateCategory(context.db, input.id);
+      const ownershipResult = await ensureCategoryOwnership(
+         context.db,
+         input.id,
+         context.teamId,
+      );
+      if (ownershipResult.isErr())
+         throw WebAppError.fromAppError(ownershipResult.error);
+      const reactivateResult = await reactivateCategory(context.db, input.id);
+      if (reactivateResult.isErr())
+         throw WebAppError.fromAppError(reactivateResult.error);
+      return reactivateResult.value;
    });
 
 export const bulkRemove = protectedProcedure
    .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
    .handler(async ({ context, input }) => {
-      await bulkDeleteCategories(context.db, input.ids, context.teamId);
+      const result = await bulkDeleteCategories(
+         context.db,
+         input.ids,
+         context.teamId,
+      );
+      if (result.isErr()) throw WebAppError.fromAppError(result.error);
       return { deleted: input.ids.length };
    });
 
 export const bulkArchive = protectedProcedure
    .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
    .handler(async ({ context, input }) => {
-      await bulkArchiveCategories(context.db, input.ids, context.teamId);
+      const result = await bulkArchiveCategories(
+         context.db,
+         input.ids,
+         context.teamId,
+      );
+      if (result.isErr()) throw WebAppError.fromAppError(result.error);
       return { archived: input.ids.length };
    });

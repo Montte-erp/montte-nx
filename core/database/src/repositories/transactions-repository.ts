@@ -166,7 +166,9 @@ export async function validateTransactionReferences(
    }
 
    if (refs.categoryId) {
-      const cat = await getCategory(db, refs.categoryId);
+      const catResult = await getCategory(db, refs.categoryId);
+      if (catResult.isErr()) throw catResult.error;
+      const cat = catResult.value;
       if (!cat || cat.teamId !== teamId) {
          throw AppError.validation("Categoria inválida.");
       }
@@ -174,8 +176,9 @@ export async function validateTransactionReferences(
 
    if (refs.tagIds && refs.tagIds.length > 0) {
       for (const tagId of refs.tagIds) {
-         const tag = await getTag(db, tagId);
-         if (!tag || tag.teamId !== teamId) {
+         const tagResult = await getTag(db, tagId);
+         if (tagResult.isErr()) throw tagResult.error;
+         if (!tagResult.value || tagResult.value.teamId !== teamId) {
             throw AppError.validation("Tag inválida.");
          }
       }

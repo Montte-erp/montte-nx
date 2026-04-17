@@ -113,20 +113,24 @@ export class CategorizationWorkflow {
    static async matchKeywordsStep(
       input: Pick<CategorizationInput, "teamId" | "name" | "type">,
    ): Promise<{ id: string } | null> {
-      return findCategoryByKeywords(db, input.teamId, {
+      const result = await findCategoryByKeywords(db, input.teamId, {
          name: input.name,
          type: input.type,
       });
+      if (result.isErr()) throw result.error;
+      return result.value;
    }
 
    @DBOS.step()
    static async inferWithAIStep(
       input: CategorizationInput,
    ): Promise<{ categoryId: string; confidence: "high" | "low" } | null> {
-      const cats = await listCategories(db, input.teamId, {
+      const catsResult = await listCategories(db, input.teamId, {
          type: input.type,
          includeArchived: false,
       });
+      if (catsResult.isErr()) throw catsResult.error;
+      const cats = catsResult.value;
       if (cats.length === 0) return null;
 
       const categoryList = cats

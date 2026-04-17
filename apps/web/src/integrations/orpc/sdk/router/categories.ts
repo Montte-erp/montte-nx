@@ -38,21 +38,24 @@ export const list = sdkProcedure
    )
    .handler(async ({ context, input }) => {
       if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
-      const cats = await listCategories(context.db, context.teamId, {
+      const result = await listCategories(context.db, context.teamId, {
          type: input.type,
          includeArchived: input.includeArchived,
       });
-      return cats.map(mapCategory);
+      if (result.isErr()) throw WebAppError.fromAppError(result.error);
+      return result.value.map(mapCategory);
    });
 
 export const create = createBillableProcedure("finance.category_created")
    .input(CreateCategorySchema)
    .handler(async ({ context, input }) => {
       if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
-      const cat = await createCategory(context.db, context.teamId, {
+      const result = await createCategory(context.db, context.teamId, {
          ...input,
          participatesDre: false,
       });
+      if (result.isErr()) throw WebAppError.fromAppError(result.error);
+      const cat = result.value;
       context.scheduleEmit(() =>
          emitFinanceCategoryCreated(context.emit, context.emitCtx, {
             categoryId: cat.id,
@@ -66,17 +69,33 @@ export const update = sdkProcedure
    .handler(async ({ context, input }) => {
       if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
       const { id, ...data } = input;
-      await ensureCategoryOwnership(context.db, id, context.teamId);
-      const cat = await updateCategory(context.db, id, data);
-      return mapCategory(cat);
+      const ownershipResult = await ensureCategoryOwnership(
+         context.db,
+         id,
+         context.teamId,
+      );
+      if (ownershipResult.isErr())
+         throw WebAppError.fromAppError(ownershipResult.error);
+      const updateResult = await updateCategory(context.db, id, data);
+      if (updateResult.isErr())
+         throw WebAppError.fromAppError(updateResult.error);
+      return mapCategory(updateResult.value);
    });
 
 export const remove = sdkProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
       if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
-      await ensureCategoryOwnership(context.db, input.id, context.teamId);
-      await deleteCategory(context.db, input.id);
+      const ownershipResult = await ensureCategoryOwnership(
+         context.db,
+         input.id,
+         context.teamId,
+      );
+      if (ownershipResult.isErr())
+         throw WebAppError.fromAppError(ownershipResult.error);
+      const deleteResult = await deleteCategory(context.db, input.id);
+      if (deleteResult.isErr())
+         throw WebAppError.fromAppError(deleteResult.error);
       return { success: true };
    });
 
@@ -84,8 +103,17 @@ export const archive = sdkProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
       if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
-      await ensureCategoryOwnership(context.db, input.id, context.teamId);
-      const cat = await archiveCategory(context.db, input.id);
-      if (!cat) throw WebAppError.notFound("Categoria não encontrada.");
-      return mapCategory(cat);
+      const ownershipResult = await ensureCategoryOwnership(
+         context.db,
+         input.id,
+         context.teamId,
+      );
+      if (ownershipResult.isErr())
+         throw WebAppError.fromAppError(ownershipResult.error);
+      const archiveResult = await archiveCategory(context.db, input.id);
+      if (archiveResult.isErr())
+         throw WebAppError.fromAppError(archiveResult.error);
+      if (!archiveResult.value)
+         throw WebAppError.notFound("Categoria não encontrada.");
+      return mapCategory(archiveResult.value);
    });
