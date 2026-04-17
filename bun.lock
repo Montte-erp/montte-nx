@@ -67,6 +67,7 @@
         "@packages/events": "workspace:*",
         "@packages/notifications": "workspace:*",
         "@packages/ui": "workspace:*",
+        "@packages/workflows": "workspace:*",
         "@tailwindcss/vite": "catalog:vite",
         "@tanstack/ai": "catalog:tanstack-ai",
         "@tanstack/ai-openrouter": "catalog:tanstack-ai",
@@ -139,6 +140,7 @@
         "@core/utils": "workspace:*",
         "@tanstack/ai": "catalog:tanstack-ai",
         "@tanstack/ai-openrouter": "catalog:tanstack-ai",
+        "neverthrow": "catalog:validation",
         "zod": "catalog:validation",
       },
       "devDependencies": {
@@ -181,6 +183,7 @@
         "@f-o-t/money": "catalog:fot",
         "dayjs": "catalog:ui",
         "drizzle-orm": "catalog:database",
+        "neverthrow": "catalog:validation",
         "pg": "catalog:database",
         "zod": "catalog:validation",
       },
@@ -484,6 +487,29 @@
         "@types/react-dom": "catalog:react",
         "bun-types": "latest",
         "tailwindcss": "catalog:ui",
+        "typescript": "catalog:development",
+      },
+    },
+    "packages/workflows": {
+      "name": "@packages/workflows",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/agents": "workspace:*",
+        "@core/database": "workspace:*",
+        "@core/logging": "workspace:*",
+        "@core/posthog": "workspace:*",
+        "@core/redis": "workspace:*",
+        "@core/stripe": "workspace:*",
+        "@dbos-inc/dbos-sdk": "catalog:workers",
+        "@packages/events": "workspace:*",
+        "@packages/notifications": "workspace:*",
+        "@tanstack/store": "catalog:tanstack",
+        "dayjs": "catalog:ui",
+        "neverthrow": "catalog:validation",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
         "typescript": "catalog:development",
       },
     },
@@ -1446,6 +1472,8 @@
     "@packages/notifications": ["@packages/notifications@workspace:packages/notifications"],
 
     "@packages/ui": ["@packages/ui@workspace:packages/ui"],
+
+    "@packages/workflows": ["@packages/workflows@workspace:packages/workflows"],
 
     "@pinojs/redact": ["@pinojs/redact@0.4.0", "", {}, "sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg=="],
 
