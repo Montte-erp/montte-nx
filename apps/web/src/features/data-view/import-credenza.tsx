@@ -28,8 +28,6 @@ import { defineStepper } from "@packages/ui/components/stepper";
 import { Button } from "@packages/ui/components/button";
 import {
    AlertTriangle,
-   Check,
-   ChevronDown,
    ChevronRight,
    FileSpreadsheet,
    FileText,
@@ -260,8 +258,6 @@ function MappingBody({
    mapping: ColumnMapping;
    onMappingChange: (m: ColumnMapping) => void;
 }) {
-   const [openHeader, setOpenHeader] = useState<string | null>(null);
-
    function getDestKeyForSource(sourceHeader: string): string {
       return (
          Object.entries(mapping).find(([, src]) => src === sourceHeader)?.[0] ??
@@ -276,7 +272,6 @@ function MappingBody({
       }
       if (destKey !== "__none__") next[destKey] = sourceHeader;
       onMappingChange(next);
-      setOpenHeader(null);
    }
 
    const destOptions = [
@@ -287,131 +282,55 @@ function MappingBody({
       })),
    ];
 
-   const requiredColumns = columns.filter((c) => c.required);
    const previewRows = raw.rows.slice(0, 6);
 
    return (
-      <div className="flex flex-col gap-4">
-         {requiredColumns.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-               {requiredColumns.map((col) => {
-                  const mapped = !!mapping[col.key];
-                  return (
-                     <div
-                        className={cn(
-                           "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
-                           mapped
-                              ? "border-primary/20 bg-primary/10 text-primary"
-                              : "border-destructive/20 bg-destructive/10 text-destructive",
-                        )}
-                        key={col.key}
-                     >
-                        {mapped ? (
-                           <Check className="size-3" />
-                        ) : (
-                           <AlertTriangle className="size-3" />
-                        )}
-                        {col.label}
-                     </div>
-                  );
-               })}
-            </div>
-         )}
-         <div className="overflow-auto rounded-md border">
-            <Table className="border-separate border-spacing-0">
-               <TableHeader>
-                  <TableRow className="bg-muted/50 hover:bg-muted/50">
-                     {raw.headers.map((header) => {
-                        const destKey = getDestKeyForSource(header);
-                        const destCol = columns.find((c) => c.key === destKey);
-                        const isMapped = destKey !== "__none__";
+      <div className="overflow-auto rounded-md border">
+         <Table className="border-separate border-spacing-0">
+            <TableHeader>
+               <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  {raw.headers.map((header) => {
+                     const destKey = getDestKeyForSource(header);
+                     return (
+                        <TableHead className="p-0 min-w-[160px]" key={header}>
+                           <Combobox
+                              className="h-10 w-full justify-start rounded-none border-0 bg-transparent px-2 text-xs font-medium shadow-none"
+                              emptyMessage="Nenhum campo"
+                              onValueChange={(v) => handleSelect(header, v)}
+                              options={destOptions}
+                              placeholder={header}
+                              renderSelected={() => (
+                                 <span className="truncate">{header}</span>
+                              )}
+                              searchPlaceholder="Buscar campo..."
+                              value={destKey}
+                           />
+                        </TableHead>
+                     );
+                  })}
+               </TableRow>
+            </TableHeader>
+            <TableBody>
+               {previewRows.map((row, rowIdx) => (
+                  <TableRow key={`row-${rowIdx + 1}`}>
+                     {raw.headers.map((header, colIdx) => {
+                        const val = row[colIdx] ?? "";
                         return (
-                           <TableHead
-                              className="p-0 min-w-[160px]"
-                              key={header}
-                           >
-                              <Popover
-                                 onOpenChange={(open) =>
-                                    setOpenHeader(open ? header : null)
-                                 }
-                                 open={openHeader === header}
-                              >
-                                 <PopoverTrigger asChild>
-                                    <div
-                                       className={cn(
-                                          "flex w-full flex-col gap-1 px-3 py-2 cursor-pointer select-none transition-colors",
-                                          "hover:bg-accent/60",
-                                          isMapped &&
-                                             destCol?.required &&
-                                             "bg-primary/5",
-                                       )}
-                                    >
-                                       <span className="truncate text-xs text-muted-foreground">
-                                          {header}
-                                       </span>
-                                       <div className="flex items-center gap-1">
-                                          <span
-                                             className={cn(
-                                                "flex-1 truncate text-xs font-medium",
-                                                isMapped
-                                                   ? "text-foreground"
-                                                   : "text-muted-foreground",
-                                                destCol?.required &&
-                                                   "text-primary",
-                                             )}
-                                          >
-                                             {isMapped
-                                                ? `→ ${destCol?.label}${destCol?.required ? " *" : ""}`
-                                                : "Ignorar"}
-                                          </span>
-                                          <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
-                                       </div>
-                                    </div>
-                                 </PopoverTrigger>
-                                 <PopoverContent
-                                    align="start"
-                                    className="w-52 p-2"
-                                 >
-                                    <Combobox
-                                       className="w-full"
-                                       emptyMessage="Nenhum campo"
-                                       onValueChange={(v) =>
-                                          handleSelect(header, v)
-                                       }
-                                       options={destOptions}
-                                       placeholder="Mapear para..."
-                                       searchPlaceholder="Buscar campo..."
-                                       value={destKey}
-                                    />
-                                 </PopoverContent>
-                              </Popover>
-                           </TableHead>
+                           <TableCell className="truncate p-2" key={header}>
+                              {val ? (
+                                 <span className="text-xs">{val}</span>
+                              ) : (
+                                 <span className="text-xs text-muted-foreground">
+                                    —
+                                 </span>
+                              )}
+                           </TableCell>
                         );
                      })}
                   </TableRow>
-               </TableHeader>
-               <TableBody>
-                  {previewRows.map((row, rowIdx) => (
-                     <TableRow key={`row-${rowIdx + 1}`}>
-                        {raw.headers.map((header, colIdx) => {
-                           const val = row[colIdx] ?? "";
-                           return (
-                              <TableCell className="truncate p-2" key={header}>
-                                 {val ? (
-                                    <span className="text-xs">{val}</span>
-                                 ) : (
-                                    <span className="text-xs text-muted-foreground">
-                                       —
-                                    </span>
-                                 )}
-                              </TableCell>
-                           );
-                        })}
-                     </TableRow>
-                  ))}
-               </TableBody>
-            </Table>
-         </div>
+               ))}
+            </TableBody>
+         </Table>
       </div>
    );
 }
