@@ -292,7 +292,7 @@ function MoneyEditCell({
    onChange: (v: string) => void;
    onDeactivate: () => void;
 }) {
-   const [draft, setDraft] = useState<number | undefined>(
+   const [draft, setDraft] = useState(
       value ? Number.parseFloat(value) : undefined,
    );
 
