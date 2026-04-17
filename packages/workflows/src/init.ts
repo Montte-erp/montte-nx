@@ -1,6 +1,7 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { env } from "@core/environment/web";
 import { getLogger } from "@core/logging/root";
+import { backfillKeywordsWorkflow } from "./workflows/backfill-keywords.workflow";
 
 const logger = getLogger().child({ module: "dbos" });
 
@@ -12,8 +13,15 @@ export function launchDBOS() {
    });
 
    DBOS.launch()
-      .then(() => {
+      .then(async () => {
          logger.info("DBOS runtime started");
+         await DBOS.applySchedules([
+            {
+               scheduleName: "backfill-keywords-daily",
+               workflowFn: backfillKeywordsWorkflow,
+               schedule: "0 3 * * *",
+            },
+         ]);
       })
       .catch((err) => {
          logger.error({ err }, "DBOS launch failed");

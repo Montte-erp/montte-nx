@@ -3,10 +3,10 @@ import "@/integrations/otel/init";
 
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import handler, { createServerEntry } from "@tanstack/react-start/server-entry";
-import { launchDBOS } from "@/integrations/dbos/init";
+import { launchDBOS } from "@packages/workflows/init";
 
 async function bootDbos() {
-   await import("@/integrations/dbos/workflows");
+   await import("@packages/workflows/workflows");
    launchDBOS();
 }
 

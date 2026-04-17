@@ -18,7 +18,7 @@ import { user as userTable } from "@core/database/schemas/auth";
 import { WebAppError } from "@core/logging/errors";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { startDeriveKeywordsWorkflow } from "@/integrations/dbos/workflows/runner";
+import { startDeriveKeywordsWorkflow } from "@packages/workflows/runner";
 import { protectedProcedure } from "../server";
 
 const idSchema = z.object({ id: z.string().uuid() });

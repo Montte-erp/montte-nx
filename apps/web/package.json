@@ -50,6 +50,7 @@
       "@packages/events": "workspace:*",
       "@packages/notifications": "workspace:*",
       "@packages/ui": "workspace:*",
+      "@packages/workflows": "workspace:*",
       "@tailwindcss/vite": "catalog:vite",
       "@tanstack/ai": "catalog:tanstack-ai",
       "@tanstack/ai-openrouter": "catalog:tanstack-ai",

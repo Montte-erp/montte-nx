@@ -1,0 +1,49 @@
+{
+   "extends": "@tooling/typescript/tsconfig.package.json",
+   "compilerOptions": {
+      "experimentalDecorators": true,
+      "paths": {
+         "@core/agents": ["../../core/agents/src/agent.ts"],
+         "@core/agents/*": ["../../core/agents/src/*"],
+         "@core/database": ["../../core/database/src/index.ts"],
+         "@core/database/*": ["../../core/database/src/*"],
+         "@core/environment/*": ["../../core/environment/src/*"],
+         "@core/logging": ["../../core/logging/src/logger.ts"],
+         "@core/logging/*": ["../../core/logging/src/*"],
+         "@core/posthog/*": ["../../core/posthog/src/*"],
+         "@core/redis/*": ["../../core/redis/src/*"],
+         "@core/stripe": ["../../core/stripe/src/index.ts"],
+         "@core/stripe/*": ["../../core/stripe/src/*"],
+         "@packages/events/*": ["../../packages/events/src/*"],
+         "@packages/notifications/*": ["../../packages/notifications/src/*"],
+         "@packages/workflows/*": ["./src/*"]
+      }
+   },
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../../core/agents"
+      },
+      {
+         "path": "../../core/stripe"
+      },
+      {
+         "path": "../../core/redis"
+      },
+      {
+         "path": "../../core/posthog"
+      },
+      {
+         "path": "../../core/logging"
+      },
+      {
+         "path": "../../core/database"
+      },
+      {
+         "path": "../../packages/events"
+      },
+      {
+         "path": "../../packages/notifications"
+      }
+   ]
+}

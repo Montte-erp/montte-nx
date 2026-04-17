@@ -1,0 +1,49 @@
+{
+   "name": "@packages/workflows",
+   "version": "0.1.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      "./init": {
+         "types": "./dist/init.d.ts",
+         "default": "./dist/init.js"
+      },
+      "./runner": {
+         "types": "./dist/runner.d.ts",
+         "default": "./dist/runner.js"
+      },
+      "./workflows": {
+         "types": "./dist/workflows/index.d.ts",
+         "default": "./dist/workflows/index.js"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@core/agents": "workspace:*",
+      "@core/database": "workspace:*",
+      "@core/environment": "workspace:*",
+      "@core/logging": "workspace:*",
+      "@core/posthog": "workspace:*",
+      "@core/redis": "workspace:*",
+      "@core/stripe": "workspace:*",
+      "@dbos-inc/dbos-sdk": "catalog:workers",
+      "@packages/events": "workspace:*",
+      "@packages/notifications": "workspace:*",
+      "dayjs": "catalog:ui",
+      "zod": "catalog:validation"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development"
+   }
+}

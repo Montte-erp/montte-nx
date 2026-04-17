@@ -19,6 +19,14 @@
       "./utils": {
          "types": "./dist/utils.d.ts",
          "default": "./dist/utils.js"
+      },
+      "./categorize": {
+         "types": "./dist/categorize.d.ts",
+         "default": "./dist/categorize.js"
+      },
+      "./keywords": {
+         "types": "./dist/keywords.d.ts",
+         "default": "./dist/keywords.js"
       }
    },
    "scripts": {
