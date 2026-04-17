@@ -76,7 +76,7 @@ r2.isErr();                     // true
 | `andThen`           | `<U, F>(fn: (t: T) => Result<U, F>) => Result<U, E \| F>`         | Chain fallible sync op. Flattens nested `Result`.                         |
 | `asyncAndThen`      | `<U, F>(fn: (t: T) => ResultAsync<U, F>) => ResultAsync<U, E\|F>` | Chain into async world.                                                   |
 | `orElse`            | `<U, A>(fn: (e: E) => Result<U, A>) => Result<U\|T, A>`           | Error recovery; may convert `Err` → `Ok`.                                 |
-| `match`             | `<A, B=A>(onOk: (t)=>A, onErr: (e)=>B) => A\|B`                   | Fold both branches to a single value. Both branches must have same type.  |
+| `match`             | `<A, B>(onOk: (t)=>A, onErr: (e)=>B) => A\|B`                     | Fold both branches to a single value. Callbacks may return different types; result is `A \| B`.  |
 | `asyncMap`          | `<U>(fn: (t: T) => Promise<U>) => ResultAsync<U, E>`              | Map to async; result becomes `ResultAsync`.                               |
 | `andTee`            | `(fn: (t: T) => unknown) => Result<T, E>`                         | Side-effect on `Ok`; passed-in errors **swallowed** (e.g. logging).       |
 | `orTee`             | `(fn: (e: E) => unknown) => Result<T, E>`                         | Side-effect on `Err`; passed-in errors swallowed.                         |
@@ -101,7 +101,7 @@ const combined = Result.combine(tuple(ok("a"), ok(1), ok(true)));
 
 ## Asynchronous API — `ResultAsync<T, E>`
 
-`ResultAsync` wraps `Promise<Result<T, E>>`. It is **thenable** — awaiting yields a `Result`. All `Result` methods are mirrored but return `ResultAsync`.
+`ResultAsync` wraps `Promise<Result<T, E>>`. It is **thenable** — awaiting yields a `Result`. Most `Result` methods are mirrored and return `ResultAsync`, but terminal methods (`match`, `unwrapOr`) return `Promise` instead of `ResultAsync`.
 
 ### Constructors
 
@@ -313,7 +313,7 @@ validateInput(schema, data)
 3. **`fromPromise` can't catch sync throws** — if the callee throws before returning a Promise, `fromPromise` still throws. Use `ResultAsync.fromThrowable` or an async IIFE: `fromPromise((async () => syncThrowing())(), errFn)`.
 4. **`await` a `ResultAsync`** — yields a `Result`, not a `T`. Call `.isOk()` / `.match()` before reading `.value`.
 5. **`_unsafeUnwrap` / `_unsafeUnwrapErr`** — tests only. Not allowed in production code.
-6. **Match callbacks must have same return type** — if they differ, use `map`/`mapErr` instead.
+6. **Match callback return types can differ** — `match<A, B>(onOk: (t) => A, onErr: (e) => B)` returns `A | B`. No need to unify them manually.
 7. **TypeScript narrowing** — after `if (r.isErr()) return ...`, `r` narrows to `Ok<T, E>` and `r.value` is accessible.
 8. **No `try/catch` to convert** — if you find yourself wrapping existing neverthrow code in `try/catch`, it's wrong. Use `.match` / `.mapErr`.
 9. **`safeTry` + Promise<Result>** — must `await` before `yield*`. `ResultAsync` can be `yield*`'d directly.
