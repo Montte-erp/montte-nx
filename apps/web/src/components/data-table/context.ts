@@ -31,7 +31,6 @@ export interface DataTableContextValue<TData, TValue> {
    rowSelection?: RowSelectionState;
    onRowSelectionChange?: (selection: RowSelectionState) => void;
    renderActions?: (props: { row: Row<TData> }) => React.ReactNode;
-   renderExpandedRow?: (props: { row: Row<TData> }) => React.ReactNode;
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
    getSubRows?: (row: TData) => TData[] | undefined;
