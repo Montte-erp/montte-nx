@@ -165,6 +165,7 @@ const baseTransactionSchema = createInsertSchema(transactions).pick({
    categoryId: true,
    creditCardId: true,
    contactId: true,
+   tagId: true,
    paymentMethod: true,
    attachments: true,
    isInstallment: true,
