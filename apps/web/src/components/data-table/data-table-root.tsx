@@ -22,17 +22,11 @@ import { Checkbox } from "@packages/ui/components/checkbox";
 import { createStore, useSelector } from "@tanstack/react-store";
 import type { Store } from "@tanstack/react-store";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
+import { createContextState } from "foxact/context-state";
 import { useLocalStorage } from "foxact/use-local-storage";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
-import {
-   createContext,
-   useCallback,
-   useContext,
-   useEffect,
-   useMemo,
-   useRef,
-   useState,
-} from "react";
+import { useSingleton } from "foxact/use-singleton";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import type React from "react";
 
 export type DataTableStoredState = {
@@ -74,13 +68,11 @@ type DataTableContextValue<TData> = {
 };
 
 // oxlint-ignore no-explicit-any
-const DataTableContext = createContext<DataTableContextValue<any> | null>(null);
+const [DataTableCtxProvider, useDataTableCtxValue, useSetDataTableCtx] =
+   createContextState<DataTableContextValue<any>>();
 
 export function useDataTableContext<TData>(): DataTableContextValue<TData> {
-   const ctx = useContext(DataTableContext);
-   if (!ctx)
-      throw new Error("useDataTableContext must be used within DataTableRoot");
-   return ctx as DataTableContextValue<TData>;
+   return useDataTableCtxValue() as DataTableContextValue<TData>;
 }
 
 export function useDataTableStore<T>(
@@ -88,6 +80,19 @@ export function useDataTableStore<T>(
 ): T {
    const { store } = useDataTableContext();
    return useSelector(store, selector);
+}
+
+// oxlint-ignore no-explicit-any
+function DataTableContextSync({
+   value,
+}: {
+   value: DataTableContextValue<any>;
+}) {
+   const setCtx = useSetDataTableCtx();
+   useIsomorphicLayoutEffect(() => {
+      setCtx(value);
+   }, [setCtx, value]);
+   return null;
 }
 
 interface DataTableRootProps<TData, TValue> {
@@ -128,7 +133,7 @@ export function DataTableRoot<TData, TValue>({
    const [persisted, setPersisted] =
       useLocalStorage<DataTablePersistedState | null>(storageKey, null);
 
-   const [store] = useState(() =>
+   const store = useSingleton(() =>
       createStore<DataTableStoreState<TData>>({
          data,
          sorting: externalSorting ?? persisted?.sorting ?? [],
@@ -143,7 +148,7 @@ export function DataTableRoot<TData, TValue>({
          rowSelection: externalRowSelection ?? {},
          hasEmptyState: false,
       }),
-   );
+   ).current;
 
    useEffect(() => {
       store.setState((s) => ({ ...s, data }));
@@ -357,8 +362,9 @@ export function DataTableRoot<TData, TValue>({
    );
 
    return (
-      <DataTableContext.Provider value={ctx}>
+      <DataTableCtxProvider initialState={ctx}>
+         <DataTableContextSync value={ctx} />
          {children}
-      </DataTableContext.Provider>
+      </DataTableCtxProvider>
    );
 }
