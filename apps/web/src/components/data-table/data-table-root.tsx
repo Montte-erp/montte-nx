@@ -58,9 +58,15 @@ export function DataTableRoot<TData, TValue>({
 
    const [hasEmptyState, setHasEmptyState] = useState(false);
 
-   const sorting: SortingState = externalSorting ?? persisted?.sorting ?? [];
-   const columnFilters: ColumnFiltersState =
-      externalColumnFilters ?? persisted?.columnFilters ?? [];
+   const sorting = useMemo<SortingState>(
+      () => externalSorting ?? persisted?.sorting ?? [],
+      [externalSorting, persisted?.sorting],
+   );
+
+   const columnFilters = useMemo<ColumnFiltersState>(
+      () => externalColumnFilters ?? persisted?.columnFilters ?? [],
+      [externalColumnFilters, persisted?.columnFilters],
+   );
 
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
       (updater) => {
@@ -87,9 +93,15 @@ export function DataTableRoot<TData, TValue>({
          [columnFilters, setPersisted],
       );
 
-   const onSortingChange = externalOnSortingChange ?? handleSortingChange;
-   const onColumnFiltersChange =
-      externalOnColumnFiltersChange ?? handleColumnFiltersChange;
+   const onSortingChange = useMemo(
+      () => externalOnSortingChange ?? handleSortingChange,
+      [externalOnSortingChange, handleSortingChange],
+   );
+
+   const onColumnFiltersChange = useMemo(
+      () => externalOnColumnFiltersChange ?? handleColumnFiltersChange,
+      [externalOnColumnFiltersChange, handleColumnFiltersChange],
+   );
 
    const tableState: DataTableStoredState | null = persisted
       ? {
