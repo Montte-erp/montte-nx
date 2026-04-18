@@ -122,12 +122,10 @@
         "@vitejs/plugin-react": "catalog:vite",
         "@vitest/coverage-istanbul": "catalog:testing",
         "babel-plugin-react-compiler": "catalog:development",
-        "jsdom": "catalog:testing",
         "nitro": "3.0.260311-beta",
         "typescript": "catalog:development",
         "vite": "catalog:vite",
         "vitest": "catalog:testing",
-        "web-vitals": "catalog:development",
       },
     },
     "apps/worker": {
@@ -595,7 +593,6 @@
     "development": {
       "babel-plugin-react-compiler": "^1.0.0",
       "typescript": "6.0.3",
-      "web-vitals": "^5.2.0",
     },
     "dnd": {
       "@dnd-kit/core": "^6.3.1",
@@ -610,7 +607,6 @@
     "files": {
       "fflate": "^0.8.2",
       "minio": "^8.0.6",
-      "sharp": "^0.34.5",
     },
     "fot": {
       "@f-o-t/condition-evaluator": "2.0.7",
@@ -648,8 +644,6 @@
       "react-error-boundary": "6.1.1",
     },
     "search-providers": {
-      "@mendable/firecrawl-js": "^4.18.3",
-      "exa-js": "^2.11.0",
     },
     "tanstack": {
       "@tanstack/devtools-event-client": "^0.4.3",
@@ -669,7 +663,6 @@
       "@tanstack/react-store": "^0.11.0",
       "@tanstack/react-table": "^8.21.3",
       "@tanstack/react-virtual": "^3.13.24",
-      "@tanstack/router-cli": "^1.166.33",
       "@tanstack/router-plugin": "^1.167.22",
       "@tanstack/store": "^0.11.0",
     },
@@ -692,7 +685,6 @@
       "@testing-library/react": "^16.3.2",
       "@vitest/coverage-istanbul": "^4.1.4",
       "@vitest/coverage-v8": "^4.1.4",
-      "jsdom": "^29.0.2",
       "vitest": "^4.1.4",
     },
     "transactional": {
@@ -718,7 +710,6 @@
       "embla-carousel-autoplay": "^8.6.0",
       "embla-carousel-react": "^8.6.0",
       "foxact": "^0.3.0",
-      "framer-motion": "^12.38.0",
       "input-otp": "^1.4.2",
       "lucide-react": "^1.8.0",
       "motion": "^12.38.0",
@@ -742,7 +733,6 @@
       "@tailwindcss/vite": "^4.2.2",
       "@vitejs/plugin-react": "^6.0.1",
       "vite": "^8.0.8",
-      "vite-tsconfig-paths": "^6.1.1",
     },
     "workers": {
       "@dbos-inc/dbos-sdk": "^4.14.6",

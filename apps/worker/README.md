@@ -4,19 +4,21 @@ Processo worker standalone responsável por executar workflows DBOS em backgroun
 
 ## Responsabilidades
 
-- Consome filas Redis (`workflow:categorize`, `workflow:derive-keywords`) via BLPOP
-- Executa workflows DBOS (categorização de transações, derivação de keywords de categorias)
+- Processa filas DBOS nativas (`workflow:categorize`, `workflow:derive-keywords`) — sem loop de consumo, DBOS gerencia automaticamente
+- Executa workflows de categorização de transações e derivação de keywords
 - Roda o cron de backfill de keywords (`0 3 * * *`)
 - Envia logs e telemetria para PostHog via OTel
 
 ## Separação do processo web
 
-O worker roda como um serviço Railway separado. A aplicação web nunca importa DBOS — ela apenas faz `rpush` nas filas Redis. O worker consome essas filas e inicia os workflows.
+O worker roda como um serviço Railway separado. A aplicação web enfileira jobs via `DBOSClient` (PostgreSQL-backed, durável):
 
 ```
-web  →  redis.rpush("workflow:categorize", payload)
-worker  →  redis.blpop("workflow:categorize")  →  DBOS.startWorkflow(...)
+web  →  DBOSClient.enqueue("workflow:categorize", payload)
+worker  →  DBOS processa a fila automaticamente  →  workflow executa
 ```
+
+Ao contrário de Redis BLPOP, jobs sobrevivem a restarts do worker.
 
 ## Desenvolvimento local
 
@@ -30,14 +32,13 @@ Carrega `.env` de `apps/web/.env.local` automaticamente via `--env-file`.
 
 **Build command:** `bun install && cd apps/worker && bun run build`
 
-**Start command:** `cd apps/worker && bun run start`
+**Start command:** `bun apps/worker/dist/index.js`
 
 ## Scripts
 
 ```bash
 bun run dev        # dev com .env de apps/web
 bun run build      # bundle para dist/
-bun run start      # inicia dist/index.js com .env de apps/web
 bun run typecheck
 ```
 

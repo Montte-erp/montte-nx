@@ -1,6 +1,6 @@
 import { env } from "@core/environment/web";
-import { startHealthHeartbeat } from "@core/logging";
-import { initOtel } from "@core/logging";
+import { startHealthHeartbeat } from "@core/logging/health";
+import { initOtel } from "@core/logging/otel";
 import { posthog } from "@/integrations/singletons";
 
 initOtel({
