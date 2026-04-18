@@ -148,12 +148,8 @@ export function DataTableContent<TData>({ maxHeight }: DataTableContentProps) {
    return (
       <div
          className="rounded-md border overflow-hidden"
-         ref={maxHeight !== undefined ? setScrollEl : undefined}
-         style={
-            maxHeight !== undefined
-               ? { maxHeight, overflowY: "auto" }
-               : undefined
-         }
+         ref={isVirtualized ? setScrollEl : undefined}
+         style={isVirtualized ? { maxHeight, overflowY: "auto" } : undefined}
       >
          <Table className="border-separate border-spacing-0">
             <TableHeader>

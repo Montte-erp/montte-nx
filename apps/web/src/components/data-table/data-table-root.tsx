@@ -26,7 +26,7 @@ import { createContextState } from "foxact/context-state";
 import { useLocalStorage } from "foxact/use-local-storage";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useSingleton } from "foxact/use-singleton";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import type React from "react";
 
 export type DataTableStoredState = {
@@ -95,10 +95,10 @@ function DataTableContextSync({
    return null;
 }
 
-interface DataTableRootProps<TData, TValue> {
+interface DataTableRootProps<TData> {
    children: React.ReactNode;
    storageKey: string;
-   columns: ColumnDef<TData, TValue>[];
+   columns: ColumnDef<TData, unknown>[];
    data: TData[];
    getRowId: (row: TData) => string;
    sorting?: SortingState;
@@ -113,7 +113,7 @@ interface DataTableRootProps<TData, TValue> {
    getSubRows?: (row: TData) => TData[] | undefined;
 }
 
-export function DataTableRoot<TData, TValue>({
+export function DataTableRoot<TData>({
    children,
    storageKey,
    columns,
@@ -129,7 +129,7 @@ export function DataTableRoot<TData, TValue>({
    groupBy,
    renderGroupHeader,
    getSubRows,
-}: DataTableRootProps<TData, TValue>) {
+}: DataTableRootProps<TData>) {
    const [persisted, setPersisted] =
       useLocalStorage<DataTablePersistedState | null>(storageKey, null);
 
@@ -207,11 +207,6 @@ export function DataTableRoot<TData, TValue>({
          [store, persistDebounced],
       );
 
-   const onRowSelectionChangeRef = useRef(onRowSelectionChange);
-   useIsomorphicLayoutEffect(() => {
-      onRowSelectionChangeRef.current = onRowSelectionChange;
-   });
-
    const handleRowSelectionChange = useCallback(
       (
          updater:
@@ -223,26 +218,17 @@ export function DataTableRoot<TData, TValue>({
                typeof updater === "function"
                   ? updater(s.rowSelection)
                   : updater;
-            onRowSelectionChangeRef.current?.(next);
+            onRowSelectionChange?.(next);
             return { ...s, rowSelection: next };
          });
       },
-      [store],
+      [store, onRowSelectionChange],
    );
 
    const effectiveColumnVisibility = useSelector(
       store,
       (s) => s.tableState?.columnVisibility ?? {},
    );
-
-   const effectiveColumnVisibilityRef = useRef(effectiveColumnVisibility);
-   useIsomorphicLayoutEffect(() => {
-      effectiveColumnVisibilityRef.current = effectiveColumnVisibility;
-   });
-
-   const onTableStateChangeRef = useRef<
-      ((s: DataTableStoredState) => void) | undefined
-   >(undefined);
 
    const onTableStateChange = useCallback(
       (state: DataTableStoredState) => {
@@ -252,25 +238,20 @@ export function DataTableRoot<TData, TValue>({
       [store, setPersisted],
    );
 
-   useIsomorphicLayoutEffect(() => {
-      onTableStateChangeRef.current = onTableStateChange;
-   });
-
    const handleColumnVisibilityChange = useCallback(
       (
          updater: VisibilityState | ((old: VisibilityState) => VisibilityState),
       ) => {
+         const current = store.state.tableState?.columnVisibility ?? {};
          const next =
-            typeof updater === "function"
-               ? updater(effectiveColumnVisibilityRef.current)
-               : updater;
-         onTableStateChangeRef.current?.({
+            typeof updater === "function" ? updater(current) : updater;
+         onTableStateChange({
             columnOrder: store.state.tableState?.columnOrder ?? [],
             columnVisibility: next,
             columnPinning: store.state.tableState?.columnPinning,
          });
       },
-      [store],
+      [store, onTableStateChange],
    );
 
    const allColumns = useMemo<ColumnDef<TData, unknown>[]>(() => {
