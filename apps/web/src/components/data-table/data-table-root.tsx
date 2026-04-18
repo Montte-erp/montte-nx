@@ -40,8 +40,7 @@ export type DataTablePersistedState = DataTableStoredState & {
    columnFilters?: ColumnFiltersState;
 };
 
-export type DataTableStoreState<TData = unknown> = {
-   data: TData[];
+export type DataTableStoreState = {
    sorting: SortingState;
    columnFilters: ColumnFiltersState;
    tableState: DataTableStoredState | null;
@@ -60,7 +59,7 @@ declare module "@tanstack/react-table" {
 }
 
 type DataTableContextValue<TData> = {
-   store: Store<DataTableStoreState<TData>>;
+   store: Store<DataTableStoreState>;
    table: Table<TData>;
    onTableStateChange: (state: DataTableStoredState) => void;
    groupBy?: (row: TData) => string;
@@ -76,10 +75,29 @@ export function useDataTableContext<TData>(): DataTableContextValue<TData> {
 }
 
 export function useDataTableStore<T>(
-   selector: (s: DataTableStoreState<unknown>) => T,
+   selector: (s: DataTableStoreState) => T,
 ): T {
    const { store } = useDataTableContext();
    return useSelector(store, selector);
+}
+
+export function useDataTable<TData>() {
+   const ctx = useDataTableContext<TData>();
+   const sorting = useSelector(ctx.store, (s) => s.sorting);
+   const columnFilters = useSelector(ctx.store, (s) => s.columnFilters);
+   const rowSelection = useSelector(ctx.store, (s) => s.rowSelection);
+   const hasEmptyState = useSelector(ctx.store, (s) => s.hasEmptyState);
+   return {
+      table: ctx.table,
+      store: ctx.store,
+      onTableStateChange: ctx.onTableStateChange,
+      groupBy: ctx.groupBy,
+      renderGroupHeader: ctx.renderGroupHeader,
+      sorting,
+      columnFilters,
+      rowSelection,
+      hasEmptyState,
+   };
 }
 
 // oxlint-ignore no-explicit-any
@@ -113,8 +131,7 @@ interface DataTableRootProps<TData> {
    getSubRows?: (row: TData) => TData[] | undefined;
 }
 
-export function DataTableRoot<TData>({
-   children,
+function useDataTableRoot<TData>({
    storageKey,
    columns,
    data,
@@ -129,13 +146,12 @@ export function DataTableRoot<TData>({
    groupBy,
    renderGroupHeader,
    getSubRows,
-}: DataTableRootProps<TData>) {
+}: Omit<DataTableRootProps<TData>, "children">): DataTableContextValue<TData> {
    const [persisted, setPersisted] =
       useLocalStorage<DataTablePersistedState | null>(storageKey, null);
 
    const store = useSingleton(() =>
-      createStore<DataTableStoreState<TData>>({
-         data,
+      createStore<DataTableStoreState>({
          sorting: externalSorting ?? persisted?.sorting ?? [],
          columnFilters: externalColumnFilters ?? persisted?.columnFilters ?? [],
          tableState: persisted
@@ -149,10 +165,6 @@ export function DataTableRoot<TData>({
          hasEmptyState: false,
       }),
    ).current;
-
-   useEffect(() => {
-      store.setState((s) => ({ ...s, data }));
-   }, [data, store]);
 
    useEffect(() => {
       if (externalSorting !== undefined)
@@ -298,11 +310,10 @@ export function DataTableRoot<TData>({
    const sorting = useSelector(store, (s) => s.sorting);
    const columnFilters = useSelector(store, (s) => s.columnFilters);
    const rowSelection = useSelector(store, (s) => s.rowSelection);
-   const storeData = useSelector(store, (s) => s.data);
 
    const table = useReactTable({
       columns: allColumns,
-      data: storeData,
+      data,
       enableRowSelection: true,
       getCoreRowModel: getCoreRowModel(),
       getExpandedRowModel: getExpandedRowModel(),
@@ -330,7 +341,7 @@ export function DataTableRoot<TData>({
       },
    });
 
-   const ctx = useMemo<DataTableContextValue<TData>>(
+   return useMemo<DataTableContextValue<TData>>(
       () => ({
          store,
          table,
@@ -340,7 +351,13 @@ export function DataTableRoot<TData>({
       }),
       [store, table, onTableStateChange, groupBy, renderGroupHeader],
    );
+}
 
+export function DataTableRoot<TData>({
+   children,
+   ...props
+}: DataTableRootProps<TData>) {
+   const ctx = useDataTableRoot(props);
    return (
       <DataTableCtxProvider initialState={ctx}>
          <DataTableContextSync value={ctx} />

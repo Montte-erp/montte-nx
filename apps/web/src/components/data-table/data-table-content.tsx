@@ -12,8 +12,26 @@ import {
    TableRow,
 } from "@packages/ui/components/table";
 import { cn } from "@packages/ui/lib/utils";
-import { useState } from "react";
-import { useDataTableContext, useDataTableStore } from "./data-table-root";
+import { useMemo, useState } from "react";
+import type React from "react";
+import { useDataTable } from "./data-table-root";
+
+function useGroupedRows<TData>(
+   rows: Row<TData>[],
+   groupBy?: (row: TData) => string,
+) {
+   return useMemo(() => {
+      if (!groupBy) return null;
+      const groups = new Map<string, Row<TData>[]>();
+      for (const row of rows) {
+         const key = groupBy(row.original);
+         const existing = groups.get(key);
+         if (existing) existing.push(row);
+         else groups.set(key, [row]);
+      }
+      return groups;
+   }, [rows, groupBy]);
+}
 
 function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
    if (row.depth > 0) {
@@ -23,7 +41,7 @@ function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
                <TableCell
                   className={cn(
                      cell.column.id === "__select"
-                        ? "w-[40px] p-0"
+                        ? "w-10 p-0"
                         : "truncate text-sm",
                      i === 1 && "pl-6",
                   )}
@@ -42,7 +60,7 @@ function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
          {row.getVisibleCells().map((cell) => (
             <TableCell
                className={cn(
-                  cell.column.id === "__select" ? "w-[40px] px-2" : "truncate",
+                  cell.column.id === "__select" ? "w-10 px-2" : "truncate",
                   cell.column.columnDef.meta?.align === "right" && "text-right",
                   cell.column.columnDef.meta?.align === "center" &&
                      "text-center",
@@ -59,12 +77,12 @@ function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
 
 function DataTableBodyRows<TData>({
    rows,
-   groupBy,
+   groupedRows,
    renderGroupHeader,
    columnCount,
 }: {
    rows: Row<TData>[];
-   groupBy?: (row: TData) => string;
+   groupedRows: Map<string, Row<TData>[]> | null;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
    columnCount: number;
 }) {
@@ -88,18 +106,11 @@ function DataTableBodyRows<TData>({
       </TableRow>
    );
 
-   if (groupBy && renderGroupHeader) {
-      const groups = new Map<string, Row<TData>[]>();
-      for (const row of rows) {
-         const key = groupBy(row.original);
-         const existing = groups.get(key);
-         if (existing) existing.push(row);
-         else groups.set(key, [row]);
-      }
-      return Array.from(groups.entries()).flatMap(([key, groupRows]) => [
+   if (groupedRows && renderGroupHeader) {
+      return Array.from(groupedRows.entries()).flatMap(([key, groupRows]) => [
          <TableRow className="hover:bg-transparent" key={`group-${key}`}>
             <TableCell
-               className="py-2 px-4 bg-muted text-sm font-medium text-foreground"
+               className="bg-muted px-4 py-2 text-sm font-medium text-foreground"
                colSpan={columnCount}
             >
                {renderGroupHeader(key, groupRows)}
@@ -117,25 +128,25 @@ interface DataTableContentProps {
 }
 
 export function DataTableContent<TData>({ maxHeight }: DataTableContentProps) {
-   const { table, groupBy, renderGroupHeader } = useDataTableContext<TData>();
-   const hasEmptyState = useDataTableStore((s) => s.hasEmptyState);
-   const dataLength = useDataTableStore((s) => s.data.length);
+   const { table, groupBy, renderGroupHeader, hasEmptyState } =
+      useDataTable<TData>();
    const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
 
    const rows = table.getRowModel().rows;
+   const groupedRows = useGroupedRows(rows, groupBy);
+   const isVirtualized = maxHeight !== undefined && !groupBy;
 
    const virtualizer = useVirtualizer({
       count: rows.length,
       getScrollElement: () => scrollEl,
       estimateSize: () => 53,
       overscan: 5,
-      enabled: maxHeight !== undefined && !groupBy,
+      enabled: isVirtualized,
    });
 
-   if (dataLength === 0 && hasEmptyState) return null;
+   if (table.getCoreRowModel().rows.length === 0 && hasEmptyState) return null;
 
    const columnCount = table.getVisibleLeafColumns().length;
-   const isVirtualized = maxHeight !== undefined && !groupBy;
    const virtualItems = isVirtualized ? virtualizer.getVirtualItems() : null;
    const totalSize = virtualizer.getTotalSize();
    const paddingTop =
@@ -164,10 +175,7 @@ export function DataTableContent<TData>({ maxHeight }: DataTableContentProps) {
                         }
                         if (header.column.id === "__select") {
                            return (
-                              <TableHead
-                                 className="w-[40px] px-2"
-                                 key={header.id}
-                              >
+                              <TableHead className="w-10 px-2" key={header.id}>
                                  {header.isPlaceholder
                                     ? null
                                     : flexRender(
@@ -200,7 +208,7 @@ export function DataTableContent<TData>({ maxHeight }: DataTableContentProps) {
                            >
                               {header.isPlaceholder ? null : header.column.getCanSort() ? (
                                  <Button
-                                    className="h-8 gap-2 text-xs font-medium px-2"
+                                    className="h-8 gap-2 px-2 text-xs font-medium"
                                     onClick={header.column.getToggleSortingHandler()}
                                     variant="ghost"
                                  >
@@ -247,6 +255,7 @@ export function DataTableContent<TData>({ maxHeight }: DataTableContentProps) {
                      )}
                      <DataTableBodyRows
                         columnCount={columnCount}
+                        groupedRows={null}
                         rows={virtualItems.map((v) => rows[v.index])}
                      />
                      {paddingBottom > 0 && (
@@ -261,7 +270,7 @@ export function DataTableContent<TData>({ maxHeight }: DataTableContentProps) {
                ) : (
                   <DataTableBodyRows
                      columnCount={columnCount}
-                     groupBy={groupBy}
+                     groupedRows={groupedRows}
                      renderGroupHeader={renderGroupHeader}
                      rows={rows}
                   />
