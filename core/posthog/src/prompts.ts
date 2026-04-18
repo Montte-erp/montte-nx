@@ -21,21 +21,19 @@ export const POSTHOG_PROMPTS = {
 
 export type PromptKey = keyof typeof POSTHOG_PROMPTS;
 
-let _client: Prompts | null = null;
-
-function getClient(): Prompts | null {
-   if (_client) return _client;
-   const host = process.env.POSTHOG_HOST;
-   const key = process.env.POSTHOG_KEY;
-   const personalApiKey = process.env.POSTHOG_PERSONAL_API_KEY;
-   if (!host || !key || !personalApiKey) return null;
-   _client = new Prompts({ personalApiKey, projectApiKey: key, host });
-   return _client;
-}
+const client =
+   process.env.POSTHOG_HOST &&
+   process.env.POSTHOG_KEY &&
+   process.env.POSTHOG_PERSONAL_API_KEY
+      ? new Prompts({
+           personalApiKey: process.env.POSTHOG_PERSONAL_API_KEY,
+           projectApiKey: process.env.POSTHOG_KEY,
+           host: process.env.POSTHOG_HOST,
+        })
+      : null;
 
 export function fetchSystemPrompt(promptKey: PromptKey) {
    const { name, fallback } = POSTHOG_PROMPTS[promptKey];
-   const client = getClient();
    if (!client) return okAsync(fallback);
    return fromPromise(client.get(name, { fallback }), () => fallback).orElse(
       (fb) => okAsync(fb),
