@@ -11,6 +11,7 @@ import {
    identifyUser,
    setGroup,
 } from "@core/posthog/server";
+import { AppError, WebAppError } from "@core/logging/errors";
 import type { Redis } from "@core/redis/connection";
 import type { StripeClient } from "@core/stripe";
 import { sanitizeData } from "@core/utils/sanitization";
@@ -217,7 +218,11 @@ const withTelemetry = withOrganization.use(
          safeCapture();
       }
 
-      if (result.isErr()) throw result.error;
+      if (result.isErr()) {
+         const error = result.error;
+         if (error instanceof AppError) throw WebAppError.fromAppError(error);
+         throw error;
+      }
       return result.value;
    },
 );

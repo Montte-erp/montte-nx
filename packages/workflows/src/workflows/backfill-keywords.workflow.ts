@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { fromPromise } from "neverthrow";
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import {
    listTeamsWithPendingKeywords,
@@ -53,24 +54,21 @@ async function backfillKeywordsWorkflowFn(
       let processed = 0;
 
       for (const category of pending) {
-         const budgetOk = await DBOS.runStep(
-            async () => {
-               try {
-                  await enforceCreditBudget(
+         const budgetResult = await fromPromise(
+            DBOS.runStep(
+               () =>
+                  enforceCreditBudget(
                      team.organizationId,
                      "ai.keyword_derived",
                      redis,
                      null,
-                  );
-                  return true;
-               } catch {
-                  return false;
-               }
-            },
-            { name: `budget-${category.id}` },
+                  ),
+               { name: `budget-${category.id}` },
+            ),
+            (e) => (e instanceof Error ? e.message : String(e)),
          );
 
-         if (!budgetOk) break;
+         if (budgetResult.isErr()) break;
 
          await DBOS.startWorkflow(deriveKeywordsWorkflow, {
             workflowID: `derive-${category.id}-${dayjs(scheduledTime).format("YYYY-MM-DD")}`,
