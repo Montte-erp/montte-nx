@@ -1,9 +1,13 @@
 import dayjs from "dayjs";
-import { AppError } from "@core/logging/errors";
+import { AppError, validateInput } from "@core/logging/errors";
 import { eq } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
-import { financialConfig } from "@core/database/schemas/settings-financial";
+import {
+   financialConfig,
+   financialConfigInsertSchema,
+   type FinancialConfigInput,
+} from "@core/database/schemas/settings-financial";
 
 export function getFinancialConfig(db: DatabaseInstance, teamId: string) {
    return fromPromise(
@@ -19,29 +23,40 @@ export function getFinancialConfig(db: DatabaseInstance, teamId: string) {
    );
 }
 
+export async function enforceCostCenterPolicy(
+   db: DatabaseInstance,
+   teamId: string,
+   tagId: string | null | undefined,
+) {
+   const result = await getFinancialConfig(db, teamId);
+   const config = result.isOk() ? result.value : null;
+   if (config?.costCenterRequired && !tagId) {
+      throw AppError.forbidden(
+         "Centro de Custo é obrigatório para este espaço.",
+      );
+   }
+}
+
 export function upsertFinancialConfig(
    db: DatabaseInstance,
    teamId: string,
-   data: Partial<
-      Omit<
-         typeof financialConfig.$inferInsert,
-         "teamId" | "createdAt" | "updatedAt"
-      >
-   >,
+   data: FinancialConfigInput,
 ) {
+   const validated = validateInput(financialConfigInsertSchema, data);
    return fromPromise(
-      (async () => {
-         const [row] = await db
+      db.transaction(async (tx) => {
+         const [row] = await tx
             .insert(financialConfig)
-            .values({ teamId, ...data })
+            .values({ teamId, ...validated })
             .onConflictDoUpdate({
                target: financialConfig.teamId,
-               set: { ...data, updatedAt: dayjs().toDate() },
+               set: { ...validated, updatedAt: dayjs().toDate() },
             })
             .returning();
-         if (!row) throw new Error("no row returned");
+         if (!row)
+            throw new Error("Falha ao salvar configurações financeiras.");
          return row;
-      })(),
+      }),
       (e) =>
          AppError.database("Falha ao salvar configurações financeiras.", {
             cause: e,

@@ -1,4 +1,6 @@
 import { boolean, timestamp, uuid } from "drizzle-orm/pg-core";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { z } from "zod";
 import { settingsSchema } from "@core/database/schemas/schemas";
 
 export const financialConfig = settingsSchema.table("financial", {
@@ -13,5 +15,14 @@ export const financialConfig = settingsSchema.table("financial", {
       .$onUpdate(() => new Date()),
 });
 
+export const financialConfigSelectSchema = createSelectSchema(financialConfig);
+export const financialConfigInsertSchema = createInsertSchema(
+   financialConfig,
+).omit({
+   teamId: true,
+   createdAt: true,
+   updatedAt: true,
+});
+
 export type FinancialConfig = typeof financialConfig.$inferSelect;
-export type NewFinancialConfig = typeof financialConfig.$inferInsert;
+export type FinancialConfigInput = z.infer<typeof financialConfigInsertSchema>;

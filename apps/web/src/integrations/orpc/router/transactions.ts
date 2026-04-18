@@ -18,7 +18,7 @@ import {
    validateTransactionReferences,
 } from "@core/database/repositories/transactions-repository";
 import { ensureBankAccountOwnership } from "@core/database/repositories/bank-accounts-repository";
-import { getFinancialConfig } from "@core/database/repositories/financial-settings-repository";
+import { enforceCostCenterPolicy } from "@core/database/repositories/financial-settings-repository";
 import {
    createTransactionSchema,
    transactions,
@@ -26,7 +26,6 @@ import {
 } from "@core/database/schemas/transactions";
 import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceStatementImported } from "@packages/events/finance";
-import type { DatabaseInstance } from "@core/database/client";
 import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
 import { enqueueCategorizationWorkflow } from "@packages/workflows/workflows/categorization-workflow";
@@ -74,20 +73,6 @@ const filterSchema = z
       conditionGroup: ConditionGroup.optional(),
    })
    .optional();
-
-async function enforceCostCenterPolicy(
-   db: DatabaseInstance,
-   teamId: string,
-   tagId: string | null | undefined,
-) {
-   const result = await getFinancialConfig(db, teamId);
-   const config = result.isOk() ? result.value : null;
-   if (config?.costCenterRequired && !tagId) {
-      throw WebAppError.badRequest(
-         "Centro de Custo é obrigatório para este espaço.",
-      );
-   }
-}
 
 export const create = protectedProcedure
    .input(
