@@ -23,6 +23,7 @@
       "@core/redis": "workspace:*",
       "@core/stripe": "workspace:*",
       "@core/utils": "workspace:*",
+      "@dbos-inc/dbos-sdk": "catalog:workers",
       "@dnd-kit/core": "catalog:dnd",
       "@dnd-kit/sortable": "catalog:dnd",
       "@dnd-kit/utilities": "catalog:dnd",

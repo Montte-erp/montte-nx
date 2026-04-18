@@ -4,8 +4,8 @@
    "type": "module",
    "scripts": {
       "build": "bun build src/index.ts --outdir dist --target bun --packages external",
-      "start": "bun --env-file ../web/.env.local dist/index.js",
-      "dev": "bun --env-file ../web/.env.local run src/index.ts",
+      "start": "bun run dist/index.js",
+      "dev": "dotenv -e ../web/.env.local -- bun run src/index.ts",
       "typecheck": "tsgo"
    },
    "dependencies": {
@@ -20,6 +20,7 @@
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
+      "dotenv-cli": "catalog:environment",
       "typescript": "catalog:development"
    }
 }

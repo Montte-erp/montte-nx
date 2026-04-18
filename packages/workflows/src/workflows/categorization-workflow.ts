@@ -1,5 +1,6 @@
+import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
-import { DBOS } from "@dbos-inc/dbos-sdk";
+import { DBOS, WorkflowQueue } from "@dbos-inc/dbos-sdk";
 import {
    findCategoryByKeywords,
    listCategories,
@@ -19,6 +20,10 @@ export type CategorizationInput = {
 };
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
+
+export const categorizationQueue = new WorkflowQueue("workflow:categorize", {
+   workerConcurrency: 10,
+});
 
 async function publishFailed(
    publisher: ReturnType<typeof getPublisher>,
@@ -194,3 +199,17 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
 export const categorizationWorkflow = DBOS.registerWorkflow(
    categorizationWorkflowFn,
 );
+
+export async function enqueueCategorizationWorkflow(
+   client: DBOSClient,
+   input: CategorizationInput,
+): Promise<void> {
+   await client.enqueue(
+      {
+         workflowName: categorizationWorkflowFn.name,
+         queueName: categorizationQueue.name,
+         workflowID: `categorize-${input.transactionId}`,
+      },
+      input,
+   );
+}

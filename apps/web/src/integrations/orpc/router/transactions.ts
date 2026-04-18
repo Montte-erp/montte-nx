@@ -27,7 +27,7 @@ import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceStatementImported } from "@packages/events/finance";
 import { WebAppError } from "@core/logging";
 import { z } from "zod";
-import { enqueueCategorizationWorkflow } from "@packages/workflows/queue";
+import { enqueueCategorizationWorkflow } from "@packages/workflows/workflows/categorization-workflow";
 import { withCreditEnforcement } from "../middlewares/credit-enforcement";
 import { protectedProcedure } from "../server";
 
@@ -117,7 +117,7 @@ export const create = protectedProcedure
          !input.categoryId &&
          (input.type === "income" || input.type === "expense")
       ) {
-         await enqueueCategorizationWorkflow(context.redis, {
+         await enqueueCategorizationWorkflow(context.workflowClient, {
             transactionId: transaction.id,
             teamId: context.teamId,
             name: input.name ?? "",
@@ -273,7 +273,7 @@ export const importStatement = withCreditEnforcement(
                !tx.categoryId &&
                (tx.type === "income" || tx.type === "expense")
             ) {
-               await enqueueCategorizationWorkflow(context.redis, {
+               await enqueueCategorizationWorkflow(context.workflowClient, {
                   transactionId: tx.id,
                   teamId: context.teamId,
                   name: tx.name ?? "",
@@ -442,7 +442,7 @@ export const importBulk = protectedProcedure
             !data.categoryId &&
             (data.type === "income" || data.type === "expense")
          ) {
-            await enqueueCategorizationWorkflow(context.redis, {
+            await enqueueCategorizationWorkflow(context.workflowClient, {
                transactionId: transaction.id,
                teamId: context.teamId,
                name: data.name ?? "",

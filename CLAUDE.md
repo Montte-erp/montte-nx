@@ -74,7 +74,8 @@ montte-nx/
 │   ├── transactional/   # Resend + email
 │   └── utils/           # Shared utilities
 ├── apps/
-│   └── web/             # TanStack Start (SSR) — dashboard + oRPC routers + DBOS workflows
+│   ├── web/             # TanStack Start (SSR) — dashboard + oRPC routers
+│   └── worker/          # DBOS worker process — consumes Redis queues, runs durable workflows
 ├── packages/
 │   ├── analytics/       # Analytics engine
 │   ├── events/          # Event catalog, schemas, emit, credits
@@ -394,6 +395,24 @@ const result = await chat({
    stream: false,
 });
 ```
+
+## Worker Process (`apps/worker`)
+
+DBOS runs in a **separate process** (`apps/worker`) — never in the web/Vite process. The web app enqueues jobs via `DBOSClient` (PostgreSQL-backed, durable):
+
+```typescript
+import { enqueueCategorizationWorkflow } from "@packages/workflows/workflows/categorization-workflow";
+await enqueueCategorizationWorkflow(context.workflowClient, input);
+```
+
+`workflowClient` is a `DBOSClient` instance in the oRPC context. `DBOSClient.create()` is called once at startup in `singletons.ts`. The worker declares `WorkflowQueue` instances in each workflow file — DBOS processes them automatically, no consumer loop needed.
+
+**WorkflowQueues** (declared alongside each workflow):
+- `workflow:categorize` (workerConcurrency: 10) — `categorization-workflow.ts`
+- `workflow:derive-keywords` (workerConcurrency: 5) — `derive-keywords-workflow.ts`
+
+**DBOS logging → PostHog via OTel:**
+`initOtel()` must be called **before** `launchDBOS()` in `apps/worker/src/index.ts`. DBOS detects the global OTel providers registered by the NodeSDK and routes `DBOS.logger` calls through them — logs arrive in PostHog with automatic DBOS context (workflowID, step, etc.). Never replace `DBOS.logger` with `getWorkerLogger` inside workflows — you lose the DBOS context.
 
 **DBOS workflows** — always use repositories (`@core/database/repositories/*`). Never raw `db` in workflow steps.
 
