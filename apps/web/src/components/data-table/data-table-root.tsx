@@ -19,7 +19,8 @@ import {
    useReactTable,
 } from "@tanstack/react-table";
 import { Checkbox } from "@packages/ui/components/checkbox";
-import { Store, useStore } from "@tanstack/react-store";
+import { createStore, useSelector } from "@tanstack/react-store";
+import type { Store } from "@tanstack/react-store";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import { useLocalStorage } from "foxact/use-local-storage";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
@@ -45,8 +46,8 @@ export type DataTablePersistedState = DataTableStoredState & {
    columnFilters?: ColumnFiltersState;
 };
 
-export type DataTableStoreState = {
-   data: unknown[];
+export type DataTableStoreState<TData = unknown> = {
+   data: TData[];
    sorting: SortingState;
    columnFilters: ColumnFiltersState;
    tableState: DataTableStoredState | null;
@@ -65,7 +66,7 @@ declare module "@tanstack/react-table" {
 }
 
 type DataTableContextValue<TData> = {
-   store: Store<DataTableStoreState>;
+   store: Store<DataTableStoreState<TData>>;
    table: Table<TData>;
    onTableStateChange: (state: DataTableStoredState) => void;
    groupBy?: (row: TData) => string;
@@ -83,10 +84,10 @@ export function useDataTableContext<TData>(): DataTableContextValue<TData> {
 }
 
 export function useDataTableStore<T>(
-   selector: (s: DataTableStoreState) => T,
+   selector: (s: DataTableStoreState<unknown>) => T,
 ): T {
    const { store } = useDataTableContext();
-   return useStore(store, selector);
+   return useSelector(store, selector);
 }
 
 interface DataTableRootProps<TData, TValue> {
@@ -127,27 +128,25 @@ export function DataTableRoot<TData, TValue>({
    const [persisted, setPersisted] =
       useLocalStorage<DataTablePersistedState | null>(storageKey, null);
 
-   const [store] = useState(
-      () =>
-         new Store<DataTableStoreState>({
-            data: data as unknown[],
-            sorting: externalSorting ?? persisted?.sorting ?? [],
-            columnFilters:
-               externalColumnFilters ?? persisted?.columnFilters ?? [],
-            tableState: persisted
-               ? {
-                    columnOrder: persisted.columnOrder ?? [],
-                    columnVisibility: persisted.columnVisibility ?? {},
-                    columnPinning: persisted.columnPinning,
-                 }
-               : null,
-            rowSelection: externalRowSelection ?? {},
-            hasEmptyState: false,
-         }),
+   const [store] = useState(() =>
+      createStore<DataTableStoreState<TData>>({
+         data,
+         sorting: externalSorting ?? persisted?.sorting ?? [],
+         columnFilters: externalColumnFilters ?? persisted?.columnFilters ?? [],
+         tableState: persisted
+            ? {
+                 columnOrder: persisted.columnOrder ?? [],
+                 columnVisibility: persisted.columnVisibility ?? {},
+                 columnPinning: persisted.columnPinning,
+              }
+            : null,
+         rowSelection: externalRowSelection ?? {},
+         hasEmptyState: false,
+      }),
    );
 
    useEffect(() => {
-      store.setState((s) => ({ ...s, data: data as unknown[] }));
+      store.setState((s) => ({ ...s, data }));
    }, [data, store]);
 
    useEffect(() => {
@@ -226,7 +225,7 @@ export function DataTableRoot<TData, TValue>({
       [store],
    );
 
-   const effectiveColumnVisibility = useStore(
+   const effectiveColumnVisibility = useSelector(
       store,
       (s) => s.tableState?.columnVisibility ?? {},
    );
@@ -269,7 +268,7 @@ export function DataTableRoot<TData, TValue>({
       [store],
    );
 
-   const allColumns = useMemo<ColumnDef<TData, TValue>[]>(() => {
+   const allColumns = useMemo<ColumnDef<TData, unknown>[]>(() => {
       const selectCol: ColumnDef<TData, unknown> = {
          id: "__select",
          header: ({ table }) => (
@@ -308,17 +307,13 @@ export function DataTableRoot<TData, TValue>({
          enableSorting: false,
          enableHiding: false,
       };
-      return [
-         selectCol as ColumnDef<TData, TValue>,
-         ...columns,
-         actionsCol as ColumnDef<TData, TValue>,
-      ];
+      return [selectCol, ...columns, actionsCol];
    }, [columns, renderActions]);
 
-   const sorting = useStore(store, (s) => s.sorting);
-   const columnFilters = useStore(store, (s) => s.columnFilters);
-   const rowSelection = useStore(store, (s) => s.rowSelection);
-   const storeData = useStore(store, (s) => s.data) as TData[];
+   const sorting = useSelector(store, (s) => s.sorting);
+   const columnFilters = useSelector(store, (s) => s.columnFilters);
+   const rowSelection = useSelector(store, (s) => s.rowSelection);
+   const storeData = useSelector(store, (s) => s.data);
 
    const table = useReactTable({
       columns: allColumns,
