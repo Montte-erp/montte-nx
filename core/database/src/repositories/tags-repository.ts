@@ -13,12 +13,18 @@ import {
 
 const safeValidateCreate = fromThrowable(
    (data: CreateTagInput) => validateInput(createTagSchema, data),
-   (e) => AppError.validation("Dados inválidos.", { cause: e }),
+   (e) =>
+      e instanceof AppError
+         ? e
+         : AppError.validation("Dados inválidos.", { cause: e }),
 );
 
 const safeValidateUpdate = fromThrowable(
    (data: UpdateTagInput) => validateInput(updateTagSchema, data),
-   (e) => AppError.validation("Dados inválidos.", { cause: e }),
+   (e) =>
+      e instanceof AppError
+         ? e
+         : AppError.validation("Dados inválidos.", { cause: e }),
 );
 
 export function createTag(

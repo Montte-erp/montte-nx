@@ -196,7 +196,7 @@ describe("transactions-repository", () => {
          expect(tx.creditCardId).toBe(card.id);
       });
 
-      it("creates transaction with tags", async () => {
+      it("creates transaction with tag", async () => {
          const teamId = randomTeamId();
          const account = await createTestBankAccount(teamId);
          const tag = await createTestTag(teamId);
@@ -210,11 +210,11 @@ describe("transactions-repository", () => {
                date: "2026-01-15",
                bankAccountId: account.id,
             },
-            [tag.id],
+            tag.id,
          );
 
-         const withTags = await repo.getTransactionWithTags(testDb.db, tx.id);
-         expect(withTags?.tagIds).toContain(tag.id);
+         const withTag = await repo.getTransactionWithTag(testDb.db, tx.id);
+         expect(withTag?.tagId).toBe(tag.id);
       });
    });
 
@@ -334,7 +334,7 @@ describe("transactions-repository", () => {
          expect(updated.name).toBe("Updated");
       });
 
-      it("updates tags", async () => {
+      it("updates tag", async () => {
          const teamId = randomTeamId();
          const account = await createTestBankAccount(teamId);
          const tag1 = await createTestTag(teamId);
@@ -349,15 +349,18 @@ describe("transactions-repository", () => {
                date: "2026-01-15",
                bankAccountId: account.id,
             },
-            [tag1.id],
+            tag1.id,
          );
 
-         await repo.updateTransaction(testDb.db, tx.id, { name: "Updated" }, [
+         await repo.updateTransaction(
+            testDb.db,
+            tx.id,
+            { name: "Updated" },
             tag2.id,
-         ]);
+         );
 
-         const withTags = await repo.getTransactionWithTags(testDb.db, tx.id);
-         expect(withTags?.tagIds).toEqual([tag2.id]);
+         const withTag = await repo.getTransactionWithTag(testDb.db, tx.id);
+         expect(withTag?.tagId).toBe(tag2.id);
       });
    });
 
@@ -374,7 +377,7 @@ describe("transactions-repository", () => {
          });
 
          await repo.deleteTransaction(testDb.db, tx.id);
-         const found = await repo.getTransactionWithTags(testDb.db, tx.id);
+         const found = await repo.getTransactionWithTag(testDb.db, tx.id);
          expect(found).toBeNull();
       });
    });

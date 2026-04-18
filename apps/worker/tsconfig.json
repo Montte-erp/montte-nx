@@ -1,6 +1,8 @@
 {
    "extends": "@tooling/typescript/core.json",
    "compilerOptions": {
+      "composite": false,
+      "noEmit": true,
       "paths": {
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],

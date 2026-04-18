@@ -31,7 +31,7 @@ launchDBOS({
    systemDatabaseUrl: env.DATABASE_URL,
    logLevel: env.LOG_LEVEL,
    onShutdown: async () => {
-      posthog.shutdown();
+      await posthog.shutdown();
       redis.disconnect();
       await shutdownOtel();
    },

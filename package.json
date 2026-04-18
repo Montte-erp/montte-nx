@@ -174,7 +174,8 @@
          "vite": {
             "@tailwindcss/vite": "^4.2.2",
             "@vitejs/plugin-react": "^6.0.1",
-            "vite": "^8.0.8"
+            "vite": "^8.0.8",
+            "vite-tsconfig-paths": "^6.1.1"
          },
          "tanstack-ai": {
             "@tanstack/ai": "^0.10.2",
@@ -240,8 +241,8 @@
       "@swc/helpers": "0.5.21",
       "@tooling/typescript": "workspace:*",
       "@typescript/native-preview": "^7.0.0-dev.20260417.1",
-      "@vitejs/plugin-react": "^6.0.1",
-      "@vitest/coverage-v8": "^4.1.4",
+      "@vitejs/plugin-react": "catalog:vite",
+      "@vitest/coverage-v8": "catalog:testing",
       "bun-types": "^1.3.12",
       "cac": "^7.0.0",
       "dotenv": "^17.4.2",
@@ -251,8 +252,8 @@
       "oxfmt": "^0.45.0",
       "oxlint": "^1.60.0",
       "typescript": "^6.0.3",
-      "vite-tsconfig-paths": "^6.1.1",
-      "vitest": "^4.1.4"
+      "vite-tsconfig-paths": "catalog:vite",
+      "vitest": "catalog:testing"
    },
    "engines": {
       "node": ">=20"
