@@ -21,7 +21,7 @@ export function DataTableSkeleton({
    rows = 5,
 }: DataTableSkeletonProps) {
    return (
-      <div className="rounded-md border overflow-hidden">
+      <div className="rounded-md border overflow-hidden" aria-hidden="true">
          <Table className="border-separate border-spacing-0">
             <TableHeader>
                <TableRow className="bg-muted/50 hover:bg-muted/50">

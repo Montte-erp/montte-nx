@@ -299,16 +299,15 @@ export function DataTableRoot<TData, TValue>({
          enableSorting: false,
          enableHiding: false,
       };
+      if (!renderActions) return [selectCol, ...columns];
       const actionsCol: ColumnDef<TData, unknown> = {
          id: "__actions",
-         header: () => null,
-         cell: renderActions
-            ? ({ row }) => (
-                 <div className="flex items-center justify-end gap-2">
-                    {renderActions({ row })}
-                 </div>
-              )
-            : undefined,
+         header: () => <span className="sr-only">Ações</span>,
+         cell: ({ row }) => (
+            <div className="flex items-center justify-end gap-2">
+               {renderActions({ row })}
+            </div>
+         ),
          enableSorting: false,
          enableHiding: false,
       };
