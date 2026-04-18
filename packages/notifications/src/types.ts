@@ -1,6 +1,8 @@
 export const NOTIFICATION_TYPES = {
    AI_KEYWORD_DERIVED: "ai.keyword_derived",
    AI_TRANSACTION_CATEGORIZED: "ai.transaction_categorized",
+   AI_TAG_KEYWORD_DERIVED: "ai.tag_keyword_derived",
+   AI_TAG_SUGGESTED: "ai.tag_suggested",
    CRON_KEYWORDS_BACKFILL: "cron.keywords_backfill",
 } as const;
 
@@ -14,6 +16,14 @@ export type NotificationPayloadMap = {
       count: number;
    };
    "ai.transaction_categorized": {
+      transactionId: string;
+   };
+   "ai.tag_keyword_derived": {
+      tagId: string;
+      tagName: string;
+      count: number;
+   };
+   "ai.tag_suggested": {
       transactionId: string;
    };
    "cron.keywords_backfill": {
