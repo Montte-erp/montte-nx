@@ -3,6 +3,7 @@ import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
 import { z } from "zod";
 import { AppError } from "@core/logging/errors";
+import { fetchSystemPrompt } from "@core/posthog/prompts";
 
 type OpenRouterModelId = Parameters<typeof openRouterText>[0];
 
@@ -25,27 +26,27 @@ const outputSchema = z.object({
 });
 
 export function deriveKeywordsWithAI(input: DeriveKeywordsAIInput) {
-   return fromPromise(
-      chat({
-         adapter: openRouterText(input.model),
-         messages: [
-            {
-               role: "user",
-               content: [
-                  {
-                     type: "text",
-                     content: `Você é um assistente financeiro brasileiro. Gere palavras-chave para a categoria financeira abaixo. As palavras-chave devem ser termos comuns que aparecem em descrições de transações bancárias.
+   const userContent = `Gere palavras-chave para a categoria financeira abaixo. As palavras-chave devem ser termos comuns que aparecem em descrições de transações bancárias.
 
 Categoria: ${input.name}${input.description ? `\nDescrição: ${input.description}` : ""}
 
-Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua variações, abreviações e termos relacionados.`,
-                  },
-               ],
-            },
-         ],
-         outputSchema,
-         stream: false,
-      }).then((result) => result.keywords),
+Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua variações, abreviações e termos relacionados.`;
+
+   return fromPromise(
+      fetchSystemPrompt("deriveKeywords").then((systemPrompt) =>
+         chat({
+            adapter: openRouterText(input.model),
+            systemPrompts: [systemPrompt],
+            messages: [
+               {
+                  role: "user",
+                  content: [{ type: "text", content: userContent }],
+               },
+            ],
+            outputSchema,
+            stream: false,
+         }).then((result) => result.keywords),
+      ),
       (e) => AppError.internal("AI keyword derivation failed", { cause: e }),
    );
 }

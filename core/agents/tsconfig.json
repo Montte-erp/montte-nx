@@ -32,6 +32,9 @@
       },
       {
          "path": "../database"
+      },
+      {
+         "path": "../posthog"
       }
    ]
 }

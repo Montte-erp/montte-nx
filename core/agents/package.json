@@ -34,6 +34,7 @@
       "@core/database": "workspace:*",
       "@core/environment": "workspace:*",
       "@core/logging": "workspace:*",
+      "@core/posthog": "workspace:*",
       "@core/utils": "workspace:*",
       "@tanstack/ai": "catalog:tanstack-ai",
       "@tanstack/ai-openrouter": "catalog:tanstack-ai",

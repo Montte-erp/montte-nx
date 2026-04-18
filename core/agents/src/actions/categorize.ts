@@ -3,6 +3,7 @@ import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
 import { z } from "zod";
 import { AppError } from "@core/logging/errors";
+import { fetchSystemPrompt } from "@core/posthog/prompts";
 
 type OpenRouterModelId = Parameters<typeof openRouterText>[0];
 
@@ -44,7 +45,7 @@ export function inferCategoryWithAI(
       )
       .join("\n");
 
-   const prompt = `Você é um assistente financeiro brasileiro. Classifique a transação abaixo na categoria mais adequada.
+   const userContent = `Classifique a transação abaixo na categoria mais adequada.
 
 Transação:
 - Nome: ${input.name}${input.contactName ? `\n- Contato: ${input.contactName}` : ""}
@@ -57,19 +58,25 @@ Retorne o nome exato de uma categoria da lista acima, ou null se nenhuma for ade
 Se tiver certeza, retorne confidence "high". Se estiver em dúvida, retorne "low".`;
 
    return fromPromise(
-      chat({
-         adapter: openRouterText(model),
-         messages: [
-            { role: "user", content: [{ type: "text", content: prompt }] },
-         ],
-         outputSchema,
-         stream: false,
-      }).then((result): InferCategoryResult | null => {
-         if (!result.categoryName) return null;
-         const match = cats.find((c) => c.name === result.categoryName);
-         if (!match) return null;
-         return { categoryId: match.id, confidence: result.confidence };
-      }),
+      fetchSystemPrompt("categorizeTransaction").then((systemPrompt) =>
+         chat({
+            adapter: openRouterText(model),
+            systemPrompts: [systemPrompt],
+            messages: [
+               {
+                  role: "user",
+                  content: [{ type: "text", content: userContent }],
+               },
+            ],
+            outputSchema,
+            stream: false,
+         }).then((result): InferCategoryResult | null => {
+            if (!result.categoryName) return null;
+            const match = cats.find((c) => c.name === result.categoryName);
+            if (!match) return null;
+            return { categoryId: match.id, confidence: result.confidence };
+         }),
+      ),
       (e) => AppError.internal("AI category inference failed", { cause: e }),
    );
 }

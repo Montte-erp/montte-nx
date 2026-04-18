@@ -3,6 +3,7 @@ import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
 import { z } from "zod";
 import { AppError } from "@core/logging/errors";
+import { fetchSystemPrompt } from "@core/posthog/prompts";
 
 type OpenRouterModelId = Parameters<typeof openRouterText>[0];
 
@@ -22,35 +23,41 @@ export function inferTagWithAI(
    transactionName: string,
    model: OpenRouterModelId,
 ) {
-   const list = tagOptions
+   const tagList = tagOptions
       .map((t) => `- ${t.name}${t.description ? ` (${t.description})` : ""}`)
       .join("\n");
 
-   const prompt = `Você é um assistente financeiro brasileiro. Com base no nome da transação abaixo, identifique o Centro de Custo mais adequado da lista.
+   const userContent = `Com base no nome da transação abaixo, identifique o Centro de Custo mais adequado da lista.
 
 Transação: ${transactionName}
 
 Centros de Custo disponíveis:
-${list}
+${tagList}
 
 Retorne o nome exato de um Centro de Custo da lista, ou null se nenhum for adequado.
 Se tiver certeza, retorne confidence "high". Se estiver em dúvida, retorne "low".`;
 
    return fromPromise(
-      chat({
-         adapter: openRouterText(model),
-         messages: [
-            { role: "user", content: [{ type: "text", content: prompt }] },
-         ],
-         outputSchema,
-         stream: false,
-      }).then(
-         (result): { tagId: string; confidence: "high" | "low" } | null => {
-            if (!result.tagName) return null;
-            const match = tagOptions.find((t) => t.name === result.tagName);
-            if (!match) return null;
-            return { tagId: match.id, confidence: result.confidence };
-         },
+      fetchSystemPrompt("suggestTag").then((systemPrompt) =>
+         chat({
+            adapter: openRouterText(model),
+            systemPrompts: [systemPrompt],
+            messages: [
+               {
+                  role: "user",
+                  content: [{ type: "text", content: userContent }],
+               },
+            ],
+            outputSchema,
+            stream: false,
+         }).then(
+            (result): { tagId: string; confidence: "high" | "low" } | null => {
+               if (!result.tagName) return null;
+               const match = tagOptions.find((t) => t.name === result.tagName);
+               if (!match) return null;
+               return { tagId: match.id, confidence: result.confidence };
+            },
+         ),
       ),
       (e) =>
          AppError.internal("Falha na inferência de centro de custo por IA.", {
