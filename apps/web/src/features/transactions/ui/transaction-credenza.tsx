@@ -721,6 +721,11 @@ function TransactionCredenzaContent({
    );
    const creditCards = creditCardsResult.data;
 
+   const { data: financialConfig } = useSuspenseQuery(
+      orpc.financialSettings.getSettings.queryOptions({}),
+   );
+   const costCenterRequired = financialConfig?.costCenterRequired ?? false;
+
    const { openAlertDialog } = useAlertDialog();
 
    const createMutation = useMutation(
@@ -1592,10 +1597,23 @@ function TransactionCredenzaContent({
                      <div className="grid grid-cols-2 gap-4">
                         <form.Field
                            name="tagIds"
+                           validators={{
+                              onSubmit: ({ value }) =>
+                                 costCenterRequired && value.length === 0
+                                    ? "Centro de Custo é obrigatório."
+                                    : undefined,
+                           }}
                            children={(field) => (
                               <Field>
                                  <div className="flex items-center justify-between">
-                                    <FieldLabel>Centros de Custo</FieldLabel>
+                                    <FieldLabel>
+                                       Centros de Custo
+                                       {costCenterRequired && (
+                                          <span className="text-destructive ml-1">
+                                             *
+                                          </span>
+                                       )}
+                                    </FieldLabel>
                                     <button
                                        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                        onClick={() =>
@@ -1643,6 +1661,12 @@ function TransactionCredenzaContent({
                                        selectedIds={field.state.value}
                                     />
                                  </QueryBoundary>
+                                 {field.state.meta.isTouched &&
+                                    field.state.meta.errors.length > 0 && (
+                                       <p className="text-sm text-destructive">
+                                          {field.state.meta.errors[0]}
+                                       </p>
+                                    )}
                               </Field>
                            )}
                         />
