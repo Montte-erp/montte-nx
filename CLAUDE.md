@@ -140,6 +140,8 @@ return (await createItem(context.db, input)).match(
 
 `AppError` factories: `database`, `validation`, `notFound`, `unauthorized`, `forbidden`, `conflict`, `tooManyRequests`, `internal`
 
+**Auto-conversion** — the oRPC server middleware (`apps/web/src/integrations/orpc/server.ts:227`) automatically converts any thrown `AppError` into `WebAppError.fromAppError(error)`. Repository functions that throw `AppError` directly (e.g. `enforceCostCenterPolicy`) do **not** need manual conversion in router handlers — the server catches and converts them.
+
 **Bulk operations** — dedicated procedure, never loop `mutateAsync` on client:
 
 ```typescript
@@ -787,21 +789,12 @@ bun run test
 npx vitest run <path-to-test-file>
 ```
 
-**Three layers:**
+**Where tests live:**
 
-1. oRPC router integration tests (`apps/web/__tests__/integrations/orpc/router/`) — every DB procedure
-2. Repository tests (`core/database/__tests__/repositories/`) — non-trivial queries only
-3. Pure logic unit tests — Zod transforms, date/math utilities, analytics, credits logic
+- `core/*` and `packages/*` — unit tests for non-trivial logic: Zod transforms, date/math utilities, analytics, credits logic, repository queries
+- `apps/*` — **no unit or integration tests**. App-level testing is E2E only (not yet introduced).
 
-**Don't test:** React components, hooks wrapping `useSuspenseQuery`/`usePostHog`, singleton init, file existence.
-
-**⚠️ Gotchas:**
-
-- `member` and `team` tables have no `.defaultNow()` on `createdAt` — always provide `createdAt: new Date()` in test inserts.
-- Tests use **PGlite** (in-memory Postgres) — no real DB needed. Pattern in `apps/web/__tests__/helpers/setup-integration-test.ts`.
-- `vi.mock('@dbos-inc/dbos-sdk')` required in any test file importing workflow files.
-
-Use the `orpc-testing` skill when writing new oRPC procedure tests.
+**Never write tests for:** `apps/web` routers, React components, hooks, singleton init, file existence.
 
 ---
 

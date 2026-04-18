@@ -18,6 +18,7 @@ import {
    validateTransactionReferences,
 } from "@core/database/repositories/transactions-repository";
 import { ensureBankAccountOwnership } from "@core/database/repositories/bank-accounts-repository";
+import { enforceCostCenterPolicy } from "@core/database/repositories/financial-settings-repository";
 import {
    createTransactionSchema,
    transactions,
@@ -81,6 +82,7 @@ export const create = protectedProcedure
    )
    .handler(async ({ context, input }) => {
       const { tagId, items, autoCategorize, ...data } = input;
+      await enforceCostCenterPolicy(context.db, context.teamId, tagId);
       await validateTransactionReferences(context.db, context.teamId, {
          bankAccountId: data.bankAccountId,
          destinationBankAccountId: data.destinationBankAccountId,
@@ -162,6 +164,9 @@ export const update = protectedProcedure
          input.id,
          context.teamId,
       );
+      if ("tagId" in input) {
+         await enforceCostCenterPolicy(context.db, context.teamId, input.tagId);
+      }
       if (
          input.bankAccountId ||
          input.destinationBankAccountId ||

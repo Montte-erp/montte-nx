@@ -1,49 +1,65 @@
 import dayjs from "dayjs";
-import { AppError, propagateError } from "@core/logging/errors";
+import { AppError, validateInput } from "@core/logging/errors";
 import { eq } from "drizzle-orm";
+import { fromPromise } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
-import { financialSettings } from "@core/database/schemas/financial";
+import {
+   financialConfig,
+   financialConfigInsertSchema,
+   type FinancialConfigInput,
+} from "@core/database/schemas/settings-financial";
 
-export async function getFinancialSettings(
+export function getFinancialConfig(db: DatabaseInstance, teamId: string) {
+   return fromPromise(
+      db
+         .select()
+         .from(financialConfig)
+         .where(eq(financialConfig.teamId, teamId))
+         .then(([row]) => row ?? null),
+      (e) =>
+         AppError.database("Falha ao buscar configurações financeiras.", {
+            cause: e,
+         }),
+   );
+}
+
+export async function enforceCostCenterPolicy(
    db: DatabaseInstance,
    teamId: string,
+   tagId: string | null | undefined,
 ) {
-   try {
-      const [settings] = await db
-         .select()
-         .from(financialSettings)
-         .where(eq(financialSettings.teamId, teamId));
-      return settings ?? null;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to get financial settings");
+   const result = await getFinancialConfig(db, teamId);
+   const config = result.isOk() ? result.value : null;
+   if (config?.costCenterRequired && !tagId) {
+      throw AppError.forbidden(
+         "Centro de Custo é obrigatório para este espaço.",
+      );
    }
 }
 
-export async function upsertFinancialSettings(
+export function upsertFinancialConfig(
    db: DatabaseInstance,
    teamId: string,
-   data: Partial<
-      Omit<
-         typeof financialSettings.$inferInsert,
-         "teamId" | "createdAt" | "updatedAt"
-      >
-   >,
+   data: FinancialConfigInput,
 ) {
-   try {
-      const [settings] = await db
-         .insert(financialSettings)
-         .values({ teamId, ...data })
-         .onConflictDoUpdate({
-            target: financialSettings.teamId,
-            set: { ...data, updatedAt: dayjs().toDate() },
-         })
-         .returning();
-      if (!settings)
-         throw AppError.database("Failed to upsert financial settings");
-      return settings;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to upsert financial settings");
-   }
+   const validated = validateInput(financialConfigInsertSchema, data);
+   return fromPromise(
+      db.transaction(async (tx) => {
+         const [row] = await tx
+            .insert(financialConfig)
+            .values({ teamId, ...validated })
+            .onConflictDoUpdate({
+               target: financialConfig.teamId,
+               set: { ...validated, updatedAt: dayjs().toDate() },
+            })
+            .returning();
+         if (!row)
+            throw new Error("Falha ao salvar configurações financeiras.");
+         return row;
+      }),
+      (e) =>
+         AppError.database("Falha ao salvar configurações financeiras.", {
+            cause: e,
+         }),
+   );
 }
