@@ -1,0 +1,18 @@
+{
+   "extends": "@tooling/typescript/core.json",
+   "compilerOptions": {
+      "paths": {
+         "@core/database": ["../../core/database/src/index.ts"],
+         "@core/database/*": ["../../core/database/src/*"],
+         "@core/environment/*": ["../../core/environment/src/*"],
+         "@core/logging": ["../../core/logging/src/logger.ts"],
+         "@core/logging/*": ["../../core/logging/src/*"],
+         "@core/posthog/*": ["../../core/posthog/src/*"],
+         "@core/redis/*": ["../../core/redis/src/*"],
+         "@core/stripe": ["../../core/stripe/src/index.ts"],
+         "@core/stripe/*": ["../../core/stripe/src/*"],
+         "@packages/workflows/*": ["../../packages/workflows/src/*"]
+      }
+   },
+   "include": ["src"]
+}
