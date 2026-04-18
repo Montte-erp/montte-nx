@@ -32,11 +32,4 @@ export function createSafeLogger(config: LoggerConfig): Logger {
    }
 }
 
-export type { Logger, LoggerConfig, LogLevel } from "./types";
-export { initLogger, getLogger } from "./root";
-export { AppError, WebAppError, propagateError, validateInput } from "./errors";
-export { startHealthHeartbeat, stopHealthHeartbeat } from "./health";
-export type { HealthConfig } from "./health";
-export { initOtel, shutdownOtel } from "./otel";
-export type { OtelConfig } from "./otel";
-export { FetchLoggingPlugin } from "./orpc-plugin";
+export type { Logger, LoggerConfig, LogLevel } from "@core/logging/types";
