@@ -3,7 +3,7 @@ import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
 import { z } from "zod";
 import { AppError } from "@core/logging/errors";
-import { fetchSystemPrompt } from "@core/posthog/prompts";
+import { compileSystemPrompt } from "@core/posthog/prompts";
 
 type OpenRouterModelId = Parameters<typeof openRouterText>[0];
 
@@ -26,23 +26,31 @@ const outputSchema = z.object({
 });
 
 export function deriveKeywordsWithAI(input: DeriveKeywordsAIInput) {
-   const userContent = `Categoria: ${input.name}${input.description ? `\nDescrição: ${input.description}` : ""}`;
+   const userContent = [
+      `Categoria: ${input.name}`,
+      ...(input.description ? [`Descrição: ${input.description}`] : []),
+   ].join("\n");
 
-   return fetchSystemPrompt("deriveKeywords").andThen((systemPrompt) =>
-      fromPromise(
-         chat({
-            adapter: openRouterText(input.model),
-            systemPrompts: [systemPrompt],
-            messages: [
-               {
-                  role: "user",
-                  content: [{ type: "text", content: userContent }],
-               },
-            ],
-            outputSchema,
-            stream: false,
-         }).then((result) => result.keywords),
-         (e) => AppError.internal("AI keyword derivation failed", { cause: e }),
-      ),
-   );
+   return compileSystemPrompt("deriveKeywords", {})
+      .mapErr((e) =>
+         AppError.internal("AI keyword derivation failed", { cause: e }),
+      )
+      .andThen((systemPrompt) =>
+         fromPromise(
+            chat({
+               adapter: openRouterText(input.model),
+               systemPrompts: [systemPrompt],
+               messages: [
+                  {
+                     role: "user",
+                     content: [{ type: "text", content: userContent }],
+                  },
+               ],
+               outputSchema,
+               stream: false,
+            }).then((result) => result.keywords),
+            (e) =>
+               AppError.internal("AI keyword derivation failed", { cause: e }),
+         ),
+      );
 }

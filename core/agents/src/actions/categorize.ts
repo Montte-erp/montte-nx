@@ -3,7 +3,7 @@ import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
 import { z } from "zod";
 import { AppError } from "@core/logging/errors";
-import { fetchSystemPrompt } from "@core/posthog/prompts";
+import { compileSystemPrompt } from "@core/posthog/prompts";
 
 type OpenRouterModelId = Parameters<typeof openRouterText>[0];
 
@@ -45,33 +45,39 @@ export function inferCategoryWithAI(
       )
       .join("\n");
 
-   const userContent = `Transação:
-- Nome: ${input.name}${input.contactName ? `\n- Contato: ${input.contactName}` : ""}
-- Tipo: ${input.type === "income" ? "Receita" : "Despesa"}
+   const userContent = [
+      `Nome: ${input.name}`,
+      `Tipo: ${input.type === "income" ? "Receita" : "Despesa"}`,
+      ...(input.contactName ? [`Contato: ${input.contactName}`] : []),
+   ].join("\n");
 
-Categorias disponíveis:
-${categoryList}`;
-
-   return fetchSystemPrompt("categorizeTransaction").andThen((systemPrompt) =>
-      fromPromise(
-         chat({
-            adapter: openRouterText(model),
-            systemPrompts: [systemPrompt],
-            messages: [
-               {
-                  role: "user",
-                  content: [{ type: "text", content: userContent }],
-               },
-            ],
-            outputSchema,
-            stream: false,
-         }).then((result): InferCategoryResult | null => {
-            if (!result.categoryName) return null;
-            const match = cats.find((c) => c.name === result.categoryName);
-            if (!match) return null;
-            return { categoryId: match.id, confidence: result.confidence };
-         }),
-         (e) => AppError.internal("AI category inference failed", { cause: e }),
-      ),
-   );
+   return compileSystemPrompt("categorizeTransaction", {
+      category_list: categoryList,
+   })
+      .mapErr((e) =>
+         AppError.internal("AI category inference failed", { cause: e }),
+      )
+      .andThen((systemPrompt) =>
+         fromPromise(
+            chat({
+               adapter: openRouterText(model),
+               systemPrompts: [systemPrompt],
+               messages: [
+                  {
+                     role: "user",
+                     content: [{ type: "text", content: userContent }],
+                  },
+               ],
+               outputSchema,
+               stream: false,
+            }).then((result): InferCategoryResult | null => {
+               if (!result.categoryName) return null;
+               const match = cats.find((c) => c.name === result.categoryName);
+               if (!match) return null;
+               return { categoryId: match.id, confidence: result.confidence };
+            }),
+            (e) =>
+               AppError.internal("AI category inference failed", { cause: e }),
+         ),
+      );
 }

@@ -1,23 +1,11 @@
 import { Prompts } from "@posthog/ai";
-import { fromPromise, okAsync } from "neverthrow";
+import { fromPromise } from "neverthrow";
 import { env } from "@core/environment/web";
 
 export const POSTHOG_PROMPTS = {
-   categorizeTransaction: {
-      name: "montte-categorize-transaction",
-      fallback:
-         "Você é um assistente financeiro brasileiro especializado em classificação de transações bancárias. Classifique a transação na categoria mais adequada da lista. Retorne o nome exato ou null. Inclua o campo confidence (high/low).",
-   },
-   deriveKeywords: {
-      name: "montte-derive-keywords",
-      fallback:
-         "Você é um assistente financeiro brasileiro. Gere entre 5 e 15 palavras-chave em português para a categoria fornecida. Retorne um array JSON no campo keywords.",
-   },
-   suggestTag: {
-      name: "montte-suggest-tag",
-      fallback:
-         "Você é um assistente financeiro brasileiro. Identifique o Centro de Custo mais adequado da lista para a transação fornecida. Retorne o nome exato ou null. Inclua o campo confidence (high/low).",
-   },
+   categorizeTransaction: "montte-categorize-transaction",
+   deriveKeywords: "montte-derive-keywords",
+   suggestTag: "montte-suggest-tag",
 } as const;
 
 export type PromptKey = keyof typeof POSTHOG_PROMPTS;
@@ -28,9 +16,13 @@ const client = new Prompts({
    host: env.POSTHOG_HOST,
 });
 
-export function fetchSystemPrompt(promptKey: PromptKey) {
-   const { name, fallback } = POSTHOG_PROMPTS[promptKey];
-   return fromPromise(client.get(name, { fallback }), () => fallback).orElse(
-      (fb) => okAsync(fb),
+export function compileSystemPrompt(
+   promptKey: PromptKey,
+   vars: Record<string, string>,
+) {
+   const name = POSTHOG_PROMPTS[promptKey];
+   return fromPromise(
+      client.get(name).then((template) => client.compile(template, vars)),
+      (e) => new Error(`Failed to fetch prompt "${name}"`, { cause: e }),
    );
 }
