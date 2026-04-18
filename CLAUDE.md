@@ -140,6 +140,8 @@ return (await createItem(context.db, input)).match(
 
 `AppError` factories: `database`, `validation`, `notFound`, `unauthorized`, `forbidden`, `conflict`, `tooManyRequests`, `internal`
 
+**Auto-conversion** — the oRPC server middleware (`apps/web/src/integrations/orpc/server.ts:227`) automatically converts any thrown `AppError` into `WebAppError.fromAppError(error)`. Repository functions that throw `AppError` directly (e.g. `enforceCostCenterPolicy`) do **not** need manual conversion in router handlers — the server catches and converts them.
+
 **Bulk operations** — dedicated procedure, never loop `mutateAsync` on client:
 
 ```typescript
