@@ -14,6 +14,7 @@ import {
 import { AppError, WebAppError } from "@core/logging/errors";
 import type { Redis } from "@core/redis/connection";
 import type { StripeClient } from "@core/stripe";
+import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { sanitizeData } from "@core/utils/sanitization";
 import { createJobPublisher } from "@packages/notifications/publisher";
 import {
@@ -22,6 +23,7 @@ import {
    posthog,
    redis,
    stripeClient,
+   workflowClient,
 } from "@/integrations/singletons";
 
 const jobPublisher = createJobPublisher(redis);
@@ -38,6 +40,7 @@ export interface ORPCContextWithAuth extends ORPCContext {
    posthog: PostHog;
    stripeClient: StripeClient;
    redis: Redis;
+   workflowClient: DBOSClient;
    jobPublisher: ReturnType<typeof createJobPublisher>;
 }
 
@@ -68,6 +71,7 @@ const withDeps = base.use(async ({ context, next }) => {
          posthog,
          stripeClient,
          redis,
+         workflowClient: await workflowClient,
          jobPublisher,
       },
    });

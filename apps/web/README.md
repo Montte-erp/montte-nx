@@ -1,47 +1,79 @@
-# web
+# @montte/web
 
-Main application — TanStack Start (SSR) dashboard with oRPC routers and DBOS durable workflows.
+Aplicação principal do Montte — ERP com dashboard, rotas SSR via TanStack Start e API via oRPC.
 
-## Dev Commands
+## Importante
 
-```bash
-bun dev           # Auto-setup on first run, starts at http://localhost:3000
-bun dev:staging   # Dev against staging cloud services
-bun run build     # Production build
-bun run start     # Run production build locally
-bun run test      # Run tests (Vitest + PGlite)
-bun run typecheck # TypeScript checks
-bun run check     # oxlint
+Esta aplicação **não executa workflows DBOS**. Enfileira jobs via `DBOSClient` (durável, PostgreSQL-backed):
+
+```ts
+import { enqueueCategorizationWorkflow } from "@packages/workflows/workflows/categorization-workflow";
+await enqueueCategorizationWorkflow(context.workflowClient, input);
 ```
+
+`workflowClient` é um `DBOSClient` resolvido no middleware oRPC (`singletons.ts`). O processamento em background é feito pelo serviço `apps/worker`.
 
 ## Stack
 
-| Concern       | Technology                                                     |
+| Concern       | Tecnologia                                                     |
 | ------------- | -------------------------------------------------------------- |
 | Framework     | TanStack Start (SSR), TanStack Router, React 19                |
-| API           | oRPC (type-safe routers)                                       |
+| API           | oRPC (routers type-safe)                                       |
 | Data fetching | TanStack Query (`useSuspenseQuery`, `useSuspenseQueries`)      |
-| Forms         | TanStack Form + Zod validation                                 |
-| State         | TanStack Store (global), URL search params (filters/sort/tabs) |
+| Formulários   | TanStack Form + Zod                                            |
+| Estado        | TanStack Store (global), URL search params (filtros/sort/tabs) |
 | UI            | `@packages/ui` (Radix + Tailwind + CVA)                        |
 | Auth          | Better Auth (`@core/authentication`)                           |
-| Workflows     | DBOS (durable workflows, cron, retries)                        |
 | AI            | TanStack AI + OpenRouter                                       |
-| Testing       | Vitest + PGlite (in-memory Postgres)                           |
+| Jobs          | `DBOSClient` → `apps/worker` (DBOS queues nativas)            |
+| Testes        | Vitest + PGlite (Postgres in-memory)                           |
 
-## Structure
+## Desenvolvimento local
+
+```bash
+# Containers (Postgres, Redis, MinIO)
+cd apps/web && docker compose up -d
+
+# Na raiz do monorepo (inicia web + worker em paralelo)
+bun dev
+```
+
+## Scripts
+
+```bash
+bun run dev          # dev server (porta 3000)
+bun run dev:staging  # dev contra serviços de staging
+bun run build        # build de produção
+bun run start        # inicia build de produção
+bun run test         # Vitest + PGlite
+bun run typecheck
+bun run check        # oxlint
+```
+
+## Produção (Railway)
+
+**Build command:** `NODE_ENV=production vite build`
+
+**Start command:** `bun .output/server/index.mjs`
+
+## Estrutura
 
 ```
 src/
-├── features/          # Feature-specific components and hooks
-├── hooks/             # Shared hooks
+├── features/          # Componentes e hooks por feature
+├── hooks/             # Hooks compartilhados
 ├── integrations/
-│   └── orpc/
-│       ├── router/    # oRPC procedure handlers
-│       ├── server.ts  # oRPC server setup
-│       └── client.ts  # oRPC client + type inference
-├── layout/            # Dashboard layout, sidebar, navigation
-├── lib/               # Utilities (persisted-store, etc.)
-├── routes/            # TanStack Router file-based routes
-└── routeTree.gen.ts   # Auto-generated — never edit manually
+│   ├── orpc/
+│   │   ├── router/    # Handlers dos procedures oRPC
+│   │   ├── server.ts  # Setup do servidor + contexto (workflowClient, redis, db...)
+│   │   └── client.ts  # Client oRPC + inferência de tipos
+│   └── singletons.ts  # Singletons do processo (db, redis, workflowClient, auth...)
+├── layout/            # Layout do dashboard, sidebar, navegação
+├── lib/               # Utilitários (persisted-store, etc.)
+├── routes/            # Rotas file-based do TanStack Router
+└── routeTree.gen.ts   # Auto-gerado — nunca editar manualmente
 ```
+
+## Variáveis de ambiente
+
+Ver `core/environment/src/web.ts` para o schema completo.

@@ -105,11 +105,9 @@
       "@vitejs/plugin-react": "catalog:vite",
       "@vitest/coverage-istanbul": "catalog:testing",
       "babel-plugin-react-compiler": "catalog:development",
-      "jsdom": "catalog:testing",
       "nitro": "3.0.260311-beta",
       "typescript": "catalog:development",
       "vite": "catalog:vite",
-      "vitest": "catalog:testing",
-      "web-vitals": "catalog:development"
+      "vitest": "catalog:testing"
    }
 }

@@ -1,6 +1,7 @@
+import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
 import dayjs from "dayjs";
-import { DBOS } from "@dbos-inc/dbos-sdk";
+import { DBOS, WorkflowQueue } from "@dbos-inc/dbos-sdk";
 import { updateCategory } from "@core/database/repositories/categories-repository";
 import { emitAiKeywordDerived } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
@@ -11,6 +12,13 @@ import type { JobNotification } from "@packages/notifications/schema";
 import { getDeps, getPublisher } from "../context";
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
+
+export const deriveKeywordsQueue = new WorkflowQueue(
+   "workflow:derive-keywords",
+   {
+      workerConcurrency: 5,
+   },
+);
 
 export type DeriveKeywordsInput = {
    categoryId: string;
@@ -199,3 +207,16 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
 export const deriveKeywordsWorkflow = DBOS.registerWorkflow(
    deriveKeywordsWorkflowFn,
 );
+
+export async function enqueueDeriveKeywordsWorkflow(
+   client: DBOSClient,
+   input: DeriveKeywordsInput,
+): Promise<void> {
+   await client.enqueue(
+      {
+         workflowName: deriveKeywordsWorkflowFn.name,
+         queueName: deriveKeywordsQueue.name,
+      },
+      input,
+   );
+}

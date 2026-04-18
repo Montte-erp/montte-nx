@@ -4,45 +4,24 @@ import type { Logger, LoggerConfig } from "@core/logging/types";
 const isDevelopment = process.env.NODE_ENV !== "production";
 
 export function createLogger(config: LoggerConfig): Logger {
-   const { name, level = "info", enableOtel } = config;
+   const { name, level = "info" } = config;
 
-   // Build transport targets
-   const targets: pino.TransportTargetOptions[] = [];
+   const targets: pino.TransportTargetOptions[] = [
+      isDevelopment
+         ? {
+              target: "pino-pretty",
+              options: {
+                 colorize: true,
+                 translateTime: "HH:MM:ss",
+                 ignore: "pid,hostname",
+              },
+              level,
+           }
+         : { target: "pino/file", options: { destination: 1 }, level },
+      { target: "pino-opentelemetry-transport", level },
+   ];
 
-   // Console transport: pretty in dev, JSON in prod
-   if (isDevelopment) {
-      targets.push({
-         target: "pino-pretty",
-         options: {
-            colorize: true,
-            translateTime: "HH:MM:ss",
-            ignore: "pid,hostname",
-         },
-         level,
-      });
-   } else {
-      targets.push({
-         target: "pino/file",
-         options: { destination: 1 }, // stdout
-         level,
-      });
-   }
-
-   // OTel transport: bridges Pino logs to OpenTelemetry LogRecordProcessor
-   if (enableOtel) {
-      targets.push({
-         target: "pino-opentelemetry-transport",
-         level,
-      });
-   }
-
-   return pino({
-      name,
-      level,
-      transport: {
-         targets,
-      },
-   });
+   return pino({ name, level, transport: { targets } });
 }
 
 export function createSafeLogger(config: LoggerConfig): Logger {
@@ -53,5 +32,4 @@ export function createSafeLogger(config: LoggerConfig): Logger {
    }
 }
 
-export { pino };
 export type { Logger, LoggerConfig, LogLevel } from "@core/logging/types";

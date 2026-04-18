@@ -6,6 +6,11 @@ import { createStripeClient } from "@core/stripe";
 import { createMinioClient } from "@core/files/client";
 import { createResendClient } from "@core/transactional/utils";
 import { createAuth } from "@core/authentication/server";
+import { DBOSClient } from "@dbos-inc/dbos-sdk";
+
+export const workflowClient = DBOSClient.create({
+   systemDatabaseUrl: env.DATABASE_URL,
+});
 
 export const db = createDb({ databaseUrl: env.DATABASE_URL });
 export const redis = createRedis(env.REDIS_URL);

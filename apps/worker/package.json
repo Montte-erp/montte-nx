@@ -1,0 +1,26 @@
+{
+   "name": "worker",
+   "private": true,
+   "type": "module",
+   "scripts": {
+      "build": "bun build src/index.ts --outdir dist --target bun --packages external",
+      "start": "bun run dist/index.js",
+      "dev": "dotenv -e ../web/.env.local -- bun run src/index.ts",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@core/database": "workspace:*",
+      "@core/environment": "workspace:*",
+      "@core/logging": "workspace:*",
+      "@core/posthog": "workspace:*",
+      "@core/redis": "workspace:*",
+      "@core/stripe": "workspace:*",
+      "@dbos-inc/dbos-sdk": "catalog:workers",
+      "@packages/workflows": "workspace:*"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "dotenv-cli": "catalog:environment",
+      "typescript": "catalog:development"
+   }
+}

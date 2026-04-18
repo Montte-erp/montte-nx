@@ -100,7 +100,7 @@ export const CreateTransactionSchema = z.object({
    contactId: uuid.nullable().optional(),
    paymentMethod: paymentMethodEnum.nullable().optional(),
    attachments: z.array(attachmentSchema).nullable().optional(),
-   tagIds: z.array(uuid).optional(),
+   tagId: uuid.nullable().optional(),
 });
 
 export const UpdateTransactionSchema = CreateTransactionSchema.omit({

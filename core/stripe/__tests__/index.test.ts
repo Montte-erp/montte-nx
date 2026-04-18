@@ -30,7 +30,7 @@ describe("stripe client", () => {
 
       expect(client).toBe(stripeClientMock);
       expect(stripeConstructorMock).toHaveBeenCalledWith("sk_test_123", {
-         apiVersion: "2026-02-25.clover",
+         apiVersion: "2026-03-25.dahlia",
       });
    });
 });

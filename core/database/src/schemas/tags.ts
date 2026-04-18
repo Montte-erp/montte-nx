@@ -7,7 +7,7 @@ import {
    uniqueIndex,
    uuid,
 } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 import { crmSchema } from "@core/database/schemas/schemas";
 
@@ -21,6 +21,7 @@ export const tags = crmSchema.table(
       name: text("name").notNull(),
       color: text("color").notNull().default("#6366f1"),
       description: text("description"),
+      isDefault: boolean("is_default").notNull().default(false),
       isArchived: boolean("is_archived").notNull().default(false),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
@@ -36,8 +37,8 @@ export const tags = crmSchema.table(
    ],
 );
 
-export type Tag = typeof tags.$inferSelect;
-export type NewTag = typeof tags.$inferInsert;
+export const tagSchema = createSelectSchema(tags);
+export type Tag = z.infer<typeof tagSchema>;
 
 const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{6}$/;
 

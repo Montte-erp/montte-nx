@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { AppError, validateInput } from "@core/logging/errors";
-import { eq, inArray, sql } from "drizzle-orm";
-import { fromPromise, ok, err } from "neverthrow";
+import { eq, inArray } from "drizzle-orm";
+import { fromPromise, fromThrowable, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateTagInput,
@@ -10,27 +10,41 @@ import {
    createTagSchema,
    updateTagSchema,
 } from "@core/database/schemas/tags";
-import { transactionTags } from "@core/database/schemas/transactions";
+
+const safeValidateCreate = fromThrowable(
+   (data: CreateTagInput) => validateInput(createTagSchema, data),
+   (e) =>
+      e instanceof AppError
+         ? e
+         : AppError.validation("Dados inválidos.", { cause: e }),
+);
+
+const safeValidateUpdate = fromThrowable(
+   (data: UpdateTagInput) => validateInput(updateTagSchema, data),
+   (e) =>
+      e instanceof AppError
+         ? e
+         : AppError.validation("Dados inválidos.", { cause: e }),
+);
 
 export function createTag(
    db: DatabaseInstance,
    teamId: string,
    data: CreateTagInput,
 ) {
-   return fromPromise(
-      (async () => {
-         const validated = validateInput(createTagSchema, data);
-         const [tag] = await db
+   return safeValidateCreate(data).asyncAndThen((validated) =>
+      fromPromise(
+         db
             .insert(tags)
             .values({ ...validated, teamId })
-            .returning();
-         if (!tag) throw AppError.database("Failed to create tag");
-         return tag;
-      })(),
-      (e) =>
-         e instanceof AppError
-            ? e
-            : AppError.database("Failed to create tag", { cause: e }),
+            .returning(),
+         (e) =>
+            AppError.database("Falha ao criar centro de custo.", { cause: e }),
+      ).andThen(([tag]) =>
+         tag
+            ? ok(tag)
+            : err(AppError.database("Falha ao criar centro de custo.")),
+      ),
    );
 }
 
@@ -39,24 +53,19 @@ export function listTags(
    teamId: string,
    opts?: { includeArchived?: boolean },
 ) {
-   return fromPromise(
-      (async () => {
-         if (opts?.includeArchived) {
-            return await db.query.tags.findMany({
-               where: (fields, { eq }) => eq(fields.teamId, teamId),
-               orderBy: (fields, { asc }) => [asc(fields.name)],
-            });
-         }
-         return await db.query.tags.findMany({
-            where: (fields, { and, eq }) =>
-               and(eq(fields.teamId, teamId), eq(fields.isArchived, false)),
-            orderBy: (fields, { asc }) => [asc(fields.name)],
-         });
-      })(),
-      (e) =>
-         e instanceof AppError
-            ? e
-            : AppError.database("Failed to list tags", { cause: e }),
+   const query = opts?.includeArchived
+      ? db.query.tags.findMany({
+           where: (fields, { eq }) => eq(fields.teamId, teamId),
+           orderBy: (fields, { asc }) => [asc(fields.name)],
+        })
+      : db.query.tags.findMany({
+           where: (fields, { and, eq }) =>
+              and(eq(fields.teamId, teamId), eq(fields.isArchived, false)),
+           orderBy: (fields, { asc }) => [asc(fields.name)],
+        });
+
+   return fromPromise(query, (e) =>
+      AppError.database("Falha ao listar centros de custo.", { cause: e }),
    );
 }
 
@@ -64,9 +73,7 @@ export function getTag(db: DatabaseInstance, id: string) {
    return fromPromise(
       db.query.tags.findFirst({ where: (fields, { eq }) => eq(fields.id, id) }),
       (e) =>
-         e instanceof AppError
-            ? e
-            : AppError.database("Failed to get tag", { cause: e }),
+         AppError.database("Falha ao buscar centro de custo.", { cause: e }),
    ).map((tag) => tag ?? null);
 }
 
@@ -75,101 +82,105 @@ export function updateTag(
    id: string,
    data: UpdateTagInput,
 ) {
-   return fromPromise(
-      (async () => {
-         const validated = validateInput(updateTagSchema, data);
-         const [updated] = await db
+   return safeValidateUpdate(data).asyncAndThen((validated) =>
+      fromPromise(
+         db
             .update(tags)
             .set({ ...validated, updatedAt: dayjs().toDate() })
             .where(eq(tags.id, id))
-            .returning();
-         if (!updated) throw AppError.notFound("Tag não encontrada.");
-         return updated;
-      })(),
-      (e) =>
-         e instanceof AppError
-            ? e
-            : AppError.database("Failed to update tag", { cause: e }),
+            .returning(),
+         (e) =>
+            AppError.database("Falha ao atualizar centro de custo.", {
+               cause: e,
+            }),
+      ).andThen(([updated]) =>
+         updated
+            ? ok(updated)
+            : err(AppError.notFound("Centro de custo não encontrado.")),
+      ),
    );
 }
 
 export function archiveTag(db: DatabaseInstance, id: string) {
    return fromPromise(
-      (async () => {
-         const [updated] = await db
-            .update(tags)
-            .set({ isArchived: true, updatedAt: dayjs().toDate() })
-            .where(eq(tags.id, id))
-            .returning();
-         if (!updated) throw AppError.notFound("Tag não encontrada.");
-         return updated;
-      })(),
+      db
+         .update(tags)
+         .set({ isArchived: true, updatedAt: dayjs().toDate() })
+         .where(eq(tags.id, id))
+         .returning(),
       (e) =>
-         e instanceof AppError
-            ? e
-            : AppError.database("Failed to archive tag", { cause: e }),
+         AppError.database("Falha ao arquivar centro de custo.", { cause: e }),
+   ).andThen(([updated]) =>
+      updated
+         ? ok(updated)
+         : err(AppError.notFound("Centro de custo não encontrado.")),
    );
 }
 
 export function reactivateTag(db: DatabaseInstance, id: string) {
    return fromPromise(
-      (async () => {
-         const [updated] = await db
-            .update(tags)
-            .set({ isArchived: false, updatedAt: dayjs().toDate() })
-            .where(eq(tags.id, id))
-            .returning();
-         if (!updated) throw AppError.notFound("Tag não encontrada.");
-         return updated;
-      })(),
+      db
+         .update(tags)
+         .set({ isArchived: false, updatedAt: dayjs().toDate() })
+         .where(eq(tags.id, id))
+         .returning(),
       (e) =>
-         e instanceof AppError
-            ? e
-            : AppError.database("Failed to reactivate tag", { cause: e }),
+         AppError.database("Falha ao reativar centro de custo.", { cause: e }),
+   ).andThen(([updated]) =>
+      updated
+         ? ok(updated)
+         : err(AppError.notFound("Centro de custo não encontrado.")),
    );
 }
 
 export function tagHasTransactions(db: DatabaseInstance, tagId: string) {
    return fromPromise(
-      (async () => {
-         const [row] = await db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(transactionTags)
-            .where(eq(transactionTags.tagId, tagId));
-         return (row?.count ?? 0) > 0;
-      })(),
+      db.query.transactions.findFirst({
+         where: (fields, { eq }) => eq(fields.tagId, tagId),
+         columns: { id: true },
+      }),
       (e) =>
-         e instanceof AppError
-            ? e
-            : AppError.database("Failed to check tag transactions", {
-                 cause: e,
-              }),
-   );
+         AppError.database(
+            "Falha ao verificar lançamentos do centro de custo.",
+            { cause: e },
+         ),
+   ).map((row) => row !== undefined);
 }
 
 export function deleteTag(db: DatabaseInstance, id: string) {
    return fromPromise(
-      (async () => {
-         const existing = await db.query.tags.findFirst({
-            where: (fields, { eq }) => eq(fields.id, id),
-         });
-         if (!existing) throw AppError.notFound("Tag não encontrada.");
-
-         const hasResult = await tagHasTransactions(db, id);
-         if (hasResult.isErr()) throw hasResult.error;
-         if (hasResult.value) {
-            throw AppError.conflict(
-               "Tag com lançamentos não pode ser excluída. Use arquivamento.",
-            );
-         }
-
-         await db.delete(tags).where(eq(tags.id, id));
-      })(),
+      db.query.tags.findFirst({ where: (fields, { eq }) => eq(fields.id, id) }),
       (e) =>
-         e instanceof AppError
-            ? e
-            : AppError.database("Failed to delete tag", { cause: e }),
-   );
+         AppError.database("Falha ao excluir centro de custo.", { cause: e }),
+   )
+      .andThen((existing) => {
+         if (!existing)
+            return err(AppError.notFound("Centro de custo não encontrado."));
+         if (existing.isDefault)
+            return err(
+               AppError.forbidden(
+                  "Centro de custo padrão não pode ser excluído.",
+               ),
+            );
+         return ok(existing);
+      })
+      .andThen(() => tagHasTransactions(db, id))
+      .andThen((hasTransactions) =>
+         hasTransactions
+            ? err(
+                 AppError.conflict(
+                    "Centro de custo com lançamentos não pode ser excluído. Use arquivamento.",
+                 ),
+              )
+            : ok(undefined),
+      )
+      .andThen(() =>
+         fromPromise(db.delete(tags).where(eq(tags.id, id)), (e) =>
+            AppError.database("Falha ao excluir centro de custo.", {
+               cause: e,
+            }),
+         ),
+      );
 }
 
 export function bulkDeleteTags(
@@ -178,30 +189,56 @@ export function bulkDeleteTags(
    teamId: string,
 ) {
    return fromPromise(
-      (async () => {
-         const existing = await db.query.tags.findMany({
-            where: (fields, { and, inArray, eq }) =>
-               and(inArray(fields.id, ids), eq(fields.teamId, teamId)),
-         });
-         if (existing.length !== ids.length) {
-            throw AppError.notFound("Uma ou mais tags não foram encontradas.");
-         }
-         const withTransactions = await db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(transactionTags)
-            .where(inArray(transactionTags.tagId, ids));
-         if ((withTransactions[0]?.count ?? 0) > 0) {
-            throw AppError.conflict(
-               "Centros de custo com lançamentos não podem ser excluídos. Use arquivamento.",
-            );
-         }
-         await db.delete(tags).where(inArray(tags.id, ids));
-      })(),
+      db.query.tags.findMany({
+         where: (fields, { and, inArray, eq }) =>
+            and(inArray(fields.id, ids), eq(fields.teamId, teamId)),
+      }),
       (e) =>
-         e instanceof AppError
-            ? e
-            : AppError.database("Failed to bulk delete tags", { cause: e }),
-   );
+         AppError.database("Falha ao excluir centros de custo.", { cause: e }),
+   )
+      .andThen((existing) => {
+         if (existing.length !== ids.length)
+            return err(
+               AppError.notFound(
+                  "Um ou mais centros de custo não foram encontrados.",
+               ),
+            );
+         if (existing.some((t) => t.isDefault))
+            return err(
+               AppError.forbidden(
+                  "Centros de custo padrão não podem ser excluídos.",
+               ),
+            );
+         return ok(undefined);
+      })
+      .andThen(() =>
+         fromPromise(
+            db.query.transactions.findFirst({
+               where: (fields, { inArray }) => inArray(fields.tagId, ids),
+               columns: { id: true },
+            }),
+            (e) =>
+               AppError.database("Falha ao excluir centros de custo.", {
+                  cause: e,
+               }),
+         ),
+      )
+      .andThen((withTransaction) =>
+         withTransaction
+            ? err(
+                 AppError.conflict(
+                    "Centros de custo com lançamentos não podem ser excluídos. Use arquivamento.",
+                 ),
+              )
+            : ok(undefined),
+      )
+      .andThen(() =>
+         fromPromise(db.delete(tags).where(inArray(tags.id, ids)), (e) =>
+            AppError.database("Falha ao excluir centros de custo.", {
+               cause: e,
+            }),
+         ),
+      );
 }
 
 export function ensureTagOwnership(
@@ -211,7 +248,7 @@ export function ensureTagOwnership(
 ) {
    return getTag(db, id).andThen((tag) => {
       if (!tag || tag.teamId !== teamId)
-         return err(AppError.notFound("Tag não encontrada."));
+         return err(AppError.notFound("Centro de custo não encontrado."));
       return ok(tag);
    });
 }

@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import {
    boolean,
    date,
@@ -7,7 +7,6 @@ import {
    integer,
    jsonb,
    numeric,
-   primaryKey,
    text,
    timestamp,
    uuid,
@@ -87,6 +86,9 @@ export const transactions = financeSchema.table(
       contactId: uuid("contact_id").references(() => contacts.id, {
          onDelete: "restrict",
       }),
+      tagId: uuid("tag_id").references(() => tags.id, {
+         onDelete: "set null",
+      }),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),
@@ -109,20 +111,8 @@ export const transactions = financeSchema.table(
          table.creditCardId,
          table.statementPeriod,
       ),
+      index("transactions_tag_id_idx").on(table.tagId),
    ],
-);
-
-export const transactionTags = financeSchema.table(
-   "transaction_tags",
-   {
-      transactionId: uuid("transaction_id")
-         .notNull()
-         .references(() => transactions.id, { onDelete: "cascade" }),
-      tagId: uuid("tag_id")
-         .notNull()
-         .references(() => tags.id, { onDelete: "cascade" }),
-   },
-   (table) => [primaryKey({ columns: [table.transactionId, table.tagId] })],
 );
 
 export const transactionItems = financeSchema.table("transaction_items", {
@@ -148,13 +138,11 @@ export const transactionItems = financeSchema.table("transaction_items", {
       .defaultNow(),
 });
 
-export type Transaction = typeof transactions.$inferSelect;
-export type NewTransaction = typeof transactions.$inferInsert;
+export const transactionSchema = createSelectSchema(transactions);
+export const transactionItemSchema = createSelectSchema(transactionItems);
+export type Transaction = z.infer<typeof transactionSchema>;
+export type TransactionItem = z.infer<typeof transactionItemSchema>;
 export type TransactionType = (typeof transactionTypeEnum.enumValues)[number];
-export type TransactionTag = typeof transactionTags.$inferSelect;
-export type NewTransactionTag = typeof transactionTags.$inferInsert;
-export type TransactionItem = typeof transactionItems.$inferSelect;
-export type NewTransactionItem = typeof transactionItems.$inferInsert;
 
 const numericPositive = (msg: string) =>
    z.string().refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {
@@ -177,6 +165,7 @@ const baseTransactionSchema = createInsertSchema(transactions).pick({
    categoryId: true,
    creditCardId: true,
    contactId: true,
+   tagId: true,
    paymentMethod: true,
    attachments: true,
    isInstallment: true,

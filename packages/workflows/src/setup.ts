@@ -2,32 +2,31 @@ import { DBOS } from "@dbos-inc/dbos-sdk";
 import { getLogger } from "@core/logging/root";
 import { initContext } from "./context";
 import type { WorkflowDeps } from "./context";
-import { categorizationWorkflow } from "./workflows/categorization.workflow";
-import { deriveKeywordsWorkflow } from "./workflows/derive-keywords.workflow";
-import { backfillKeywordsWorkflow } from "./workflows/backfill-keywords.workflow";
-import type { CategorizationInput } from "./workflows/categorization.workflow";
-import type { DeriveKeywordsInput } from "./workflows/derive-keywords.workflow";
-
-export type { CategorizationInput, DeriveKeywordsInput };
+import { backfillKeywordsWorkflow } from "./workflows/backfill-keywords-workflow";
+import "./workflows/categorization-workflow";
+import "./workflows/derive-keywords-workflow";
 
 type LaunchConfig = WorkflowDeps & {
    systemDatabaseUrl: string;
    logLevel?: string;
+   onShutdown?: () => Promise<void>;
 };
-
-const logger = getLogger().child({ module: "dbos" });
 
 export function launchDBOS({
    systemDatabaseUrl,
    logLevel,
+   onShutdown,
    ...deps
 }: LaunchConfig) {
+   const logger = getLogger();
+
    initContext(deps);
 
    DBOS.setConfig({
       name: "montte-web",
       systemDatabaseUrl,
       logLevel: logLevel ?? "info",
+      runAdminServer: false,
    });
 
    DBOS.launch()
@@ -45,28 +44,14 @@ export function launchDBOS({
          logger.error({ err }, "DBOS launch failed");
       });
 
-   process.on("SIGTERM", () => void DBOS.shutdown());
-   process.on("SIGINT", () => void DBOS.shutdown());
-}
+   async function gracefulShutdown(signal: string) {
+      logger.info(`${signal} received — shutting down`);
+      await DBOS.shutdown();
+      await onShutdown?.();
+      logger.info("Shutdown complete");
+      process.exit(0);
+   }
 
-export function startCategorizationWorkflow(input: CategorizationInput): void {
-   void DBOS.startWorkflow(categorizationWorkflow, {
-      workflowID: `categorize-${input.transactionId}`,
-   })(input).catch((err: unknown) => {
-      logger.error(
-         { err, transactionId: input.transactionId },
-         "Failed to start categorization workflow",
-      );
-   });
-}
-
-export function startDeriveKeywordsWorkflow(input: DeriveKeywordsInput): void {
-   void DBOS.startWorkflow(deriveKeywordsWorkflow)(input).catch(
-      (err: unknown) => {
-         logger.error(
-            { err, categoryId: input.categoryId },
-            "Failed to start derive-keywords workflow",
-         );
-      },
-   );
+   process.on("SIGTERM", () => void gracefulShutdown("SIGTERM"));
+   process.on("SIGINT", () => void gracefulShutdown("SIGINT"));
 }

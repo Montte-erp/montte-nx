@@ -10,7 +10,10 @@ import { enforceCreditBudget } from "@packages/events/credits";
 import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import type { JobNotification } from "@packages/notifications/schema";
 import { getDeps, getPublisher } from "../context";
-import { deriveKeywordsWorkflow } from "./derive-keywords.workflow";
+import {
+   deriveKeywordsWorkflow,
+   deriveKeywordsQueue,
+} from "./derive-keywords-workflow";
 
 async function backfillKeywordsWorkflowFn(
    scheduledTime: Date,
@@ -72,6 +75,7 @@ async function backfillKeywordsWorkflowFn(
 
          await DBOS.startWorkflow(deriveKeywordsWorkflow, {
             workflowID: `derive-${category.id}-${dayjs(scheduledTime).format("YYYY-MM-DD")}`,
+            queueName: deriveKeywordsQueue.name,
          })({
             categoryId: category.id,
             teamId: category.teamId,

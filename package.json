@@ -9,39 +9,38 @@
    "workspaces": {
       "catalogs": {
          "analytics-client": {
-            "posthog-js": "^1.347.2",
-            "posthog-node": "^5.24.15"
+            "posthog-js": "^1.369.3",
+            "posthog-node": "^5.29.2"
          },
          "astro": {
-            "@astrojs/check": "^0.9.6",
-            "@astrojs/mdx": "^4.3.13",
-            "@astrojs/node": "^9.5.3",
-            "@astrojs/react": "^4.4.2",
-            "@astrojs/rss": "^4.0.15",
-            "@astrojs/sitemap": "^3.7.0",
-            "@astrojs/starlight": "0.37.6",
-            "@astrojs/starlight-tailwind": "4.0.2",
-            "@astrojs/ts-plugin": "^1.10.6",
-            "@lucide/astro": "^0.564.0",
-            "astro": "5.17.2"
+            "@astrojs/check": "^0.9.8",
+            "@astrojs/mdx": "^5.0.3",
+            "@astrojs/node": "^10.0.5",
+            "@astrojs/react": "^5.0.3",
+            "@astrojs/rss": "^4.0.18",
+            "@astrojs/sitemap": "^3.7.2",
+            "@astrojs/starlight": "0.38.3",
+            "@astrojs/starlight-tailwind": "5.0.0",
+            "@astrojs/ts-plugin": "^1.10.7",
+            "@lucide/astro": "^1.8.0",
+            "astro": "6.1.7"
          },
          "auth": {
-            "better-auth": "1.5.6",
-            "@better-auth/api-key": "1.5.6",
-            "@better-auth/drizzle-adapter": "1.5.6",
-            "@better-auth/stripe": "1.5.6"
+            "better-auth": "1.6.5",
+            "@better-auth/api-key": "1.6.5",
+            "@better-auth/drizzle-adapter": "1.6.5",
+            "@better-auth/stripe": "1.6.5"
          },
          "database": {
-            "@types/pg": "^8.16.0",
-            "drizzle-kit": "0.31.9",
+            "@types/pg": "^8.20.0",
+            "drizzle-kit": "0.31.10",
             "drizzle-orm": "0.45.2",
             "drizzle-zod": "0.8.3",
             "pg": "^8.18.0"
          },
          "development": {
-            "typescript": "6.0.2",
-            "babel-plugin-react-compiler": "^1.0.0",
-            "web-vitals": "^5.1.0"
+            "typescript": "6.0.3",
+            "babel-plugin-react-compiler": "^1.0.0"
          },
          "dnd": {
             "@dnd-kit/core": "^6.3.1",
@@ -49,14 +48,13 @@
             "@dnd-kit/utilities": "^3.2.2"
          },
          "environment": {
-            "dotenv": "17.3.1",
+            "dotenv": "17.4.2",
             "dotenv-cli": "11.0.0",
             "shx": "0.4.0"
          },
          "files": {
             "fflate": "^0.8.2",
-            "minio": "^8.0.6",
-            "sharp": "^0.34.5"
+            "minio": "^8.0.6"
          },
          "fot": {
             "@f-o-t/condition-evaluator": "2.0.7",
@@ -73,110 +71,99 @@
             "pino-pretty": "^13.1.3"
          },
          "orpc": {
-            "@orpc/client": "^1.13.13",
-            "@orpc/contract": "^1.13.13",
-            "@orpc/experimental-pino": "^1.13.13",
-            "@orpc/experimental-publisher": "^1.13.13",
-            "@orpc/json-schema": "^1.13.13",
-            "@orpc/otel": "^1.13.13",
-            "@orpc/server": "^1.13.13",
-            "@orpc/tanstack-query": "^1.13.13",
-            "@orpc/zod": "^1.13.13"
+            "@orpc/client": "^1.13.14",
+            "@orpc/contract": "^1.13.14",
+            "@orpc/experimental-pino": "^1.13.14",
+            "@orpc/experimental-publisher": "^1.13.14",
+            "@orpc/json-schema": "^1.13.14",
+            "@orpc/otel": "^1.13.14",
+            "@orpc/server": "^1.13.14",
+            "@orpc/tanstack-query": "^1.13.14",
+            "@orpc/zod": "^1.13.14"
          },
          "payments": {
-            "stripe": "^20.4.0"
+            "stripe": "^22.0.2"
          },
          "react": {
             "@types/react": "19.2.14",
             "@types/react-dom": "19.2.3",
-            "react": "19.2.4",
-            "react-dom": "19.2.4",
+            "react": "19.2.5",
+            "react-dom": "19.2.5",
             "react-error-boundary": "6.1.1"
          },
-         "search-providers": {
-            "@mendable/firecrawl-js": "^4.12.1",
-            "@tavily/core": "0.7.1",
-            "exa-js": "^2.4.0"
-         },
-         "server": {
-            "@elysiajs/cors": "1.4.1",
-            "elysia": "1.4.25"
-         },
+         "search-providers": {},
          "tanstack": {
-            "@tanstack/pacer": "^0.20.1",
-            "@tanstack/react-pacer": "^0.21.1",
+            "@tanstack/pacer": "^0.21.0",
+            "@tanstack/react-pacer": "^0.22.0",
             "@tanstack/devtools-event-client": "^0.4.3",
-            "@tanstack/devtools-vite": "^0.5.5",
+            "@tanstack/devtools-vite": "^0.6.0",
             "@tanstack/match-sorter-utils": "^8.19.4",
-            "@tanstack/react-devtools": "^0.9.13",
+            "@tanstack/react-devtools": "^0.10.2",
             "@tanstack/react-form-devtools": "^0.2.21",
-            "@tanstack/react-form": "^1.28.5",
-            "@tanstack/react-query": "^5.90.21",
-            "@tanstack/react-query-devtools": "^5.91.3",
-            "@tanstack/react-router": "^1.168.7",
-            "@tanstack/react-router-devtools": "^1.166.11",
-            "@tanstack/react-router-ssr-query": "^1.166.10",
-            "@tanstack/react-start": "^1.167.12",
-            "@tanstack/react-store": "^0.10.0",
+            "@tanstack/react-form": "^1.29.0",
+            "@tanstack/react-query": "^5.99.0",
+            "@tanstack/react-query-devtools": "^5.99.0",
+            "@tanstack/react-router": "^1.168.22",
+            "@tanstack/react-router-devtools": "^1.166.13",
+            "@tanstack/react-router-ssr-query": "^1.166.11",
+            "@tanstack/react-start": "^1.167.41",
+            "@tanstack/react-store": "^0.11.0",
             "@tanstack/react-table": "^8.21.3",
-            "@tanstack/react-virtual": "^3.13.22",
-            "@tanstack/router-cli": "^1.166.22",
-            "@tanstack/router-plugin": "^1.167.8",
-            "@tanstack/store": "^0.10.0"
+            "@tanstack/react-virtual": "^3.13.24",
+            "@tanstack/router-plugin": "^1.167.22",
+            "@tanstack/store": "^0.11.0"
          },
          "telemetry": {
-            "@opentelemetry/api-logs": "^0.214.0",
-            "@opentelemetry/exporter-logs-otlp-http": "^0.214.0",
-            "@opentelemetry/resources": "^2.6.1",
-            "@opentelemetry/sdk-logs": "^0.214.0",
-            "@opentelemetry/sdk-node": "^0.214.0",
+            "@opentelemetry/api-logs": "^0.215.0",
+            "@opentelemetry/exporter-logs-otlp-http": "^0.215.0",
+            "@opentelemetry/resources": "^2.7.0",
+            "@opentelemetry/sdk-logs": "^0.215.0",
+            "@opentelemetry/sdk-node": "^0.215.0",
             "pino-opentelemetry-transport": "^3.0.0"
          },
          "testing": {
-            "@faker-js/faker": "^10.3.0",
+            "@faker-js/faker": "^10.4.0",
             "@testing-library/dom": "^10.4.1",
             "@testing-library/react": "^16.3.2",
-            "@vitest/coverage-istanbul": "^4.1.2",
-            "@vitest/coverage-v8": "^4.1.2",
-            "jsdom": "^28.1.0",
-            "vitest": "^4.1.2"
+            "@vitest/coverage-istanbul": "^4.1.4",
+            "@vitest/coverage-v8": "^4.1.4",
+            "vitest": "^4.1.4"
          },
          "transactional": {
-            "@react-email/components": "1.0.7",
-            "react-email": "5.2.8",
-            "resend": "6.9.2"
+            "@react-email/components": "1.0.12",
+            "react-email": "6.0.0",
+            "resend": "6.12.0"
          },
          "ui": {
             "@maskito/core": "^5.2.2",
             "@maskito/kit": "^5.2.2",
             "@maskito/react": "^5.2.2",
-            "@number-flow/react": "^0.5.11",
+            "@number-flow/react": "^0.6.0",
             "@stepperize/react": "^6.0.0",
-            "@tailwindcss/postcss": "^4.1.18",
+            "@tailwindcss/postcss": "^4.2.2",
             "@tailwindcss/typography": "^0.5.19",
-            "@types/color": "^4.2.0",
-            "@xyflow/react": "^12.10.0",
+            "@types/color": "^4.2.1",
+            "@xyflow/react": "^12.10.2",
             "class-variance-authority": "^0.7.1",
             "clsx": "^2.1.1",
             "cmdk": "^1.1.1",
             "color": "^5.0.3",
-            "dayjs": "^1.11.13",
+            "dayjs": "^1.11.20",
             "embla-carousel-autoplay": "^8.6.0",
             "embla-carousel-react": "^8.6.0",
             "foxact": "^0.3.0",
-            "framer-motion": "^12.34.0",
             "input-otp": "^1.4.2",
-            "lucide-react": "^0.564.0",
-            "motion": "^12.34.0",
+            "lucide-react": "^1.8.0",
+            "motion": "^12.38.0",
             "qrcode.react": "^4.2.0",
             "radix-ui": "^1.4.3",
             "react-day-picker": "^9.13.2",
             "react-dropzone": "^15.0.0",
             "react-markdown": "^10.1.0",
-            "recharts": "^3.7.0",
+            "recharts": "^3.8.1",
             "sonner": "^2.0.7",
             "tailwind-merge": "^3.4.1",
-            "tailwindcss": "^4.1.18",
+            "tailwindcss": "^4.2.2",
             "tw-animate-css": "^1.4.0",
             "vaul": "^1.1.2"
          },
@@ -185,19 +172,19 @@
             "zod": "4.3.6"
          },
          "vite": {
-            "@tailwindcss/vite": "^4.2.1",
+            "@tailwindcss/vite": "^4.2.2",
             "@vitejs/plugin-react": "^6.0.1",
-            "vite": "^8.0.2",
+            "vite": "^8.0.8",
             "vite-tsconfig-paths": "^6.1.1"
          },
          "tanstack-ai": {
-            "@tanstack/ai": "^0.10.1",
-            "@tanstack/ai-react": "^0.7.9",
-            "@tanstack/ai-openrouter": "^0.7.3"
+            "@tanstack/ai": "^0.10.2",
+            "@tanstack/ai-react": "^0.7.10",
+            "@tanstack/ai-openrouter": "^0.7.4"
          },
          "workers": {
             "@dbos-inc/dbos-sdk": "^4.14.6",
-            "ioredis": "5.9.3"
+            "ioredis": "5.10.1"
          }
       },
       "packages": [
@@ -220,7 +207,7 @@
       "db:push:prod": "bun run scripts/ensure-schemas.ts --env production && nx run core/database:db-push-prod",
       "db:studio:local": "nx run core/database:db-studio-local",
       "db:studio:prod": "nx run core/database:db-studio-prod",
-      "dev": "bun run scripts/dev-init.ts && nx run-many -t dev --parallel=3 -p web",
+      "dev": "bun run scripts/dev-init.ts; nx run-many -t dev --parallel=3 -p web worker",
       "dev:staging": "bun run scripts/check-env.ts --env staging && nx run-many -t dev:staging --parallel=3 -p web",
       "setup": "bun run scripts/setup.ts",
       "dev:all": "bun run scripts/dev-init.ts && nx run-many -t dev --parallel=6",
@@ -246,25 +233,25 @@
       "web:start": "bun run --filter=web start"
    },
    "devDependencies": {
-      "@nx/js": "22.6.3",
-      "@rolldown/plugin-babel": "^0.2.2",
-      "@schpet/linear-cli": "^1.11.1",
+      "@nx/js": "22.6.5",
+      "@rolldown/plugin-babel": "^0.2.3",
+      "@schpet/linear-cli": "^2.0.0",
       "@swc-node/register": "1.11.1",
-      "@swc/core": "1.15.21",
-      "@swc/helpers": "0.5.20",
+      "@swc/core": "1.15.26",
+      "@swc/helpers": "0.5.21",
       "@tooling/typescript": "workspace:*",
-      "@typescript/native-preview": "^7.0.0-dev.20260327.2",
+      "@typescript/native-preview": "^7.0.0-dev.20260417.1",
       "@vitejs/plugin-react": "catalog:vite",
       "@vitest/coverage-v8": "catalog:testing",
-      "bun-types": "latest",
-      "cac": "^6.7.14",
-      "dotenv": "catalog:environment",
-      "lefthook": "^2.1.4",
-      "nitro": "3.0.260311-beta",
-      "nx": "22.6.3",
-      "oxfmt": "^0.42.0",
-      "oxlint": "^1.57.0",
-      "typescript": "catalog:development",
+      "bun-types": "^1.3.12",
+      "cac": "^7.0.0",
+      "dotenv": "^17.4.2",
+      "lefthook": "^2.1.6",
+      "nitro": "3.0.260415-beta",
+      "nx": "22.6.5",
+      "oxfmt": "^0.45.0",
+      "oxlint": "^1.60.0",
+      "typescript": "^6.0.3",
       "vite-tsconfig-paths": "catalog:vite",
       "vitest": "catalog:testing"
    },

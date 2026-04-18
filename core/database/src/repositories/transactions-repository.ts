@@ -13,7 +13,6 @@ import {
    gt,
    gte,
    ilike,
-   inArray,
    isNotNull,
    isNull,
    lt,
@@ -31,7 +30,6 @@ import {
    paymentMethodEnum,
    transactionItems,
    transactions,
-   transactionTags,
 } from "@core/database/schemas/transactions";
 import { getBankAccount } from "@core/database/repositories/bank-accounts-repository";
 import { getCategory } from "@core/database/repositories/categories-repository";
@@ -129,7 +127,7 @@ export async function validateTransactionReferences(
       destinationBankAccountId?: string | null;
       categoryId?: string | null;
       contactId?: string | null;
-      tagIds?: string[];
+      tagId?: string | null;
       date?: Date | string | null;
    },
 ) {
@@ -174,13 +172,11 @@ export async function validateTransactionReferences(
       }
    }
 
-   if (refs.tagIds && refs.tagIds.length > 0) {
-      for (const tagId of refs.tagIds) {
-         const tagResult = await getTag(db, tagId);
-         if (tagResult.isErr()) throw tagResult.error;
-         if (!tagResult.value || tagResult.value.teamId !== teamId) {
-            throw AppError.validation("Tag inválida.");
-         }
+   if (refs.tagId) {
+      const tagResult = await getTag(db, refs.tagId);
+      if (tagResult.isErr()) throw tagResult.error;
+      if (!tagResult.value || tagResult.value.teamId !== teamId) {
+         throw AppError.validation("Tag inválida.");
       }
    }
 
@@ -196,25 +192,16 @@ export async function createTransaction(
    db: DatabaseInstance,
    teamId: string,
    data: CreateTransactionInput,
-   tagIds?: string[],
+   tagId?: string,
 ) {
    try {
       const validated = validateInput(createTransactionSchema, data);
       const [transaction] = await db
          .insert(transactions)
-         .values({ ...validated, teamId })
+         .values({ ...validated, teamId, tagId: tagId ?? null })
          .returning();
 
       if (!transaction) throw AppError.database("Failed to create transaction");
-
-      if (tagIds && tagIds.length > 0) {
-         await db.insert(transactionTags).values(
-            tagIds.map((tagId) => ({
-               transactionId: transaction.id,
-               tagId,
-            })),
-         );
-      }
 
       return transaction;
    } catch (err) {
@@ -234,19 +221,7 @@ export async function listTransactions(
       const conditions = [eq(transactions.teamId, filter.teamId)];
 
       if (filter.tagId) {
-         const taggedIds = await db
-            .select({ transactionId: transactionTags.transactionId })
-            .from(transactionTags)
-            .where(eq(transactionTags.tagId, filter.tagId));
-
-         if (taggedIds.length === 0) return { data: [], total: 0 };
-
-         conditions.push(
-            inArray(
-               transactions.id,
-               taggedIds.map((r) => r.transactionId),
-            ),
-         );
+         conditions.push(eq(transactions.tagId, filter.tagId));
       }
 
       if (filter.type) conditions.push(eq(transactions.type, filter.type));
@@ -410,23 +385,7 @@ export async function getTransactionsSummary(
       const conditions = [eq(transactions.teamId, filter.teamId)];
 
       if (filter.tagId) {
-         const taggedIds = await db
-            .select({ transactionId: transactionTags.transactionId })
-            .from(transactionTags)
-            .where(eq(transactionTags.tagId, filter.tagId));
-         if (taggedIds.length === 0)
-            return {
-               totalCount: 0,
-               incomeTotal: "0",
-               expenseTotal: "0",
-               balance: "0",
-            };
-         conditions.push(
-            inArray(
-               transactions.id,
-               taggedIds.map((r) => r.transactionId),
-            ),
-         );
+         conditions.push(eq(transactions.tagId, filter.tagId));
       }
 
       if (filter.type) conditions.push(eq(transactions.type, filter.type));
@@ -484,20 +443,14 @@ export async function getTransactionsSummary(
    }
 }
 
-export async function getTransactionWithTags(db: DatabaseInstance, id: string) {
+export async function getTransactionWithTag(db: DatabaseInstance, id: string) {
    try {
       const [transaction] = await db
          .select()
          .from(transactions)
          .where(eq(transactions.id, id));
       if (!transaction) return null;
-
-      const tagRows = await db
-         .select()
-         .from(transactionTags)
-         .where(eq(transactionTags.transactionId, id));
-
-      return { ...transaction, tagIds: tagRows.map((r) => r.tagId) };
+      return transaction;
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to get transaction");
@@ -508,7 +461,7 @@ export async function updateTransaction(
    db: DatabaseInstance,
    id: string,
    data: UpdateTransactionInput,
-   tagIds?: string[],
+   tagId?: string | null,
 ) {
    try {
       const validated = validateInput(updateTransactionSchema, data);
@@ -516,6 +469,7 @@ export async function updateTransaction(
          .update(transactions)
          .set({
             ...validated,
+            ...(tagId !== undefined ? { tagId } : {}),
             ...(validated.categoryId !== undefined
                ? { suggestedCategoryId: null }
                : {}),
@@ -525,17 +479,6 @@ export async function updateTransaction(
 
       if (!updated) {
          throw AppError.database("Transaction not found");
-      }
-
-      if (tagIds !== undefined) {
-         await db
-            .delete(transactionTags)
-            .where(eq(transactionTags.transactionId, id));
-         if (tagIds.length > 0) {
-            await db
-               .insert(transactionTags)
-               .values(tagIds.map((tagId) => ({ transactionId: id, tagId })));
-         }
       }
 
       return updated;

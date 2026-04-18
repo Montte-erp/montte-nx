@@ -1,10 +1,8 @@
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { setupTestDb } from "../helpers/setup-test-db";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
-import {
-   transactions,
-   transactionTags,
-} from "@core/database/schemas/transactions";
+import { transactions } from "@core/database/schemas/transactions";
+import { tags } from "@core/database/schemas/tags";
 import * as repo from "../../src/repositories/tags-repository";
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
@@ -42,6 +40,7 @@ describe("tags-repository", () => {
             color: "#6366f1",
             description: null,
             isArchived: false,
+            isDefault: false,
          });
          expect(tag.id).toBeDefined();
       });
@@ -373,7 +372,7 @@ describe("tags-repository", () => {
             teamId,
          );
          expect(result._unsafeUnwrapErr().message).toMatch(
-            /não foram encontradas/,
+            /não foram encontrados/,
          );
       });
 
@@ -387,19 +386,13 @@ describe("tags-repository", () => {
             )
          )._unsafeUnwrap();
 
-         const [txn] = await testDb.db
-            .insert(transactions)
-            .values({
-               teamId,
-               type: "income",
-               amount: "50.00",
-               date: "2025-01-15",
-            })
-            .returning();
-
-         await testDb.db
-            .insert(transactionTags)
-            .values({ transactionId: txn!.id, tagId: tag.id });
+         await testDb.db.insert(transactions).values({
+            teamId,
+            type: "income",
+            amount: "50.00",
+            date: "2025-01-15",
+            tagId: tag.id,
+         });
 
          const result = await repo.bulkDeleteTags(testDb.db, [tag.id], teamId);
          expect(result._unsafeUnwrapErr().message).toMatch(/lançamentos/);
@@ -436,20 +429,14 @@ describe("tags-repository", () => {
             })
             .returning();
 
-         const [transaction] = await testDb.db
-            .insert(transactions)
-            .values({
-               teamId,
-               type: "expense",
-               amount: "100.00",
-               date: "2026-01-15",
-               bankAccountId: account!.id,
-            })
-            .returning();
-
-         await testDb.db
-            .insert(transactionTags)
-            .values({ transactionId: transaction!.id, tagId: tag.id });
+         await testDb.db.insert(transactions).values({
+            teamId,
+            type: "expense",
+            amount: "100.00",
+            date: "2026-01-15",
+            bankAccountId: account!.id,
+            tagId: tag.id,
+         });
 
          const result = await repo.deleteTag(testDb.db, tag.id);
          expect(result._unsafeUnwrapErr().message).toMatch(/lançamentos/);
@@ -458,6 +445,41 @@ describe("tags-repository", () => {
       it("rejects deleting nonexistent tag", async () => {
          const result = await repo.deleteTag(testDb.db, crypto.randomUUID());
          expect(result._unsafeUnwrapErr().message).toMatch(/não encontrad/);
+      });
+
+      it("rejects deleting default tag", async () => {
+         const teamId = randomTeamId();
+         const [tag] = await testDb.db
+            .insert(tags)
+            .values({ teamId, name: "Padrão", isDefault: true })
+            .returning();
+
+         const result = await repo.deleteTag(testDb.db, tag!.id);
+         expect(result._unsafeUnwrapErr().message).toMatch(/padrão/);
+      });
+   });
+
+   describe("bulkDeleteTags — isDefault", () => {
+      it("rejects bulk delete when any tag is default", async () => {
+         const teamId = randomTeamId();
+         const [defaultTag] = await testDb.db
+            .insert(tags)
+            .values({ teamId, name: "Padrão Bulk", isDefault: true })
+            .returning();
+         const normal = (
+            await repo.createTag(
+               testDb.db,
+               teamId,
+               validCreateInput({ name: "Normal" }),
+            )
+         )._unsafeUnwrap();
+
+         const result = await repo.bulkDeleteTags(
+            testDb.db,
+            [defaultTag!.id, normal.id],
+            teamId,
+         );
+         expect(result._unsafeUnwrapErr().message).toMatch(/padrão/);
       });
    });
 });

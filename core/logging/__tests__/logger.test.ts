@@ -42,26 +42,16 @@ describe("createLogger", () => {
       );
    });
 
-   it("includes OTel transport when enableOtel is true", () => {
-      createLogger({ name: "test-service", enableOtel: true });
-      const callArgs = vi.mocked(pino).mock.calls[0][0] as {
-         transport: { targets: Array<{ target: string }> };
-      };
-      const targets = callArgs.transport.targets;
-      expect(
-         targets.some((t) => t.target === "pino-opentelemetry-transport"),
-      ).toBe(true);
-   });
-
-   it("does not include OTel transport by default", () => {
+   it("always includes otel transport", () => {
       createLogger({ name: "test-service" });
       const callArgs = vi.mocked(pino).mock.calls[0][0] as {
          transport: { targets: Array<{ target: string }> };
       };
-      const targets = callArgs.transport.targets;
       expect(
-         targets.some((t) => t.target === "pino-opentelemetry-transport"),
-      ).toBe(false);
+         callArgs.transport.targets.some(
+            (t) => t.target === "pino-opentelemetry-transport",
+         ),
+      ).toBe(true);
    });
 });
 
