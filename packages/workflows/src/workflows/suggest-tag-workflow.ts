@@ -139,6 +139,11 @@ async function suggestTagWorkflowFn(input: SuggestTagInput) {
 
    const tagId = aiResult.value;
 
+   if (!tagId) {
+      DBOS.logger.info(`${ctx} AI returned no suggestion, skipping`);
+      return;
+   }
+
    await DBOS.runStep(
       () =>
          updateTransactionTag(db, input.transactionId, {

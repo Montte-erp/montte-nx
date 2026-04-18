@@ -1,4 +1,4 @@
-import { fromPromise, ok, err, safeTry } from "neverthrow";
+import { fromPromise, ok, safeTry } from "neverthrow";
 import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
 import { z } from "zod";
@@ -8,7 +8,7 @@ import { POSTHOG_PROMPTS } from "@core/posthog/config";
 import {
    createPosthogAiMiddleware,
    type AiObservabilityContext,
-} from "../middleware/posthog";
+} from "@core/agents/middleware/posthog";
 
 type OpenRouterModelId = Parameters<typeof openRouterText>[0];
 
@@ -73,15 +73,9 @@ export function inferTagWithAI(
             ),
       );
 
-      if (!result.tagName)
-         return err(
-            AppError.notFound("Nenhum centro de custo sugerido pela IA."),
-         );
+      if (!result.tagName) return ok(null);
       const match = tagOptions.find((t) => t.name === result.tagName);
-      if (!match)
-         return err(
-            AppError.notFound("Centro de custo sugerido não encontrado."),
-         );
+      if (!match) return ok(null);
       return ok(match.id);
    });
 }
