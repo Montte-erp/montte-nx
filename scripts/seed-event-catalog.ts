@@ -1,6 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { createDb } from "@core/database/client";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import * as schema from "@core/database/schema";
 import { eventCatalog } from "@core/database/schemas/event-catalog";
 import { EVENT_CATEGORIES } from "@packages/events/catalog";
 import { AI_EVENTS } from "@packages/events/ai";
@@ -397,44 +399,49 @@ async function runSeed(env: string, dryRun: boolean) {
       return;
    }
 
-   const db = createDb({ databaseUrl });
-
-   let deleted: Array<{ id: string }>;
+   const pool = new Pool({ connectionString: databaseUrl, max: 1 });
+   const db = drizzle({ casing: "snake_case", client: pool, schema });
 
    try {
-      deleted = await db
-         .delete(eventCatalog)
-         .returning({ id: eventCatalog.id });
-   } catch (error) {
-      const cause = error instanceof Error ? error.cause : undefined;
-      const rootMessage =
-         cause instanceof Error
-            ? cause.message
-            : error instanceof Error
-              ? error.message
-              : String(error);
+      let deleted: Array<{ id: string }>;
 
-      if (
-         rootMessage.includes("relation") &&
-         rootMessage.includes("does not exist")
-      ) {
-         throw new Error(
-            "Table platform.event_catalog does not exist. Run 'bun run db:push' first.",
-         );
+      try {
+         deleted = await db
+            .delete(eventCatalog)
+            .returning({ id: eventCatalog.id });
+      } catch (error) {
+         const cause = error instanceof Error ? error.cause : undefined;
+         const rootMessage =
+            cause instanceof Error
+               ? cause.message
+               : error instanceof Error
+                 ? error.message
+                 : String(error);
+
+         if (
+            rootMessage.includes("relation") &&
+            rootMessage.includes("does not exist")
+         ) {
+            throw new Error(
+               "Table platform.event_catalog does not exist. Run 'bun run db:push' first.",
+            );
+         }
+
+         throw error;
       }
 
-      throw error;
+      console.log(`Deleted ${deleted.length} existing catalog entries.`);
+
+      const inserted = await db
+         .insert(eventCatalog)
+         .values(EVENT_PRICING.map(toSeedEntry))
+         .returning();
+
+      printSummary(inserted);
+      console.log(colors.green("\n--- Done ---"));
+   } finally {
+      await pool.end();
    }
-
-   console.log(`Deleted ${deleted.length} existing catalog entries.`);
-
-   const inserted = await db
-      .insert(eventCatalog)
-      .values(EVENT_PRICING.map(toSeedEntry))
-      .returning();
-
-   printSummary(inserted);
-   console.log(colors.green("\n--- Done ---"));
 }
 
 async function checkCatalog(env: string) {
@@ -443,8 +450,10 @@ async function checkCatalog(env: string) {
 
    console.log(colors.blue("🔍 Checking event catalog drift...\n"));
 
+   const pool = new Pool({ connectionString: databaseUrl, max: 1 });
+   const db = drizzle({ casing: "snake_case", client: pool, schema });
+
    try {
-      const db = createDb({ databaseUrl });
       const rows = await db
          .select({ eventName: eventCatalog.eventName })
          .from(eventCatalog);
@@ -497,6 +506,8 @@ async function checkCatalog(env: string) {
          error,
       );
       process.exit(1);
+   } finally {
+      await pool.end();
    }
 }
 
