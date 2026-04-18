@@ -18,6 +18,7 @@ import {
    getFacetedUniqueValues,
    useReactTable,
 } from "@tanstack/react-table";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import { Store, useStore } from "@tanstack/react-store";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import { useLocalStorage } from "foxact/use-local-storage";
@@ -32,10 +33,6 @@ import {
    useState,
 } from "react";
 import type React from "react";
-
-// =============================================================================
-// Types
-// =============================================================================
 
 export type DataTableStoredState = {
    columnOrder: string[];
@@ -67,10 +64,6 @@ declare module "@tanstack/react-table" {
    }
 }
 
-// =============================================================================
-// Context
-// =============================================================================
-
 type DataTableContextValue<TData> = {
    store: Store<DataTableStoreState>;
    table: Table<TData>;
@@ -95,10 +88,6 @@ export function useDataTableStore<T>(
    const { store } = useDataTableContext();
    return useStore(store, selector);
 }
-
-// =============================================================================
-// DataTableRoot
-// =============================================================================
 
 interface DataTableRootProps<TData, TValue> {
    children: React.ReactNode;
@@ -157,7 +146,6 @@ export function DataTableRoot<TData, TValue>({
          }),
    );
 
-   // Sync props into store
    useEffect(() => {
       store.setState((s) => ({ ...s, data: data as unknown[] }));
    }, [data, store]);
@@ -180,7 +168,6 @@ export function DataTableRoot<TData, TValue>({
          store.setState((s) => ({ ...s, rowSelection: externalRowSelection }));
    }, [externalRowSelection, store]);
 
-   // Debounced persistence
    const persistDebounced = useDebouncedCallback(
       (update: Partial<DataTablePersistedState>) => {
          setPersisted((prev) => ({
@@ -191,7 +178,6 @@ export function DataTableRoot<TData, TValue>({
       { wait: 350 },
    );
 
-   // Sorting handlers
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
       (updater) => {
          const next =
@@ -204,7 +190,6 @@ export function DataTableRoot<TData, TValue>({
       [store, persistDebounced],
    );
 
-   // Column filter handlers
    const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
       useCallback(
          (updater) => {
@@ -218,7 +203,6 @@ export function DataTableRoot<TData, TValue>({
          [store, persistDebounced],
       );
 
-   // Row selection handler
    const onRowSelectionChangeRef = useRef(onRowSelectionChange);
    useIsomorphicLayoutEffect(() => {
       onRowSelectionChangeRef.current = onRowSelectionChange;
@@ -242,7 +226,6 @@ export function DataTableRoot<TData, TValue>({
       [store],
    );
 
-   // Column visibility / table state
    const effectiveColumnVisibility = useStore(
       store,
       (s) => s.tableState?.columnVisibility ?? {},
@@ -286,14 +269,38 @@ export function DataTableRoot<TData, TValue>({
       [store],
    );
 
-   // Build columns (inject __actions)
    const allColumns = useMemo<ColumnDef<TData, TValue>[]>(() => {
+      const selectCol: ColumnDef<TData, unknown> = {
+         id: "__select",
+         header: ({ table }) => (
+            <Checkbox
+               aria-label="Select all"
+               checked={
+                  table.getIsAllPageRowsSelected() ||
+                  (table.getIsSomePageRowsSelected() && "indeterminate")
+               }
+               onCheckedChange={(value) =>
+                  table.toggleAllPageRowsSelected(!!value)
+               }
+            />
+         ),
+         cell: ({ row }) =>
+            row.depth > 0 ? null : (
+               <Checkbox
+                  aria-label="Select row"
+                  checked={row.getIsSelected()}
+                  onCheckedChange={(value) => row.toggleSelected(!!value)}
+               />
+            ),
+         enableSorting: false,
+         enableHiding: false,
+      };
       const actionsCol: ColumnDef<TData, unknown> = {
          id: "__actions",
          header: () => null,
          cell: renderActions
             ? ({ row }) => (
-                 <div className="flex items-center justify-end gap-1">
+                 <div className="flex items-center justify-end gap-2">
                     {renderActions({ row })}
                  </div>
               )
@@ -301,10 +308,13 @@ export function DataTableRoot<TData, TValue>({
          enableSorting: false,
          enableHiding: false,
       };
-      return [...columns, actionsCol as ColumnDef<TData, TValue>];
+      return [
+         selectCol as ColumnDef<TData, TValue>,
+         ...columns,
+         actionsCol as ColumnDef<TData, TValue>,
+      ];
    }, [columns, renderActions]);
 
-   // Reactive store values for table
    const sorting = useStore(store, (s) => s.sorting);
    const columnFilters = useStore(store, (s) => s.columnFilters);
    const rowSelection = useStore(store, (s) => s.rowSelection);
@@ -334,6 +344,7 @@ export function DataTableRoot<TData, TValue>({
          rowSelection,
          sorting,
          columnPinning: {
+            left: ["__select"],
             right: ["__actions"],
          },
       },

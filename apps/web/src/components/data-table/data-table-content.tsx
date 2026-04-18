@@ -2,7 +2,6 @@ import type { Row } from "@tanstack/react-table";
 import { flexRender } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@packages/ui/components/button";
-import { Checkbox } from "@packages/ui/components/checkbox";
 import {
    Table,
    TableBody,
@@ -14,18 +13,18 @@ import {
 import { cn } from "@packages/ui/lib/utils";
 import { useDataTableContext, useDataTableStore } from "./data-table-root";
 
-// =============================================================================
-// Body row
-// =============================================================================
-
 function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
    if (row.depth > 0) {
       return (
          <>
-            <TableCell className="w-[40px] p-0" />
             {row.getVisibleCells().map((cell, i) => (
                <TableCell
-                  className={cn("truncate text-sm", i === 0 && "pl-6")}
+                  className={cn(
+                     cell.column.id === "__select"
+                        ? "w-[40px] p-0"
+                        : "truncate text-sm",
+                     i === 1 && "pl-6",
+                  )}
                   key={cell.id}
                   style={{ maxWidth: cell.column.columnDef.maxSize }}
                >
@@ -38,20 +37,10 @@ function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
 
    return (
       <>
-         <TableCell className="w-[40px] px-2">
-            <div className="flex items-center gap-1">
-               {row.getCanExpand() && <span className="size-3.5 shrink-0" />}
-               <Checkbox
-                  aria-label="Select row"
-                  checked={row.getIsSelected()}
-                  onCheckedChange={(value) => row.toggleSelected(!!value)}
-               />
-            </div>
-         </TableCell>
          {row.getVisibleCells().map((cell) => (
             <TableCell
                className={cn(
-                  "truncate",
+                  cell.column.id === "__select" ? "w-[40px] px-2" : "truncate",
                   cell.column.columnDef.meta?.align === "right" && "text-right",
                   cell.column.columnDef.meta?.align === "center" &&
                      "text-center",
@@ -65,10 +54,6 @@ function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
       </>
    );
 }
-
-// =============================================================================
-// Body rows (with optional grouping)
-// =============================================================================
 
 function DataTableBodyRows<TData>({
    rows,
@@ -125,10 +110,6 @@ function DataTableBodyRows<TData>({
    return rows.map(renderRow);
 }
 
-// =============================================================================
-// DataTableContent
-// =============================================================================
-
 export function DataTableContent<TData>() {
    const { table, groupBy, renderGroupHeader } = useDataTableContext<TData>();
    const hasEmptyState = useDataTableStore((s) => s.hasEmptyState);
@@ -136,7 +117,7 @@ export function DataTableContent<TData>() {
 
    if (dataLength === 0 && hasEmptyState) return null;
 
-   const columnCount = table.getVisibleLeafColumns().length + 1;
+   const columnCount = table.getVisibleLeafColumns().length;
    const rows = table.getRowModel().rows;
 
    return (
@@ -148,22 +129,24 @@ export function DataTableContent<TData>() {
                      className="bg-muted/50 hover:bg-muted/50"
                      key={headerGroup.id}
                   >
-                     <TableHead className="w-[40px] px-2">
-                        <Checkbox
-                           aria-label="Select all"
-                           checked={
-                              table.getIsAllPageRowsSelected() ||
-                              (table.getIsSomePageRowsSelected() &&
-                                 "indeterminate")
-                           }
-                           onCheckedChange={(value) =>
-                              table.toggleAllPageRowsSelected(!!value)
-                           }
-                        />
-                     </TableHead>
                      {headerGroup.headers.map((header) => {
                         if (header.column.id === "__actions") {
                            return <TableHead className="w-0" key={header.id} />;
+                        }
+                        if (header.column.id === "__select") {
+                           return (
+                              <TableHead
+                                 className="w-[40px] px-2"
+                                 key={header.id}
+                              >
+                                 {header.isPlaceholder
+                                    ? null
+                                    : flexRender(
+                                         header.column.columnDef.header,
+                                         header.getContext(),
+                                      )}
+                              </TableHead>
+                           );
                         }
                         return (
                            <TableHead
@@ -179,7 +162,7 @@ export function DataTableContent<TData>() {
                            >
                               {header.isPlaceholder ? null : header.column.getCanSort() ? (
                                  <Button
-                                    className="h-8 gap-1.5 text-xs font-medium px-2"
+                                    className="h-8 gap-2 text-xs font-medium px-2"
                                     onClick={header.column.getToggleSortingHandler()}
                                     variant="ghost"
                                  >
@@ -188,12 +171,15 @@ export function DataTableContent<TData>() {
                                        header.getContext(),
                                     )}
                                     {header.column.getIsSorted() === "asc" ? (
-                                       <ArrowUp className="size-3.5" />
+                                       <ArrowUp data-icon="inline-end" />
                                     ) : header.column.getIsSorted() ===
                                       "desc" ? (
-                                       <ArrowDown className="size-3.5" />
+                                       <ArrowDown data-icon="inline-end" />
                                     ) : (
-                                       <ArrowUpDown className="size-3.5 opacity-50" />
+                                       <ArrowUpDown
+                                          className="opacity-50"
+                                          data-icon="inline-end"
+                                       />
                                     )}
                                  </Button>
                               ) : (
