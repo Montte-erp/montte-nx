@@ -1,9 +1,9 @@
 "use client";
 
-import { useDebouncedCallback } from "@tanstack/react-pacer";
+import { useAsyncDebouncedCallback } from "@tanstack/react-pacer";
 import { Link } from "@tanstack/react-router";
 import { FilterX, Plus, Search, X } from "lucide-react";
-import { useState } from "react";
+import { useForm } from "@tanstack/react-form";
 import type React from "react";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
@@ -23,130 +23,131 @@ function filterValueLabel(value: unknown): string {
 }
 
 interface DataTableToolbarProps {
-   searchColumnId?: string;
    searchPlaceholder?: string;
+   searchDefaultValue?: string;
+   onSearch?: (value: string) => Promise<void> | void;
    className?: string;
    children?: React.ReactNode;
 }
 
 export function DataTableToolbar({
-   searchColumnId,
    searchPlaceholder = "Buscar...",
+   searchDefaultValue = "",
+   onSearch,
    className,
    children,
 }: DataTableToolbarProps) {
    const { table, columnFilters } = useDataTable();
 
-   const currentSearchValue = searchColumnId
-      ? String(columnFilters.find((f) => f.id === searchColumnId)?.value ?? "")
-      : "";
+   const form = useForm({
+      defaultValues: { search: searchDefaultValue },
+   });
 
-   const [inputValue, setInputValue] = useState(currentSearchValue);
-
-   const applySearch = useDebouncedCallback(
-      (value: string) => {
-         if (!searchColumnId) return;
-         table.getColumn(searchColumnId)?.setFilterValue(value || undefined);
+   const debouncedSearch = useAsyncDebouncedCallback(
+      async (value: string) => {
+         await onSearch?.(value);
       },
       { wait: 350 },
    );
 
-   const activeFilters = columnFilters.filter((f) => {
-      if (f.id === searchColumnId) return false;
-      return f.value !== undefined && f.value !== null && f.value !== "";
-   });
+   const activeFilters = columnFilters.filter(
+      (f) => f.value !== undefined && f.value !== null && f.value !== "",
+   );
 
-   const hasAnyFilter =
-      columnFilters.length > 0 &&
-      columnFilters.some((f) => {
-         if (f.id === searchColumnId) return inputValue !== "";
-         return f.value !== undefined && f.value !== null && f.value !== "";
-      });
+   const inputValue = form.getFieldValue("search");
+   const hasAnyFilter = activeFilters.length > 0 || inputValue !== "";
 
    function removeFilter(columnId: string) {
       table.getColumn(columnId)?.setFilterValue(undefined);
-      if (columnId === searchColumnId) setInputValue("");
    }
 
-   function clearSearch() {
-      setInputValue("");
-      if (searchColumnId)
-         table.getColumn(searchColumnId)?.setFilterValue(undefined);
+   async function clearSearch() {
+      form.setFieldValue("search", "");
+      await onSearch?.("");
    }
 
-   function clearAll() {
+   async function clearAll() {
       table.resetColumnFilters();
-      setInputValue("");
+      if (inputValue !== "") {
+         form.setFieldValue("search", "");
+         await onSearch?.("");
+      }
    }
 
    return (
-      <div className={cn("flex flex-wrap items-center gap-2", className)}>
-         {searchColumnId && (
-            <InputGroup className="w-[220px]">
-               <InputGroupAddon>
-                  <Search className="text-muted-foreground" />
-               </InputGroupAddon>
-               <InputGroupInput
-                  placeholder={searchPlaceholder}
-                  value={inputValue}
-                  onChange={(e) => {
-                     setInputValue(e.target.value);
-                     applySearch(e.target.value);
-                  }}
-               />
-               {inputValue && (
-                  <InputGroupAddon align="inline-end">
-                     <InputGroupButton onClick={clearSearch}>
-                        <X />
-                        <span className="sr-only">Limpar busca</span>
-                     </InputGroupButton>
-                  </InputGroupAddon>
-               )}
-            </InputGroup>
-         )}
+      <div className={cn("flex items-center gap-2", className)}>
+         <div className="flex flex-1 flex-wrap items-center gap-2 min-w-0">
+            {onSearch && (
+               <form.Field name="search">
+                  {(field) => (
+                     <InputGroup className="flex-1 min-w-0 max-w-sm">
+                        <InputGroupAddon>
+                           <Search className="text-muted-foreground" />
+                        </InputGroupAddon>
+                        <InputGroupInput
+                           placeholder={searchPlaceholder}
+                           value={field.state.value}
+                           onChange={(e) => {
+                              field.handleChange(e.target.value);
+                              debouncedSearch(e.target.value);
+                           }}
+                        />
+                        {field.state.value && (
+                           <InputGroupAddon align="inline-end">
+                              <InputGroupButton onClick={clearSearch}>
+                                 <X />
+                                 <span className="sr-only">Limpar busca</span>
+                              </InputGroupButton>
+                           </InputGroupAddon>
+                        )}
+                     </InputGroup>
+                  )}
+               </form.Field>
+            )}
 
-         {activeFilters.map((filter) => {
-            const label =
-               table.getColumn(filter.id)?.columnDef.meta?.label ?? filter.id;
-            const valueLabel = filterValueLabel(filter.value);
-            return (
-               <Badge
-                  key={filter.id}
-                  variant="secondary"
-                  className="gap-1.5 pr-1 font-normal"
-               >
-                  <span className="text-muted-foreground">{label}</span>
-                  <span className="text-muted-foreground/40">·</span>
-                  <span className="font-medium text-foreground">
-                     {valueLabel}
-                  </span>
-                  <Button
-                     size="icon"
-                     variant="ghost"
-                     className="size-4 text-muted-foreground/50 hover:text-foreground hover:bg-accent"
-                     onClick={() => removeFilter(filter.id)}
+            {activeFilters.map((filter) => {
+               const label =
+                  table.getColumn(filter.id)?.columnDef.meta?.label ??
+                  filter.id;
+               const valueLabel = filterValueLabel(filter.value);
+               return (
+                  <Badge
+                     key={filter.id}
+                     variant="secondary"
+                     className="shrink-0 gap-1.5 pr-1 font-normal"
                   >
-                     <X />
-                     <span className="sr-only">Remover filtro {label}</span>
-                  </Button>
-               </Badge>
-            );
-         })}
+                     <span className="text-muted-foreground">{label}</span>
+                     <span className="text-muted-foreground/40">·</span>
+                     <span className="font-medium text-foreground">
+                        {valueLabel}
+                     </span>
+                     <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-4 text-muted-foreground/50 hover:text-foreground hover:bg-accent"
+                        onClick={() => removeFilter(filter.id)}
+                     >
+                        <X />
+                        <span className="sr-only">Remover filtro {label}</span>
+                     </Button>
+                  </Badge>
+               );
+            })}
 
-         {hasAnyFilter && (
-            <Button
-               variant="ghost"
-               size="sm"
-               className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-               onClick={clearAll}
-            >
-               <FilterX data-icon="inline-start" />
-               Limpar todos
-            </Button>
-         )}
-
+            {hasAnyFilter && (
+               <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  onClick={clearAll}
+               >
+                  <FilterX data-icon="inline-start" />
+                  Limpar todos
+               </Button>
+            )}
+         </div>
          {children && (
-            <div className="ml-auto flex items-center gap-2">{children}</div>
+            <div className="flex shrink-0 items-center gap-2">{children}</div>
          )}
       </div>
    );
