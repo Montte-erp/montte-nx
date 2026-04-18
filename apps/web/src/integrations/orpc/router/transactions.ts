@@ -15,6 +15,7 @@ import {
    replaceTransactionItems,
    updateTransaction,
    updateTransactionCategory,
+   updateTransactionTag,
    validateTransactionReferences,
 } from "@core/database/repositories/transactions-repository";
 import { ensureBankAccountOwnership } from "@core/database/repositories/bank-accounts-repository";
@@ -29,6 +30,7 @@ import { emitFinanceStatementImported } from "@packages/events/finance";
 import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
 import { enqueueCategorizationWorkflow } from "@packages/workflows/workflows/categorization-workflow";
+import { enqueueSuggestTagWorkflow } from "@packages/workflows/workflows/suggest-tag-workflow";
 import { withCreditEnforcement } from "../middlewares/credit-enforcement";
 import { protectedProcedure } from "../server";
 
@@ -124,6 +126,14 @@ export const create = protectedProcedure
             teamId: context.teamId,
             name: input.name ?? "",
             type: input.type,
+         });
+      }
+
+      if (transaction?.name && !tagId) {
+         await enqueueSuggestTagWorkflow(context.workflowClient, {
+            transactionId: transaction.id,
+            teamId: context.teamId,
+            name: transaction.name,
          });
       }
 
@@ -285,6 +295,16 @@ export const importStatement = withCreditEnforcement(
                   type: tx.type,
                });
             }
+         }
+      }
+
+      for (const tx of inserted) {
+         if (tx.name) {
+            await enqueueSuggestTagWorkflow(context.workflowClient, {
+               transactionId: tx.id,
+               teamId: context.teamId,
+               name: tx.name,
+            });
          }
       }
 
@@ -454,6 +474,13 @@ export const importBulk = protectedProcedure
                type: data.type,
             });
          }
+         if (transaction?.name && !tagId) {
+            await enqueueSuggestTagWorkflow(context.workflowClient, {
+               transactionId: transaction.id,
+               teamId: context.teamId,
+               name: transaction.name,
+            });
+         }
          imported++;
       }
       return { imported, skipped: 0 };
@@ -485,6 +512,36 @@ export const dismissSuggestedCategory = protectedProcedure
       await ensureTransactionOwnership(context.db, input.id, context.teamId);
       await updateTransactionCategory(context.db, input.id, {
          suggestedCategoryId: null,
+      });
+      return { ok: true };
+   });
+
+export const acceptSuggestedTag = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      const tx = await ensureTransactionOwnership(
+         context.db,
+         input.id,
+         context.teamId,
+      );
+      if (!tx.suggestedTagId) {
+         throw WebAppError.badRequest(
+            "Nenhuma sugestão de centro de custo disponível.",
+         );
+      }
+      await updateTransactionTag(context.db, input.id, {
+         tagId: tx.suggestedTagId,
+         suggestedTagId: null,
+      });
+      return { ok: true };
+   });
+
+export const dismissSuggestedTag = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      await ensureTransactionOwnership(context.db, input.id, context.teamId);
+      await updateTransactionTag(context.db, input.id, {
+         suggestedTagId: null,
       });
       return { ok: true };
    });

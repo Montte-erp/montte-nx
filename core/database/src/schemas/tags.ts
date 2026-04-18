@@ -23,6 +23,7 @@ export const tags = crmSchema.table(
       description: text("description"),
       isDefault: boolean("is_default").notNull().default(false),
       isArchived: boolean("is_archived").notNull().default(false),
+      keywords: text("keywords").array(),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),
