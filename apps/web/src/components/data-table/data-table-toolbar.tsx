@@ -3,7 +3,7 @@
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import { Link } from "@tanstack/react-router";
 import { FilterX, Plus, Search, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type React from "react";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
@@ -42,10 +42,6 @@ export function DataTableToolbar({
       : "";
 
    const [inputValue, setInputValue] = useState(currentSearchValue);
-
-   useEffect(() => {
-      setInputValue(currentSearchValue);
-   }, [currentSearchValue]);
 
    const applySearch = useDebouncedCallback(
       (value: string) => {
