@@ -1,49 +1,50 @@
 import dayjs from "dayjs";
-import { AppError, propagateError } from "@core/logging/errors";
+import { AppError } from "@core/logging/errors";
 import { eq } from "drizzle-orm";
+import { fromPromise } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
-import { financialSettings } from "@core/database/schemas/financial";
+import { financialConfig } from "@core/database/schemas/settings-financial";
 
-export async function getFinancialSettings(
-   db: DatabaseInstance,
-   teamId: string,
-) {
-   try {
-      const [settings] = await db
+export function getFinancialConfig(db: DatabaseInstance, teamId: string) {
+   return fromPromise(
+      db
          .select()
-         .from(financialSettings)
-         .where(eq(financialSettings.teamId, teamId));
-      return settings ?? null;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to get financial settings");
-   }
+         .from(financialConfig)
+         .where(eq(financialConfig.teamId, teamId))
+         .then(([row]) => row ?? null),
+      (e) =>
+         AppError.database("Falha ao buscar configurações financeiras.", {
+            cause: e,
+         }),
+   );
 }
 
-export async function upsertFinancialSettings(
+export function upsertFinancialConfig(
    db: DatabaseInstance,
    teamId: string,
    data: Partial<
       Omit<
-         typeof financialSettings.$inferInsert,
+         typeof financialConfig.$inferInsert,
          "teamId" | "createdAt" | "updatedAt"
       >
    >,
 ) {
-   try {
-      const [settings] = await db
-         .insert(financialSettings)
-         .values({ teamId, ...data })
-         .onConflictDoUpdate({
-            target: financialSettings.teamId,
-            set: { ...data, updatedAt: dayjs().toDate() },
-         })
-         .returning();
-      if (!settings)
-         throw AppError.database("Failed to upsert financial settings");
-      return settings;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to upsert financial settings");
-   }
+   return fromPromise(
+      (async () => {
+         const [row] = await db
+            .insert(financialConfig)
+            .values({ teamId, ...data })
+            .onConflictDoUpdate({
+               target: financialConfig.teamId,
+               set: { ...data, updatedAt: dayjs().toDate() },
+            })
+            .returning();
+         if (!row) throw new Error("no row returned");
+         return row;
+      })(),
+      (e) =>
+         AppError.database("Falha ao salvar configurações financeiras.", {
+            cause: e,
+         }),
+   );
 }
