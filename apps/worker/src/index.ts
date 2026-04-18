@@ -1,6 +1,6 @@
-import { env } from "@core/environment/web";
+import { env } from "@core/environment/worker";
 import { getWorkerLogger } from "@core/logging/worker";
-import { initOtel } from "@core/logging/otel";
+import { initOtel, shutdownOtel } from "@core/logging/otel";
 import { createDb } from "@core/database/client";
 import { createRedis } from "@core/redis/connection";
 import { createPostHog } from "@core/posthog/server";
@@ -32,4 +32,9 @@ launchDBOS({
    stripeClient,
    systemDatabaseUrl: env.DATABASE_URL,
    logLevel: env.LOG_LEVEL,
+   onShutdown: async () => {
+      posthog.shutdown();
+      redis.disconnect();
+      await shutdownOtel();
+   },
 });

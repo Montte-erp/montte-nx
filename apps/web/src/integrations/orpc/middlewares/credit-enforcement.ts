@@ -1,4 +1,4 @@
-import { WebAppError } from "@core/logging/errors";
+import { WebAppError } from "@core/logging";
 import { enforceCreditBudget, incrementUsage } from "@packages/events/credits";
 import { protectedProcedure } from "../server";
 

@@ -27,8 +27,8 @@ import {
    updateVariantSchema,
 } from "@core/database/schemas/services";
 import { createSubscriptionSchema } from "@core/database/schemas/subscriptions";
-import { AppError } from "@core/logging/errors";
-import { getLogger } from "@core/logging/root";
+import { AppError } from "@core/logging";
+import { getLogger } from "@core/logging";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 import {

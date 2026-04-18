@@ -16,7 +16,7 @@ import {
 } from "@core/database/repositories/transactions-repository";
 import { ensureBankAccountOwnership } from "@core/database/repositories/bank-accounts-repository";
 import { createBillSchema } from "@core/database/schemas/bills";
-import { AppError } from "@core/logging/errors";
+import { AppError } from "@core/logging";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

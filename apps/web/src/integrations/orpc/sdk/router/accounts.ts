@@ -13,7 +13,7 @@ import {
 } from "@montte/cli/contract";
 import dayjs from "dayjs";
 import { emitFinanceBankAccountConnected } from "@packages/events/finance";
-import { WebAppError } from "@core/logging/errors";
+import { WebAppError } from "@core/logging";
 import { createBillableProcedure } from "../billable";
 import { sdkProcedure } from "../server";
 

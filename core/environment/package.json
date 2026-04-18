@@ -12,6 +12,10 @@
          "types": "./dist/web.d.ts",
          "default": "./dist/web.js"
       },
+      "./worker": {
+         "types": "./dist/worker.d.ts",
+         "default": "./dist/worker.js"
+      },
       "./helpers": {
          "types": "./dist/helpers.d.ts",
          "default": "./dist/helpers.js"

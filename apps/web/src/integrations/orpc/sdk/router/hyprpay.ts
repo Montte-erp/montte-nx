@@ -1,6 +1,6 @@
 import { implementerInternal } from "@orpc/server";
 import { Result, err, ok } from "neverthrow";
-import { WebAppError } from "@core/logging/errors";
+import { WebAppError } from "@core/logging";
 import {
    createContact,
    getContactByExternalId,

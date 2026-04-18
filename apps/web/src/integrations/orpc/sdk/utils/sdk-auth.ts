@@ -1,4 +1,4 @@
-import { getLogger } from "@core/logging/root";
+import { getLogger } from "@core/logging";
 import { ResultAsync, err, errAsync, fromPromise, ok } from "neverthrow";
 import { auth } from "@/integrations/singletons";
 

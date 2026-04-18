@@ -14,7 +14,7 @@ import {
    ListTransactionsFilterSchema,
 } from "@montte/cli/contract";
 import dayjs from "dayjs";
-import { WebAppError } from "@core/logging/errors";
+import { WebAppError } from "@core/logging";
 import { emitFinanceTransactionCreated } from "@packages/events/finance";
 import { createBillableProcedure } from "../billable";
 import { sdkProcedure } from "../server";

@@ -55,6 +55,7 @@
       "@orpc/otel": "catalog:orpc",
       "@orpc/server": "catalog:orpc",
       "pino": "catalog:logging",
+      "pino-opentelemetry-transport": "catalog:telemetry",
       "posthog-node": "catalog:analytics-client",
       "zod": "catalog:validation"
    },

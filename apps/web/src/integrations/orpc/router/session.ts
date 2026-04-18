@@ -1,4 +1,4 @@
-import { WebAppError } from "@core/logging/errors";
+import { WebAppError } from "@core/logging";
 import { z } from "zod";
 import { protectedProcedure, publicProcedure } from "../server";
 

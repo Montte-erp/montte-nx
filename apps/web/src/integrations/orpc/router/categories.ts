@@ -15,7 +15,7 @@ import {
    updateCategorySchema,
 } from "@core/database/schemas/categories";
 import { user as userTable } from "@core/database/schemas/auth";
-import { WebAppError } from "@core/logging/errors";
+import { WebAppError } from "@core/logging";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { enqueueDeriveKeywordsWorkflow } from "@packages/workflows/queue";

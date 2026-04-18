@@ -3,7 +3,7 @@ import "@/integrations/otel/init";
 
 import handler, { createServerEntry } from "@tanstack/react-start/server-entry";
 import { env } from "@core/environment/web";
-import { initLogger } from "@core/logging/root";
+import { initLogger } from "@core/logging";
 
 initLogger({ name: "montte", level: env.LOG_LEVEL });
 

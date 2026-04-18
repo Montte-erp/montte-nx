@@ -6,7 +6,7 @@ import {
 } from "@core/database/schemas/auth";
 import { generatePresignedPutUrl } from "@core/files/client";
 import { minioClient } from "@/integrations/singletons";
-import { WebAppError } from "@core/logging/errors";
+import { WebAppError } from "@core/logging";
 import { fromPromise } from "neverthrow";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";

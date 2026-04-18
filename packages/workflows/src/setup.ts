@@ -12,11 +12,16 @@ import type { DeriveKeywordsInput } from "./workflows/derive-keywords.workflow";
 type LaunchConfig = WorkflowDeps & {
    systemDatabaseUrl: string;
    logLevel?: string;
+   onShutdown?: () => Promise<void>;
 };
+
+let running = false;
+const consumerConns: WorkflowDeps["redis"][] = [];
 
 export function launchDBOS({
    systemDatabaseUrl,
    logLevel,
+   onShutdown,
    ...deps
 }: LaunchConfig) {
    const logger = getWorkerLogger({
@@ -35,6 +40,7 @@ export function launchDBOS({
    DBOS.launch()
       .then(async () => {
          logger.info("DBOS runtime started");
+         running = true;
          await DBOS.applySchedules([
             {
                scheduleName: "backfill-keywords-daily",
@@ -48,8 +54,22 @@ export function launchDBOS({
          logger.error({ err }, "DBOS launch failed");
       });
 
-   process.on("SIGTERM", () => void DBOS.shutdown());
-   process.on("SIGINT", () => void DBOS.shutdown());
+   async function gracefulShutdown(signal: string) {
+      logger.info(`${signal} received — shutting down`);
+      running = false;
+
+      for (const conn of consumerConns) {
+         conn.disconnect();
+      }
+
+      await DBOS.shutdown();
+      await onShutdown?.();
+      logger.info("Shutdown complete");
+      process.exit(0);
+   }
+
+   process.on("SIGTERM", () => void gracefulShutdown("SIGTERM"));
+   process.on("SIGINT", () => void gracefulShutdown("SIGINT"));
 }
 
 function startConsumerLoops(
@@ -58,6 +78,8 @@ function startConsumerLoops(
 ) {
    const categorizeConn = redis.duplicate();
    const deriveConn = redis.duplicate();
+
+   consumerConns.push(categorizeConn, deriveConn);
 
    void runConsumerLoop<CategorizationInput>(
       categorizeConn,
@@ -86,8 +108,8 @@ async function runConsumerLoop<T>(
    handler: (input: T) => Promise<void>,
    logger: ReturnType<typeof getWorkerLogger>,
 ) {
-   for (;;) {
-      const result = await conn.blpop(key, 0);
+   while (running) {
+      const result = await conn.blpop(key, 1).catch(() => null);
       if (!result) continue;
       const [, raw] = result;
       try {

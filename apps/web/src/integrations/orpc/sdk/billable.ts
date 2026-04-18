@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { WebAppError } from "@core/logging/errors";
+import { WebAppError } from "@core/logging";
 import type { DatabaseInstance } from "@core/database/client";
 import { user as userTable } from "@core/database/schemas/auth";
 import { createEmitFn } from "@packages/events/emit";

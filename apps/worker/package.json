@@ -4,7 +4,8 @@
    "type": "module",
    "scripts": {
       "build": "bun build src/index.ts --outdir dist --target bun --packages external",
-      "start": "bun dist/index.js",
+      "start": "bun --env-file ../web/.env.local dist/index.js",
+      "dev": "bun --env-file ../web/.env.local run src/index.ts",
       "typecheck": "tsgo"
    },
    "dependencies": {

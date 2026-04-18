@@ -1,4 +1,4 @@
-import { getLogger } from "@core/logging/root";
+import { getLogger } from "@core/logging";
 import { createFileRoute } from "@tanstack/react-router";
 import { minioClient } from "@/integrations/singletons";
 

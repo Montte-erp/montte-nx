@@ -1,6 +1,6 @@
 import { eventIterator } from "@orpc/server";
 import { jobNotificationSchema } from "@packages/notifications/schema";
-import { getLogger } from "@core/logging/root";
+import { getLogger } from "@core/logging";
 import { protectedProcedure } from "../server";
 
 const logger = getLogger().child({ module: "notifications.subscribe" });

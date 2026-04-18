@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { fromPromise } from "neverthrow";
 import { eventCatalog } from "@core/database/schemas/event-catalog";
-import { WebAppError } from "@core/logging/errors";
+import { WebAppError } from "@core/logging";
 import {
    EVENT_PRICES,
    FREE_TIER_LIMITS,

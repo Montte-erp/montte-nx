@@ -18,8 +18,8 @@ import {
    markTeamOnboardingComplete,
    updateInsightCache,
 } from "@core/database/repositories/onboarding-repository";
-import { WebAppError } from "@core/logging/errors";
-import { getLogger } from "@core/logging/root";
+import { WebAppError } from "@core/logging";
+import { getLogger } from "@core/logging";
 import { createSlug } from "@core/utils/text";
 
 const logger = getLogger().child({ module: "router:onboarding" });

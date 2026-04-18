@@ -1,7 +1,7 @@
 import { os } from "@orpc/server";
 import type { PostHog } from "@core/posthog/server";
 import type { DatabaseInstance } from "@core/database/client";
-import { WebAppError } from "@core/logging/errors";
+import { WebAppError } from "@core/logging";
 import { authenticateRequest } from "./utils/sdk-auth";
 import type { AuthError } from "./utils/sdk-auth";
 
