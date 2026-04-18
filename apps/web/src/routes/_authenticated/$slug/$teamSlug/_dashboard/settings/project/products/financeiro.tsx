@@ -1,25 +1,14 @@
 import { Button } from "@packages/ui/components/button";
 import { Label } from "@packages/ui/components/label";
-import {
-   Select,
-   SelectContent,
-   SelectItem,
-   SelectTrigger,
-   SelectValue,
-} from "@packages/ui/components/select";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Switch } from "@packages/ui/components/switch";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import dayjs from "dayjs";
-import "dayjs/locale/pt-br";
 import { Loader2 } from "lucide-react";
 import { Suspense } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
-
-dayjs.locale("pt-br");
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro",
@@ -30,25 +19,9 @@ export const Route = createFileRoute(
    component: FinanceiroSettingsPage,
 });
 
-const CURRENCIES = [
-   { value: "BRL", label: "Real Brasileiro (BRL)" },
-   { value: "USD", label: "Dólar Americano (USD)" },
-   { value: "EUR", label: "Euro (EUR)" },
-];
-
-const MONTHS = Array.from({ length: 12 }, (_, i) => ({
-   value: i + 1,
-   label: dayjs().month(i).format("MMMM"),
-}));
-
-const DUE_DAYS = [7, 14, 30, 45, 60];
-
 function FinanceiroSettingsForm() {
    const { data: settings } = useSuspenseQuery(
       orpc.financialSettings.getSettings.queryOptions({}),
-   );
-   const { data: bankAccounts } = useSuspenseQuery(
-      orpc.bankAccounts.getAll.queryOptions({}),
    );
 
    const mutation = useMutation(
@@ -60,14 +33,7 @@ function FinanceiroSettingsForm() {
 
    const form = useForm({
       defaultValues: {
-         defaultCurrency: settings?.defaultCurrency ?? "BRL",
-         fiscalYearStartMonth: settings?.fiscalYearStartMonth ?? 1,
-         defaultPaymentDueDays: settings?.defaultPaymentDueDays ?? 30,
-         autoCategorizationEnabled: settings?.autoCategorizationEnabled ?? true,
-         defaultIncomeBankAccountId:
-            settings?.defaultIncomeBankAccountId ?? null,
-         defaultExpenseBankAccountId:
-            settings?.defaultExpenseBankAccountId ?? null,
+         costCenterRequired: settings?.costCenterRequired ?? false,
       },
       onSubmit: ({ value }) => {
          mutation.mutate(value);
@@ -93,146 +59,17 @@ function FinanceiroSettingsForm() {
 
             <div className="flex flex-col gap-4">
                <form.Field
-                  name="defaultCurrency"
-                  children={(field) => (
-                     <div className="flex flex-col gap-2">
-                        <Label htmlFor={field.name}>Moeda padrão</Label>
-                        <Select
-                           value={field.state.value}
-                           onValueChange={(v) => field.handleChange(v)}
-                        >
-                           <SelectTrigger id={field.name}>
-                              <SelectValue placeholder="Selecionar moeda…" />
-                           </SelectTrigger>
-                           <SelectContent>
-                              {CURRENCIES.map((c) => (
-                                 <SelectItem key={c.value} value={c.value}>
-                                    {c.label}
-                                 </SelectItem>
-                              ))}
-                           </SelectContent>
-                        </Select>
-                     </div>
-                  )}
-               />
-
-               <form.Field
-                  name="fiscalYearStartMonth"
-                  children={(field) => (
-                     <div className="flex flex-col gap-2">
-                        <Label htmlFor={field.name}>Início do ano fiscal</Label>
-                        <Select
-                           value={String(field.state.value)}
-                           onValueChange={(v) => field.handleChange(Number(v))}
-                        >
-                           <SelectTrigger id={field.name}>
-                              <SelectValue placeholder="Selecionar mês…" />
-                           </SelectTrigger>
-                           <SelectContent>
-                              {MONTHS.map((m) => (
-                                 <SelectItem
-                                    key={m.value}
-                                    value={String(m.value)}
-                                 >
-                                    {m.label}
-                                 </SelectItem>
-                              ))}
-                           </SelectContent>
-                        </Select>
-                     </div>
-                  )}
-               />
-
-               <form.Field
-                  name="defaultPaymentDueDays"
-                  children={(field) => (
-                     <div className="flex flex-col gap-2">
-                        <Label htmlFor={field.name}>
-                           Prazo padrão de vencimento
-                        </Label>
-                        <Select
-                           value={String(field.state.value)}
-                           onValueChange={(v) => field.handleChange(Number(v))}
-                        >
-                           <SelectTrigger id={field.name}>
-                              <SelectValue placeholder="Selecionar prazo…" />
-                           </SelectTrigger>
-                           <SelectContent>
-                              {DUE_DAYS.map((d) => (
-                                 <SelectItem key={d} value={String(d)}>
-                                    {d} dias
-                                 </SelectItem>
-                              ))}
-                           </SelectContent>
-                        </Select>
-                     </div>
-                  )}
-               />
-
-               <form.Field
-                  name="autoCategorizationEnabled"
+                  name="costCenterRequired"
                   children={(field) => (
                      <div className="flex items-center justify-between">
                         <Label htmlFor={field.name}>
-                           Categorização automática
+                           Centro de custo obrigatório
                         </Label>
                         <Switch
                            id={field.name}
                            checked={field.state.value}
                            onCheckedChange={(v) => field.handleChange(v)}
                         />
-                     </div>
-                  )}
-               />
-
-               <form.Field
-                  name="defaultIncomeBankAccountId"
-                  children={(field) => (
-                     <div className="flex flex-col gap-2">
-                        <Label htmlFor={field.name}>
-                           Conta padrão para receitas
-                        </Label>
-                        <Select
-                           value={field.state.value ?? ""}
-                           onValueChange={(v) => field.handleChange(v || null)}
-                        >
-                           <SelectTrigger id={field.name}>
-                              <SelectValue placeholder="Selecionar conta…" />
-                           </SelectTrigger>
-                           <SelectContent>
-                              {bankAccounts.map((a) => (
-                                 <SelectItem key={a.id} value={a.id}>
-                                    {a.name}
-                                 </SelectItem>
-                              ))}
-                           </SelectContent>
-                        </Select>
-                     </div>
-                  )}
-               />
-
-               <form.Field
-                  name="defaultExpenseBankAccountId"
-                  children={(field) => (
-                     <div className="flex flex-col gap-2">
-                        <Label htmlFor={field.name}>
-                           Conta padrão para despesas
-                        </Label>
-                        <Select
-                           value={field.state.value ?? ""}
-                           onValueChange={(v) => field.handleChange(v || null)}
-                        >
-                           <SelectTrigger id={field.name}>
-                              <SelectValue placeholder="Selecionar conta…" />
-                           </SelectTrigger>
-                           <SelectContent>
-                              {bankAccounts.map((a) => (
-                                 <SelectItem key={a.id} value={a.id}>
-                                    {a.name}
-                                 </SelectItem>
-                              ))}
-                           </SelectContent>
-                        </Select>
                      </div>
                   )}
                />
@@ -262,7 +99,7 @@ function FinanceiroSettingsPage() {
       <Suspense
          fallback={
             <div className="flex flex-col gap-4 max-w-lg">
-               {Array.from({ length: 6 }).map((_, i) => (
+               {Array.from({ length: 3 }).map((_, i) => (
                   <Skeleton className="h-10 w-full" key={`skel-${i + 1}`} />
                ))}
             </div>

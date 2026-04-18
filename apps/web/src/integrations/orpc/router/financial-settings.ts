@@ -1,24 +1,33 @@
 import {
-   getFinancialSettings,
-   upsertFinancialSettings,
+   getFinancialConfig,
+   upsertFinancialConfig,
 } from "@core/database/repositories/financial-settings-repository";
-import { financialSettings } from "@core/database/schemas/financial";
-import { createInsertSchema } from "drizzle-zod";
+import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
-const financialSettingsSchema = createInsertSchema(financialSettings)
-   .omit({ teamId: true, createdAt: true, updatedAt: true })
-   .extend({
-      fiscalYearStartMonth: z.number().int().min(1).max(12).optional(),
-   });
+const updateSchema = z.object({
+   costCenterRequired: z.boolean(),
+});
 
 export const getSettings = protectedProcedure.handler(async ({ context }) => {
-   return getFinancialSettings(context.db, context.teamId);
+   return (await getFinancialConfig(context.db, context.teamId)).match(
+      (config) => config,
+      (e) => {
+         throw WebAppError.fromAppError(e);
+      },
+   );
 });
 
 export const upsertSettings = protectedProcedure
-   .input(financialSettingsSchema.partial())
+   .input(updateSchema)
    .handler(async ({ context, input }) => {
-      return upsertFinancialSettings(context.db, context.teamId, input);
+      return (
+         await upsertFinancialConfig(context.db, context.teamId, input)
+      ).match(
+         (config) => config,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
    });
