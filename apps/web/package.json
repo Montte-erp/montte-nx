@@ -11,7 +11,8 @@
       "preview": "bun --bun vite preview",
       "test": "vitest run --passWithNoTests",
       "typecheck": "tsgo",
-      "check": "oxlint ."
+      "check": "oxlint .",
+      "worker": "bun run src/worker.ts"
    },
    "dependencies": {
       "@core/authentication": "workspace:*",

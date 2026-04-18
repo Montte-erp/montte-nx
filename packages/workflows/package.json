@@ -11,6 +11,10 @@
       "./setup": {
          "types": "./dist/setup.d.ts",
          "default": "./dist/setup.js"
+      },
+      "./queue": {
+         "types": "./dist/queue.d.ts",
+         "default": "./dist/queue.js"
       }
    },
    "scripts": {

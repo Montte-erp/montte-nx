@@ -109,7 +109,9 @@ export const getAll = protectedProcedure
 **Router errors** — `WebAppError` only (NOT `ORPCError`, `Error`, `AppError`):
 `notFound` · `forbidden` · `unauthorized` · `badRequest` · `conflict` · `internal` · `tooManyRequests` · `fromAppError(appError)`
 
-**Repository errors** (`core/database/src/repositories/`) — `neverthrow` + `AppError`. Return `ResultAsync<T, AppError>` via `fromPromise`:
+**Repository errors** (`core/database/src/repositories/`) — `neverthrow` + `AppError`. Return `ResultAsync<T, AppError>` via `fromPromise`.
+
+**Mensagens de erro sempre em pt-BR** — o texto de `AppError` e `WebAppError` é exibido diretamente no toast do frontend, sem redefinição no front. Nunca use inglês em mensagens de erro de repositório ou router.
 
 ```typescript
 import { fromPromise } from "neverthrow";
@@ -118,10 +120,10 @@ export function createItem(db: DatabaseInstance, data: CreateItemInput) {
    return fromPromise(
       (async () => {
          const [row] = await db.insert(...).values(data).returning();
-         if (!row) throw AppError.database("Failed");
+         if (!row) throw AppError.database("Falha ao criar item.");
          return row;
       })(),
-      (e) => (e instanceof AppError ? e : AppError.database("Failed", { cause: e })),
+      (e) => AppError.database("Falha ao criar item.", { cause: e }),
    );
 }
 ```

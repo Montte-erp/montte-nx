@@ -18,7 +18,7 @@ import { user as userTable } from "@core/database/schemas/auth";
 import { WebAppError } from "@core/logging/errors";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { startDeriveKeywordsWorkflow } from "@packages/workflows/setup";
+import { enqueueDeriveKeywordsWorkflow } from "@packages/workflows/queue";
 import { protectedProcedure } from "../server";
 
 const idSchema = z.object({ id: z.string().uuid() });
@@ -45,7 +45,7 @@ export const create = protectedProcedure
             throw WebAppError.fromAppError(e);
          },
       );
-      startDeriveKeywordsWorkflow({
+      await enqueueDeriveKeywordsWorkflow(context.redis, {
          categoryId: category.id,
          teamId: context.teamId,
          organizationId: context.organizationId,
@@ -116,7 +116,7 @@ export const update = protectedProcedure
             where: eq(userTable.id, context.userId),
             columns: { stripeCustomerId: true },
          });
-         startDeriveKeywordsWorkflow({
+         await enqueueDeriveKeywordsWorkflow(context.redis, {
             categoryId: category.id,
             teamId: context.teamId,
             organizationId: context.organizationId,
@@ -195,7 +195,7 @@ export const importBatch = protectedProcedure
          },
       );
       for (const created of parents) {
-         startDeriveKeywordsWorkflow({
+         await enqueueDeriveKeywordsWorkflow(context.redis, {
             categoryId: created.id,
             teamId: context.teamId,
             organizationId: context.organizationId,
