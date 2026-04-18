@@ -8,6 +8,6 @@
       "startCommand": "bun apps/worker/dist/index.js",
       "restartPolicyType": "ON_FAILURE",
       "restartPolicyMaxRetries": 5,
-      "drainingSeconds": "30"
+      "drainingSeconds": 30
    }
 }
