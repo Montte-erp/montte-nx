@@ -4,14 +4,14 @@ Aplicação principal do Montte — ERP com dashboard, rotas SSR via TanStack St
 
 ## Importante
 
-Esta aplicação **não executa workflows DBOS**. Ela apenas enfileira jobs via Redis:
+Esta aplicação **não executa workflows DBOS**. Enfileira jobs via `DBOSClient` (durável, PostgreSQL-backed):
 
 ```ts
-import { enqueueCategorizationWorkflow } from "@packages/workflows/queue";
-await enqueueCategorizationWorkflow(context.redis, input);
+import { enqueueCategorizationWorkflow } from "@packages/workflows/workflows/categorization-workflow";
+await enqueueCategorizationWorkflow(context.workflowClient, input);
 ```
 
-O processamento em background é feito pelo serviço `apps/worker`.
+`workflowClient` é um `DBOSClient` resolvido no middleware oRPC (`singletons.ts`). O processamento em background é feito pelo serviço `apps/worker`.
 
 ## Stack
 
@@ -25,6 +25,7 @@ O processamento em background é feito pelo serviço `apps/worker`.
 | UI            | `@packages/ui` (Radix + Tailwind + CVA)                        |
 | Auth          | Better Auth (`@core/authentication`)                           |
 | AI            | TanStack AI + OpenRouter                                       |
+| Jobs          | `DBOSClient` → `apps/worker` (DBOS queues nativas)            |
 | Testes        | Vitest + PGlite (Postgres in-memory)                           |
 
 ## Desenvolvimento local
@@ -33,7 +34,7 @@ O processamento em background é feito pelo serviço `apps/worker`.
 # Containers (Postgres, Redis, MinIO)
 cd apps/web && docker compose up -d
 
-# Na raiz do monorepo
+# Na raiz do monorepo (inicia web + worker em paralelo)
 bun dev
 ```
 
@@ -62,10 +63,11 @@ src/
 ├── features/          # Componentes e hooks por feature
 ├── hooks/             # Hooks compartilhados
 ├── integrations/
-│   └── orpc/
-│       ├── router/    # Handlers dos procedures oRPC
-│       ├── server.ts  # Setup do servidor oRPC
-│       └── client.ts  # Client oRPC + inferência de tipos
+│   ├── orpc/
+│   │   ├── router/    # Handlers dos procedures oRPC
+│   │   ├── server.ts  # Setup do servidor + contexto (workflowClient, redis, db...)
+│   │   └── client.ts  # Client oRPC + inferência de tipos
+│   └── singletons.ts  # Singletons do processo (db, redis, workflowClient, auth...)
 ├── layout/            # Layout do dashboard, sidebar, navegação
 ├── lib/               # Utilitários (persisted-store, etc.)
 ├── routes/            # Rotas file-based do TanStack Router
