@@ -266,20 +266,15 @@ export const pay = protectedProcedure
 
       const transactionType = bill.type === "payable" ? "expense" : "income";
 
-      const transaction = await createTransaction(
-         db,
-         teamId,
-         {
-            name: bill.name,
-            type: transactionType,
-            amount,
-            description: bill.description ?? null,
-            date,
-            bankAccountId: resolvedBankAccountId,
-            categoryId: bill.categoryId ?? null,
-         },
-         [],
-      );
+      const transaction = await createTransaction(db, teamId, {
+         name: bill.name,
+         type: transactionType,
+         amount,
+         description: bill.description ?? null,
+         date,
+         bankAccountId: resolvedBankAccountId,
+         categoryId: bill.categoryId ?? null,
+      });
 
       if (!transaction) {
          throw AppError.database("Falha ao criar transação.");

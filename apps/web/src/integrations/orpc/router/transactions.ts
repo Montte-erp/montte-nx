@@ -10,7 +10,7 @@ import {
    deleteTransaction,
    ensureTransactionOwnership,
    getTransactionsSummary,
-   getTransactionWithTags,
+   getTransactionWithTag,
    listTransactions,
    replaceTransactionItems,
    updateTransaction,
@@ -34,7 +34,7 @@ import { protectedProcedure } from "../server";
 const idSchema = z.object({ id: z.string().uuid() });
 
 const tagAndItemsSchema = z.object({
-   tagIds: z.array(z.string().uuid()).optional().default([]),
+   tagId: z.string().uuid().nullable().optional(),
    items: z
       .array(
          z.object({
@@ -80,12 +80,12 @@ export const create = protectedProcedure
          .merge(z.object({ autoCategorize: z.boolean().default(false) })),
    )
    .handler(async ({ context, input }) => {
-      const { tagIds, items, autoCategorize, ...data } = input;
+      const { tagId, items, autoCategorize, ...data } = input;
       await validateTransactionReferences(context.db, context.teamId, {
          bankAccountId: data.bankAccountId,
          destinationBankAccountId: data.destinationBankAccountId,
          categoryId: data.type === "transfer" ? null : data.categoryId,
-         tagIds,
+         tagId,
          contactId: data.contactId,
          date: data.date,
       });
@@ -99,7 +99,7 @@ export const create = protectedProcedure
          context.db,
          context.teamId,
          txData,
-         tagIds,
+         tagId ?? undefined,
       );
 
       if (items.length > 0 && transaction) {
@@ -147,7 +147,7 @@ export const getById = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
       await ensureTransactionOwnership(context.db, input.id, context.teamId);
-      return getTransactionWithTags(context.db, input.id);
+      return getTransactionWithTag(context.db, input.id);
    });
 
 export const update = protectedProcedure
@@ -166,20 +166,20 @@ export const update = protectedProcedure
          input.bankAccountId ||
          input.destinationBankAccountId ||
          input.categoryId ||
-         input.tagIds ||
+         input.tagId ||
          input.contactId
       ) {
          await validateTransactionReferences(context.db, context.teamId, {
             bankAccountId: input.bankAccountId ?? existing.bankAccountId,
             destinationBankAccountId: input.destinationBankAccountId,
             categoryId: input.categoryId,
-            tagIds: input.tagIds,
+            tagId: input.tagId,
             contactId: input.contactId,
             date: input.date ?? existing.date,
          });
       }
-      const { id, tagIds, items, ...data } = input;
-      const result = await updateTransaction(context.db, id, data, tagIds);
+      const { id, tagId, items, ...data } = input;
+      const result = await updateTransaction(context.db, id, data, tagId);
       if (items !== undefined) {
          await replaceTransactionItems(context.db, id, context.teamId, items);
       }
@@ -422,19 +422,19 @@ export const importBulk = protectedProcedure
    .handler(async ({ context, input }) => {
       let imported = 0;
       for (const t of input.transactions) {
-         const { tagIds, items: _items, ...data } = t;
+         const { tagId, items: _items, ...data } = t;
          await validateTransactionReferences(context.db, context.teamId, {
             bankAccountId: data.bankAccountId,
             destinationBankAccountId: data.destinationBankAccountId,
             categoryId: data.categoryId,
-            tagIds,
+            tagId,
             date: data.date,
          });
          const transaction = await createTransaction(
             context.db,
             context.teamId,
             data,
-            tagIds,
+            tagId ?? undefined,
          );
          if (
             input.autoCategorize &&

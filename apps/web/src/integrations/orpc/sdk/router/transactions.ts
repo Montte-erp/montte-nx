@@ -66,20 +66,20 @@ export const create = createBillableProcedure("finance.transaction_created")
    .input(CreateTransactionSchema)
    .handler(async ({ context, input }) => {
       if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
-      const { tagIds, ...data } = input;
+      const { tagId, ...data } = input;
       await validateTransactionReferences(context.db, context.teamId, {
          bankAccountId: data.bankAccountId,
          destinationBankAccountId: data.destinationBankAccountId,
          categoryId: data.categoryId,
          contactId: data.contactId,
-         tagIds,
+         tagId,
          date: data.date,
       });
       const tx = await createTransaction(
          context.db,
          context.teamId,
          data,
-         tagIds,
+         tagId ?? undefined,
       );
       context.scheduleEmit(() =>
          emitFinanceTransactionCreated(context.emit, context.emitCtx, {
@@ -97,19 +97,19 @@ export const update = sdkProcedure
    .input(z.object({ id: z.string().uuid() }).merge(UpdateTransactionSchema))
    .handler(async ({ context, input }) => {
       if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
-      const { id, tagIds, ...data } = input;
+      const { id, tagId, ...data } = input;
       await ensureTransactionOwnership(context.db, id, context.teamId);
-      if (Object.keys(data).length > 0 || tagIds) {
+      if (Object.keys(data).length > 0 || tagId) {
          await validateTransactionReferences(context.db, context.teamId, {
             bankAccountId: data.bankAccountId,
             destinationBankAccountId: data.destinationBankAccountId,
             categoryId: data.categoryId,
             contactId: data.contactId,
-            tagIds,
+            tagId,
             date: data.date,
          });
       }
-      const tx = await updateTransaction(context.db, id, data, tagIds);
+      const tx = await updateTransaction(context.db, id, data, tagId);
       return mapTransaction(tx);
    });
 
