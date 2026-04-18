@@ -1,5 +1,6 @@
 import { Prompts } from "@posthog/ai";
 import { fromPromise, okAsync } from "neverthrow";
+import { env } from "@core/environment/web";
 
 export const POSTHOG_PROMPTS = {
    categorizeTransaction: {
@@ -21,16 +22,13 @@ export const POSTHOG_PROMPTS = {
 
 export type PromptKey = keyof typeof POSTHOG_PROMPTS;
 
-const client =
-   process.env.POSTHOG_HOST &&
-   process.env.POSTHOG_KEY &&
-   process.env.POSTHOG_PERSONAL_API_KEY
-      ? new Prompts({
-           personalApiKey: process.env.POSTHOG_PERSONAL_API_KEY,
-           projectApiKey: process.env.POSTHOG_KEY,
-           host: process.env.POSTHOG_HOST,
-        })
-      : null;
+const client = env.POSTHOG_PERSONAL_API_KEY
+   ? new Prompts({
+        personalApiKey: env.POSTHOG_PERSONAL_API_KEY,
+        projectApiKey: env.POSTHOG_KEY,
+        host: env.POSTHOG_HOST,
+     })
+   : null;
 
 export function fetchSystemPrompt(promptKey: PromptKey) {
    const { name, fallback } = POSTHOG_PROMPTS[promptKey];
