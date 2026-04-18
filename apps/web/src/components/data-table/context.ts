@@ -37,8 +37,10 @@ export interface DataTableContextValue<TData, TValue> {
 }
 
 export const DataTableContext = createContext<DataTableContextValue<
-   unknown,
-   unknown
+   // oxlint-ignore no-explicit-any
+   any,
+   // oxlint-ignore no-explicit-any
+   any
 > | null>(null);
 
 export function useDataTableContext<
