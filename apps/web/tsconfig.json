@@ -26,6 +26,7 @@
          "@packages/analytics/*": ["../../packages/analytics/src/*"],
          "@packages/events/*": ["../../packages/events/src/*"],
          "@packages/notifications/*": ["../../packages/notifications/src/*"],
+         "@packages/workflows/*": ["../../packages/workflows/src/*"],
          "@packages/ui/*": ["../../packages/ui/src/*"],
          "@montte/cli": ["../../libraries/cli/src/index.ts"],
          "@montte/cli/*": ["../../libraries/cli/src/*"],
@@ -76,6 +77,9 @@
       },
       {
          "path": "../../packages/notifications"
+      },
+      {
+         "path": "../../packages/workflows"
       }
    ]
 }

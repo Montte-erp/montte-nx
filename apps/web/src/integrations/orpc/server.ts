@@ -1,9 +1,9 @@
 import dayjs from "dayjs";
+import { fromPromise, fromThrowable } from "neverthrow";
 import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, os } from "@orpc/server";
 import type { AuthInstance } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
-import { AppError, WebAppError } from "@core/logging/errors";
 import type { PostHog } from "@core/posthog/server";
 import {
    captureError,
@@ -11,9 +11,11 @@ import {
    identifyUser,
    setGroup,
 } from "@core/posthog/server";
+import { AppError, WebAppError } from "@core/logging/errors";
 import type { Redis } from "@core/redis/connection";
 import type { StripeClient } from "@core/stripe";
 import { sanitizeData } from "@core/utils/sanitization";
+import { createJobPublisher } from "@packages/notifications/publisher";
 import {
    auth,
    db,
@@ -21,6 +23,8 @@ import {
    redis,
    stripeClient,
 } from "@/integrations/singletons";
+
+const jobPublisher = createJobPublisher(redis);
 
 export interface ORPCContext {
    headers: Headers;
@@ -31,9 +35,10 @@ export interface ORPCContextWithAuth extends ORPCContext {
    auth: AuthInstance;
    db: DatabaseInstance;
    session: Awaited<ReturnType<AuthInstance["api"]["getSession"]>> | null;
-   posthog?: PostHog;
-   stripeClient?: StripeClient;
-   redis?: Redis;
+   posthog: PostHog;
+   stripeClient: StripeClient;
+   redis: Redis;
+   jobPublisher: ReturnType<typeof createJobPublisher>;
 }
 
 export interface ORPCContextAuthenticated extends ORPCContextWithAuth {
@@ -49,28 +54,21 @@ export interface ORPCContextWithOrganization extends ORPCContextAuthenticated {
 const base = os.$context<ORPCContext>();
 
 const withDeps = base.use(async ({ context, next }) => {
-   const ctx = context as ORPCContext & Partial<ORPCContextWithAuth>;
-
-   let session: Awaited<ReturnType<typeof auth.api.getSession>> | null = null;
-   if (ctx.session !== undefined) {
-      session = ctx.session;
-   } else {
-      try {
-         session = await auth.api.getSession({ headers: context.headers });
-      } catch {
-         session = null;
-      }
-   }
+   const sessionResult = await fromPromise(
+      (async () => auth.api.getSession({ headers: context.headers }))(),
+      () => null,
+   );
 
    return next({
       context: {
          ...context,
-         auth: ctx.auth ?? auth,
-         db: ctx.db ?? db,
-         session,
-         posthog: ctx.posthog ?? posthog,
-         stripeClient: ctx.stripeClient ?? stripeClient,
-         redis: ctx.redis ?? redis,
+         auth,
+         db,
+         session: sessionResult.isOk() ? sessionResult.value : null,
+         posthog,
+         stripeClient,
+         redis,
+         jobPublisher,
       },
    });
 });
@@ -121,19 +119,9 @@ const withOrganization = withAuth.use(async ({ context, next }) => {
    });
 });
 
-const withErrorHandling = withOrganization.use(async ({ next }) => {
-   try {
-      return await next();
-   } catch (err) {
-      if (err instanceof ORPCError) throw err;
-      if (err instanceof AppError) throw WebAppError.fromAppError(err);
-      throw WebAppError.internal("Erro interno do servidor.", { cause: err });
-   }
-});
-
 const otelLogger = logs.getLogger("montte-web-orpc");
 
-const withTelemetry = withErrorHandling.use(
+const withTelemetry = withOrganization.use(
    async ({ context, path, next }, input) => {
       const startDate = dayjs().toDate();
       const userId = context.session?.user?.id;
@@ -163,85 +151,79 @@ const withTelemetry = withErrorHandling.use(
             email: userEmail,
             name: userName,
          });
-
-         if (organizationId) {
-            setGroup(context.posthog, organizationId, {});
-         }
+         if (organizationId) setGroup(context.posthog, organizationId, {});
       }
 
-      let isSuccess = true;
-      let error: Error | null = null;
+      const result = await fromPromise(
+         (async () => next())(),
+         (err): Error => (err instanceof Error ? err : new Error(String(err))),
+      );
 
-      try {
-         const result = await next();
-         return result;
-      } catch (err) {
-         isSuccess = false;
-         error = err instanceof Error ? err : new Error(String(err));
-         throw err;
-      } finally {
-         const durationMs = Date.now() - startDate.getTime();
+      const durationMs = Date.now() - startDate.getTime();
+      const isSuccess = result.isOk();
+      const error = result.isErr() ? result.error : null;
 
-         otelLogger.emit({
-            severityText: isSuccess ? "info" : "error",
-            body: isSuccess
-               ? `oRPC completed: ${path.join(".")} (${durationMs}ms)`
-               : `oRPC error: ${path.join(".")} — ${error?.message}`,
-            attributes: {
-               ...otelIdentity,
-               durationMs,
-               success: isSuccess,
-               ...(error
-                  ? { errorName: error.name, errorMessage: error.message }
-                  : {}),
-            },
-         });
+      otelLogger.emit({
+         severityText: isSuccess ? "info" : "error",
+         body: isSuccess
+            ? `oRPC completed: ${path.join(".")} (${durationMs}ms)`
+            : `oRPC error: ${path.join(".")} — ${error?.message}`,
+         attributes: {
+            ...otelIdentity,
+            durationMs,
+            success: isSuccess,
+            ...(error
+               ? { errorName: error.name, errorMessage: error.message }
+               : {}),
+         },
+      });
 
-         if (userId && context.posthog) {
-            try {
-               const rootPath = path[0];
-
-               if (!isSuccess && error) {
-                  const errorId = crypto.randomUUID();
-
-                  captureError(context.posthog, {
-                     code: "INTERNAL_SERVER_ERROR",
-                     errorId,
-                     input: sanitizeData(input),
-                     message: error.message,
-                     organizationId: organizationId || undefined,
-                     path: path.join("."),
-                     userId,
-                  });
-               }
-
-               captureServerEvent(context.posthog, {
-                  userId,
-                  event: "orpc_request",
-                  properties: {
-                     durationMs,
-                     endAt: dayjs().toISOString(),
-                     input: sanitizeData(input),
-                     path: path.join("."),
-                     rootPath,
-                     startAt: startDate.toISOString(),
-                     success: isSuccess,
-                     ...(isSuccess
-                        ? {}
-                        : {
-                             errorMessage: error?.message,
-                             errorName: error?.name,
-                          }),
-                  },
-                  groups: organizationId
-                     ? { organization: organizationId }
-                     : undefined,
+      if (userId && context.posthog) {
+         const safeCapture = fromThrowable(() => {
+            const rootPath = path[0];
+            if (!isSuccess && error) {
+               captureError(context.posthog!, {
+                  code: "INTERNAL_SERVER_ERROR",
+                  errorId: crypto.randomUUID(),
+                  input: sanitizeData(input),
+                  message: error.message,
+                  organizationId: organizationId || undefined,
+                  path: path.join("."),
+                  userId: userId!,
                });
-            } catch {
-               // Silently fail telemetry to not affect the main request
             }
-         }
+            captureServerEvent(context.posthog!, {
+               userId: userId!,
+               event: "orpc_request",
+               properties: {
+                  durationMs,
+                  endAt: dayjs().toISOString(),
+                  input: sanitizeData(input),
+                  path: path.join("."),
+                  rootPath,
+                  startAt: startDate.toISOString(),
+                  success: isSuccess,
+                  ...(isSuccess
+                     ? {}
+                     : {
+                          errorMessage: error?.message,
+                          errorName: error?.name,
+                       }),
+               },
+               groups: organizationId
+                  ? { organization: organizationId }
+                  : undefined,
+            });
+         });
+         safeCapture();
       }
+
+      if (result.isErr()) {
+         const error = result.error;
+         if (error instanceof AppError) throw WebAppError.fromAppError(error);
+         throw error;
+      }
+      return result.value;
    },
 );
 

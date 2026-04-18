@@ -7,6 +7,7 @@ import {
 import { generatePresignedPutUrl } from "@core/files/client";
 import { minioClient } from "@/integrations/singletons";
 import { WebAppError } from "@core/logging/errors";
+import { fromPromise, fromThrowable } from "neverthrow";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { authenticatedProcedure, protectedProcedure } from "../server";
@@ -50,10 +51,20 @@ export const getActiveOrganization = protectedProcedure.handler(
             return null;
          }
 
-         const subscriptions = await auth.api.listActiveSubscriptions({
-            headers,
-            query: { referenceId: org.id },
-         });
+         const callListSubs = fromThrowable(
+            () =>
+               auth.api.listActiveSubscriptions({
+                  headers,
+                  query: { referenceId: org.id },
+               }),
+            () => null,
+         );
+         const subsCallResult = callListSubs();
+         const subscriptions = await (subsCallResult.isOk()
+            ? fromPromise(subsCallResult.value, () => []).then((r) =>
+                 r.unwrapOr([]),
+              )
+            : Promise.resolve([]));
 
          const activeSubscription =
             subscriptions.find(
