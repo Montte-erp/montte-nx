@@ -11,6 +11,7 @@ import {
 } from "@packages/ui/components/table";
 
 interface DataTableSkeletonProps {
+   // oxlint-ignore no-explicit-any
    columns: ColumnDef<any, any>[];
    rows?: number;
 }
