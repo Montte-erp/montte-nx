@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { AppError, validateInput } from "@core/logging/errors";
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { fromPromise, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -10,7 +10,6 @@ import {
    createTagSchema,
    updateTagSchema,
 } from "@core/database/schemas/tags";
-import { transactionTags } from "@core/database/schemas/transactions";
 
 export function createTag(
    db: DatabaseInstance,
@@ -131,20 +130,17 @@ export function reactivateTag(db: DatabaseInstance, id: string) {
 
 export function tagHasTransactions(db: DatabaseInstance, tagId: string) {
    return fromPromise(
-      (async () => {
-         const [row] = await db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(transactionTags)
-            .where(eq(transactionTags.tagId, tagId));
-         return (row?.count ?? 0) > 0;
-      })(),
+      db.query.transactions.findFirst({
+         where: (fields, { eq }) => eq(fields.tagId, tagId),
+         columns: { id: true },
+      }),
       (e) =>
          e instanceof AppError
             ? e
             : AppError.database("Failed to check tag transactions", {
                  cause: e,
               }),
-   );
+   ).map((row) => row !== undefined);
 }
 
 export function deleteTag(db: DatabaseInstance, id: string) {
@@ -186,11 +182,11 @@ export function bulkDeleteTags(
          if (existing.length !== ids.length) {
             throw AppError.notFound("Uma ou mais tags não foram encontradas.");
          }
-         const withTransactions = await db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(transactionTags)
-            .where(inArray(transactionTags.tagId, ids));
-         if ((withTransactions[0]?.count ?? 0) > 0) {
+         const withTransaction = await db.query.transactions.findFirst({
+            where: (fields, { inArray }) => inArray(fields.tagId, ids),
+            columns: { id: true },
+         });
+         if (withTransaction) {
             throw AppError.conflict(
                "Centros de custo com lançamentos não podem ser excluídos. Use arquivamento.",
             );

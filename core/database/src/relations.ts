@@ -39,7 +39,6 @@ import { tags } from "@core/database/schemas/tags";
 import {
    transactionItems,
    transactions,
-   transactionTags,
 } from "@core/database/schemas/transactions";
 import {
    webhookDeliveries,
@@ -370,22 +369,11 @@ export const transactionsRelations = relations(
          fields: [transactions.contactId],
          references: [contacts.id],
       }),
-      transactionTags: many(transactionTags),
-      items: many(transactionItems),
-   }),
-);
-
-export const transactionTagsRelations = relations(
-   transactionTags,
-   ({ one }) => ({
-      transaction: one(transactions, {
-         fields: [transactionTags.transactionId],
-         references: [transactions.id],
-      }),
       tag: one(tags, {
-         fields: [transactionTags.tagId],
+         fields: [transactions.tagId],
          references: [tags.id],
       }),
+      items: many(transactionItems),
    }),
 );
 

@@ -1,10 +1,7 @@
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { setupTestDb } from "../helpers/setup-test-db";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
-import {
-   transactions,
-   transactionTags,
-} from "@core/database/schemas/transactions";
+import { transactions } from "@core/database/schemas/transactions";
 import * as repo from "../../src/repositories/tags-repository";
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
@@ -387,19 +384,13 @@ describe("tags-repository", () => {
             )
          )._unsafeUnwrap();
 
-         const [txn] = await testDb.db
-            .insert(transactions)
-            .values({
-               teamId,
-               type: "income",
-               amount: "50.00",
-               date: "2025-01-15",
-            })
-            .returning();
-
-         await testDb.db
-            .insert(transactionTags)
-            .values({ transactionId: txn!.id, tagId: tag.id });
+         await testDb.db.insert(transactions).values({
+            teamId,
+            type: "income",
+            amount: "50.00",
+            date: "2025-01-15",
+            tagId: tag.id,
+         });
 
          const result = await repo.bulkDeleteTags(testDb.db, [tag.id], teamId);
          expect(result._unsafeUnwrapErr().message).toMatch(/lançamentos/);
@@ -436,20 +427,14 @@ describe("tags-repository", () => {
             })
             .returning();
 
-         const [transaction] = await testDb.db
-            .insert(transactions)
-            .values({
-               teamId,
-               type: "expense",
-               amount: "100.00",
-               date: "2026-01-15",
-               bankAccountId: account!.id,
-            })
-            .returning();
-
-         await testDb.db
-            .insert(transactionTags)
-            .values({ transactionId: transaction!.id, tagId: tag.id });
+         await testDb.db.insert(transactions).values({
+            teamId,
+            type: "expense",
+            amount: "100.00",
+            date: "2026-01-15",
+            bankAccountId: account!.id,
+            tagId: tag.id,
+         });
 
          const result = await repo.deleteTag(testDb.db, tag.id);
          expect(result._unsafeUnwrapErr().message).toMatch(/lançamentos/);
