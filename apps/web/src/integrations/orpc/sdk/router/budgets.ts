@@ -13,7 +13,7 @@ import {
    ListBudgetGoalsFilterSchema,
 } from "@montte/cli/contract";
 import dayjs from "dayjs";
-import { WebAppError } from "@core/logging";
+import { WebAppError } from "@core/logging/errors";
 import { sdkProcedure } from "../server";
 
 function mapBudgetGoal(goal: {

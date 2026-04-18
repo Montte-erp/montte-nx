@@ -4,7 +4,7 @@ import { executeTimeSeriesQuery } from "@packages/analytics/compute-time-series"
 import { insightConfigSchema } from "@packages/analytics/types";
 import { getDefaultDashboard as fetchDefaultDashboard } from "@core/database/repositories/dashboard-repository";
 import { getInsightsByIds } from "@core/database/repositories/insight-repository";
-import { AppError } from "@core/logging";
+import { AppError } from "@core/logging/errors";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

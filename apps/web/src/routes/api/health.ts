@@ -1,4 +1,4 @@
-import { getLogger } from "@core/logging";
+import { getLogger } from "@core/logging/root";
 import { createFileRoute } from "@tanstack/react-router";
 import { sql } from "drizzle-orm";
 import { db, redis } from "@/integrations/singletons";

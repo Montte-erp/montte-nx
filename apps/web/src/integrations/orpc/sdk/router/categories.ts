@@ -12,7 +12,7 @@ import {
    UpdateCategorySchema,
 } from "@montte/cli/contract";
 import dayjs from "dayjs";
-import { WebAppError } from "@core/logging";
+import { WebAppError } from "@core/logging/errors";
 import { emitFinanceCategoryCreated } from "@packages/events/finance";
 import { createBillableProcedure } from "../billable";
 import { sdkProcedure } from "../server";

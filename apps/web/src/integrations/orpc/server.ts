@@ -11,7 +11,7 @@ import {
    identifyUser,
    setGroup,
 } from "@core/posthog/server";
-import { AppError, WebAppError } from "@core/logging";
+import { AppError, WebAppError } from "@core/logging/errors";
 import type { Redis } from "@core/redis/connection";
 import type { StripeClient } from "@core/stripe";
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";

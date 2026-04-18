@@ -25,7 +25,7 @@ import {
 } from "@core/database/schemas/transactions";
 import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceStatementImported } from "@packages/events/finance";
-import { WebAppError } from "@core/logging";
+import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
 import { enqueueCategorizationWorkflow } from "@packages/workflows/workflows/categorization-workflow";
 import { withCreditEnforcement } from "../middlewares/credit-enforcement";

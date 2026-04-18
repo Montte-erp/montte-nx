@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { cnpjDataSchema } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
-import { WebAppError } from "@core/logging";
+import { WebAppError } from "@core/logging/errors";
 import { team, teamMember } from "@core/database/schemas/auth";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";

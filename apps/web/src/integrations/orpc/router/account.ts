@@ -1,7 +1,7 @@
 import { generatePresignedPutUrl } from "@core/files/client";
 import { minioClient } from "@/integrations/singletons";
-import { WebAppError } from "@core/logging";
-import { getLogger } from "@core/logging";
+import { WebAppError } from "@core/logging/errors";
+import { getLogger } from "@core/logging/root";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

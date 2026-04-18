@@ -16,7 +16,7 @@ import {
    emitInsightDeleted,
    emitInsightUpdated,
 } from "@packages/events/insight";
-import { getLogger } from "@core/logging";
+import { getLogger } from "@core/logging/root";
 import { insightConfigSchema } from "@packages/analytics/types";
 import { eq } from "drizzle-orm";
 import { z } from "zod";

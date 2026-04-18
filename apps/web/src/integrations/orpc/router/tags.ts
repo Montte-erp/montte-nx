@@ -8,7 +8,7 @@ import {
    updateTag,
 } from "@core/database/repositories/tags-repository";
 import { createTagSchema, updateTagSchema } from "@core/database/schemas/tags";
-import { WebAppError } from "@core/logging";
+import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
