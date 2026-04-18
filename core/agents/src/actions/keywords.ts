@@ -26,14 +26,10 @@ const outputSchema = z.object({
 });
 
 export function deriveKeywordsWithAI(input: DeriveKeywordsAIInput) {
-   const userContent = `Gere palavras-chave para a categoria financeira abaixo. As palavras-chave devem ser termos comuns que aparecem em descrições de transações bancárias.
+   const userContent = `Categoria: ${input.name}${input.description ? `\nDescrição: ${input.description}` : ""}`;
 
-Categoria: ${input.name}${input.description ? `\nDescrição: ${input.description}` : ""}
-
-Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua variações, abreviações e termos relacionados.`;
-
-   return fromPromise(
-      fetchSystemPrompt("deriveKeywords").then((systemPrompt) =>
+   return fetchSystemPrompt("deriveKeywords").andThen((systemPrompt) =>
+      fromPromise(
          chat({
             adapter: openRouterText(input.model),
             systemPrompts: [systemPrompt],
@@ -46,7 +42,7 @@ Retorne entre 5 e 15 palavras-chave relevantes em português brasileiro. Inclua 
             outputSchema,
             stream: false,
          }).then((result) => result.keywords),
+         (e) => AppError.internal("AI keyword derivation failed", { cause: e }),
       ),
-      (e) => AppError.internal("AI keyword derivation failed", { cause: e }),
    );
 }

@@ -1,4 +1,5 @@
 import { Prompts } from "@posthog/ai";
+import { fromPromise, okAsync } from "neverthrow";
 
 export const POSTHOG_PROMPTS = {
    categorizeTransaction: {
@@ -32,13 +33,11 @@ function getClient(): Prompts | null {
    return _client;
 }
 
-export async function fetchSystemPrompt(promptKey: PromptKey): Promise<string> {
+export function fetchSystemPrompt(promptKey: PromptKey) {
    const { name, fallback } = POSTHOG_PROMPTS[promptKey];
-   try {
-      const client = getClient();
-      if (!client) return fallback;
-      return await client.get(name, { fallback });
-   } catch {
-      return fallback;
-   }
+   const client = getClient();
+   if (!client) return okAsync(fallback);
+   return fromPromise(client.get(name, { fallback }), () => fallback).orElse(
+      (fb) => okAsync(fb),
+   );
 }

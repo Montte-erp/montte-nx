@@ -45,20 +45,15 @@ export function inferCategoryWithAI(
       )
       .join("\n");
 
-   const userContent = `Classifique a transação abaixo na categoria mais adequada.
-
-Transação:
+   const userContent = `Transação:
 - Nome: ${input.name}${input.contactName ? `\n- Contato: ${input.contactName}` : ""}
 - Tipo: ${input.type === "income" ? "Receita" : "Despesa"}
 
 Categorias disponíveis:
-${categoryList}
+${categoryList}`;
 
-Retorne o nome exato de uma categoria da lista acima, ou null se nenhuma for adequada.
-Se tiver certeza, retorne confidence "high". Se estiver em dúvida, retorne "low".`;
-
-   return fromPromise(
-      fetchSystemPrompt("categorizeTransaction").then((systemPrompt) =>
+   return fetchSystemPrompt("categorizeTransaction").andThen((systemPrompt) =>
+      fromPromise(
          chat({
             adapter: openRouterText(model),
             systemPrompts: [systemPrompt],
@@ -76,7 +71,7 @@ Se tiver certeza, retorne confidence "high". Se estiver em dúvida, retorne "low
             if (!match) return null;
             return { categoryId: match.id, confidence: result.confidence };
          }),
+         (e) => AppError.internal("AI category inference failed", { cause: e }),
       ),
-      (e) => AppError.internal("AI category inference failed", { cause: e }),
    );
 }
