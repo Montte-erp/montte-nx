@@ -549,6 +549,19 @@ import {
 
 Repositories: `core/database/src/repositories/` — always `validateInput()`, `AppError`, `propagateError()`.
 
+**Transactions** — wrap almost every repository write in `db.transaction(async (tx) => { ... })`. Use `tx` instead of `db` inside. Single-statement reads are the only exception. Pattern:
+
+```typescript
+return fromPromise(
+   db.transaction(async (tx) => {
+      const [row] = await tx.update(table).set({ ...data }).where(eq(table.id, id)).returning();
+      if (!row) throw AppError.notFound("Registro não encontrado.");
+      return row;
+   }),
+   (e) => (e instanceof AppError ? e : AppError.database("Falha ao atualizar.", { cause: e })),
+);
+```
+
 ---
 
 ## Authentication (Better Auth)

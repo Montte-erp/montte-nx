@@ -89,6 +89,9 @@ export const transactions = financeSchema.table(
       tagId: uuid("tag_id").references(() => tags.id, {
          onDelete: "set null",
       }),
+      suggestedTagId: uuid("suggested_tag_id").references(() => tags.id, {
+         onDelete: "set null",
+      }),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),
@@ -112,6 +115,7 @@ export const transactions = financeSchema.table(
          table.statementPeriod,
       ),
       index("transactions_tag_id_idx").on(table.tagId),
+      index("transactions_suggested_tag_id_idx").on(table.suggestedTagId),
    ],
 );
 

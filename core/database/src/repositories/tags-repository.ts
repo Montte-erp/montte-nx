@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { AppError, validateInput } from "@core/logging/errors";
-import { eq, inArray } from "drizzle-orm";
-import { fromPromise, fromThrowable, ok, err } from "neverthrow";
+import { eq, inArray, sql } from "drizzle-orm";
+import { fromPromise, fromThrowable, ok, err, okAsync } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateTagInput,
@@ -264,4 +264,60 @@ export function ensureTagOwnership(
          return err(AppError.notFound("Centro de custo não encontrado."));
       return ok(tag);
    });
+}
+
+export function findTagByKeywords(
+   db: DatabaseInstance,
+   teamId: string,
+   name: string,
+) {
+   const words = name
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 2);
+
+   if (words.length === 0) return okAsync(null);
+
+   return fromPromise(
+      db.query.tags.findFirst({
+         where: (fields, { and, eq }) =>
+            and(
+               eq(fields.teamId, teamId),
+               eq(fields.isArchived, false),
+               sql`${fields.keywords} && ARRAY[${sql.join(
+                  words.map((w) => sql`${w}`),
+                  sql`, `,
+               )}]::text[]`,
+            ),
+      }),
+      (e) =>
+         AppError.database(
+            "Falha ao buscar centro de custo por palavras-chave.",
+            { cause: e },
+         ),
+   ).map((tag) => tag ?? null);
+}
+
+export function updateTagKeywords(
+   db: DatabaseInstance,
+   id: string,
+   keywords: string[],
+) {
+   return fromPromise(
+      db.transaction(async (tx) => {
+         const [updated] = await tx
+            .update(tags)
+            .set({ keywords, updatedAt: dayjs().toDate() })
+            .where(eq(tags.id, id))
+            .returning({ id: tags.id });
+         if (!updated)
+            throw AppError.notFound("Centro de custo não encontrado.");
+      }),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Falha ao atualizar palavras-chave.", {
+                 cause: e,
+              }),
+   );
 }

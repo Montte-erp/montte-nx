@@ -12,13 +12,15 @@ import {
 
 type OpenRouterModelId = Parameters<typeof openRouterText>[0];
 
-export const deriveKeywordsAIInputSchema = z.object({
+export const deriveTagKeywordsAIInputSchema = z.object({
    name: z.string(),
    description: z.string().nullish(),
    model: z.custom<OpenRouterModelId>(),
 });
 
-export type DeriveKeywordsAIInput = z.infer<typeof deriveKeywordsAIInputSchema>;
+export type DeriveTagKeywordsAIInput = z.infer<
+   typeof deriveTagKeywordsAIInputSchema
+>;
 
 const KEYWORDS_MIN = 5;
 const KEYWORDS_MAX = 15;
@@ -30,16 +32,16 @@ const keywordsSchema = z
 
 const outputSchema = z.object({
    keywords: keywordsSchema.describe(
-      "Lista de palavras-chave financeiras para categorização de transações",
+      "Lista de palavras-chave financeiras para categorização de transações por centro de custo",
    ),
 });
 
-export function deriveKeywordsWithAI(
-   input: DeriveKeywordsAIInput,
+export function deriveTagKeywordsWithAI(
+   input: DeriveTagKeywordsAIInput,
    observability: AiObservabilityContext,
 ) {
    const userContent = [
-      `Categoria: ${input.name}`,
+      `Centro de Custo: ${input.name}`,
       ...(input.description ? [`Descrição: ${input.description}`] : []),
    ].join("\n");
 
@@ -60,7 +62,7 @@ export function deriveKeywordsWithAI(
                adapter: openRouterText(input.model),
                systemPrompts: [
                   promptsClient.compile(prompt, {
-                     entity_label: "categoria financeira",
+                     entity_label: "centro de custo",
                      min_keywords: KEYWORDS_MIN,
                      max_keywords: KEYWORDS_MAX,
                   }),

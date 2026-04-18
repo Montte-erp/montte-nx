@@ -2,8 +2,8 @@ import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
 import dayjs from "dayjs";
 import { DBOS, WorkflowQueue } from "@dbos-inc/dbos-sdk";
-import { updateCategory } from "@core/database/repositories/categories-repository";
-import { emitAiKeywordDerived } from "@packages/events/ai";
+import { updateTagKeywords } from "@core/database/repositories/tags-repository";
+import { emitAiTagKeywordDerived } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
 import { enforceCreditBudget } from "@packages/events/credits";
 import { deriveKeywordsWithAI } from "@core/agents/actions/keywords";
@@ -13,15 +13,13 @@ import { getDeps, getPublisher } from "../context";
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
 
-export const deriveKeywordsQueue = new WorkflowQueue(
-   "workflow:derive-keywords",
-   {
-      workerConcurrency: 5,
-   },
+export const deriveTagKeywordsQueue = new WorkflowQueue(
+   "workflow:derive-tag-keywords",
+   { workerConcurrency: 5 },
 );
 
-export type DeriveKeywordsInput = {
-   categoryId: string;
+export type DeriveTagKeywordsInput = {
+   tagId: string;
    teamId: string;
    organizationId: string;
    name: string;
@@ -40,7 +38,7 @@ async function publishFailed(
       () =>
          publisher.publish("job.notification", {
             jobId: crypto.randomUUID(),
-            type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
+            type: NOTIFICATION_TYPES.AI_TAG_KEYWORD_DERIVED,
             status: "failed",
             message: msg,
             teamId,
@@ -50,10 +48,10 @@ async function publishFailed(
    );
 }
 
-async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
+async function deriveTagKeywordsWorkflowFn(input: DeriveTagKeywordsInput) {
    const { db, redis, posthog, stripeClient } = getDeps();
    const publisher = getPublisher();
-   const ctx = `[derive-keywords] category=${input.categoryId} team=${input.teamId}`;
+   const ctx = `[derive-tag-keywords] tag=${input.tagId} team=${input.teamId}`;
 
    DBOS.logger.info(`${ctx} started name="${input.name}"`);
 
@@ -61,7 +59,7 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
       () =>
          publisher.publish("job.notification", {
             jobId: crypto.randomUUID(),
-            type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
+            type: NOTIFICATION_TYPES.AI_TAG_KEYWORD_DERIVED,
             status: "started",
             message: `Gerando palavras-chave para ${input.name}...`,
             teamId: input.teamId,
@@ -75,7 +73,7 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
          () =>
             enforceCreditBudget(
                input.organizationId,
-               "ai.keyword_derived",
+               "ai.tag_keyword_derived",
                redis,
                input.stripeCustomerId,
             ),
@@ -135,7 +133,7 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
    const saveResult = await fromPromise(
       DBOS.runStep(
          async () =>
-            (await updateCategory(db, input.categoryId, { keywords })).match(
+            (await updateTagKeywords(db, input.tagId, keywords)).match(
                () => null,
                (e) => {
                   throw e;
@@ -168,7 +166,7 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
             input.stripeCustomerId ?? undefined,
             redis,
          );
-         await emitAiKeywordDerived(
+         await emitAiTagKeywordDerived(
             emit,
             {
                organizationId: input.organizationId,
@@ -176,7 +174,7 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
                userId: input.userId,
             },
             {
-               categoryId: input.categoryId,
+               tagId: input.tagId,
                keywordCount: keywords.length,
                model: MODEL,
                latencyMs: 0,
@@ -190,12 +188,12 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
       () =>
          publisher.publish("job.notification", {
             jobId: crypto.randomUUID(),
-            type: NOTIFICATION_TYPES.AI_KEYWORD_DERIVED,
+            type: NOTIFICATION_TYPES.AI_TAG_KEYWORD_DERIVED,
             status: "completed",
             message: `Palavras-chave geradas para ${input.name}.`,
             payload: {
-               categoryId: input.categoryId,
-               categoryName: input.name,
+               tagId: input.tagId,
+               tagName: input.name,
                count: keywords.length,
             },
             teamId: input.teamId,
@@ -207,18 +205,18 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
    DBOS.logger.info(`${ctx} completed`);
 }
 
-export const deriveKeywordsWorkflow = DBOS.registerWorkflow(
-   deriveKeywordsWorkflowFn,
+export const deriveTagKeywordsWorkflow = DBOS.registerWorkflow(
+   deriveTagKeywordsWorkflowFn,
 );
 
-export async function enqueueDeriveKeywordsWorkflow(
+export async function enqueueDeriveTagKeywordsWorkflow(
    client: DBOSClient,
-   input: DeriveKeywordsInput,
+   input: DeriveTagKeywordsInput,
 ): Promise<void> {
    await client.enqueue(
       {
-         workflowName: deriveKeywordsWorkflowFn.name,
-         queueName: deriveKeywordsQueue.name,
+         workflowName: deriveTagKeywordsWorkflowFn.name,
+         queueName: deriveTagKeywordsQueue.name,
       },
       input,
    );

@@ -1,8 +1,14 @@
-import { fromPromise } from "neverthrow";
+import { fromPromise, ok, err, safeTry } from "neverthrow";
 import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
 import { z } from "zod";
 import { AppError } from "@core/logging/errors";
+import { promptsClient } from "@core/posthog/server";
+import { POSTHOG_PROMPTS } from "@core/posthog/config";
+import {
+   createPosthogAiMiddleware,
+   type AiObservabilityContext,
+} from "../middleware/posthog";
 
 type OpenRouterModelId = Parameters<typeof openRouterText>[0];
 
@@ -20,7 +26,6 @@ export const inferCategoryInputSchema = z.object({
 
 export const inferCategoryResultSchema = z.object({
    categoryId: z.string(),
-   confidence: z.enum(["high", "low"]),
 });
 
 export type CategoryOption = z.infer<typeof categoryOptionSchema>;
@@ -29,13 +34,13 @@ export type InferCategoryResult = z.infer<typeof inferCategoryResultSchema>;
 
 const outputSchema = z.object({
    categoryName: z.string().nullable(),
-   confidence: z.enum(["high", "low"]),
 });
 
 export function inferCategoryWithAI(
    cats: CategoryOption[],
    input: InferCategoryInput,
    model: OpenRouterModelId,
+   observability: AiObservabilityContext,
 ) {
    const categoryList = cats
       .map(
@@ -44,32 +49,56 @@ export function inferCategoryWithAI(
       )
       .join("\n");
 
-   const prompt = `Você é um assistente financeiro brasileiro. Classifique a transação abaixo na categoria mais adequada.
+   const userContent = [
+      `Nome: ${input.name}`,
+      `Tipo: ${input.type === "income" ? "Receita" : "Despesa"}`,
+      ...(input.contactName ? [`Contato: ${input.contactName}`] : []),
+   ].join("\n");
 
-Transação:
-- Nome: ${input.name}${input.contactName ? `\n- Contato: ${input.contactName}` : ""}
-- Tipo: ${input.type === "income" ? "Receita" : "Despesa"}
+   return safeTry(async function* () {
+      const { prompt, name, version } = yield* fromPromise(
+         promptsClient.get(POSTHOG_PROMPTS.categorizeTransaction, {
+            withMetadata: true,
+         }),
+         (e) =>
+            AppError.internal("Falha na inferência de categoria por IA.", {
+               cause: e,
+            }),
+      );
 
-Categorias disponíveis:
-${categoryList}
+      const result = yield* fromPromise(
+         chat({
+            adapter: openRouterText(model),
+            systemPrompts: [
+               promptsClient.compile(prompt, { category_list: categoryList }),
+            ],
+            messages: [
+               {
+                  role: "user",
+                  content: [{ type: "text", content: userContent }],
+               },
+            ],
+            outputSchema,
+            stream: false,
+            middleware: [
+               createPosthogAiMiddleware({
+                  ...observability,
+                  promptName: name,
+                  promptVersion: version,
+               }),
+            ],
+         }),
+         (e) =>
+            AppError.internal("Falha na inferência de categoria por IA.", {
+               cause: e,
+            }),
+      );
 
-Retorne o nome exato de uma categoria da lista acima, ou null se nenhuma for adequada.
-Se tiver certeza, retorne confidence "high". Se estiver em dúvida, retorne "low".`;
-
-   return fromPromise(
-      chat({
-         adapter: openRouterText(model),
-         messages: [
-            { role: "user", content: [{ type: "text", content: prompt }] },
-         ],
-         outputSchema,
-         stream: false,
-      }).then((result): InferCategoryResult | null => {
-         if (!result.categoryName) return null;
-         const match = cats.find((c) => c.name === result.categoryName);
-         if (!match) return null;
-         return { categoryId: match.id, confidence: result.confidence };
-      }),
-      (e) => AppError.internal("AI category inference failed", { cause: e }),
-   );
+      if (!result.categoryName)
+         return err(AppError.notFound("Nenhuma categoria sugerida pela IA."));
+      const match = cats.find((c) => c.name === result.categoryName);
+      if (!match)
+         return err(AppError.notFound("Categoria sugerida não encontrada."));
+      return ok({ categoryId: match.id });
+   });
 }

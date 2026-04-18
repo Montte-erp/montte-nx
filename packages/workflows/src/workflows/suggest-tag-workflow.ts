@@ -1,27 +1,26 @@
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
 import { DBOS, WorkflowQueue } from "@dbos-inc/dbos-sdk";
+import dayjs from "dayjs";
 import {
-   findCategoryByKeywords,
-   listCategories,
-} from "@core/database/repositories/categories-repository";
-import { updateTransactionCategory } from "@core/database/repositories/transactions-repository";
-import { inferCategoryWithAI } from "@core/agents/actions/categorize";
+   findTagByKeywords,
+   listTags,
+} from "@core/database/repositories/tags-repository";
+import { updateTransactionTag } from "@core/database/repositories/transactions-repository";
+import { inferTagWithAI } from "@core/agents/actions/suggest-tag";
 import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import type { JobNotification } from "@packages/notifications/schema";
 import { getDeps, getPublisher } from "../context";
 
-export type CategorizationInput = {
+export type SuggestTagInput = {
    transactionId: string;
    teamId: string;
    name: string;
-   type: "income" | "expense";
-   contactName?: string | null;
 };
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
 
-export const categorizationQueue = new WorkflowQueue("workflow:categorize", {
+export const suggestTagQueue = new WorkflowQueue("workflow:suggest-tag", {
    workerConcurrency: 10,
 });
 
@@ -35,8 +34,8 @@ async function publishFailed(
       () =>
          publisher.publish("job.notification", {
             jobId: crypto.randomUUID(),
-            timestamp: new Date().toISOString(),
-            type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
+            timestamp: dayjs().toISOString(),
+            type: NOTIFICATION_TYPES.AI_TAG_SUGGESTED,
             status: "failed",
             message: msg,
             teamId,
@@ -45,35 +44,17 @@ async function publishFailed(
    );
 }
 
-async function categorizationWorkflowFn(input: CategorizationInput) {
+async function suggestTagWorkflowFn(input: SuggestTagInput) {
    const { db, posthog } = getDeps();
    const publisher = getPublisher();
-   const ctx = `[categorization] tx=${input.transactionId} team=${input.teamId}`;
+   const ctx = `[suggest-tag] tx=${input.transactionId} team=${input.teamId}`;
 
    DBOS.logger.info(`${ctx} started name="${input.name}"`);
-
-   await DBOS.runStep(
-      () =>
-         publisher.publish("job.notification", {
-            jobId: crypto.randomUUID(),
-            timestamp: new Date().toISOString(),
-            type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
-            status: "started",
-            message: `Categorizando transação "${input.name}"...`,
-            teamId: input.teamId,
-         } satisfies JobNotification),
-      { name: "publishStarted" },
-   );
 
    const keywordMatchResult = await fromPromise(
       DBOS.runStep(
          async () =>
-            (
-               await findCategoryByKeywords(db, input.teamId, {
-                  name: input.name,
-                  type: input.type,
-               })
-            ).match(
+            (await findTagByKeywords(db, input.teamId, input.name)).match(
                (v) => v,
                (e) => {
                   throw e;
@@ -102,19 +83,19 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
    if (keywordMatch) {
       await DBOS.runStep(
          () =>
-            updateTransactionCategory(db, input.transactionId, {
-               categoryId: keywordMatch.id,
+            updateTransactionTag(db, input.transactionId, {
+               suggestedTagId: keywordMatch.id,
             }),
-         { name: "applyCategory" },
+         { name: "applyTag" },
       );
       await DBOS.runStep(
          () =>
             publisher.publish("job.notification", {
                jobId: crypto.randomUUID(),
-               timestamp: new Date().toISOString(),
-               type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
+               timestamp: dayjs().toISOString(),
+               type: NOTIFICATION_TYPES.AI_TAG_SUGGESTED,
                status: "completed",
-               message: `Transação "${input.name}" categorizada.`,
+               message: `Centro de custo sugerido para "${input.name}".`,
                payload: { transactionId: input.transactionId },
                teamId: input.teamId,
             } satisfies JobNotification),
@@ -127,25 +108,18 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
    const aiResult = await fromPromise(
       DBOS.runStep(
          async () => {
-            const catsResult = await listCategories(db, input.teamId, {
-               type: input.type,
+            const tagsResult = await listTags(db, input.teamId, {
                includeArchived: false,
             });
-            return catsResult.match(
-               (cats) =>
-                  inferCategoryWithAI(cats, input, MODEL, {
-                     posthog,
-                     distinctId: input.teamId,
-                  }).match(
-                     (v) => v,
-                     (e) => {
-                        throw e;
-                     },
-                  ),
-               (e) => {
-                  throw e;
-               },
+            if (tagsResult.isErr()) throw tagsResult.error;
+            const inferResult = await inferTagWithAI(
+               tagsResult.value,
+               input.name,
+               MODEL,
+               { posthog, distinctId: input.teamId },
             );
+            if (inferResult.isErr()) throw inferResult.error;
+            return inferResult.value;
          },
          { name: "inferWithAI" },
       ),
@@ -163,24 +137,29 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
       return;
    }
 
-   const { categoryId } = aiResult.value;
+   const tagId = aiResult.value;
+
+   if (!tagId) {
+      DBOS.logger.info(`${ctx} AI returned no suggestion, skipping`);
+      return;
+   }
 
    await DBOS.runStep(
       () =>
-         updateTransactionCategory(db, input.transactionId, {
-            suggestedCategoryId: categoryId,
+         updateTransactionTag(db, input.transactionId, {
+            suggestedTagId: tagId,
          }),
-      { name: "applyCategory" },
+      { name: "applyTag" },
    );
 
    await DBOS.runStep(
       () =>
          publisher.publish("job.notification", {
             jobId: crypto.randomUUID(),
-            timestamp: new Date().toISOString(),
-            type: NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED,
+            timestamp: dayjs().toISOString(),
+            type: NOTIFICATION_TYPES.AI_TAG_SUGGESTED,
             status: "completed",
-            message: `Transação "${input.name}" categorizada.`,
+            message: `Centro de custo sugerido para "${input.name}".`,
             payload: { transactionId: input.transactionId },
             teamId: input.teamId,
          } satisfies JobNotification),
@@ -190,19 +169,17 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
    DBOS.logger.info(`${ctx} completed via AI inference`);
 }
 
-export const categorizationWorkflow = DBOS.registerWorkflow(
-   categorizationWorkflowFn,
-);
+export const suggestTagWorkflow = DBOS.registerWorkflow(suggestTagWorkflowFn);
 
-export async function enqueueCategorizationWorkflow(
+export async function enqueueSuggestTagWorkflow(
    client: DBOSClient,
-   input: CategorizationInput,
+   input: SuggestTagInput,
 ): Promise<void> {
    await client.enqueue(
       {
-         workflowName: categorizationWorkflowFn.name,
-         queueName: categorizationQueue.name,
-         workflowID: `categorize-${input.transactionId}`,
+         workflowName: suggestTagWorkflowFn.name,
+         queueName: suggestTagQueue.name,
+         workflowID: `suggest-tag-${input.transactionId}`,
       },
       input,
    );

@@ -37,7 +37,10 @@ export function useJobNotifications() {
             queryKey: orpc.categories.getAll.queryKey(),
          });
       }
-      if (data.type === NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED) {
+      if (
+         data.type === NOTIFICATION_TYPES.AI_TRANSACTION_CATEGORIZED ||
+         data.type === NOTIFICATION_TYPES.AI_TAG_SUGGESTED
+      ) {
          queryClient.invalidateQueries({
             queryKey: orpc.transactions.getAll.queryKey(),
          });
