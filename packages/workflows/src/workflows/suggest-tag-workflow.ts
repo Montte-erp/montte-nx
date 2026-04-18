@@ -1,6 +1,7 @@
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
 import { DBOS, WorkflowQueue } from "@dbos-inc/dbos-sdk";
+import dayjs from "dayjs";
 import {
    findTagByKeywords,
    listTags,
@@ -33,7 +34,7 @@ async function publishFailed(
       () =>
          publisher.publish("job.notification", {
             jobId: crypto.randomUUID(),
-            timestamp: new Date().toISOString(),
+            timestamp: dayjs().toISOString(),
             type: NOTIFICATION_TYPES.AI_TAG_SUGGESTED,
             status: "failed",
             message: msg,
@@ -91,7 +92,7 @@ async function suggestTagWorkflowFn(input: SuggestTagInput) {
          () =>
             publisher.publish("job.notification", {
                jobId: crypto.randomUUID(),
-               timestamp: new Date().toISOString(),
+               timestamp: dayjs().toISOString(),
                type: NOTIFICATION_TYPES.AI_TAG_SUGGESTED,
                status: "completed",
                message: `Centro de custo sugerido para "${input.name}".`,
@@ -159,7 +160,7 @@ async function suggestTagWorkflowFn(input: SuggestTagInput) {
       () =>
          publisher.publish("job.notification", {
             jobId: crypto.randomUUID(),
-            timestamp: new Date().toISOString(),
+            timestamp: dayjs().toISOString(),
             type: NOTIFICATION_TYPES.AI_TAG_SUGGESTED,
             status: "completed",
             message: `Centro de custo sugerido para "${input.name}".`,
