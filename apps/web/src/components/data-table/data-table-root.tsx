@@ -344,7 +344,7 @@ export function DataTableRoot<TData, TValue>({
          sorting,
          columnPinning: {
             left: ["__select"],
-            right: ["__actions"],
+            right: renderActions ? ["__actions"] : [],
          },
       },
    });
