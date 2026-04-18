@@ -4,6 +4,8 @@
       "composite": false,
       "noEmit": true,
       "paths": {
+         "@core/agents": ["../../core/agents/src/agent.ts"],
+         "@core/agents/*": ["../../core/agents/src/*"],
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],
          "@core/environment/worker": ["../../core/environment/src/worker.ts"],
@@ -14,7 +16,9 @@
          "@core/redis/*": ["../../core/redis/src/*"],
          "@core/stripe": ["../../core/stripe/src/index.ts"],
          "@core/stripe/*": ["../../core/stripe/src/*"],
-         "@packages/workflows/*": ["../../packages/workflows/src/*"]
+         "@packages/workflows/*": ["../../packages/workflows/src/*"],
+         "@packages/events/*": ["../../packages/events/src/*"],
+         "@packages/notifications/*": ["../../packages/notifications/src/*"]
       }
    },
    "include": ["src"]
