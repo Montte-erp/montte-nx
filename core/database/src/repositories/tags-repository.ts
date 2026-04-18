@@ -69,6 +69,19 @@ export function listTags(
    );
 }
 
+export function getById(db: DatabaseInstance, id: string, teamId: string) {
+   return fromPromise(
+      db.query.tags.findFirst({
+         where: (fields, { and, eq }) =>
+            and(eq(fields.id, id), eq(fields.teamId, teamId)),
+      }),
+      (e) =>
+         AppError.database("Falha ao buscar centro de custo.", { cause: e }),
+   ).andThen((tag) =>
+      tag ? ok(tag) : err(AppError.notFound("Centro de custo não encontrado.")),
+   );
+}
+
 export function getTag(db: DatabaseInstance, id: string) {
    return fromPromise(
       db.query.tags.findFirst({ where: (fields, { eq }) => eq(fields.id, id) }),
