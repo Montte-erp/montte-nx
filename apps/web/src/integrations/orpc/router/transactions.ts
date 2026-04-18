@@ -26,6 +26,7 @@ import {
 } from "@core/database/schemas/transactions";
 import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceStatementImported } from "@packages/events/finance";
+import type { DatabaseInstance } from "@core/database/client";
 import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
 import { enqueueCategorizationWorkflow } from "@packages/workflows/workflows/categorization-workflow";
@@ -75,7 +76,7 @@ const filterSchema = z
    .optional();
 
 async function enforceCostCenterPolicy(
-   db: Parameters<typeof getFinancialConfig>[0],
+   db: DatabaseInstance,
    teamId: string,
    tagId: string | null | undefined,
 ) {
