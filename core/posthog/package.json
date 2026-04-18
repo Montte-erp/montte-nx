@@ -33,7 +33,8 @@
       "@core/environment": "workspace:*",
       "@posthog/ai": "^7.16.0",
       "neverthrow": "catalog:validation",
-      "posthog-node": "catalog:analytics-client"
+      "posthog-node": "catalog:analytics-client",
+      "zod": "catalog:validation"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
