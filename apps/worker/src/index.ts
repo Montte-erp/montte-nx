@@ -1,5 +1,5 @@
 import { env } from "@core/environment/worker";
-import { getWorkerLogger } from "@core/logging/worker";
+import { initLogger, getLogger } from "@core/logging/root";
 import { initOtel, shutdownOtel } from "@core/logging/otel";
 import { createDb } from "@core/database/client";
 import { createRedis } from "@core/redis/connection";
@@ -13,11 +13,9 @@ initOtel({
    posthogHost: env.POSTHOG_HOST,
 });
 
-const logger = getWorkerLogger({
-   LOG_LEVEL: env.LOG_LEVEL,
-   POSTHOG_KEY: env.POSTHOG_KEY,
-});
+initLogger({ name: "montte-worker", level: env.LOG_LEVEL });
 
+const logger = getLogger();
 const db = createDb({ databaseUrl: env.DATABASE_URL });
 const redis = createRedis(env.REDIS_URL);
 const posthog = createPostHog(env.POSTHOG_KEY, env.POSTHOG_HOST);

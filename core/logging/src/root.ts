@@ -1,4 +1,4 @@
-import { createSafeLogger } from "./logger";
+import { createSafeLogger } from "@core/logging";
 import type { Logger, LoggerConfig } from "@core/logging/types";
 
 let rootLogger: Logger | null = null;
