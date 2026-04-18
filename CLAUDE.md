@@ -142,18 +142,7 @@ return (await createItem(context.db, input)).match(
 
 **Auto-conversion** — the oRPC server middleware (`apps/web/src/integrations/orpc/server.ts:227`) automatically converts any thrown `AppError` into `WebAppError.fromAppError(error)`. Repository functions that throw `AppError` directly (e.g. `enforceCostCenterPolicy`) do **not** need manual conversion in router handlers — the server catches and converts them.
 
-**Bulk operations** — dedicated procedure, never loop `mutateAsync` on client:
-
-```typescript
-export const bulkRemove = protectedProcedure
-   .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
-   .handler(async ({ context, input }) => {
-      const results = await Promise.allSettled(input.ids.map(async (id) => { ... }));
-      const failed = results.filter((r) => r.status === "rejected").length;
-      if (failed > 0) throw WebAppError.internal(`${failed} item(s) failed.`);
-      return { deleted: input.ids.length };
-   });
-```
+**Bulk operations** — dedicated procedure + `Promise.allSettled`, never loop `mutateAsync` on client.
 
 ---
 
@@ -195,29 +184,8 @@ import { useActiveTeam } from "@/hooks/use-active-team";
 | Mutation state cross-component | `useMutationState` + `orpc.procedure.mutationKey()`                 |
 | SSE / live stream              | `useQuery` + `experimental_liveOptions`                             |
 
-**SSE / Live queries:**
-
-```tsx
-const { data } = useQuery(
-   orpc.notifications.subscribe.experimental_liveOptions({ retry: true }),
-);
-useEffect(() => {
-   if (!data) return; /* handle latest event */
-}, [data]);
-```
-
-Never use `consumeEventIterator` + `useEffect` manually.
-
-**Type inference** — never manual interfaces:
-
-```typescript
-import type { Inputs, Outputs } from "@/integrations/orpc/client";
-type CnpjData = NonNullable<
-   Inputs["onboarding"]["createWorkspace"]["cnpjData"]
->;
-```
-
-Frontend never imports backend schemas or `@core/*` packages.
+- SSE: `useQuery` + `experimental_liveOptions`. Never `consumeEventIterator` + `useEffect`.
+- Types: `import type { Inputs, Outputs } from "@/integrations/orpc/client"`. Never manual interfaces. Frontend never imports `@core/*`.
 
 ---
 
@@ -244,14 +212,9 @@ Full API → `tanstack-form` skill.
    }
    ```
 - Server field error → `{ fields: { fieldName: "message" } }` from `onSubmitAsync`. No footer error paragraph — use `toast.error` for generic errors.
-- Multi-step forms: local React context via factory function (never `ReturnType<typeof useForm<T>>`):
-   ```tsx
-   function createMyForm() { return useForm({ ... }); }
-   type MyFormApi = ReturnType<typeof createMyForm>;
-   const FormCtx = createContext<MyFormApi | null>(null);
-   ```
-- `form.Subscribe` — always specific selector, never `selector={(state) => state}`.
-- Navigation guard — `useBlocker` with `withResolver: true`. Optional chain `blocker.proceed?.()` / `blocker.reset?.()`. Set `disabled: isCreate`.
+- Multi-step forms: local React context via factory function. Type: `ReturnType<typeof createMyForm>`.
+- `form.Subscribe` — specific selector only, never `selector={(state) => state}`.
+- Navigation guard: `useBlocker` with `withResolver: true`, `disabled: isCreate`.
 
 ---
 
@@ -413,8 +376,7 @@ await enqueueCategorizationWorkflow(context.workflowClient, input);
 - `workflow:categorize` (workerConcurrency: 10) — `categorization-workflow.ts`
 - `workflow:derive-keywords` (workerConcurrency: 5) — `derive-keywords-workflow.ts`
 
-**DBOS logging → PostHog via OTel:**
-`initOtel()` must be called **before** `launchDBOS()` in `apps/worker/src/index.ts`. DBOS detects the global OTel providers registered by the NodeSDK and routes `DBOS.logger` calls through them — logs arrive in PostHog with automatic DBOS context (workflowID, step, etc.). Never replace `DBOS.logger` with `getWorkerLogger` inside workflows — you lose the DBOS context.
+**DBOS logging:** `initOtel()` BEFORE `launchDBOS()`. Never replace `DBOS.logger` with `getWorkerLogger` in workflows — loses DBOS context (workflowID, step, etc.).
 
 **DBOS workflows** — always use repositories (`@core/database/repositories/*`). Never raw `db` in workflow steps.
 
@@ -630,107 +592,19 @@ Design review, screen/flow design, responsive patterns → `ui-ux-expert` skill.
 
 ## TanStack Store
 
-Use the `tanstack-store` skill for full API (`createStore`, `useStore`, `createAtom`, `createPersistedStore`, `createStoreEffect`, `batch`, `createAsyncAtom`). Reactive collections / live queries / optimistic mutations → `tanstack-db` skill.
+Use the `tanstack-store` skill for full API. Reactive collections / live queries / optimistic mutations → `tanstack-db` skill.
 
-`@tanstack/store` + `@tanstack/react-store` for all client-side global state. Never Zustand, Jotai, or React context for shared mutable state.
+`@tanstack/store` + `@tanstack/react-store` only — never Zustand, Jotai, or React context for shared mutable state.
 
-**Store creation** — always `createStore()`, never `new Store()`:
-```typescript
-import { createStore } from "@tanstack/react-store";
-
-const myStore = createStore<MyState>({ count: 0, name: "" });
-```
-
-**Reading in React** — `useStore` with selector. Primitive selectors need no comparator. Object selectors always pass `shallow`:
-```typescript
-import { useStore, shallow } from "@tanstack/react-store";
-
-const count = useStore(myStore, (s) => s.count);
-const { count, name } = useStore(myStore, (s) => ({ count: s.count, name: s.name }), shallow);
-```
-
-**Updating:**
-```typescript
-myStore.setState((s) => ({ ...s, count: s.count + 1 }));
-```
-
-**Derived state** — `createAtom` for computed values, never inline derivation in components:
-```typescript
-import { createStore, createAtom } from "@tanstack/react-store";
-
-const store = createStore<{ items: Item[]; filter: string }>({ items: [], filter: "" });
-
-const filteredItemsAtom = createAtom(() => {
-   const { items, filter } = store.state;
-   return items.filter((i) => i.name.includes(filter));
-});
-
-// Atoms chain — activeTabMetaAtom depends on allTabMetasAtom
-const allTabMetasAtom = createAtom(() => { /* reads store.state */ });
-const activeTabMetaAtom = createAtom(() => {
-   const all = allTabMetasAtom.get(); // reactive dependency
-   const { activeId } = store.state;
-   return all.find((t) => t.id === activeId) ?? all[0] ?? null;
-});
-
-// In component — useStore works with atoms directly
-const filtered = useStore(filteredItemsAtom, (s) => s);
-const active = useStore(activeTabMetaAtom, (s) => s);
-```
-
-**Persisted store** — `createPersistedStore` from `@/lib/store`. Uses `createClientOnlyFn` for SSR safety. Hydrates from localStorage, auto-persists on change, cross-tab sync via `storage` event. No hook needed:
-```typescript
-import { createPersistedStore } from "@/lib/store";
-
-const sidebarStore = createPersistedStore<SidebarState>("montte:sidebar", { isCollapsed: false });
-
-// Use like any other store — persistence is automatic
-const isCollapsed = useStore(sidebarStore, (s) => s.isCollapsed);
-```
-
-**Store effects** — `createStoreEffect` from `@/lib/store` for store-to-store coordination outside React. Replaces `useEffect` bridges between stores with deterministic subscriptions:
-```typescript
-import { createStoreEffect } from "@/lib/store";
-
-// Guarantee: when activeSection becomes null, searchQuery auto-clears
-createStoreEffect(transientStore, (next, prev) => {
-   if (prev.activeSection !== null && next.activeSection === null) {
-      transientStore.setState((s) => ({ ...s, searchQuery: "" }));
-   }
-});
-```
-Effects run synchronously after `setState`, before React render. Guard with `prev !== next` comparisons to avoid infinite loops. Return a cleanup function from the effect callback if needed.
-
-**Batch updates** — `batch()` groups multiple store updates into one notification cycle:
-```typescript
-import { batch } from "@tanstack/react-store";
-
-batch(() => {
-   storeA.setState((s) => ({ ...s, count: 1 }));
-   storeB.setState((s) => ({ ...s, name: "foo" }));
-});
-// Subscribers notified once with final state
-```
-
-**Async derived** — `createAsyncAtom` for async computations:
-```typescript
-import { createAsyncAtom } from "@tanstack/react-store";
-
-const asyncAtom = createAsyncAtom(async () => {
-   const data = await fetchSomething(store.state.id);
-   return data;
-});
-// Returns { status: "pending" | "done" | "error", data?, error? }
-```
-
-**Rules:**
-- Never store `React.ReactNode` in store state — use render functions `() => React.ReactNode`.
-- Never `useStore(store, (s) => s)` without `shallow` — full-state subscriptions re-render on any change.
-- Prefer narrow selectors. Split monolithic hooks into focused sub-hooks.
-- Derived state in `createAtom`, never computed inline in components.
-- Per-instance stores (inside `useState`) can use `new Store()` — only global/module-level stores use `createStore()`.
+- `createStore()` not `new Store()`. Object selectors always pass `shallow`.
+- Derived state → `createAtom`. Async → `createAsyncAtom`. Persisted → `createPersistedStore` from `@/lib/store`.
+- Store-to-store coordination → `createStoreEffect` from `@/lib/store` (runs sync after `setState`, before render).
+- Batch multi-store updates with `batch()`.
+- Never store `React.ReactNode` — use render functions `() => React.ReactNode`.
+- Never `useStore(store, (s) => s)` without `shallow`.
+- Per-instance stores (inside `useState`) can use `new Store()`.
 - All localStorage keys prefixed `montte:`.
-- SSR safety: `createClientOnlyFn` / `createIsomorphicFn` from `@tanstack/react-start` for browser-only code. Never `typeof window !== "undefined"`.
+- SSR safety: `createClientOnlyFn` / `createIsomorphicFn`. Never `typeof window !== "undefined"`.
 
 ---
 
@@ -842,30 +716,9 @@ Procedures: `apps/web/src/integrations/orpc/router/onboarding.ts`
 
 ## Montte CLI Skills (`@montte/cli` via TanStack Intent)
 
-Skills *authored* by `libraries/cli/` and published as `@montte/cli`. Distinct from `.agents/skills/` (which are consumed in this repo). Built with TanStack Intent.
+Skills *authored* by `libraries/cli/` and published as `@montte/cli`. Distinct from `.agents/skills/` (which are consumed in this repo).
 
-```json
-{
-   "keywords": ["tanstack-intent"],
-   "files": ["dist", "skills", "!skills/_artifacts"]
-}
-```
-
-Skill file `skills/<domain>/SKILL.md`:
-
-```yaml
----
-name: "@montte/cli/<domain>"
-description: > Use when <specific triggering condition>.
-type: core | sub-skill | framework | lifecycle | composition | security
-library: "@montte/cli"
-library_version: "0.1.0"
-sources:
-  - "Montte-erp/montte-nx:libraries/cli/src/<file>.ts"
----
-```
-
-`name` matches directory slug. `description` is triggering condition. Max 500 lines. Never commit `skills/_artifacts/`.
+Skill files: `skills/<domain>/SKILL.md`. Never commit `skills/_artifacts/`.
 
 ```bash
 npx @tanstack/intent@latest validate   # before publishing
