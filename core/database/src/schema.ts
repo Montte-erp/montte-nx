@@ -28,4 +28,5 @@ export {
    crmSchema,
    inventorySchema,
    platformSchema,
+   settingsSchema,
 } from "@core/database/schemas/schemas";
