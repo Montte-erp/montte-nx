@@ -1,68 +1,87 @@
-import { fromPromise } from "neverthrow";
+import { fromPromise, ok, err, safeTry } from "neverthrow";
 import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
 import { z } from "zod";
 import { AppError } from "@core/logging/errors";
-import { compileSystemPrompt } from "@core/posthog/prompts";
+import { promptsClient } from "@core/posthog/server";
+import { POSTHOG_PROMPTS } from "@core/posthog/config";
+import {
+   createPosthogAiMiddleware,
+   type AiObservabilityContext,
+} from "../middleware/posthog";
 
 type OpenRouterModelId = Parameters<typeof openRouterText>[0];
 
-export type TagOption = {
-   id: string;
-   name: string;
-   description?: string | null;
-};
+export const tagOptionSchema = z.object({
+   id: z.string(),
+   name: z.string(),
+   description: z.string().nullish(),
+});
+
+export type TagOption = z.infer<typeof tagOptionSchema>;
 
 const outputSchema = z.object({
    tagName: z.string().nullable(),
-   confidence: z.enum(["high", "low"]),
 });
 
 export function inferTagWithAI(
    tagOptions: TagOption[],
    transactionName: string,
    model: OpenRouterModelId,
+   observability: AiObservabilityContext,
 ) {
    const tagList = tagOptions
       .map((t) => `- ${t.name}${t.description ? ` (${t.description})` : ""}`)
       .join("\n");
 
-   return compileSystemPrompt("suggestTag", { tag_list: tagList })
-      .mapErr((e) =>
-         AppError.internal("Falha na inferência de centro de custo por IA.", {
-            cause: e,
-         }),
-      )
-      .andThen((systemPrompt) =>
-         fromPromise(
-            chat({
-               adapter: openRouterText(model),
-               systemPrompts: [systemPrompt],
-               messages: [
-                  {
-                     role: "user",
-                     content: [{ type: "text", content: transactionName }],
-                  },
-               ],
-               outputSchema,
-               stream: false,
-            }).then(
-               (
-                  result,
-               ): { tagId: string; confidence: "high" | "low" } | null => {
-                  if (!result.tagName) return null;
-                  const match = tagOptions.find(
-                     (t) => t.name === result.tagName,
-                  );
-                  if (!match) return null;
-                  return { tagId: match.id, confidence: result.confidence };
-               },
+   return safeTry(async function* () {
+      const { prompt, name, version } = yield* fromPromise(
+         promptsClient.get(POSTHOG_PROMPTS.suggestTag, { withMetadata: true }),
+         (e) =>
+            AppError.internal(
+               "Falha na inferência de centro de custo por IA.",
+               { cause: e },
             ),
-            (e) =>
-               AppError.internal(
-                  "Falha na inferência de centro de custo por IA.",
-                  { cause: e },
-               ),
-         ),
       );
+
+      const result = yield* fromPromise(
+         chat({
+            adapter: openRouterText(model),
+            systemPrompts: [
+               promptsClient.compile(prompt, { tag_list: tagList }),
+            ],
+            messages: [
+               {
+                  role: "user",
+                  content: [{ type: "text", content: transactionName }],
+               },
+            ],
+            outputSchema,
+            stream: false,
+            middleware: [
+               createPosthogAiMiddleware({
+                  ...observability,
+                  promptName: name,
+                  promptVersion: version,
+               }),
+            ],
+         }),
+         (e) =>
+            AppError.internal(
+               "Falha na inferência de centro de custo por IA.",
+               { cause: e },
+            ),
+      );
+
+      if (!result.tagName)
+         return err(
+            AppError.notFound("Nenhum centro de custo sugerido pela IA."),
+         );
+      const match = tagOptions.find((t) => t.name === result.tagName);
+      if (!match)
+         return err(
+            AppError.notFound("Centro de custo sugerido não encontrado."),
+         );
+      return ok(match.id);
+   });
 }

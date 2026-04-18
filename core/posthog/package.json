@@ -15,10 +15,6 @@
       "./config": {
          "types": "./dist/config.d.ts",
          "default": "./dist/config.js"
-      },
-      "./prompts": {
-         "types": "./dist/prompts.d.ts",
-         "default": "./dist/prompts.js"
       }
    },
    "scripts": {

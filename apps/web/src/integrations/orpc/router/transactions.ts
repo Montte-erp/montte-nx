@@ -130,11 +130,11 @@ export const create = protectedProcedure
       }
 
       if (transaction?.name && !tagId) {
-         await enqueueSuggestTagWorkflow(context.workflowClient, {
+         enqueueSuggestTagWorkflow(context.workflowClient, {
             transactionId: transaction.id,
             teamId: context.teamId,
             name: transaction.name,
-         });
+         }).catch(() => undefined);
       }
 
       return transaction;
@@ -300,11 +300,11 @@ export const importStatement = withCreditEnforcement(
 
       for (const tx of inserted) {
          if (tx.name) {
-            await enqueueSuggestTagWorkflow(context.workflowClient, {
+            enqueueSuggestTagWorkflow(context.workflowClient, {
                transactionId: tx.id,
                teamId: context.teamId,
                name: tx.name,
-            });
+            }).catch(() => undefined);
          }
       }
 
@@ -475,11 +475,11 @@ export const importBulk = protectedProcedure
             });
          }
          if (transaction?.name && !tagId) {
-            await enqueueSuggestTagWorkflow(context.workflowClient, {
+            enqueueSuggestTagWorkflow(context.workflowClient, {
                transactionId: transaction.id,
                teamId: context.teamId,
                name: transaction.name,
-            });
+            }).catch(() => undefined);
          }
          imported++;
       }

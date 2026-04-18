@@ -1,4 +1,12 @@
 import { PostHog } from "posthog-node";
+import { Prompts } from "@posthog/ai";
+import { env } from "@core/environment/web";
+
+export const promptsClient = new Prompts({
+   personalApiKey: env.POSTHOG_PERSONAL_API_KEY,
+   projectApiKey: env.POSTHOG_KEY,
+   host: env.POSTHOG_HOST,
+});
 
 export type { PostHog };
 

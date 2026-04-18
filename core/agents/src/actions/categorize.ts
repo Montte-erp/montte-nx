@@ -1,9 +1,14 @@
-import { fromPromise } from "neverthrow";
+import { fromPromise, ok, err, safeTry } from "neverthrow";
 import { chat } from "@tanstack/ai";
 import { openRouterText } from "@tanstack/ai-openrouter";
 import { z } from "zod";
 import { AppError } from "@core/logging/errors";
-import { compileSystemPrompt } from "@core/posthog/prompts";
+import { promptsClient } from "@core/posthog/server";
+import { POSTHOG_PROMPTS } from "@core/posthog/config";
+import {
+   createPosthogAiMiddleware,
+   type AiObservabilityContext,
+} from "../middleware/posthog";
 
 type OpenRouterModelId = Parameters<typeof openRouterText>[0];
 
@@ -21,7 +26,6 @@ export const inferCategoryInputSchema = z.object({
 
 export const inferCategoryResultSchema = z.object({
    categoryId: z.string(),
-   confidence: z.enum(["high", "low"]),
 });
 
 export type CategoryOption = z.infer<typeof categoryOptionSchema>;
@@ -30,13 +34,13 @@ export type InferCategoryResult = z.infer<typeof inferCategoryResultSchema>;
 
 const outputSchema = z.object({
    categoryName: z.string().nullable(),
-   confidence: z.enum(["high", "low"]),
 });
 
 export function inferCategoryWithAI(
    cats: CategoryOption[],
    input: InferCategoryInput,
    model: OpenRouterModelId,
+   observability: AiObservabilityContext,
 ) {
    const categoryList = cats
       .map(
@@ -51,33 +55,50 @@ export function inferCategoryWithAI(
       ...(input.contactName ? [`Contato: ${input.contactName}`] : []),
    ].join("\n");
 
-   return compileSystemPrompt("categorizeTransaction", {
-      category_list: categoryList,
-   })
-      .mapErr((e) =>
-         AppError.internal("AI category inference failed", { cause: e }),
-      )
-      .andThen((systemPrompt) =>
-         fromPromise(
-            chat({
-               adapter: openRouterText(model),
-               systemPrompts: [systemPrompt],
-               messages: [
-                  {
-                     role: "user",
-                     content: [{ type: "text", content: userContent }],
-                  },
-               ],
-               outputSchema,
-               stream: false,
-            }).then((result): InferCategoryResult | null => {
-               if (!result.categoryName) return null;
-               const match = cats.find((c) => c.name === result.categoryName);
-               if (!match) return null;
-               return { categoryId: match.id, confidence: result.confidence };
+   return safeTry(async function* () {
+      const { prompt, name, version } = yield* fromPromise(
+         promptsClient.get(POSTHOG_PROMPTS.categorizeTransaction, {
+            withMetadata: true,
+         }),
+         (e) =>
+            AppError.internal("Falha na inferência de categoria por IA.", {
+               cause: e,
             }),
-            (e) =>
-               AppError.internal("AI category inference failed", { cause: e }),
-         ),
       );
+
+      const result = yield* fromPromise(
+         chat({
+            adapter: openRouterText(model),
+            systemPrompts: [
+               promptsClient.compile(prompt, { category_list: categoryList }),
+            ],
+            messages: [
+               {
+                  role: "user",
+                  content: [{ type: "text", content: userContent }],
+               },
+            ],
+            outputSchema,
+            stream: false,
+            middleware: [
+               createPosthogAiMiddleware({
+                  ...observability,
+                  promptName: name,
+                  promptVersion: version,
+               }),
+            ],
+         }),
+         (e) =>
+            AppError.internal("Falha na inferência de categoria por IA.", {
+               cause: e,
+            }),
+      );
+
+      if (!result.categoryName)
+         return err(AppError.notFound("Nenhuma categoria sugerida pela IA."));
+      const match = cats.find((c) => c.name === result.categoryName);
+      if (!match)
+         return err(AppError.notFound("Categoria sugerida não encontrada."));
+      return ok({ categoryId: match.id });
+   });
 }

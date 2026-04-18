@@ -98,11 +98,14 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
    const keywordsResult = await fromPromise(
       DBOS.runStep(
          () =>
-            deriveKeywordsWithAI({
-               name: input.name,
-               description: input.description,
-               model: MODEL,
-            }).match(
+            deriveKeywordsWithAI(
+               {
+                  name: input.name,
+                  description: input.description,
+                  model: MODEL,
+               },
+               { posthog, distinctId: input.teamId },
+            ).match(
                (v) => v,
                (e) => {
                   throw e;

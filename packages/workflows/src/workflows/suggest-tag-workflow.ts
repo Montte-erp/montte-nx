@@ -45,7 +45,7 @@ async function publishFailed(
 }
 
 async function suggestTagWorkflowFn(input: SuggestTagInput) {
-   const { db } = getDeps();
+   const { db, posthog } = getDeps();
    const publisher = getPublisher();
    const ctx = `[suggest-tag] tx=${input.transactionId} team=${input.teamId}`;
 
@@ -116,6 +116,7 @@ async function suggestTagWorkflowFn(input: SuggestTagInput) {
                tagsResult.value,
                input.name,
                MODEL,
+               { posthog, distinctId: input.teamId },
             );
             if (inferResult.isErr()) throw inferResult.error;
             return inferResult.value;
@@ -136,17 +137,7 @@ async function suggestTagWorkflowFn(input: SuggestTagInput) {
       return;
    }
 
-   if (!aiResult.value) {
-      DBOS.logger.info(`${ctx} no tag match found`);
-      return;
-   }
-
-   const { tagId, confidence } = aiResult.value;
-
-   if (confidence !== "high") {
-      DBOS.logger.info(`${ctx} low confidence, skipping suggestion`);
-      return;
-   }
+   const tagId = aiResult.value;
 
    await DBOS.runStep(
       () =>

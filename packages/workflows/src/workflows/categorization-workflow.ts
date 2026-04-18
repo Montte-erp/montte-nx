@@ -46,7 +46,7 @@ async function publishFailed(
 }
 
 async function categorizationWorkflowFn(input: CategorizationInput) {
-   const { db } = getDeps();
+   const { db, posthog } = getDeps();
    const publisher = getPublisher();
    const ctx = `[categorization] tx=${input.transactionId} team=${input.teamId}`;
 
@@ -133,7 +133,10 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
             });
             return catsResult.match(
                (cats) =>
-                  inferCategoryWithAI(cats, input, MODEL).match(
+                  inferCategoryWithAI(cats, input, MODEL, {
+                     posthog,
+                     distinctId: input.teamId,
+                  }).match(
                      (v) => v,
                      (e) => {
                         throw e;
@@ -160,22 +163,13 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
       return;
    }
 
-   if (!aiResult.value) {
-      DBOS.logger.info(`${ctx} no category match found`);
-      return;
-   }
-
-   const { categoryId, confidence } = aiResult.value;
+   const { categoryId } = aiResult.value;
 
    await DBOS.runStep(
       () =>
-         updateTransactionCategory(
-            db,
-            input.transactionId,
-            confidence === "high"
-               ? { categoryId }
-               : { suggestedCategoryId: categoryId },
-         ),
+         updateTransactionCategory(db, input.transactionId, {
+            suggestedCategoryId: categoryId,
+         }),
       { name: "applyCategory" },
    );
 

@@ -304,11 +304,20 @@ export function updateTagKeywords(
    keywords: string[],
 ) {
    return fromPromise(
-      db
-         .update(tags)
-         .set({ keywords, updatedAt: dayjs().toDate() })
-         .where(eq(tags.id, id)),
+      db.transaction(async (tx) => {
+         const [updated] = await tx
+            .update(tags)
+            .set({ keywords, updatedAt: dayjs().toDate() })
+            .where(eq(tags.id, id))
+            .returning({ id: tags.id });
+         if (!updated)
+            throw AppError.notFound("Centro de custo não encontrado.");
+      }),
       (e) =>
-         AppError.database("Falha ao atualizar palavras-chave.", { cause: e }),
-   ).map(() => undefined);
+         e instanceof AppError
+            ? e
+            : AppError.database("Falha ao atualizar palavras-chave.", {
+                 cause: e,
+              }),
+   );
 }
