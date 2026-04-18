@@ -34,9 +34,9 @@ export interface ORPCContextWithAuth extends ORPCContext {
    auth: AuthInstance;
    db: DatabaseInstance;
    session: Awaited<ReturnType<AuthInstance["api"]["getSession"]>> | null;
-   posthog?: PostHog;
-   stripeClient?: StripeClient;
-   redis?: Redis;
+   posthog: PostHog;
+   stripeClient: StripeClient;
+   redis: Redis;
    jobPublisher: ReturnType<typeof createJobPublisher>;
 }
 
@@ -54,7 +54,7 @@ const base = os.$context<ORPCContext>();
 
 const withDeps = base.use(async ({ context, next }) => {
    const sessionResult = await fromPromise(
-      auth.api.getSession({ headers: context.headers }),
+      (async () => auth.api.getSession({ headers: context.headers }))(),
       () => null,
    );
 

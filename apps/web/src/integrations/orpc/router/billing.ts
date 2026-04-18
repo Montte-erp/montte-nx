@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { fromPromise } from "neverthrow";
 import { eventCatalog } from "@core/database/schemas/event-catalog";
 import { WebAppError } from "@core/logging/errors";
 import {
@@ -21,10 +22,6 @@ export const getInvoices = protectedProcedure
    .handler(async ({ context, input }) => {
       const { db, stripeClient, userId } = context;
 
-      if (!stripeClient) {
-         throw WebAppError.internal("Stripe client not configured");
-      }
-
       const userRecord = await db.query.user.findFirst({
          where: (fields, { eq }) => eq(fields.id, userId),
       });
@@ -33,37 +30,38 @@ export const getInvoices = protectedProcedure
          return [];
       }
 
-      try {
-         const invoices = await stripeClient.invoices.list({
+      const result = await fromPromise(
+         stripeClient.invoices.list({
             customer: userRecord.stripeCustomerId,
             limit: input?.limit ?? 10,
-         });
+         }),
+         () => WebAppError.internal("Failed to fetch invoices"),
+      );
 
-         return invoices.data.map((invoice) => ({
-            id: invoice.id,
-            number: invoice.number,
-            amountPaid: invoice.amount_paid,
-            amountDue: invoice.amount_due,
-            currency: invoice.currency,
-            status: invoice.status,
-            created: invoice.created,
-            periodStart: invoice.period_start,
-            periodEnd: invoice.period_end,
-            invoicePdf: invoice.invoice_pdf ?? null,
-            hostedInvoiceUrl: invoice.hosted_invoice_url ?? null,
-         }));
-      } catch {
-         throw WebAppError.internal("Failed to fetch invoices");
-      }
+      return result.match(
+         (invoices) =>
+            invoices.data.map((invoice) => ({
+               id: invoice.id,
+               number: invoice.number,
+               amountPaid: invoice.amount_paid,
+               amountDue: invoice.amount_due,
+               currency: invoice.currency,
+               status: invoice.status,
+               created: invoice.created,
+               periodStart: invoice.period_start,
+               periodEnd: invoice.period_end,
+               invoicePdf: invoice.invoice_pdf ?? null,
+               hostedInvoiceUrl: invoice.hosted_invoice_url ?? null,
+            })),
+         (e) => {
+            throw e;
+         },
+      );
    });
 
 export const getUpcomingInvoice = protectedProcedure.handler(
    async ({ context }) => {
       const { db, stripeClient, userId } = context;
-
-      if (!stripeClient) {
-         throw WebAppError.internal("Stripe client not configured");
-      }
 
       const userRecord = await db.query.user.findFirst({
          where: (fields, { eq }) => eq(fields.id, userId),
@@ -73,12 +71,15 @@ export const getUpcomingInvoice = protectedProcedure.handler(
          return null;
       }
 
-      try {
-         const upcoming = await stripeClient.invoices.createPreview({
+      const result = await fromPromise(
+         stripeClient.invoices.createPreview({
             customer: userRecord.stripeCustomerId,
-         });
+         }),
+         () => null,
+      );
 
-         return {
+      return result.match(
+         (upcoming) => ({
             amountDue: upcoming.amount_due,
             currency: upcoming.currency,
             periodStart: upcoming.period_start,
@@ -89,20 +90,15 @@ export const getUpcomingInvoice = protectedProcedure.handler(
                amount: line.amount,
                quantity: line.quantity,
             })),
-         };
-      } catch {
-         return null;
-      }
+         }),
+         () => null,
+      );
    },
 );
 
 export const getPaymentStatus = protectedProcedure.handler(
    async ({ context }) => {
       const { db, stripeClient, userId } = context;
-
-      if (!stripeClient) {
-         return { hasPaymentMethod: false };
-      }
 
       const userRecord = await db.query.user.findFirst({
          where: (fields, { eq }) => eq(fields.id, userId),
@@ -112,25 +108,26 @@ export const getPaymentStatus = protectedProcedure.handler(
          return { hasPaymentMethod: false };
       }
 
-      try {
-         const paymentMethods = await stripeClient.paymentMethods.list({
+      const result = await fromPromise(
+         stripeClient.paymentMethods.list({
             customer: userRecord.stripeCustomerId,
             type: "card",
             limit: 1,
-         });
-         return { hasPaymentMethod: paymentMethods.data.length > 0 };
-      } catch {
-         return { hasPaymentMethod: false };
-      }
+         }),
+         () => null,
+      );
+
+      return result.match(
+         (paymentMethods) => ({
+            hasPaymentMethod: paymentMethods.data.length > 0,
+         }),
+         () => ({ hasPaymentMethod: false }),
+      );
    },
 );
 
 export const getMeterUsage = protectedProcedure.handler(async ({ context }) => {
    const { db, stripeClient, userId } = context;
-
-   if (!stripeClient) {
-      return buildUsageFallback();
-   }
 
    const userRecord = await db.query.user.findFirst({
       where: (fields, { eq }) => eq(fields.id, userId),
@@ -140,93 +137,96 @@ export const getMeterUsage = protectedProcedure.handler(async ({ context }) => {
       return buildUsageFallback();
    }
 
-   try {
-      const now = Math.floor(Date.now() / 1000);
-      const startOfMonth = Math.floor(
-         dayjs().startOf("month").valueOf() / 1000,
-      );
+   const now = Math.floor(Date.now() / 1000);
+   const startOfMonth = Math.floor(dayjs().startOf("month").valueOf() / 1000);
 
-      const meters = await stripeClient.billing.meters.list({ limit: 100 });
-      const meterByEventName = new Map(
-         meters.data.map((m) => [m.event_name, m.id]),
-      );
+   const metersResult = await fromPromise(
+      stripeClient.billing.meters.list({ limit: 100 }),
+      () => WebAppError.internal("Failed to fetch meter usage"),
+   );
 
-      const entries = Object.entries(STRIPE_METER_EVENTS);
-      const concurrency = 5;
-      const results: Array<{
-         eventName: string;
-         used: number;
-         freeTierLimit: number;
-         pricePerEvent: string;
-      }> = [];
-      for (let i = 0; i < entries.length; i += concurrency) {
-         const batch = entries.slice(i, i + concurrency);
-         const batchResults = await Promise.allSettled(
-            batch.map(async ([eventName, meterEventName]) => {
-               const meterId = meterByEventName.get(meterEventName);
-               if (!meterId) {
-                  return {
-                     eventName,
-                     used: 0,
-                     freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
-                     pricePerEvent: EVENT_PRICES[eventName] ?? "0",
-                  };
-               }
-               const summary =
-                  await stripeClient.billing.meters.listEventSummaries(
-                     meterId,
-                     {
-                        customer: userRecord.stripeCustomerId!,
-                        start_time: startOfMonth,
-                        end_time: now,
-                        value_grouping_window: "day",
-                        limit: 31,
-                     },
-                  );
-               const used = summary.data.reduce(
-                  (sum, s) => sum + s.aggregated_value,
-                  0,
-               );
+   if (metersResult.isErr()) throw metersResult.error;
+
+   const meterByEventName = new Map(
+      metersResult.value.data.map((m) => [m.event_name, m.id]),
+   );
+
+   const entries = Object.entries(STRIPE_METER_EVENTS);
+   const concurrency = 5;
+   const results: Array<{
+      eventName: string;
+      used: number;
+      freeTierLimit: number;
+      pricePerEvent: string;
+   }> = [];
+
+   for (let i = 0; i < entries.length; i += concurrency) {
+      const batch = entries.slice(i, i + concurrency);
+      const batchResults = await Promise.allSettled(
+         batch.map(async ([eventName, meterEventName]) => {
+            const meterId = meterByEventName.get(meterEventName);
+            if (!meterId) {
                return {
-                  eventName,
-                  used,
-                  freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
-                  pricePerEvent: EVENT_PRICES[eventName] ?? "0",
-               };
-            }),
-         );
-         for (const [j, result] of batchResults.entries()) {
-            const eventName = batch[j]![0];
-            if (result.status === "rejected") {
-               results.push({
                   eventName,
                   used: 0,
                   freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
                   pricePerEvent: EVENT_PRICES[eventName] ?? "0",
-               });
-            } else {
-               results.push(result.value);
+               };
             }
+            const summary =
+               await stripeClient.billing.meters.listEventSummaries(meterId, {
+                  customer: userRecord.stripeCustomerId!,
+                  start_time: startOfMonth,
+                  end_time: now,
+                  value_grouping_window: "day",
+                  limit: 31,
+               });
+            const used = summary.data.reduce(
+               (sum, s) => sum + s.aggregated_value,
+               0,
+            );
+            return {
+               eventName,
+               used,
+               freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
+               pricePerEvent: EVENT_PRICES[eventName] ?? "0",
+            };
+         }),
+      );
+      for (const [j, result] of batchResults.entries()) {
+         const eventName = batch[j]![0];
+         if (result.status === "rejected") {
+            results.push({
+               eventName,
+               used: 0,
+               freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
+               pricePerEvent: EVENT_PRICES[eventName] ?? "0",
+            });
+         } else {
+            results.push(result.value);
          }
       }
-
-      return results;
-   } catch {
-      throw WebAppError.internal("Failed to fetch meter usage");
    }
+
+   return results;
 });
 
 export const getEventCatalog = protectedProcedure.handler(
    async ({ context }) => {
       const { db } = context;
-      try {
-         return await db
+      const result = await fromPromise(
+         db
             .select()
             .from(eventCatalog)
-            .orderBy(eventCatalog.category, eventCatalog.displayName);
-      } catch {
-         throw WebAppError.internal("Failed to fetch event catalog");
-      }
+            .orderBy(eventCatalog.category, eventCatalog.displayName),
+         () => WebAppError.internal("Failed to fetch event catalog"),
+      );
+      return result.match(
+         (rows) => rows,
+         (e) => {
+            throw e;
+         },
+      );
    },
 );
 
