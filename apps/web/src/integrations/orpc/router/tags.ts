@@ -8,8 +8,11 @@ import {
    updateTag,
 } from "@core/database/repositories/tags-repository";
 import { createTagSchema, updateTagSchema } from "@core/database/schemas/tags";
+import { user as userTable } from "@core/database/schemas/auth";
 import { WebAppError } from "@core/logging/errors";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { enqueueDeriveTagKeywordsWorkflow } from "@packages/workflows/workflows/derive-tag-keywords-workflow";
 import { protectedProcedure } from "../server";
 
 const idSchema = z.object({ id: z.string().uuid() });
@@ -17,12 +20,29 @@ const idSchema = z.object({ id: z.string().uuid() });
 export const create = protectedProcedure
    .input(createTagSchema)
    .handler(async ({ context, input }) => {
-      return (await createTag(context.db, context.teamId, input)).match(
-         (tag) => tag,
+      const [tagResult, userRecord] = await Promise.all([
+         createTag(context.db, context.teamId, input),
+         context.db.query.user.findFirst({
+            where: eq(userTable.id, context.userId),
+            columns: { stripeCustomerId: true },
+         }),
+      ]);
+      const tag = tagResult.match(
+         (t) => t,
          (e) => {
             throw WebAppError.fromAppError(e);
          },
       );
+      await enqueueDeriveTagKeywordsWorkflow(context.workflowClient, {
+         tagId: tag.id,
+         teamId: context.teamId,
+         organizationId: context.organizationId,
+         name: tag.name,
+         description: tag.description ?? null,
+         userId: context.userId,
+         stripeCustomerId: userRecord?.stripeCustomerId ?? null,
+      });
+      return tag;
    });
 
 export const getAll = protectedProcedure.handler(async ({ context }) => {
@@ -38,16 +58,32 @@ export const update = protectedProcedure
    .input(idSchema.merge(updateTagSchema))
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
-      return (
+      const tag = (
          await ensureTagOwnership(context.db, input.id, context.teamId).andThen(
             () => updateTag(context.db, id, data),
          )
       ).match(
-         (tag) => tag,
+         (t) => t,
          (e) => {
             throw WebAppError.fromAppError(e);
          },
       );
+      if (data.name !== undefined || data.description !== undefined) {
+         const userRecord = await context.db.query.user.findFirst({
+            where: eq(userTable.id, context.userId),
+            columns: { stripeCustomerId: true },
+         });
+         await enqueueDeriveTagKeywordsWorkflow(context.workflowClient, {
+            tagId: tag.id,
+            teamId: context.teamId,
+            organizationId: context.organizationId,
+            name: tag.name,
+            description: tag.description ?? null,
+            userId: context.userId,
+            stripeCustomerId: userRecord?.stripeCustomerId ?? null,
+         });
+      }
+      return tag;
    });
 
 export const remove = protectedProcedure
