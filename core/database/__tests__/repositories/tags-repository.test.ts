@@ -459,6 +459,43 @@ describe("tags-repository", () => {
       });
    });
 
+   describe("getById", () => {
+      it("returns tag when id and teamId match", async () => {
+         const teamId = randomTeamId();
+         const created = (
+            await repo.createTag(testDb.db, teamId, validCreateInput())
+         )._unsafeUnwrap();
+
+         const found = (
+            await repo.getById(testDb.db, created.id, teamId)
+         )._unsafeUnwrap();
+         expect(found).toMatchObject({ id: created.id, teamId });
+      });
+
+      it("returns notFound error when id does not exist", async () => {
+         const result = await repo.getById(
+            testDb.db,
+            crypto.randomUUID(),
+            randomTeamId(),
+         );
+         expect(result._unsafeUnwrapErr().message).toMatch(/não encontrad/);
+      });
+
+      it("returns notFound error when teamId does not match", async () => {
+         const teamId = randomTeamId();
+         const created = (
+            await repo.createTag(testDb.db, teamId, validCreateInput())
+         )._unsafeUnwrap();
+
+         const result = await repo.getById(
+            testDb.db,
+            created.id,
+            randomTeamId(),
+         );
+         expect(result._unsafeUnwrapErr().message).toMatch(/não encontrad/);
+      });
+   });
+
    describe("bulkDeleteTags — isDefault", () => {
       it("rejects bulk delete when any tag is default", async () => {
          const teamId = randomTeamId();
