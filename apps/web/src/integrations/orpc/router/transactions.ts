@@ -18,6 +18,7 @@ import {
    validateTransactionReferences,
 } from "@core/database/repositories/transactions-repository";
 import { ensureBankAccountOwnership } from "@core/database/repositories/bank-accounts-repository";
+import { getFinancialConfig } from "@core/database/repositories/financial-settings-repository";
 import {
    createTransactionSchema,
    transactions,
@@ -73,6 +74,20 @@ const filterSchema = z
    })
    .optional();
 
+async function enforceCostCenterPolicy(
+   db: Parameters<typeof getFinancialConfig>[0],
+   teamId: string,
+   tagId: string | null | undefined,
+) {
+   const result = await getFinancialConfig(db, teamId);
+   const config = result.isOk() ? result.value : null;
+   if (config?.costCenterRequired && !tagId) {
+      throw WebAppError.badRequest(
+         "Centro de Custo é obrigatório para este espaço.",
+      );
+   }
+}
+
 export const create = protectedProcedure
    .input(
       createTransactionSchema
@@ -81,6 +96,7 @@ export const create = protectedProcedure
    )
    .handler(async ({ context, input }) => {
       const { tagId, items, autoCategorize, ...data } = input;
+      await enforceCostCenterPolicy(context.db, context.teamId, tagId);
       await validateTransactionReferences(context.db, context.teamId, {
          bankAccountId: data.bankAccountId,
          destinationBankAccountId: data.destinationBankAccountId,
@@ -162,6 +178,9 @@ export const update = protectedProcedure
          input.id,
          context.teamId,
       );
+      if ("tagId" in input) {
+         await enforceCostCenterPolicy(context.db, context.teamId, input.tagId);
+      }
       if (
          input.bankAccountId ||
          input.destinationBankAccountId ||
