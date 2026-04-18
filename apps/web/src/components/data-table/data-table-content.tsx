@@ -1,5 +1,3 @@
-"use client";
-
 import { DataTable } from "@packages/ui/components/data-table";
 import { useDataTableContext } from "./context";
 
