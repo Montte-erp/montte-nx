@@ -36,6 +36,7 @@ import { getCategory } from "@core/database/repositories/categories-repository";
 import { getContact } from "@core/database/repositories/contacts-repository";
 import { getTag } from "@core/database/repositories/tags-repository";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { tags } from "@core/database/schemas/tags";
 import { categories } from "@core/database/schemas/categories";
 import { contacts } from "@core/database/schemas/contacts";
 import { creditCards } from "@core/database/schemas/credit-cards";
@@ -282,6 +283,8 @@ export async function listTransactions(
             categories,
             "suggested_categories",
          );
+         const suggestedTagsWeighted = alias(tags, "suggested_tags");
+         const tagAliasWeighted = alias(tags, "tag_alias");
          const allRows = await db
             .select({
                ...getTableColumns(transactions),
@@ -290,6 +293,8 @@ export async function listTransactions(
                bankAccountName: bankAccounts.name,
                contactName: contacts.name,
                suggestedCategoryName: suggestedCategoriesWeighted.name,
+               tagName: tagAliasWeighted.name,
+               suggestedTagName: suggestedTagsWeighted.name,
             })
             .from(transactions)
             .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -309,6 +314,14 @@ export async function listTransactions(
                eq(transactions.bankAccountId, bankAccounts.id),
             )
             .leftJoin(contacts, eq(transactions.contactId, contacts.id))
+            .leftJoin(
+               tagAliasWeighted,
+               eq(transactions.tagId, tagAliasWeighted.id),
+            )
+            .leftJoin(
+               suggestedTagsWeighted,
+               eq(transactions.suggestedTagId, suggestedTagsWeighted.id),
+            )
             .where(whereClause)
             .orderBy(desc(transactions.date));
 
@@ -343,6 +356,8 @@ export async function listTransactions(
          .where(whereClause);
 
       const suggestedCategories = alias(categories, "suggested_categories");
+      const suggestedTags = alias(tags, "suggested_tags");
+      const tagAlias = alias(tags, "tag_alias");
 
       const data = await db
          .select({
@@ -352,6 +367,8 @@ export async function listTransactions(
             bankAccountName: bankAccounts.name,
             contactName: contacts.name,
             suggestedCategoryName: suggestedCategories.name,
+            tagName: tagAlias.name,
+            suggestedTagName: suggestedTags.name,
          })
          .from(transactions)
          .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -365,6 +382,11 @@ export async function listTransactions(
             eq(transactions.bankAccountId, bankAccounts.id),
          )
          .leftJoin(contacts, eq(transactions.contactId, contacts.id))
+         .leftJoin(tagAlias, eq(transactions.tagId, tagAlias.id))
+         .leftJoin(
+            suggestedTags,
+            eq(transactions.suggestedTagId, suggestedTags.id),
+         )
          .where(whereClause)
          .orderBy(desc(transactions.date))
          .limit(pageSize)
@@ -469,7 +491,7 @@ export async function updateTransaction(
          .update(transactions)
          .set({
             ...validated,
-            ...(tagId !== undefined ? { tagId } : {}),
+            ...(tagId !== undefined ? { tagId, suggestedTagId: null } : {}),
             ...(validated.categoryId !== undefined
                ? { suggestedCategoryId: null }
                : {}),
@@ -611,5 +633,26 @@ export async function updateTransactionCategory(
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to update transaction category");
+   }
+}
+
+export async function updateTransactionTag(
+   db: DatabaseInstance,
+   id: string,
+   data: {
+      tagId?: string | null;
+      suggestedTagId?: string | null;
+   },
+) {
+   try {
+      await db
+         .update(transactions)
+         .set({ ...data, updatedAt: dayjs().toDate() })
+         .where(eq(transactions.id, id));
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database(
+         "Falha ao atualizar centro de custo da transação.",
+      );
    }
 }
