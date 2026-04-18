@@ -278,7 +278,7 @@ export function DataTableRoot<TData, TValue>({
          id: "__select",
          header: ({ table }) => (
             <Checkbox
-               aria-label="Select all"
+               aria-label="Selecionar todos"
                checked={
                   table.getIsAllPageRowsSelected() ||
                   (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -291,7 +291,7 @@ export function DataTableRoot<TData, TValue>({
          cell: ({ row }) =>
             row.depth > 0 ? null : (
                <Checkbox
-                  aria-label="Select row"
+                  aria-label="Selecionar linha"
                   checked={row.getIsSelected()}
                   onCheckedChange={(value) => row.toggleSelected(!!value)}
                />

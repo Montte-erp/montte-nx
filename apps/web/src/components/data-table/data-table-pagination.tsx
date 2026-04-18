@@ -97,6 +97,7 @@ export function DataTablePagination({
                               "pointer-events-none opacity-50",
                         )}
                         href="#"
+                        tabIndex={isFirstPage || hasSinglePage ? -1 : undefined}
                         onClick={(e) => {
                            e.preventDefault();
                            if (!isFirstPage && !hasSinglePage)
@@ -113,6 +114,7 @@ export function DataTablePagination({
                            )}
                            href="#"
                            isActive={pageNum === currentPage}
+                           tabIndex={hasSinglePage ? -1 : undefined}
                            onClick={(e) => {
                               e.preventDefault();
                               if (!hasSinglePage) onPageChange(pageNum);
@@ -130,6 +132,7 @@ export function DataTablePagination({
                               "pointer-events-none opacity-50",
                         )}
                         href="#"
+                        tabIndex={isLastPage || hasSinglePage ? -1 : undefined}
                         onClick={(e) => {
                            e.preventDefault();
                            if (!isLastPage && !hasSinglePage)

@@ -1,5 +1,6 @@
 import type { Row } from "@tanstack/react-table";
 import { flexRender } from "@tanstack/react-table";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -11,6 +12,7 @@ import {
    TableRow,
 } from "@packages/ui/components/table";
 import { cn } from "@packages/ui/lib/utils";
+import { useState } from "react";
 import { useDataTableContext, useDataTableStore } from "./data-table-root";
 
 function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
@@ -110,18 +112,49 @@ function DataTableBodyRows<TData>({
    return rows.map(renderRow);
 }
 
-export function DataTableContent<TData>() {
+interface DataTableContentProps {
+   maxHeight?: number;
+}
+
+export function DataTableContent<TData>({ maxHeight }: DataTableContentProps) {
    const { table, groupBy, renderGroupHeader } = useDataTableContext<TData>();
    const hasEmptyState = useDataTableStore((s) => s.hasEmptyState);
    const dataLength = useDataTableStore((s) => s.data.length);
+   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
+
+   const rows = table.getRowModel().rows;
+
+   const virtualizer = useVirtualizer({
+      count: rows.length,
+      getScrollElement: () => scrollEl,
+      estimateSize: () => 53,
+      overscan: 5,
+      enabled: maxHeight !== undefined && !groupBy,
+   });
 
    if (dataLength === 0 && hasEmptyState) return null;
 
    const columnCount = table.getVisibleLeafColumns().length;
-   const rows = table.getRowModel().rows;
+   const isVirtualized = maxHeight !== undefined && !groupBy;
+   const virtualItems = isVirtualized ? virtualizer.getVirtualItems() : null;
+   const totalSize = virtualizer.getTotalSize();
+   const paddingTop =
+      virtualItems && virtualItems.length > 0 ? virtualItems[0].start : 0;
+   const paddingBottom =
+      virtualItems && virtualItems.length > 0
+         ? totalSize - virtualItems[virtualItems.length - 1].end
+         : 0;
 
    return (
-      <div className="rounded-md border overflow-hidden">
+      <div
+         className="rounded-md border overflow-hidden"
+         ref={maxHeight !== undefined ? setScrollEl : undefined}
+         style={
+            maxHeight !== undefined
+               ? { maxHeight, overflowY: "auto" }
+               : undefined
+         }
+      >
          <Table className="border-separate border-spacing-0">
             <TableHeader>
                {table.getHeaderGroups().map((headerGroup) => (
@@ -159,6 +192,15 @@ export function DataTableContent<TData>() {
                               )}
                               colSpan={header.colSpan}
                               key={header.id}
+                              aria-sort={
+                                 header.column.getCanSort()
+                                    ? header.column.getIsSorted() === "asc"
+                                       ? "ascending"
+                                       : header.column.getIsSorted() === "desc"
+                                         ? "descending"
+                                         : "none"
+                                    : undefined
+                              }
                            >
                               {header.isPlaceholder ? null : header.column.getCanSort() ? (
                                  <Button
@@ -197,12 +239,37 @@ export function DataTableContent<TData>() {
                ))}
             </TableHeader>
             <TableBody>
-               <DataTableBodyRows
-                  columnCount={columnCount}
-                  groupBy={groupBy}
-                  renderGroupHeader={renderGroupHeader}
-                  rows={rows}
-               />
+               {isVirtualized && virtualItems ? (
+                  <>
+                     {paddingTop > 0 && (
+                        <TableRow>
+                           <TableCell
+                              colSpan={columnCount}
+                              style={{ height: paddingTop, padding: 0 }}
+                           />
+                        </TableRow>
+                     )}
+                     <DataTableBodyRows
+                        columnCount={columnCount}
+                        rows={virtualItems.map((v) => rows[v.index])}
+                     />
+                     {paddingBottom > 0 && (
+                        <TableRow>
+                           <TableCell
+                              colSpan={columnCount}
+                              style={{ height: paddingBottom, padding: 0 }}
+                           />
+                        </TableRow>
+                     )}
+                  </>
+               ) : (
+                  <DataTableBodyRows
+                     columnCount={columnCount}
+                     groupBy={groupBy}
+                     renderGroupHeader={renderGroupHeader}
+                     rows={rows}
+                  />
+               )}
             </TableBody>
          </Table>
       </div>
