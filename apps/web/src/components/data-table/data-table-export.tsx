@@ -24,14 +24,9 @@ function downloadBlob(blob: Blob, filename: string) {
    setTimeout(() => URL.revokeObjectURL(url), 100);
 }
 
-interface DataTableExportButtonProps {
-   exportFileName: string;
-}
-
-export function DataTableExportButton({
-   exportFileName,
-}: DataTableExportButtonProps) {
-   const { table } = useDataTable();
+export function DataTableExportButton() {
+   const { table, storageKey } = useDataTable();
+   const exportFileBase = storageKey.replace(/^montte:datatable:/, "");
    const { generate: generateCsv } = useCsvFile();
    const { generate: generateXlsx } = useXlsxFile();
 
@@ -78,7 +73,7 @@ export function DataTableExportButton({
          const data = buildRows(rows);
          const suffix = selected ? "-selecionados" : "";
          const dateStr = dayjs().format("YYYY-MM-DD");
-         const filename = `${exportFileName}${suffix}-${dateStr}.${format}`;
+         const filename = `${exportFileBase}${suffix}-${dateStr}.${format}`;
 
          if (format === "csv") {
             downloadBlob(generateCsv(data, headers), filename);
@@ -86,7 +81,7 @@ export function DataTableExportButton({
          }
          downloadBlob(generateXlsx(data, headers), filename);
       },
-      [table, buildRows, exportFileName, headers, generateCsv, generateXlsx],
+      [table, buildRows, storageKey, headers, generateCsv, generateXlsx],
    );
 
    return (

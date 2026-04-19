@@ -62,6 +62,7 @@ declare module "@tanstack/react-table" {
 type DataTableContextValue<TData> = {
    store: Store<DataTableStoreState>;
    table: Table<TData>;
+   storageKey: string;
    onTableStateChange: (state: DataTableStoredState) => void;
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
@@ -91,6 +92,7 @@ export function useDataTable<TData>() {
    return {
       table: ctx.table,
       store: ctx.store,
+      storageKey: ctx.storageKey,
       onTableStateChange: ctx.onTableStateChange,
       groupBy: ctx.groupBy,
       renderGroupHeader: ctx.renderGroupHeader,
@@ -346,11 +348,19 @@ function useDataTableRoot<TData>({
       () => ({
          store,
          table,
+         storageKey,
          onTableStateChange,
          groupBy,
          renderGroupHeader,
       }),
-      [store, table, onTableStateChange, groupBy, renderGroupHeader],
+      [
+         store,
+         table,
+         storageKey,
+         onTableStateChange,
+         groupBy,
+         renderGroupHeader,
+      ],
    );
 }
 
