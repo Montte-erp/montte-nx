@@ -27,7 +27,8 @@ export function buildTagColumns(): ColumnDef<TagRow>[] {
                return (
                   <Announcement className="cursor-default w-fit">
                      <AnnouncementTag>
-                        <ShieldCheck className="size-4" aria-label="Padrão" />
+                        <ShieldCheck aria-hidden="true" className="size-4" />
+                        <span className="sr-only">Padrão</span>
                      </AnnouncementTag>
                      <AnnouncementTitle>
                         {name}
@@ -35,10 +36,14 @@ export function buildTagColumns(): ColumnDef<TagRow>[] {
                            <Tooltip>
                               <TooltipTrigger asChild>
                                  <span
+                                    aria-label="Arquivado"
                                     className="inline-flex shrink-0 cursor-default"
                                     tabIndex={0}
                                  >
-                                    <Archive className="size-4 text-muted-foreground" />
+                                    <Archive
+                                       aria-hidden="true"
+                                       className="size-4 text-muted-foreground"
+                                    />
                                  </span>
                               </TooltipTrigger>
                               <TooltipContent>Arquivado</TooltipContent>
@@ -55,10 +60,14 @@ export function buildTagColumns(): ColumnDef<TagRow>[] {
                      <Tooltip>
                         <TooltipTrigger asChild>
                            <span
+                              aria-label="Arquivado"
                               className="inline-flex shrink-0 cursor-default"
                               tabIndex={0}
                            >
-                              <Archive className="size-4 text-muted-foreground" />
+                              <Archive
+                                 aria-hidden="true"
+                                 className="size-4 text-muted-foreground"
+                              />
                            </span>
                         </TooltipTrigger>
                         <TooltipContent>Arquivado</TooltipContent>

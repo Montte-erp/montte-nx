@@ -1,4 +1,5 @@
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
+import { DERIVE_TAG_KEYWORDS_QUEUE_NAME } from "./derive-tag-keywords-workflow";
 
 export type DeriveTagKeywordsInput = {
    tagId: string;
@@ -17,7 +18,7 @@ export async function enqueueDeriveTagKeywordsWorkflow(
    await client.enqueue(
       {
          workflowName: "deriveTagKeywordsWorkflowFn",
-         queueName: "workflow:derive-tag-keywords",
+         queueName: DERIVE_TAG_KEYWORDS_QUEUE_NAME,
       },
       input,
    );

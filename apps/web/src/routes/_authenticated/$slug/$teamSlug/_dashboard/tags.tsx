@@ -225,7 +225,7 @@ function TagsList() {
                            tooltip="Reativar"
                            variant="outline"
                         >
-                           <ArchiveRestore className="size-4" />
+                           <ArchiveRestore />
                         </Button>
                         <Button
                            className="text-destructive hover:text-destructive"
@@ -233,7 +233,7 @@ function TagsList() {
                            tooltip="Excluir"
                            variant="outline"
                         >
-                           <Trash2 className="size-4" />
+                           <Trash2 />
                         </Button>
                      </>
                   );
@@ -245,14 +245,14 @@ function TagsList() {
                         tooltip="Editar"
                         variant="outline"
                      >
-                        <Pencil className="size-4" />
+                        <Pencil />
                      </Button>
                      <Button
                         onClick={() => handleArchive(row.original)}
                         tooltip="Arquivar"
                         variant="outline"
                      >
-                        <Archive className="size-4" />
+                        <Archive />
                      </Button>
                      <Button
                         className="text-destructive hover:text-destructive"
@@ -260,7 +260,7 @@ function TagsList() {
                         tooltip="Excluir"
                         variant="outline"
                      >
-                        <Trash2 className="size-4" />
+                        <Trash2 />
                      </Button>
                   </>
                );
@@ -313,7 +313,7 @@ function TagsList() {
                      <>
                         {archivableIds.length > 0 && (
                            <SelectionActionButton
-                              icon={<Archive className="size-4" />}
+                              icon={<Archive />}
                               onClick={async () => {
                                  await bulkArchiveMutation.mutateAsync({
                                     ids: archivableIds,
@@ -329,7 +329,7 @@ function TagsList() {
                         )}
                         {deletableIds.length > 0 && (
                            <SelectionActionButton
-                              icon={<Trash2 className="size-4" />}
+                              icon={<Trash2 />}
                               onClick={() => {
                                  openAlertDialog({
                                     title: `Excluir ${deletableIds.length} ${deletableIds.length === 1 ? "centro de custo" : "centros de custo"}`,
