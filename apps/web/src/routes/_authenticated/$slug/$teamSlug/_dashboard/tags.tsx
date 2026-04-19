@@ -7,7 +7,7 @@ import {
    EmptyTitle,
 } from "@packages/ui/components/empty";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import {
    Archive,
    ArchiveRestore,
@@ -91,7 +91,7 @@ function TagsSkeleton() {
 function TagsList() {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
-   const navigate = useNavigate();
+   const navigate = Route.useNavigate();
    const { search, includeArchived, page, pageSize } = Route.useSearch();
 
    const handleCreate = useCallback(() => {

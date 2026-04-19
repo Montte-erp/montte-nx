@@ -94,7 +94,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
    const [{ data: categories }, { data: tagsResult }] = useSuspenseQueries({
       queries: [
          orpc.categories.getAll.queryOptions({}),
-         orpc.tags.getAll.queryOptions({}),
+         orpc.tags.getAll.queryOptions({ input: {} }),
       ],
    });
    const tags = tagsResult.data;

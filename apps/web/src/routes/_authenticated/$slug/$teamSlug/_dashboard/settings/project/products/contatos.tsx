@@ -31,7 +31,7 @@ function ContatosSettingsForm() {
       orpc.contactSettings.getSettings.queryOptions({}),
    );
    const { data: tagsResult } = useSuspenseQuery(
-      orpc.tags.getAll.queryOptions({}),
+      orpc.tags.getAll.queryOptions({ input: {} }),
    );
    const tags = tagsResult.data;
 
