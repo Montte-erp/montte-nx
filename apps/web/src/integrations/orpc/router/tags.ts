@@ -1,5 +1,6 @@
 import {
    archiveTag,
+   bulkArchiveTags,
    bulkDeleteTags,
    createTag,
    deleteTag,
@@ -115,6 +116,18 @@ export const archive = protectedProcedure
             throw WebAppError.fromAppError(e);
          },
       );
+   });
+
+export const bulkArchive = protectedProcedure
+   .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
+   .handler(async ({ context, input }) => {
+      (await bulkArchiveTags(context.db, input.ids, context.teamId)).match(
+         () => null,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+      return { archived: input.ids.length };
    });
 
 export const bulkRemove = protectedProcedure
