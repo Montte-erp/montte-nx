@@ -26,7 +26,7 @@ import { createContextState } from "foxact/context-state";
 import { useLocalStorage } from "foxact/use-local-storage";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useSingleton } from "foxact/use-singleton";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import type React from "react";
 
 export type DataTableStoredState = {
@@ -183,6 +183,14 @@ function useDataTableRoot<TData>({
       if (externalRowSelection !== undefined)
          store.setState((s) => ({ ...s, rowSelection: externalRowSelection }));
    }, [externalRowSelection, store]);
+
+   const prevDataRef = useRef(data);
+   useEffect(() => {
+      if (prevDataRef.current !== data) {
+         prevDataRef.current = data;
+         store.setState((s) => ({ ...s, rowSelection: {} }));
+      }
+   }, [data, store]);
 
    const persistDebounced = useDebouncedCallback(
       (update: Partial<DataTablePersistedState>) => {
