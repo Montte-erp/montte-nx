@@ -66,6 +66,9 @@ type DataTableContextValue<TData> = {
    onTableStateChange: (state: DataTableStoredState) => void;
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
+   isDraftRowActive?: boolean;
+   onAddRow?: (data: Record<string, string | string[]>) => Promise<void>;
+   onDiscardAddRow?: () => void;
 };
 
 // oxlint-ignore no-explicit-any
@@ -96,6 +99,9 @@ export function useDataTable<TData>() {
       onTableStateChange: ctx.onTableStateChange,
       groupBy: ctx.groupBy,
       renderGroupHeader: ctx.renderGroupHeader,
+      isDraftRowActive: ctx.isDraftRowActive,
+      onAddRow: ctx.onAddRow,
+      onDiscardAddRow: ctx.onDiscardAddRow,
       sorting,
       columnFilters,
       rowSelection,
@@ -132,6 +138,9 @@ interface DataTableRootProps<TData> {
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
    getSubRows?: (row: TData) => TData[] | undefined;
+   isDraftRowActive?: boolean;
+   onAddRow?: (data: Record<string, string | string[]>) => Promise<void>;
+   onDiscardAddRow?: () => void;
 }
 
 function useDataTableRoot<TData>({
@@ -149,6 +158,9 @@ function useDataTableRoot<TData>({
    groupBy,
    renderGroupHeader,
    getSubRows,
+   isDraftRowActive,
+   onAddRow,
+   onDiscardAddRow,
 }: Omit<DataTableRootProps<TData>, "children">): DataTableContextValue<TData> {
    const [persisted, setPersisted] =
       useLocalStorage<DataTablePersistedState | null>(storageKey, null);
@@ -352,6 +364,9 @@ function useDataTableRoot<TData>({
          onTableStateChange,
          groupBy,
          renderGroupHeader,
+         isDraftRowActive,
+         onAddRow,
+         onDiscardAddRow,
       }),
       [
          store,
@@ -360,6 +375,9 @@ function useDataTableRoot<TData>({
          onTableStateChange,
          groupBy,
          renderGroupHeader,
+         isDraftRowActive,
+         onAddRow,
+         onDiscardAddRow,
       ],
    );
 }

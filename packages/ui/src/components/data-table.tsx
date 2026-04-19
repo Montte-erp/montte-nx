@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import {
    closestCenter,
    DndContext,
@@ -103,6 +104,13 @@ declare module "@tanstack/react-table" {
       filterVariant?: "text" | "select" | "range" | "date";
       align?: "left" | "center" | "right";
       exportable?: boolean;
+      isEditable?: boolean;
+      cellComponent?: "text" | "textarea" | "select" | "tags";
+      editMode?: "inline" | "popover";
+      editOptions?: Array<{ label: string; value: string }>;
+      editSchema?: StandardSchemaV1<any>;
+      onSave?: (rowId: string, value: unknown) => Promise<void>;
+      isEditableForRow?: (row: TData) => boolean;
    }
 }
 
