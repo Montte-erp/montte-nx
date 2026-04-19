@@ -120,6 +120,7 @@ export function buildTagColumns(options?: {
             label: "Descrição",
             exportable: true,
             isEditable: true,
+            editMode: "inline",
             cellComponent: "textarea",
             editSchema: tagDescriptionSchema,
             isEditableForRow: (row: TagRow) => !row.isArchived,

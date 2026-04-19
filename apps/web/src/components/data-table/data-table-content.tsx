@@ -37,6 +37,7 @@ import {
 import { Input } from "@packages/ui/components/input";
 import { Textarea } from "@packages/ui/components/textarea";
 import { cn } from "@packages/ui/lib/utils";
+import { fromPromise } from "neverthrow";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import { useDataTable } from "./data-table-root";
@@ -120,6 +121,7 @@ function CellInput({
    options,
    label,
    autoFocus,
+   autoCommitOnBlur,
    inputRef,
    onCommit,
    onCancel,
@@ -129,6 +131,7 @@ function CellInput({
    options?: Array<{ label: string; value: string }>;
    label?: string;
    autoFocus?: boolean;
+   autoCommitOnBlur?: boolean;
    inputRef?: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
    onCommit?: () => void;
    onCancel?: () => void;
@@ -150,7 +153,10 @@ function CellInput({
             autoFocus={autoFocus}
             className="h-7 aria-invalid:border-destructive"
             value={stringValue}
-            onBlur={() => field.handleBlur()}
+            onBlur={() => {
+               field.handleBlur();
+               if (autoCommitOnBlur) onCommit?.();
+            }}
             onChange={(e) => field.handleChange(e.target.value)}
             onKeyDown={(e) => {
                if (e.key === "Escape") {
@@ -177,7 +183,10 @@ function CellInput({
             className="min-h-0 resize-none overflow-hidden aria-invalid:border-destructive"
             rows={1}
             value={stringValue}
-            onBlur={() => field.handleBlur()}
+            onBlur={() => {
+               field.handleBlur();
+               if (autoCommitOnBlur) onCommit?.();
+            }}
             onChange={(e) => {
                e.target.style.height = "auto";
                e.target.style.height = `${e.target.scrollHeight}px`;
@@ -206,7 +215,7 @@ function CellInput({
                onCommit?.();
             }}
          >
-            <SelectTrigger className="h-7 text-sm">
+            <SelectTrigger aria-label={label} className="h-7 text-sm">
                <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -225,6 +234,7 @@ function CellInput({
    if (cellComponent === "tags") {
       return (
          <MultiSelect
+            aria-label={label}
             onChange={(v) => field.handleChange(v)}
             onCreate={(name) => field.handleChange([...arrayValue, name])}
             options={arrayValue.map((kw) => ({ label: kw, value: kw }))}
@@ -240,6 +250,7 @@ function CellInput({
 function EditableCell({
    value: initialValue,
    cellComponent,
+   editMode = "popover",
    label,
    options,
    schema,
@@ -249,6 +260,7 @@ function EditableCell({
 }: {
    value: unknown;
    cellComponent: "text" | "textarea" | "select" | "tags";
+   editMode?: "inline" | "popover";
    label?: string;
    options?: Array<{ label: string; value: string }>;
    schema?: StandardSchemaV1<unknown>;
@@ -282,10 +294,12 @@ function EditableCell({
          const prev = localValue;
          setLocalValue(value.value);
          setOpen(false);
-         try {
-            await onSave?.(rowId, value.value);
-         } catch {
-            setLocalValue(prev);
+         if (onSave) {
+            const result = await fromPromise(
+               onSave(rowId, value.value),
+               (e) => e,
+            );
+            if (result.isErr()) setLocalValue(prev);
          }
       },
    });
@@ -301,6 +315,67 @@ function EditableCell({
    const displayValue = Array.isArray(localValue)
       ? localValue.join(", ")
       : localValue;
+
+   const fieldValidators = schema
+      ? {
+           onChange: ({ value }: { value: string | string[] }) => {
+              const result = schema["~standard"].validate(value);
+              if (result instanceof Promise) return undefined;
+              return result.issues?.map((i) => i.message).join(", ");
+           },
+        }
+      : undefined;
+
+   if (editMode === "inline") {
+      if (!open) {
+         return (
+            <button
+               aria-label={ariaLabel}
+               className="group/cell cursor-pointer min-h-[1.5rem] flex items-center gap-2 w-full text-sm text-left"
+               type="button"
+               onClick={() => setOpen(true)}
+            >
+               {children ?? (
+                  <span className="flex-1 truncate">
+                     {cellComponent === "select"
+                        ? (options?.find((o) => o.value === displayValue)
+                             ?.label ?? displayValue)
+                        : displayValue || (
+                             <span className="text-muted-foreground/40">—</span>
+                          )}
+                  </span>
+               )}
+               <Pencil className="size-3 shrink-0 text-muted-foreground opacity-0 group-hover/cell:opacity-100 transition-opacity" />
+            </button>
+         );
+      }
+
+      return (
+         <form
+            onSubmit={(e) => {
+               e.preventDefault();
+               e.stopPropagation();
+               form.handleSubmit();
+            }}
+         >
+            <form.Field name="value" validators={fieldValidators}>
+               {(field) => (
+                  <CellInput
+                     autoCommitOnBlur
+                     autoFocus
+                     cellComponent={cellComponent}
+                     field={field as unknown as CellFieldApi}
+                     inputRef={inputRef}
+                     label={ariaLabel}
+                     options={options}
+                     onCancel={cancel}
+                     onCommit={commit}
+                  />
+               )}
+            </form.Field>
+         </form>
+      );
+   }
 
    return (
       <Popover
@@ -351,23 +426,7 @@ function EditableCell({
                   form.handleSubmit();
                }}
             >
-               <form.Field
-                  name="value"
-                  validators={
-                     schema
-                        ? {
-                             onChange: ({ value }) => {
-                                const result =
-                                   schema["~standard"].validate(value);
-                                if (result instanceof Promise) return undefined;
-                                return result.issues
-                                   ?.map((i) => i.message)
-                                   .join(", ");
-                             },
-                          }
-                        : undefined
-                  }
-               >
+               <form.Field name="value" validators={fieldValidators}>
                   {(field) => (
                      <div className="flex flex-col gap-2">
                         <CellInput
@@ -439,6 +498,7 @@ function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
                   {isEditable ? (
                      <EditableCell
                         cellComponent={meta!.cellComponent!}
+                        editMode={meta?.editMode}
                         label={meta?.label}
                         options={meta?.editOptions}
                         rowId={row.id}

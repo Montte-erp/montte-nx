@@ -27,6 +27,7 @@ interface MultiSelectProps {
    emptyMessage?: string;
    onCreate?: (name: string) => void;
    createLabel?: string;
+   "aria-label"?: string;
 }
 
 export function MultiSelect({
@@ -37,6 +38,7 @@ export function MultiSelect({
    placeholder = "Select options...",
    onCreate,
    createLabel = "Criar",
+   "aria-label": ariaLabel,
 }: MultiSelectProps) {
    const inputRef = React.useRef<HTMLInputElement>(null);
    const [open, setOpen] = React.useState(false);
@@ -133,6 +135,7 @@ export function MultiSelect({
                   );
                })}
                <CommandPrimitive.Input
+                  aria-label={ariaLabel}
                   className="ml-2 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
                   onBlur={() => setOpen(false)}
                   onFocus={() => setOpen(true)}
