@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { AppError, validateInput } from "@core/logging/errors";
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { fromPromise, fromThrowable, ok, err, okAsync } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -63,9 +63,49 @@ export function listTags(
               and(eq(fields.teamId, teamId), eq(fields.isArchived, false)),
            orderBy: (fields, { asc }) => [asc(fields.name)],
         });
-
    return fromPromise(query, (e) =>
       AppError.database("Falha ao listar centros de custo.", { cause: e }),
+   );
+}
+
+export function listTagsPaginated(
+   db: DatabaseInstance,
+   teamId: string,
+   opts: {
+      includeArchived?: boolean;
+      search?: string;
+      page: number;
+      pageSize: number;
+   },
+) {
+   const search = opts.search?.trim();
+   return fromPromise(
+      (async () => {
+         const conditions = [eq(tags.teamId, teamId)];
+         if (!opts.includeArchived) conditions.push(eq(tags.isArchived, false));
+         if (search) {
+            const searchCond = or(
+               ilike(tags.name, `%${search}%`),
+               ilike(tags.description, `%${search}%`),
+            );
+            if (searchCond) conditions.push(searchCond);
+         }
+         const whereClause = and(...conditions);
+         const [countResult] = await db
+            .select({ total: count() })
+            .from(tags)
+            .where(whereClause);
+         const data = await db
+            .select()
+            .from(tags)
+            .where(whereClause)
+            .orderBy(asc(tags.name))
+            .limit(opts.pageSize)
+            .offset((opts.page - 1) * opts.pageSize);
+         return { data, total: countResult?.total ?? 0 };
+      })(),
+      (e) =>
+         AppError.database("Falha ao listar centros de custo.", { cause: e }),
    );
 }
 

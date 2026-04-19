@@ -12,13 +12,13 @@ import {
 } from "@/components/blocks/announcement";
 import type { Outputs } from "@/integrations/orpc/client";
 
-export type TagRow = Outputs["tags"]["getAll"][number];
+export type TagRow = Outputs["tags"]["getAll"]["data"][number];
 
 export function buildTagColumns(): ColumnDef<TagRow>[] {
    return [
       {
          accessorKey: "name",
-         header: "",
+         header: "Nome",
          meta: { label: "Nome", exportable: true },
          enableSorting: false,
          cell: ({ row }) => {
@@ -27,7 +27,7 @@ export function buildTagColumns(): ColumnDef<TagRow>[] {
                return (
                   <Announcement className="cursor-default w-fit">
                      <AnnouncementTag>
-                        <ShieldCheck className="size-3" />
+                        <ShieldCheck className="size-4" />
                      </AnnouncementTag>
                      <AnnouncementTitle>
                         {name}
@@ -38,7 +38,7 @@ export function buildTagColumns(): ColumnDef<TagRow>[] {
                                     className="inline-flex shrink-0 cursor-default"
                                     tabIndex={0}
                                  >
-                                    <Archive className="size-3.5 text-muted-foreground" />
+                                    <Archive className="size-4 text-muted-foreground" />
                                  </span>
                               </TooltipTrigger>
                               <TooltipContent>Arquivado</TooltipContent>
@@ -58,7 +58,7 @@ export function buildTagColumns(): ColumnDef<TagRow>[] {
                               className="inline-flex shrink-0 cursor-default"
                               tabIndex={0}
                            >
-                              <Archive className="size-3.5 text-muted-foreground" />
+                              <Archive className="size-4 text-muted-foreground" />
                            </span>
                         </TooltipTrigger>
                         <TooltipContent>Arquivado</TooltipContent>
@@ -98,7 +98,7 @@ export function buildTagColumns(): ColumnDef<TagRow>[] {
                   <TooltipTrigger asChild>
                      <Announcement className="cursor-default w-fit">
                         <AnnouncementTag>
-                           <Tags className="size-3" />
+                           <Tags className="size-4" />
                         </AnnouncementTag>
                         <AnnouncementTitle className="text-xs">
                            {count} {count === 1 ? "palavra" : "palavras"}

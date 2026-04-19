@@ -30,7 +30,10 @@ function ContatosSettingsForm() {
    const { data: settings } = useSuspenseQuery(
       orpc.contactSettings.getSettings.queryOptions({}),
    );
-   const { data: tags } = useSuspenseQuery(orpc.tags.getAll.queryOptions({}));
+   const { data: tagsResult } = useSuspenseQuery(
+      orpc.tags.getAll.queryOptions({}),
+   );
+   const tags = tagsResult.data;
 
    const mutation = useMutation(
       orpc.contactSettings.upsertSettings.mutationOptions({

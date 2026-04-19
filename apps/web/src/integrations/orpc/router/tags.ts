@@ -5,7 +5,8 @@ import {
    createTag,
    deleteTag,
    ensureTagOwnership,
-   listTags,
+   listTagsPaginated,
+   reactivateTag,
    updateTag,
 } from "@core/database/repositories/tags-repository";
 import { createTagSchema, updateTagSchema } from "@core/database/schemas/tags";
@@ -46,14 +47,30 @@ export const create = protectedProcedure
       return tag;
    });
 
-export const getAll = protectedProcedure.handler(async ({ context }) => {
-   return (await listTags(context.db, context.teamId)).match(
-      (tags) => tags,
-      (e) => {
-         throw WebAppError.fromAppError(e);
-      },
-   );
-});
+export const getAll = protectedProcedure
+   .input(
+      z.object({
+         search: z.string().optional(),
+         includeArchived: z.boolean().optional(),
+         page: z.number().int().positive().default(1),
+         pageSize: z.number().int().positive().max(100).default(20),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      return (
+         await listTagsPaginated(context.db, context.teamId, {
+            includeArchived: input.includeArchived,
+            search: input.search,
+            page: input.page,
+            pageSize: input.pageSize,
+         })
+      ).match(
+         (result) => result,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
 
 export const update = protectedProcedure
    .input(idSchema.merge(updateTagSchema))
@@ -128,6 +145,21 @@ export const bulkArchive = protectedProcedure
          },
       );
       return { archived: input.ids.length };
+   });
+
+export const unarchive = protectedProcedure
+   .input(idSchema)
+   .handler(async ({ context, input }) => {
+      return (
+         await ensureTagOwnership(context.db, input.id, context.teamId).andThen(
+            () => reactivateTag(context.db, input.id),
+         )
+      ).match(
+         (tag) => tag,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
    });
 
 export const bulkRemove = protectedProcedure
