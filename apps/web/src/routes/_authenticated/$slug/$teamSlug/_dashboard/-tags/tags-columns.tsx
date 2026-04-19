@@ -1,4 +1,3 @@
-import { Badge } from "@packages/ui/components/badge";
 import {
    Tooltip,
    TooltipContent,
@@ -23,45 +22,49 @@ export function buildTagColumns(): ColumnDef<TagRow>[] {
          meta: { label: "Nome", exportable: true },
          enableSorting: false,
          cell: ({ row }) => {
-            const { name, color, isDefault, isArchived } = row.original;
+            const { name, isDefault, isArchived } = row.original;
+            if (isDefault) {
+               return (
+                  <Announcement className="cursor-default w-fit">
+                     <AnnouncementTag>
+                        <ShieldCheck className="size-3" />
+                     </AnnouncementTag>
+                     <AnnouncementTitle>
+                        {name}
+                        {isArchived && (
+                           <Tooltip>
+                              <TooltipTrigger asChild>
+                                 <span
+                                    className="inline-flex shrink-0 cursor-default"
+                                    tabIndex={0}
+                                 >
+                                    <Archive className="size-3.5 text-muted-foreground" />
+                                 </span>
+                              </TooltipTrigger>
+                              <TooltipContent>Arquivado</TooltipContent>
+                           </Tooltip>
+                        )}
+                     </AnnouncementTitle>
+                  </Announcement>
+               );
+            }
             return (
-               <Announcement className="cursor-default w-fit">
-                  <AnnouncementTag>
-                     <span
-                        className="size-2.5 rounded-full"
-                        style={{ backgroundColor: color }}
-                     />
-                  </AnnouncementTag>
-                  <AnnouncementTitle>
-                     {name}
-                     {isDefault && (
-                        <Tooltip>
-                           <TooltipTrigger asChild>
-                              <span
-                                 className="inline-flex shrink-0 cursor-default"
-                                 tabIndex={0}
-                              >
-                                 <ShieldCheck className="size-3.5 text-muted-foreground" />
-                              </span>
-                           </TooltipTrigger>
-                           <TooltipContent>Padrão</TooltipContent>
-                        </Tooltip>
-                     )}
-                     {isArchived && (
-                        <Tooltip>
-                           <TooltipTrigger asChild>
-                              <span
-                                 className="inline-flex shrink-0 cursor-default"
-                                 tabIndex={0}
-                              >
-                                 <Archive className="size-3.5 text-muted-foreground" />
-                              </span>
-                           </TooltipTrigger>
-                           <TooltipContent>Arquivado</TooltipContent>
-                        </Tooltip>
-                     )}
-                  </AnnouncementTitle>
-               </Announcement>
+               <div className="flex items-center gap-2">
+                  <span className="text-sm">{name}</span>
+                  {isArchived && (
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                           <span
+                              className="inline-flex shrink-0 cursor-default"
+                              tabIndex={0}
+                           >
+                              <Archive className="size-3.5 text-muted-foreground" />
+                           </span>
+                        </TooltipTrigger>
+                        <TooltipContent>Arquivado</TooltipContent>
+                     </Tooltip>
+                  )}
+               </div>
             );
          },
       },
@@ -113,18 +116,6 @@ export function buildTagColumns(): ColumnDef<TagRow>[] {
                </Tooltip>
             );
          },
-      },
-      {
-         id: "isDefault",
-         header: "Padrão",
-         meta: { label: "Padrão", exportIgnore: true },
-         enableSorting: false,
-         cell: ({ row }) =>
-            row.original.isDefault ? (
-               <Badge variant="secondary">Padrão</Badge>
-            ) : (
-               <span className="text-sm text-muted-foreground/40">—</span>
-            ),
       },
    ];
 }
