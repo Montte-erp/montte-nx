@@ -82,7 +82,7 @@ export function DataTableToolbar({
    const inputValue = useStore(form.store, (s) => s.values.search);
 
    const activeFilters = columnFilters.filter(
-      ({ value }) => value !== undefined && value !== null && value !== "",
+      ({ value }) => value != null && value !== "",
    );
 
    const hasAnyFilter = activeFilters.length > 0 || inputValue !== "";
