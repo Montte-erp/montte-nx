@@ -29,14 +29,18 @@ function SelectionActionBar({
          data-selection-toolbar
          className={cn(
             "fixed bottom-4 left-1/2 -translate-x-1/2 z-[60]",
-            "flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3",
+            "flex items-center gap-2 md:gap-4 px-4 py-2 md:py-4",
             "bg-background border border-border",
             "rounded-lg shadow-lg",
-            "animate-in slide-in-from-bottom-4 fade-in duration-200",
+            "animate-in slide-in-from-bottom-4 fade-in duration-200 motion-reduce:animate-none",
             className,
          )}
       >
-         <div className="flex items-center gap-2 text-sm font-medium whitespace-nowrap">
+         <div
+            aria-atomic="true"
+            aria-live="polite"
+            className="flex items-center gap-2 text-sm font-medium whitespace-nowrap"
+         >
             <span className="tabular-nums">{selectedCount}</span>
             <span className="hidden sm:inline">
                {selectedCount === 1 ? "selecionado" : "selecionados"}
@@ -49,7 +53,8 @@ function SelectionActionBar({
          </div>
 
          <Button
-            className="h-7 gap-1.5 px-2"
+            aria-label="Limpar seleção"
+            className="h-8 gap-2 px-2"
             onClick={onClear}
             variant="outline"
          >
@@ -57,9 +62,9 @@ function SelectionActionBar({
             <span className="hidden sm:inline text-xs">Limpar</span>
          </Button>
 
-         <div className="h-4 w-px bg-border mx-1" />
+         <div className="h-4 w-px bg-border mx-2" />
 
-         <div className="flex items-center gap-1 md:gap-2">{children}</div>
+         <div className="flex items-center gap-2 md:gap-4">{children}</div>
       </div>
    );
 }
@@ -79,7 +84,7 @@ function SelectionActionButton({
    return (
       <Button
          className={cn(
-            "h-8 px-2.5 md:px-3 text-xs md:text-sm gap-1.5",
+            "h-8 px-2 md:px-4 text-xs md:text-sm gap-2",
             variant === "destructive" &&
                "bg-destructive/10 hover:bg-destructive/20 text-destructive border-destructive/30",
             className,
