@@ -196,6 +196,42 @@ export function deleteTag(db: DatabaseInstance, id: string) {
       );
 }
 
+export function bulkArchiveTags(
+   db: DatabaseInstance,
+   ids: string[],
+   teamId: string,
+) {
+   return fromPromise(
+      db.query.tags.findMany({
+         where: (fields, { and, inArray: inArr, eq }) =>
+            and(inArr(fields.id, ids), eq(fields.teamId, teamId)),
+      }),
+      (e) =>
+         AppError.database("Falha ao arquivar centros de custo.", { cause: e }),
+   )
+      .andThen((existing) => {
+         if (existing.length !== ids.length)
+            return err(
+               AppError.notFound(
+                  "Um ou mais centros de custo não foram encontrados.",
+               ),
+            );
+         return ok(undefined);
+      })
+      .andThen(() =>
+         fromPromise(
+            db
+               .update(tags)
+               .set({ isArchived: true, updatedAt: dayjs().toDate() })
+               .where(inArray(tags.id, ids)),
+            (e) =>
+               AppError.database("Falha ao arquivar centros de custo.", {
+                  cause: e,
+               }),
+         ),
+      );
+}
+
 export function bulkDeleteTags(
    db: DatabaseInstance,
    ids: string[],

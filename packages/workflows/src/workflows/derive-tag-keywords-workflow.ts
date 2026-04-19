@@ -1,7 +1,7 @@
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
 import dayjs from "dayjs";
-import { DBOS, WorkflowQueue } from "@dbos-inc/dbos-sdk";
+import { DBOS } from "@dbos-inc/dbos-sdk";
 import { updateTagKeywords } from "@core/database/repositories/tags-repository";
 import { emitAiTagKeywordDerived } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
@@ -13,10 +13,8 @@ import { getDeps, getPublisher } from "../context";
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
 
-export const deriveTagKeywordsQueue = new WorkflowQueue(
-   "workflow:derive-tag-keywords",
-   { workerConcurrency: 5 },
-);
+export const DERIVE_TAG_KEYWORDS_QUEUE_NAME =
+   "workflow:derive-tag-keywords" as const;
 
 export type DeriveTagKeywordsInput = {
    tagId: string;
@@ -216,7 +214,7 @@ export async function enqueueDeriveTagKeywordsWorkflow(
    await client.enqueue(
       {
          workflowName: deriveTagKeywordsWorkflowFn.name,
-         queueName: deriveTagKeywordsQueue.name,
+         queueName: DERIVE_TAG_KEYWORDS_QUEUE_NAME,
       },
       input,
    );
