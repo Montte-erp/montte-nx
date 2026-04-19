@@ -268,6 +268,7 @@ function TagsList() {
          >
             <DataTableToolbar
                searchPlaceholder="Buscar centros de custo..."
+               searchDefaultValue={search}
                onSearch={(value) =>
                   navigate({
                      search: (prev) => ({ ...prev, search: value, page: 1 }),

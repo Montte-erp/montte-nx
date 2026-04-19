@@ -1,4 +1,3 @@
-import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
 import dayjs from "dayjs";
 import { DBOS } from "@dbos-inc/dbos-sdk";
@@ -206,16 +205,3 @@ async function deriveTagKeywordsWorkflowFn(input: DeriveTagKeywordsInput) {
 export const deriveTagKeywordsWorkflow = DBOS.registerWorkflow(
    deriveTagKeywordsWorkflowFn,
 );
-
-export async function enqueueDeriveTagKeywordsWorkflow(
-   client: DBOSClient,
-   input: DeriveTagKeywordsInput,
-): Promise<void> {
-   await client.enqueue(
-      {
-         workflowName: deriveTagKeywordsWorkflowFn.name,
-         queueName: DERIVE_TAG_KEYWORDS_QUEUE_NAME,
-      },
-      input,
-   );
-}

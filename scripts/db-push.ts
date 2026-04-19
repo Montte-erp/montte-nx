@@ -55,6 +55,7 @@ async function ensureSchemas(envFile: string): Promise<void> {
    await client.connect();
 
    try {
+      await client.query(`CREATE EXTENSION IF NOT EXISTS pg_trgm`);
       for (const schema of REQUIRED_SCHEMAS) {
          await client.query(`CREATE SCHEMA IF NOT EXISTS "${schema}"`);
       }

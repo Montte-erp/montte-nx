@@ -14,7 +14,7 @@ import { user as userTable } from "@core/database/schemas/auth";
 import { WebAppError } from "@core/logging/errors";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { enqueueDeriveTagKeywordsWorkflow } from "@packages/workflows/workflows/derive-tag-keywords-workflow";
+import { enqueueDeriveTagKeywordsWorkflow } from "@packages/workflows/workflows/derive-tag-keywords-enqueue";
 import { protectedProcedure } from "../server";
 
 const idSchema = z.object({ id: z.string().uuid() });

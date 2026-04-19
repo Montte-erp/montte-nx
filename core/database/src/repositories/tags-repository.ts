@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { AppError, validateInput } from "@core/logging/errors";
-import { and, asc, count, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 import { fromPromise, fromThrowable, ok, err, okAsync } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -84,11 +84,12 @@ export function listTagsPaginated(
          const conditions = [eq(tags.teamId, teamId)];
          if (!opts.includeArchived) conditions.push(eq(tags.isArchived, false));
          if (search) {
-            const searchCond = or(
-               ilike(tags.name, `%${search}%`),
-               ilike(tags.description, `%${search}%`),
+            conditions.push(
+               sql`(
+                  ${tags.name} ilike ${"%" + search + "%"}
+                  or coalesce(${tags.description}, '') ilike ${"%" + search + "%"}
+               )`,
             );
-            if (searchCond) conditions.push(searchCond);
          }
          const whereClause = and(...conditions);
          const [countResult] = await db
