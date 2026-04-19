@@ -5,6 +5,7 @@ import {
 } from "@packages/ui/components/tooltip";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Archive, ShieldCheck, Tags } from "lucide-react";
+import { z } from "zod";
 import {
    Announcement,
    AnnouncementTag,
@@ -12,14 +13,45 @@ import {
 } from "@/components/blocks/announcement";
 import type { Outputs } from "@/integrations/orpc/client";
 
+const tagNameSchema = z
+   .string()
+   .min(2, "Mínimo 2 caracteres")
+   .max(120, "Máximo 120 caracteres");
+
+const tagDescriptionSchema = z
+   .string()
+   .max(255, "Máximo 255 caracteres")
+   .optional();
+
 export type TagRow = Outputs["tags"]["getAll"]["data"][number];
 
-export function buildTagColumns(): ColumnDef<TagRow>[] {
+type OnUpdate = (
+   id: string,
+   patch: { name?: string; description?: string | null },
+) => Promise<void>;
+
+export function buildTagColumns(options?: {
+   onUpdate?: OnUpdate;
+}): ColumnDef<TagRow>[] {
    return [
       {
          accessorKey: "name",
          header: "Nome",
-         meta: { label: "Nome", exportable: true },
+         meta: {
+            label: "Nome",
+            exportable: true,
+            isEditable: true,
+            cellComponent: "text",
+            editMode: "inline",
+            editSchema: tagNameSchema,
+            isEditableForRow: (row: TagRow) =>
+               !row.isDefault && !row.isArchived,
+            onSave: options?.onUpdate
+               ? async (rowId, value) => {
+                    await options.onUpdate!(rowId, { name: String(value) });
+                 }
+               : undefined,
+         },
          enableSorting: false,
          cell: ({ row }) => {
             const { name, isDefault, isArchived } = row.original;
@@ -80,7 +112,23 @@ export function buildTagColumns(): ColumnDef<TagRow>[] {
       {
          accessorKey: "description",
          header: "Descrição",
-         meta: { label: "Descrição", exportable: true },
+         meta: {
+            label: "Descrição",
+            exportable: true,
+            isEditable: true,
+            cellComponent: "textarea",
+            editMode: "popover",
+            editSchema: tagDescriptionSchema,
+            isEditableForRow: (row: TagRow) => !row.isArchived,
+            onSave: options?.onUpdate
+               ? async (rowId, value) => {
+                    const trimmed = String(value).trim();
+                    await options.onUpdate!(rowId, {
+                       description: trimmed.length > 0 ? trimmed : null,
+                    });
+                 }
+               : undefined,
+         },
          enableSorting: false,
          cell: ({ row }) =>
             row.original.description ? (

@@ -8,14 +8,7 @@ import {
 } from "@packages/ui/components/empty";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-   Archive,
-   ArchiveRestore,
-   Pencil,
-   Plus,
-   Tag,
-   Trash2,
-} from "lucide-react";
+import { Archive, ArchiveRestore, Plus, Tag, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { z } from "zod";
@@ -157,24 +150,11 @@ function TagsList() {
       }),
    );
 
-   const handleEdit = useCallback(
-      (tag: TagRow) => {
-         openCredenza({
-            renderChildren: () => (
-               <TagForm
-                  mode="edit"
-                  onSuccess={closeCredenza}
-                  tag={{
-                     id: tag.id,
-                     name: tag.name,
-                     color: tag.color,
-                     description: tag.description,
-                  }}
-               />
-            ),
-         });
-      },
-      [openCredenza, closeCredenza],
+   const updateMutation = useMutation(
+      orpc.tags.update.mutationOptions({
+         onError: (e) =>
+            toast.error(e.message || "Erro ao atualizar centro de custo."),
+      }),
    );
 
    const handleDelete = useCallback(
@@ -207,7 +187,15 @@ function TagsList() {
       [unarchiveMutation],
    );
 
-   const columns = useMemo(() => buildTagColumns(), []);
+   const columns = useMemo(
+      () =>
+         buildTagColumns({
+            onUpdate: async (id, patch) => {
+               await updateMutation.mutateAsync({ id, ...patch });
+            },
+         }),
+      [updateMutation],
+   );
 
    return (
       <>
@@ -240,13 +228,6 @@ function TagsList() {
                }
                return (
                   <>
-                     <Button
-                        onClick={() => handleEdit(row.original)}
-                        tooltip="Editar"
-                        variant="outline"
-                     >
-                        <Pencil />
-                     </Button>
                      <Button
                         onClick={() => handleArchive(row.original)}
                         tooltip="Arquivar"
