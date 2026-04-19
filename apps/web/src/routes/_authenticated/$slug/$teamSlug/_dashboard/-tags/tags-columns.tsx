@@ -11,6 +11,7 @@ import {
    AnnouncementTag,
    AnnouncementTitle,
 } from "@/components/blocks/announcement";
+
 import type { Outputs } from "@/integrations/orpc/client";
 
 const tagNameSchema = z
@@ -27,7 +28,11 @@ export type TagRow = Outputs["tags"]["getAll"]["data"][number];
 
 type OnUpdate = (
    id: string,
-   patch: { name?: string; description?: string | null },
+   patch: {
+      name?: string;
+      description?: string | null;
+      keywords?: string[] | null;
+   },
 ) => Promise<void>;
 
 export function buildTagColumns(options?: {
@@ -139,10 +144,24 @@ export function buildTagColumns(options?: {
       },
       {
          id: "keywords",
+         accessorFn: (row) => row.keywords ?? [],
          header: "Palavras-chave",
-         meta: { label: "Palavras-chave" },
+         meta: {
+            label: "Palavras-chave",
+            exportable: true,
+            isEditable: true,
+            cellComponent: "tags",
+            isEditableForRow: (row: TagRow) => !row.isArchived,
+            onSave: options?.onUpdate
+               ? async (rowId, value) => {
+                    const kws = Array.isArray(value) ? (value as string[]) : [];
+                    await options.onUpdate!(rowId, {
+                       keywords: kws.length > 0 ? kws : null,
+                    });
+                 }
+               : undefined,
+         },
          enableSorting: false,
-         accessorFn: (row) => row.keywords?.join(", ") ?? "",
          cell: ({ row }) => {
             const keywords = row.original.keywords;
             const count = keywords?.length ?? 0;

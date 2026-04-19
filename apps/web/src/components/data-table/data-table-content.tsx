@@ -3,8 +3,16 @@ import { flexRender } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { useForm } from "@tanstack/react-form";
-import { ArrowDown, ArrowUp, ArrowUpDown, Pencil } from "lucide-react";
+import {
+   ArrowDown,
+   ArrowUp,
+   ArrowUpDown,
+   Check,
+   Pencil,
+   X,
+} from "lucide-react";
 import { Button } from "@packages/ui/components/button";
+import { MultiSelect } from "@packages/ui/components/multi-select";
 import {
    Popover,
    PopoverContent,
@@ -25,6 +33,7 @@ import {
    TableHeader,
    TableRow,
 } from "@packages/ui/components/table";
+import { Input } from "@packages/ui/components/input";
 import { Textarea } from "@packages/ui/components/textarea";
 import { cn } from "@packages/ui/lib/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -56,22 +65,35 @@ function EditableCell({
    onSave,
    rowId,
    cellId,
+   children,
 }: {
    value: unknown;
-   cellComponent: "text" | "textarea" | "select";
+   cellComponent: "text" | "textarea" | "select" | "tags";
    options?: Array<{ label: string; value: string }>;
    schema?: StandardSchemaV1<any>;
    onSave?: (rowId: string, value: unknown) => Promise<void>;
    rowId: string;
    cellId: string;
+   children?: React.ReactNode;
 }) {
    const [open, setOpen] = useState(false);
    const [localValue, setLocalValue] = useState<unknown>(initialValue);
+   const [pendingTags, setPendingTags] = useState<string[]>(
+      Array.isArray(initialValue) ? (initialValue as string[]) : [],
+   );
    const inputRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
 
    useEffect(() => {
       setLocalValue(initialValue);
    }, [initialValue]);
+
+   useEffect(() => {
+      if (open && cellComponent === "tags") {
+         setPendingTags(
+            Array.isArray(localValue) ? (localValue as string[]) : [],
+         );
+      }
+   }, [open, cellComponent, localValue]);
 
    const form = useForm({
       defaultValues: { value: String(localValue ?? "") },
@@ -98,18 +120,23 @@ function EditableCell({
       <div
          data-editable-cell
          data-editable-cell-id={cellId}
-         className="group/cell cursor-pointer rounded px-2 py-0.5 -mx-2 hover:bg-muted/60 min-h-[1.5rem] flex items-center gap-2 w-full text-sm transition-colors"
+         className={cn(
+            "group/cell cursor-pointer min-h-[1.5rem] flex items-center gap-2 w-full text-sm",
+            open && "opacity-60",
+         )}
          role="button"
          tabIndex={0}
       >
-         <span className="flex-1 truncate">
-            {cellComponent === "select"
-               ? (options?.find((o) => o.value === displayValue)?.label ??
-                 displayValue)
-               : displayValue || (
-                    <span className="text-muted-foreground/40">—</span>
-                 )}
-         </span>
+         {children ?? (
+            <span className="flex-1 truncate">
+               {cellComponent === "select"
+                  ? (options?.find((o) => o.value === displayValue)?.label ??
+                    displayValue)
+                  : displayValue || (
+                       <span className="text-muted-foreground/40">—</span>
+                    )}
+            </span>
+         )}
          <Pencil className="size-3 shrink-0 text-muted-foreground opacity-0 group-hover/cell:opacity-100 transition-opacity" />
       </div>
    );
@@ -124,7 +151,10 @@ function EditableCell({
       >
          <PopoverTrigger asChild>{trigger}</PopoverTrigger>
          <PopoverContent
-            className="w-80"
+            align="start"
+            side="bottom"
+            sideOffset={-36}
+            className="w-[var(--radix-popover-trigger-width)] min-w-64 p-2"
             onOpenAutoFocus={(e) => {
                e.preventDefault();
                inputRef.current?.focus();
@@ -137,6 +167,47 @@ function EditableCell({
                   form.handleSubmit();
                }}
             >
+               {cellComponent === "tags" && (
+                  <div className="flex flex-col gap-2">
+                     <MultiSelect
+                        onChange={setPendingTags}
+                        onCreate={(name) =>
+                           setPendingTags((prev) => [...prev, name])
+                        }
+                        options={pendingTags.map((kw) => ({
+                           label: kw,
+                           value: kw,
+                        }))}
+                        placeholder="Adicionar palavra-chave..."
+                        selected={pendingTags}
+                     />
+                     <div className="flex justify-end gap-2">
+                        <Button
+                           onClick={cancel}
+                           size="sm"
+                           type="button"
+                           variant="outline"
+                        >
+                           Cancelar
+                        </Button>
+                        <Button
+                           onClick={() => {
+                              const prev = localValue;
+                              setLocalValue(pendingTags);
+                              setOpen(false);
+                              onSave?.(rowId, pendingTags).catch(() =>
+                                 setLocalValue(prev),
+                              );
+                           }}
+                           size="sm"
+                           type="button"
+                        >
+                           Salvar
+                        </Button>
+                     </div>
+                  </div>
+               )}
+
                {cellComponent === "select" && (
                   <Select
                      value={String(localValue ?? "")}
@@ -172,14 +243,14 @@ function EditableCell({
                   >
                      {(field) => (
                         <div className="flex flex-col gap-2">
-                           <input
+                           <Input
                               ref={inputRef}
                               type="text"
                               aria-invalid={
                                  field.state.meta.isTouched &&
                                  field.state.meta.errors.length > 0
                               }
-                              className="h-7 w-full rounded border border-input bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-ring/50 aria-invalid:border-destructive"
+                              className="h-7 aria-invalid:border-destructive"
                               defaultValue={field.state.value}
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
@@ -335,6 +406,7 @@ function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
                      cell.column.id === "__select" ? "w-10 px-2" : "truncate",
                      meta?.align === "right" && "text-right",
                      meta?.align === "center" && "text-center",
+                     isEditable && "hover:bg-muted/60 transition-colors",
                   )}
                   key={cell.id}
                   style={{ maxWidth: cell.column.columnDef.maxSize }}
@@ -348,7 +420,12 @@ function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
                         onSave={meta?.onSave}
                         rowId={row.id}
                         value={cell.getValue()}
-                     />
+                     >
+                        {flexRender(
+                           cell.column.columnDef.cell,
+                           cell.getContext(),
+                        )}
+                     </EditableCell>
                   ) : (
                      flexRender(cell.column.columnDef.cell, cell.getContext())
                   )}
@@ -356,6 +433,178 @@ function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
             );
          })}
       </>
+   );
+}
+
+function DraftRow() {
+   const { table, addRowForm, onDiscardAddRow } = useDataTable();
+   if (!addRowForm) return null;
+
+   const visibleColumns = table.getVisibleLeafColumns();
+   let autoFocused = false;
+
+   return (
+      <TableRow className="bg-card">
+         {visibleColumns.map((column) => {
+            const meta = column.columnDef.meta;
+
+            if (column.id === "__select") {
+               return <TableCell className="w-10 px-2" key={column.id} />;
+            }
+
+            if (column.id === "__actions") {
+               return (
+                  <TableCell key={column.id}>
+                     <div className="flex items-center justify-end gap-2">
+                        <Button
+                           onClick={onDiscardAddRow}
+                           tooltip="Descartar"
+                           type="button"
+                           variant="outline"
+                        >
+                           <X />
+                        </Button>
+                        <addRowForm.Subscribe
+                           // oxlint-ignore no-explicit-any
+                           selector={(s: any) => s.canSubmit && !s.isSubmitting}
+                        >
+                           {/* oxlint-ignore no-explicit-any */}
+                           {(canSubmit: any) => (
+                              <Button
+                                 disabled={!canSubmit}
+                                 onClick={() => addRowForm.handleSubmit()}
+                                 tooltip="Salvar"
+                                 type="button"
+                                 variant="outline"
+                              >
+                                 <Check />
+                              </Button>
+                           )}
+                        </addRowForm.Subscribe>
+                     </div>
+                  </TableCell>
+               );
+            }
+
+            const cellComp = meta?.cellComponent;
+            if (!cellComp) return <TableCell key={column.id} />;
+
+            const fieldName = String(
+               (column.columnDef as { accessorKey?: string }).accessorKey ??
+                  column.id,
+            );
+            const schema = meta?.editSchema;
+            const shouldFocus = !autoFocused;
+            autoFocused = true;
+
+            return (
+               <TableCell className="py-2 truncate" key={column.id}>
+                  {cellComp === "text" && (
+                     <addRowForm.Field
+                        name={fieldName}
+                        validators={
+                           schema
+                              ? { onChange: schema, onBlur: schema }
+                              : undefined
+                        }
+                     >
+                        {/* oxlint-ignore no-explicit-any */}
+                        {(field: any) => (
+                           <div className="flex flex-col gap-1">
+                              <Input
+                                 aria-invalid={
+                                    field.state.meta.isTouched &&
+                                    field.state.meta.errors.length > 0
+                                 }
+                                 aria-label={meta?.label}
+                                 autoFocus={shouldFocus}
+                                 className="h-7 aria-invalid:border-destructive"
+                                 id={field.name}
+                                 name={field.name}
+                                 onBlur={() => field.handleBlur()}
+                                 onChange={(
+                                    e: React.ChangeEvent<HTMLInputElement>,
+                                 ) => field.handleChange(e.target.value)}
+                                 value={field.state.value as string}
+                              />
+                              {field.state.meta.isTouched &&
+                                 field.state.meta.errors.length > 0 && (
+                                    <span className="text-xs text-destructive">
+                                       {field.state.meta.errors[0]?.message}
+                                    </span>
+                                 )}
+                           </div>
+                        )}
+                     </addRowForm.Field>
+                  )}
+                  {cellComp === "textarea" && (
+                     <addRowForm.Field
+                        name={fieldName}
+                        validators={
+                           schema
+                              ? { onChange: schema, onBlur: schema }
+                              : undefined
+                        }
+                     >
+                        {/* oxlint-ignore no-explicit-any */}
+                        {(field: any) => (
+                           <div className="flex flex-col gap-1">
+                              <Textarea
+                                 aria-invalid={
+                                    field.state.meta.isTouched &&
+                                    field.state.meta.errors.length > 0
+                                 }
+                                 aria-label={meta?.label}
+                                 autoFocus={shouldFocus}
+                                 className="min-h-0 resize-none overflow-hidden aria-invalid:border-destructive"
+                                 id={field.name}
+                                 name={field.name}
+                                 onBlur={() => field.handleBlur()}
+                                 onChange={(
+                                    e: React.ChangeEvent<HTMLTextAreaElement>,
+                                 ) => {
+                                    e.target.style.height = "auto";
+                                    e.target.style.height = `${e.target.scrollHeight}px`;
+                                    field.handleChange(e.target.value);
+                                 }}
+                                 rows={1}
+                                 value={field.state.value as string}
+                              />
+                              {field.state.meta.isTouched &&
+                                 field.state.meta.errors.length > 0 && (
+                                    <span className="text-xs text-destructive">
+                                       {field.state.meta.errors[0]?.message}
+                                    </span>
+                                 )}
+                           </div>
+                        )}
+                     </addRowForm.Field>
+                  )}
+                  {cellComp === "tags" && (
+                     <addRowForm.Field name={fieldName}>
+                        {/* oxlint-ignore no-explicit-any */}
+                        {(field: any) => (
+                           <MultiSelect
+                              onChange={(v) => field.handleChange(v)}
+                              onCreate={(name) =>
+                                 field.handleChange([
+                                    ...(field.state.value as string[]),
+                                    name,
+                                 ])
+                              }
+                              options={(field.state.value as string[]).map(
+                                 (kw: string) => ({ label: kw, value: kw }),
+                              )}
+                              placeholder="Adicionar palavra-chave..."
+                              selected={field.state.value as string[]}
+                           />
+                        )}
+                     </addRowForm.Field>
+                  )}
+               </TableCell>
+            );
+         })}
+      </TableRow>
    );
 }
 
@@ -530,6 +779,7 @@ export function DataTableContent<TData>({ maxHeight }: DataTableContentProps) {
                ))}
             </TableHeader>
             <TableBody>
+               <DraftRow />
                {isVirtualized && virtualItems ? (
                   <>
                      {paddingTop > 0 && (

@@ -105,7 +105,7 @@ declare module "@tanstack/react-table" {
       align?: "left" | "center" | "right";
       exportable?: boolean;
       isEditable?: boolean;
-      cellComponent?: "text" | "textarea" | "select";
+      cellComponent?: "text" | "textarea" | "select" | "tags";
       editMode?: "inline" | "popover";
       editOptions?: Array<{ label: string; value: string }>;
       editSchema?: StandardSchemaV1<any>;

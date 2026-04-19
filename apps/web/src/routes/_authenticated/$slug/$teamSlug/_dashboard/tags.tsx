@@ -6,10 +6,12 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Archive, ArchiveRestore, Plus, Tag, Trash2 } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { fromPromise } from "neverthrow";
+import { useCallback, useMemo, useState } from "react";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -25,10 +27,8 @@ import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 import { buildTagColumns, type TagRow } from "./-tags/tags-columns";
-import { TagForm } from "./-tags/tags-form";
 
 const tagsSearchSchema = z.object({
    sorting: z
@@ -82,18 +82,10 @@ function TagsSkeleton() {
 }
 
 function TagsList() {
-   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const navigate = Route.useNavigate();
    const { search, includeArchived, page, pageSize } = Route.useSearch();
-
-   const handleCreate = useCallback(() => {
-      openCredenza({
-         renderChildren: () => (
-            <TagForm mode="create" onSuccess={closeCredenza} />
-         ),
-      });
-   }, [openCredenza, closeCredenza]);
+   const [isDraftActive, setIsDraftActive] = useState(false);
 
    const { data: result } = useSuspenseQuery(
       orpc.tags.getAll.queryOptions({
@@ -150,12 +142,52 @@ function TagsList() {
       }),
    );
 
+   const createMutation = useMutation(
+      orpc.tags.create.mutationOptions({
+         onSuccess: () => toast.success("Centro de custo criado com sucesso."),
+         onError: (e) =>
+            toast.error(e.message || "Erro ao criar centro de custo."),
+      }),
+   );
+
    const updateMutation = useMutation(
       orpc.tags.update.mutationOptions({
          onError: (e) =>
             toast.error(e.message || "Erro ao atualizar centro de custo."),
       }),
    );
+
+   const draftForm = useForm({
+      defaultValues: {
+         name: "",
+         description: "",
+         keywords: [] as string[],
+      },
+      onSubmit: async ({ value }) => {
+         const result = await fromPromise(
+            createMutation.mutateAsync({
+               name: value.name,
+               description: value.description.trim() || null,
+               keywords: value.keywords.length > 0 ? value.keywords : undefined,
+            }),
+            (e) => e,
+         );
+         if (result.isOk()) {
+            setIsDraftActive(false);
+            draftForm.reset();
+         }
+      },
+   });
+
+   const handleCreate = useCallback(() => {
+      draftForm.reset();
+      setIsDraftActive(true);
+   }, [draftForm]);
+
+   const handleDiscardDraft = useCallback(() => {
+      setIsDraftActive(false);
+      draftForm.reset();
+   }, [draftForm]);
 
    const handleDelete = useCallback(
       (tag: TagRow) => {
@@ -200,10 +232,11 @@ function TagsList() {
    return (
       <>
          <DataTableRoot
-            storageKey="montte:datatable:tags"
+            addRowForm={isDraftActive ? draftForm : undefined}
             columns={columns}
             data={tags}
             getRowId={(row) => row.id}
+            onDiscardAddRow={handleDiscardDraft}
             renderActions={({ row }) => {
                if (row.original.isArchived) {
                   return (
@@ -246,6 +279,7 @@ function TagsList() {
                   </>
                );
             }}
+            storageKey="montte:datatable:tags"
          >
             <DataTableToolbar
                searchPlaceholder="Buscar centros de custo..."
