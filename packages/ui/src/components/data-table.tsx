@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
+import { useForm } from "@tanstack/react-form";
 import {
    closestCenter,
    DndContext,
@@ -74,6 +76,7 @@ import {
    PaginationNext,
    PaginationPrevious,
 } from "./pagination";
+import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import {
    Select,
    SelectContent,
@@ -81,6 +84,7 @@ import {
    SelectTrigger,
    SelectValue,
 } from "./select";
+import { Textarea } from "./textarea";
 import {
    Table,
    TableBody,
@@ -103,6 +107,13 @@ declare module "@tanstack/react-table" {
       filterVariant?: "text" | "select" | "range" | "date";
       align?: "left" | "center" | "right";
       exportable?: boolean;
+      isEditable?: boolean;
+      cellComponent?: "text" | "textarea" | "select";
+      editMode?: "inline" | "popover";
+      editOptions?: Array<{ label: string; value: string }>;
+      editSchema?: StandardSchemaV1<any>;
+      onSave?: (rowId: string, value: unknown) => Promise<void>;
+      isEditableForRow?: (row: TData) => boolean;
    }
 }
 
@@ -185,6 +196,268 @@ function getPageNumbers(currentPage: number, totalPages: number): number[] {
 // =============================================================================
 // DnD — Sortable header cell
 // =============================================================================
+
+// =============================================================================
+// Editable cell
+// =============================================================================
+
+function EditableCell({
+   value: initialValue,
+   cellComponent,
+   editMode = "inline",
+   options,
+   schema,
+   onSave,
+   rowId,
+   cellId,
+}: {
+   value: unknown;
+   cellComponent: "text" | "textarea" | "select";
+   editMode?: "inline" | "popover";
+   options?: Array<{ label: string; value: string }>;
+   schema?: StandardSchemaV1<any>;
+   onSave?: (rowId: string, value: unknown) => Promise<void>;
+   rowId: string;
+   cellId: string;
+}) {
+   const [editing, setEditing] = useState(false);
+   const [localValue, setLocalValue] = useState<unknown>(initialValue);
+   const inputRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+
+   useEffect(() => {
+      setLocalValue(initialValue);
+   }, [initialValue]);
+
+   useEffect(() => {
+      if (editing && editMode === "inline") {
+         inputRef.current?.focus();
+      }
+   }, [editing, editMode]);
+
+   const form = useForm({
+      defaultValues: { value: String(localValue ?? "") },
+      onSubmit: async ({ value }: { value: { value: string } }) => {
+         const prev = localValue;
+         setLocalValue(value.value);
+         setEditing(false);
+         try {
+            await onSave?.(rowId, value.value);
+         } catch {
+            setLocalValue(prev);
+         }
+      },
+   });
+
+   const cancel = useCallback(() => {
+      form.reset();
+      setEditing(false);
+   }, [form]);
+
+   const focusNext = useCallback(() => {
+      const all = Array.from(
+         document.querySelectorAll<HTMLElement>("[data-editable-cell]"),
+      );
+      const idx = all.findIndex((el) => el.dataset.editableCellId === cellId);
+      all[idx + 1]?.click();
+   }, [cellId]);
+
+   const displayValue = String(localValue ?? "");
+
+   const displayNode = (
+      <div
+         data-editable-cell
+         data-editable-cell-id={cellId}
+         className="cursor-pointer rounded px-1 -mx-1 hover:bg-muted/50 min-h-[1.5rem] flex items-center w-full text-sm"
+         onClick={() => setEditing(true)}
+         onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") setEditing(true);
+         }}
+         role="button"
+         tabIndex={0}
+      >
+         {cellComponent === "select"
+            ? (options?.find((o) => o.value === displayValue)?.label ??
+              displayValue)
+            : displayValue || (
+                 <span className="text-muted-foreground/40">—</span>
+              )}
+      </div>
+   );
+
+   if (!editing) return displayNode;
+
+   const editFields = (
+      <form
+         onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+         }}
+      >
+         {cellComponent === "select" && (
+            <Select
+               value={String(localValue ?? "")}
+               onValueChange={(v) => {
+                  setLocalValue(v);
+                  setEditing(false);
+                  onSave?.(rowId, v).catch(() => setLocalValue(localValue));
+               }}
+               open
+               onOpenChange={(open) => {
+                  if (!open) cancel();
+               }}
+            >
+               <SelectTrigger className="h-7 text-sm">
+                  <SelectValue />
+               </SelectTrigger>
+               <SelectContent>
+                  {options?.map((opt) => (
+                     <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                     </SelectItem>
+                  ))}
+               </SelectContent>
+            </Select>
+         )}
+
+         {cellComponent === "text" && (
+            <form.Field
+               name="value"
+               validators={
+                  schema ? { onChange: schema, onBlur: schema } : undefined
+               }
+            >
+               {(field) => (
+                  <div className="flex flex-col gap-2">
+                     <input
+                        ref={inputRef}
+                        type="text"
+                        aria-invalid={
+                           field.state.meta.isTouched &&
+                           field.state.meta.errors.length > 0
+                        }
+                        className="h-7 w-full rounded border border-input bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-ring/50 aria-invalid:border-destructive"
+                        defaultValue={field.state.value}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        onBlur={(e) => {
+                           field.handleChange(e.target.value);
+                           field.handleBlur();
+                           form.handleSubmit();
+                        }}
+                        onKeyDown={(e) => {
+                           if (e.key === "Escape") {
+                              e.preventDefault();
+                              cancel();
+                           }
+                           if (e.key === "Tab") {
+                              e.preventDefault();
+                              field.handleChange(
+                                 (e.target as HTMLInputElement).value,
+                              );
+                              form.handleSubmit().then(focusNext);
+                           }
+                        }}
+                     />
+                     {field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0 && (
+                           <span className="text-xs text-destructive">
+                              {field.state.meta.errors[0]?.message}
+                           </span>
+                        )}
+                  </div>
+               )}
+            </form.Field>
+         )}
+
+         {cellComponent === "textarea" && (
+            <div className="flex flex-col gap-2">
+               <form.Field
+                  name="value"
+                  validators={
+                     schema ? { onChange: schema, onBlur: schema } : undefined
+                  }
+               >
+                  {(field) => (
+                     <>
+                        <Textarea
+                           ref={inputRef}
+                           aria-invalid={
+                              field.state.meta.isTouched &&
+                              field.state.meta.errors.length > 0
+                           }
+                           className="min-h-[80px] text-sm resize-none aria-invalid:border-destructive"
+                           defaultValue={field.state.value}
+                           onChange={(e) => field.handleChange(e.target.value)}
+                           onBlur={() => field.handleBlur()}
+                           onKeyDown={(e) => {
+                              if (e.key === "Escape") {
+                                 e.preventDefault();
+                                 cancel();
+                              }
+                              if (
+                                 e.key === "Enter" &&
+                                 (e.ctrlKey || e.metaKey)
+                              ) {
+                                 e.preventDefault();
+                                 field.handleChange(
+                                    (e.target as HTMLTextAreaElement).value,
+                                 );
+                                 form.handleSubmit();
+                              }
+                           }}
+                           placeholder="Adicionar descrição..."
+                        />
+                        {field.state.meta.isTouched &&
+                           field.state.meta.errors.length > 0 && (
+                              <span className="text-xs text-destructive">
+                                 {field.state.meta.errors[0]?.message}
+                              </span>
+                           )}
+                     </>
+                  )}
+               </form.Field>
+               <div className="flex justify-end gap-2">
+                  <Button
+                     type="button"
+                     variant="outline"
+                     size="sm"
+                     onClick={cancel}
+                  >
+                     Cancelar
+                  </Button>
+                  <Button type="submit" size="sm">
+                     Salvar
+                  </Button>
+               </div>
+            </div>
+         )}
+      </form>
+   );
+
+   if (editMode === "popover") {
+      return (
+         <Popover
+            open
+            onOpenChange={(open) => {
+               if (!open) cancel();
+            }}
+         >
+            <PopoverTrigger asChild>{displayNode}</PopoverTrigger>
+            <PopoverContent
+               className="w-80"
+               onOpenAutoFocus={(e) => {
+                  e.preventDefault();
+                  inputRef.current?.focus();
+               }}
+            >
+               {editFields}
+            </PopoverContent>
+         </Popover>
+      );
+   }
+
+   return editFields;
+}
 
 function SortableHeaderCell<TData>({
    headerId,
@@ -494,24 +767,43 @@ function DataTableBodyRow<TData>({
                />
             </div>
          </TableCell>
-         {row.getVisibleCells().map((cell) => (
-            <TableCell
-               className={cn(
-                  "truncate",
-                  cell.column.getIsPinned() && "sticky z-[1] bg-inherit",
-                  cell.column.columnDef.meta?.align === "right" && "text-right",
-                  cell.column.columnDef.meta?.align === "center" &&
-                     "text-center",
-               )}
-               key={cell.id}
-               style={{
-                  maxWidth: cell.column.columnDef.maxSize,
-                  ...getPinningOffsets(cell.column),
-               }}
-            >
-               {flexRender(cell.column.columnDef.cell, cell.getContext())}
-            </TableCell>
-         ))}
+         {row.getVisibleCells().map((cell) => {
+            const meta = cell.column.columnDef.meta;
+            const isEditable =
+               meta?.isEditable &&
+               meta.cellComponent &&
+               (!meta.isEditableForRow || meta.isEditableForRow(row.original));
+            return (
+               <TableCell
+                  className={cn(
+                     "truncate",
+                     cell.column.getIsPinned() && "sticky z-[1] bg-inherit",
+                     meta?.align === "right" && "text-right",
+                     meta?.align === "center" && "text-center",
+                  )}
+                  key={cell.id}
+                  style={{
+                     maxWidth: cell.column.columnDef.maxSize,
+                     ...getPinningOffsets(cell.column),
+                  }}
+               >
+                  {isEditable ? (
+                     <EditableCell
+                        cellComponent={meta!.cellComponent!}
+                        cellId={cell.id}
+                        editMode={meta?.editMode}
+                        options={meta?.editOptions}
+                        schema={meta?.editSchema}
+                        onSave={meta?.onSave}
+                        rowId={row.id}
+                        value={cell.getValue()}
+                     />
+                  ) : (
+                     flexRender(cell.column.columnDef.cell, cell.getContext())
+                  )}
+               </TableCell>
+            );
+         })}
       </>
    );
 }
