@@ -19,9 +19,9 @@ export function DataTableBulkActions<TData>({
    children,
    summary,
 }: DataTableBulkActionsProps<TData>) {
-   const { table, rowSelection } = useDataTable<TData>();
-   const selectedCount = Object.values(rowSelection).filter(Boolean).length;
+   const { table } = useDataTable<TData>();
    const selectedRows = table.getSelectedRowModel().rows.map((r) => r.original);
+   const selectedCount = selectedRows.length;
    const clearSelection = () => table.resetRowSelection();
 
    return (

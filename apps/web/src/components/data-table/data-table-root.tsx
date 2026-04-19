@@ -189,8 +189,9 @@ function useDataTableRoot<TData>({
       if (prevDataRef.current !== data) {
          prevDataRef.current = data;
          store.setState((s) => ({ ...s, rowSelection: {} }));
+         onRowSelectionChange?.({});
       }
-   }, [data, store]);
+   }, [data, store, onRowSelectionChange]);
 
    const persistDebounced = useDebouncedCallback(
       (update: Partial<DataTablePersistedState>) => {
