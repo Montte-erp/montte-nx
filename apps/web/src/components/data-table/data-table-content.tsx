@@ -98,7 +98,7 @@ function EditableCell({
       <div
          data-editable-cell
          data-editable-cell-id={cellId}
-         className="group/cell cursor-pointer rounded px-2 py-0.5 -mx-2 hover:bg-muted/60 hover:ring-1 hover:ring-border min-h-[1.5rem] flex items-center gap-2 w-full text-sm transition-colors"
+         className="group/cell cursor-pointer min-h-[1.5rem] flex items-center gap-2 w-full text-sm"
          role="button"
          tabIndex={0}
       >
