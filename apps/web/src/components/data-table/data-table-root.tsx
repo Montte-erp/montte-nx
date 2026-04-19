@@ -1,4 +1,3 @@
-import { useForm } from "@tanstack/react-form";
 import type {
    ColumnDef,
    ColumnFiltersState,
@@ -11,9 +10,6 @@ import type {
    Table,
    VisibilityState,
 } from "@tanstack/react-table";
-
-// oxlint-ignore no-explicit-any
-type AnyFormApi = ReturnType<typeof useForm<Record<string, any>>>;
 import {
    getCoreRowModel,
    getExpandedRowModel,
@@ -70,7 +66,8 @@ type DataTableContextValue<TData> = {
    onTableStateChange: (state: DataTableStoredState) => void;
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
-   addRowForm?: AnyFormApi;
+   isDraftRowActive?: boolean;
+   onAddRow?: (data: Record<string, string | string[]>) => Promise<void>;
    onDiscardAddRow?: () => void;
 };
 
@@ -102,7 +99,8 @@ export function useDataTable<TData>() {
       onTableStateChange: ctx.onTableStateChange,
       groupBy: ctx.groupBy,
       renderGroupHeader: ctx.renderGroupHeader,
-      addRowForm: ctx.addRowForm,
+      isDraftRowActive: ctx.isDraftRowActive,
+      onAddRow: ctx.onAddRow,
       onDiscardAddRow: ctx.onDiscardAddRow,
       sorting,
       columnFilters,
@@ -140,7 +138,8 @@ interface DataTableRootProps<TData> {
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
    getSubRows?: (row: TData) => TData[] | undefined;
-   addRowForm?: AnyFormApi;
+   isDraftRowActive?: boolean;
+   onAddRow?: (data: Record<string, string | string[]>) => Promise<void>;
    onDiscardAddRow?: () => void;
 }
 
@@ -159,7 +158,8 @@ function useDataTableRoot<TData>({
    groupBy,
    renderGroupHeader,
    getSubRows,
-   addRowForm,
+   isDraftRowActive,
+   onAddRow,
    onDiscardAddRow,
 }: Omit<DataTableRootProps<TData>, "children">): DataTableContextValue<TData> {
    const [persisted, setPersisted] =
@@ -364,7 +364,8 @@ function useDataTableRoot<TData>({
          onTableStateChange,
          groupBy,
          renderGroupHeader,
-         addRowForm,
+         isDraftRowActive,
+         onAddRow,
          onDiscardAddRow,
       }),
       [
@@ -374,7 +375,8 @@ function useDataTableRoot<TData>({
          onTableStateChange,
          groupBy,
          renderGroupHeader,
-         addRowForm,
+         isDraftRowActive,
+         onAddRow,
          onDiscardAddRow,
       ],
    );

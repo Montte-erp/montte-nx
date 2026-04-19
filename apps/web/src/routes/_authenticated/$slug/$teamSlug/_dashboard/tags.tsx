@@ -6,11 +6,9 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Archive, ArchiveRestore, Plus, Tag, Trash2 } from "lucide-react";
-import { fromPromise } from "neverthrow";
 import { useCallback, useMemo, useState } from "react";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { z } from "zod";
@@ -157,37 +155,30 @@ function TagsList() {
       }),
    );
 
-   const draftForm = useForm({
-      defaultValues: {
-         name: "",
-         description: "",
-         keywords: [] as string[],
-      },
-      onSubmit: async ({ value }) => {
-         const result = await fromPromise(
-            createMutation.mutateAsync({
-               name: value.name,
-               description: value.description.trim() || null,
-               keywords: value.keywords.length > 0 ? value.keywords : undefined,
-            }),
-            (e) => e,
-         );
-         if (result.isOk()) {
-            setIsDraftActive(false);
-            draftForm.reset();
-         }
-      },
-   });
-
    const handleCreate = useCallback(() => {
-      draftForm.reset();
       setIsDraftActive(true);
-   }, [draftForm]);
+   }, []);
 
    const handleDiscardDraft = useCallback(() => {
       setIsDraftActive(false);
-      draftForm.reset();
-   }, [draftForm]);
+   }, []);
+
+   const handleCreateTag = useCallback(
+      async (data: Record<string, string | string[]>) => {
+         const name = String(data.name ?? "");
+         const description = String(data.description ?? "").trim() || null;
+         const keywords = Array.isArray(data.keywords)
+            ? (data.keywords as string[])
+            : [];
+         await createMutation.mutateAsync({
+            name,
+            description,
+            keywords: keywords.length > 0 ? keywords : undefined,
+         });
+         setIsDraftActive(false);
+      },
+      [createMutation],
+   );
 
    const handleDelete = useCallback(
       (tag: TagRow) => {
@@ -232,10 +223,11 @@ function TagsList() {
    return (
       <>
          <DataTableRoot
-            addRowForm={isDraftActive ? draftForm : undefined}
             columns={columns}
             data={tags}
             getRowId={(row) => row.id}
+            isDraftRowActive={isDraftActive}
+            onAddRow={handleCreateTag}
             onDiscardAddRow={handleDiscardDraft}
             renderActions={({ row }) => {
                if (row.original.isArchived) {
