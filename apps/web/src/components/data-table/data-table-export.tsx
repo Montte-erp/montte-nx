@@ -50,16 +50,16 @@ function useTableExport() {
 
    const buildRows = useCallback(
       (rows: ReturnType<typeof table.getRowModel>["rows"]) =>
-         rows.map((row) => {
-            const record: Record<string, string> = {};
-            for (let i = 0; i < exportCols.length; i++) {
-               const col = exportCols[i];
-               const header = headers[i];
-               const value = row.getValue(col.id);
-               record[header] = value == null ? "" : String(value);
-            }
-            return record;
-         }),
+         rows.map((row) =>
+            Object.fromEntries(
+               exportCols.map((col, i) => [
+                  headers[i],
+                  row.getValue(col.id) == null
+                     ? ""
+                     : String(row.getValue(col.id)),
+               ]),
+            ),
+         ),
       [exportCols, headers],
    );
 
@@ -84,6 +84,11 @@ function useTableExport() {
    return { table, exportRows };
 }
 
+const EXPORT_FORMATS: { format: "csv" | "xlsx"; label: string }[] = [
+   { format: "csv", label: "CSV" },
+   { format: "xlsx", label: "XLSX" },
+];
+
 export function DataTableExportButton() {
    const { table, exportRows } = useTableExport();
 
@@ -105,12 +110,14 @@ export function DataTableExportButton() {
             <DropdownMenuLabel id="export-label">Exportar</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup aria-labelledby="export-label">
-               <DropdownMenuItem onClick={() => handleExport("csv")}>
-                  Exportar CSV
-               </DropdownMenuItem>
-               <DropdownMenuItem onClick={() => handleExport("xlsx")}>
-                  Exportar XLSX
-               </DropdownMenuItem>
+               {EXPORT_FORMATS.map(({ format, label }) => (
+                  <DropdownMenuItem
+                     key={format}
+                     onClick={() => handleExport(format)}
+                  >
+                     Exportar {label}
+                  </DropdownMenuItem>
+               ))}
             </DropdownMenuGroup>
          </DropdownMenuContent>
       </DropdownMenu>
@@ -138,12 +145,14 @@ export function DataTableExportSelectedButton() {
             <DropdownMenuLabel>Exportar selecionados</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-               <DropdownMenuItem onClick={() => handleExport("csv")}>
-                  CSV
-               </DropdownMenuItem>
-               <DropdownMenuItem onClick={() => handleExport("xlsx")}>
-                  XLSX
-               </DropdownMenuItem>
+               {EXPORT_FORMATS.map(({ format, label }) => (
+                  <DropdownMenuItem
+                     key={format}
+                     onClick={() => handleExport(format)}
+                  >
+                     {label}
+                  </DropdownMenuItem>
+               ))}
             </DropdownMenuGroup>
          </DropdownMenuContent>
       </DropdownMenu>
