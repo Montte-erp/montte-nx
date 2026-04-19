@@ -55,6 +55,7 @@ declare module "@tanstack/react-table" {
       filterVariant?: "text" | "select" | "range" | "date";
       align?: "left" | "center" | "right";
       exportable?: boolean;
+      exportIgnore?: boolean;
    }
 }
 
