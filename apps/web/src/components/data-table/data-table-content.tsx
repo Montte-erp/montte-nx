@@ -98,7 +98,7 @@ function EditableCell({
       <div
          data-editable-cell
          data-editable-cell-id={cellId}
-         className="group/cell cursor-pointer min-h-[1.5rem] flex items-center gap-2 w-full text-sm"
+         className="group/cell cursor-pointer rounded px-2 py-0.5 -mx-2 hover:bg-muted/60 min-h-[1.5rem] flex items-center gap-2 w-full text-sm transition-colors"
          role="button"
          tabIndex={0}
       >
@@ -382,10 +382,7 @@ function DataTableBodyRows<TData>({
 
    const renderRow = (row: Row<TData>) => (
       <TableRow
-         className={cn(
-            "bg-card hover:bg-muted/40",
-            row.getIsSelected() && "bg-muted/50",
-         )}
+         className={cn("bg-card", row.getIsSelected() && "bg-muted/50")}
          data-state={row.getIsSelected() ? "selected" : undefined}
          key={row.id}
       >
