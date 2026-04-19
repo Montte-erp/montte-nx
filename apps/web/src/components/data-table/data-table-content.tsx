@@ -382,7 +382,10 @@ function DataTableBodyRows<TData>({
 
    const renderRow = (row: Row<TData>) => (
       <TableRow
-         className={cn("bg-card", row.getIsSelected() && "bg-muted/50")}
+         className={cn(
+            "bg-card hover:bg-card",
+            row.getIsSelected() && "bg-muted/50",
+         )}
          data-state={row.getIsSelected() ? "selected" : undefined}
          key={row.id}
       >
