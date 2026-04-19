@@ -1,6 +1,6 @@
 import { useAsyncDebouncedCallback } from "@tanstack/react-pacer";
-import { useForm } from "@tanstack/react-form";
-import type { FormApi } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
+import type { AnyFormApi } from "@tanstack/react-form";
 import { Link } from "@tanstack/react-router";
 import { FilterX, Plus, Search, X } from "lucide-react";
 import { createContextState } from "foxact/context-state";
@@ -25,7 +25,7 @@ export type ToolbarValues = {
 };
 
 type DataTableToolbarContextValue = {
-   form: FormApi<ToolbarValues>;
+   form: AnyFormApi;
    onSearch?: (value: string) => Promise<void> | void;
 };
 
@@ -75,12 +75,12 @@ export function DataTableToolbar({
       Object.fromEntries(columnFilters.map((f) => [f.id, f.value])),
    ).current;
 
-   const form = useForm<ToolbarValues>({
+   const form = useForm({
       defaultValues: { search: searchDefaultValue, filters: defaultFilters },
    });
 
-   const inputValue = form.useStore((s) => s.values.search);
-   const filterValues = form.useStore((s) => s.values.filters);
+   const inputValue = useStore(form.store, (s) => s.values.search);
+   const filterValues = useStore(form.store, (s) => s.values.filters);
 
    const activeFilters = Object.entries(filterValues).filter(
       ([, v]) => v !== undefined && v !== null && v !== "",
@@ -127,13 +127,18 @@ export function DataTableToolbar({
          <div className={cn("flex items-center gap-2", className)}>
             <div className="flex flex-1 flex-wrap items-center gap-2 min-w-0">
                {onSearch && (
-                  <form.Field name="search">
-                     {(field) => (
+                  <form.Field
+                     name="search"
+                     children={(field) => (
                         <InputGroup className="flex-1 min-w-0 max-w-sm">
                            <InputGroupAddon>
-                              <Search className="text-muted-foreground" />
+                              <Search
+                                 className="text-muted-foreground"
+                                 aria-hidden="true"
+                              />
                            </InputGroupAddon>
                            <InputGroupInput
+                              aria-label={searchPlaceholder}
                               placeholder={searchPlaceholder}
                               value={field.state.value}
                               onChange={(e) => {
@@ -153,7 +158,7 @@ export function DataTableToolbar({
                            )}
                         </InputGroup>
                      )}
-                  </form.Field>
+                  />
                )}
 
                {activeFilters.map(([columnId, value]) => {
