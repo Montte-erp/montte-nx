@@ -27,7 +27,7 @@ export function buildTagColumns(): ColumnDef<TagRow>[] {
                return (
                   <Announcement className="cursor-default w-fit">
                      <AnnouncementTag>
-                        <ShieldCheck className="size-4" />
+                        <ShieldCheck className="size-4" aria-label="Padrão" />
                      </AnnouncementTag>
                      <AnnouncementTitle>
                         {name}
