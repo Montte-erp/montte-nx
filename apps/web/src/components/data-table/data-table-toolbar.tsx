@@ -18,6 +18,7 @@ import {
 } from "@packages/ui/components/input-group";
 import { cn } from "@packages/ui/lib/utils";
 import { useDataTable } from "./data-table-root";
+import { DataTableExportButton } from "./data-table-export";
 
 export type ToolbarValues = {
    search: string;
@@ -202,11 +203,10 @@ export function DataTableToolbar({
                )}
             </div>
 
-            {children && (
-               <div className="flex shrink-0 items-center gap-2">
-                  {children}
-               </div>
-            )}
+            <div className="flex shrink-0 items-center gap-2">
+               <DataTableExportButton />
+               {children}
+            </div>
          </div>
       </DataTableToolbarCtxProvider>
    );
