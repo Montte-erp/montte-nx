@@ -62,7 +62,7 @@ function SelectionActionBar({
             <span className="hidden sm:inline text-xs">Limpar</span>
          </Button>
 
-         <div className="h-4 w-px bg-border mx-2" />
+         <div className="h-4 w-px bg-border" />
 
          <div className="flex items-center gap-2 md:gap-4">{children}</div>
       </div>
