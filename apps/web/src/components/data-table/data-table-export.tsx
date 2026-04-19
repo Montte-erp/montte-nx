@@ -5,6 +5,7 @@ import { Button } from "@packages/ui/components/button";
 import {
    DropdownMenu,
    DropdownMenuContent,
+   DropdownMenuGroup,
    DropdownMenuItem,
    DropdownMenuLabel,
    DropdownMenuSeparator,
@@ -20,7 +21,7 @@ function downloadBlob(blob: Blob, filename: string) {
    a.href = url;
    a.download = filename;
    a.click();
-   URL.revokeObjectURL(url);
+   setTimeout(() => URL.revokeObjectURL(url), 100);
 }
 
 interface DataTableExportButtonProps {
@@ -92,28 +93,36 @@ export function DataTableExportButton({
       <DropdownMenu>
          <DropdownMenuTrigger asChild>
             <Button tooltip="Exportar" variant="outline" size="icon-sm">
-               <Download className="size-4" />
+               <Download />
                <span className="sr-only">Exportar</span>
             </Button>
          </DropdownMenuTrigger>
          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Exportar</DropdownMenuLabel>
+            <DropdownMenuLabel id="export-label">Exportar</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleExport("csv", false)}>
-               Exportar CSV
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleExport("xlsx", false)}>
-               Exportar XLSX
-            </DropdownMenuItem>
+            <DropdownMenuGroup aria-labelledby="export-label">
+               <DropdownMenuItem onClick={() => handleExport("csv", false)}>
+                  Exportar CSV
+               </DropdownMenuItem>
+               <DropdownMenuItem onClick={() => handleExport("xlsx", false)}>
+                  Exportar XLSX
+               </DropdownMenuItem>
+            </DropdownMenuGroup>
             {hasSelection && (
                <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleExport("csv", true)}>
-                     Exportar selecionados (CSV)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExport("xlsx", true)}>
-                     Exportar selecionados (XLSX)
-                  </DropdownMenuItem>
+                  <DropdownMenuGroup>
+                     <DropdownMenuItem
+                        onClick={() => handleExport("csv", true)}
+                     >
+                        Exportar selecionados (CSV)
+                     </DropdownMenuItem>
+                     <DropdownMenuItem
+                        onClick={() => handleExport("xlsx", true)}
+                     >
+                        Exportar selecionados (XLSX)
+                     </DropdownMenuItem>
+                  </DropdownMenuGroup>
                </>
             )}
          </DropdownMenuContent>
