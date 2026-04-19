@@ -91,12 +91,13 @@ function ExistingVariants({ serviceId }: { serviceId: string }) {
 export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
    const isCreate = mode === "create";
 
-   const [{ data: categories }, { data: tags }] = useSuspenseQueries({
+   const [{ data: categories }, { data: tagsResult }] = useSuspenseQueries({
       queries: [
          orpc.categories.getAll.queryOptions({}),
-         orpc.tags.getAll.queryOptions({}),
+         orpc.tags.getAll.queryOptions({ input: {} }),
       ],
    });
+   const tags = tagsResult.data;
 
    const { openAlertDialog } = useAlertDialog();
 

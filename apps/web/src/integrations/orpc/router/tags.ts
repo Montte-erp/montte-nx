@@ -1,10 +1,12 @@
 import {
    archiveTag,
+   bulkArchiveTags,
    bulkDeleteTags,
    createTag,
    deleteTag,
    ensureTagOwnership,
-   listTags,
+   listTagsPaginated,
+   reactivateTag,
    updateTag,
 } from "@core/database/repositories/tags-repository";
 import { createTagSchema, updateTagSchema } from "@core/database/schemas/tags";
@@ -12,7 +14,7 @@ import { user as userTable } from "@core/database/schemas/auth";
 import { WebAppError } from "@core/logging/errors";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { enqueueDeriveTagKeywordsWorkflow } from "@packages/workflows/workflows/derive-tag-keywords-workflow";
+import { enqueueDeriveTagKeywordsWorkflow } from "@packages/workflows/workflows/derive-tag-keywords-enqueue";
 import { protectedProcedure } from "../server";
 
 const idSchema = z.object({ id: z.string().uuid() });
@@ -45,14 +47,30 @@ export const create = protectedProcedure
       return tag;
    });
 
-export const getAll = protectedProcedure.handler(async ({ context }) => {
-   return (await listTags(context.db, context.teamId)).match(
-      (tags) => tags,
-      (e) => {
-         throw WebAppError.fromAppError(e);
-      },
-   );
-});
+export const getAll = protectedProcedure
+   .input(
+      z.object({
+         search: z.string().optional(),
+         includeArchived: z.boolean().optional(),
+         page: z.number().int().positive().default(1),
+         pageSize: z.number().int().positive().max(100).default(20),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      return (
+         await listTagsPaginated(context.db, context.teamId, {
+            includeArchived: input.includeArchived,
+            search: input.search,
+            page: input.page,
+            pageSize: input.pageSize,
+         })
+      ).match(
+         (result) => result,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
 
 export const update = protectedProcedure
    .input(idSchema.merge(updateTagSchema))
@@ -108,6 +126,33 @@ export const archive = protectedProcedure
       return (
          await ensureTagOwnership(context.db, input.id, context.teamId).andThen(
             () => archiveTag(context.db, input.id),
+         )
+      ).match(
+         (tag) => tag,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
+
+export const bulkArchive = protectedProcedure
+   .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
+   .handler(async ({ context, input }) => {
+      (await bulkArchiveTags(context.db, input.ids, context.teamId)).match(
+         () => null,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+      return { archived: input.ids.length };
+   });
+
+export const unarchive = protectedProcedure
+   .input(idSchema)
+   .handler(async ({ context, input }) => {
+      return (
+         await ensureTagOwnership(context.db, input.id, context.teamId).andThen(
+            () => reactivateTag(context.db, input.id),
          )
       ).match(
          (tag) => tag,

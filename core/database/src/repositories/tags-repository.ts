@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { AppError, validateInput } from "@core/logging/errors";
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 import { fromPromise, fromThrowable, ok, err, okAsync } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -63,9 +63,50 @@ export function listTags(
               and(eq(fields.teamId, teamId), eq(fields.isArchived, false)),
            orderBy: (fields, { asc }) => [asc(fields.name)],
         });
-
    return fromPromise(query, (e) =>
       AppError.database("Falha ao listar centros de custo.", { cause: e }),
+   );
+}
+
+export function listTagsPaginated(
+   db: DatabaseInstance,
+   teamId: string,
+   opts: {
+      includeArchived?: boolean;
+      search?: string;
+      page: number;
+      pageSize: number;
+   },
+) {
+   const search = opts.search?.trim();
+   return fromPromise(
+      (async () => {
+         const conditions = [eq(tags.teamId, teamId)];
+         if (!opts.includeArchived) conditions.push(eq(tags.isArchived, false));
+         if (search) {
+            conditions.push(
+               sql`(
+                  ${tags.name} ilike ${"%" + search + "%"}
+                  or coalesce(${tags.description}, '') ilike ${"%" + search + "%"}
+               )`,
+            );
+         }
+         const whereClause = and(...conditions);
+         const [countResult] = await db
+            .select({ total: count() })
+            .from(tags)
+            .where(whereClause);
+         const data = await db
+            .select()
+            .from(tags)
+            .where(whereClause)
+            .orderBy(asc(tags.name))
+            .limit(opts.pageSize)
+            .offset((opts.page - 1) * opts.pageSize);
+         return { data, total: countResult?.total ?? 0 };
+      })(),
+      (e) =>
+         AppError.database("Falha ao listar centros de custo.", { cause: e }),
    );
 }
 
@@ -192,6 +233,42 @@ export function deleteTag(db: DatabaseInstance, id: string) {
             AppError.database("Falha ao excluir centro de custo.", {
                cause: e,
             }),
+         ),
+      );
+}
+
+export function bulkArchiveTags(
+   db: DatabaseInstance,
+   ids: string[],
+   teamId: string,
+) {
+   return fromPromise(
+      db.query.tags.findMany({
+         where: (fields, { and, inArray: inArr, eq }) =>
+            and(inArr(fields.id, ids), eq(fields.teamId, teamId)),
+      }),
+      (e) =>
+         AppError.database("Falha ao arquivar centros de custo.", { cause: e }),
+   )
+      .andThen((existing) => {
+         if (existing.length !== ids.length)
+            return err(
+               AppError.notFound(
+                  "Um ou mais centros de custo não foram encontrados.",
+               ),
+            );
+         return ok(undefined);
+      })
+      .andThen(() =>
+         fromPromise(
+            db
+               .update(tags)
+               .set({ isArchived: true, updatedAt: dayjs().toDate() })
+               .where(inArray(tags.id, ids)),
+            (e) =>
+               AppError.database("Falha ao arquivar centros de custo.", {
+                  cause: e,
+               }),
          ),
       );
 }

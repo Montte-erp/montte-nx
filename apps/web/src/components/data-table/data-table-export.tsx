@@ -24,7 +24,7 @@ function downloadBlob(blob: Blob, filename: string) {
    setTimeout(() => URL.revokeObjectURL(url), 100);
 }
 
-export function DataTableExportButton() {
+function useTableExport() {
    const { table, storageKey } = useDataTable();
    const exportFileBase = storageKey.replace(/^montte:datatable:/, "");
    const { generate: generateCsv } = useCsvFile();
@@ -50,38 +50,52 @@ export function DataTableExportButton() {
 
    const buildRows = useCallback(
       (rows: ReturnType<typeof table.getRowModel>["rows"]) =>
-         rows.map((row) => {
-            const record: Record<string, string> = {};
-            for (let i = 0; i < exportCols.length; i++) {
-               const col = exportCols[i];
-               const header = headers[i];
-               const value = row.getValue(col.id);
-               record[header] = value == null ? "" : String(value);
-            }
-            return record;
-         }),
+         rows.map((row) =>
+            Object.fromEntries(
+               exportCols.map((col, i) => [
+                  headers[i],
+                  row.getValue(col.id) == null
+                     ? ""
+                     : String(row.getValue(col.id)),
+               ]),
+            ),
+         ),
       [exportCols, headers],
    );
 
-   const hasSelection = table.getSelectedRowModel().rows.length > 0;
-
-   const handleExport = useCallback(
-      (format: "csv" | "xlsx", selected: boolean) => {
-         const rows = selected
-            ? table.getSelectedRowModel().rows
-            : table.getRowModel().rows;
+   const exportRows = useCallback(
+      (
+         format: "csv" | "xlsx",
+         rows: ReturnType<typeof table.getRowModel>["rows"],
+         suffix: string,
+      ) => {
          const data = buildRows(rows);
-         const suffix = selected ? "-selecionados" : "";
          const dateStr = dayjs().format("YYYY-MM-DD");
          const filename = `${exportFileBase}${suffix}-${dateStr}.${format}`;
-
          if (format === "csv") {
             downloadBlob(generateCsv(data, headers), filename);
             return;
          }
          downloadBlob(generateXlsx(data, headers), filename);
       },
-      [table, buildRows, storageKey, headers, generateCsv, generateXlsx],
+      [buildRows, exportFileBase, headers, generateCsv, generateXlsx],
+   );
+
+   return { table, exportRows };
+}
+
+const EXPORT_FORMATS: { format: "csv" | "xlsx"; label: string }[] = [
+   { format: "csv", label: "CSV" },
+   { format: "xlsx", label: "XLSX" },
+];
+
+export function DataTableExportButton() {
+   const { table, exportRows } = useTableExport();
+
+   const handleExport = useCallback(
+      (format: "csv" | "xlsx") =>
+         exportRows(format, table.getRowModel().rows, ""),
+      [table, exportRows],
    );
 
    return (
@@ -96,30 +110,50 @@ export function DataTableExportButton() {
             <DropdownMenuLabel id="export-label">Exportar</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup aria-labelledby="export-label">
-               <DropdownMenuItem onClick={() => handleExport("csv", false)}>
-                  Exportar CSV
-               </DropdownMenuItem>
-               <DropdownMenuItem onClick={() => handleExport("xlsx", false)}>
-                  Exportar XLSX
-               </DropdownMenuItem>
+               {EXPORT_FORMATS.map(({ format, label }) => (
+                  <DropdownMenuItem
+                     key={format}
+                     onClick={() => handleExport(format)}
+                  >
+                     Exportar {label}
+                  </DropdownMenuItem>
+               ))}
             </DropdownMenuGroup>
-            {hasSelection && (
-               <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                     <DropdownMenuItem
-                        onClick={() => handleExport("csv", true)}
-                     >
-                        Exportar selecionados (CSV)
-                     </DropdownMenuItem>
-                     <DropdownMenuItem
-                        onClick={() => handleExport("xlsx", true)}
-                     >
-                        Exportar selecionados (XLSX)
-                     </DropdownMenuItem>
-                  </DropdownMenuGroup>
-               </>
-            )}
+         </DropdownMenuContent>
+      </DropdownMenu>
+   );
+}
+
+export function DataTableExportSelectedButton() {
+   const { table, exportRows } = useTableExport();
+
+   const handleExport = useCallback(
+      (format: "csv" | "xlsx") =>
+         exportRows(format, table.getSelectedRowModel().rows, "-selecionados"),
+      [table, exportRows],
+   );
+
+   return (
+      <DropdownMenu>
+         <DropdownMenuTrigger asChild>
+            <Button tooltip="Exportar selecionados" variant="outline" size="sm">
+               <Download data-icon="inline-start" />
+               Exportar
+            </Button>
+         </DropdownMenuTrigger>
+         <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Exportar selecionados</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+               {EXPORT_FORMATS.map(({ format, label }) => (
+                  <DropdownMenuItem
+                     key={format}
+                     onClick={() => handleExport(format)}
+                  >
+                     {label}
+                  </DropdownMenuItem>
+               ))}
+            </DropdownMenuGroup>
          </DropdownMenuContent>
       </DropdownMenu>
    );

@@ -135,7 +135,10 @@ function TagCombobox({
    selectedIds: string[];
    onChange: (ids: string[]) => void;
 }) {
-   const { data: tags } = useSuspenseQuery(orpc.tags.getAll.queryOptions({}));
+   const { data: tagsResult } = useSuspenseQuery(
+      orpc.tags.getAll.queryOptions({ input: {} }),
+   );
+   const tags = tagsResult.data;
 
    return (
       <div className="flex flex-col gap-2">

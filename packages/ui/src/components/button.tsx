@@ -59,6 +59,7 @@ function Button({
 
    const button = (
       <Comp
+         aria-label={tooltip}
          className={cn(buttonVariants({ variant, size, className }))}
          data-size={size}
          data-slot="button"

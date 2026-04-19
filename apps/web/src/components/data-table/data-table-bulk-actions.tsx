@@ -4,6 +4,7 @@ import {
 } from "@packages/ui/components/selection-action-bar";
 import type React from "react";
 import { useDataTable } from "./data-table-root";
+import { DataTableExportSelectedButton } from "./data-table-export";
 
 export { SelectionActionButton };
 
@@ -31,6 +32,7 @@ export function DataTableBulkActions<TData>({
          onClear={clearSelection}
       >
          {children({ selectedRows, clearSelection })}
+         <DataTableExportSelectedButton />
       </SelectionActionBar>
    );
 }

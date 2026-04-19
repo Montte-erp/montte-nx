@@ -1,12 +1,17 @@
-import { DBOS } from "@dbos-inc/dbos-sdk";
+import { DBOS, WorkflowQueue } from "@dbos-inc/dbos-sdk";
 import { getLogger } from "@core/logging/root";
 import { initContext } from "./context";
 import type { WorkflowDeps } from "./context";
 import { backfillKeywordsWorkflow } from "./workflows/backfill-keywords-workflow";
 import "./workflows/categorization-workflow";
 import "./workflows/derive-keywords-workflow";
-import "./workflows/derive-tag-keywords-workflow";
+import { DERIVE_TAG_KEYWORDS_QUEUE_NAME } from "./workflows/derive-tag-keywords-workflow";
 import "./workflows/suggest-tag-workflow";
+
+export const deriveTagKeywordsQueue = new WorkflowQueue(
+   DERIVE_TAG_KEYWORDS_QUEUE_NAME,
+   { workerConcurrency: 5 },
+);
 
 type LaunchConfig = WorkflowDeps & {
    systemDatabaseUrl: string;
