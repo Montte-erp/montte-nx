@@ -51,7 +51,6 @@ function useGroupedRows<TData>(
 function EditableCell({
    value: initialValue,
    cellComponent,
-   editMode = "inline",
    options,
    schema,
    onSave,
@@ -60,14 +59,13 @@ function EditableCell({
 }: {
    value: unknown;
    cellComponent: "text" | "textarea" | "select";
-   editMode?: "inline" | "popover";
    options?: Array<{ label: string; value: string }>;
    schema?: StandardSchemaV1<any>;
    onSave?: (rowId: string, value: unknown) => Promise<void>;
    rowId: string;
    cellId: string;
 }) {
-   const [editing, setEditing] = useState(false);
+   const [open, setOpen] = useState(false);
    const [localValue, setLocalValue] = useState<unknown>(initialValue);
    const inputRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
 
@@ -75,18 +73,12 @@ function EditableCell({
       setLocalValue(initialValue);
    }, [initialValue]);
 
-   useEffect(() => {
-      if (editing && editMode === "inline") {
-         inputRef.current?.focus();
-      }
-   }, [editing, editMode]);
-
    const form = useForm({
       defaultValues: { value: String(localValue ?? "") },
       onSubmit: async ({ value }: { value: { value: string } }) => {
          const prev = localValue;
          setLocalValue(value.value);
-         setEditing(false);
+         setOpen(false);
          try {
             await onSave?.(rowId, value.value);
          } catch {
@@ -97,28 +89,16 @@ function EditableCell({
 
    const cancel = useCallback(() => {
       form.reset();
-      setEditing(false);
+      setOpen(false);
    }, [form]);
-
-   const focusNext = useCallback(() => {
-      const all = Array.from(
-         document.querySelectorAll<HTMLElement>("[data-editable-cell]"),
-      );
-      const idx = all.findIndex((el) => el.dataset.editableCellId === cellId);
-      all[idx + 1]?.click();
-   }, [cellId]);
 
    const displayValue = String(localValue ?? "");
 
-   const displayNode = (
+   const trigger = (
       <div
          data-editable-cell
          data-editable-cell-id={cellId}
          className="group/cell cursor-pointer rounded px-2 py-0.5 -mx-2 hover:bg-muted/60 hover:ring-1 hover:ring-border min-h-[1.5rem] flex items-center gap-2 w-full text-sm transition-colors"
-         onClick={() => setEditing(true)}
-         onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") setEditing(true);
-         }}
          role="button"
          tabIndex={0}
       >
@@ -134,179 +114,189 @@ function EditableCell({
       </div>
    );
 
-   if (!editing) return displayNode;
-
-   const editFields = (
-      <form
-         onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            form.handleSubmit();
+   return (
+      <Popover
+         open={open}
+         onOpenChange={(next) => {
+            if (!next) cancel();
+            else setOpen(true);
          }}
       >
-         {cellComponent === "select" && (
-            <Select
-               value={String(localValue ?? "")}
-               onValueChange={(v) => {
-                  setLocalValue(v);
-                  setEditing(false);
-                  onSave?.(rowId, v).catch(() => setLocalValue(localValue));
-               }}
-               open
-               onOpenChange={(open) => {
-                  if (!open) cancel();
-               }}
-            >
-               <SelectTrigger className="h-7 text-sm">
-                  <SelectValue />
-               </SelectTrigger>
-               <SelectContent>
-                  {options?.map((opt) => (
-                     <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                     </SelectItem>
-                  ))}
-               </SelectContent>
-            </Select>
-         )}
-
-         {cellComponent === "text" && (
-            <form.Field
-               name="value"
-               validators={
-                  schema ? { onChange: schema, onBlur: schema } : undefined
-               }
-            >
-               {(field) => (
-                  <div className="flex flex-col gap-2">
-                     <input
-                        ref={inputRef}
-                        type="text"
-                        aria-invalid={
-                           field.state.meta.isTouched &&
-                           field.state.meta.errors.length > 0
-                        }
-                        className="h-7 w-full rounded border border-input bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-ring/50 aria-invalid:border-destructive"
-                        defaultValue={field.state.value}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        onBlur={(e) => {
-                           field.handleChange(e.target.value);
-                           field.handleBlur();
-                           form.handleSubmit();
-                        }}
-                        onKeyDown={(e) => {
-                           if (e.key === "Escape") {
-                              e.preventDefault();
-                              cancel();
-                           }
-                           if (e.key === "Tab") {
-                              e.preventDefault();
-                              field.handleChange(
-                                 (e.target as HTMLInputElement).value,
-                              );
-                              form.handleSubmit().then(focusNext);
-                           }
-                        }}
-                     />
-                     {field.state.meta.isTouched &&
-                        field.state.meta.errors.length > 0 && (
-                           <span className="text-xs text-destructive">
-                              {field.state.meta.errors[0]?.message}
-                           </span>
-                        )}
-                  </div>
-               )}
-            </form.Field>
-         )}
-
-         {cellComponent === "textarea" && (
-            <div className="flex flex-col gap-2">
-               <form.Field
-                  name="value"
-                  validators={
-                     schema ? { onChange: schema, onBlur: schema } : undefined
-                  }
-               >
-                  {(field) => (
-                     <>
-                        <Textarea
-                           ref={inputRef}
-                           aria-invalid={
-                              field.state.meta.isTouched &&
-                              field.state.meta.errors.length > 0
-                           }
-                           className="min-h-[80px] text-sm resize-none aria-invalid:border-destructive"
-                           defaultValue={field.state.value}
-                           onChange={(e) => field.handleChange(e.target.value)}
-                           onBlur={() => field.handleBlur()}
-                           onKeyDown={(e) => {
-                              if (e.key === "Escape") {
-                                 e.preventDefault();
-                                 cancel();
-                              }
-                              if (
-                                 e.key === "Enter" &&
-                                 (e.ctrlKey || e.metaKey)
-                              ) {
-                                 e.preventDefault();
-                                 field.handleChange(
-                                    (e.target as HTMLTextAreaElement).value,
-                                 );
-                                 form.handleSubmit();
-                              }
-                           }}
-                           placeholder="Adicionar descrição..."
-                        />
-                        {field.state.meta.isTouched &&
-                           field.state.meta.errors.length > 0 && (
-                              <span className="text-xs text-destructive">
-                                 {field.state.meta.errors[0]?.message}
-                              </span>
-                           )}
-                     </>
-                  )}
-               </form.Field>
-               <div className="flex justify-end gap-2">
-                  <Button
-                     type="button"
-                     variant="outline"
-                     size="sm"
-                     onClick={cancel}
-                  >
-                     Cancelar
-                  </Button>
-                  <Button type="submit" size="sm">
-                     Salvar
-                  </Button>
-               </div>
-            </div>
-         )}
-      </form>
-   );
-
-   if (editMode === "popover") {
-      return (
-         <Popover
-            open
-            onOpenChange={(open) => {
-               if (!open) cancel();
+         <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+         <PopoverContent
+            className="w-80"
+            onOpenAutoFocus={(e) => {
+               e.preventDefault();
+               inputRef.current?.focus();
             }}
          >
-            <PopoverTrigger asChild>{displayNode}</PopoverTrigger>
-            <PopoverContent
-               className="w-80"
-               onOpenAutoFocus={(e) => {
+            <form
+               onSubmit={(e) => {
                   e.preventDefault();
-                  inputRef.current?.focus();
+                  e.stopPropagation();
+                  form.handleSubmit();
                }}
             >
-               {editFields}
-            </PopoverContent>
-         </Popover>
-      );
-   }
+               {cellComponent === "select" && (
+                  <Select
+                     value={String(localValue ?? "")}
+                     onValueChange={(v) => {
+                        setLocalValue(v);
+                        setOpen(false);
+                        onSave?.(rowId, v).catch(() =>
+                           setLocalValue(localValue),
+                        );
+                     }}
+                  >
+                     <SelectTrigger className="h-7 text-sm">
+                        <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent>
+                        {options?.map((opt) => (
+                           <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                           </SelectItem>
+                        ))}
+                     </SelectContent>
+                  </Select>
+               )}
 
-   return editFields;
+               {cellComponent === "text" && (
+                  <form.Field
+                     name="value"
+                     validators={
+                        schema
+                           ? { onChange: schema, onBlur: schema }
+                           : undefined
+                     }
+                  >
+                     {(field) => (
+                        <div className="flex flex-col gap-2">
+                           <input
+                              ref={inputRef}
+                              type="text"
+                              aria-invalid={
+                                 field.state.meta.isTouched &&
+                                 field.state.meta.errors.length > 0
+                              }
+                              className="h-7 w-full rounded border border-input bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-ring/50 aria-invalid:border-destructive"
+                              defaultValue={field.state.value}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              onBlur={(e) => {
+                                 field.handleChange(e.target.value);
+                                 field.handleBlur();
+                              }}
+                              onKeyDown={(e) => {
+                                 if (e.key === "Escape") {
+                                    e.preventDefault();
+                                    cancel();
+                                 }
+                                 if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    field.handleChange(
+                                       (e.target as HTMLInputElement).value,
+                                    );
+                                    form.handleSubmit();
+                                 }
+                              }}
+                           />
+                           {field.state.meta.isTouched &&
+                              field.state.meta.errors.length > 0 && (
+                                 <span className="text-xs text-destructive">
+                                    {field.state.meta.errors[0]?.message}
+                                 </span>
+                              )}
+                           <div className="flex justify-end gap-2">
+                              <Button
+                                 type="button"
+                                 variant="outline"
+                                 size="sm"
+                                 onClick={cancel}
+                              >
+                                 Cancelar
+                              </Button>
+                              <Button type="submit" size="sm">
+                                 Salvar
+                              </Button>
+                           </div>
+                        </div>
+                     )}
+                  </form.Field>
+               )}
+
+               {cellComponent === "textarea" && (
+                  <div className="flex flex-col gap-2">
+                     <form.Field
+                        name="value"
+                        validators={
+                           schema
+                              ? { onChange: schema, onBlur: schema }
+                              : undefined
+                        }
+                     >
+                        {(field) => (
+                           <>
+                              <Textarea
+                                 ref={inputRef}
+                                 aria-invalid={
+                                    field.state.meta.isTouched &&
+                                    field.state.meta.errors.length > 0
+                                 }
+                                 className="min-h-[80px] text-sm resize-none aria-invalid:border-destructive"
+                                 defaultValue={field.state.value}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 onBlur={() => field.handleBlur()}
+                                 onKeyDown={(e) => {
+                                    if (e.key === "Escape") {
+                                       e.preventDefault();
+                                       cancel();
+                                    }
+                                    if (
+                                       e.key === "Enter" &&
+                                       (e.ctrlKey || e.metaKey)
+                                    ) {
+                                       e.preventDefault();
+                                       field.handleChange(
+                                          (e.target as HTMLTextAreaElement)
+                                             .value,
+                                       );
+                                       form.handleSubmit();
+                                    }
+                                 }}
+                                 placeholder="Adicionar descrição..."
+                              />
+                              {field.state.meta.isTouched &&
+                                 field.state.meta.errors.length > 0 && (
+                                    <span className="text-xs text-destructive">
+                                       {field.state.meta.errors[0]?.message}
+                                    </span>
+                                 )}
+                           </>
+                        )}
+                     </form.Field>
+                     <div className="flex justify-end gap-2">
+                        <Button
+                           type="button"
+                           variant="outline"
+                           size="sm"
+                           onClick={cancel}
+                        >
+                           Cancelar
+                        </Button>
+                        <Button type="submit" size="sm">
+                           Salvar
+                        </Button>
+                     </div>
+                  </div>
+               )}
+            </form>
+         </PopoverContent>
+      </Popover>
+   );
 }
 
 function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
@@ -353,7 +343,6 @@ function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
                      <EditableCell
                         cellComponent={meta!.cellComponent!}
                         cellId={cell.id}
-                        editMode={meta?.editMode}
                         options={meta?.editOptions}
                         schema={meta?.editSchema}
                         onSave={meta?.onSave}

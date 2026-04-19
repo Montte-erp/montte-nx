@@ -42,7 +42,6 @@ export function buildTagColumns(options?: {
             exportable: true,
             isEditable: true,
             cellComponent: "text",
-            editMode: "inline",
             editSchema: tagNameSchema,
             isEditableForRow: (row: TagRow) =>
                !row.isDefault && !row.isArchived,
@@ -117,7 +116,6 @@ export function buildTagColumns(options?: {
             exportable: true,
             isEditable: true,
             cellComponent: "textarea",
-            editMode: "popover",
             editSchema: tagDescriptionSchema,
             isEditableForRow: (row: TagRow) => !row.isArchived,
             onSave: options?.onUpdate
