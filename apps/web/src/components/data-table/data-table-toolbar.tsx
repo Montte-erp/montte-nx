@@ -80,10 +80,9 @@ export function DataTableToolbar({
    });
 
    const inputValue = useStore(form.store, (s) => s.values.search);
-   const filterValues = useStore(form.store, (s) => s.values.filters);
 
-   const activeFilters = Object.entries(filterValues).filter(
-      ([, v]) => v !== undefined && v !== null && v !== "",
+   const activeFilters = columnFilters.filter(
+      ({ value }) => value !== undefined && value !== null && value !== "",
    );
 
    const hasAnyFilter = activeFilters.length > 0 || inputValue !== "";
@@ -161,13 +160,12 @@ export function DataTableToolbar({
                   />
                )}
 
-               {activeFilters.map(([columnId, value]) => {
+               {activeFilters.map(({ id, value }) => {
                   const label =
-                     table.getColumn(columnId)?.columnDef.meta?.label ??
-                     columnId;
+                     table.getColumn(id)?.columnDef.meta?.label ?? id;
                   return (
                      <Badge
-                        key={columnId}
+                        key={id}
                         variant="secondary"
                         className="shrink-0 gap-1.5 pr-1 font-normal"
                      >
@@ -180,7 +178,7 @@ export function DataTableToolbar({
                            size="icon"
                            variant="ghost"
                            className="size-4 text-muted-foreground/50 hover:text-foreground hover:bg-accent"
-                           onClick={() => removeFilter(columnId)}
+                           onClick={() => removeFilter(id)}
                         >
                            <X />
                            <span className="sr-only">
