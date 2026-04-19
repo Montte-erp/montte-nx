@@ -1,36 +1,60 @@
 # @core/agents
 
-TanStack AI-powered agent framework with multi-model support via OpenRouter.
+TanStack AI primitives — model registry, PostHog observability middleware, and shared AI infrastructure. Domain-specific AI actions live inside each entity or feature module.
 
 ## Exports
 
-| Export     | Purpose                                    |
-| ---------- | ------------------------------------------ |
-| `.`        | `chatRubi()` — streaming chat function     |
-| `./models` | Model ID types and available model presets |
-| `./utils`  | Agent utility functions                    |
+| Export        | Purpose                                           |
+| ------------- | ------------------------------------------------- |
+| `.`           | `chatRubi()` — Rubi chat interface (not yet impl) |
+| `./models`    | `AVAILABLE_MODELS`, `getModelPreset`, `ModelId`   |
+| `./actions/*` | AI action functions per domain                    |
 
-## Usage
+## Model Registry
 
 ```typescript
-import { chatRubi } from "@core/agents";
+import { AVAILABLE_MODELS, getModelPreset, DEFAULT_MODEL_ID } from "@core/agents/models";
 
-const stream = chatRubi({
-   db,
-   userId,
-   teamId,
-   organizationId,
-   threadId,
-   messages,
-   modelId: "openrouter/moonshotai/kimi-k2.5",
-   language: "pt-BR",
-});
-
-for await (const chunk of stream) {
-   // stream TanStack AI chunks to the client
-}
+const preset = getModelPreset(AVAILABLE_MODELS, modelId, DEFAULT_MODEL_ID);
+// preset.temperature, preset.maxTokens, preset.label, ...
 ```
 
-## How It Works
+Available models (via OpenRouter):
+- `openrouter/moonshotai/kimi-k2.5` — default, Rubi's primary model
+- `openrouter/google/gemini-3-flash-preview` — long context (1M tokens)
+- `openrouter/openai/gpt-oss-20b` — fast and cheap
+- `openrouter/google/gemini-3.1-flash-lite-preview` — ultra-light, free tier
 
-`chatRubi()` wraps TanStack AI's `chat()` with an OpenRouter adapter. It builds a system prompt scoped to Rubi's persona, resolves the model preset (temperature, topP, maxTokens), and attaches a persistence middleware that saves user/assistant messages and auto-generates a thread title after the first exchange.
+## PostHog AI Middleware
+
+Captures `$ai_generation` events to PostHog for every `chat()` call.
+
+```typescript
+import { createPosthogAiMiddleware, type AiObservabilityContext } from "@core/agents/middleware/posthog";
+
+const obs: AiObservabilityContext = {
+   posthog,
+   distinctId: context.userId,
+   promptName: "categorize-transaction",
+   promptVersion: 1,
+};
+
+chat({
+   adapter: openRouterText(modelId),
+   messages: [...],
+   middleware: [createPosthogAiMiddleware(obs)],
+});
+```
+
+## AI Actions
+
+All actions use `@tanstack/ai` + `@tanstack/ai-openrouter` with `safeTry` from neverthrow. All return `ResultAsync<T, AppError>`.
+
+| Action | Import | Used by |
+|--------|--------|---------|
+| `inferCategoryWithAI` | `@core/agents/actions/categorize` | transactions categorization |
+| `deriveKeywordsWithAI` | `@core/agents/actions/keywords` | categories keyword derivation |
+| `deriveTagKeywordsWithAI` | `@core/agents/actions/keywords-tag` | tags keyword derivation |
+| `inferTagWithAI` | `@core/agents/actions/suggest-tag` | transactions tag suggestion |
+
+> In the target modular architecture, actions co-locate with their domains (`entities/categories/ai.ts`, `features/transactions/ai.ts`). The middleware and model registry stay in `core/agents/`.
