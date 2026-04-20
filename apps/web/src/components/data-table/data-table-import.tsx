@@ -52,9 +52,7 @@ function autoMatch(
             normH === normLabel ||
             normH === normKey ||
             normH.includes(normLabel) ||
-            normLabel.includes(normH) ||
-            normH.includes(normKey) ||
-            normKey.includes(normH)
+            normH.includes(normKey)
          );
       });
       if (match) mapping[col.key] = match;
