@@ -176,14 +176,33 @@ export const getStats = protectedProcedure.handler(async ({ context }) => {
 export const bulkCreate = protectedProcedure
    .input(z.object({ items: z.array(createTagSchema).min(1) }))
    .handler(async ({ context, input }) => {
-      return (
-         await bulkCreateTags(context.db, context.teamId, input.items)
-      ).match(
-         (created) => created,
+      const [tagsResult, userRecord] = await Promise.all([
+         bulkCreateTags(context.db, context.teamId, input.items),
+         context.db.query.user.findFirst({
+            where: eq(userTable.id, context.userId),
+            columns: { stripeCustomerId: true },
+         }),
+      ]);
+      const created = tagsResult.match(
+         (tags) => tags,
          (e) => {
             throw WebAppError.fromAppError(e);
          },
       );
+      await Promise.all(
+         created.map((tag) =>
+            enqueueDeriveTagKeywordsWorkflow(context.workflowClient, {
+               tagId: tag.id,
+               teamId: context.teamId,
+               organizationId: context.organizationId,
+               name: tag.name,
+               description: tag.description ?? null,
+               userId: context.userId,
+               stripeCustomerId: userRecord?.stripeCustomerId ?? null,
+            }),
+         ),
+      );
+      return created;
    });
 
 export const bulkRemove = protectedProcedure

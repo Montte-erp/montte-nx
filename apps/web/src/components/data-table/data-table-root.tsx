@@ -53,7 +53,7 @@ export type DataTableImportState = {
    rawHeaders: string[];
    rawRows: string[][];
    mapping: Record<string, string>;
-   importRows: unknown[];
+   importRows: Record<string, unknown>[];
    onSave: (rows: Record<string, unknown>[]) => Promise<void>;
 };
 

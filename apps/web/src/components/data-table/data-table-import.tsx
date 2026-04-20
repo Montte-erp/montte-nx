@@ -23,7 +23,10 @@ export type RawImportData = {
 export interface DataTableImportConfig {
    accept?: Record<string, string[]>;
    parseFile: (file: File) => Promise<RawImportData>;
-   mapRow?: (row: Record<string, string>, index: number) => unknown;
+   mapRow?: (
+      row: Record<string, string>,
+      index: number,
+   ) => Record<string, unknown>;
    onImport: (rows: Record<string, unknown>[]) => Promise<void>;
 }
 
@@ -104,18 +107,17 @@ export function DataTableImportButton({
          }
          const data = result.value;
          const mapping = autoMatch(data.headers, importableColumns);
-         const importRows = importConfig.mapRow
-            ? data.rows.map((rawRow, i) => {
-                 const mapped: Record<string, string> = {};
-                 for (const [colKey, fileHeader] of Object.entries(mapping)) {
-                    if (!fileHeader) continue;
-                    const headerIdx = data.headers.indexOf(fileHeader);
-                    mapped[colKey] =
-                       headerIdx >= 0 ? (rawRow[headerIdx] ?? "") : "";
-                 }
-                 return importConfig.mapRow!(mapped, i);
-              })
-            : [];
+         const importRows = data.rows.map((rawRow, i) => {
+            const mapped: Record<string, string> = {};
+            for (const [colKey, fileHeader] of Object.entries(mapping)) {
+               if (!fileHeader) continue;
+               const headerIdx = data.headers.indexOf(fileHeader);
+               mapped[colKey] = headerIdx >= 0 ? (rawRow[headerIdx] ?? "") : "";
+            }
+            return importConfig.mapRow
+               ? importConfig.mapRow(mapped, i)
+               : mapped;
+         });
          store.setState((s) => ({
             ...s,
             importState: {

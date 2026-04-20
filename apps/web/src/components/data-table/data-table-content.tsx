@@ -42,13 +42,23 @@ import { Input } from "@packages/ui/components/input";
 import { Textarea } from "@packages/ui/components/textarea";
 import { cn } from "@packages/ui/lib/utils";
 import { fromPromise } from "neverthrow";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+   createContext,
+   useCallback,
+   useContext,
+   useEffect,
+   useMemo,
+   useRef,
+   useState,
+} from "react";
 import type React from "react";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDataTable, useDataTableStore } from "./data-table-root";
+
+const DataTableScrollContext = createContext<HTMLDivElement | null>(null);
 
 // Structural interface — compatible with TanStack Form FieldApi instances
 // whose value type is string | string[].
@@ -544,6 +554,7 @@ function ImportSectionInner() {
    );
    const [ignoredIndices, setIgnoredIndices] = useState<Set<number>>(new Set());
    const [editingColKey, setEditingColKey] = useState<string | null>(null);
+   const scrollEl = useContext(DataTableScrollContext);
 
    const existingRows = table.getCoreRowModel().rows;
 
@@ -590,9 +601,7 @@ function ImportSectionInner() {
             .filter(({ i }) => !ignoredIndices.has(i));
          let toImport: Record<string, unknown>[];
          if (hasImportRows) {
-            toImport = activeRows.map(
-               ({ i }) => importRows[i] as Record<string, unknown>,
-            );
+            toImport = activeRows.map(({ i }) => importRows[i]);
          } else {
             toImport = activeRows.map(({ row }) => {
                const entry: Record<string, string> = {};
@@ -628,6 +637,28 @@ function ImportSectionInner() {
    const hasImportRows = importRows.length > 0;
    const visibleCols = table.getVisibleLeafColumns();
    const colCount = visibleCols.length;
+
+   const shouldVirtualizeImport = scrollEl !== null && rawRows.length > 500;
+   const importVirtualizer = useVirtualizer({
+      count: rawRows.length,
+      enabled: shouldVirtualizeImport,
+      estimateSize: () => 40,
+      getScrollElement: () => scrollEl,
+      overscan: 10,
+   });
+   const virtualImportItems = shouldVirtualizeImport
+      ? importVirtualizer.getVirtualItems()
+      : null;
+   const importTotalSize = importVirtualizer.getTotalSize();
+   const importPaddingTop =
+      virtualImportItems && virtualImportItems.length > 0
+         ? virtualImportItems[0].start
+         : 0;
+   const importPaddingBottom =
+      virtualImportItems && virtualImportItems.length > 0
+         ? importTotalSize -
+           virtualImportItems[virtualImportItems.length - 1].end
+         : 0;
 
    const headerOptions = [
       { value: "__none__", label: "— Não mapear —" },
@@ -704,7 +735,7 @@ function ImportSectionInner() {
       const row = rawRows[rowIdx];
       let rowData: Record<string, unknown>;
       if (hasImportRows) {
-         rowData = importRows[rowIdx] as Record<string, unknown>;
+         rowData = importRows[rowIdx];
       } else {
          const entry: Record<string, string> = {};
          for (const [colKey, fileHeader] of Object.entries(mapping)) {
@@ -756,7 +787,7 @@ function ImportSectionInner() {
             actionLabel: "Continuar",
             cancelLabel: "Cancelar",
             onAction: async () => {
-               form.handleSubmit();
+               await form.handleSubmit();
             },
          });
       } else {
@@ -889,7 +920,7 @@ function ImportSectionInner() {
                               />
                            ) : (
                               <Button
-                                 className="flex w-full items-center justify-start gap-1.5 px-2 py-1 text-left text-xs"
+                                 className="flex w-full items-center justify-start gap-2 px-2 py-2 text-left text-xs"
                                  type="button"
                                  variant="ghost"
                                  onClick={() => setEditingColKey(accKey)}
@@ -913,217 +944,253 @@ function ImportSectionInner() {
          </TableRow>
 
          <form.Subscribe selector={(s) => s.values.mapping}>
-            {(mapping) =>
-               rawRows.map((row, rowIdx) => {
-                  const isSelected = selectedIndices.has(rowIdx);
-                  const isIgnored = ignoredIndices.has(rowIdx);
-                  const isDuplicate = duplicateIndices.has(rowIdx);
-                  return (
-                     <TableRow
-                        className={cn(
-                           "border-l-2 transition-colors",
-                           isIgnored
-                              ? "border-l-muted-foreground/20 bg-muted/30 hover:bg-muted/30 opacity-50"
-                              : isDuplicate
-                                ? "border-l-destructive/50 bg-destructive/[0.03] hover:bg-destructive/[0.07]"
-                                : isSelected
-                                  ? "border-l-primary/40 bg-primary/10 hover:bg-primary/10"
-                                  : "border-l-primary/40 bg-primary/[0.03] hover:bg-primary/[0.07]",
-                        )}
-                        // oxlint-ignore react/no-array-index-key
-                        key={`__import_${rowIdx}`}
-                     >
-                        {visibleCols.map((col) => {
-                           if (col.id === "__select") {
-                              return (
-                                 <TableCell key={col.id} className="w-10 px-2">
-                                    <Checkbox
-                                       aria-label="Selecionar linha"
-                                       checked={isSelected}
-                                       disabled={isIgnored}
-                                       onCheckedChange={() => toggleRow(rowIdx)}
-                                    />
-                                 </TableCell>
-                              );
-                           }
-                           if (col.id === "__actions") {
-                              return (
-                                 <TableCell key={col.id}>
-                                    <div className="flex items-center justify-end gap-2">
-                                       {isIgnored ? (
-                                          <Button
-                                             className="h-7 px-2 text-xs"
-                                             onClick={() => restoreRow(rowIdx)}
-                                             size="sm"
-                                             tooltip="Restaurar linha"
-                                             type="button"
-                                             variant="ghost"
-                                          >
-                                             Restaurar
-                                          </Button>
-                                       ) : (
-                                          <>
-                                             {isDuplicate && (
-                                                <span className="flex items-center shrink-0">
-                                                   <TriangleAlert
-                                                      aria-hidden="true"
-                                                      className="size-4 text-destructive"
-                                                   />
-                                                   <span className="sr-only">
-                                                      Linha duplicada
-                                                   </span>
-                                                </span>
-                                             )}
-                                             <Button
-                                                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                                                onClick={() =>
-                                                   ignoreRow(rowIdx)
-                                                }
-                                                size="sm"
-                                                tooltip="Ignorar linha"
-                                                type="button"
-                                                variant="ghost"
-                                             >
-                                                Ignorar
-                                             </Button>
+            {(mapping) => (
+               <>
+                  {importPaddingTop > 0 && (
+                     <TableRow key="__import_pad_top">
+                        <TableCell
+                           colSpan={colCount}
+                           style={{ height: importPaddingTop, padding: 0 }}
+                        />
+                     </TableRow>
+                  )}
+                  {(virtualImportItems
+                     ? virtualImportItems.map((v) => v.index)
+                     : rawRows.map((_, i) => i)
+                  ).map((rowIdx) => {
+                     const row = rawRows[rowIdx];
+                     const isSelected = selectedIndices.has(rowIdx);
+                     const isIgnored = ignoredIndices.has(rowIdx);
+                     const isDuplicate = duplicateIndices.has(rowIdx);
+                     return (
+                        <TableRow
+                           className={cn(
+                              "border-l-2 transition-colors",
+                              isIgnored
+                                 ? "border-l-muted-foreground/20 bg-muted/30 hover:bg-muted/30 opacity-50"
+                                 : isDuplicate
+                                   ? "border-l-destructive/50 bg-destructive/[0.03] hover:bg-destructive/[0.07]"
+                                   : isSelected
+                                     ? "border-l-primary/40 bg-primary/10 hover:bg-primary/10"
+                                     : "border-l-primary/40 bg-primary/[0.03] hover:bg-primary/[0.07]",
+                           )}
+                           // oxlint-ignore react/no-array-index-key
+                           key={`__import_${rowIdx}`}
+                        >
+                           {visibleCols.map((col) => {
+                              if (col.id === "__select") {
+                                 return (
+                                    <TableCell
+                                       key={col.id}
+                                       className="w-10 px-2"
+                                    >
+                                       <Checkbox
+                                          aria-label="Selecionar linha"
+                                          checked={isSelected}
+                                          disabled={isIgnored}
+                                          onCheckedChange={() =>
+                                             toggleRow(rowIdx)
+                                          }
+                                       />
+                                    </TableCell>
+                                 );
+                              }
+                              if (col.id === "__actions") {
+                                 return (
+                                    <TableCell key={col.id}>
+                                       <div className="flex items-center justify-end gap-2">
+                                          {isIgnored ? (
                                              <Button
                                                 className="h-7 px-2 text-xs"
                                                 onClick={() =>
-                                                   handleSaveRow(
-                                                      rowIdx,
-                                                      mapping,
-                                                   )
+                                                   restoreRow(rowIdx)
                                                 }
                                                 size="sm"
-                                                tooltip="Salvar esta linha"
+                                                tooltip="Restaurar linha"
                                                 type="button"
-                                                variant="outline"
+                                                variant="ghost"
                                              >
-                                                <Check className="size-3" />
-                                                Salvar
+                                                Restaurar
                                              </Button>
-                                          </>
-                                       )}
-                                    </div>
-                                 </TableCell>
-                              );
-                           }
-                           const accKey =
-                              "accessorKey" in col.columnDef &&
-                              col.columnDef.accessorKey != null
-                                 ? String(col.columnDef.accessorKey)
-                                 : col.id;
-                           const fileHeader = mapping[accKey];
-                           const headerIdx = fileHeader
-                              ? rawHeaders.indexOf(fileHeader)
-                              : -1;
-                           const rawVal =
-                              headerIdx >= 0 ? (row[headerIdx] ?? "") : "";
-                           const importedRow = (
-                              hasImportRows ? importRows[rowIdx] : null
-                           ) as Record<string, unknown> | null;
-                           const val = importedRow
-                              ? importedRow[accKey]
-                              : rawVal;
-                           const meta = col.columnDef.meta;
-                           const isImportEditable =
-                              hasImportRows &&
-                              !isIgnored &&
-                              meta?.isEditable &&
-                              meta.cellComponent &&
-                              (!meta.isEditableForRow ||
-                                 meta.isEditableForRow(
-                                    importedRow as Parameters<
-                                       NonNullable<typeof meta.isEditableForRow>
-                                    >[0],
-                                 ));
-                           // oxlint-ignore no-explicit-any
-                           const fakeCtx: any = importedRow
-                              ? {
-                                   table,
-                                   row: {
-                                      id: `__import_${rowIdx}`,
-                                      original: importedRow,
-                                      getValue: (id: string) => importedRow[id],
-                                      renderValue: (id: string) =>
-                                         importedRow[id] ?? null,
-                                      depth: 0,
-                                      getIsSelected: () => isSelected,
-                                      index: rowIdx,
-                                   },
-                                   column: col,
-                                   cell: {
-                                      id: `__import_${rowIdx}_${col.id}`,
+                                          ) : (
+                                             <>
+                                                {isDuplicate && (
+                                                   <span className="flex items-center shrink-0">
+                                                      <TriangleAlert
+                                                         aria-hidden="true"
+                                                         className="size-4 text-destructive"
+                                                      />
+                                                      <span className="sr-only">
+                                                         Linha duplicada
+                                                      </span>
+                                                   </span>
+                                                )}
+                                                <Button
+                                                   className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                                   onClick={() =>
+                                                      ignoreRow(rowIdx)
+                                                   }
+                                                   size="sm"
+                                                   tooltip="Ignorar linha"
+                                                   type="button"
+                                                   variant="ghost"
+                                                >
+                                                   Ignorar
+                                                </Button>
+                                                <Button
+                                                   className="h-7 px-2 text-xs"
+                                                   onClick={() =>
+                                                      handleSaveRow(
+                                                         rowIdx,
+                                                         mapping,
+                                                      )
+                                                   }
+                                                   size="sm"
+                                                   tooltip="Salvar esta linha"
+                                                   type="button"
+                                                   variant="outline"
+                                                >
+                                                   <Check className="size-3" />
+                                                   Salvar
+                                                </Button>
+                                             </>
+                                          )}
+                                       </div>
+                                    </TableCell>
+                                 );
+                              }
+                              const accKey =
+                                 "accessorKey" in col.columnDef &&
+                                 col.columnDef.accessorKey != null
+                                    ? String(col.columnDef.accessorKey)
+                                    : col.id;
+                              const fileHeader = mapping[accKey];
+                              const headerIdx = fileHeader
+                                 ? rawHeaders.indexOf(fileHeader)
+                                 : -1;
+                              const rawVal =
+                                 headerIdx >= 0 ? (row[headerIdx] ?? "") : "";
+                              const importedRow: Record<
+                                 string,
+                                 unknown
+                              > | null = hasImportRows
+                                 ? (importRows[rowIdx] ?? null)
+                                 : null;
+                              const val = importedRow
+                                 ? importedRow[accKey]
+                                 : rawVal;
+                              const meta = col.columnDef.meta;
+                              const isImportEditable =
+                                 hasImportRows &&
+                                 !isIgnored &&
+                                 meta?.isEditable &&
+                                 meta.cellComponent &&
+                                 (!meta.isEditableForRow ||
+                                    meta.isEditableForRow(
+                                       importedRow as Parameters<
+                                          NonNullable<
+                                             typeof meta.isEditableForRow
+                                          >
+                                       >[0],
+                                    ));
+                              // oxlint-ignore no-explicit-any
+                              const fakeCtx: any = importedRow
+                                 ? {
+                                      table,
+                                      row: {
+                                         id: `__import_${rowIdx}`,
+                                         original: importedRow,
+                                         getValue: (id: string) =>
+                                            importedRow[id],
+                                         renderValue: (id: string) =>
+                                            importedRow[id] ?? null,
+                                         depth: 0,
+                                         getIsSelected: () => isSelected,
+                                         index: rowIdx,
+                                      },
+                                      column: col,
+                                      cell: {
+                                         id: `__import_${rowIdx}_${col.id}`,
+                                         getValue: () => val,
+                                         renderValue: () => val ?? null,
+                                      },
                                       getValue: () => val,
                                       renderValue: () => val ?? null,
-                                   },
-                                   getValue: () => val,
-                                   renderValue: () => val ?? null,
-                                }
-                              : null;
-                           return (
-                              <TableCell
-                                 key={col.id}
-                                 className={cn(
-                                    "truncate",
-                                    !hasImportRows &&
-                                       "text-sm text-foreground/80",
-                                    isImportEditable &&
-                                       !isIgnored &&
-                                       "hover:bg-muted/60 transition-colors",
-                                    isIgnored && "line-through",
-                                 )}
-                              >
-                                 {isImportEditable && fakeCtx ? (
-                                    <EditableCell
-                                       cellComponent={meta!.cellComponent!}
-                                       editMode={meta?.editMode}
-                                       label={meta?.label}
-                                       options={meta?.editOptions}
-                                       rowId={`__import_${rowIdx}`}
-                                       schema={meta?.editSchema}
-                                       value={val}
-                                       onSave={(_rowId, newValue) => {
-                                          store.setState((s) => {
-                                             if (!s.importState) return s;
-                                             const updatedRows = [
-                                                ...s.importState.importRows,
-                                             ];
-                                             updatedRows[rowIdx] = {
-                                                ...(updatedRows[
-                                                   rowIdx
-                                                ] as Record<string, unknown>),
-                                                [accKey]: newValue,
-                                             };
-                                             return {
-                                                ...s,
-                                                importState: {
-                                                   ...s.importState,
-                                                   importRows: updatedRows,
-                                                },
-                                             };
-                                          });
-                                          return Promise.resolve();
-                                       }}
-                                    >
-                                       {flexRender(col.columnDef.cell, fakeCtx)}
-                                    </EditableCell>
-                                 ) : fakeCtx ? (
-                                    flexRender(col.columnDef.cell, fakeCtx)
-                                 ) : (
-                                    String(rawVal) || (
-                                       <span className="text-muted-foreground/30">
-                                          —
-                                       </span>
-                                    )
-                                 )}
-                              </TableCell>
-                           );
-                        })}
+                                   }
+                                 : null;
+                              return (
+                                 <TableCell
+                                    key={col.id}
+                                    className={cn(
+                                       "truncate",
+                                       !hasImportRows &&
+                                          "text-sm text-foreground/80",
+                                       isImportEditable &&
+                                          !isIgnored &&
+                                          "hover:bg-muted/60 transition-colors",
+                                       isIgnored && "line-through",
+                                    )}
+                                 >
+                                    {isImportEditable && fakeCtx ? (
+                                       <EditableCell
+                                          cellComponent={meta!.cellComponent!}
+                                          editMode={meta?.editMode}
+                                          label={meta?.label}
+                                          options={meta?.editOptions}
+                                          rowId={`__import_${rowIdx}`}
+                                          schema={meta?.editSchema}
+                                          value={val}
+                                          onSave={(_rowId, newValue) => {
+                                             store.setState((s) => {
+                                                if (!s.importState) return s;
+                                                const updatedRows = [
+                                                   ...s.importState.importRows,
+                                                ];
+                                                updatedRows[rowIdx] = {
+                                                   ...updatedRows[rowIdx],
+                                                   [accKey]: newValue,
+                                                };
+                                                return {
+                                                   ...s,
+                                                   importState: {
+                                                      ...s.importState,
+                                                      importRows: updatedRows,
+                                                   },
+                                                };
+                                             });
+                                             return Promise.resolve();
+                                          }}
+                                       >
+                                          {flexRender(
+                                             col.columnDef.cell,
+                                             fakeCtx,
+                                          )}
+                                       </EditableCell>
+                                    ) : fakeCtx ? (
+                                       flexRender(col.columnDef.cell, fakeCtx)
+                                    ) : (
+                                       String(rawVal) || (
+                                          <span className="text-muted-foreground/30">
+                                             —
+                                          </span>
+                                       )
+                                    )}
+                                 </TableCell>
+                              );
+                           })}
+                        </TableRow>
+                     );
+                  })}
+                  {importPaddingBottom > 0 && (
+                     <TableRow key="__import_pad_bottom">
+                        <TableCell
+                           colSpan={colCount}
+                           style={{ height: importPaddingBottom, padding: 0 }}
+                        />
                      </TableRow>
-                  );
-               })
-            }
+                  )}
+               </>
+            )}
          </form.Subscribe>
       </>
    );
@@ -1337,148 +1404,157 @@ export function DataTableContent<TData>({
          : 0;
 
    return (
-      <div
-         className={cn("rounded-md border overflow-hidden", className)}
-         ref={isVirtualized ? setScrollEl : undefined}
-         style={isVirtualized ? { maxHeight, overflowY: "auto" } : undefined}
-      >
-         <Table className="border-separate border-spacing-0">
-            <TableHeader>
-               {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow
-                     className="bg-muted/50 hover:bg-muted/50"
-                     key={headerGroup.id}
-                  >
-                     {headerGroup.headers.map((header) => {
-                        if (header.column.id === "__actions") {
-                           return <TableHead className="w-0" key={header.id} />;
-                        }
-                        if (header.column.id === "__select") {
+      <DataTableScrollContext.Provider value={scrollEl}>
+         <div
+            className={cn("rounded-md border overflow-hidden", className)}
+            ref={isVirtualized ? setScrollEl : undefined}
+            style={isVirtualized ? { maxHeight, overflowY: "auto" } : undefined}
+         >
+            <Table className="border-separate border-spacing-0">
+               <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                     <TableRow
+                        className="bg-muted/50 hover:bg-muted/50"
+                        key={headerGroup.id}
+                     >
+                        {headerGroup.headers.map((header) => {
+                           if (header.column.id === "__actions") {
+                              return (
+                                 <TableHead className="w-0" key={header.id} />
+                              );
+                           }
+                           if (header.column.id === "__select") {
+                              return (
+                                 <TableHead
+                                    className="w-10 px-2"
+                                    key={header.id}
+                                 >
+                                    {header.isPlaceholder
+                                       ? null
+                                       : flexRender(
+                                            header.column.columnDef.header,
+                                            header.getContext(),
+                                         )}
+                                 </TableHead>
+                              );
+                           }
                            return (
-                              <TableHead className="w-10 px-2" key={header.id}>
-                                 {header.isPlaceholder
-                                    ? null
-                                    : flexRender(
-                                         header.column.columnDef.header,
-                                         header.getContext(),
-                                      )}
+                              <TableHead
+                                 aria-sort={
+                                    header.column.getCanSort()
+                                       ? header.column.getIsSorted() === "asc"
+                                          ? "ascending"
+                                          : header.column.getIsSorted() ===
+                                              "desc"
+                                            ? "descending"
+                                            : "none"
+                                       : undefined
+                                 }
+                                 className={cn(
+                                    "text-xs font-medium",
+                                    header.column.columnDef.meta?.align ===
+                                       "right" && "text-right",
+                                    header.column.columnDef.meta?.align ===
+                                       "center" && "text-center",
+                                 )}
+                                 colSpan={header.colSpan}
+                                 key={header.id}
+                              >
+                                 {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                                    <Button
+                                       className="h-8 gap-2 px-2 text-xs font-medium"
+                                       onClick={header.column.getToggleSortingHandler()}
+                                       variant="ghost"
+                                    >
+                                       {flexRender(
+                                          header.column.columnDef.header,
+                                          header.getContext(),
+                                       )}
+                                       {header.column.getIsSorted() ===
+                                       "asc" ? (
+                                          <ArrowUp data-icon="inline-end" />
+                                       ) : header.column.getIsSorted() ===
+                                         "desc" ? (
+                                          <ArrowDown data-icon="inline-end" />
+                                       ) : (
+                                          <ArrowUpDown
+                                             className="opacity-50"
+                                             data-icon="inline-end"
+                                          />
+                                       )}
+                                    </Button>
+                                 ) : (
+                                    <span className="px-2 text-xs font-medium">
+                                       {flexRender(
+                                          header.column.columnDef.header,
+                                          header.getContext(),
+                                       )}
+                                    </span>
+                                 )}
                               </TableHead>
                            );
-                        }
-                        return (
-                           <TableHead
-                              aria-sort={
-                                 header.column.getCanSort()
-                                    ? header.column.getIsSorted() === "asc"
-                                       ? "ascending"
-                                       : header.column.getIsSorted() === "desc"
-                                         ? "descending"
-                                         : "none"
-                                    : undefined
-                              }
-                              className={cn(
-                                 "text-xs font-medium",
-                                 header.column.columnDef.meta?.align ===
-                                    "right" && "text-right",
-                                 header.column.columnDef.meta?.align ===
-                                    "center" && "text-center",
-                              )}
-                              colSpan={header.colSpan}
-                              key={header.id}
-                           >
-                              {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                                 <Button
-                                    className="h-8 gap-2 px-2 text-xs font-medium"
-                                    onClick={header.column.getToggleSortingHandler()}
-                                    variant="ghost"
-                                 >
-                                    {flexRender(
-                                       header.column.columnDef.header,
-                                       header.getContext(),
-                                    )}
-                                    {header.column.getIsSorted() === "asc" ? (
-                                       <ArrowUp data-icon="inline-end" />
-                                    ) : header.column.getIsSorted() ===
-                                      "desc" ? (
-                                       <ArrowDown data-icon="inline-end" />
-                                    ) : (
-                                       <ArrowUpDown
-                                          className="opacity-50"
-                                          data-icon="inline-end"
-                                       />
-                                    )}
-                                 </Button>
-                              ) : (
-                                 <span className="px-2 text-xs font-medium">
-                                    {flexRender(
-                                       header.column.columnDef.header,
-                                       header.getContext(),
-                                    )}
-                                 </span>
-                              )}
-                           </TableHead>
-                        );
-                     })}
-                  </TableRow>
-               ))}
-            </TableHeader>
-            <TableBody>
-               <ImportSection />
-               <DraftRow />
-               {importState !== null && rows.length > 0 && (
-                  <TableRow className="hover:bg-transparent">
-                     <TableCell
-                        className="bg-muted px-4 py-2"
-                        colSpan={columnCount}
-                     >
-                        <div className="flex items-center gap-2">
-                           <span className="text-sm font-medium">
-                              Existentes
-                           </span>
-                           <Badge
-                              className="text-xs font-normal"
-                              variant="secondary"
-                           >
-                              {rows.length}
-                           </Badge>
-                        </div>
-                     </TableCell>
-                  </TableRow>
-               )}
-               {isVirtualized && virtualItems ? (
-                  <>
-                     {paddingTop > 0 && (
-                        <TableRow>
-                           <TableCell
-                              colSpan={columnCount}
-                              style={{ height: paddingTop, padding: 0 }}
-                           />
-                        </TableRow>
-                     )}
+                        })}
+                     </TableRow>
+                  ))}
+               </TableHeader>
+               <TableBody>
+                  <ImportSection />
+                  <DraftRow />
+                  {importState !== null && rows.length > 0 && (
+                     <TableRow className="hover:bg-transparent">
+                        <TableCell
+                           className="bg-muted px-4 py-2"
+                           colSpan={columnCount}
+                        >
+                           <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">
+                                 Existentes
+                              </span>
+                              <Badge
+                                 className="text-xs font-normal"
+                                 variant="secondary"
+                              >
+                                 {rows.length}
+                              </Badge>
+                           </div>
+                        </TableCell>
+                     </TableRow>
+                  )}
+                  {isVirtualized && virtualItems ? (
+                     <>
+                        {paddingTop > 0 && (
+                           <TableRow>
+                              <TableCell
+                                 colSpan={columnCount}
+                                 style={{ height: paddingTop, padding: 0 }}
+                              />
+                           </TableRow>
+                        )}
+                        <DataTableBodyRows
+                           columnCount={columnCount}
+                           groupedRows={null}
+                           rows={virtualItems.map((v) => rows[v.index])}
+                        />
+                        {paddingBottom > 0 && (
+                           <TableRow>
+                              <TableCell
+                                 colSpan={columnCount}
+                                 style={{ height: paddingBottom, padding: 0 }}
+                              />
+                           </TableRow>
+                        )}
+                     </>
+                  ) : (
                      <DataTableBodyRows
                         columnCount={columnCount}
-                        groupedRows={null}
-                        rows={virtualItems.map((v) => rows[v.index])}
+                        groupedRows={groupedRows}
+                        renderGroupHeader={renderGroupHeader}
+                        rows={rows}
                      />
-                     {paddingBottom > 0 && (
-                        <TableRow>
-                           <TableCell
-                              colSpan={columnCount}
-                              style={{ height: paddingBottom, padding: 0 }}
-                           />
-                        </TableRow>
-                     )}
-                  </>
-               ) : (
-                  <DataTableBodyRows
-                     columnCount={columnCount}
-                     groupedRows={groupedRows}
-                     renderGroupHeader={renderGroupHeader}
-                     rows={rows}
-                  />
-               )}
-            </TableBody>
-         </Table>
-      </div>
+                  )}
+               </TableBody>
+            </Table>
+         </div>
+      </DataTableScrollContext.Provider>
    );
 }
