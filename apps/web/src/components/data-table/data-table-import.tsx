@@ -6,7 +6,14 @@ import {
    AlertTriangle,
    Undo2,
    X,
+   Upload,
 } from "lucide-react";
+import {
+   Popover,
+   PopoverContent,
+   PopoverTrigger,
+} from "@packages/ui/components/popover";
+import { useDataTable } from "./data-table-root";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { Input } from "@packages/ui/components/input";
 import {
@@ -106,7 +113,6 @@ function applyMapping(
 }
 
 export { DEFAULT_ACCEPT, normalize, autoMatch, applyMapping };
-export type { ImportStep };
 
 const STEPS: ImportStep[] = ["upload", "map", "preview", "confirm"];
 
@@ -188,8 +194,6 @@ function UploadStep({
       </div>
    );
 }
-
-export { ImportStepBar, UploadStep };
 
 function MapStep({
    rawData,
@@ -284,8 +288,6 @@ function MapStep({
       </div>
    );
 }
-
-export { MapStep };
 
 function PreviewStep({
    importableColumns,
@@ -687,8 +689,6 @@ function PreviewStep({
    );
 }
 
-export { PreviewStep };
-
 function ConfirmStep({
    rows,
    ignoredIndices,
@@ -783,4 +783,147 @@ function ConfirmStep({
    );
 }
 
-export { ConfirmStep };
+export function DataTableImportButton({
+   importConfig,
+}: {
+   importConfig: DataTableImportConfig;
+}) {
+   const { table } = useDataTable();
+
+   const importableColumns = table
+      .getAllColumns()
+      .filter(
+         (col) =>
+            col.id !== "__select" &&
+            col.id !== "__actions" &&
+            !col.columnDef.meta?.importIgnore,
+      )
+      .map((col) => {
+         const def = col.columnDef;
+         const rawKey =
+            "accessorKey" in def && def.accessorKey != null
+               ? String(def.accessorKey)
+               : col.id;
+         return { key: rawKey, label: col.columnDef.meta?.label ?? col.id };
+      });
+
+   const [open, setOpen] = useState(false);
+   const [step, setStep] = useState<ImportStep>("upload");
+   const [rawData, setRawData] = useState<RawImportData | null>(null);
+   const [mapping, setMapping] = useState<Record<string, string>>({});
+   const [rows, setRows] = useState<ImportRow[]>([]);
+   const [ignoredIndices, setIgnoredIndices] = useState<Set<number>>(new Set());
+
+   function reset() {
+      setStep("upload");
+      setRawData(null);
+      setMapping({});
+      setRows([]);
+      setIgnoredIndices(new Set());
+   }
+
+   function handleOpenChange(next: boolean) {
+      setOpen(next);
+      if (!next) reset();
+   }
+
+   function handleParsed(data: RawImportData) {
+      setRawData(data);
+      setMapping(autoMatch(data.headers, importableColumns));
+      setStep("map");
+   }
+
+   function handleMappingConfirmed() {
+      if (!rawData) return;
+      const mapped = applyMapping(
+         rawData,
+         mapping,
+         importableColumns,
+         importConfig.validateRow,
+      );
+      setRows(mapped);
+      setStep("preview");
+   }
+
+   async function handleImport() {
+      const toImport = rows
+         .filter((r, i) => !r.__errors?.length && !ignoredIndices.has(i))
+         .map((r) => {
+            const entry: Record<string, string> = {};
+            for (const [k, v] of Object.entries(r)) {
+               if (k !== "__errors") entry[k] = String(v ?? "");
+            }
+            return entry;
+         });
+
+      await importConfig.onImport(toImport);
+      toast.success(`${toImport.length} linha(s) importada(s) com sucesso.`);
+      handleOpenChange(false);
+   }
+
+   const popoverWidth =
+      step === "preview"
+         ? "w-[680px]"
+         : step === "map"
+           ? "w-[520px]"
+           : "w-[380px]";
+
+   return (
+      <Popover open={open} onOpenChange={handleOpenChange}>
+         <PopoverTrigger asChild>
+            <Button size="icon-sm" tooltip="Importar dados" variant="outline">
+               <Upload />
+               <span className="sr-only">Importar dados</span>
+            </Button>
+         </PopoverTrigger>
+         <PopoverContent
+            align="end"
+            className={`${popoverWidth} p-4 flex flex-col gap-4`}
+            sideOffset={8}
+         >
+            <ImportStepBar current={step} />
+
+            {step === "upload" && (
+               <UploadStep
+                  importConfig={importConfig}
+                  onParsed={handleParsed}
+               />
+            )}
+
+            {step === "map" && rawData && (
+               <MapStep
+                  rawData={rawData}
+                  importableColumns={importableColumns}
+                  mapping={mapping}
+                  onMappingChange={setMapping}
+                  onNext={handleMappingConfirmed}
+                  onBack={() => setStep("upload")}
+               />
+            )}
+
+            {step === "preview" && (
+               <PreviewStep
+                  importableColumns={importableColumns}
+                  rows={rows}
+                  onRowsChange={setRows}
+                  ignoredIndices={ignoredIndices}
+                  onIgnoredIndicesChange={setIgnoredIndices}
+                  validateRow={importConfig.validateRow}
+                  renderBulkActions={importConfig.renderBulkActions}
+                  onNext={() => setStep("confirm")}
+                  onBack={() => setStep("map")}
+               />
+            )}
+
+            {step === "confirm" && (
+               <ConfirmStep
+                  rows={rows}
+                  ignoredIndices={ignoredIndices}
+                  onImport={handleImport}
+                  onBack={() => setStep("preview")}
+               />
+            )}
+         </PopoverContent>
+      </Popover>
+   );
+}
