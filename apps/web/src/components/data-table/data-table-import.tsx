@@ -1,3 +1,4 @@
+import { fromPromise } from "neverthrow";
 import { useState, useTransition } from "react";
 import { FileSpreadsheet, Loader2, Upload } from "lucide-react";
 import {
@@ -92,39 +93,41 @@ export function DataTableImportButton({
       if (!file) return;
       setSelectedFile(file);
       startParsing(async () => {
-         try {
-            const data = await importConfig.parseFile(file);
-            const mapping = autoMatch(data.headers, importableColumns);
-            const importRows = importConfig.mapRow
-               ? data.rows.map((rawRow, i) => {
-                    const mapped: Record<string, string> = {};
-                    for (const [colKey, fileHeader] of Object.entries(
-                       mapping,
-                    )) {
-                       if (!fileHeader) continue;
-                       const headerIdx = data.headers.indexOf(fileHeader);
-                       mapped[colKey] =
-                          headerIdx >= 0 ? (rawRow[headerIdx] ?? "") : "";
-                    }
-                    return importConfig.mapRow!(mapped, i);
-                 })
-               : [];
-            store.setState((s) => ({
-               ...s,
-               importState: {
-                  rawHeaders: data.headers,
-                  rawRows: data.rows,
-                  mapping,
-                  importRows,
-                  onSave: importConfig.onImport,
-               },
-            }));
-            setOpen(false);
+         const result = await fromPromise(
+            importConfig.parseFile(file),
+            () => "Erro ao processar o arquivo.",
+         );
+         if (result.isErr()) {
+            toast.error(result.error);
             setSelectedFile(undefined);
-         } catch {
-            toast.error("Erro ao processar o arquivo.");
-            setSelectedFile(undefined);
+            return;
          }
+         const data = result.value;
+         const mapping = autoMatch(data.headers, importableColumns);
+         const importRows = importConfig.mapRow
+            ? data.rows.map((rawRow, i) => {
+                 const mapped: Record<string, string> = {};
+                 for (const [colKey, fileHeader] of Object.entries(mapping)) {
+                    if (!fileHeader) continue;
+                    const headerIdx = data.headers.indexOf(fileHeader);
+                    mapped[colKey] =
+                       headerIdx >= 0 ? (rawRow[headerIdx] ?? "") : "";
+                 }
+                 return importConfig.mapRow!(mapped, i);
+              })
+            : [];
+         store.setState((s) => ({
+            ...s,
+            importState: {
+               rawHeaders: data.headers,
+               rawRows: data.rows,
+               mapping,
+               importRows,
+               onSave: importConfig.onImport,
+            },
+         }));
+         setOpen(false);
+         setSelectedFile(undefined);
       });
    }
 

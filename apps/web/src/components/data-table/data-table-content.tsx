@@ -605,15 +605,19 @@ function ImportSectionInner() {
                return entry;
             });
          }
-         try {
-            await onSave(toImport);
-            toast.success(
-               `${toImport.length} linha(s) importada(s) com sucesso.`,
-            );
-            store.setState((s) => ({ ...s, importState: null }));
-         } catch {
-            toast.error("Erro ao importar dados.");
-         }
+         const result = await fromPromise(
+            onSave(toImport),
+            () => "Erro ao importar dados.",
+         );
+         result.match(
+            () => {
+               toast.success(
+                  `${toImport.length} linha(s) importada(s) com sucesso.`,
+               );
+               store.setState((s) => ({ ...s, importState: null }));
+            },
+            (msg) => toast.error(msg),
+         );
       },
    });
 
@@ -710,13 +714,17 @@ function ImportSectionInner() {
          rowData = entry;
       }
       if (!importState) return;
-      try {
-         await importState.onSave([rowData]);
-         toast.success("Linha importada com sucesso.");
-         removeRows(new Set([rowIdx]));
-      } catch {
-         toast.error("Erro ao importar linha.");
-      }
+      const result = await fromPromise(
+         importState.onSave([rowData]),
+         () => "Erro ao importar linha.",
+      );
+      result.match(
+         () => {
+            toast.success("Linha importada com sucesso.");
+            removeRows(new Set([rowIdx]));
+         },
+         (msg) => toast.error(msg),
+      );
    }
 
    function handleSaveRow(rowIdx: number, mapping: Record<string, string>) {
@@ -761,7 +769,6 @@ function ImportSectionInner() {
 
    return (
       <>
-         {/* Group header */}
          <TableRow className="hover:bg-transparent">
             <TableCell className="bg-muted px-4 py-2" colSpan={colCount}>
                <div className="flex items-center justify-between gap-4">
@@ -833,7 +840,6 @@ function ImportSectionInner() {
             </TableCell>
          </TableRow>
 
-         {/* Column mapping row */}
          <TableRow className="bg-muted/20 hover:bg-muted/20">
             <form.Field name="mapping">
                {(field) =>
@@ -904,7 +910,6 @@ function ImportSectionInner() {
             </form.Field>
          </TableRow>
 
-         {/* Pending import rows */}
          <form.Subscribe selector={(s) => s.values.mapping}>
             {(mapping) =>
                rawRows.map((row, rowIdx) => {
@@ -957,7 +962,15 @@ function ImportSectionInner() {
                                        ) : (
                                           <>
                                              {isDuplicate && (
-                                                <TriangleAlert className="size-4 text-destructive shrink-0" />
+                                                <span className="flex items-center shrink-0">
+                                                   <TriangleAlert
+                                                      aria-hidden="true"
+                                                      className="size-4 text-destructive"
+                                                   />
+                                                   <span className="sr-only">
+                                                      Linha duplicada
+                                                   </span>
+                                                </span>
                                              )}
                                              <Button
                                                 className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"

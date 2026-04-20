@@ -1,6 +1,7 @@
 import {
    archiveTag,
    bulkArchiveTags,
+   bulkCreateTags,
    bulkDeleteTags,
    createTag,
    deleteTag,
@@ -171,6 +172,19 @@ export const getStats = protectedProcedure.handler(async ({ context }) => {
       },
    );
 });
+
+export const bulkCreate = protectedProcedure
+   .input(z.object({ items: z.array(createTagSchema).min(1) }))
+   .handler(async ({ context, input }) => {
+      return (
+         await bulkCreateTags(context.db, context.teamId, input.items)
+      ).match(
+         (created) => created,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
 
 export const bulkRemove = protectedProcedure
    .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))

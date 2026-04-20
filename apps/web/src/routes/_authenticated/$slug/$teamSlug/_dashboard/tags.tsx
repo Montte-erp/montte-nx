@@ -144,7 +144,19 @@ function TagsList() {
             isDefault: false,
          }),
          onImport: async (rows) => {
-            console.log("Importar centros de custo:", rows);
+            const items = rows.map((r) => ({
+               name: String(r.name ?? ""),
+               description: r.description ? String(r.description).trim() : null,
+               keywords: Array.isArray(r.keywords)
+                  ? (r.keywords as string[]).filter(Boolean)
+                  : typeof r.keywords === "string" && r.keywords
+                    ? r.keywords
+                         .split(",")
+                         .map((k) => k.trim())
+                         .filter(Boolean)
+                    : undefined,
+            }));
+            await bulkCreateMutation.mutateAsync({ items });
          },
       }),
       [parseCsv, parseXlsx],
@@ -210,6 +222,13 @@ function TagsList() {
          onSuccess: () => toast.success("Centro de custo criado com sucesso."),
          onError: (e) =>
             toast.error(e.message || "Erro ao criar centro de custo."),
+      }),
+   );
+
+   const bulkCreateMutation = useMutation(
+      orpc.tags.bulkCreate.mutationOptions({
+         onError: (e) =>
+            toast.error(e.message || "Erro ao importar centros de custo."),
       }),
    );
 

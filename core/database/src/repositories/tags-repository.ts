@@ -398,6 +398,21 @@ export function getTagStats(db: DatabaseInstance, teamId: string) {
    );
 }
 
+export function bulkCreateTags(
+   db: DatabaseInstance,
+   teamId: string,
+   data: CreateTagInput[],
+) {
+   return fromPromise(
+      db
+         .insert(tags)
+         .values(data.map((d) => ({ ...d, teamId })))
+         .returning(),
+      (e) =>
+         AppError.database("Falha ao importar centros de custo.", { cause: e }),
+   );
+}
+
 export function updateTagKeywords(
    db: DatabaseInstance,
    id: string,
