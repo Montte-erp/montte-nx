@@ -29,6 +29,7 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
+import { Separator } from "@packages/ui/components/separator";
 import {
    Table,
    TableBody,
@@ -801,7 +802,7 @@ function ImportSectionInner() {
                            >
                               Remover
                            </Button>
-                           <div className="h-4 w-px bg-border" />
+                           <Separator orientation="vertical" className="h-4" />
                         </>
                      )}
                      <form.Subscribe selector={(s) => s.isSubmitting}>
@@ -887,9 +888,10 @@ function ImportSectionInner() {
                                  }}
                               />
                            ) : (
-                              <button
-                                 className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-xs transition-colors hover:bg-muted"
+                              <Button
+                                 className="flex w-full items-center justify-start gap-1.5 px-2 py-1 text-left text-xs"
                                  type="button"
+                                 variant="ghost"
                                  onClick={() => setEditingColKey(accKey)}
                               >
                                  {currentHeader ? (
@@ -901,7 +903,7 @@ function ImportSectionInner() {
                                        Não mapeado
                                     </span>
                                  )}
-                              </button>
+                              </Button>
                            )}
                         </TableCell>
                      );
