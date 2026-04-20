@@ -1,6 +1,21 @@
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import type React from "react";
-import { FileSpreadsheet, Loader2 } from "lucide-react";
+import {
+   FileSpreadsheet,
+   Loader2,
+   AlertTriangle,
+   Undo2,
+   X,
+} from "lucide-react";
+import { Checkbox } from "@packages/ui/components/checkbox";
+import { Input } from "@packages/ui/components/input";
+import {
+   Tooltip,
+   TooltipContent,
+   TooltipProvider,
+   TooltipTrigger,
+} from "@packages/ui/components/tooltip";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
    Dropzone,
    DropzoneContent,
@@ -17,7 +32,7 @@ export type RawImportData = {
 
 type ImportStep = "upload" | "map" | "preview" | "confirm";
 
-type ImportRow = {
+export type ImportRow = {
    [key: string]: string | string[] | undefined;
    __errors?: string[];
 };
@@ -28,10 +43,10 @@ export interface DataTableImportConfig {
    accept?: Record<string, string[]>;
    validateRow?: (row: Record<string, string>) => string[] | null;
    renderBulkActions?: (props: {
-      selectedRows: Record<string, string>[];
+      selectedRows: ImportRow[];
       selectedIndices: Set<number>;
-      rows: Record<string, string>[];
-      onRowsChange: (rows: Record<string, string>[]) => void;
+      rows: ImportRow[];
+      onRowsChange: (rows: ImportRow[]) => void;
       onClearSelection: () => void;
    }) => React.ReactNode;
 }
@@ -91,7 +106,7 @@ function applyMapping(
 }
 
 export { DEFAULT_ACCEPT, normalize, autoMatch, applyMapping };
-export type { ImportStep, ImportRow };
+export type { ImportStep };
 
 const STEPS: ImportStep[] = ["upload", "map", "preview", "confirm"];
 
@@ -271,3 +286,404 @@ function MapStep({
 }
 
 export { MapStep };
+
+function PreviewStep({
+   importableColumns,
+   rows,
+   onRowsChange,
+   ignoredIndices,
+   onIgnoredIndicesChange,
+   validateRow,
+   renderBulkActions,
+   onNext,
+   onBack,
+}: {
+   importableColumns: Array<{ key: string; label: string }>;
+   rows: ImportRow[];
+   onRowsChange: (rows: ImportRow[]) => void;
+   ignoredIndices: Set<number>;
+   onIgnoredIndicesChange: (s: Set<number>) => void;
+   validateRow?: DataTableImportConfig["validateRow"];
+   renderBulkActions?: DataTableImportConfig["renderBulkActions"];
+   onNext: () => void;
+   onBack: () => void;
+}) {
+   const parentRef = useRef<HTMLDivElement>(null);
+   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
+      new Set(),
+   );
+   const [editingCell, setEditingCell] = useState<{
+      rowIdx: number;
+      colKey: string;
+   } | null>(null);
+   const [showErrorsOnly, setShowErrorsOnly] = useState(false);
+
+   const validRows = rows.filter((r) => !r.__errors?.length);
+   const errorRows = rows.filter((r) => r.__errors?.length);
+
+   const displayRows = showErrorsOnly
+      ? rows
+           .map((r, i) => ({ row: r, originalIndex: i }))
+           .filter(({ row }) => row.__errors?.length)
+      : rows.map((r, i) => ({ row: r, originalIndex: i }));
+
+   const virtualizer = useVirtualizer({
+      count: displayRows.length,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => 40,
+      overscan: 8,
+   });
+
+   const selectableIndices = rows
+      .map((r, i) => ({ r, i }))
+      .filter(({ r, i }) => !r.__errors?.length && !ignoredIndices.has(i))
+      .map(({ i }) => i);
+
+   const allSelected =
+      selectableIndices.length > 0 &&
+      selectableIndices.every((i) => selectedIndices.has(i));
+   const someSelected = selectableIndices.some((i) => selectedIndices.has(i));
+   const isIndeterminate = someSelected && !allSelected;
+
+   function toggleSelectAll() {
+      if (allSelected) {
+         setSelectedIndices(new Set());
+         return;
+      }
+      setSelectedIndices(new Set(selectableIndices));
+   }
+
+   function toggleRow(idx: number) {
+      setSelectedIndices((prev) => {
+         const next = new Set(prev);
+         if (next.has(idx)) next.delete(idx);
+         else next.add(idx);
+         return next;
+      });
+   }
+
+   function ignoreRows(indices: Iterable<number>) {
+      const arr = [...indices];
+      onIgnoredIndicesChange(
+         arr.reduce((s, i) => {
+            s.add(i);
+            return s;
+         }, new Set(ignoredIndices)),
+      );
+      setSelectedIndices((prev) => {
+         const next = new Set(prev);
+         for (const i of arr) next.delete(i);
+         return next;
+      });
+   }
+
+   function unignoreRow(idx: number) {
+      const next = new Set(ignoredIndices);
+      next.delete(idx);
+      onIgnoredIndicesChange(next);
+   }
+
+   function commitEdit(rowIdx: number, colKey: string, value: string) {
+      const updated = rows.map((r, i) => {
+         if (i !== rowIdx) return r;
+         const newRow: ImportRow = { ...r, [colKey]: value };
+         if (validateRow) {
+            const clean: Record<string, string> = {};
+            for (const [k, v] of Object.entries(newRow)) {
+               if (k !== "__errors") clean[k] = String(v ?? "");
+            }
+            const errors = validateRow(clean);
+            if (errors?.length) return { ...newRow, __errors: errors };
+         }
+         return Object.fromEntries(
+            Object.entries(newRow).filter(([k]) => k !== "__errors"),
+         ) as ImportRow;
+      });
+      onRowsChange(updated);
+      setEditingCell(null);
+   }
+
+   const importableCount = selectableIndices.length;
+
+   return (
+      <div className="flex flex-col gap-4">
+         <div className="flex items-center justify-between">
+            <div>
+               <p className="text-sm font-medium">Revise os dados</p>
+               <p className="text-xs text-muted-foreground">
+                  {validRows.length} válidos
+                  {errorRows.length > 0 && ` · ${errorRows.length} com erro`}
+               </p>
+            </div>
+            {errorRows.length > 0 && (
+               <div className="flex items-center gap-2">
+                  <Button
+                     size="sm"
+                     variant={!showErrorsOnly ? "secondary" : "ghost"}
+                     className="h-7 text-xs"
+                     onClick={() => setShowErrorsOnly(false)}
+                     type="button"
+                  >
+                     Todos
+                  </Button>
+                  <Button
+                     size="sm"
+                     variant={showErrorsOnly ? "secondary" : "ghost"}
+                     className="h-7 text-xs"
+                     onClick={() => setShowErrorsOnly(true)}
+                     type="button"
+                  >
+                     Com erro
+                  </Button>
+               </div>
+            )}
+         </div>
+
+         <div className="rounded-lg border overflow-hidden">
+            <div
+               className="grid items-center gap-2 border-b bg-muted/50 px-3 py-2"
+               style={{
+                  gridTemplateColumns: `2rem repeat(${importableColumns.length}, minmax(0, 1fr)) 2rem`,
+               }}
+            >
+               <Checkbox
+                  checked={isIndeterminate ? "indeterminate" : allSelected}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Selecionar todos"
+               />
+               {importableColumns.map((col) => (
+                  <span
+                     key={col.key}
+                     className="text-xs font-medium text-muted-foreground truncate"
+                  >
+                     {col.label}
+                  </span>
+               ))}
+               <span />
+            </div>
+
+            <div ref={parentRef} className="h-56 overflow-auto">
+               <div
+                  style={{
+                     height: virtualizer.getTotalSize(),
+                     position: "relative",
+                  }}
+               >
+                  {virtualizer.getVirtualItems().map((virtualRow) => {
+                     const item = displayRows[virtualRow.index];
+                     if (!item) return null;
+                     const { row, originalIndex } = item;
+                     const hasErrors = !!row.__errors?.length;
+                     const isIgnored = ignoredIndices.has(originalIndex);
+                     const isSelected = selectedIndices.has(originalIndex);
+
+                     const rowEl = (
+                        <div
+                           key={virtualRow.key}
+                           data-index={virtualRow.index}
+                           ref={(el) => {
+                              if (el) virtualizer.measureElement(el);
+                           }}
+                           className={[
+                              "grid items-center gap-2 border-b px-3 h-10",
+                              hasErrors || isIgnored ? "opacity-50" : "",
+                              isIgnored ? "line-through bg-muted/30" : "",
+                              isSelected ? "bg-primary/5" : "",
+                           ]
+                              .filter(Boolean)
+                              .join(" ")}
+                           style={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              width: "100%",
+                              transform: `translateY(${virtualRow.start}px)`,
+                              gridTemplateColumns: `2rem repeat(${importableColumns.length}, minmax(0, 1fr)) 2rem`,
+                           }}
+                        >
+                           <Checkbox
+                              checked={isSelected}
+                              disabled={hasErrors || isIgnored}
+                              onCheckedChange={() => {
+                                 if (!hasErrors && !isIgnored)
+                                    toggleRow(originalIndex);
+                              }}
+                              aria-label="Selecionar linha"
+                           />
+
+                           {importableColumns.map((col) => {
+                              const isEditing =
+                                 editingCell?.rowIdx === originalIndex &&
+                                 editingCell?.colKey === col.key;
+                              const cellValue = String(row[col.key] ?? "");
+
+                              if (isEditing) {
+                                 return (
+                                    <Input
+                                       key={col.key}
+                                       autoFocus
+                                       className="h-7 text-xs py-0"
+                                       defaultValue={cellValue}
+                                       onBlur={(e) =>
+                                          commitEdit(
+                                             originalIndex,
+                                             col.key,
+                                             e.target.value,
+                                          )
+                                       }
+                                       onKeyDown={(e) => {
+                                          if (e.key === "Enter")
+                                             commitEdit(
+                                                originalIndex,
+                                                col.key,
+                                                e.currentTarget.value,
+                                             );
+                                          if (e.key === "Escape")
+                                             setEditingCell(null);
+                                       }}
+                                    />
+                                 );
+                              }
+
+                              return (
+                                 <span
+                                    key={col.key}
+                                    className={[
+                                       "text-xs truncate",
+                                       !hasErrors && !isIgnored
+                                          ? "cursor-text hover:underline hover:decoration-dotted"
+                                          : "",
+                                    ].join(" ")}
+                                    onClick={() => {
+                                       if (!hasErrors && !isIgnored)
+                                          setEditingCell({
+                                             rowIdx: originalIndex,
+                                             colKey: col.key,
+                                          });
+                                    }}
+                                 >
+                                    {cellValue || (
+                                       <span className="text-muted-foreground/40">
+                                          —
+                                       </span>
+                                    )}
+                                 </span>
+                              );
+                           })}
+
+                           <span className="flex items-center justify-end">
+                              {hasErrors ? (
+                                 <AlertTriangle className="size-3.5 text-destructive" />
+                              ) : isIgnored ? (
+                                 <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="size-6 text-muted-foreground hover:text-foreground"
+                                    onClick={() => unignoreRow(originalIndex)}
+                                    type="button"
+                                    aria-label="Desfazer ignorar"
+                                 >
+                                    <Undo2 className="size-3.5" />
+                                 </Button>
+                              ) : (
+                                 <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="size-6 text-muted-foreground hover:text-destructive"
+                                    onClick={() => ignoreRows([originalIndex])}
+                                    type="button"
+                                    aria-label="Ignorar linha"
+                                 >
+                                    <X className="size-3.5" />
+                                 </Button>
+                              )}
+                           </span>
+                        </div>
+                     );
+
+                     if (hasErrors && row.__errors?.length) {
+                        return (
+                           <TooltipProvider key={`tooltip-${originalIndex}`}>
+                              <Tooltip>
+                                 <TooltipTrigger asChild>
+                                    {rowEl}
+                                 </TooltipTrigger>
+                                 <TooltipContent
+                                    side="top"
+                                    className="max-w-xs"
+                                 >
+                                    <p className="text-xs font-medium pb-1">
+                                       Não pode ser importado:
+                                    </p>
+                                    <ul className="list-disc list-inside text-xs">
+                                       {row.__errors.map((e) => (
+                                          <li key={e}>{e}</li>
+                                       ))}
+                                    </ul>
+                                 </TooltipContent>
+                              </Tooltip>
+                           </TooltipProvider>
+                        );
+                     }
+
+                     return rowEl;
+                  })}
+               </div>
+            </div>
+         </div>
+
+         {selectedIndices.size > 0 && (
+            <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2">
+               <span className="text-xs font-medium tabular-nums shrink-0">
+                  {selectedIndices.size} de {importableCount} selecionadas
+               </span>
+               <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-2 px-2 text-xs"
+                  onClick={() => setSelectedIndices(new Set())}
+                  type="button"
+               >
+                  <X className="size-3.5" />
+                  Limpar
+               </Button>
+               <div className="h-4 w-px bg-border" />
+               <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                  onClick={() => ignoreRows(selectedIndices)}
+                  type="button"
+               >
+                  Ignorar selecionadas
+               </Button>
+               {renderBulkActions?.({
+                  selectedRows: [...selectedIndices]
+                     .map((i) => rows[i])
+                     .filter(Boolean) as ImportRow[],
+                  selectedIndices,
+                  rows,
+                  onRowsChange,
+                  onClearSelection: () => setSelectedIndices(new Set()),
+               })}
+            </div>
+         )}
+
+         <div className="flex gap-2">
+            <Button onClick={onBack} type="button" variant="outline">
+               Voltar
+            </Button>
+            <Button
+               className="flex-1"
+               disabled={importableCount === 0}
+               onClick={() => onNext()}
+               type="button"
+            >
+               Continuar
+            </Button>
+         </div>
+      </div>
+   );
+}
+
+export { PreviewStep };
