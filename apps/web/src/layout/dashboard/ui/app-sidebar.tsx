@@ -3,6 +3,7 @@ import {
    Sidebar,
    SidebarContent,
    SidebarFooter,
+   SidebarHeader,
    SidebarMenu,
    SidebarMenuButton,
    SidebarMenuItem,
@@ -15,10 +16,18 @@ import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { EarlyAccessSidebarBanner } from "./early-access-sidebar-banner";
 import { SidebarDefaultItems, SidebarNav } from "./sidebar-nav";
 import { SidebarScopeSwitcher } from "./sidebar-scope-switcher";
+import { SidebarChatButton } from "./sidebar-chat-button";
+import { SidebarAccountMenu } from "./sidebar-account-menu";
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
    return (
       <Sidebar className="px-0" collapsible="icon" variant="inset" {...props}>
+         <SidebarHeader className="gap-1 pb-2">
+            <SidebarScopeSwitcher />
+            <Separator className="my-1" />
+            <SidebarChatButton />
+         </SidebarHeader>
+
          <SidebarContent>
             <SidebarDefaultItems />
             <div className="px-2">
@@ -30,8 +39,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
          <SidebarFooter>
             <EarlyAccessSidebarBanner />
             <Separator />
+            <SidebarAccountMenu />
+            <Separator />
             <SidebarFooterContent />
-            <SidebarScopeSwitcher />
          </SidebarFooter>
       </Sidebar>
    );
@@ -55,10 +65,10 @@ function SidebarFooterContent() {
             </SidebarMenuButton>
          </SidebarMenuItem>
          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Configuracoes">
+            <SidebarMenuButton asChild tooltip="Configurações">
                <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/settings">
                   <Settings />
-                  <span>Configuracoes</span>
+                  <span>Configurações</span>
                </Link>
             </SidebarMenuButton>
          </SidebarMenuItem>
