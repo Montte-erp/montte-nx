@@ -395,9 +395,10 @@ function PreviewStep({
             const errors = validateRow(clean);
             if (errors?.length) return { ...newRow, __errors: errors };
          }
-         return Object.fromEntries(
+         const cleaned: ImportRow = Object.fromEntries(
             Object.entries(newRow).filter(([k]) => k !== "__errors"),
-         ) as ImportRow;
+         );
+         return cleaned;
       });
       onRowsChange(updated);
       setEditingCell(null);
