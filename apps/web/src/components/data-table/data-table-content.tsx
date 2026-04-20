@@ -337,10 +337,11 @@ function EditableCell({
    if (editMode === "inline") {
       if (!open) {
          return (
-            <button
+            <Button
                aria-label={ariaLabel}
-               className="group/cell cursor-pointer min-h-[1.5rem] flex items-center gap-2 w-full text-sm text-left"
+               className="group/cell h-auto min-h-[1.5rem] w-full justify-start gap-2 px-0 text-sm font-normal"
                type="button"
+               variant="ghost"
                onClick={() => setOpen(true)}
             >
                {children ?? (
@@ -354,7 +355,7 @@ function EditableCell({
                   </span>
                )}
                <Pencil className="size-3 shrink-0 text-muted-foreground opacity-0 group-hover/cell:opacity-100 transition-opacity" />
-            </button>
+            </Button>
          );
       }
 
@@ -394,15 +395,14 @@ function EditableCell({
          }}
       >
          <PopoverTrigger asChild>
-            <button
-               aria-expanded={open}
-               aria-haspopup="dialog"
+            <Button
                aria-label={ariaLabel}
                className={cn(
-                  "group/cell cursor-pointer min-h-[1.5rem] flex items-center gap-2 w-full text-sm text-left",
+                  "group/cell h-auto min-h-[1.5rem] w-full justify-start gap-2 px-0 text-sm font-normal",
                   open && "opacity-60",
                )}
                type="button"
+               variant="ghost"
             >
                {children ?? (
                   <span className="flex-1 truncate">
@@ -415,7 +415,7 @@ function EditableCell({
                   </span>
                )}
                <Pencil className="size-3 shrink-0 text-muted-foreground opacity-0 group-hover/cell:opacity-100 transition-opacity" />
-            </button>
+            </Button>
          </PopoverTrigger>
          <PopoverContent
             align="start"
