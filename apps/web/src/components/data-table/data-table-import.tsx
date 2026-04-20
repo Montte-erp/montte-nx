@@ -206,7 +206,7 @@ function MapStep({
             </p>
          </div>
 
-         <div className="flex flex-col gap-1">
+         <div className="flex flex-col gap-2">
             <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-1 pb-1">
                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Campo
@@ -236,7 +236,7 @@ function MapStep({
                      <span className="pt-1 text-sm font-medium">
                         {col.label}
                      </span>
-                     <div className="flex flex-col gap-1 min-w-0">
+                     <div className="flex flex-col gap-2 min-w-0">
                         <Combobox
                            options={headerOptions}
                            value={mapping[col.key] ?? "__none__"}
