@@ -33,6 +33,7 @@ import {
    ShieldCheck,
    Star,
    Tags,
+   TriangleAlert,
    Utensils,
    Wallet,
    Zap,
@@ -188,31 +189,76 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
          id: "keywords",
          header: "Palavras-chave",
          cell: ({ row }) => {
-            const keywords = row.original.keywords;
-            const count = keywords?.length ?? 0;
-            if (count === 0)
+            if (row.depth > 0)
                return <span className="text-sm text-muted-foreground">—</span>;
+            const { keywords, keywordsUpdatedAt, updatedAt } = row.original;
+            const count = keywords?.length ?? 0;
+            const isStale =
+               !keywordsUpdatedAt ||
+               new Date(updatedAt) > new Date(keywordsUpdatedAt);
+
+            if (count === 0) {
+               if (isStale) {
+                  return (
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                           <span className="inline-flex items-center gap-1 text-sm text-amber-500 cursor-default">
+                              <TriangleAlert className="size-3.5" />
+                              Não geradas
+                           </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                           Palavras-chave ainda não foram geradas para esta
+                           categoria. Use "Regerar palavras-chave" para gerar.
+                        </TooltipContent>
+                     </Tooltip>
+                  );
+               }
+               return <span className="text-sm text-muted-foreground">—</span>;
+            }
+
             return (
-               <Tooltip>
-                  <TooltipTrigger asChild>
-                     <Announcement className="cursor-default w-fit">
-                        <AnnouncementTag>
-                           <Tags className="size-3" />
-                        </AnnouncementTag>
-                        <AnnouncementTitle className="text-xs">
-                           {count} {count === 1 ? "palavra" : "palavras"}
-                        </AnnouncementTitle>
-                     </Announcement>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-72">
-                     <p className="font-semibold text-sm">Palavras-chave IA</p>
-                     <p className="text-xs text-muted-foreground">
-                        Geradas automaticamente com base no nome e descrição da
-                        categoria.
-                     </p>
-                     <p className="text-xs">{keywords!.join(", ")}</p>
-                  </TooltipContent>
-               </Tooltip>
+               <div className="flex items-center gap-2">
+                  <Tooltip>
+                     <TooltipTrigger asChild>
+                        <Announcement className="cursor-default w-fit">
+                           <AnnouncementTag>
+                              <Tags className="size-3" />
+                           </AnnouncementTag>
+                           <AnnouncementTitle className="text-xs">
+                              {count} {count === 1 ? "palavra" : "palavras"}
+                           </AnnouncementTitle>
+                        </Announcement>
+                     </TooltipTrigger>
+                     <TooltipContent className="max-w-72">
+                        <p className="font-semibold text-sm">
+                           Palavras-chave IA
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                           Geradas automaticamente com base no nome e descrição
+                           da categoria.
+                        </p>
+                        <p className="text-xs">{keywords!.join(", ")}</p>
+                     </TooltipContent>
+                  </Tooltip>
+                  {isStale && (
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                           <span
+                              className="inline-flex cursor-default"
+                              tabIndex={0}
+                           >
+                              <TriangleAlert className="size-3.5 text-amber-500" />
+                           </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                           Categoria foi atualizada desde a última geração de
+                           palavras-chave. Use "Regerar palavras-chave" para
+                           atualizar.
+                        </TooltipContent>
+                     </Tooltip>
+                  )}
+               </div>
             );
          },
       },

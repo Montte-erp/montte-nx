@@ -659,6 +659,31 @@ export function updateCategory(
    );
 }
 
+export function updateCategoryKeywords(
+   db: DatabaseInstance,
+   id: string,
+   keywords: string[],
+) {
+   return fromPromise(
+      (async () => {
+         const now = dayjs().toDate();
+         const [updated] = await db
+            .update(categories)
+            .set({ keywords, keywordsUpdatedAt: now, updatedAt: now })
+            .where(eq(categories.id, id))
+            .returning();
+         if (!updated) throw AppError.notFound("Categoria não encontrada.");
+         return updated;
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Falha ao salvar palavras-chave.", {
+                 cause: e,
+              }),
+   );
+}
+
 export function archiveCategory(db: DatabaseInstance, id: string) {
    return fromPromise(
       (async () => {
