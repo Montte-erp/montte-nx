@@ -29,7 +29,7 @@ function RailMenuButton() {
       <Popover onOpenChange={setOpen} open={open}>
          <PopoverTrigger asChild>
             <button
-               className="flex flex-col items-center px-2 py-3 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground w-full"
+               className="flex flex-col items-center px-2 py-3 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground rounded-md mx-1 w-[calc(100%-0.5rem)]"
                type="button"
             >
                <Ellipsis className="size-4" />
@@ -84,16 +84,14 @@ export function ContextPanelRail() {
          <div className="flex flex-col flex-1">
             {allTabMetas.map((tab) => (
                <button
-                  className="flex flex-col items-center gap-2 px-2 py-4 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                  className="flex flex-col items-center gap-2 px-2 py-4 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground rounded-md mx-1"
                   key={tab.id}
                   onClick={() => handleTabClick(tab.id)}
                   type="button"
                >
                   <tab.icon className="size-4 shrink-0" />
-                  <span className="flex flex-col items-center text-[10px] font-medium leading-tight">
-                     {tab.label.split("").map((char, i) => (
-                        <span key={i}>{char}</span>
-                     ))}
+                  <span className="text-[10px] font-medium [writing-mode:vertical-lr] [text-orientation:upright]">
+                     {tab.label}
                   </span>
                </button>
             ))}
