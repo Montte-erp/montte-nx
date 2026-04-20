@@ -55,7 +55,7 @@ export function DataTablePagination({
    );
 
    return (
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="sticky bottom-0 z-10 -mx-4 flex flex-col items-center justify-between gap-4 bg-background px-4 pt-2 sm:flex-row">
          <div className="flex items-center gap-4">
             <div className="text-sm text-muted-foreground hidden md:block">
                Exibindo {totalCount} resultados

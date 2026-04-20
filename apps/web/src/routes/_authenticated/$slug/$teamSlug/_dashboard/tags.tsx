@@ -199,16 +199,32 @@ function TagsList() {
 
    const handleArchive = useCallback(
       (tag: TagRow) => {
-         archiveMutation.mutate({ id: tag.id });
+         openAlertDialog({
+            title: "Arquivar centro de custo",
+            description: `Tem certeza que deseja arquivar "${tag.name}"? Ele não aparecerá mais nas opções de seleção.`,
+            actionLabel: "Arquivar",
+            cancelLabel: "Cancelar",
+            onAction: async () => {
+               await archiveMutation.mutateAsync({ id: tag.id });
+            },
+         });
       },
-      [archiveMutation],
+      [openAlertDialog, archiveMutation],
    );
 
    const handleUnarchive = useCallback(
       (tag: TagRow) => {
-         unarchiveMutation.mutate({ id: tag.id });
+         openAlertDialog({
+            title: "Reativar centro de custo",
+            description: `Tem certeza que deseja reativar "${tag.name}"?`,
+            actionLabel: "Reativar",
+            cancelLabel: "Cancelar",
+            onAction: async () => {
+               await unarchiveMutation.mutateAsync({ id: tag.id });
+            },
+         });
       },
-      [unarchiveMutation],
+      [openAlertDialog, unarchiveMutation],
    );
 
    const columns = useMemo(
@@ -222,7 +238,7 @@ function TagsList() {
    );
 
    return (
-      <>
+      <div className="flex flex-1 flex-col gap-4 min-h-0">
          <DataTableRoot
             columns={columns}
             data={tags}
@@ -325,7 +341,7 @@ function TagsList() {
                   </EmptyHeader>
                </Empty>
             </DataTableEmptyState>
-            <DataTableContent />
+            <DataTableContent className="flex-1 overflow-auto min-h-0" />
             <DataTableBulkActions<TagRow>>
                {({ selectedRows, clearSelection }) => {
                   const archivableIds = selectedRows
@@ -406,23 +422,25 @@ function TagsList() {
                })
             }
          />
-      </>
+      </div>
    );
 }
 
 function TagsPage() {
    return (
-      <main className="flex flex-col gap-4">
+      <main className="flex h-full flex-col gap-4">
          <DefaultHeader
             description="Gerencie seus centros de custo para categorizar transações"
             title="Centros de Custo"
          />
-         <QueryBoundary
-            fallback={<TagsSkeleton />}
-            errorTitle="Erro ao carregar centros de custo"
-         >
-            <TagsList />
-         </QueryBoundary>
+         <div className="flex flex-1 flex-col min-h-0">
+            <QueryBoundary
+               fallback={<TagsSkeleton />}
+               errorTitle="Erro ao carregar centros de custo"
+            >
+               <TagsList />
+            </QueryBoundary>
+         </div>
       </main>
    );
 }
