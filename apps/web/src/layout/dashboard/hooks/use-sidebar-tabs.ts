@@ -1,4 +1,4 @@
-import { getRouteApi } from "@tanstack/react-router";
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
 
 const dashboardRoute = getRouteApi(
    "/_authenticated/$slug/$teamSlug/_dashboard",
@@ -6,7 +6,7 @@ const dashboardRoute = getRouteApi(
 
 export function useSidebarTabs() {
    const { sidebarTab } = dashboardRoute.useSearch();
-   const navigate = dashboardRoute.useNavigate();
+   const navigate = useNavigate();
 
    const setTab = (tab: "navegar" | "assistente") =>
       navigate({

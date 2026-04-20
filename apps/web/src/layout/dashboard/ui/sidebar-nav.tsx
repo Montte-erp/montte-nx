@@ -393,7 +393,7 @@ export function SidebarNav() {
          onOpenChange={setOpen}
       >
          <SidebarGroup className="p-0">
-            <SidebarGroupLabel className="justify-between px-2 pr-2 group-data-[collapsible=icon]:hidden">
+            <SidebarGroupLabel className="justify-between px-4 group-data-[collapsible=icon]:hidden">
                <CollapsibleTrigger className="flex cursor-pointer items-center gap-2 transition-colors duration-150 hover:text-foreground">
                   <LayoutGrid aria-hidden="true" className="size-4 shrink-0" />
                   <span className="text-[11px] font-semibold uppercase tracking-wider">
