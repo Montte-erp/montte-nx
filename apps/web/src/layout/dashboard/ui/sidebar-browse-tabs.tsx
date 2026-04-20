@@ -1,5 +1,5 @@
 import { Tabs, TabsList, TabsTrigger } from "@packages/ui/components/tabs";
-import { LayoutGrid, MessageSquare } from "lucide-react";
+import { BotMessageSquare, LayoutGrid } from "lucide-react";
 
 type BrowseTab = "navegar" | "assistente";
 
@@ -20,7 +20,7 @@ export function SidebarBrowseTabs({
                Navegar
             </TabsTrigger>
             <TabsTrigger className="flex-1 gap-1.5" value="assistente">
-               <MessageSquare className="size-4 text-rose-400" />
+               <BotMessageSquare className="size-4" />
                Assistente
             </TabsTrigger>
          </TabsList>
