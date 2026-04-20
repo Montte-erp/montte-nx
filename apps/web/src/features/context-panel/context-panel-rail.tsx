@@ -1,4 +1,3 @@
-import { Button } from "@packages/ui/components/button";
 import { shallow, useStore } from "@tanstack/react-store";
 import { cn } from "@packages/ui/lib/utils";
 import { allTabMetasStore, contextPanelStore } from "./context-panel-store";
@@ -23,24 +22,24 @@ export function ContextPanelRail() {
    };
 
    return (
-      <div className="absolute right-3 top-20 hidden md:flex flex-col gap-2 z-10">
+      <div className="hidden md:flex flex-col shrink-0">
          {allTabMetas.map((tab) => (
-            <Button
+            <button
                className={cn(
-                  "size-9 rounded-full shadow-sm border bg-background hover:bg-accent",
+                  "flex flex-col items-center gap-2 px-2 py-4 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground",
                   isOpen &&
                      activeTabId === tab.id &&
-                     "bg-primary text-primary-foreground hover:bg-primary/90 border-primary shadow-md",
+                     "bg-accent/70 text-foreground",
                )}
                key={tab.id}
                onClick={() => handleTabClick(tab.id)}
-               tooltip={tab.label}
-               tooltipSide="left"
                type="button"
-               variant="ghost"
             >
-               <tab.icon className="size-4" />
-            </Button>
+               <tab.icon className="size-4 shrink-0" />
+               <span className="rotate-180 text-[10px] font-medium leading-none [writing-mode:vertical-rl]">
+                  {tab.label}
+               </span>
+            </button>
          ))}
       </div>
    );
