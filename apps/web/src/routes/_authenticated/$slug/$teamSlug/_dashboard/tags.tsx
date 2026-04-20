@@ -15,7 +15,11 @@ import {
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Archive, ArchiveRestore, Plus, Tag, Trash2 } from "lucide-react";
+import { DataTableImportButton } from "@/components/data-table/data-table-import";
+import type { DataTableImportConfig } from "@/components/data-table/data-table-import";
 import { DataTableExternalFilter } from "@/components/data-table/data-table-root";
+import { useCsvFile } from "@/hooks/use-csv-file";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { useCallback, useMemo, useState } from "react";
 
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
@@ -110,6 +114,28 @@ function TagsList() {
    const navigate = Route.useNavigate();
    const { search, includeArchived, page, pageSize } = Route.useSearch();
    const [isDraftActive, setIsDraftActive] = useState(false);
+   const { parse: parseCsv } = useCsvFile();
+   const { parse: parseXlsx } = useXlsxFile();
+
+   const importConfig: DataTableImportConfig = useMemo(
+      () => ({
+         accept: {
+            "text/csv": [".csv"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+               [".xlsx"],
+            "application/vnd.ms-excel": [".xls"],
+         },
+         parseFile: async (file: File) => {
+            const ext = file.name.split(".").pop()?.toLowerCase();
+            if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
+            return parseCsv(file);
+         },
+         onImport: async (rows) => {
+            console.log("Importar centros de custo:", rows);
+         },
+      }),
+      [parseCsv, parseXlsx],
+   );
 
    const { data: result } = useSuspenseQuery(
       orpc.tags.getAll.queryOptions({
@@ -344,6 +370,7 @@ function TagsList() {
                   })
                }
             >
+               <DataTableImportButton importConfig={importConfig} />
                <Button
                   onClick={handleCreate}
                   tooltip="Novo Centro de Custo"

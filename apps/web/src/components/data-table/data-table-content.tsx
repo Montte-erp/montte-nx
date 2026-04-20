@@ -8,9 +8,13 @@ import {
    ArrowUp,
    ArrowUpDown,
    Check,
+   ChevronDown,
+   Loader2,
    Pencil,
+   Upload,
    X,
 } from "lucide-react";
+import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { MultiSelect } from "@packages/ui/components/multi-select";
 import {
@@ -38,9 +42,19 @@ import { Input } from "@packages/ui/components/input";
 import { Textarea } from "@packages/ui/components/textarea";
 import { cn } from "@packages/ui/lib/utils";
 import { fromPromise } from "neverthrow";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+   useCallback,
+   useEffect,
+   useMemo,
+   useRef,
+   useState,
+   useTransition,
+} from "react";
 import type React from "react";
-import { useDataTable } from "./data-table-root";
+import { Checkbox } from "@packages/ui/components/checkbox";
+import { Combobox } from "@packages/ui/components/combobox";
+import { toast } from "sonner";
+import { useDataTable, useDataTableStore } from "./data-table-root";
 
 // Structural interface — compatible with TanStack Form FieldApi instances
 // whose value type is string | string[].
@@ -521,6 +535,320 @@ function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
    );
 }
 
+function ImportSection() {
+   const { table, store } = useDataTable();
+   const importState = useDataTableStore((s) => s.importState);
+   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
+      new Set(),
+   );
+   const [editingColKey, setEditingColKey] = useState<string | null>(null);
+   const [isSaving, startSaving] = useTransition();
+
+   if (!importState) return null;
+
+   const { rawHeaders, rawRows, mapping, onSave } = importState;
+   const visibleCols = table.getVisibleLeafColumns();
+   const colCount = visibleCols.length;
+
+   const headerOptions = [
+      { value: "__none__", label: "— Não mapear —" },
+      ...rawHeaders.map((h) => ({ value: h, label: h })),
+   ];
+
+   const allSelected =
+      rawRows.length > 0 && selectedIndices.size === rawRows.length;
+   const someSelected = selectedIndices.size > 0 && !allSelected;
+
+   function toggleAll() {
+      if (allSelected) {
+         setSelectedIndices(new Set());
+      } else {
+         setSelectedIndices(new Set(rawRows.map((_, i) => i)));
+      }
+   }
+
+   function toggleRow(idx: number) {
+      setSelectedIndices((prev) => {
+         const next = new Set(prev);
+         if (next.has(idx)) next.delete(idx);
+         else next.add(idx);
+         return next;
+      });
+   }
+
+   function setColMapping(colKey: string, fileHeader: string) {
+      store.setState((s) => {
+         if (!s.importState) return s;
+         return {
+            ...s,
+            importState: {
+               ...s.importState,
+               mapping: {
+                  ...s.importState.mapping,
+                  [colKey]: fileHeader === "__none__" ? "" : fileHeader,
+               },
+            },
+         };
+      });
+   }
+
+   function removeRows(indices: Set<number>) {
+      store.setState((s) => {
+         if (!s.importState) return s;
+         const newRows = s.importState.rawRows.filter(
+            (_, i) => !indices.has(i),
+         );
+         return {
+            ...s,
+            importState:
+               newRows.length === 0
+                  ? null
+                  : { ...s.importState, rawRows: newRows },
+         };
+      });
+      setSelectedIndices(new Set());
+   }
+
+   function discard() {
+      store.setState((s) => ({ ...s, importState: null }));
+   }
+
+   function handleSave() {
+      startSaving(async () => {
+         const toImport = rawRows.map((row) => {
+            const entry: Record<string, string> = {};
+            for (const [colKey, fileHeader] of Object.entries(mapping)) {
+               if (!fileHeader) continue;
+               const idx = rawHeaders.indexOf(fileHeader);
+               entry[colKey] = idx >= 0 ? (row[idx] ?? "") : "";
+            }
+            return entry;
+         });
+         try {
+            await onSave(toImport);
+            toast.success(
+               `${toImport.length} linha(s) importada(s) com sucesso.`,
+            );
+            store.setState((s) => ({ ...s, importState: null }));
+         } catch {
+            toast.error("Erro ao importar dados.");
+         }
+      });
+   }
+
+   return (
+      <>
+         {/* Group header */}
+         <TableRow className="hover:bg-transparent">
+            <TableCell className="bg-muted px-4 py-2" colSpan={colCount}>
+               <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                     <div className="flex size-5 items-center justify-center rounded bg-primary/20">
+                        <Upload className="size-3 text-primary" />
+                     </div>
+                     <span className="text-sm font-medium">Importando</span>
+                     <Badge className="text-xs font-normal" variant="secondary">
+                        {rawRows.length}{" "}
+                        {rawRows.length === 1 ? "linha" : "linhas"}
+                     </Badge>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                     {selectedIndices.size > 0 && (
+                        <>
+                           <span className="text-xs text-muted-foreground tabular-nums">
+                              {selectedIndices.size} selecionada(s)
+                           </span>
+                           <Button
+                              className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                              onClick={() => removeRows(selectedIndices)}
+                              size="sm"
+                              type="button"
+                              variant="ghost"
+                           >
+                              Remover
+                           </Button>
+                           <div className="h-4 w-px bg-border" />
+                        </>
+                     )}
+                     <Button
+                        className="h-7 gap-2 px-3 text-xs"
+                        disabled={isSaving}
+                        onClick={handleSave}
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                     >
+                        {isSaving ? (
+                           <Loader2 className="size-3 animate-spin" />
+                        ) : (
+                           <Check className="size-3" />
+                        )}
+                        Salvar {rawRows.length} linha(s)
+                     </Button>
+                     <Button
+                        className="size-7 text-muted-foreground hover:text-destructive"
+                        onClick={discard}
+                        size="icon"
+                        tooltip="Descartar importação"
+                        type="button"
+                        variant="ghost"
+                     >
+                        <X className="size-3.5" />
+                        <span className="sr-only">Descartar importação</span>
+                     </Button>
+                  </div>
+               </div>
+            </TableCell>
+         </TableRow>
+
+         {/* Column mapping row — click cell to pick file header */}
+         <TableRow className="bg-muted/20 hover:bg-muted/20">
+            {visibleCols.map((col) => {
+               if (col.id === "__select") {
+                  return (
+                     <TableCell key={col.id} className="w-10 px-2">
+                        <Checkbox
+                           aria-label="Selecionar todos"
+                           checked={
+                              someSelected ? "indeterminate" : allSelected
+                           }
+                           onCheckedChange={toggleAll}
+                        />
+                     </TableCell>
+                  );
+               }
+               if (col.id === "__actions") {
+                  return <TableCell key={col.id} />;
+               }
+               const accKey =
+                  "accessorKey" in col.columnDef &&
+                  col.columnDef.accessorKey != null
+                     ? String(col.columnDef.accessorKey)
+                     : col.id;
+               const currentHeader = mapping[accKey];
+               const isEditing = editingColKey === accKey;
+
+               return (
+                  <TableCell key={col.id} className="py-1 pr-2">
+                     <Popover
+                        open={isEditing}
+                        onOpenChange={(open) =>
+                           setEditingColKey(open ? accKey : null)
+                        }
+                     >
+                        <PopoverTrigger asChild>
+                           <button
+                              className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-xs transition-colors hover:bg-muted"
+                              type="button"
+                           >
+                              {currentHeader ? (
+                                 <span className="flex-1 truncate font-medium text-foreground">
+                                    {currentHeader}
+                                 </span>
+                              ) : (
+                                 <span className="flex-1 truncate text-muted-foreground/50 italic">
+                                    Não mapeado
+                                 </span>
+                              )}
+                              <ChevronDown className="size-3 shrink-0 text-muted-foreground/60" />
+                           </button>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" className="w-56 p-2">
+                           <Combobox
+                              options={headerOptions}
+                              value={mapping[accKey] ?? "__none__"}
+                              onValueChange={(v) => {
+                                 setColMapping(accKey, v);
+                                 setEditingColKey(null);
+                              }}
+                           />
+                        </PopoverContent>
+                     </Popover>
+                  </TableCell>
+               );
+            })}
+         </TableRow>
+
+         {/* Pending import rows */}
+         {rawRows.map((row, rowIdx) => {
+            const isSelected = selectedIndices.has(rowIdx);
+            return (
+               <TableRow
+                  className={cn(
+                     "border-l-2 border-l-primary/40 transition-colors",
+                     isSelected
+                        ? "bg-primary/10 hover:bg-primary/10"
+                        : "bg-primary/[0.03] hover:bg-primary/[0.07]",
+                  )}
+                  // oxlint-ignore react/no-array-index-key
+                  key={`__import_${rowIdx}`}
+               >
+                  {visibleCols.map((col) => {
+                     if (col.id === "__select") {
+                        return (
+                           <TableCell key={col.id} className="w-10 px-2">
+                              <Checkbox
+                                 aria-label="Selecionar linha"
+                                 checked={isSelected}
+                                 onCheckedChange={() => toggleRow(rowIdx)}
+                              />
+                           </TableCell>
+                        );
+                     }
+                     if (col.id === "__actions") {
+                        return (
+                           <TableCell key={col.id}>
+                              <div className="flex items-center justify-end gap-2">
+                                 <Button
+                                    className="text-muted-foreground/40 hover:text-destructive"
+                                    onClick={() =>
+                                       removeRows(new Set([rowIdx]))
+                                    }
+                                    size="icon"
+                                    tooltip="Remover linha"
+                                    type="button"
+                                    variant="ghost"
+                                 >
+                                    <X />
+                                    <span className="sr-only">
+                                       Remover linha
+                                    </span>
+                                 </Button>
+                              </div>
+                           </TableCell>
+                        );
+                     }
+                     const accKey =
+                        "accessorKey" in col.columnDef &&
+                        col.columnDef.accessorKey != null
+                           ? String(col.columnDef.accessorKey)
+                           : col.id;
+                     const fileHeader = mapping[accKey];
+                     const headerIdx = fileHeader
+                        ? rawHeaders.indexOf(fileHeader)
+                        : -1;
+                     const val = headerIdx >= 0 ? (row[headerIdx] ?? "") : "";
+                     return (
+                        <TableCell
+                           key={col.id}
+                           className="truncate text-sm text-foreground/80"
+                        >
+                           {val || (
+                              <span className="text-muted-foreground/30">
+                                 —
+                              </span>
+                           )}
+                        </TableCell>
+                     );
+                  })}
+               </TableRow>
+            );
+         })}
+      </>
+   );
+}
+
 function DraftRow() {
    const { table, isDraftRowActive, onAddRow, onDiscardAddRow } =
       useDataTable();
@@ -701,6 +1029,7 @@ export function DataTableContent<TData>({
 }: DataTableContentProps) {
    const { table, groupBy, renderGroupHeader, hasEmptyState } =
       useDataTable<TData>();
+   const importState = useDataTableStore((s) => s.importState);
    const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
 
    const rows = table.getRowModel().rows;
@@ -814,7 +1143,28 @@ export function DataTableContent<TData>({
                ))}
             </TableHeader>
             <TableBody>
+               <ImportSection />
                <DraftRow />
+               {importState !== null && rows.length > 0 && (
+                  <TableRow className="hover:bg-transparent">
+                     <TableCell
+                        className="bg-muted px-4 py-2"
+                        colSpan={columnCount}
+                     >
+                        <div className="flex items-center gap-2">
+                           <span className="text-sm font-medium">
+                              Existentes
+                           </span>
+                           <Badge
+                              className="text-xs font-normal"
+                              variant="secondary"
+                           >
+                              {rows.length}
+                           </Badge>
+                        </div>
+                     </TableCell>
+                  </TableRow>
+               )}
                {isVirtualized && virtualItems ? (
                   <>
                      {paddingTop > 0 && (
