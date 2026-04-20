@@ -41,14 +41,7 @@ import { Input } from "@packages/ui/components/input";
 import { Textarea } from "@packages/ui/components/textarea";
 import { cn } from "@packages/ui/lib/utils";
 import { fromPromise } from "neverthrow";
-import {
-   useCallback,
-   useEffect,
-   useMemo,
-   useRef,
-   useState,
-   useTransition,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
@@ -716,6 +709,7 @@ function ImportSectionInner() {
          }
          rowData = entry;
       }
+      if (!importState) return;
       try {
          await importState.onSave([rowData]);
          toast.success("Linha importada com sucesso.");
