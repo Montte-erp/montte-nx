@@ -271,23 +271,38 @@ export function SidebarDefaultItems() {
    const resolvedSlug = slug || pathname.split("/")[1] || "";
 
    return (
-      <SidebarGroup className="py-0">
-         <SidebarGroupContent>
-            <SidebarMenu>
-               {visibleMainItems.map((item) => (
-                  <NavItem
-                     isActive={isItemActive(item)}
-                     item={item}
-                     key={item.id}
-                     onMainItemClick={handleMainItemClick}
-                     onSubPanelToggle={handleSubPanelToggle}
-                     slug={resolvedSlug}
-                     teamSlug={teamSlug}
-                  />
-               ))}
-            </SidebarMenu>
-         </SidebarGroupContent>
-      </SidebarGroup>
+      <Collapsible defaultOpen className="group/projeto">
+         <SidebarGroup className="py-0">
+            <SidebarGroupLabel
+               asChild
+               className="justify-between pr-2 group-data-[collapsible=icon]:hidden"
+            >
+               <CollapsibleTrigger className="w-full cursor-pointer transition-colors duration-150 hover:text-foreground">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider">
+                     Projeto
+                  </span>
+                  <ChevronRight className="size-3 transition-transform duration-200 group-data-[state=open]/projeto:rotate-90" />
+               </CollapsibleTrigger>
+            </SidebarGroupLabel>
+            <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+               <SidebarGroupContent>
+                  <SidebarMenu>
+                     {visibleMainItems.map((item) => (
+                        <NavItem
+                           isActive={isItemActive(item)}
+                           item={item}
+                           key={item.id}
+                           onMainItemClick={handleMainItemClick}
+                           onSubPanelToggle={handleSubPanelToggle}
+                           slug={resolvedSlug}
+                           teamSlug={teamSlug}
+                        />
+                     ))}
+                  </SidebarMenu>
+               </SidebarGroupContent>
+            </CollapsibleContent>
+         </SidebarGroup>
+      </Collapsible>
    );
 }
 
