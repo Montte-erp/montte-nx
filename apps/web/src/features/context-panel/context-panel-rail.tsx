@@ -28,12 +28,9 @@ function RailMenuButton() {
    return (
       <Popover onOpenChange={setOpen} open={open}>
          <PopoverTrigger asChild>
-            <button
-               className="flex flex-col items-center px-2 py-3 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground rounded-md mx-1 w-[calc(100%-0.5rem)]"
-               type="button"
-            >
+            <Button variant="ghost" size="icon" className="mx-1 size-8">
                <Ellipsis className="size-4" />
-            </button>
+            </Button>
          </PopoverTrigger>
          <PopoverContent align="end" className="w-auto p-1" side="left">
             <Button
