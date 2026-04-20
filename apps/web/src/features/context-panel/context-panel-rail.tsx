@@ -21,22 +21,19 @@ export function ContextPanelRail() {
       if (!isOpen) openContextPanel();
    };
 
+   if (isOpen) return null;
+
    return (
       <div className="hidden md:flex flex-col shrink-0">
          {allTabMetas.map((tab) => (
             <button
-               className={cn(
-                  "flex flex-col items-center gap-2 px-2 py-4 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground",
-                  isOpen &&
-                     activeTabId === tab.id &&
-                     "bg-accent/70 text-foreground",
-               )}
+               className="flex flex-col items-center gap-2 px-2 py-4 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
                key={tab.id}
                onClick={() => handleTabClick(tab.id)}
                type="button"
             >
                <tab.icon className="size-4 shrink-0" />
-               <span className="rotate-180 text-[10px] font-medium leading-none [writing-mode:vertical-rl]">
+               <span className="text-xs font-medium leading-none [writing-mode:vertical-lr]">
                   {tab.label}
                </span>
             </button>
