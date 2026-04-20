@@ -11,7 +11,10 @@ export function SidebarBrowseTabs({
    onValueChange,
 }: SidebarBrowseTabsProps) {
    return (
-      <Tabs value={value} onValueChange={(v) => onValueChange(v as BrowseTab)}>
+      <Tabs
+         value={value}
+         onValueChange={(v) => onValueChange(v as "navegar" | "assistente")}
+      >
          <TabsList className="w-full">
             <TabsTrigger className="flex-1 gap-2" value="navegar">
                <LayoutGrid aria-hidden="true" />

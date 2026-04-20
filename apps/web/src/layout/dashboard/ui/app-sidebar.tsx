@@ -17,10 +17,11 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { Command, PanelLeftClose, Search, Settings } from "lucide-react";
 import type * as React from "react";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
+import { useSidebarTabs } from "@/layout/dashboard/hooks/use-sidebar-tabs";
 import { EarlyAccessSidebarBanner } from "./early-access-sidebar-banner";
 import { openKeyboardShortcuts } from "./keyboard-shortcuts-sheet";
 import { SidebarAccountMenu } from "./sidebar-account-menu";
@@ -31,17 +32,8 @@ import { SidebarDefaultItems, SidebarNav } from "./sidebar-nav";
 import { SidebarScopeSwitcher } from "./sidebar-scope-switcher";
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
-   const { sidebarTab } = useSearch({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
-   const navigate = useNavigate();
+   const { sidebarTab, setTab } = useSidebarTabs();
    const { open: openSearch } = useSidebarCommandDialog();
-
-   const setActiveTab = (tab: "navegar" | "assistente") =>
-      navigate({
-         search: (prev) => ({ ...prev, sidebarTab: tab }),
-         replace: true,
-      });
 
    useHotkey("Mod+/", openKeyboardShortcuts);
 
@@ -55,10 +47,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                <SidebarHeaderActions onSearchClick={openSearch} />
             </div>
             <div className="group-data-[collapsible=icon]:hidden">
-               <SidebarBrowseTabs
-                  value={sidebarTab}
-                  onValueChange={setActiveTab}
-               />
+               <SidebarBrowseTabs value={sidebarTab} onValueChange={setTab} />
             </div>
          </SidebarHeader>
 
