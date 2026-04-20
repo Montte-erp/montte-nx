@@ -112,8 +112,6 @@ function applyMapping(
    });
 }
 
-export { DEFAULT_ACCEPT, normalize, autoMatch, applyMapping };
-
 const STEPS: ImportStep[] = ["upload", "map", "preview", "confirm"];
 
 function ImportStepBar({ current }: { current: ImportStep }) {
