@@ -2,7 +2,7 @@ import { useAsyncDebouncedCallback } from "@tanstack/react-pacer";
 import { useForm, useStore } from "@tanstack/react-form";
 import type { AnyFormApi } from "@tanstack/react-form";
 import { Link } from "@tanstack/react-router";
-import { FilterX, Plus, Search, X } from "lucide-react";
+import { FilterX, ListFilter, Plus, Search, X } from "lucide-react";
 import { createContextState } from "foxact/context-state";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useSingleton } from "foxact/use-singleton";
@@ -16,14 +16,98 @@ import {
    InputGroupButton,
    InputGroupInput,
 } from "@packages/ui/components/input-group";
+import {
+   DropdownMenu,
+   DropdownMenuContent,
+   DropdownMenuGroup,
+   DropdownMenuItem,
+   DropdownMenuLabel,
+   DropdownMenuSeparator,
+   DropdownMenuTrigger,
+} from "@packages/ui/components/dropdown-menu";
+import { Switch } from "@packages/ui/components/switch";
 import { cn } from "@packages/ui/lib/utils";
-import { useDataTable } from "./data-table-root";
+import { useDataTable, useDataTableStore } from "./data-table-root";
 import { DataTableExportButton } from "./data-table-export";
 
 export type ToolbarValues = {
    search: string;
    filters: Record<string, unknown>;
 };
+
+function DataTableFilterDropdown() {
+   const externalFilters = useDataTableStore((s) => s.externalFilters);
+
+   const allFilters = Object.values(externalFilters);
+   if (allFilters.length === 0) return null;
+
+   const activeCount = allFilters.filter((f) => f.active).length;
+
+   const groups = allFilters.reduce<Record<string, typeof allFilters>>(
+      (acc, f) => {
+         if (!acc[f.group]) acc[f.group] = [];
+         acc[f.group].push(f);
+         return acc;
+      },
+      {},
+   );
+
+   return (
+      <DropdownMenu>
+         <DropdownMenuTrigger asChild>
+            <Button
+               className={cn(
+                  "relative shrink-0",
+                  activeCount > 0 &&
+                     "border-primary/50 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary",
+               )}
+               size="icon-sm"
+               tooltip="Filtros"
+               variant="outline"
+            >
+               <ListFilter />
+               {activeCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                     {activeCount}
+                  </span>
+               )}
+               <span className="sr-only">Filtros</span>
+            </Button>
+         </DropdownMenuTrigger>
+         <DropdownMenuContent align="end" className="w-64">
+            {Object.entries(groups).map(([groupLabel, filters], gi) => (
+               <DropdownMenuGroup key={groupLabel}>
+                  {gi > 0 && <DropdownMenuSeparator />}
+                  <DropdownMenuLabel>{groupLabel}</DropdownMenuLabel>
+                  {filters.map((filter) => (
+                     <DropdownMenuItem
+                        className="cursor-pointer justify-between gap-4 py-2.5"
+                        key={filter.id}
+                        onSelect={(e) => {
+                           e.preventDefault();
+                           filter.onToggle(!filter.active);
+                        }}
+                     >
+                        <span className="flex items-center gap-2 text-sm">
+                           {filter.renderIcon && (
+                              <span className="text-muted-foreground shrink-0">
+                                 {filter.renderIcon()}
+                              </span>
+                           )}
+                           {filter.label}
+                        </span>
+                        <Switch
+                           checked={filter.active}
+                           className="pointer-events-none shrink-0"
+                        />
+                     </DropdownMenuItem>
+                  ))}
+               </DropdownMenuGroup>
+            ))}
+         </DropdownMenuContent>
+      </DropdownMenu>
+   );
+}
 
 type DataTableToolbarContextValue = {
    form: AnyFormApi;
@@ -71,6 +155,7 @@ export function DataTableToolbar({
    children,
 }: DataTableToolbarProps) {
    const { table, columnFilters } = useDataTable();
+   const externalFilters = useDataTableStore((s) => s.externalFilters);
 
    const defaultFilters = useSingleton(() =>
       Object.fromEntries(columnFilters.map((f) => [f.id, f.value])),
@@ -82,11 +167,18 @@ export function DataTableToolbar({
 
    const inputValue = useStore(form.store, (s) => s.values.search);
 
-   const activeFilters = columnFilters.filter(
+   const activeColumnFilters = columnFilters.filter(
       ({ value }) => value != null && value !== "",
    );
 
-   const hasAnyFilter = activeFilters.length > 0 || inputValue !== "";
+   const activeExternalCount = Object.values(externalFilters).filter(
+      (f) => f.active,
+   ).length;
+
+   const hasAnyFilter =
+      activeColumnFilters.length > 0 ||
+      inputValue !== "" ||
+      activeExternalCount > 0;
 
    const debouncedSearch = useAsyncDebouncedCallback(
       async (value: string) => {
@@ -114,7 +206,10 @@ export function DataTableToolbar({
       form.setFieldValue("filters", {});
       table.resetColumnFilters();
       await onSearch?.("");
-   }, [form, onSearch, table]);
+      for (const filter of Object.values(externalFilters)) {
+         if (filter.active) filter.onToggle(false);
+      }
+   }, [form, onSearch, table, externalFilters]);
 
    const ctx = useMemo<DataTableToolbarContextValue>(
       () => ({ form, onSearch }),
@@ -161,7 +256,9 @@ export function DataTableToolbar({
                   />
                )}
 
-               {activeFilters.map(({ id, value }) => {
+               <DataTableFilterDropdown />
+
+               {activeColumnFilters.map(({ id, value }) => {
                   const label =
                      table.getColumn(id)?.columnDef.meta?.label ?? id;
                   return (

@@ -7,7 +7,7 @@ import type {
 } from "@tanstack/react-devtools";
 
 export const devtoolsConfig: TanStackDevtoolsReactInit["config"] = {
-   position: "top-right",
+   position: "bottom-right",
    openHotkey: ["Shift", "D"],
    hideUntilHover: true,
    requireUrlFlag: true,

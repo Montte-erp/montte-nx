@@ -36,6 +36,9 @@ export const categories = financeSchema.table(
       icon: text("icon"),
       isArchived: boolean("is_archived").notNull().default(false),
       keywords: text("keywords").array(),
+      keywordsUpdatedAt: timestamp("keywords_updated_at", {
+         withTimezone: true,
+      }),
       notes: text("notes"),
       participatesDre: boolean("participates_dre").notNull().default(false),
       dreGroupId: text("dre_group_id"),

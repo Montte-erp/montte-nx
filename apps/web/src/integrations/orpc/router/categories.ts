@@ -99,7 +99,7 @@ export const update = protectedProcedure
    .input(idSchema.merge(updateCategorySchema))
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
-      const category = (
+      return (
          await ensureCategoryOwnership(
             context.db,
             input.id,
@@ -111,22 +111,33 @@ export const update = protectedProcedure
             throw WebAppError.fromAppError(e);
          },
       );
-      if (data.name !== undefined || data.description !== undefined) {
-         const userRecord = await context.db.query.user.findFirst({
-            where: eq(userTable.id, context.userId),
-            columns: { stripeCustomerId: true },
-         });
-         await enqueueDeriveKeywordsWorkflow(context.workflowClient, {
-            categoryId: category.id,
-            teamId: context.teamId,
-            organizationId: context.organizationId,
-            userId: context.userId,
-            name: category.name,
-            description: category.description,
-            stripeCustomerId: userRecord?.stripeCustomerId ?? null,
-         });
-      }
-      return category;
+   });
+
+export const regenerateKeywords = protectedProcedure
+   .input(idSchema)
+   .handler(async ({ context, input }) => {
+      const category = (
+         await ensureCategoryOwnership(context.db, input.id, context.teamId)
+      ).match(
+         (v) => v,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+      const userRecord = await context.db.query.user.findFirst({
+         where: eq(userTable.id, context.userId),
+         columns: { stripeCustomerId: true },
+      });
+      await enqueueDeriveKeywordsWorkflow(context.workflowClient, {
+         categoryId: category.id,
+         teamId: context.teamId,
+         organizationId: context.organizationId,
+         userId: context.userId,
+         name: category.name,
+         description: category.description,
+         stripeCustomerId: userRecord?.stripeCustomerId ?? null,
+      });
+      return { success: true };
    });
 
 export const remove = protectedProcedure

@@ -136,7 +136,7 @@ export function DataTableExportSelectedButton() {
    return (
       <DropdownMenu>
          <DropdownMenuTrigger asChild>
-            <Button tooltip="Exportar selecionados" variant="outline" size="sm">
+            <Button variant="outline" size="sm">
                <Download data-icon="inline-start" />
                Exportar
             </Button>

@@ -39,6 +39,7 @@ import {
    FolderOpen,
    Pencil,
    Plus,
+   RefreshCw,
    Trash2,
    Upload,
 } from "lucide-react";
@@ -353,6 +354,18 @@ function CategoriesList({ navigate }: CategoriesListProps) {
       }),
    );
 
+   const regenerateKeywordsMutation = useMutation(
+      orpc.categories.regenerateKeywords.mutationOptions({
+         meta: { skipGlobalInvalidation: true },
+         onSuccess: () =>
+            toast.success(
+               "Geração de palavras-chave iniciada. Isso pode levar alguns segundos.",
+            ),
+         onError: (e) =>
+            toast.error(e.message || "Erro ao gerar palavras-chave."),
+      }),
+   );
+
    const handleEdit = useCallback(
       (category: CategoryRow) => {
          if (category.parentId !== null) {
@@ -577,6 +590,20 @@ function CategoriesList({ navigate }: CategoriesListProps) {
                      >
                         <Pencil />
                      </Button>
+                     {!isSub && (
+                        <Button
+                           disabled={regenerateKeywordsMutation.isPending}
+                           onClick={() =>
+                              regenerateKeywordsMutation.mutate({
+                                 id: row.original.id,
+                              })
+                           }
+                           tooltip="Regerar palavras-chave"
+                           variant="outline"
+                        >
+                           <RefreshCw />
+                        </Button>
+                     )}
                      {!isSub && (
                         <Button
                            onClick={() => handleArchive(row.original)}

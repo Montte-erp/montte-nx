@@ -2,7 +2,7 @@ import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
 import dayjs from "dayjs";
 import { DBOS, WorkflowQueue } from "@dbos-inc/dbos-sdk";
-import { updateCategory } from "@core/database/repositories/categories-repository";
+import { updateCategoryKeywords } from "@core/database/repositories/categories-repository";
 import { emitAiKeywordDerived } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
 import { enforceCreditBudget } from "@packages/events/credits";
@@ -135,7 +135,9 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsInput) {
    const saveResult = await fromPromise(
       DBOS.runStep(
          async () =>
-            (await updateCategory(db, input.categoryId, { keywords })).match(
+            (
+               await updateCategoryKeywords(db, input.categoryId, keywords)
+            ).match(
                () => null,
                (e) => {
                   throw e;

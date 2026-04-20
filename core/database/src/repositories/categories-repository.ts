@@ -659,6 +659,49 @@ export function updateCategory(
    );
 }
 
+export function updateCategoryKeywords(
+   db: DatabaseInstance,
+   id: string,
+   keywords: string[],
+) {
+   return fromPromise(
+      (async () => {
+         const existing = await db.query.categories.findFirst({
+            where: (fields, { eq }) => eq(fields.id, id),
+         });
+         if (!existing) throw AppError.notFound("Categoria não encontrada.");
+         if (existing.isDefault) {
+            throw AppError.conflict(
+               "Palavras-chave de categorias padrão não podem ser atualizadas.",
+            );
+         }
+         if (keywords.length) {
+            const vResult = await validateKeywordsUniqueness(
+               db,
+               existing.teamId,
+               keywords,
+               id,
+            );
+            if (vResult.isErr()) throw vResult.error;
+         }
+         const now = dayjs().toDate();
+         const [updated] = await db
+            .update(categories)
+            .set({ keywords, keywordsUpdatedAt: now, updatedAt: now })
+            .where(eq(categories.id, id))
+            .returning();
+         if (!updated) throw AppError.notFound("Categoria não encontrada.");
+         return updated;
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Falha ao salvar palavras-chave.", {
+                 cause: e,
+              }),
+   );
+}
+
 export function archiveCategory(db: DatabaseInstance, id: string) {
    return fromPromise(
       (async () => {

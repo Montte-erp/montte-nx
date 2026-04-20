@@ -12,6 +12,7 @@ import { useEffect } from "react";
 import { useSingleton } from "foxact/use-singleton";
 import { useJobNotifications } from "@/features/notifications/use-job-notifications";
 import { GlobalContextPanel } from "@/features/context-panel/context-panel";
+import { ContextPanelRail } from "@/features/context-panel/context-panel-rail";
 import { AutoBugReporter } from "@/features/feedback/ui/auto-bug-reporter";
 import { MonthlySatisfactionSurvey } from "@/features/feedback/ui/monthly-satisfaction-survey";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
@@ -87,19 +88,22 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   <AppSidebar />
                </SidebarManager>
 
-               <SidebarInset className="flex flex-col overflow-hidden bg-sidebar">
+               <SidebarInset className="flex flex-col overflow-hidden bg-sidebar mr-0">
                   <SidebarSubPanel />
-                  <div className=" flex flex-1 flex-col overflow-hidden rounded-xl bg-background">
-                     <main
-                        className={cn(
-                           "relative flex-1",
-                           isSettingsPage
-                              ? "overflow-hidden p-4"
-                              : "overflow-y-auto p-4",
-                        )}
-                     >
-                        {children}
-                     </main>
+                  <div className="flex flex-1 overflow-hidden">
+                     <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-background">
+                        <main
+                           className={cn(
+                              "relative flex-1",
+                              isSettingsPage
+                                 ? "overflow-hidden p-4"
+                                 : "overflow-y-auto p-4",
+                           )}
+                        >
+                           {children}
+                        </main>
+                     </div>
+                     <ContextPanelRail />
                   </div>
                   <AutoBugReporter />
                   <MonthlySatisfactionSurvey />
