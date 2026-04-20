@@ -32,7 +32,10 @@ export function ContextPanelRail() {
                type="button"
             >
                <tab.icon className="size-4 shrink-0" />
-               <span className="text-xs font-medium leading-none [writing-mode:vertical-lr]">
+               <span
+                  className="text-xs font-medium leading-none"
+                  style={{ writingMode: "vertical-lr" }}
+               >
                   {tab.label}
                </span>
             </button>
