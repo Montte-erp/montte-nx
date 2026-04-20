@@ -242,20 +242,7 @@ export function PageHeader({
 
          {/* Desktop: actions */}
          <div className="hidden sm:flex items-center gap-2 shrink-0">
-            {!isOpen &&
-               panelActions?.map((action) => (
-                  <Button
-                     key={action.label}
-                     onClick={action.onClick}
-                     tooltip={action.label}
-                     type="button"
-                     variant="outline"
-                  >
-                     <action.icon className="size-4" />
-                  </Button>
-               ))}
             {actions}
-            {!isOpen && <ContextPanelHeaderActions />}
          </div>
       </header>
    );
