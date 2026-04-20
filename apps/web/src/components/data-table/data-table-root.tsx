@@ -66,6 +66,7 @@ declare module "@tanstack/react-table" {
       align?: "left" | "center" | "right";
       exportable?: boolean;
       exportIgnore?: boolean;
+      importIgnore?: boolean;
    }
 }
 
