@@ -34,7 +34,6 @@ export function ContextPanelRail() {
                )}
                key={tab.id}
                onClick={() => handleTabClick(tab.id)}
-               size="icon"
                tooltip={tab.label}
                tooltipSide="left"
                type="button"
