@@ -42,7 +42,7 @@ function RailMenuButton() {
                variant="ghost"
             >
                <Sparkles className="size-4" />
-               Sugestão de funcionalidade
+               Dar feedback
             </Button>
             <Button
                asChild
@@ -80,8 +80,8 @@ export function ContextPanelRail() {
    if (isOpen) return null;
 
    return (
-      <div className="hidden md:flex flex-col shrink-0 justify-between">
-         <div className="flex flex-col">
+      <div className="hidden md:flex flex-col shrink-0 h-full">
+         <div className="flex flex-col flex-1">
             {allTabMetas.map((tab) => (
                <button
                   className="flex flex-col items-center gap-2 px-2 py-4 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
@@ -90,11 +90,10 @@ export function ContextPanelRail() {
                   type="button"
                >
                   <tab.icon className="size-4 shrink-0" />
-                  <span
-                     className="text-xs font-medium leading-none"
-                     style={{ writingMode: "vertical-lr" }}
-                  >
-                     {tab.label}
+                  <span className="flex flex-col items-center text-[10px] font-medium leading-tight">
+                     {tab.label.split("").map((char, i) => (
+                        <span key={i}>{char}</span>
+                     ))}
                   </span>
                </button>
             ))}
