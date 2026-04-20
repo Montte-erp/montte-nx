@@ -1,3 +1,4 @@
+import { Badge } from "@packages/ui/components/badge";
 import {
    SidebarMenu,
    SidebarMenuButton,
@@ -21,11 +22,9 @@ export function SidebarChatButton() {
                      disabled
                      size="sm"
                   >
-                     <MessageSquare className="size-4" />
-                     <span>Chat</span>
-                     <span className="ml-auto rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                        Em breve
-                     </span>
+                     <MessageSquare aria-hidden="true" />
+                     <span className="flex-1">Chat</span>
+                     <Badge variant="secondary">Em breve</Badge>
                   </SidebarMenuButton>
                </TooltipTrigger>
                <TooltipContent side="right">

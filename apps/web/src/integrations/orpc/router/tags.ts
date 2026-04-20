@@ -5,6 +5,7 @@ import {
    createTag,
    deleteTag,
    ensureTagOwnership,
+   getTagStats,
    listTagsPaginated,
    reactivateTag,
    updateTag,
@@ -161,6 +162,15 @@ export const unarchive = protectedProcedure
          },
       );
    });
+
+export const getStats = protectedProcedure.handler(async ({ context }) => {
+   return (await getTagStats(context.db, context.teamId)).match(
+      (stats) => stats,
+      (e) => {
+         throw WebAppError.fromAppError(e);
+      },
+   );
+});
 
 export const bulkRemove = protectedProcedure
    .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))

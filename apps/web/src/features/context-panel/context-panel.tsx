@@ -168,3 +168,18 @@ export function GlobalContextPanel() {
       </SidebarManager>
    );
 }
+
+export function ContextPanelTabContent() {
+   const activeTabMeta = useStore(activeTabMetaStore, (s) => s);
+   const dynamicTabs = useStore(contextPanelStore, (s) => s.dynamicTabs);
+   const activeTab: ContextPanelTab | undefined =
+      activeTabMeta?.id === "info"
+         ? INFO_TAB
+         : dynamicTabs.find((t) => t.id === activeTabMeta?.id);
+
+   return (
+      <div className="h-full overflow-hidden rounded-xl bg-muted">
+         {activeTab?.renderContent()}
+      </div>
+   );
+}

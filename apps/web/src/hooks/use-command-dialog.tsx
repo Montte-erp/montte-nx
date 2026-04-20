@@ -8,6 +8,7 @@ import {
    CommandSeparator,
 } from "@packages/ui/components/command";
 import { createStore, useStore } from "@tanstack/react-store";
+import { Fragment } from "react";
 import type React from "react";
 
 type CommandItemDef = {
@@ -87,14 +88,9 @@ export function GlobalCommandDialog() {
                   {options.groups
                      .filter((g) => g.items.length > 0)
                      .map((group, index) => (
-                        <>
-                           {index > 0 && (
-                              <CommandSeparator key={`sep-${group.id}`} />
-                           )}
-                           <CommandGroup
-                              heading={group.label ?? "Projeto"}
-                              key={group.id}
-                           >
+                        <Fragment key={group.id}>
+                           {index > 0 && <CommandSeparator />}
+                           <CommandGroup heading={group.label ?? "Projeto"}>
                               {group.items.map((item) => {
                                  const Icon = item.icon;
                                  return (
@@ -106,14 +102,17 @@ export function GlobalCommandDialog() {
                                        }}
                                     >
                                        {Icon && (
-                                          <Icon className={item.iconColor} />
+                                          <Icon
+                                             aria-hidden="true"
+                                             className={item.iconColor}
+                                          />
                                        )}
                                        {item.label}
                                     </CommandItem>
                                  );
                               })}
                            </CommandGroup>
-                        </>
+                        </Fragment>
                      ))}
                </CommandList>
             </>

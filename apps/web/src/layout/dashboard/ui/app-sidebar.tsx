@@ -84,23 +84,24 @@ function SidebarHeaderActions({
 }) {
    const isMac =
       typeof navigator !== "undefined" &&
-      /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+      /mac|iphone|ipad|ipod/i.test(navigator.userAgent);
 
    return (
       <div className="flex shrink-0 items-center group-data-[collapsible=icon]:hidden">
          <Tooltip>
             <TooltipTrigger asChild>
                <Button
+                  aria-label="Buscar"
                   className="size-7"
                   size="icon"
                   variant="outline"
                   onClick={onSearchClick}
                >
-                  <Search className="size-3.5" />
+                  <Search />
                </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-               <span className="flex items-center gap-1.5">
+               <span className="flex items-center gap-2">
                   Busca
                   <KbdGroup>
                      <Kbd>{isMac ? <Command /> : "Ctrl"}</Kbd>

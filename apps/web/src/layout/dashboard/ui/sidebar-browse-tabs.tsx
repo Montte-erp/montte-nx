@@ -15,12 +15,12 @@ export function SidebarBrowseTabs({
    return (
       <Tabs value={value} onValueChange={(v) => onValueChange(v as BrowseTab)}>
          <TabsList className="w-full">
-            <TabsTrigger className="flex-1 gap-1.5" value="navegar">
-               <LayoutGrid className="size-4" />
+            <TabsTrigger className="flex-1 gap-2" value="navegar">
+               <LayoutGrid aria-hidden="true" />
                Navegar
             </TabsTrigger>
-            <TabsTrigger className="flex-1 gap-1.5" value="assistente">
-               <BotMessageSquare className="size-4" />
+            <TabsTrigger className="flex-1 gap-2" value="assistente">
+               <BotMessageSquare aria-hidden="true" />
                Assistente
             </TabsTrigger>
          </TabsList>

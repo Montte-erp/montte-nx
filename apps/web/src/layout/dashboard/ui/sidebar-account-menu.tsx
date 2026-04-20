@@ -113,7 +113,7 @@ function SidebarAccountMenuContent() {
                            {session?.user.email}
                         </span>
                      </div>
-                     <ChevronsUpDown className="ml-auto size-4 shrink-0" />
+                     <ChevronsUpDown className="shrink-0" />
                   </SidebarMenuButton>
                </DropdownMenuTrigger>
                <DropdownMenuContent
@@ -154,7 +154,7 @@ function SidebarAccountMenuContent() {
                         params={{ slug, teamSlug }}
                         to="/$slug/$teamSlug/settings/profile"
                      >
-                        <Settings className="size-4" />
+                        <Settings aria-hidden="true" />
                         Meu perfil
                      </Link>
                   </DropdownMenuItem>
@@ -162,7 +162,7 @@ function SidebarAccountMenuContent() {
                      onSelect={handleLogoutClick}
                      className="text-destructive focus:text-destructive"
                   >
-                     <LogOut className="size-4" />
+                     <LogOut aria-hidden="true" />
                      Sair
                   </DropdownMenuItem>
                </DropdownMenuContent>

@@ -7,6 +7,7 @@ import {
    CommandSeparator,
 } from "@packages/ui/components/command";
 import { Kbd, KbdGroup } from "@packages/ui/components/kbd";
+import { Fragment } from "react";
 import { openCommandDialog } from "@/hooks/use-command-dialog";
 import { SHORTCUT_GROUPS, formatShortcutKeys } from "./keyboard-shortcuts";
 
@@ -17,9 +18,9 @@ function KeyboardShortcutsContent() {
          <CommandList className="max-h-[calc(75vh-3rem)]">
             <CommandEmpty>Nenhum atalho encontrado.</CommandEmpty>
             {SHORTCUT_GROUPS.map((group, index) => (
-               <>
-                  {index > 0 && <CommandSeparator key={`sep-${group.id}`} />}
-                  <CommandGroup heading={group.label} key={group.id}>
+               <Fragment key={group.id}>
+                  {index > 0 && <CommandSeparator />}
+                  <CommandGroup heading={group.label}>
                      {group.shortcuts.map((shortcut) => {
                         const keys = formatShortcutKeys(shortcut.keys);
                         return (
@@ -27,7 +28,6 @@ function KeyboardShortcutsContent() {
                               key={shortcut.keys}
                               className="flex items-center justify-between"
                               value={shortcut.label}
-                              onSelect={() => {}}
                            >
                               <span>{shortcut.label}</span>
                               <KbdGroup>
@@ -41,7 +41,7 @@ function KeyboardShortcutsContent() {
                         );
                      })}
                   </CommandGroup>
-               </>
+               </Fragment>
             ))}
          </CommandList>
       </>

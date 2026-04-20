@@ -4,6 +4,7 @@ import {
    CollapsibleContent,
    CollapsibleTrigger,
 } from "@packages/ui/components/collapsible";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import {
    SidebarGroup,
    SidebarGroupContent,
@@ -102,14 +103,14 @@ function NavItem({
             {item.subPanel ? (
                <>
                   <Icon className={cn(item.iconColor)} />
-                  <span>{item.label}</span>
+                  <span className="flex-1">{item.label}</span>
                   {stage && (
                      <FeatureStageBadge
-                        className="ml-auto group-data-[collapsible=icon]:hidden"
+                        className="group-data-[collapsible=icon]:hidden"
                         stage={stage}
                      />
                   )}
-                  <ChevronRight className="size-3.5 text-muted-foreground group-data-[collapsible=icon]:hidden" />
+                  <ChevronRight className="text-muted-foreground group-data-[collapsible=icon]:hidden" />
                </>
             ) : (
                <Link
@@ -118,10 +119,10 @@ function NavItem({
                   to={item.route}
                >
                   <Icon className={cn(item.iconColor)} />
-                  <span>{item.label}</span>
+                  <span className="flex-1">{item.label}</span>
                   {stage && (
                      <FeatureStageBadge
-                        className="ml-auto group-data-[collapsible=icon]:hidden"
+                        className="group-data-[collapsible=icon]:hidden"
                         stage={stage}
                      />
                   )}
@@ -226,12 +227,15 @@ export function SidebarDefaultItems() {
       >
          <SidebarGroup className="py-0">
             <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-               <CollapsibleTrigger className="flex cursor-pointer items-center gap-1.5 transition-colors duration-150 hover:text-foreground">
-                  <FolderOpen className="size-3.5 shrink-0" />
+               <CollapsibleTrigger className="flex cursor-pointer items-center gap-2 transition-colors duration-150 hover:text-foreground">
+                  <FolderOpen aria-hidden="true" className="size-4 shrink-0" />
                   <span className="text-[11px] font-semibold uppercase tracking-wider">
                      Projeto
                   </span>
-                  <ChevronRight className="size-3 transition-transform duration-200 group-data-[state=open]/projeto:rotate-90" />
+                  <ChevronRight
+                     aria-hidden="true"
+                     className="size-4 transition-transform duration-200 group-data-[state=open]/projeto:rotate-90"
+                  />
                </CollapsibleTrigger>
             </SidebarGroupLabel>
             <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
@@ -271,7 +275,7 @@ function NavGroup({
    onSubPanelToggle: (section: SubSidebarSection) => void;
    onMainItemClick: () => void;
 }) {
-   const { isEnrolled, updateEnrollment } = useEarlyAccess();
+   const { isEnrolled, updateEnrollment, getFeatureStage } = useEarlyAccess();
    const { isVisible, toggleItem: toggleVisibility } = useSidebarVisibility();
    const { isWanted, toggleItem: toggleWanted } = useFinanceNavPreferences();
    const { isEditingNav } = useSidebarNav();
@@ -323,31 +327,33 @@ function NavGroup({
                   ? editableItems.map((item) => {
                        const Icon = item.icon;
                        const checked = isChecked(item);
+                       const stage = item.earlyAccessFlag
+                          ? getFeatureStage(item.earlyAccessFlag)
+                          : null;
                        return (
                           <SidebarMenuItem key={item.id}>
-                             <button
-                                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors duration-150 hover:bg-sidebar-accent"
+                             <SidebarMenuButton
+                                aria-pressed={checked}
                                 onClick={() => handleToggle(item)}
-                                type="button"
                              >
-                                <div
-                                   className={cn(
-                                      "flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors duration-150",
-                                      checked
-                                         ? "border-primary bg-primary text-primary-foreground"
-                                         : "border-muted-foreground",
-                                   )}
-                                >
-                                   {checked && <Check className="size-3" />}
-                                </div>
+                                <Checkbox
+                                   aria-hidden="true"
+                                   checked={checked}
+                                   className="pointer-events-none shrink-0"
+                                   tabIndex={-1}
+                                />
                                 <Icon
+                                   aria-hidden="true"
                                    className={cn(
-                                      "size-4 shrink-0",
+                                      "shrink-0",
                                       item.iconColor ?? "text-muted-foreground",
                                    )}
                                 />
-                                <span className="truncate">{item.label}</span>
-                             </button>
+                                <span className="flex-1 truncate">
+                                   {item.label}
+                                </span>
+                                {stage && <FeatureStageBadge stage={stage} />}
+                             </SidebarMenuButton>
                           </SidebarMenuItem>
                        );
                     })
@@ -388,24 +394,36 @@ export function SidebarNav() {
       >
          <SidebarGroup className="p-0">
             <SidebarGroupLabel className="justify-between px-2 pr-2 group-data-[collapsible=icon]:hidden">
-               <CollapsibleTrigger className="flex cursor-pointer items-center gap-1.5 transition-colors duration-150 hover:text-foreground">
-                  <LayoutGrid className="size-3.5 shrink-0" />
+               <CollapsibleTrigger className="flex cursor-pointer items-center gap-2 transition-colors duration-150 hover:text-foreground">
+                  <LayoutGrid aria-hidden="true" className="size-4 shrink-0" />
                   <span className="text-[11px] font-semibold uppercase tracking-wider">
                      Módulos
                   </span>
-                  <ChevronRight className="size-3 transition-transform duration-200 group-data-[state=open]/modules:rotate-90" />
+                  <ChevronRight
+                     aria-hidden="true"
+                     className="size-4 transition-transform duration-200 group-data-[state=open]/modules:rotate-90"
+                  />
                </CollapsibleTrigger>
                <Tooltip>
                   <TooltipTrigger asChild>
                      <button
-                        className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors duration-150 hover:bg-sidebar-accent hover:text-foreground"
+                        aria-label={
+                           isEditingNav
+                              ? "Concluir edição"
+                              : "Personalizar módulos"
+                        }
+                        aria-pressed={isEditingNav}
+                        className="flex size-4 items-center justify-center rounded text-muted-foreground transition-colors duration-150 hover:bg-sidebar-accent hover:text-foreground"
                         onClick={() => setNavEditing(!isEditingNav)}
                         type="button"
                      >
                         {isEditingNav ? (
-                           <Check className="size-3.5 text-primary" />
+                           <Check
+                              aria-hidden="true"
+                              className="size-4 text-primary"
+                           />
                         ) : (
-                           <Pencil className="size-3.5" />
+                           <Pencil aria-hidden="true" className="size-4" />
                         )}
                      </button>
                   </TooltipTrigger>

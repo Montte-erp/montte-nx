@@ -375,6 +375,34 @@ export function findTagByKeywords(
    ).map((tag) => tag ?? null);
 }
 
+export function getTagStats(db: DatabaseInstance, teamId: string) {
+   return fromPromise(
+      (async () => {
+         const rows = await db
+            .select({
+               isArchived: tags.isArchived,
+               keywordCount: sql<number>`coalesce(array_length(${tags.keywords}, 1), 0)`,
+            })
+            .from(tags)
+            .where(eq(tags.teamId, teamId));
+         let active = 0;
+         let archived = 0;
+         let totalKeywords = 0;
+         for (const row of rows) {
+            if (row.isArchived) archived++;
+            else active++;
+            totalKeywords += Number(row.keywordCount);
+         }
+         return { active, archived, totalKeywords };
+      })(),
+      (e) =>
+         AppError.database(
+            "Falha ao buscar estatísticas de centros de custo.",
+            { cause: e },
+         ),
+   );
+}
+
 export function updateTagKeywords(
    db: DatabaseInstance,
    id: string,
