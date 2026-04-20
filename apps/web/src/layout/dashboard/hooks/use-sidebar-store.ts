@@ -14,6 +14,7 @@ interface SidebarPersistedState {
 interface SidebarTransientState {
    activeSection: SubSidebarSection | null;
    searchQuery: string;
+   isEditingNav: boolean;
 }
 
 const sidebarStore = createPersistedStore<SidebarPersistedState>(
@@ -29,6 +30,7 @@ const sidebarStore = createPersistedStore<SidebarPersistedState>(
 const transientStore = createStore<SidebarTransientState>({
    activeSection: null,
    searchQuery: "",
+   isEditingNav: false,
 });
 
 createStoreEffect(transientStore, (next, prev) => {
@@ -47,6 +49,10 @@ export function setActiveSection(section: SubSidebarSection | null) {
 
 export function setSearchQuery(query: string) {
    transientStore.setState((state) => ({ ...state, searchQuery: query }));
+}
+
+export function setNavEditing(value: boolean) {
+   transientStore.setState((state) => ({ ...state, isEditingNav: value }));
 }
 
 export function togglePinnedItem(itemId: string) {
@@ -110,8 +116,15 @@ export function useSidebarNav() {
    const activeSection = useStore(transientStore, (s) => s.activeSection);
    const searchQuery = useStore(transientStore, (s) => s.searchQuery);
    const pinnedItems = useStore(sidebarStore, (s) => s.pinnedItems);
+   const isEditingNav = useStore(transientStore, (s) => s.isEditingNav);
 
-   return { activeSection, searchQuery, pinnedItems, setSearchQuery };
+   return {
+      activeSection,
+      searchQuery,
+      pinnedItems,
+      setSearchQuery,
+      isEditingNav,
+   };
 }
 
 export function useSidebarSection(section: SubSidebarSection) {

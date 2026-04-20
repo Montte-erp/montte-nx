@@ -1,5 +1,3 @@
-// apps/web/src/layout/dashboard/sidebar-nav.tsx
-
 import { FeatureStageBadge } from "@/components/blocks/feature-stage-badge";
 import {
    Collapsible,
@@ -13,24 +11,34 @@ import {
    SidebarMenu,
    SidebarMenuButton,
    SidebarMenuItem,
-   SidebarMenuSub,
-   SidebarMenuSubButton,
-   SidebarMenuSubItem,
+   useSidebar,
    useSidebarManager,
 } from "@packages/ui/components/sidebar";
+import {
+   Tooltip,
+   TooltipContent,
+   TooltipTrigger,
+} from "@packages/ui/components/tooltip";
+import { cn } from "@packages/ui/lib/utils";
 import {
    Link,
    useLocation,
    useParams,
    useRouter,
 } from "@tanstack/react-router";
-import { cn } from "@packages/ui/lib/utils";
-import { Check, ChevronRight, Pencil, X } from "lucide-react";
+import {
+   Check,
+   ChevronRight,
+   FolderOpen,
+   LayoutGrid,
+   Pencil,
+} from "lucide-react";
 import { useCallback, useState } from "react";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 import {
-   useFinanceNavPreferences,
    setActiveSection,
+   setNavEditing,
+   useFinanceNavPreferences,
    useSidebarNav,
    useSidebarVisibility,
 } from "@/layout/dashboard/hooks/use-sidebar-store";
@@ -93,7 +101,7 @@ function NavItem({
          >
             {item.subPanel ? (
                <>
-                  <Icon />
+                  <Icon className={cn(item.iconColor)} />
                   <span>{item.label}</span>
                   {stage && (
                      <FeatureStageBadge
@@ -109,7 +117,7 @@ function NavItem({
                   params={{ slug, teamSlug: teamSlug ?? "" }}
                   to={item.route}
                >
-                  <Icon />
+                  <Icon className={cn(item.iconColor)} />
                   <span>{item.label}</span>
                   {stage && (
                      <FeatureStageBadge
@@ -121,67 +129,6 @@ function NavItem({
             )}
          </SidebarMenuButton>
       </SidebarMenuItem>
-   );
-}
-
-function CollapsibleNavItem({
-   item,
-   slug,
-   teamSlug,
-   isItemActive,
-   onMainItemClick,
-}: {
-   item: NavItemDef;
-   slug: string;
-   teamSlug?: string | null;
-   isItemActive: (item: NavItemDef) => boolean;
-   onMainItemClick: () => void;
-}) {
-   const { isVisible } = useSidebarVisibility();
-   const Icon = item.icon;
-   const visibleChildren = (item.children ?? []).filter((child) =>
-      isVisible(child.id),
-   );
-   const anyChildActive = visibleChildren.some(isItemActive);
-
-   if (visibleChildren.length === 0) return null;
-
-   return (
-      <Collapsible asChild className="group/collapsible" defaultOpen>
-         <SidebarMenuItem>
-            <CollapsibleTrigger asChild>
-               <SidebarMenuButton
-                  isActive={anyChildActive}
-                  tooltip={item.label}
-               >
-                  <Icon />
-                  <span>{item.label}</span>
-                  <span className="flex-1" />
-                  <ChevronRight className="size-3.5 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
-               </SidebarMenuButton>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-               <SidebarMenuSub>
-                  {visibleChildren.map((child) => (
-                     <SidebarMenuSubItem key={child.id}>
-                        <SidebarMenuSubButton
-                           asChild
-                           isActive={isItemActive(child)}
-                        >
-                           <Link
-                              onClick={onMainItemClick}
-                              params={{ slug, teamSlug: teamSlug ?? "" }}
-                              to={child.route}
-                           >
-                              <span>{child.label}</span>
-                           </Link>
-                        </SidebarMenuSubButton>
-                     </SidebarMenuSubItem>
-                  ))}
-               </SidebarMenuSub>
-            </CollapsibleContent>
-         </SidebarMenuItem>
-      </Collapsible>
    );
 }
 
@@ -258,6 +205,8 @@ export function SidebarDefaultItems() {
    const { pathname } = useLocation();
    const { isEnrolled } = useEarlyAccess();
    const { isVisible } = useSidebarVisibility();
+   const { state: sidebarState } = useSidebar();
+   const [open, setOpen] = useState(true);
 
    const mainGroup = navGroups.find((g) => !g.label);
    const visibleMainItems = (mainGroup?.items ?? [])
@@ -270,13 +219,15 @@ export function SidebarDefaultItems() {
    const resolvedSlug = slug || pathname.split("/")[1] || "";
 
    return (
-      <Collapsible defaultOpen className="group/projeto">
+      <Collapsible
+         className="group/projeto"
+         open={sidebarState === "collapsed" || open}
+         onOpenChange={setOpen}
+      >
          <SidebarGroup className="py-0">
-            <SidebarGroupLabel
-               asChild
-               className="justify-between pr-2 group-data-[collapsible=icon]:hidden"
-            >
-               <CollapsibleTrigger className="w-full cursor-pointer transition-colors duration-150 hover:text-foreground">
+            <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+               <CollapsibleTrigger className="flex cursor-pointer items-center gap-1.5 transition-colors duration-150 hover:text-foreground">
+                  <FolderOpen className="size-3.5 shrink-0" />
                   <span className="text-[11px] font-semibold uppercase tracking-wider">
                      Projeto
                   </span>
@@ -323,7 +274,7 @@ function NavGroup({
    const { isEnrolled, updateEnrollment } = useEarlyAccess();
    const { isVisible, toggleItem: toggleVisibility } = useSidebarVisibility();
    const { isWanted, toggleItem: toggleWanted } = useFinanceNavPreferences();
-   const [isEditing, setIsEditing] = useState(false);
+   const { isEditingNav } = useSidebarNav();
 
    const visibleItems = group.items
       .filter((item) => {
@@ -334,13 +285,13 @@ function NavGroup({
       })
       .filter((item) => isVisible(item.id));
 
-   if (visibleItems.length === 0 && !group.label) return null;
-
    const editableItems = group.items.filter(
       (item) =>
          item.configurable &&
          (!item.earlyAccessFlag || isEnrolled(item.earlyAccessFlag)),
    );
+
+   if (!isEditingNav && visibleItems.length === 0) return null;
 
    const isChecked = (item: NavItemDef): boolean => {
       if (item.earlyAccessFlag) {
@@ -360,119 +311,60 @@ function NavGroup({
    };
 
    return (
-      <Collapsible defaultOpen className="group/nav-group pt-0">
-         <SidebarGroup className="pt-0">
-            {group.label && (
-               <SidebarGroupLabel asChild className="justify-between pr-1">
-                  <CollapsibleTrigger className="w-full cursor-pointer transition-colors duration-150 hover:text-foreground">
-                     <span>{group.label}</span>
-                     <div className="flex items-center gap-1">
-                        {!isEditing && editableItems.length > 0 && (
-                           <button
-                              className="text-muted-foreground hover:text-foreground group-data-[collapsible=icon]:hidden"
-                              onClick={(e) => {
-                                 e.stopPropagation();
-                                 setIsEditing(true);
-                              }}
-                              type="button"
-                           >
-                              <Pencil className="size-3.5" />
-                           </button>
-                        )}
-                        {isEditing && (
-                           <>
-                              <button
-                                 className="text-emerald-600 hover:text-emerald-700"
-                                 onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsEditing(false);
-                                 }}
-                                 type="button"
-                              >
-                                 <Check className="size-3.5" />
-                              </button>
-                              <button
-                                 className="text-muted-foreground hover:text-foreground"
-                                 onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsEditing(false);
-                                 }}
-                                 type="button"
-                              >
-                                 <X className="size-3.5" />
-                              </button>
-                           </>
-                        )}
-                        <ChevronRight className="size-3 transition-transform duration-200 group-data-[state=open]/nav-group:rotate-90 group-data-[collapsible=icon]:hidden" />
-                     </div>
-                  </CollapsibleTrigger>
-               </SidebarGroupLabel>
-            )}
-            <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-               {isEditing ? (
-                  <SidebarGroupContent>
-                     <SidebarMenu>
-                        {editableItems.map((item) => {
-                           const Icon = item.icon;
-                           const checked = isChecked(item);
-                           return (
-                              <SidebarMenuItem key={item.id}>
-                                 <button
-                                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors duration-150 hover:bg-sidebar-accent"
-                                    onClick={() => handleToggle(item)}
-                                    type="button"
-                                 >
-                                    <div
-                                       className={cn(
-                                          "flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors duration-150",
-                                          checked
-                                             ? "border-primary bg-primary text-primary-foreground"
-                                             : "border-muted-foreground",
-                                       )}
-                                    >
-                                       {checked && <Check className="size-3" />}
-                                    </div>
-                                    <Icon className="size-4 shrink-0 text-muted-foreground" />
-                                    <span className="truncate">
-                                       {item.label}
-                                    </span>
-                                 </button>
-                              </SidebarMenuItem>
-                           );
-                        })}
-                     </SidebarMenu>
-                  </SidebarGroupContent>
-               ) : (
-                  <SidebarGroupContent>
-                     <SidebarMenu>
-                        {visibleItems.map((item) =>
-                           item.children ? (
-                              <CollapsibleNavItem
-                                 isItemActive={isItemActive}
-                                 item={item}
-                                 key={item.id}
-                                 onMainItemClick={onMainItemClick}
-                                 slug={slug}
-                                 teamSlug={teamSlug}
-                              />
-                           ) : (
-                              <NavItem
-                                 isActive={isItemActive(item)}
-                                 item={item}
-                                 key={item.id}
-                                 onMainItemClick={onMainItemClick}
-                                 onSubPanelToggle={onSubPanelToggle}
-                                 slug={slug}
-                                 teamSlug={teamSlug}
-                              />
-                           ),
-                        )}
-                     </SidebarMenu>
-                  </SidebarGroupContent>
-               )}
-            </CollapsibleContent>
-         </SidebarGroup>
-      </Collapsible>
+      <SidebarGroup className="pt-0">
+         {group.label && (
+            <SidebarGroupLabel className="text-[11px] group-data-[collapsible=icon]:hidden">
+               {group.label}
+            </SidebarGroupLabel>
+         )}
+         <SidebarGroupContent>
+            <SidebarMenu>
+               {isEditingNav
+                  ? editableItems.map((item) => {
+                       const Icon = item.icon;
+                       const checked = isChecked(item);
+                       return (
+                          <SidebarMenuItem key={item.id}>
+                             <button
+                                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors duration-150 hover:bg-sidebar-accent"
+                                onClick={() => handleToggle(item)}
+                                type="button"
+                             >
+                                <div
+                                   className={cn(
+                                      "flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors duration-150",
+                                      checked
+                                         ? "border-primary bg-primary text-primary-foreground"
+                                         : "border-muted-foreground",
+                                   )}
+                                >
+                                   {checked && <Check className="size-3" />}
+                                </div>
+                                <Icon
+                                   className={cn(
+                                      "size-4 shrink-0",
+                                      item.iconColor ?? "text-muted-foreground",
+                                   )}
+                                />
+                                <span className="truncate">{item.label}</span>
+                             </button>
+                          </SidebarMenuItem>
+                       );
+                    })
+                  : visibleItems.map((item) => (
+                       <NavItem
+                          isActive={isItemActive(item)}
+                          item={item}
+                          key={item.id}
+                          onMainItemClick={onMainItemClick}
+                          onSubPanelToggle={onSubPanelToggle}
+                          slug={slug}
+                          teamSlug={teamSlug}
+                       />
+                    ))}
+            </SidebarMenu>
+         </SidebarGroupContent>
+      </SidebarGroup>
    );
 }
 
@@ -484,22 +376,60 @@ export function SidebarNav() {
       handleMainItemClick,
       isItemActive,
    } = useNavHandlers();
+   const { isEditingNav } = useSidebarNav();
+   const { state: sidebarState } = useSidebar();
+   const [open, setOpen] = useState(true);
 
    return (
-      <>
-         {navGroups
-            .filter((g) => g.id !== "main")
-            .map((group) => (
-               <NavGroup
-                  group={group}
-                  isItemActive={isItemActive}
-                  key={group.id}
-                  onMainItemClick={handleMainItemClick}
-                  onSubPanelToggle={handleSubPanelToggle}
-                  slug={slug}
-                  teamSlug={teamSlug ?? undefined}
-               />
-            ))}
-      </>
+      <Collapsible
+         className="group/modules"
+         open={sidebarState === "collapsed" || open}
+         onOpenChange={setOpen}
+      >
+         <SidebarGroup className="p-0">
+            <SidebarGroupLabel className="justify-between px-2 pr-2 group-data-[collapsible=icon]:hidden">
+               <CollapsibleTrigger className="flex cursor-pointer items-center gap-1.5 transition-colors duration-150 hover:text-foreground">
+                  <LayoutGrid className="size-3.5 shrink-0" />
+                  <span className="text-[11px] font-semibold uppercase tracking-wider">
+                     Módulos
+                  </span>
+                  <ChevronRight className="size-3 transition-transform duration-200 group-data-[state=open]/modules:rotate-90" />
+               </CollapsibleTrigger>
+               <Tooltip>
+                  <TooltipTrigger asChild>
+                     <button
+                        className="flex size-5 items-center justify-center rounded text-muted-foreground transition-colors duration-150 hover:bg-sidebar-accent hover:text-foreground"
+                        onClick={() => setNavEditing(!isEditingNav)}
+                        type="button"
+                     >
+                        {isEditingNav ? (
+                           <Check className="size-3.5 text-primary" />
+                        ) : (
+                           <Pencil className="size-3.5" />
+                        )}
+                     </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                     {isEditingNav ? "Concluir edição" : "Personalizar módulos"}
+                  </TooltipContent>
+               </Tooltip>
+            </SidebarGroupLabel>
+            <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+               {navGroups
+                  .filter((g) => g.id !== "main")
+                  .map((group) => (
+                     <NavGroup
+                        group={group}
+                        isItemActive={isItemActive}
+                        key={group.id}
+                        onMainItemClick={handleMainItemClick}
+                        onSubPanelToggle={handleSubPanelToggle}
+                        slug={slug}
+                        teamSlug={teamSlug ?? undefined}
+                     />
+                  ))}
+            </CollapsibleContent>
+         </SidebarGroup>
+      </Collapsible>
    );
 }

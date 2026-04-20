@@ -13,40 +13,54 @@ import {
 import { Link } from "@tanstack/react-router";
 import { PanelLeftClose, Search, Settings } from "lucide-react";
 import type * as React from "react";
+import { useState } from "react";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { EarlyAccessSidebarBanner } from "./early-access-sidebar-banner";
-import { SidebarDefaultItems, SidebarNav } from "./sidebar-nav";
-import { SidebarScopeSwitcher } from "./sidebar-scope-switcher";
 import { SidebarAccountMenu } from "./sidebar-account-menu";
 import { SidebarBrowseTabs } from "./sidebar-browse-tabs";
+import { SidebarChatPanel } from "./sidebar-chat-panel";
+import { SidebarCommandDialog } from "./sidebar-command-dialog";
+import { SidebarDefaultItems, SidebarNav } from "./sidebar-nav";
+import { SidebarScopeSwitcher } from "./sidebar-scope-switcher";
+
+type BrowseTab = "navegar" | "assistente";
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
+   const [activeTab, setActiveTab] = useState<BrowseTab>("navegar");
+   const [commandOpen, setCommandOpen] = useState(false);
+
    return (
       <Sidebar className="px-0" collapsible="icon" variant="inset" {...props}>
+         <SidebarCommandDialog
+            open={commandOpen}
+            onOpenChange={setCommandOpen}
+         />
          <SidebarHeader className="gap-2 pb-2">
-            <div className="flex items-center gap-1 group-data-[collapsible=icon]:justify-center">
-               <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1">
+               <div className="min-w-0 flex-1">
                   <SidebarScopeSwitcher />
                </div>
-               <Button
-                  className="shrink-0 size-8 text-muted-foreground group-data-[collapsible=icon]:hidden"
-                  size="icon"
-                  variant="ghost"
-               >
-                  <Search className="size-4" />
-               </Button>
+               <SidebarHeaderActions
+                  onSearchClick={() => setCommandOpen(true)}
+               />
             </div>
             <div className="group-data-[collapsible=icon]:hidden">
-               <SidebarBrowseTabs />
+               <SidebarBrowseTabs
+                  value={activeTab}
+                  onValueChange={setActiveTab}
+               />
             </div>
          </SidebarHeader>
 
          <SidebarContent>
-            <SidebarDefaultItems />
-            <div className="px-2">
-               <Separator />
-            </div>
-            <SidebarNav />
+            {activeTab === "navegar" ? (
+               <>
+                  <SidebarDefaultItems />
+                  <SidebarNav />
+               </>
+            ) : (
+               <SidebarChatPanel />
+            )}
          </SidebarContent>
 
          <SidebarFooter>
@@ -56,6 +70,25 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             <SidebarAccountMenu />
          </SidebarFooter>
       </Sidebar>
+   );
+}
+
+function SidebarHeaderActions({
+   onSearchClick,
+}: {
+   onSearchClick: () => void;
+}) {
+   return (
+      <div className="flex shrink-0 items-center group-data-[collapsible=icon]:hidden">
+         <Button
+            className="size-7"
+            size="icon"
+            variant="outline"
+            onClick={onSearchClick}
+         >
+            <Search className="size-3.5" />
+         </Button>
+      </div>
    );
 }
 
