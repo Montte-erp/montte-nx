@@ -12,10 +12,11 @@ import {
    TooltipContent,
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
-import { shallow, useStore } from "@tanstack/react-store";
-import { Ellipsis, ExternalLink, Sparkles, X } from "lucide-react";
+import { useSelector } from "@tanstack/react-store";
+import { Ellipsis, ExternalLink, Keyboard, Sparkles, X } from "lucide-react";
 import { POSTHOG_SURVEYS } from "@core/posthog/config";
 import { useSurveyModal } from "@/hooks/use-survey-modal";
+import { openKeyboardShortcuts } from "@/layout/dashboard/ui/keyboard-shortcuts-sheet";
 import { allTabMetasStore, contextPanelStore } from "./context-panel-store";
 import {
    closeContextPanel,
@@ -41,6 +42,13 @@ function RailMenuButton() {
                <DropdownMenuSeparator />
                <DropdownMenuItem
                   className="cursor-pointer gap-2"
+                  onClick={openKeyboardShortcuts}
+               >
+                  <Keyboard className="size-4" />
+                  Atalhos de teclado
+               </DropdownMenuItem>
+               <DropdownMenuItem
+                  className="cursor-pointer gap-2"
                   onClick={() =>
                      openSurveyModal(POSTHOG_SURVEYS.featureRequest.id)
                   }
@@ -50,7 +58,7 @@ function RailMenuButton() {
                </DropdownMenuItem>
                <DropdownMenuItem asChild className="cursor-pointer gap-2">
                   <a
-                     href="https://docs.montte.app"
+                     href="https://montte.co/docs"
                      rel="noopener noreferrer"
                      target="_blank"
                   >
@@ -66,9 +74,9 @@ function RailMenuButton() {
 }
 
 export function ContextPanelRail() {
-   const allTabMetas = useStore(allTabMetasStore, (s) => s, shallow);
-   const isOpen = useStore(contextPanelStore, (s) => s.isOpen);
-   const activeTabId = useStore(contextPanelStore, (s) => s.activeTabId);
+   const allTabMetas = useSelector(allTabMetasStore, (s) => s);
+   const isOpen = useSelector(contextPanelStore, (s) => s.isOpen);
+   const activeTabId = useSelector(contextPanelStore, (s) => s.activeTabId);
 
    const handleTabClick = (tabId: string) => {
       if (isOpen && activeTabId === tabId) {

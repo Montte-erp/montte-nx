@@ -692,9 +692,13 @@ function DataTableBodyRows<TData>({
 
 interface DataTableContentProps {
    maxHeight?: number;
+   className?: string;
 }
 
-export function DataTableContent<TData>({ maxHeight }: DataTableContentProps) {
+export function DataTableContent<TData>({
+   maxHeight,
+   className,
+}: DataTableContentProps) {
    const { table, groupBy, renderGroupHeader, hasEmptyState } =
       useDataTable<TData>();
    const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
@@ -725,7 +729,7 @@ export function DataTableContent<TData>({ maxHeight }: DataTableContentProps) {
 
    return (
       <div
-         className="rounded-md border overflow-hidden"
+         className={cn("rounded-md border overflow-hidden", className)}
          ref={isVirtualized ? setScrollEl : undefined}
          style={isVirtualized ? { maxHeight, overflowY: "auto" } : undefined}
       >

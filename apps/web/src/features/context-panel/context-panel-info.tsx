@@ -10,6 +10,7 @@ import {
 import type { VariantProps } from "class-variance-authority";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import type React from "react";
 
 export function ContextPanelAction({
    icon: Icon,
@@ -40,20 +41,22 @@ export function ContextPanelMeta({
    label,
    value,
 }: {
-   icon: LucideIcon;
+   icon: React.ElementType;
    label: string;
    value: ReactNode;
 }) {
    return (
-      <Item className="px-0">
+      <Item size="sm">
          <ItemMedia variant="icon">
             <Icon />
          </ItemMedia>
          <ItemContent>
             <ItemTitle>{label}</ItemTitle>
          </ItemContent>
-         <ItemActions>
-            <span className="text-sm text-muted-foreground">{value}</span>
+         <ItemActions className="shrink-0">
+            <span className="text-sm text-muted-foreground tabular-nums">
+               {value}
+            </span>
          </ItemActions>
       </Item>
    );

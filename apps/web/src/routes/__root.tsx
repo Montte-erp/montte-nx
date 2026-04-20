@@ -12,6 +12,7 @@ import {
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
+import { GlobalCommandDialog } from "@/hooks/use-command-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";
 import { GlobalSelectionToolbar } from "@/hooks/use-selection-toolbar";
 import { GlobalSurveyModal } from "@/hooks/use-survey-modal";
@@ -96,6 +97,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   <GlobalAlertDialog />
                   <ClientOnly>
                      <GlobalCredenza />
+                     <GlobalCommandDialog />
                      <GlobalSelectionToolbar />
                   </ClientOnly>
                   <GlobalSurveyModal />

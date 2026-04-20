@@ -7,11 +7,13 @@ import {
 import { cn } from "@packages/ui/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "@tanstack/react-router";
+import { useStore } from "@tanstack/react-store";
 import type * as React from "react";
 import { useEffect } from "react";
 import { useSingleton } from "foxact/use-singleton";
 import { useJobNotifications } from "@/features/notifications/use-job-notifications";
-import { GlobalContextPanel } from "@/features/context-panel/context-panel";
+import { ContextPanelTabContent } from "@/features/context-panel/context-panel";
+import { contextPanelStore } from "@/features/context-panel/context-panel-store";
 import { ContextPanelRail } from "@/features/context-panel/context-panel-rail";
 import { AutoBugReporter } from "@/features/feedback/ui/auto-bug-reporter";
 import { MonthlySatisfactionSurvey } from "@/features/feedback/ui/monthly-satisfaction-survey";
@@ -24,6 +26,24 @@ import { useSidebarCollapsed } from "@/layout/dashboard/hooks/use-sidebar-store"
 import { orpc } from "@/integrations/orpc/client";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarSubPanel } from "./sidebar-sub-panel";
+
+function InlineContextPanel() {
+   const isOpen = useStore(contextPanelStore, (s) => s.isOpen);
+
+   return (
+      <div
+         className={cn(
+            "hidden sm:block shrink-0 overflow-hidden transition-[width] duration-200 ease-linear",
+            isOpen ? "w-[28rem]" : "w-0",
+         )}
+         {...(!isOpen && { inert: true })}
+      >
+         <div className="w-[28rem] h-full p-2">
+            <ContextPanelTabContent />
+         </div>
+      </div>
+   );
+}
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
    const { activeOrganization } = useActiveOrganization();
@@ -103,12 +123,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                            {children}
                         </main>
                      </div>
+                     <InlineContextPanel />
                      <ContextPanelRail />
                   </div>
                   <AutoBugReporter />
                   <MonthlySatisfactionSurvey />
                </SidebarInset>
-               <GlobalContextPanel />
             </SidebarProvider>
          </SidebarManagerProvider>
       </EarlyAccessProvider>

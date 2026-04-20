@@ -1,5 +1,11 @@
 import { Button } from "@packages/ui/components/button";
 import {
+   ContextPanel,
+   ContextPanelContent,
+   ContextPanelHeader,
+   ContextPanelTitle,
+} from "@packages/ui/components/context-panel";
+import {
    Empty,
    EmptyDescription,
    EmptyHeader,
@@ -11,6 +17,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Archive, ArchiveRestore, Plus, Tag, Trash2 } from "lucide-react";
 import { DataTableExternalFilter } from "@/components/data-table/data-table-root";
 import { useCallback, useMemo, useState } from "react";
+
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -25,6 +32,7 @@ import { DataTableRoot } from "@/components/data-table/data-table-root";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { QueryBoundary } from "@/components/query-boundary";
+import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 import { buildTagColumns, type TagRow } from "./-tags/tags-columns";
@@ -43,6 +51,23 @@ const tagsSearchSchema = z.object({
    page: z.number().int().min(1).catch(1).default(1),
    pageSize: z.number().int().min(1).max(100).catch(20).default(20),
 });
+
+function TagsInfoContent() {
+   return (
+      <ContextPanel className="h-auto shrink-0">
+         <ContextPanelHeader>
+            <ContextPanelTitle>O que são centros de custo?</ContextPanelTitle>
+         </ContextPanelHeader>
+         <ContextPanelContent className="flex-none">
+            <p className="text-sm text-muted-foreground px-2">
+               Centros de custo organizam suas transações por setor, projeto ou
+               responsabilidade. As palavras-chave habilitam categorização
+               automática via IA.
+            </p>
+         </ContextPanelContent>
+      </ContextPanel>
+   );
+}
 
 const skeletonColumns = buildTagColumns();
 
@@ -199,16 +224,32 @@ function TagsList() {
 
    const handleArchive = useCallback(
       (tag: TagRow) => {
-         archiveMutation.mutate({ id: tag.id });
+         openAlertDialog({
+            title: "Arquivar centro de custo",
+            description: `Tem certeza que deseja arquivar "${tag.name}"? Ele não aparecerá mais nas opções de seleção.`,
+            actionLabel: "Arquivar",
+            cancelLabel: "Cancelar",
+            onAction: async () => {
+               await archiveMutation.mutateAsync({ id: tag.id });
+            },
+         });
       },
-      [archiveMutation],
+      [openAlertDialog, archiveMutation],
    );
 
    const handleUnarchive = useCallback(
       (tag: TagRow) => {
-         unarchiveMutation.mutate({ id: tag.id });
+         openAlertDialog({
+            title: "Reativar centro de custo",
+            description: `Tem certeza que deseja reativar "${tag.name}"?`,
+            actionLabel: "Reativar",
+            cancelLabel: "Cancelar",
+            onAction: async () => {
+               await unarchiveMutation.mutateAsync({ id: tag.id });
+            },
+         });
       },
-      [unarchiveMutation],
+      [openAlertDialog, unarchiveMutation],
    );
 
    const columns = useMemo(
@@ -221,8 +262,10 @@ function TagsList() {
       [updateMutation],
    );
 
+   useContextPanelInfo(() => <TagsInfoContent />);
+
    return (
-      <>
+      <div className="flex flex-1 flex-col gap-4 min-h-0">
          <DataTableRoot
             columns={columns}
             data={tags}
@@ -325,7 +368,7 @@ function TagsList() {
                   </EmptyHeader>
                </Empty>
             </DataTableEmptyState>
-            <DataTableContent />
+            <DataTableContent className="flex-1 overflow-auto min-h-0" />
             <DataTableBulkActions<TagRow>>
                {({ selectedRows, clearSelection }) => {
                   const archivableIds = selectedRows
@@ -406,23 +449,25 @@ function TagsList() {
                })
             }
          />
-      </>
+      </div>
    );
 }
 
 function TagsPage() {
    return (
-      <main className="flex flex-col gap-4">
+      <main className="flex h-full flex-col gap-4">
          <DefaultHeader
             description="Gerencie seus centros de custo para categorizar transações"
             title="Centros de Custo"
          />
-         <QueryBoundary
-            fallback={<TagsSkeleton />}
-            errorTitle="Erro ao carregar centros de custo"
-         >
-            <TagsList />
-         </QueryBoundary>
+         <div className="flex flex-1 flex-col min-h-0">
+            <QueryBoundary
+               fallback={<TagsSkeleton />}
+               errorTitle="Erro ao carregar centros de custo"
+            >
+               <TagsList />
+            </QueryBoundary>
+         </div>
       </main>
    );
 }

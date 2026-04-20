@@ -4,7 +4,7 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Archive, ShieldCheck, Tags } from "lucide-react";
+import { Archive, Landmark, ShieldCheck, Tags } from "lucide-react";
 import { z } from "zod";
 import {
    Announcement,
@@ -90,26 +90,21 @@ export function buildTagColumns(options?: {
                );
             }
             return (
-               <div className="flex items-center gap-2">
-                  <span className="text-sm">{name}</span>
-                  {isArchived && (
-                     <Tooltip>
-                        <TooltipTrigger asChild>
-                           <span
-                              aria-label="Arquivado"
-                              className="inline-flex shrink-0 cursor-default"
-                              tabIndex={0}
-                           >
-                              <Archive
-                                 aria-hidden="true"
-                                 className="size-4 text-muted-foreground"
-                              />
-                           </span>
-                        </TooltipTrigger>
-                        <TooltipContent>Arquivado</TooltipContent>
-                     </Tooltip>
-                  )}
-               </div>
+               <Tooltip>
+                  <TooltipTrigger asChild>
+                     <Announcement className="cursor-default w-fit">
+                        <AnnouncementTag>
+                           {isArchived ? (
+                              <Archive aria-hidden="true" className="size-4" />
+                           ) : (
+                              <Landmark aria-hidden="true" className="size-4" />
+                           )}
+                        </AnnouncementTag>
+                        <AnnouncementTitle>{name}</AnnouncementTitle>
+                     </Announcement>
+                  </TooltipTrigger>
+                  {isArchived && <TooltipContent>Arquivado</TooltipContent>}
+               </Tooltip>
             );
          },
       },

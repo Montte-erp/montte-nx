@@ -141,7 +141,7 @@ export function DataTableExportSelectedButton() {
                Exportar
             </Button>
          </DropdownMenuTrigger>
-         <DropdownMenuContent align="end">
+         <DropdownMenuContent align="end" className="z-[70]">
             <DropdownMenuLabel>Exportar selecionados</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>

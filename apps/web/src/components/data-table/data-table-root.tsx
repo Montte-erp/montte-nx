@@ -401,22 +401,21 @@ export function DataTableExternalFilter(config: ExternalFilter) {
 export function useRegisterDataTableFilter(config: ExternalFilter) {
    const { store } = useDataTableContext();
 
-   // Write directly during render — always in sync with the latest config
-   store.setState((s) => ({
-      ...s,
-      externalFilters: { ...s.externalFilters, [config.id]: config },
-   }));
-
-   // Cleanup only on unmount
-   useEffect(
-      () => () => {
+   // No deps — runs after every render to stay in sync with latest config.
+   // Using a layout effect (vs render-time setState) ensures React Strict Mode's
+   // simulated unmount/remount cycle correctly removes and re-adds the filter.
+   useIsomorphicLayoutEffect(() => {
+      store.setState((s) => ({
+         ...s,
+         externalFilters: { ...s.externalFilters, [config.id]: config },
+      }));
+      return () => {
          store.setState((s) => {
             const { [config.id]: _, ...rest } = s.externalFilters;
             return { ...s, externalFilters: rest };
          });
-      },
-      [store, config.id],
-   );
+      };
+   });
 }
 
 export function DataTableRoot<TData>({
