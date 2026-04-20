@@ -12,6 +12,7 @@ import { useEffect } from "react";
 import { useSingleton } from "foxact/use-singleton";
 import { useJobNotifications } from "@/features/notifications/use-job-notifications";
 import { GlobalContextPanel } from "@/features/context-panel/context-panel";
+import { ContextPanelRail } from "@/features/context-panel/context-panel-rail";
 import { AutoBugReporter } from "@/features/feedback/ui/auto-bug-reporter";
 import { MonthlySatisfactionSurvey } from "@/features/feedback/ui/monthly-satisfaction-survey";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
@@ -89,7 +90,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
                <SidebarInset className="flex flex-col overflow-hidden bg-sidebar">
                   <SidebarSubPanel />
-                  <div className=" flex flex-1 flex-col overflow-hidden rounded-xl bg-background">
+                  <div className="flex flex-1 overflow-hidden rounded-xl bg-background">
                      <main
                         className={cn(
                            "relative flex-1",
@@ -100,6 +101,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                      >
                         {children}
                      </main>
+                     <ContextPanelRail />
                   </div>
                   <AutoBugReporter />
                   <MonthlySatisfactionSurvey />
