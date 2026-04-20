@@ -6,6 +6,8 @@ import {
    DropzoneContent,
    DropzoneEmptyState,
 } from "@packages/ui/components/dropzone";
+import { Button } from "@packages/ui/components/button";
+import { Combobox } from "@packages/ui/components/combobox";
 import { toast } from "sonner";
 
 export type RawImportData = {
@@ -173,3 +175,99 @@ function UploadStep({
 }
 
 export { ImportStepBar, UploadStep };
+
+function MapStep({
+   rawData,
+   importableColumns,
+   mapping,
+   onMappingChange,
+   onNext,
+   onBack,
+}: {
+   rawData: RawImportData;
+   importableColumns: Array<{ key: string; label: string }>;
+   mapping: Record<string, string>;
+   onMappingChange: (m: Record<string, string>) => void;
+   onNext: () => void;
+   onBack: () => void;
+}) {
+   const headerOptions = [
+      { value: "__none__", label: "— Não mapear —" },
+      ...rawData.headers.map((h) => ({ value: h, label: h })),
+   ];
+
+   return (
+      <div className="flex flex-col gap-4">
+         <div>
+            <p className="text-sm font-medium">Mapeie as colunas</p>
+            <p className="text-xs text-muted-foreground">
+               {rawData.rows.length} linha(s) · {rawData.headers.length} colunas
+               detectadas
+            </p>
+         </div>
+
+         <div className="flex flex-col gap-1">
+            <div className="grid grid-cols-[9rem_1fr] items-center gap-2 px-1 pb-1">
+               <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Campo
+               </span>
+               <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Coluna do arquivo
+               </span>
+            </div>
+
+            {importableColumns.map((col) => {
+               const mapped = mapping[col.key];
+               const headerIdx = mapped ? rawData.headers.indexOf(mapped) : -1;
+               const sample =
+                  headerIdx >= 0
+                     ? rawData.rows
+                          .slice(0, 3)
+                          .map((r) => r[headerIdx])
+                          .filter(Boolean)
+                          .join(", ")
+                     : null;
+
+               return (
+                  <div
+                     key={col.key}
+                     className="grid grid-cols-[9rem_1fr] items-start gap-2 rounded-lg border bg-muted/20 px-3 py-2"
+                  >
+                     <span className="pt-1 text-sm font-medium">
+                        {col.label}
+                     </span>
+                     <div className="flex flex-col gap-1 min-w-0">
+                        <Combobox
+                           options={headerOptions}
+                           value={mapping[col.key] ?? "__none__"}
+                           onValueChange={(v) =>
+                              onMappingChange({
+                                 ...mapping,
+                                 [col.key]: v === "__none__" ? "" : v,
+                              })
+                           }
+                        />
+                        {sample && (
+                           <p className="truncate px-1 text-xs text-muted-foreground">
+                              {sample}
+                           </p>
+                        )}
+                     </div>
+                  </div>
+               );
+            })}
+         </div>
+
+         <div className="flex gap-2">
+            <Button onClick={onBack} type="button" variant="outline">
+               Voltar
+            </Button>
+            <Button className="flex-1" onClick={onNext} type="button">
+               Continuar
+            </Button>
+         </div>
+      </div>
+   );
+}
+
+export { MapStep };
