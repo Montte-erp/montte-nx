@@ -688,3 +688,99 @@ function PreviewStep({
 }
 
 export { PreviewStep };
+
+function ConfirmStep({
+   rows,
+   ignoredIndices,
+   onImport,
+   onBack,
+}: {
+   rows: ImportRow[];
+   ignoredIndices: Set<number>;
+   onImport: () => Promise<void>;
+   onBack: () => void;
+}) {
+   const [isPending, setIsPending] = useState(false);
+
+   const totalCount = rows.length;
+   const errorCount = rows.filter((r) => r.__errors?.length).length;
+   const ignoredCount = ignoredIndices.size;
+   const importCount = totalCount - errorCount - ignoredCount;
+
+   async function handleImport() {
+      setIsPending(true);
+      try {
+         await onImport();
+      } finally {
+         setIsPending(false);
+      }
+   }
+
+   return (
+      <div className="flex flex-col gap-4">
+         <div>
+            <p className="text-sm font-medium">Tudo certo?</p>
+            <p className="text-xs text-muted-foreground">
+               Confirme para importar os dados
+            </p>
+         </div>
+
+         <div className="rounded-xl border overflow-hidden divide-y">
+            <div className="flex items-center justify-between px-4 py-2">
+               <span className="text-sm text-muted-foreground">
+                  Total no arquivo
+               </span>
+               <span className="text-sm font-medium">{totalCount}</span>
+            </div>
+            {errorCount > 0 && (
+               <div className="flex items-center justify-between px-4 py-2">
+                  <span className="text-sm text-muted-foreground">
+                     Com erro (ignoradas)
+                  </span>
+                  <span className="text-sm font-medium text-destructive">
+                     {errorCount}
+                  </span>
+               </div>
+            )}
+            {ignoredCount > 0 && (
+               <div className="flex items-center justify-between px-4 py-2">
+                  <span className="text-sm text-muted-foreground">
+                     Ignoradas manualmente
+                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                     {ignoredCount}
+                  </span>
+               </div>
+            )}
+            <div className="flex items-center justify-between bg-primary/5 px-4 py-2">
+               <span className="text-sm font-medium">Serão importadas</span>
+               <span className="text-sm font-bold text-primary">
+                  {importCount}
+               </span>
+            </div>
+         </div>
+
+         <div className="flex gap-2">
+            <Button
+               disabled={isPending}
+               onClick={onBack}
+               type="button"
+               variant="outline"
+            >
+               Voltar
+            </Button>
+            <Button
+               className="flex-1"
+               disabled={isPending || importCount === 0}
+               onClick={handleImport}
+               type="button"
+            >
+               {isPending && <Loader2 className="size-4 animate-spin" />}
+               Importar {importCount} linha(s)
+            </Button>
+         </div>
+      </div>
+   );
+}
+
+export { ConfirmStep };
