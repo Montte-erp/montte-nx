@@ -14,15 +14,7 @@ import {
 } from "@packages/ui/components/empty";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-   Archive,
-   ArchiveRestore,
-   Landmark,
-   Plus,
-   Tag,
-   Tags,
-   Trash2,
-} from "lucide-react";
+import { Archive, ArchiveRestore, Plus, Tag, Trash2 } from "lucide-react";
 import { DataTableExternalFilter } from "@/components/data-table/data-table-root";
 import { useCallback, useMemo, useState } from "react";
 
@@ -40,10 +32,6 @@ import { DataTableRoot } from "@/components/data-table/data-table-root";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { QueryBoundary } from "@/components/query-boundary";
-import {
-   ContextPanelDivider,
-   ContextPanelMeta,
-} from "@/features/context-panel/context-panel-info";
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
@@ -64,56 +52,20 @@ const tagsSearchSchema = z.object({
    pageSize: z.number().int().min(1).max(100).catch(20).default(20),
 });
 
-type TagStats = Awaited<ReturnType<typeof orpc.tags.getStats.call>>;
-
-type StatItem = {
-   icon: Parameters<typeof ContextPanelMeta>[0]["icon"];
-   label: string;
-   value: number;
-};
-
-function TagsInfoContent({ stats }: { stats: TagStats }) {
-   const statItems: StatItem[] = [
-      { icon: Landmark, label: "Ativos", value: stats.active },
-      { icon: Archive, label: "Arquivados", value: stats.archived },
-      { icon: Tags, label: "Palavras-chave", value: stats.totalKeywords },
-   ];
-
+function TagsInfoContent() {
    return (
-      <>
-         <ContextPanel className="h-auto shrink-0">
-            <ContextPanelHeader>
-               <ContextPanelTitle>Resumo</ContextPanelTitle>
-            </ContextPanelHeader>
-            <ContextPanelContent className="flex-none gap-1">
-               {statItems.map(({ icon, label, value }, index) => (
-                  <>
-                     {index > 0 && <ContextPanelDivider key={`sep-${label}`} />}
-                     <ContextPanelMeta
-                        key={label}
-                        icon={icon}
-                        label={label}
-                        value={value}
-                     />
-                  </>
-               ))}
-            </ContextPanelContent>
-         </ContextPanel>
-         <ContextPanel className="h-auto shrink-0">
-            <ContextPanelHeader>
-               <ContextPanelTitle>
-                  O que são centros de custo?
-               </ContextPanelTitle>
-            </ContextPanelHeader>
-            <ContextPanelContent className="flex-none">
-               <p className="text-sm text-muted-foreground px-2">
-                  Centros de custo organizam suas transações por setor, projeto
-                  ou responsabilidade. As palavras-chave habilitam categorização
-                  automática via IA.
-               </p>
-            </ContextPanelContent>
-         </ContextPanel>
-      </>
+      <ContextPanel className="h-auto shrink-0">
+         <ContextPanelHeader>
+            <ContextPanelTitle>O que são centros de custo?</ContextPanelTitle>
+         </ContextPanelHeader>
+         <ContextPanelContent className="flex-none">
+            <p className="text-sm text-muted-foreground px-2">
+               Centros de custo organizam suas transações por setor, projeto ou
+               responsabilidade. As palavras-chave habilitam categorização
+               automática via IA.
+            </p>
+         </ContextPanelContent>
+      </ContextPanel>
    );
 }
 
@@ -168,9 +120,6 @@ function TagsList() {
             pageSize,
          },
       }),
-   );
-   const { data: stats } = useSuspenseQuery(
-      orpc.tags.getStats.queryOptions({}),
    );
    const { data: tags, total } = result;
    const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -313,7 +262,7 @@ function TagsList() {
       [updateMutation],
    );
 
-   useContextPanelInfo(() => <TagsInfoContent stats={stats} />);
+   useContextPanelInfo(() => <TagsInfoContent />);
 
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
