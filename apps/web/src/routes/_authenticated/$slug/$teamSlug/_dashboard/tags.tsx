@@ -15,7 +15,11 @@ import {
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Archive, ArchiveRestore, Plus, Tag, Trash2 } from "lucide-react";
+import { DataTableImportButton } from "@/components/data-table/data-table-import";
+import type { DataTableImportConfig } from "@/components/data-table/data-table-import";
 import { DataTableExternalFilter } from "@/components/data-table/data-table-root";
+import { useCsvFile } from "@/hooks/use-csv-file";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { useCallback, useMemo, useState } from "react";
 
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
@@ -110,6 +114,53 @@ function TagsList() {
    const navigate = Route.useNavigate();
    const { search, includeArchived, page, pageSize } = Route.useSearch();
    const [isDraftActive, setIsDraftActive] = useState(false);
+   const { parse: parseCsv } = useCsvFile();
+   const { parse: parseXlsx } = useXlsxFile();
+
+   const importConfig: DataTableImportConfig = useMemo(
+      () => ({
+         accept: {
+            "text/csv": [".csv"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+               [".xlsx"],
+            "application/vnd.ms-excel": [".xls"],
+         },
+         parseFile: async (file: File) => {
+            const ext = file.name.split(".").pop()?.toLowerCase();
+            if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
+            return parseCsv(file);
+         },
+         mapRow: (row, i) => ({
+            id: `__import_${i}`,
+            name: row.name ?? "",
+            description: row.description?.trim() || null,
+            keywords: row.keywords
+               ? row.keywords
+                    .split(",")
+                    .map((k) => k.trim())
+                    .filter(Boolean)
+               : [],
+            isArchived: false,
+            isDefault: false,
+         }),
+         onImport: async (rows) => {
+            const items = rows.map((r) => ({
+               name: String(r.name ?? ""),
+               description: r.description ? String(r.description).trim() : null,
+               keywords: Array.isArray(r.keywords)
+                  ? (r.keywords as string[]).filter(Boolean)
+                  : typeof r.keywords === "string" && r.keywords
+                    ? r.keywords
+                         .split(",")
+                         .map((k) => k.trim())
+                         .filter(Boolean)
+                    : undefined,
+            }));
+            await bulkCreateMutation.mutateAsync({ items });
+         },
+      }),
+      [parseCsv, parseXlsx],
+   );
 
    const { data: result } = useSuspenseQuery(
       orpc.tags.getAll.queryOptions({
@@ -171,6 +222,13 @@ function TagsList() {
          onSuccess: () => toast.success("Centro de custo criado com sucesso."),
          onError: (e) =>
             toast.error(e.message || "Erro ao criar centro de custo."),
+      }),
+   );
+
+   const bulkCreateMutation = useMutation(
+      orpc.tags.bulkCreate.mutationOptions({
+         onError: (e) =>
+            toast.error(e.message || "Erro ao importar centros de custo."),
       }),
    );
 
@@ -344,6 +402,7 @@ function TagsList() {
                   })
                }
             >
+               <DataTableImportButton importConfig={importConfig} />
                <Button
                   onClick={handleCreate}
                   tooltip="Novo Centro de Custo"

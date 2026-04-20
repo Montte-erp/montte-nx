@@ -49,6 +49,14 @@ export type ExternalFilter = {
    onToggle: (active: boolean) => void;
 };
 
+export type DataTableImportState = {
+   rawHeaders: string[];
+   rawRows: string[][];
+   mapping: Record<string, string>;
+   importRows: Record<string, unknown>[];
+   onSave: (rows: Record<string, unknown>[]) => Promise<void>;
+};
+
 export type DataTableStoreState = {
    sorting: SortingState;
    columnFilters: ColumnFiltersState;
@@ -56,6 +64,7 @@ export type DataTableStoreState = {
    rowSelection: RowSelectionState;
    hasEmptyState: boolean;
    externalFilters: Record<string, ExternalFilter>;
+   importState: DataTableImportState | null;
 };
 
 declare module "@tanstack/react-table" {
@@ -66,6 +75,7 @@ declare module "@tanstack/react-table" {
       align?: "left" | "center" | "right";
       exportable?: boolean;
       exportIgnore?: boolean;
+      importIgnore?: boolean;
    }
 }
 
@@ -189,6 +199,7 @@ function useDataTableRoot<TData>({
          rowSelection: externalRowSelection ?? {},
          hasEmptyState: false,
          externalFilters: {},
+         importState: null,
       }),
    ).current;
 
