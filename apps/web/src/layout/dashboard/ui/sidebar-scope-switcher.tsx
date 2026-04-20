@@ -35,25 +35,21 @@ import {
    Check,
    ChevronsUpDown,
    CreditCard,
-   LogOut,
    Plus,
    Settings,
    UserPlus,
 } from "lucide-react";
 import { useCallback, useTransition } from "react";
 import { QueryBoundary } from "@/components/query-boundary";
-import { toast } from "sonner";
 import { CreateTeamForm } from "./-sidebar-scope-switcher/create-team-form";
 import { ManageOrganizationForm } from "./-sidebar-scope-switcher/manage-organization-form";
 import { useSetActiveOrganization } from "./-sidebar-scope-switcher/use-set-active-organization";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
-import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
-import { ThemeSwitcher } from "./theme-switcher";
 
 type Organization = {
    id: string;
@@ -137,21 +133,17 @@ function SidebarScopeSwitcherContent() {
       useActiveOrganization();
    const { activeTeam, teams } = useActiveTeam();
    const { openCredenza, closeCredenza } = useCredenza();
-   const { openAlertDialog } = useAlertDialog();
    const { setActiveOrganization } = useSetActiveOrganization();
    const [isPending, startTransition] = useTransition();
    const queryClient = useQueryClient();
    const router = useRouter();
    const { pathname } = useLocation();
-   const { isMobile, setOpenMobile } = useSidebar();
+   const { isMobile } = useSidebar();
    const { slug, teamSlug } = useDashboardSlugs();
    const currentSlug = slug || activeOrganization.slug;
 
    const { data: organizations } = useSuspenseQuery(
       orpc.organization.getOrganizations.queryOptions({}),
-   );
-   const { data: session } = useSuspenseQuery(
-      orpc.session.getSession.queryOptions({}),
    );
 
    const organizationList = organizations ?? [];
@@ -276,38 +268,6 @@ function SidebarScopeSwitcherContent() {
       },
       [openCredenza],
    );
-
-   const handleLogout = useCallback(async () => {
-      await authClient.signOut({
-         fetchOptions: {
-            onError: ({ error }) => {
-               toast.error(error.message, { id: "logout" });
-            },
-            onRequest: () => {
-               toast.loading("Saindo...", { id: "logout" });
-            },
-            onSuccess: async () => {
-               await queryClient.invalidateQueries({
-                  queryKey: orpc.session.getSession.queryKey({}),
-               });
-               router.navigate({ to: "/auth/sign-in" });
-               toast.success("Você saiu com sucesso", { id: "logout" });
-            },
-         },
-      });
-      setOpenMobile(false);
-   }, [queryClient, router, setOpenMobile]);
-
-   const handleLogoutClick = useCallback(() => {
-      openAlertDialog({
-         actionLabel: "Sair",
-         cancelLabel: "Cancelar",
-         description: "Tem certeza que deseja sair da sua conta?",
-         onAction: handleLogout,
-         title: "Sair da Conta",
-         variant: "destructive",
-      });
-   }, [openAlertDialog, handleLogout]);
 
    return (
       <SidebarMenu>
@@ -479,45 +439,6 @@ function SidebarScopeSwitcherContent() {
 
                      <DropdownMenuSeparator />
                   </>
-
-                  <DropdownMenuLabel className="py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                     Conta
-                  </DropdownMenuLabel>
-
-                  <div className="flex items-center justify-between px-2 py-1.5">
-                     <span className="text-sm text-muted-foreground">Tema</span>
-                     <ThemeSwitcher />
-                  </div>
-
-                  <DropdownMenuItem asChild className="py-2">
-                     <Link
-                        params={{ slug, teamSlug }}
-                        to="/$slug/$teamSlug/settings/profile"
-                     >
-                        <Avatar className="size-6 shrink-0 rounded-full">
-                           <AvatarImage
-                              alt={session?.user.name ?? ""}
-                              src={session?.user.image ?? undefined}
-                           />
-                           <AvatarFallback className="rounded-full text-[10px]">
-                              {session?.user.name?.charAt(0) ?? "?"}
-                           </AvatarFallback>
-                        </Avatar>
-                        <div className="grid min-w-0 flex-1 leading-tight">
-                           <span className="truncate text-sm font-medium">
-                              {session?.user.name}
-                           </span>
-                           <span className="truncate text-xs text-muted-foreground">
-                              {session?.user.email}
-                           </span>
-                        </div>
-                     </Link>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem onSelect={handleLogoutClick}>
-                     <LogOut className="size-4" />
-                     Sair
-                  </DropdownMenuItem>
                </DropdownMenuContent>
             </DropdownMenu>
          </SidebarMenuItem>
