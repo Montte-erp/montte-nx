@@ -40,12 +40,22 @@ export type DataTablePersistedState = DataTableStoredState & {
    columnFilters?: ColumnFiltersState;
 };
 
+export type ExternalFilter = {
+   id: string;
+   label: string;
+   group: string;
+   active: boolean;
+   renderIcon?: () => React.ReactNode;
+   onToggle: (active: boolean) => void;
+};
+
 export type DataTableStoreState = {
    sorting: SortingState;
    columnFilters: ColumnFiltersState;
    tableState: DataTableStoredState | null;
    rowSelection: RowSelectionState;
    hasEmptyState: boolean;
+   externalFilters: Record<string, ExternalFilter>;
 };
 
 declare module "@tanstack/react-table" {
@@ -178,6 +188,7 @@ function useDataTableRoot<TData>({
             : null,
          rowSelection: externalRowSelection ?? {},
          hasEmptyState: false,
+         externalFilters: {},
       }),
    ).current;
 
@@ -379,6 +390,32 @@ function useDataTableRoot<TData>({
          onAddRow,
          onDiscardAddRow,
       ],
+   );
+}
+
+export function DataTableExternalFilter(config: ExternalFilter) {
+   useRegisterDataTableFilter(config);
+   return null;
+}
+
+export function useRegisterDataTableFilter(config: ExternalFilter) {
+   const { store } = useDataTableContext();
+
+   // Write directly during render — always in sync with the latest config
+   store.setState((s) => ({
+      ...s,
+      externalFilters: { ...s.externalFilters, [config.id]: config },
+   }));
+
+   // Cleanup only on unmount
+   useEffect(
+      () => () => {
+         store.setState((s) => {
+            const { [config.id]: _, ...rest } = s.externalFilters;
+            return { ...s, externalFilters: rest };
+         });
+      },
+      [store, config.id],
    );
 }
 

@@ -2,9 +2,9 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Redesign AppSidebar to match PostHog layout — org selector + project selector at top, account at bottom, nav groups collapsible at group level with Tailwind animation, inline edit mode for nav config (no modal).
+**Goal:** Redesign AppSidebar to match PostHog layout — one combined org+team selector at top header, chat button stub below it, account at bottom footer, all nav sections are shadcn Collapsible groups (including a new "PROJETO" group wrapping the current main items: Home/Dashboards/Insights/Data), inline edit mode for nav config (no modal).
 
-**Architecture:** Split the single `SidebarScopeSwitcher` (537 lines, does too much) into three focused components: `SidebarOrgSelector`, `SidebarProjectSelector`, `SidebarAccountMenu`. Move selectors to `SidebarHeader`. Add a `ChatButton` stub. Make `NavGroup` headers into collapsible triggers at the group level. Replace the modal-based nav config with an inline toggle mode triggered by the pencil icon.
+**Architecture:** Move `SidebarScopeSwitcher` (combined org+team) into `SidebarHeader`. Extract `SidebarAccountMenu` (user/logout/theme) as separate footer component. Convert `SidebarDefaultItems` (the unlabeled main group) into a labeled `"PROJETO"` shadcn Collapsible section. Make all `NavGroup` labels collapsible triggers. Replace modal nav config with inline checkbox toggle mode.
 
 **Tech Stack:** shadcn/ui Sidebar primitives, Radix Collapsible, TanStack Query, Better Auth authClient, Tailwind CSS transitions, Lucide icons.
 
@@ -15,239 +15,91 @@
 ```
 <Sidebar>
   <SidebarHeader>
-    <SidebarOrgSelector />      ← org dropdown (top)
-    <SidebarProjectSelector />  ← team/project dropdown
-    <ChatButton />              ← chat stub (disabled, tooltip)
+    <SidebarScopeSwitcher />    ← combined org+team dropdown (existing, just moved here)
+    <Separator />
+    <SidebarChatButton />       ← chat stub (disabled, "Em breve")
   </SidebarHeader>
+
   <SidebarContent>
-    <SidebarDefaultItems />     ← unchanged
-    <SidebarNav />              ← groups now collapsible at group level
+    {/* "PROJETO" — shadcn Collapsible, wraps current SidebarDefaultItems */}
+    <SidebarGroup>
+      <Collapsible defaultOpen>
+        <SidebarGroupLabel asChild>
+          <CollapsibleTrigger>PROJETO <ChevronRight /></CollapsibleTrigger>
+        </SidebarGroupLabel>
+        <CollapsibleContent>
+          Home, Dashboards, Insights, Gestão de Dados
+        </CollapsibleContent>
+      </Collapsible>
+    </SidebarGroup>
+
+    <Separator />
+
+    {/* Finanças, ERP — each NavGroup header is also a CollapsibleTrigger */}
+    <SidebarNav />
   </SidebarContent>
+
   <SidebarFooter>
     <EarlyAccessSidebarBanner />
     <Separator />
-    <SidebarAccountMenu />      ← user avatar, theme, logout
-    <SidebarFooterContent />    ← hide/settings buttons
+    <SidebarAccountMenu />      ← extracted: user avatar + theme + logout
+    <Separator />
+    <SidebarFooterContent />    ← hide/settings (unchanged)
   </SidebarFooter>
 </Sidebar>
 ```
 
----
-
-## Task 1: Split SidebarScopeSwitcher → OrgSelector
-
-**Files:**
-- Create: `apps/web/src/layout/dashboard/ui/sidebar-org-selector.tsx`
-- Modify: `apps/web/src/layout/dashboard/ui/sidebar-scope-switcher.tsx` (keep only what task 2 and 3 need)
-
-**What to build:**
-
-`SidebarOrgSelector` renders a `DropdownMenu` triggered by a `SidebarMenuButton` that shows:
-- Active org avatar + name
-- `ChevronsUpDown` chevron on the right
-- Dropdown content: list of orgs with check mark on active, "Nova organização" at bottom
-- Links to org settings + billing
-
-Copy the org-related logic from `SidebarScopeSwitcherContent` (lines 159–186, 272–278, 460–479 in current file).
-
-```tsx
-// sidebar-org-selector.tsx
-import { ... } from "@packages/ui/components/dropdown-menu";
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@packages/ui/components/sidebar";
-import { useActiveOrganization } from "@/hooks/use-active-organization";
-import { useSetActiveOrganization } from "./-sidebar-scope-switcher/use-set-active-organization";
-import { orpc } from "@/integrations/orpc/client";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { ManageOrganizationForm } from "./-sidebar-scope-switcher/manage-organization-form";
-import { useCredenza } from "@/hooks/use-credenza";
-import { QueryBoundary } from "@/components/query-boundary";
-import { OrgAvatar } from "./sidebar-org-avatar"; // see Task 0
-
-export function SidebarOrgSelector() {
-  return (
-    <QueryBoundary fallback={<SidebarOrgSelectorSkeleton />} errorTitle="Erro ao carregar organização">
-      <SidebarOrgSelectorContent />
-    </QueryBoundary>
-  );
-}
-
-function SidebarOrgSelectorContent() {
-  const { activeOrganization } = useActiveOrganization();
-  const { isMobile } = useSidebar();
-  const { openCredenza } = useCredenza();
-  const { setActiveOrganization } = useSetActiveOrganization();
-  const [isPending, startTransition] = useTransition();
-  const { pathname } = useLocation();
-  const { slug, teamSlug } = useDashboardSlugs();
-  const router = useRouter();
-  const { data: organizations } = useSuspenseQuery(orpc.organization.getOrganizations.queryOptions({}));
-
-  // handleOrganizationSwitch — same logic as current SidebarScopeSwitcherContent
-  // handleNewOrganization — same as current
-
-  return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="sm"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            >
-              <OrgAvatar name={activeOrganization.name} logo={activeOrganization.logo} size="sm" />
-              <span className="truncate text-xs font-medium">{activeOrganization.name}</span>
-              <ChevronsUpDown className="ml-auto size-3.5 shrink-0" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="start"
-            side={isMobile ? "bottom" : "right"}
-            sideOffset={4}
-            className="min-w-56 rounded-lg"
-          >
-            <DropdownMenuLabel className="py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Organizações
-            </DropdownMenuLabel>
-            {organizations?.map((org, i) => (
-              <DropdownMenuItem key={`org-${i + 1}`} onSelect={() => handleOrganizationSwitch(org)}>
-                {org.id === activeOrganization.id ? <Check className="size-4 shrink-0" /> : <span className="size-4 shrink-0" />}
-                <OrgAvatar name={org.name} logo={org.logo} size="md" />
-                <span className="truncate">{org.name}</span>
-                {org.role && <span className="ml-auto text-[10px] text-muted-foreground">{org.role}</span>}
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => handleNewOrganization()}>
-              <Plus className="size-4" />
-              Nova organização
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/settings/organization/general">
-                <Settings className="size-4" /> Configurações da organização
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/billing">
-                <CreditCard className="size-4" /> Cobrança & uso
-              </Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
-  );
-}
-```
-
-**Step 1:** Extract `OrgAvatar`, `getInitials`, `getOrgColor`, `ORG_AVATAR_COLORS` to a new shared file `sidebar-org-avatar.tsx` — these are needed by multiple components.
-
-**Step 2:** Create `sidebar-org-selector.tsx` with `SidebarOrgSelectorContent` + `SidebarOrgSelectorSkeleton` + `SidebarOrgSelector` (boundary wrapper).
-
-**Step 3:** Run `bun run typecheck` — fix any errors.
-
-**Step 4:** Commit.
-
-```bash
-git add apps/web/src/layout/dashboard/ui/sidebar-org-avatar.tsx
-git add apps/web/src/layout/dashboard/ui/sidebar-org-selector.tsx
-git commit -m "feat(sidebar): extract OrgAvatar + SidebarOrgSelector component"
-```
+**Key clarifications:**
+- ONE selector at top: org+team combined (current `SidebarScopeSwitcher` logic, just relocated to header)
+- "PROJETO" in nav body = shadcn `Collapsible`, NOT a dropdown — wraps Home/Dashboards/Insights/Data
+- Account section extracted from `SidebarScopeSwitcher` into its own `SidebarAccountMenu` at footer
 
 ---
 
-## Task 2: Split SidebarScopeSwitcher → ProjectSelector
-
-**Files:**
-- Create: `apps/web/src/layout/dashboard/ui/-sidebar-scope-switcher/sidebar-project-selector.tsx`
-
-**What to build:**
-
-`SidebarProjectSelector` shows active team/project with a dropdown to switch between teams or create new one. Smaller than org selector since projects are within an org.
-
-```tsx
-function SidebarProjectSelectorContent() {
-  const { activeTeam, teams } = useActiveTeam();
-  const { projectLimit, projectCount } = useActiveOrganization();
-  const { isMobile } = useSidebar();
-  const { openCredenza, closeCredenza } = useCredenza();
-  // handleTeamSwitch, handleNewProject — same logic as current
-  const { slug, teamSlug } = useDashboardSlugs();
-
-  return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="sm"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            >
-              <LayoutGrid className="size-4 shrink-0 text-muted-foreground" />
-              <span className="truncate text-sm font-medium">{activeTeam?.name ?? "Sem espaço"}</span>
-              <ChevronsUpDown className="ml-auto size-3.5 shrink-0" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" side={isMobile ? "bottom" : "right"} sideOffset={4} className="min-w-56 rounded-lg">
-            <DropdownMenuLabel className="py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Espaços
-            </DropdownMenuLabel>
-            {teams.map((team, i) => (
-              <DropdownMenuItem key={`team-${i + 1}`} onSelect={() => handleTeamSwitch(team)}>
-                {team.id === activeTeam?.id ? <Check className="size-4 shrink-0" /> : <span className="size-4 shrink-0" />}
-                <span className="truncate">{team.name}</span>
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => handleNewProject()}>
-              <Plus className="size-4" />
-              {projectLimit !== null && projectLimit !== Number.POSITIVE_INFINITY
-                ? `Novo espaço (${projectCount}/${projectLimit})`
-                : "Novo espaço"}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/settings/project/general">
-                <Settings className="size-4" /> Configurações do espaço
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/settings/organization/members">
-                <UserPlus className="size-4" /> Convidar membros
-              </Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
-  );
-}
-```
-
-**Step 1:** Create `sidebar-project-selector.tsx` — copy team/project logic from `SidebarScopeSwitcherContent`.
-
-**Step 2:** `bun run typecheck` — fix errors.
-
-**Step 3:** Commit.
-
-```bash
-git add apps/web/src/layout/dashboard/ui/sidebar-project-selector.tsx
-git commit -m "feat(sidebar): extract SidebarProjectSelector component"
-```
-
----
-
-## Task 3: Split SidebarScopeSwitcher → AccountMenu
+## Task 1: Extract SidebarAccountMenu from SidebarScopeSwitcher
 
 **Files:**
 - Create: `apps/web/src/layout/dashboard/ui/sidebar-account-menu.tsx`
-- Delete or gut: `apps/web/src/layout/dashboard/ui/sidebar-scope-switcher.tsx` (replace with thin re-exports or delete)
+- Modify: `apps/web/src/layout/dashboard/ui/sidebar-scope-switcher.tsx` (remove account section)
 
 **What to build:**
 
-`SidebarAccountMenu` at the bottom — user avatar, name, email, theme switcher, logout.
+Extract the "Conta" section (user avatar, theme switcher, logout) from `SidebarScopeSwitcherContent` into a standalone `SidebarAccountMenu`. This goes in `SidebarFooter`. The existing `SidebarScopeSwitcher` keeps org+team switching logic but drops account.
 
 ```tsx
+// sidebar-account-menu.tsx
+import { Avatar, AvatarFallback, AvatarImage } from "@packages/ui/components/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@packages/ui/components/dropdown-menu";
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@packages/ui/components/sidebar";
+import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
+import { ChevronsUpDown, LogOut, Settings } from "lucide-react";
+import { useCallback, useTransition } from "react";
+import { QueryBoundary } from "@/components/query-boundary";
+import { Skeleton } from "@packages/ui/components/skeleton";
+import { toast } from "sonner";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
+import { authClient } from "@/integrations/better-auth/auth-client";
+import { orpc } from "@/integrations/orpc/client";
+import { ThemeSwitcher } from "./theme-switcher";
+
+function SidebarAccountMenuSkeleton() {
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton className="pointer-events-none" size="lg">
+          <Skeleton className="size-8 rounded-full" />
+          <div className="grid flex-1 gap-2">
+            <Skeleton className="h-3.5 w-24" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+}
+
 function SidebarAccountMenuContent() {
   const { data: session } = useSuspenseQuery(orpc.session.getSession.queryOptions({}));
   const { slug, teamSlug } = useDashboardSlugs();
@@ -255,7 +107,33 @@ function SidebarAccountMenuContent() {
   const { isMobile, setOpenMobile } = useSidebar();
   const queryClient = useQueryClient();
   const router = useRouter();
-  // handleLogout, handleLogoutClick — same as current
+  const [, startTransition] = useTransition();
+
+  const handleLogout = useCallback(async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onError: ({ error }) => toast.error(error.message, { id: "logout" }),
+        onRequest: () => toast.loading("Saindo...", { id: "logout" }),
+        onSuccess: async () => {
+          await queryClient.invalidateQueries({ queryKey: orpc.session.getSession.queryKey({}) });
+          router.navigate({ to: "/auth/sign-in" });
+          toast.success("Você saiu com sucesso", { id: "logout" });
+        },
+      },
+    });
+    setOpenMobile(false);
+  }, [queryClient, router, setOpenMobile]);
+
+  const handleLogoutClick = useCallback(() => {
+    openAlertDialog({
+      actionLabel: "Sair",
+      cancelLabel: "Cancelar",
+      description: "Tem certeza que deseja sair da sua conta?",
+      onAction: handleLogout,
+      title: "Sair da Conta",
+      variant: "destructive",
+    });
+  }, [openAlertDialog, handleLogout]);
 
   return (
     <SidebarMenu>
@@ -272,7 +150,7 @@ function SidebarAccountMenuContent() {
                   {session?.user.name?.charAt(0) ?? "?"}
                 </AvatarFallback>
               </Avatar>
-              <div className="grid min-w-0 flex-1 leading-tight text-left">
+              <div className="grid min-w-0 flex-1 text-left leading-tight">
                 <span className="truncate text-sm font-medium">{session?.user.name}</span>
                 <span className="truncate text-xs text-muted-foreground">{session?.user.email}</span>
               </div>
@@ -308,7 +186,10 @@ function SidebarAccountMenuContent() {
                 <Settings className="size-4" /> Meu perfil
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={handleLogoutClick} className="text-destructive focus:text-destructive">
+            <DropdownMenuItem
+              onSelect={handleLogoutClick}
+              className="text-destructive focus:text-destructive"
+            >
               <LogOut className="size-4" />
               Sair
             </DropdownMenuItem>
@@ -318,31 +199,41 @@ function SidebarAccountMenuContent() {
     </SidebarMenu>
   );
 }
+
+export function SidebarAccountMenu() {
+  return (
+    <QueryBoundary fallback={<SidebarAccountMenuSkeleton />} errorTitle="Erro ao carregar conta">
+      <SidebarAccountMenuContent />
+    </QueryBoundary>
+  );
+}
 ```
 
-**Step 1:** Create `sidebar-account-menu.tsx` with `SidebarAccountMenuContent` + skeleton + `SidebarAccountMenu` (QueryBoundary wrapper).
+In `sidebar-scope-switcher.tsx`: delete the "Conta" `DropdownMenuLabel` block and everything under it (theme switcher, profile link, logout). The component now only handles org+team.
 
-**Step 2:** Delete `sidebar-scope-switcher.tsx` (all its consumers will be replaced in Task 4).
+**Step 1:** Create `sidebar-account-menu.tsx` with code above.
 
-**Step 3:** `bun run typecheck` — fix broken imports.
+**Step 2:** Remove account section from `sidebar-scope-switcher.tsx` (lines 483–521 in current file — the `DropdownMenuLabel` "Conta" through end of dropdown content).
+
+**Step 3:** `bun run typecheck` — fix errors.
 
 **Step 4:** Commit.
 
 ```bash
 git add apps/web/src/layout/dashboard/ui/sidebar-account-menu.tsx
-git rm apps/web/src/layout/dashboard/ui/sidebar-scope-switcher.tsx
-git commit -m "feat(sidebar): extract SidebarAccountMenu, remove old scope switcher"
+git add apps/web/src/layout/dashboard/ui/sidebar-scope-switcher.tsx
+git commit -m "feat(sidebar): extract SidebarAccountMenu from scope switcher"
 ```
 
 ---
 
-## Task 4: Rewire app-sidebar.tsx + add ChatButton
+## Task 2: Rewire app-sidebar.tsx — move scope switcher to header, account to footer, add chat button
 
 **Files:**
 - Modify: `apps/web/src/layout/dashboard/ui/app-sidebar.tsx`
 - Create: `apps/web/src/layout/dashboard/ui/sidebar-chat-button.tsx`
 
-**ChatButton** — just a button that shows a "em breve" tooltip. No infra needed.
+**ChatButton** — disabled button, "Em breve" badge, tooltip.
 
 ```tsx
 // sidebar-chat-button.tsx
@@ -356,7 +247,7 @@ export function SidebarChatButton() {
       <SidebarMenuItem>
         <Tooltip>
           <TooltipTrigger asChild>
-            <SidebarMenuButton className="cursor-not-allowed opacity-60" size="sm">
+            <SidebarMenuButton size="sm" className="cursor-not-allowed opacity-60" disabled>
               <MessageSquare className="size-4" />
               <span>Chat</span>
               <span className="ml-auto rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -376,15 +267,17 @@ export function SidebarChatButton() {
 
 ```tsx
 import { Separator } from "@packages/ui/components/separator";
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@packages/ui/components/sidebar";
+import {
+  Sidebar, SidebarContent, SidebarFooter, SidebarHeader,
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,
+} from "@packages/ui/components/sidebar";
 import { Link } from "@tanstack/react-router";
 import { PanelLeftClose, Settings } from "lucide-react";
 import type * as React from "react";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { EarlyAccessSidebarBanner } from "./early-access-sidebar-banner";
 import { SidebarDefaultItems, SidebarNav } from "./sidebar-nav";
-import { SidebarOrgSelector } from "./sidebar-org-selector";
-import { SidebarProjectSelector } from "./sidebar-project-selector";
+import { SidebarScopeSwitcher } from "./sidebar-scope-switcher";
 import { SidebarChatButton } from "./sidebar-chat-button";
 import { SidebarAccountMenu } from "./sidebar-account-menu";
 
@@ -392,8 +285,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar className="px-0" collapsible="icon" variant="inset" {...props}>
       <SidebarHeader className="gap-1 pb-2">
-        <SidebarOrgSelector />
-        <SidebarProjectSelector />
+        <SidebarScopeSwitcher />
         <Separator className="my-1" />
         <SidebarChatButton />
       </SidebarHeader>
@@ -444,7 +336,7 @@ function SidebarFooterContent() {
 
 **Step 1:** Create `sidebar-chat-button.tsx`.
 
-**Step 2:** Rewrite `app-sidebar.tsx` with new structure above.
+**Step 2:** Rewrite `app-sidebar.tsx`.
 
 **Step 3:** `bun run typecheck` — fix errors.
 
@@ -453,27 +345,122 @@ function SidebarFooterContent() {
 ```bash
 git add apps/web/src/layout/dashboard/ui/sidebar-chat-button.tsx
 git add apps/web/src/layout/dashboard/ui/app-sidebar.tsx
-git commit -m "feat(sidebar): new PostHog-style layout — org+project header, account footer, chat button stub"
+git commit -m "feat(sidebar): PostHog layout — scope switcher to header, account to footer, chat stub"
 ```
 
 ---
 
-## Task 5: Collapsible NavGroups at group level with Tailwind animation
+## Task 3: "PROJETO" collapsible nav section (wrap SidebarDefaultItems)
 
 **Files:**
 - Modify: `apps/web/src/layout/dashboard/ui/sidebar-nav.tsx`
 
-Currently `NavGroup` has a static `SidebarGroupLabel` header. Make each group with a `label` collapsible — clicking the label toggles the whole group.
+`SidebarDefaultItems` currently renders the unlabeled main group (Home, Dashboards, Insights, Data Management) with no section header. Wrap it in a shadcn `Collapsible` with a "PROJETO" label, matching PostHog's "PROJECT ˅" section.
 
-**Key change in `NavGroup`:**
+**Replace `SidebarDefaultItems` in `sidebar-nav.tsx`:**
 
 ```tsx
-function NavGroup({ group, ... }) {
-  // ...existing logic...
+import {
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
+} from "@packages/ui/components/collapsible";
+import {
+  SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
+  SidebarMenu, useSidebarManager,
+} from "@packages/ui/components/sidebar";
+import { ChevronRight } from "lucide-react";
 
-  // Groups are open by default; state stored in component (no persistence needed)
+export function SidebarDefaultItems() {
+  const {
+    slug, teamSlug,
+    handleSubPanelToggle, handleMainItemClick, isItemActive,
+  } = useNavHandlers();
+  const { pathname } = useLocation();
+  const { isEnrolled } = useEarlyAccess();
+  const { isVisible } = useSidebarVisibility();
+
+  const mainGroup = navGroups.find((g) => !g.label);
+  const visibleMainItems = (mainGroup?.items ?? [])
+    .filter((item) => (!item.earlyAccessFlag) || isEnrolled(item.earlyAccessFlag))
+    .filter((item) => isVisible(item.id));
+
+  const resolvedSlug = slug || pathname.split("/")[1] || "";
+
   return (
-    <Collapsible asChild defaultOpen className="group/nav-group pt-0">
+    <Collapsible defaultOpen className="group/projeto">
+      <SidebarGroup className="py-0">
+        <SidebarGroupLabel asChild className="justify-between pr-2 group-data-[collapsible=icon]:hidden">
+          <CollapsibleTrigger className="w-full cursor-pointer hover:text-foreground transition-colors duration-150">
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Projeto</span>
+            <ChevronRight className="size-3 transition-transform duration-200 group-data-[state=open]/projeto:rotate-90" />
+          </CollapsibleTrigger>
+        </SidebarGroupLabel>
+        <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {visibleMainItems.map((item) => (
+                <NavItem
+                  isActive={isItemActive(item)}
+                  item={item}
+                  key={item.id}
+                  onMainItemClick={handleMainItemClick}
+                  onSubPanelToggle={handleSubPanelToggle}
+                  slug={resolvedSlug}
+                  teamSlug={teamSlug}
+                />
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </CollapsibleContent>
+      </SidebarGroup>
+    </Collapsible>
+  );
+}
+```
+
+**Step 1:** Add `Collapsible`, `CollapsibleContent`, `CollapsibleTrigger` to imports in `sidebar-nav.tsx`.
+
+**Step 2:** Rewrite `SidebarDefaultItems` as shown above.
+
+**Step 3:** `bun run typecheck` — fix errors.
+
+**Step 4:** Commit.
+
+```bash
+git add apps/web/src/layout/dashboard/ui/sidebar-nav.tsx
+git commit -m "feat(sidebar): PROJETO collapsible section wrapping main nav items"
+```
+
+---
+
+## Task 4: Collapsible NavGroup headers (Finanças, ERP, etc.)
+
+**Files:**
+- Modify: `apps/web/src/layout/dashboard/ui/sidebar-nav.tsx`
+
+Make each `NavGroup` with a `label` collapsible at group level — clicking the section header toggles the group. Uses the same shadcn `Collapsible` pattern.
+
+**Replace `NavGroup`:**
+
+```tsx
+function NavGroup({ group, slug, teamSlug, isItemActive, onSubPanelToggle, onMainItemClick, onConfigure }) {
+  const { isEnrolled } = useEarlyAccess();
+  const { isVisible } = useSidebarVisibility();
+  const { isWanted } = useFinanceNavPreferences();
+
+  const visibleItems = group.items
+    .filter((item) => {
+      if (!item.earlyAccessFlag) return true;
+      if (group.label) return isWanted(item.id) || isEnrolled(item.earlyAccessFlag);
+      return isEnrolled(item.earlyAccessFlag);
+    })
+    .filter((item) => isVisible(item.id));
+
+  if (visibleItems.length === 0 && !onConfigure) return null;
+
+  const groupKey = `nav-group-${group.id}`;
+
+  return (
+    <Collapsible defaultOpen className={`group/${groupKey} pt-0`}>
       <SidebarGroup className="pt-0">
         {group.label && (
           <SidebarGroupLabel asChild className="justify-between pr-1">
@@ -489,15 +476,36 @@ function NavGroup({ group, ... }) {
                     <Settings2 className="size-3.5" />
                   </button>
                 )}
-                <ChevronRight className="size-3 text-muted-foreground transition-transform duration-200 group-data-[state=open]/nav-group:rotate-90 group-data-[collapsible=icon]:hidden" />
+                <ChevronRight className={`size-3 text-muted-foreground transition-transform duration-200 group-data-[state=open]/${groupKey}:rotate-90 group-data-[collapsible=icon]:hidden`} />
               </div>
             </CollapsibleTrigger>
           </SidebarGroupLabel>
         )}
-        <CollapsibleContent className="overflow-hidden transition-all duration-200 data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+        <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
           <SidebarGroupContent>
             <SidebarMenu>
-              {visibleItems.map((item) => ...)}
+              {visibleItems.map((item) =>
+                item.children ? (
+                  <CollapsibleNavItem
+                    isItemActive={isItemActive}
+                    item={item}
+                    key={item.id}
+                    onMainItemClick={onMainItemClick}
+                    slug={slug}
+                    teamSlug={teamSlug}
+                  />
+                ) : (
+                  <NavItem
+                    isActive={isItemActive(item)}
+                    item={item}
+                    key={item.id}
+                    onMainItemClick={onMainItemClick}
+                    onSubPanelToggle={onSubPanelToggle}
+                    slug={slug}
+                    teamSlug={teamSlug}
+                  />
+                ),
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </CollapsibleContent>
@@ -507,15 +515,24 @@ function NavGroup({ group, ... }) {
 }
 ```
 
-**Note on Tailwind animation classes:** shadcn/ui already ships `animate-accordion-up` and `animate-accordion-down` via `tailwindcss-animate` in `globals.css`. These work on `CollapsibleContent`. No extra config needed.
+**Note on dynamic Tailwind group names:** `group-data-[state=open]/${groupKey}` uses Tailwind's arbitrary group variant. This requires the class to be present as a complete string at build time — Tailwind can't detect dynamically interpolated class names. Use a fixed set instead: wrap in `className="group/nav-group"` and use `group-data-[state=open]/nav-group:rotate-90`. Since all groups share the same variant name, it's fine — each `Collapsible` scopes its own state independently via the DOM tree.
 
-**Step 1:** Wrap `NavGroup` body in `<Collapsible asChild defaultOpen>`.
+**Simplified approach (avoids dynamic class issue):**
 
-**Step 2:** Make `SidebarGroupLabel` a `CollapsibleTrigger` — add chevron to right side.
+```tsx
+// Always use the same group name — each Collapsible scopes independently
+<Collapsible defaultOpen className="group/nav-group pt-0">
+  ...
+  <ChevronRight className="size-3 ... transition-transform duration-200 group-data-[state=open]/nav-group:rotate-90 ..." />
+```
 
-**Step 3:** Wrap `SidebarGroupContent` in `<CollapsibleContent className="overflow-hidden transition-all duration-200 data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">`.
+**Step 1:** Wrap `NavGroup` body in `<Collapsible defaultOpen className="group/nav-group pt-0">`.
 
-**Step 4:** Stop propagation on the configure button click so it doesn't toggle collapse.
+**Step 2:** Make `SidebarGroupLabel` a `CollapsibleTrigger` with `asChild`, add chevron.
+
+**Step 3:** Wrap content in `<CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">`.
+
+**Step 4:** `e.stopPropagation()` on the configure button so it doesn't toggle collapse.
 
 **Step 5:** `bun run typecheck` — fix errors.
 
@@ -523,109 +540,112 @@ function NavGroup({ group, ... }) {
 
 ```bash
 git add apps/web/src/layout/dashboard/ui/sidebar-nav.tsx
-git commit -m "feat(sidebar): collapsible nav groups with Tailwind animation"
+git commit -m "feat(sidebar): collapsible group headers for Finanças and ERP sections"
 ```
 
 ---
 
-## Task 6: Inline edit mode for nav config (replace modal)
+## Task 5: Inline edit mode for nav config (replace modal)
 
 **Files:**
 - Modify: `apps/web/src/layout/dashboard/ui/sidebar-nav.tsx`
-- Modify: `apps/web/src/layout/dashboard/ui/sidebar-nav-config-form.tsx` (may no longer be needed)
+- Modify: `apps/web/src/layout/dashboard/hooks/use-sidebar-store.ts` (if toggle missing)
 
-Currently: clicking the `Settings2` icon on the finance group opens a `SidebarNavConfigForm` modal.
+Currently: `Settings2` icon on finance group opens `SidebarNavConfigForm` modal.
 
-New behavior (like PostHog image 9): clicking the pencil toggles an inline "edit mode" for that group. In edit mode:
-- Each item shows a checkbox on the left
-- Header shows a `Check` icon instead of pencil to save, and an `X` to cancel
-- Clicking `Check` saves the visibility preferences and exits edit mode
-- Animation: fade/slide transition between view and edit modes
+New behavior (PostHog image 9): click pencil → inline checkbox list. Click ✓ → save + exit. Click ✗ → cancel.
 
-**State:** Add local state to `NavGroup` — `isEditing: boolean`.
+**Step 1:** Check `use-sidebar-store.ts` — does `useSidebarVisibility` expose a `toggleVisibility(itemId)` function? If not, add:
 
-**Implementation in `NavGroup`:**
-
-```tsx
-function NavGroup({ group, slug, teamSlug, isItemActive, onSubPanelToggle, onMainItemClick, onConfigure }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const { isVisible, toggleVisibility } = useSidebarVisibility(); // need toggleVisibility
-  // ...
-
-  const handleEditStart = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation(); // don't collapse group
-    setIsEditing(true);
-  }, []);
-
-  const handleEditSave = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsEditing(false);
-    // visibility already toggled on checkbox click via store
-  }, []);
-
-  const handleEditCancel = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsEditing(false);
-  }, []);
-
-  // In the label area:
-  // Replace: <Settings2 onClick={onConfigure} />
-  // With:
-  {onConfigure && !isEditing && (
-    <button onClick={handleEditStart} type="button" className="...">
-      <Pencil className="size-3.5" />
-    </button>
-  )}
-  {isEditing && (
-    <>
-      <button onClick={handleEditSave} type="button" className="text-green-600 hover:text-green-700">
-        <Check className="size-3.5" />
-      </button>
-      <button onClick={handleEditCancel} type="button" className="text-muted-foreground hover:text-foreground">
-        <X className="size-3.5" />
-      </button>
-    </>
-  )}
-
-  // Items in edit mode: render all items (not just visible) with checkboxes
-  {isEditing ? (
-    <SidebarMenu>
-      {group.items.filter(...earlyAccess).map((item) => (
-        <SidebarMenuItem key={item.id}>
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent transition-colors duration-150"
-            onClick={() => toggleVisibility(item.id)}
-          >
-            <div className={cn(
-              "flex size-4 items-center justify-center rounded-sm border transition-colors duration-150",
-              isVisible(item.id) ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground"
-            )}>
-              {isVisible(item.id) && <Check className="size-3" />}
-            </div>
-            <item.icon className="size-4 text-muted-foreground" />
-            <span>{item.label}</span>
-          </button>
-        </SidebarMenuItem>
-      ))}
-    </SidebarMenu>
-  ) : (
-    // normal items rendering
-  )}
+```typescript
+// in use-sidebar-store.ts
+export function toggleVisibility(itemId: string) {
+  // look at how isVisible/setVisible works and implement toggle
+  // likely: store.setState(s => ({ ...s, hiddenItems: s.hiddenItems.includes(itemId) ? s.hiddenItems.filter(id => id !== itemId) : [...s.hiddenItems, itemId] }))
 }
 ```
 
-**Note:** Check if `useSidebarVisibility` already exposes a toggle function. If not, add `toggleVisibility(itemId: string)` to `use-sidebar-store.ts`.
+**Step 2:** Add `isEditing` state to `NavGroup`, `handleEditStart/Save/Cancel` callbacks:
 
-**Step 1:** Check `apps/web/src/layout/dashboard/hooks/use-sidebar-store.ts` — does `useSidebarVisibility` expose a toggle? If not, add one.
+```tsx
+const [isEditing, setIsEditing] = useState(false);
+const { isVisible } = useSidebarVisibility();
 
-**Step 2:** Add `isEditing` state + `handleEditStart/Save/Cancel` to `NavGroup`.
+const handleEditStart = useCallback((e: React.MouseEvent) => {
+  e.stopPropagation();
+  setIsEditing(true);
+}, []);
 
-**Step 3:** Replace `Settings2` configure button with `Pencil` that triggers inline edit.
+const handleEditSave = useCallback((e: React.MouseEvent) => {
+  e.stopPropagation();
+  setIsEditing(false);
+}, []);
 
-**Step 4:** Render checkbox list when `isEditing === true`.
+const handleEditCancel = useCallback((e: React.MouseEvent) => {
+  e.stopPropagation();
+  setIsEditing(false);
+}, []);
+```
 
-**Step 5:** Remove `onConfigure` prop from `NavGroup` and `SidebarNav`. Remove `SidebarNavConfigForm` modal call from `SidebarNav`.
+**Step 3:** Replace `Settings2` button with `Pencil` → `handleEditStart`. When `isEditing`, show `Check` (save) + `X` (cancel) instead:
+
+```tsx
+{onConfigure && !isEditing && (
+  <button onClick={handleEditStart} type="button"
+    className="text-muted-foreground hover:text-foreground group-data-[collapsible=icon]:hidden">
+    <Pencil className="size-3.5" />
+  </button>
+)}
+{isEditing && (
+  <>
+    <button onClick={handleEditSave} type="button" className="text-emerald-600 hover:text-emerald-700">
+      <Check className="size-3.5" />
+    </button>
+    <button onClick={handleEditCancel} type="button" className="text-muted-foreground hover:text-foreground">
+      <X className="size-3.5" />
+    </button>
+  </>
+)}
+```
+
+**Step 4:** Render checkbox list when `isEditing`. Show ALL group items (not just visible), filtered by early access only:
+
+```tsx
+{isEditing ? (
+  <SidebarGroupContent>
+    <SidebarMenu>
+      {group.items
+        .filter((item) => !item.earlyAccessFlag || isEnrolled(item.earlyAccessFlag))
+        .map((item) => {
+          const Icon = item.icon;
+          const visible = isVisible(item.id);
+          return (
+            <SidebarMenuItem key={item.id}>
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent transition-colors duration-150"
+                onClick={() => toggleVisibility(item.id)}
+              >
+                <div className={cn(
+                  "flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors duration-150",
+                  visible ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground",
+                )}>
+                  {visible && <Check className="size-3" />}
+                </div>
+                <Icon className="size-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{item.label}</span>
+              </button>
+            </SidebarMenuItem>
+          );
+        })}
+    </SidebarMenu>
+  </SidebarGroupContent>
+) : (
+  // existing items render
+)}
+```
+
+**Step 5:** Remove `onConfigure` prop from `NavGroup` signature and from `SidebarNav`. Remove `handleConfigure` + `SidebarNavConfigForm` call from `SidebarNav`.
 
 **Step 6:** `bun run typecheck`.
 
@@ -634,37 +654,36 @@ function NavGroup({ group, slug, teamSlug, isItemActive, onSubPanelToggle, onMai
 ```bash
 git add apps/web/src/layout/dashboard/ui/sidebar-nav.tsx
 git add apps/web/src/layout/dashboard/hooks/use-sidebar-store.ts
-git commit -m "feat(sidebar): inline edit mode for nav config, replace modal"
+git commit -m "feat(sidebar): inline checkbox edit mode, remove modal config"
 ```
 
 ---
 
-## Task 7: Cleanup
+## Task 6: Cleanup
 
 **Files:**
-- Check: `apps/web/src/layout/dashboard/ui/sidebar-nav-config-form.tsx` — delete if no longer referenced
-- Check: `apps/web/src/layout/dashboard/ui/sidebar-scope-switcher.tsx` — delete if not done in Task 3
+- Delete: `apps/web/src/layout/dashboard/ui/sidebar-nav-config-form.tsx` (if unreferenced)
 
-**Step 1:** `grep -r "SidebarNavConfigForm" apps/web/src` — confirm no references remain.
+**Step 1:** `grep -r "SidebarNavConfigForm" apps/web/src` — confirm zero references.
 
-**Step 2:** Delete `sidebar-nav-config-form.tsx` if unreferenced.
+**Step 2:** Delete if clean.
 
 **Step 3:** `bun run typecheck && bun run check` — all clean.
 
-**Step 4:** Final commit.
+**Step 4:** Commit.
 
 ```bash
 git rm apps/web/src/layout/dashboard/ui/sidebar-nav-config-form.tsx
-git commit -m "chore(sidebar): remove unused SidebarNavConfigForm after inline edit migration"
+git commit -m "chore(sidebar): remove SidebarNavConfigForm after inline edit migration"
 ```
 
 ---
 
 ## Notes & Gotchas
 
-- **`SidebarGroupLabel` as CollapsibleTrigger**: shadcn's `SidebarGroupLabel` renders a `div`, not a `button`. Pass `asChild` to `SidebarGroupLabel` and make `CollapsibleTrigger` the child — not the other way around. Check if this causes styling issues; might need to `asChild` chain carefully.
-- **`group-data-[state=open]/nav-group` Tailwind variant**: Requires the `Collapsible` to have `className="group/nav-group"` — already done in the code above. The chevron rotation uses this.
-- **Animation classes**: `animate-accordion-up` / `animate-accordion-down` are defined by shadcn in `tailwind.config.ts` via `tailwindcss-animate`. Verify they exist: `grep -r "accordion" apps/web/tailwind.config.ts`. If missing, use `data-[state=closed]:h-0 data-[state=open]:h-auto transition-all duration-200` with `overflow-hidden` instead (less smooth but works).
-- **`OrgAvatar` extraction**: Both `SidebarOrgSelector` and any org-related display in `SidebarAccountMenu` need it. Keep it in `sidebar-org-avatar.tsx` as a named export only — no barrel.
-- **Mobile sidebar**: `isMobile` from `useSidebar()` — existing pattern already handles this. Keep `side={isMobile ? "bottom" : "right"}` on project/org dropdowns.
-- **`SidebarHeader` padding**: Current sidebar uses `px-0` on `<Sidebar>`. Add `px-2 pt-2` on `SidebarHeader` or use individual `px-2` on each selector to match the existing item padding.
+- **`SidebarGroupLabel` + `asChild` + `CollapsibleTrigger`**: `SidebarGroupLabel` renders a `div`. Pass `asChild` on it and use `CollapsibleTrigger` as the direct child. Do NOT put `asChild` on `CollapsibleTrigger` here — it's the trigger itself. If styling breaks, fall back to a plain `button` styled to match `SidebarGroupLabel` classes.
+- **`group/nav-group` shared name**: All `NavGroup` collapsibles can share `className="group/nav-group"` — each `Collapsible` scopes its `data-[state]` to its own subtree. No name conflicts.
+- **Animation classes**: `animate-accordion-up`/`animate-accordion-down` from `tailwindcss-animate`. Verify: `grep accordion apps/web/tailwind.config.ts`. Fallback: `data-[state=closed]:grid-rows-[0fr] data-[state=open]:grid-rows-[1fr] transition-[grid-template-rows] duration-200` with inner `div className="overflow-hidden"`.
+- **`SidebarScopeSwitcher` size in header**: The existing trigger uses `size="lg"`. In a header context this may feel large — consider `size="sm"` or default. Adjust if needed.
+- **Mobile**: `SidebarScopeSwitcher` already handles `isMobile`. No changes needed there.
+- **`SidebarHeader` padding**: `Sidebar` has `px-0`. `SidebarHeader` will need `px-2` or the child `SidebarMenu` will handle it. Check visually.

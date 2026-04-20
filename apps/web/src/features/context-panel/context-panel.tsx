@@ -16,11 +16,10 @@ import {
 import {
    Sidebar,
    SidebarContent,
-   SidebarHeader,
    SidebarManager,
 } from "@packages/ui/components/sidebar";
 import { useStore, shallow } from "@tanstack/react-store";
-import { Check, ChevronDown, Info, X } from "lucide-react";
+import { Check, ChevronDown, Info } from "lucide-react";
 import type React from "react";
 import { ContextPanelAction } from "./context-panel-info";
 import {
@@ -146,29 +145,7 @@ function ContextPanelInner() {
          side="right"
          variant="inset"
       >
-         <SidebarHeader className="bg-background rounded-t-xl">
-            <div className="flex items-center gap-2">
-               {activeTabMeta && (
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                     <activeTabMeta.icon className="size-4 shrink-0 text-muted-foreground" />
-                     <span className="text-sm font-medium truncate">
-                        {activeTabMeta.label}
-                     </span>
-                  </div>
-               )}
-               <Button
-                  className="shrink-0 ml-auto"
-                  onClick={closeContextPanel}
-                  tooltip="Fechar painel"
-                  type="button"
-                  variant="ghost"
-               >
-                  <X className="" />
-               </Button>
-            </div>
-         </SidebarHeader>
-
-         <SidebarContent className="h-full overflow-hidden rounded-b-xl bg-muted">
+         <SidebarContent className="h-full overflow-hidden rounded-xl bg-muted">
             {activeTab?.renderContent()}
          </SidebarContent>
       </Sidebar>

@@ -1,12 +1,19 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   Popover,
-   PopoverContent,
-   PopoverTrigger,
-} from "@packages/ui/components/popover";
+   DropdownMenu,
+   DropdownMenuContent,
+   DropdownMenuItem,
+   DropdownMenuLabel,
+   DropdownMenuSeparator,
+   DropdownMenuTrigger,
+} from "@packages/ui/components/dropdown-menu";
+import {
+   Tooltip,
+   TooltipContent,
+   TooltipTrigger,
+} from "@packages/ui/components/tooltip";
 import { shallow, useStore } from "@tanstack/react-store";
-import { Ellipsis, ExternalLink, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { Ellipsis, ExternalLink, Sparkles, X } from "lucide-react";
 import { POSTHOG_SURVEYS } from "@core/posthog/config";
 import { useSurveyModal } from "@/hooks/use-survey-modal";
 import { allTabMetasStore, contextPanelStore } from "./context-panel-store";
@@ -17,46 +24,44 @@ import {
 } from "./use-context-panel";
 
 function RailMenuButton() {
-   const [open, setOpen] = useState(false);
    const { openSurveyModal } = useSurveyModal();
 
-   const handleFeedback = () => {
-      setOpen(false);
-      openSurveyModal(POSTHOG_SURVEYS.featureRequest.id);
-   };
-
    return (
-      <Popover onOpenChange={setOpen} open={open}>
-         <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="mx-1 size-8">
-               <Ellipsis className="size-4" />
-            </Button>
-         </PopoverTrigger>
-         <PopoverContent align="end" className="w-auto p-1" side="left">
-            <Button
-               className="w-full justify-start gap-2"
-               onClick={handleFeedback}
-               variant="ghost"
-            >
-               <Sparkles className="size-4" />
-               Dar feedback
-            </Button>
-            <Button
-               asChild
-               className="w-full justify-start gap-2"
-               variant="ghost"
-            >
-               <a
-                  href="https://docs.montte.app"
-                  rel="noopener noreferrer"
-                  target="_blank"
+      <Tooltip>
+         <DropdownMenu>
+            <TooltipTrigger asChild>
+               <DropdownMenuTrigger asChild>
+                  <Button aria-label="Mais opções" size="icon" variant="ghost">
+                     <Ellipsis className="size-4" />
+                  </Button>
+               </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <DropdownMenuContent align="end" side="left">
+               <DropdownMenuLabel>Ajuda</DropdownMenuLabel>
+               <DropdownMenuSeparator />
+               <DropdownMenuItem
+                  className="cursor-pointer gap-2"
+                  onClick={() =>
+                     openSurveyModal(POSTHOG_SURVEYS.featureRequest.id)
+                  }
                >
-                  <ExternalLink className="size-4" />
-                  Documentação
-               </a>
-            </Button>
-         </PopoverContent>
-      </Popover>
+                  <Sparkles className="size-4" />
+                  Dar feedback
+               </DropdownMenuItem>
+               <DropdownMenuItem asChild className="cursor-pointer gap-2">
+                  <a
+                     href="https://docs.montte.app"
+                     rel="noopener noreferrer"
+                     target="_blank"
+                  >
+                     <ExternalLink className="size-4" />
+                     Documentação
+                  </a>
+               </DropdownMenuItem>
+            </DropdownMenuContent>
+         </DropdownMenu>
+         <TooltipContent side="left">Mais opções</TooltipContent>
+      </Tooltip>
    );
 }
 
@@ -74,20 +79,31 @@ export function ContextPanelRail() {
       if (!isOpen) openContextPanel();
    };
 
-   if (isOpen) return null;
-
    return (
-      <div className="hidden md:flex flex-col shrink-0 h-full">
+      <div className="hidden sm:flex flex-col shrink-0 h-full">
          <div className="flex flex-col flex-1">
             {allTabMetas.map((tab) => (
                <button
-                  className="flex flex-col items-center gap-2 px-2 py-4 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground rounded-md mx-1"
+                  aria-label={
+                     isOpen && activeTabId === tab.id
+                        ? `Fechar ${tab.label}`
+                        : tab.label
+                  }
+                  aria-pressed={isOpen && activeTabId === tab.id}
+                  className={`group flex flex-col items-center gap-2 px-2 py-4 transition-colors rounded-md cursor-pointer ${isOpen && activeTabId === tab.id ? "bg-accent text-foreground hover:bg-destructive/10 hover:text-destructive" : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"}`}
                   key={tab.id}
                   onClick={() => handleTabClick(tab.id)}
                   type="button"
                >
-                  <tab.icon className="size-4 shrink-0" />
-                  <span className="text-sm font-medium [writing-mode:vertical-lr]">
+                  {isOpen && activeTabId === tab.id ? (
+                     <>
+                        <X className="size-4 shrink-0 hidden group-hover:block" />
+                        <tab.icon className="size-4 shrink-0 group-hover:hidden" />
+                     </>
+                  ) : (
+                     <tab.icon className="size-4 shrink-0" />
+                  )}
+                  <span className="text-xs font-medium [writing-mode:vertical-lr]">
                      {tab.label}
                   </span>
                </button>

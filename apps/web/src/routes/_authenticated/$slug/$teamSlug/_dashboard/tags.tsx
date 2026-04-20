@@ -9,6 +9,7 @@ import {
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Archive, ArchiveRestore, Plus, Tag, Trash2 } from "lucide-react";
+import { DataTableExternalFilter } from "@/components/data-table/data-table-root";
 import { useCallback, useMemo, useState } from "react";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { z } from "zod";
@@ -273,6 +274,23 @@ function TagsList() {
             }}
             storageKey="montte:datatable:tags"
          >
+            <DataTableExternalFilter
+               id="includeArchived"
+               label="Mostrar arquivados"
+               group="Filtros"
+               active={includeArchived}
+               renderIcon={() => <Archive className="size-4" />}
+               onToggle={(checked) =>
+                  navigate({
+                     search: (prev) => ({
+                        ...prev,
+                        includeArchived: checked,
+                        page: 1,
+                     }),
+                     replace: true,
+                  })
+               }
+            />
             <DataTableToolbar
                searchPlaceholder="Buscar centros de custo..."
                searchDefaultValue={search}

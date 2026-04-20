@@ -666,6 +666,24 @@ export function updateCategoryKeywords(
 ) {
    return fromPromise(
       (async () => {
+         const existing = await db.query.categories.findFirst({
+            where: (fields, { eq }) => eq(fields.id, id),
+         });
+         if (!existing) throw AppError.notFound("Categoria não encontrada.");
+         if (existing.isDefault) {
+            throw AppError.conflict(
+               "Palavras-chave de categorias padrão não podem ser atualizadas.",
+            );
+         }
+         if (keywords.length) {
+            const vResult = await validateKeywordsUniqueness(
+               db,
+               existing.teamId,
+               keywords,
+               id,
+            );
+            if (vResult.isErr()) throw vResult.error;
+         }
          const now = dayjs().toDate();
          const [updated] = await db
             .update(categories)

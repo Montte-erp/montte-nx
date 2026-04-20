@@ -202,7 +202,7 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                   return (
                      <Tooltip>
                         <TooltipTrigger asChild>
-                           <span className="inline-flex items-center gap-1 text-sm text-amber-500 cursor-default">
+                           <span className="inline-flex items-center gap-2 text-sm text-amber-500 cursor-default">
                               <TriangleAlert className="size-3.5" />
                               Não geradas
                            </span>
