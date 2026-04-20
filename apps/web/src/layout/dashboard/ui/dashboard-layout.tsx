@@ -90,7 +90,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
                <SidebarInset className="flex flex-col overflow-hidden bg-sidebar">
                   <SidebarSubPanel />
-                  <div className="flex flex-1 overflow-hidden rounded-xl bg-background">
+                  <div className="relative flex flex-1 flex-col overflow-hidden rounded-xl bg-background">
                      <main
                         className={cn(
                            "relative flex-1",

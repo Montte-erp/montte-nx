@@ -23,14 +23,14 @@ export function ContextPanelRail() {
    };
 
    return (
-      <div className="hidden md:flex flex-col items-center py-2 w-10 shrink-0 gap-2 border-l">
+      <div className="absolute right-3 top-20 hidden md:flex flex-col gap-2 z-10">
          {allTabMetas.map((tab) => (
             <Button
                className={cn(
-                  "size-8 p-0",
+                  "size-9 rounded-full shadow-sm border bg-background hover:bg-accent",
                   isOpen &&
                      activeTabId === tab.id &&
-                     "bg-accent text-accent-foreground",
+                     "bg-primary text-primary-foreground hover:bg-primary/90 border-primary shadow-md",
                )}
                key={tab.id}
                onClick={() => handleTabClick(tab.id)}
