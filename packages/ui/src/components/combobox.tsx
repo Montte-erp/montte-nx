@@ -33,6 +33,7 @@ interface ComboboxProps {
    emptyMessage?: string;
    className?: string;
    disabled?: boolean;
+   defaultOpen?: boolean;
    onBlur?: React.FocusEventHandler<HTMLButtonElement>;
    onCreate?: (name: string) => void;
    createLabel?: string;
@@ -49,13 +50,14 @@ export function Combobox({
    emptyMessage = "No option found.",
    className,
    disabled = false,
+   defaultOpen = false,
    onBlur,
    onCreate,
    createLabel = "Criar",
    renderOption,
    renderSelected,
 }: ComboboxProps) {
-   const [open, setOpen] = React.useState(false);
+   const [open, setOpen] = React.useState(defaultOpen);
    const [search, setSearch] = React.useState("");
    const [parentNode, setParentNode] = React.useState<HTMLDivElement | null>(
       null,

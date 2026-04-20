@@ -22,7 +22,8 @@ export type RawImportData = {
 export interface DataTableImportConfig {
    accept?: Record<string, string[]>;
    parseFile: (file: File) => Promise<RawImportData>;
-   onImport: (rows: Record<string, string>[]) => Promise<void>;
+   mapRow?: (row: Record<string, string>, index: number) => unknown;
+   onImport: (rows: Record<string, unknown>[]) => Promise<void>;
 }
 
 const DEFAULT_ACCEPT = {
@@ -94,12 +95,27 @@ export function DataTableImportButton({
          try {
             const data = await importConfig.parseFile(file);
             const mapping = autoMatch(data.headers, importableColumns);
+            const importRows = importConfig.mapRow
+               ? data.rows.map((rawRow, i) => {
+                    const mapped: Record<string, string> = {};
+                    for (const [colKey, fileHeader] of Object.entries(
+                       mapping,
+                    )) {
+                       if (!fileHeader) continue;
+                       const headerIdx = data.headers.indexOf(fileHeader);
+                       mapped[colKey] =
+                          headerIdx >= 0 ? (rawRow[headerIdx] ?? "") : "";
+                    }
+                    return importConfig.mapRow!(mapped, i);
+                 })
+               : [];
             store.setState((s) => ({
                ...s,
                importState: {
                   rawHeaders: data.headers,
                   rawRows: data.rows,
                   mapping,
+                  importRows,
                   onSave: importConfig.onImport,
                },
             }));

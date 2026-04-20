@@ -8,10 +8,9 @@ import {
    ArrowUp,
    ArrowUpDown,
    Check,
-   ChevronDown,
    Loader2,
    Pencil,
-   Upload,
+   TriangleAlert,
    X,
 } from "lucide-react";
 import { Badge } from "@packages/ui/components/badge";
@@ -54,6 +53,7 @@ import type React from "react";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
 import { toast } from "sonner";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDataTable, useDataTableStore } from "./data-table-root";
 
 // Structural interface — compatible with TanStack Form FieldApi instances
@@ -536,17 +536,98 @@ function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
 }
 
 function ImportSection() {
+   const importState = useDataTableStore((s) => s.importState);
+   if (!importState) return null;
+   return <ImportSectionInner />;
+}
+
+function ImportSectionInner() {
    const { table, store } = useDataTable();
    const importState = useDataTableStore((s) => s.importState);
+   const { openAlertDialog } = useAlertDialog();
    const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
       new Set(),
    );
+   const [ignoredIndices, setIgnoredIndices] = useState<Set<number>>(new Set());
    const [editingColKey, setEditingColKey] = useState<string | null>(null);
-   const [isSaving, startSaving] = useTransition();
+
+   const existingRows = table.getCoreRowModel().rows;
+
+   const duplicateIndices = useMemo(() => {
+      if (!importState?.importRows.length) return new Set<number>();
+      const visibleCols = table.getVisibleLeafColumns();
+      const firstCol = visibleCols.find(
+         (col) =>
+            col.id !== "__select" &&
+            col.id !== "__actions" &&
+            !col.columnDef.meta?.importIgnore,
+      );
+      if (!firstCol) return new Set<number>();
+      const accKey =
+         "accessorKey" in firstCol.columnDef &&
+         firstCol.columnDef.accessorKey != null
+            ? String(firstCol.columnDef.accessorKey)
+            : firstCol.id;
+      const existingValues = new Set(
+         existingRows.map((r) =>
+            String(r.getValue(accKey) ?? "").toLowerCase(),
+         ),
+      );
+      const result = new Set<number>();
+      importState.importRows.forEach((r, i) => {
+         const val = String(
+            (r as Record<string, unknown>)[accKey] ?? "",
+         ).toLowerCase();
+         if (val && existingValues.has(val)) result.add(i);
+      });
+      return result;
+   }, [importState, existingRows, table]);
+
+   const form = useForm({
+      defaultValues: {
+         mapping: importState?.mapping ?? ({} as Record<string, string>),
+      },
+      onSubmit: async ({ value }) => {
+         if (!importState) return;
+         const { rawHeaders, rawRows, onSave, importRows } = importState;
+         const hasImportRows = importRows.length > 0;
+         const activeRows = rawRows
+            .map((row, i) => ({ row, i }))
+            .filter(({ i }) => !ignoredIndices.has(i));
+         let toImport: Record<string, unknown>[];
+         if (hasImportRows) {
+            toImport = activeRows.map(
+               ({ i }) => importRows[i] as Record<string, unknown>,
+            );
+         } else {
+            toImport = activeRows.map(({ row }) => {
+               const entry: Record<string, string> = {};
+               for (const [colKey, fileHeader] of Object.entries(
+                  value.mapping,
+               )) {
+                  if (!fileHeader || fileHeader === "__none__") continue;
+                  const idx = rawHeaders.indexOf(fileHeader);
+                  entry[colKey] = idx >= 0 ? (row[idx] ?? "") : "";
+               }
+               return entry;
+            });
+         }
+         try {
+            await onSave(toImport);
+            toast.success(
+               `${toImport.length} linha(s) importada(s) com sucesso.`,
+            );
+            store.setState((s) => ({ ...s, importState: null }));
+         } catch {
+            toast.error("Erro ao importar dados.");
+         }
+      },
+   });
 
    if (!importState) return null;
 
-   const { rawHeaders, rawRows, mapping, onSave } = importState;
+   const { rawHeaders, rawRows, importRows } = importState;
+   const hasImportRows = importRows.length > 0;
    const visibleCols = table.getVisibleLeafColumns();
    const colCount = visibleCols.length;
 
@@ -560,11 +641,8 @@ function ImportSection() {
    const someSelected = selectedIndices.size > 0 && !allSelected;
 
    function toggleAll() {
-      if (allSelected) {
-         setSelectedIndices(new Set());
-      } else {
-         setSelectedIndices(new Set(rawRows.map((_, i) => i)));
-      }
+      if (allSelected) setSelectedIndices(new Set());
+      else setSelectedIndices(new Set(rawRows.map((_, i) => i)));
    }
 
    function toggleRow(idx: number) {
@@ -576,26 +654,25 @@ function ImportSection() {
       });
    }
 
-   function setColMapping(colKey: string, fileHeader: string) {
-      store.setState((s) => {
-         if (!s.importState) return s;
-         return {
-            ...s,
-            importState: {
-               ...s.importState,
-               mapping: {
-                  ...s.importState.mapping,
-                  [colKey]: fileHeader === "__none__" ? "" : fileHeader,
-               },
-            },
-         };
-      });
+   function shiftIgnored(indices: Set<number>, total: number): Set<number> {
+      const sorted = Array.from(indices).sort((a, b) => a - b);
+      const next = new Set<number>();
+      for (let i = 0; i < total; i++) {
+         if (indices.has(i)) continue;
+         const shift = sorted.filter((r) => r < i).length;
+         if (ignoredIndices.has(i)) next.add(i - shift);
+      }
+      return next;
    }
 
    function removeRows(indices: Set<number>) {
+      setIgnoredIndices(shiftIgnored(indices, rawRows.length));
       store.setState((s) => {
          if (!s.importState) return s;
          const newRows = s.importState.rawRows.filter(
+            (_, i) => !indices.has(i),
+         );
+         const newImportRows = s.importState.importRows.filter(
             (_, i) => !indices.has(i),
          );
          return {
@@ -603,37 +680,89 @@ function ImportSection() {
             importState:
                newRows.length === 0
                   ? null
-                  : { ...s.importState, rawRows: newRows },
+                  : {
+                       ...s.importState,
+                       rawRows: newRows,
+                       importRows: newImportRows,
+                    },
          };
       });
       setSelectedIndices(new Set());
    }
 
-   function discard() {
-      store.setState((s) => ({ ...s, importState: null }));
+   function ignoreRow(idx: number) {
+      setIgnoredIndices((prev) => new Set([...prev, idx]));
    }
 
-   function handleSave() {
-      startSaving(async () => {
-         const toImport = rawRows.map((row) => {
-            const entry: Record<string, string> = {};
-            for (const [colKey, fileHeader] of Object.entries(mapping)) {
-               if (!fileHeader) continue;
-               const idx = rawHeaders.indexOf(fileHeader);
-               entry[colKey] = idx >= 0 ? (row[idx] ?? "") : "";
-            }
-            return entry;
-         });
-         try {
-            await onSave(toImport);
-            toast.success(
-               `${toImport.length} linha(s) importada(s) com sucesso.`,
-            );
-            store.setState((s) => ({ ...s, importState: null }));
-         } catch {
-            toast.error("Erro ao importar dados.");
-         }
+   function restoreRow(idx: number) {
+      setIgnoredIndices((prev) => {
+         const next = new Set(prev);
+         next.delete(idx);
+         return next;
       });
+   }
+
+   async function saveRow(rowIdx: number, mapping: Record<string, string>) {
+      const row = rawRows[rowIdx];
+      let rowData: Record<string, unknown>;
+      if (hasImportRows) {
+         rowData = importRows[rowIdx] as Record<string, unknown>;
+      } else {
+         const entry: Record<string, string> = {};
+         for (const [colKey, fileHeader] of Object.entries(mapping)) {
+            if (!fileHeader || fileHeader === "__none__") continue;
+            const idx = rawHeaders.indexOf(fileHeader);
+            entry[colKey] = idx >= 0 ? (row[idx] ?? "") : "";
+         }
+         rowData = entry;
+      }
+      try {
+         await importState.onSave([rowData]);
+         toast.success("Linha importada com sucesso.");
+         removeRows(new Set([rowIdx]));
+      } catch {
+         toast.error("Erro ao importar linha.");
+      }
+   }
+
+   function handleSaveRow(rowIdx: number, mapping: Record<string, string>) {
+      if (duplicateIndices.has(rowIdx)) {
+         openAlertDialog({
+            title: "Salvar linha duplicada?",
+            description:
+               "Esta linha pode já existir nos dados atuais. Deseja importar mesmo assim?",
+            actionLabel: "Continuar",
+            cancelLabel: "Cancelar",
+            onAction: async () => {
+               await saveRow(rowIdx, mapping);
+            },
+         });
+      } else {
+         saveRow(rowIdx, mapping);
+      }
+   }
+
+   function handleBulkSave() {
+      const activeDuplicates = [...duplicateIndices].filter(
+         (i) => !ignoredIndices.has(i),
+      );
+      if (activeDuplicates.length > 0) {
+         openAlertDialog({
+            title: "Salvar duplicados?",
+            description: `${activeDuplicates.length} linha(s) podem já existir nos dados atuais. Deseja importar mesmo assim?`,
+            actionLabel: "Continuar",
+            cancelLabel: "Cancelar",
+            onAction: async () => {
+               form.handleSubmit();
+            },
+         });
+      } else {
+         form.handleSubmit();
+      }
+   }
+
+   function discard() {
+      store.setState((s) => ({ ...s, importState: null }));
    }
 
    return (
@@ -643,16 +772,19 @@ function ImportSection() {
             <TableCell className="bg-muted px-4 py-2" colSpan={colCount}>
                <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
-                     <div className="flex size-5 items-center justify-center rounded bg-primary/20">
-                        <Upload className="size-3 text-primary" />
-                     </div>
                      <span className="text-sm font-medium">Importando</span>
                      <Badge className="text-xs font-normal" variant="secondary">
-                        {rawRows.length}{" "}
-                        {rawRows.length === 1 ? "linha" : "linhas"}
+                        {rawRows.length - ignoredIndices.size}
                      </Badge>
+                     {duplicateIndices.size > 0 && (
+                        <Badge
+                           className="text-xs font-normal"
+                           variant="destructive"
+                        >
+                           {duplicateIndices.size} duplicado(s)
+                        </Badge>
+                     )}
                   </div>
-
                   <div className="flex items-center gap-2">
                      {selectedIndices.size > 0 && (
                         <>
@@ -671,21 +803,26 @@ function ImportSection() {
                            <div className="h-4 w-px bg-border" />
                         </>
                      )}
-                     <Button
-                        className="h-7 gap-2 px-3 text-xs"
-                        disabled={isSaving}
-                        onClick={handleSave}
-                        size="sm"
-                        type="button"
-                        variant="outline"
-                     >
-                        {isSaving ? (
-                           <Loader2 className="size-3 animate-spin" />
-                        ) : (
-                           <Check className="size-3" />
+                     <form.Subscribe selector={(s) => s.isSubmitting}>
+                        {(isSubmitting) => (
+                           <Button
+                              className="h-7 gap-2 px-3 text-xs"
+                              disabled={isSubmitting}
+                              onClick={handleBulkSave}
+                              size="sm"
+                              type="button"
+                              variant="outline"
+                           >
+                              {isSubmitting ? (
+                                 <Loader2 className="size-3 animate-spin" />
+                              ) : (
+                                 <Check className="size-3" />
+                              )}
+                              Salvar {rawRows.length - ignoredIndices.size}{" "}
+                              linha(s)
+                           </Button>
                         )}
-                        Salvar {rawRows.length} linha(s)
-                     </Button>
+                     </form.Subscribe>
                      <Button
                         className="size-7 text-muted-foreground hover:text-destructive"
                         onClick={discard}
@@ -702,149 +839,283 @@ function ImportSection() {
             </TableCell>
          </TableRow>
 
-         {/* Column mapping row — click cell to pick file header */}
+         {/* Column mapping row */}
          <TableRow className="bg-muted/20 hover:bg-muted/20">
-            {visibleCols.map((col) => {
-               if (col.id === "__select") {
-                  return (
-                     <TableCell key={col.id} className="w-10 px-2">
-                        <Checkbox
-                           aria-label="Selecionar todos"
-                           checked={
-                              someSelected ? "indeterminate" : allSelected
-                           }
-                           onCheckedChange={toggleAll}
-                        />
-                     </TableCell>
-                  );
-               }
-               if (col.id === "__actions") {
-                  return <TableCell key={col.id} />;
-               }
-               const accKey =
-                  "accessorKey" in col.columnDef &&
-                  col.columnDef.accessorKey != null
-                     ? String(col.columnDef.accessorKey)
-                     : col.id;
-               const currentHeader = mapping[accKey];
-               const isEditing = editingColKey === accKey;
-
-               return (
-                  <TableCell key={col.id} className="py-1 pr-2">
-                     <Popover
-                        open={isEditing}
-                        onOpenChange={(open) =>
-                           setEditingColKey(open ? accKey : null)
-                        }
-                     >
-                        <PopoverTrigger asChild>
-                           <button
-                              className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-xs transition-colors hover:bg-muted"
-                              type="button"
-                           >
-                              {currentHeader ? (
-                                 <span className="flex-1 truncate font-medium text-foreground">
-                                    {currentHeader}
-                                 </span>
-                              ) : (
-                                 <span className="flex-1 truncate text-muted-foreground/50 italic">
-                                    Não mapeado
-                                 </span>
-                              )}
-                              <ChevronDown className="size-3 shrink-0 text-muted-foreground/60" />
-                           </button>
-                        </PopoverTrigger>
-                        <PopoverContent align="start" className="w-56 p-2">
-                           <Combobox
-                              options={headerOptions}
-                              value={mapping[accKey] ?? "__none__"}
-                              onValueChange={(v) => {
-                                 setColMapping(accKey, v);
-                                 setEditingColKey(null);
-                              }}
-                           />
-                        </PopoverContent>
-                     </Popover>
-                  </TableCell>
-               );
-            })}
-         </TableRow>
-
-         {/* Pending import rows */}
-         {rawRows.map((row, rowIdx) => {
-            const isSelected = selectedIndices.has(rowIdx);
-            return (
-               <TableRow
-                  className={cn(
-                     "border-l-2 border-l-primary/40 transition-colors",
-                     isSelected
-                        ? "bg-primary/10 hover:bg-primary/10"
-                        : "bg-primary/[0.03] hover:bg-primary/[0.07]",
-                  )}
-                  // oxlint-ignore react/no-array-index-key
-                  key={`__import_${rowIdx}`}
-               >
-                  {visibleCols.map((col) => {
+            <form.Field name="mapping">
+               {(field) =>
+                  visibleCols.map((col) => {
                      if (col.id === "__select") {
                         return (
                            <TableCell key={col.id} className="w-10 px-2">
                               <Checkbox
-                                 aria-label="Selecionar linha"
-                                 checked={isSelected}
-                                 onCheckedChange={() => toggleRow(rowIdx)}
+                                 aria-label="Selecionar todos"
+                                 checked={
+                                    someSelected ? "indeterminate" : allSelected
+                                 }
+                                 onCheckedChange={toggleAll}
                               />
                            </TableCell>
                         );
                      }
                      if (col.id === "__actions") {
-                        return (
-                           <TableCell key={col.id}>
-                              <div className="flex items-center justify-end gap-2">
-                                 <Button
-                                    className="text-muted-foreground/40 hover:text-destructive"
-                                    onClick={() =>
-                                       removeRows(new Set([rowIdx]))
-                                    }
-                                    size="icon"
-                                    tooltip="Remover linha"
-                                    type="button"
-                                    variant="ghost"
-                                 >
-                                    <X />
-                                    <span className="sr-only">
-                                       Remover linha
-                                    </span>
-                                 </Button>
-                              </div>
-                           </TableCell>
-                        );
+                        return <TableCell key={col.id} />;
                      }
                      const accKey =
                         "accessorKey" in col.columnDef &&
                         col.columnDef.accessorKey != null
                            ? String(col.columnDef.accessorKey)
                            : col.id;
-                     const fileHeader = mapping[accKey];
-                     const headerIdx = fileHeader
-                        ? rawHeaders.indexOf(fileHeader)
-                        : -1;
-                     const val = headerIdx >= 0 ? (row[headerIdx] ?? "") : "";
+                     const currentHeader = field.state.value[accKey] ?? "";
+                     const isEditing = editingColKey === accKey;
+
                      return (
-                        <TableCell
-                           key={col.id}
-                           className="truncate text-sm text-foreground/80"
-                        >
-                           {val || (
-                              <span className="text-muted-foreground/30">
-                                 —
-                              </span>
+                        <TableCell key={col.id} className="py-1 pr-2">
+                           {isEditing ? (
+                              <Combobox
+                                 defaultOpen
+                                 emptyMessage="Nenhuma coluna encontrada."
+                                 options={headerOptions}
+                                 placeholder="Não mapeado"
+                                 searchPlaceholder="Buscar coluna..."
+                                 value={currentHeader || "__none__"}
+                                 onValueChange={(v) => {
+                                    field.handleChange({
+                                       ...field.state.value,
+                                       [accKey]: v === "__none__" ? "" : v,
+                                    });
+                                    setEditingColKey(null);
+                                 }}
+                              />
+                           ) : (
+                              <button
+                                 className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-xs transition-colors hover:bg-muted"
+                                 type="button"
+                                 onClick={() => setEditingColKey(accKey)}
+                              >
+                                 {currentHeader ? (
+                                    <span className="flex-1 truncate font-medium text-foreground">
+                                       {currentHeader}
+                                    </span>
+                                 ) : (
+                                    <span className="flex-1 truncate italic text-muted-foreground/50">
+                                       Não mapeado
+                                    </span>
+                                 )}
+                              </button>
                            )}
                         </TableCell>
                      );
-                  })}
-               </TableRow>
-            );
-         })}
+                  })
+               }
+            </form.Field>
+         </TableRow>
+
+         {/* Pending import rows */}
+         <form.Subscribe selector={(s) => s.values.mapping}>
+            {(mapping) =>
+               rawRows.map((row, rowIdx) => {
+                  const isSelected = selectedIndices.has(rowIdx);
+                  const isIgnored = ignoredIndices.has(rowIdx);
+                  const isDuplicate = duplicateIndices.has(rowIdx);
+                  return (
+                     <TableRow
+                        className={cn(
+                           "border-l-2 transition-colors",
+                           isIgnored
+                              ? "border-l-muted-foreground/20 bg-muted/30 hover:bg-muted/30 opacity-50"
+                              : isDuplicate
+                                ? "border-l-destructive/50 bg-destructive/[0.03] hover:bg-destructive/[0.07]"
+                                : isSelected
+                                  ? "border-l-primary/40 bg-primary/10 hover:bg-primary/10"
+                                  : "border-l-primary/40 bg-primary/[0.03] hover:bg-primary/[0.07]",
+                        )}
+                        // oxlint-ignore react/no-array-index-key
+                        key={`__import_${rowIdx}`}
+                     >
+                        {visibleCols.map((col) => {
+                           if (col.id === "__select") {
+                              return (
+                                 <TableCell key={col.id} className="w-10 px-2">
+                                    <Checkbox
+                                       aria-label="Selecionar linha"
+                                       checked={isSelected}
+                                       disabled={isIgnored}
+                                       onCheckedChange={() => toggleRow(rowIdx)}
+                                    />
+                                 </TableCell>
+                              );
+                           }
+                           if (col.id === "__actions") {
+                              return (
+                                 <TableCell key={col.id}>
+                                    <div className="flex items-center justify-end gap-2">
+                                       {isIgnored ? (
+                                          <Button
+                                             className="h-7 px-2 text-xs"
+                                             onClick={() => restoreRow(rowIdx)}
+                                             size="sm"
+                                             tooltip="Restaurar linha"
+                                             type="button"
+                                             variant="ghost"
+                                          >
+                                             Restaurar
+                                          </Button>
+                                       ) : (
+                                          <>
+                                             {isDuplicate && (
+                                                <TriangleAlert className="size-4 text-destructive shrink-0" />
+                                             )}
+                                             <Button
+                                                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                                onClick={() =>
+                                                   ignoreRow(rowIdx)
+                                                }
+                                                size="sm"
+                                                tooltip="Ignorar linha"
+                                                type="button"
+                                                variant="ghost"
+                                             >
+                                                Ignorar
+                                             </Button>
+                                             <Button
+                                                className="h-7 px-2 text-xs"
+                                                onClick={() =>
+                                                   handleSaveRow(
+                                                      rowIdx,
+                                                      mapping,
+                                                   )
+                                                }
+                                                size="sm"
+                                                tooltip="Salvar esta linha"
+                                                type="button"
+                                                variant="outline"
+                                             >
+                                                <Check className="size-3" />
+                                                Salvar
+                                             </Button>
+                                          </>
+                                       )}
+                                    </div>
+                                 </TableCell>
+                              );
+                           }
+                           const accKey =
+                              "accessorKey" in col.columnDef &&
+                              col.columnDef.accessorKey != null
+                                 ? String(col.columnDef.accessorKey)
+                                 : col.id;
+                           const fileHeader = mapping[accKey];
+                           const headerIdx = fileHeader
+                              ? rawHeaders.indexOf(fileHeader)
+                              : -1;
+                           const rawVal =
+                              headerIdx >= 0 ? (row[headerIdx] ?? "") : "";
+                           const importedRow = (
+                              hasImportRows ? importRows[rowIdx] : null
+                           ) as Record<string, unknown> | null;
+                           const val = importedRow
+                              ? importedRow[accKey]
+                              : rawVal;
+                           const meta = col.columnDef.meta;
+                           const isImportEditable =
+                              hasImportRows &&
+                              !isIgnored &&
+                              meta?.isEditable &&
+                              meta.cellComponent &&
+                              (!meta.isEditableForRow ||
+                                 meta.isEditableForRow(
+                                    importedRow as Parameters<
+                                       NonNullable<typeof meta.isEditableForRow>
+                                    >[0],
+                                 ));
+                           // oxlint-ignore no-explicit-any
+                           const fakeCtx: any = importedRow
+                              ? {
+                                   table,
+                                   row: {
+                                      id: `__import_${rowIdx}`,
+                                      original: importedRow,
+                                      getValue: (id: string) => importedRow[id],
+                                      renderValue: (id: string) =>
+                                         importedRow[id] ?? null,
+                                      depth: 0,
+                                      getIsSelected: () => isSelected,
+                                      index: rowIdx,
+                                   },
+                                   column: col,
+                                   cell: {
+                                      id: `__import_${rowIdx}_${col.id}`,
+                                      getValue: () => val,
+                                      renderValue: () => val ?? null,
+                                   },
+                                   getValue: () => val,
+                                   renderValue: () => val ?? null,
+                                }
+                              : null;
+                           return (
+                              <TableCell
+                                 key={col.id}
+                                 className={cn(
+                                    "truncate",
+                                    !hasImportRows &&
+                                       "text-sm text-foreground/80",
+                                    isImportEditable &&
+                                       !isIgnored &&
+                                       "hover:bg-muted/60 transition-colors",
+                                    isIgnored && "line-through",
+                                 )}
+                              >
+                                 {isImportEditable && fakeCtx ? (
+                                    <EditableCell
+                                       cellComponent={meta!.cellComponent!}
+                                       editMode={meta?.editMode}
+                                       label={meta?.label}
+                                       options={meta?.editOptions}
+                                       rowId={`__import_${rowIdx}`}
+                                       schema={meta?.editSchema}
+                                       value={val}
+                                       onSave={(_rowId, newValue) => {
+                                          store.setState((s) => {
+                                             if (!s.importState) return s;
+                                             const updatedRows = [
+                                                ...s.importState.importRows,
+                                             ];
+                                             updatedRows[rowIdx] = {
+                                                ...(updatedRows[
+                                                   rowIdx
+                                                ] as Record<string, unknown>),
+                                                [accKey]: newValue,
+                                             };
+                                             return {
+                                                ...s,
+                                                importState: {
+                                                   ...s.importState,
+                                                   importRows: updatedRows,
+                                                },
+                                             };
+                                          });
+                                          return Promise.resolve();
+                                       }}
+                                    >
+                                       {flexRender(col.columnDef.cell, fakeCtx)}
+                                    </EditableCell>
+                                 ) : fakeCtx ? (
+                                    flexRender(col.columnDef.cell, fakeCtx)
+                                 ) : (
+                                    String(rawVal) || (
+                                       <span className="text-muted-foreground/30">
+                                          —
+                                       </span>
+                                    )
+                                 )}
+                              </TableCell>
+                           );
+                        })}
+                     </TableRow>
+                  );
+               })
+            }
+         </form.Subscribe>
       </>
    );
 }

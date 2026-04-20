@@ -130,6 +130,19 @@ function TagsList() {
             if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
             return parseCsv(file);
          },
+         mapRow: (row, i) => ({
+            id: `__import_${i}`,
+            name: row.name ?? "",
+            description: row.description?.trim() || null,
+            keywords: row.keywords
+               ? row.keywords
+                    .split(",")
+                    .map((k) => k.trim())
+                    .filter(Boolean)
+               : [],
+            isArchived: false,
+            isDefault: false,
+         }),
          onImport: async (rows) => {
             console.log("Importar centros de custo:", rows);
          },
