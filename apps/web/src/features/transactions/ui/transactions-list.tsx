@@ -3,6 +3,9 @@ import {
    AnnouncementTag,
    AnnouncementTitle,
 } from "@/components/blocks/announcement";
+import { DataTableImportButton } from "@/components/data-table/data-table-import";
+import type { DataTableImportConfig } from "@/components/data-table/data-table-import";
+import { DataTableRoot } from "@/components/data-table/data-table-root";
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
@@ -41,6 +44,7 @@ import {
 } from "lucide-react";
 import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import type {
+   ColumnDef,
    ColumnFiltersState,
    OnChangeFn,
    SortingState,
@@ -60,7 +64,72 @@ import {
 } from "@/features/transactions/ui/transactions-columns";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
+import { useCsvFile } from "@/hooks/use-csv-file";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { orpc } from "@/integrations/orpc/client";
+
+type ImportRow = Record<string, never>;
+
+const IMPORT_COLUMNS: ColumnDef<ImportRow>[] = [
+   {
+      accessorKey: "date",
+      meta: { label: "Data" },
+   },
+   {
+      accessorKey: "name",
+      meta: { label: "Nome" },
+   },
+   {
+      accessorKey: "type",
+      meta: { label: "Tipo" },
+   },
+   {
+      accessorKey: "amount",
+      meta: { label: "Valor" },
+   },
+   {
+      accessorKey: "bankAccountName",
+      meta: { label: "Conta" },
+   },
+   {
+      accessorKey: "categoryName",
+      meta: { label: "Categoria" },
+   },
+   {
+      accessorKey: "description",
+      meta: { label: "Descrição" },
+   },
+];
+
+function TransactionImportButton() {
+   const { parse: parseCsv } = useCsvFile();
+   const { parse: parseXlsx } = useXlsxFile();
+
+   const importConfig = useMemo<DataTableImportConfig>(
+      () => ({
+         parseFile: async (file: File) => {
+            const ext = file.name.split(".").pop()?.toLowerCase();
+            if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
+            return parseCsv(file);
+         },
+         onImport: async (rows) => {
+            console.log("Importar lançamentos:", rows);
+         },
+      }),
+      [parseCsv, parseXlsx],
+   );
+
+   return (
+      <DataTableRoot
+         columns={IMPORT_COLUMNS}
+         data={[]}
+         getRowId={() => ""}
+         storageKey="montte:datatable:transactions-import"
+      >
+         <DataTableImportButton importConfig={importConfig} />
+      </DataTableRoot>
+   );
+}
 
 const [useTransactionsTableState] =
    createLocalStorageState<DataTableStoredState | null>(
@@ -332,6 +401,9 @@ export function TransactionsList({
    return (
       <>
          <SummaryBar summary={summary} />
+         <div className="flex items-center justify-end">
+            <TransactionImportButton />
+         </div>
          <DataTable
             columns={columns}
             columnFilters={columnFilters}
