@@ -603,7 +603,7 @@ function PreviewStep({
 
                      if (hasErrors && row.__errors?.length) {
                         return (
-                           <TooltipProvider key={`tooltip-${originalIndex}`}>
+                           <TooltipProvider key={virtualRow.key}>
                               <Tooltip>
                                  <TooltipTrigger asChild>
                                     {rowEl}
@@ -660,7 +660,7 @@ function PreviewStep({
                {renderBulkActions?.({
                   selectedRows: [...selectedIndices]
                      .map((i) => rows[i])
-                     .filter(Boolean) as ImportRow[],
+                     .filter((r): r is ImportRow => Boolean(r)),
                   selectedIndices,
                   rows,
                   onRowsChange,
