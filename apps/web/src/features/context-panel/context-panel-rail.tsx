@@ -90,7 +90,7 @@ export function ContextPanelRail() {
                   type="button"
                >
                   <tab.icon className="size-4 shrink-0" />
-                  <span className="text-[10px] font-medium [writing-mode:vertical-lr]">
+                  <span className="text-sm font-medium [writing-mode:vertical-lr]">
                      {tab.label}
                   </span>
                </button>
