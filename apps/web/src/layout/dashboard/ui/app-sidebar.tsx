@@ -23,8 +23,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
    return (
       <Sidebar className="px-0" collapsible="icon" variant="inset" {...props}>
          <SidebarHeader className="gap-1 pb-2">
-            <SidebarScopeSwitcher />
-            <Separator className="my-1" />
             <SidebarChatButton />
          </SidebarHeader>
 
@@ -42,6 +40,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             <SidebarAccountMenu />
             <Separator />
             <SidebarFooterContent />
+            <Separator />
+            <SidebarScopeSwitcher />
          </SidebarFooter>
       </Sidebar>
    );
