@@ -1,11 +1,9 @@
 import { Tabs, TabsList, TabsTrigger } from "@packages/ui/components/tabs";
 import { BotMessageSquare, LayoutGrid } from "lucide-react";
 
-type BrowseTab = "navegar" | "assistente";
-
 interface SidebarBrowseTabsProps {
-   value: BrowseTab;
-   onValueChange: (value: BrowseTab) => void;
+   value: "navegar" | "assistente";
+   onValueChange: (value: "navegar" | "assistente") => void;
 }
 
 export function SidebarBrowseTabs({

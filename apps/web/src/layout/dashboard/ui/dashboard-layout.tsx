@@ -36,6 +36,7 @@ function InlineContextPanel() {
             "hidden sm:block shrink-0 overflow-hidden transition-[width] duration-200 ease-linear",
             isOpen ? "w-[28rem]" : "w-0",
          )}
+         {...(!isOpen && { inert: true })}
       >
          <div className="w-[28rem] h-full p-2">
             <ContextPanelTabContent />

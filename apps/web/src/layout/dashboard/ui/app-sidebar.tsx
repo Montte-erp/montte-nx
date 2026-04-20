@@ -17,10 +17,9 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { Command, PanelLeftClose, Search, Settings } from "lucide-react";
 import type * as React from "react";
-import { useState } from "react";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { EarlyAccessSidebarBanner } from "./early-access-sidebar-banner";
 import { openKeyboardShortcuts } from "./keyboard-shortcuts-sheet";
@@ -31,18 +30,25 @@ import { useSidebarCommandDialog } from "./sidebar-command-dialog";
 import { SidebarDefaultItems, SidebarNav } from "./sidebar-nav";
 import { SidebarScopeSwitcher } from "./sidebar-scope-switcher";
 
-type BrowseTab = "navegar" | "assistente";
-
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
-   const [activeTab, setActiveTab] = useState<BrowseTab>("navegar");
+   const { sidebarTab } = useSearch({
+      from: "/_authenticated/$slug/$teamSlug/_dashboard",
+   });
+   const navigate = useNavigate();
    const { open: openSearch } = useSidebarCommandDialog();
+
+   const setActiveTab = (tab: "navegar" | "assistente") =>
+      navigate({
+         search: (prev) => ({ ...prev, sidebarTab: tab }),
+         replace: true,
+      });
 
    useHotkey("Mod+/", openKeyboardShortcuts);
 
    return (
       <Sidebar className="px-0" collapsible="icon" variant="inset" {...props}>
          <SidebarHeader className="gap-2 pb-2">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
                <div className="min-w-0 flex-1">
                   <SidebarScopeSwitcher />
                </div>
@@ -50,14 +56,14 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             </div>
             <div className="group-data-[collapsible=icon]:hidden">
                <SidebarBrowseTabs
-                  value={activeTab}
+                  value={sidebarTab}
                   onValueChange={setActiveTab}
                />
             </div>
          </SidebarHeader>
 
          <SidebarContent>
-            {activeTab === "navegar" ? (
+            {sidebarTab === "navegar" ? (
                <>
                   <SidebarDefaultItems />
                   <SidebarNav />
@@ -92,7 +98,7 @@ function SidebarHeaderActions({
             <TooltipTrigger asChild>
                <Button
                   aria-label="Buscar"
-                  className="size-7"
+                  className="size-8"
                   size="icon"
                   variant="outline"
                   onClick={onSearchClick}

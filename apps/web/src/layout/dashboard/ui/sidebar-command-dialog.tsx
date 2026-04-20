@@ -1,16 +1,15 @@
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { useNavigate, useParams } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { openCommandDialog } from "@/hooks/use-command-dialog";
 import { useEarlyAccess } from "@/hooks/use-early-access";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useSidebarVisibility } from "@/layout/dashboard/hooks/use-sidebar-store";
 import { navGroups } from "@/layout/dashboard/ui/sidebar-nav-items";
 
 export function useSidebarCommandDialog() {
    const navigate = useNavigate();
-   const { slug, teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
+   const { slug, teamSlug } = useDashboardSlugs();
    const { isEnrolled } = useEarlyAccess();
    const { isVisible } = useSidebarVisibility();
 

@@ -35,7 +35,7 @@ export function SidebarChatPanel() {
                <Plus />
             </Button>
          </div>
-         <Empty className="border py-8">
+         <Empty className="border py-4">
             <EmptyMedia>
                <MessageSquare className="text-muted-foreground/50" />
             </EmptyMedia>

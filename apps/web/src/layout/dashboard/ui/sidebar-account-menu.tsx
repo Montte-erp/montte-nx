@@ -144,7 +144,7 @@ function SidebarAccountMenuContent() {
                      </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <div className="flex items-center justify-between px-2 py-1.5">
+                  <div className="flex items-center justify-between px-2 py-2">
                      <span className="text-sm text-muted-foreground">Tema</span>
                      <ThemeSwitcher />
                   </div>

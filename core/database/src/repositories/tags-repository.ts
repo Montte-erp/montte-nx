@@ -377,24 +377,19 @@ export function findTagByKeywords(
 
 export function getTagStats(db: DatabaseInstance, teamId: string) {
    return fromPromise(
-      (async () => {
-         const rows = await db
-            .select({
-               isArchived: tags.isArchived,
-               keywordCount: sql<number>`coalesce(array_length(${tags.keywords}, 1), 0)`,
-            })
-            .from(tags)
-            .where(eq(tags.teamId, teamId));
-         let active = 0;
-         let archived = 0;
-         let totalKeywords = 0;
-         for (const row of rows) {
-            if (row.isArchived) archived++;
-            else active++;
-            totalKeywords += Number(row.keywordCount);
-         }
-         return { active, archived, totalKeywords };
-      })(),
+      db
+         .select({
+            active: sql<number>`count(*) filter (where not ${tags.isArchived})`,
+            archived: sql<number>`count(*) filter (where ${tags.isArchived})`,
+            totalKeywords: sql<number>`coalesce(sum(array_length(${tags.keywords}, 1)), 0)`,
+         })
+         .from(tags)
+         .where(eq(tags.teamId, teamId))
+         .then(([row]) => ({
+            active: Number(row?.active ?? 0),
+            archived: Number(row?.archived ?? 0),
+            totalKeywords: Number(row?.totalKeywords ?? 0),
+         })),
       (e) =>
          AppError.database(
             "Falha ao buscar estatísticas de centros de custo.",
