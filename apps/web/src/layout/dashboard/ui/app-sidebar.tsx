@@ -1,4 +1,5 @@
 import { Button } from "@packages/ui/components/button";
+import { Kbd, KbdGroup } from "@packages/ui/components/kbd";
 import { Separator } from "@packages/ui/components/separator";
 import {
    Sidebar,
@@ -10,16 +11,23 @@ import {
    SidebarMenuItem,
    useSidebar,
 } from "@packages/ui/components/sidebar";
+import {
+   Tooltip,
+   TooltipContent,
+   TooltipTrigger,
+} from "@packages/ui/components/tooltip";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { Link } from "@tanstack/react-router";
-import { PanelLeftClose, Search, Settings } from "lucide-react";
+import { Command, PanelLeftClose, Search, Settings } from "lucide-react";
 import type * as React from "react";
 import { useState } from "react";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { EarlyAccessSidebarBanner } from "./early-access-sidebar-banner";
+import { openKeyboardShortcuts } from "./keyboard-shortcuts-sheet";
 import { SidebarAccountMenu } from "./sidebar-account-menu";
 import { SidebarBrowseTabs } from "./sidebar-browse-tabs";
 import { SidebarChatPanel } from "./sidebar-chat-panel";
-import { SidebarCommandDialog } from "./sidebar-command-dialog";
+import { useSidebarCommandDialog } from "./sidebar-command-dialog";
 import { SidebarDefaultItems, SidebarNav } from "./sidebar-nav";
 import { SidebarScopeSwitcher } from "./sidebar-scope-switcher";
 
@@ -27,22 +35,18 @@ type BrowseTab = "navegar" | "assistente";
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
    const [activeTab, setActiveTab] = useState<BrowseTab>("navegar");
-   const [commandOpen, setCommandOpen] = useState(false);
+   const { open: openSearch } = useSidebarCommandDialog();
+
+   useHotkey("Mod+/", openKeyboardShortcuts);
 
    return (
       <Sidebar className="px-0" collapsible="icon" variant="inset" {...props}>
-         <SidebarCommandDialog
-            open={commandOpen}
-            onOpenChange={setCommandOpen}
-         />
          <SidebarHeader className="gap-2 pb-2">
             <div className="flex items-center gap-1">
                <div className="min-w-0 flex-1">
                   <SidebarScopeSwitcher />
                </div>
-               <SidebarHeaderActions
-                  onSearchClick={() => setCommandOpen(true)}
-               />
+               <SidebarHeaderActions onSearchClick={openSearch} />
             </div>
             <div className="group-data-[collapsible=icon]:hidden">
                <SidebarBrowseTabs
@@ -78,16 +82,33 @@ function SidebarHeaderActions({
 }: {
    onSearchClick: () => void;
 }) {
+   const isMac =
+      typeof navigator !== "undefined" &&
+      /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+
    return (
       <div className="flex shrink-0 items-center group-data-[collapsible=icon]:hidden">
-         <Button
-            className="size-7"
-            size="icon"
-            variant="outline"
-            onClick={onSearchClick}
-         >
-            <Search className="size-3.5" />
-         </Button>
+         <Tooltip>
+            <TooltipTrigger asChild>
+               <Button
+                  className="size-7"
+                  size="icon"
+                  variant="outline"
+                  onClick={onSearchClick}
+               >
+                  <Search className="size-3.5" />
+               </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+               <span className="flex items-center gap-1.5">
+                  Busca
+                  <KbdGroup>
+                     <Kbd>{isMac ? <Command /> : "Ctrl"}</Kbd>
+                     <Kbd>K</Kbd>
+                  </KbdGroup>
+               </span>
+            </TooltipContent>
+         </Tooltip>
       </div>
    );
 }

@@ -1,27 +1,12 @@
-import {
-   CommandDialog,
-   CommandEmpty,
-   CommandGroup,
-   CommandInput,
-   CommandItem,
-   CommandList,
-   CommandSeparator,
-} from "@packages/ui/components/command";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useCallback } from "react";
+import { openCommandDialog } from "@/hooks/use-command-dialog";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 import { useSidebarVisibility } from "@/layout/dashboard/hooks/use-sidebar-store";
 import { navGroups } from "@/layout/dashboard/ui/sidebar-nav-items";
 
-interface SidebarCommandDialogProps {
-   open: boolean;
-   onOpenChange: (open: boolean) => void;
-}
-
-export function SidebarCommandDialog({
-   open,
-   onOpenChange,
-}: SidebarCommandDialogProps) {
+export function useSidebarCommandDialog() {
    const navigate = useNavigate();
    const { slug, teamSlug } = useParams({
       from: "/_authenticated/$slug/$teamSlug/_dashboard",
@@ -29,68 +14,35 @@ export function SidebarCommandDialog({
    const { isEnrolled } = useEarlyAccess();
    const { isVisible } = useSidebarVisibility();
 
-   useEffect(() => {
-      const handler = (e: KeyboardEvent) => {
-         if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-            e.preventDefault();
-            onOpenChange(!open);
-         }
-      };
-      document.addEventListener("keydown", handler);
-      return () => document.removeEventListener("keydown", handler);
-   }, [open, onOpenChange]);
+   const open = useCallback(() => {
+      const groups = navGroups
+         .map((group) => ({
+            id: group.id,
+            label: group.label,
+            items: group.items
+               .filter((item) => {
+                  if (item.earlyAccessFlag && !isEnrolled(item.earlyAccessFlag))
+                     return false;
+                  return isVisible(item.id);
+               })
+               .map((item) => ({
+                  id: item.id,
+                  label: item.label,
+                  icon: item.icon,
+                  iconColor: item.iconColor,
+                  onSelect: () =>
+                     navigate({
+                        to: item.route,
+                        params: { slug, teamSlug: teamSlug ?? "" },
+                     }),
+               })),
+         }))
+         .filter((g) => g.items.length > 0);
 
-   const handleSelect = (route: string) => {
-      onOpenChange(false);
-      navigate({ to: route, params: { slug, teamSlug: teamSlug ?? "" } });
-   };
+      openCommandDialog({ groups });
+   }, [isEnrolled, isVisible, navigate, slug, teamSlug]);
 
-   const visibleGroups = navGroups
-      .map((group) => ({
-         ...group,
-         items: group.items.filter((item) => {
-            if (item.earlyAccessFlag && !isEnrolled(item.earlyAccessFlag))
-               return false;
-            return isVisible(item.id);
-         }),
-      }))
-      .filter((group) => group.items.length > 0);
+   useHotkey("Mod+K", open);
 
-   return (
-      <CommandDialog
-         className="top-[8vh] translate-y-0 max-h-[75vh]"
-         description="Navegue para qualquer página"
-         open={open}
-         showCloseButton={false}
-         title="Buscar"
-         onOpenChange={onOpenChange}
-      >
-         <CommandInput placeholder="Buscar páginas..." />
-         <CommandList className="max-h-[calc(75vh-3rem)]">
-            <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
-            {visibleGroups.map((group, index) => (
-               <>
-                  {index > 0 && <CommandSeparator key={`sep-${group.id}`} />}
-                  <CommandGroup
-                     heading={group.label ?? "Projeto"}
-                     key={group.id}
-                  >
-                     {group.items.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                           <CommandItem
-                              key={item.id}
-                              onSelect={() => handleSelect(item.route)}
-                           >
-                              <Icon className={item.iconColor} />
-                              {item.label}
-                           </CommandItem>
-                        );
-                     })}
-                  </CommandGroup>
-               </>
-            ))}
-         </CommandList>
-      </CommandDialog>
-   );
+   return { open };
 }

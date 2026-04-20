@@ -13,9 +13,10 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import { shallow, useStore } from "@tanstack/react-store";
-import { Ellipsis, ExternalLink, Sparkles, X } from "lucide-react";
+import { Ellipsis, ExternalLink, Keyboard, Sparkles, X } from "lucide-react";
 import { POSTHOG_SURVEYS } from "@core/posthog/config";
 import { useSurveyModal } from "@/hooks/use-survey-modal";
+import { openKeyboardShortcuts } from "@/layout/dashboard/ui/keyboard-shortcuts-sheet";
 import { allTabMetasStore, contextPanelStore } from "./context-panel-store";
 import {
    closeContextPanel,
@@ -39,6 +40,13 @@ function RailMenuButton() {
             <DropdownMenuContent align="end" side="left">
                <DropdownMenuLabel>Ajuda</DropdownMenuLabel>
                <DropdownMenuSeparator />
+               <DropdownMenuItem
+                  className="cursor-pointer gap-2"
+                  onClick={openKeyboardShortcuts}
+               >
+                  <Keyboard className="size-4" />
+                  Atalhos de teclado
+               </DropdownMenuItem>
                <DropdownMenuItem
                   className="cursor-pointer gap-2"
                   onClick={() =>
