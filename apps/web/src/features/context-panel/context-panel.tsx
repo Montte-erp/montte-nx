@@ -19,7 +19,6 @@ import {
    SidebarHeader,
    SidebarManager,
 } from "@packages/ui/components/sidebar";
-import { cn } from "@packages/ui/lib/utils";
 import { useStore, shallow } from "@tanstack/react-store";
 import { Check, ChevronDown, Info, X } from "lucide-react";
 import type React from "react";
@@ -27,15 +26,10 @@ import { ContextPanelAction } from "./context-panel-info";
 import {
    type ContextPanelTab,
    contextPanelStore,
-   allTabMetasStore,
    activeTabMetaStore,
    type PageViewSwitchConfig,
 } from "./context-panel-store";
-import {
-   closeContextPanel,
-   openContextPanel,
-   setActiveTab,
-} from "./use-context-panel";
+import { closeContextPanel, openContextPanel } from "./use-context-panel";
 
 function ViewSwitchPanelAction({ config }: { config: PageViewSwitchConfig }) {
    const active =
@@ -137,7 +131,6 @@ const INFO_TAB: ContextPanelTab = {
 };
 
 function ContextPanelInner() {
-   const allTabMetas = useStore(allTabMetasStore, (s) => s);
    const activeTabMeta = useStore(activeTabMetaStore, (s) => s);
 
    const dynamicTabs = useStore(contextPanelStore, (s) => s.dynamicTabs);
@@ -154,30 +147,21 @@ function ContextPanelInner() {
          variant="inset"
       >
          <SidebarHeader className="bg-background rounded-t-xl">
-            <div className="flex-row flex items-center gap-2">
-               {allTabMetas.map((tab) => (
-                  <Button
-                     className={cn(
-                        "",
-                        activeTabMeta?.id === tab.id &&
-                           "bg-accent text-accent-foreground",
-                     )}
-                     key={tab.id}
-                     onClick={() => setActiveTab(tab.id)}
-                     tooltip={tab.label}
-                     tooltipSide="bottom"
-                     type="button"
-                     variant="outline"
-                  >
-                     <tab.icon className="" />
-                  </Button>
-               ))}
-               <div className="flex-1" />
+            <div className="flex items-center gap-2">
+               {activeTabMeta && (
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                     <activeTabMeta.icon className="size-4 shrink-0 text-muted-foreground" />
+                     <span className="text-sm font-medium truncate">
+                        {activeTabMeta.label}
+                     </span>
+                  </div>
+               )}
                <Button
+                  className="shrink-0 ml-auto"
                   onClick={closeContextPanel}
                   tooltip="Fechar painel"
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                >
                   <X className="" />
                </Button>
