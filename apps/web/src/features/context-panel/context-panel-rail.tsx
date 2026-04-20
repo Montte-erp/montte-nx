@@ -1,5 +1,4 @@
 import { shallow, useStore } from "@tanstack/react-store";
-import { cn } from "@packages/ui/lib/utils";
 import { allTabMetasStore, contextPanelStore } from "./context-panel-store";
 import {
    closeContextPanel,
