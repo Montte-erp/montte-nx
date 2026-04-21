@@ -1411,7 +1411,7 @@ export function DataTableContent<TData>({
             style={isVirtualized ? { maxHeight, overflowY: "auto" } : undefined}
          >
             <Table className="border-separate border-spacing-0">
-               <TableHeader>
+               <TableHeader className="sticky top-0 z-10 [&_th]:bg-muted/50">
                   {table.getHeaderGroups().map((headerGroup) => (
                      <TableRow
                         className="bg-muted/50 hover:bg-muted/50"

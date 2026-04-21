@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { AppError, validateInput } from "@core/logging/errors";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { fromPromise, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
@@ -589,6 +589,99 @@ export function listCategories(
          e instanceof AppError
             ? e
             : AppError.database("Failed to list categories", { cause: e }),
+   );
+}
+
+export function listCategoriesPaginated(
+   db: DatabaseInstance,
+   teamId: string,
+   opts: {
+      type?: "income" | "expense";
+      includeArchived?: boolean;
+      search?: string;
+      page: number;
+      pageSize: number;
+   },
+) {
+   return fromPromise(
+      (async () => {
+         const base: SQL[] = [eq(categories.teamId, teamId)];
+         if (opts.type) base.push(eq(categories.type, opts.type));
+         if (!opts.includeArchived) base.push(eq(categories.isArchived, false));
+
+         const trimmedSearch = opts.search?.trim();
+         const searchPattern = trimmedSearch
+            ? `%${trimmedSearch.replace(/[\\%_]/g, "\\$&")}%`
+            : null;
+
+         let parentIds: string[];
+         if (searchPattern) {
+            const matchedParents = await db
+               .selectDistinct({
+                  parentId: sql<string>`COALESCE(${categories.parentId}, ${categories.id})`,
+               })
+               .from(categories)
+               .where(and(...base, ilike(categories.name, searchPattern)));
+            parentIds = matchedParents.map((r) => r.parentId);
+         } else {
+            parentIds = [];
+         }
+
+         const parentConditions: SQL[] = [
+            eq(categories.teamId, teamId),
+            isNull(categories.parentId),
+         ];
+         if (opts.type) parentConditions.push(eq(categories.type, opts.type));
+         if (!opts.includeArchived)
+            parentConditions.push(eq(categories.isArchived, false));
+         if (searchPattern) {
+            if (parentIds.length === 0) {
+               return { data: [] as Category[], total: 0 };
+            }
+            parentConditions.push(inArray(categories.id, parentIds));
+         }
+
+         const countRows = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(categories)
+            .where(and(...parentConditions));
+         const count = countRows[0]?.count ?? 0;
+
+         const offset = Math.max(0, (opts.page - 1) * opts.pageSize);
+         const parents = await db
+            .select()
+            .from(categories)
+            .where(and(...parentConditions))
+            .orderBy(asc(categories.name))
+            .limit(opts.pageSize)
+            .offset(offset);
+
+         if (parents.length === 0) {
+            return { data: [] as Category[], total: count };
+         }
+
+         const subConditions: SQL[] = [
+            eq(categories.teamId, teamId),
+            inArray(
+               categories.parentId,
+               parents.map((p) => p.id),
+            ),
+         ];
+         if (!opts.includeArchived)
+            subConditions.push(eq(categories.isArchived, false));
+
+         const subs = await db
+            .select()
+            .from(categories)
+            .where(and(...subConditions))
+            .orderBy(asc(categories.name));
+
+         return { data: [...parents, ...subs], total: count };
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Falha ao listar categorias.", { cause: e }),
    );
 }
 
