@@ -76,6 +76,23 @@ declare module "@tanstack/react-table" {
       exportable?: boolean;
       exportIgnore?: boolean;
       importIgnore?: boolean;
+      isEditable?: boolean;
+      cellComponent?:
+         | "text"
+         | "textarea"
+         | "select"
+         | "tags"
+         | "money"
+         | "date"
+         | "combobox";
+      editMode?: "inline" | "popover";
+      editOptions?: Array<{ label: string; value: string }>;
+      // oxlint-ignore no-explicit-any
+      editSchema?: any;
+      // oxlint-ignore no-explicit-any
+      isEditableForRow?: (row: TData) => boolean;
+      onSave?: (rowId: string, value: unknown) => Promise<void>;
+      onCreateOption?: (name: string) => Promise<string>;
    }
 }
 

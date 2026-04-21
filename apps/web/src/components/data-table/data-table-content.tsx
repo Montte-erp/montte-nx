@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import { DatePicker } from "@packages/ui/components/date-picker";
+import { MoneyInput } from "@packages/ui/components/money-input";
 import { MultiSelect } from "@packages/ui/components/multi-select";
 import {
    Popover,
@@ -41,6 +43,7 @@ import {
 import { Input } from "@packages/ui/components/input";
 import { Textarea } from "@packages/ui/components/textarea";
 import { cn } from "@packages/ui/lib/utils";
+import dayjs from "dayjs";
 import { fromPromise } from "neverthrow";
 import {
    createContext,
@@ -143,8 +146,16 @@ function CellInput({
    inputRef,
    onCommit,
    onCancel,
+   onCreateOption,
 }: {
-   cellComponent: "text" | "textarea" | "select" | "tags";
+   cellComponent:
+      | "text"
+      | "textarea"
+      | "select"
+      | "tags"
+      | "money"
+      | "date"
+      | "combobox";
    field: CellFieldApi;
    options?: Array<{ label: string; value: string }>;
    label?: string;
@@ -153,6 +164,7 @@ function CellInput({
    inputRef?: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
    onCommit?: () => void;
    onCancel?: () => void;
+   onCreateOption?: (name: string) => Promise<string>;
 }) {
    const stringValue =
       typeof field.state.value === "string" ? field.state.value : "";
@@ -234,7 +246,13 @@ function CellInput({
             }}
          >
             <SelectTrigger aria-label={label} className="h-7 text-sm">
-               <SelectValue />
+               <SelectValue
+                  placeholder={
+                     label
+                        ? `Selecionar ${label.toLowerCase()}...`
+                        : "Selecionar..."
+                  }
+               />
             </SelectTrigger>
             <SelectContent>
                <SelectGroup>
@@ -262,6 +280,67 @@ function CellInput({
       );
    }
 
+   if (cellComponent === "money") {
+      return (
+         <MoneyInput
+            autoFocus={autoFocus}
+            valueInCents={false}
+            value={stringValue ? Number(stringValue) : undefined}
+            onChange={(v) =>
+               field.handleChange(v !== undefined ? String(v) : "")
+            }
+            onBlur={() => {
+               field.handleBlur();
+               if (autoCommitOnBlur) onCommit?.();
+            }}
+         />
+      );
+   }
+
+   if (cellComponent === "date") {
+      const parsed = stringValue ? dayjs(stringValue).toDate() : undefined;
+      return (
+         <DatePicker
+            className="h-7 w-full text-sm"
+            date={parsed}
+            placeholder="Selecionar data..."
+            onSelect={(d) => {
+               const formatted = d
+                  ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+                  : "";
+               field.handleChange(formatted);
+               if (d) onCommit?.();
+            }}
+         />
+      );
+   }
+
+   if (cellComponent === "combobox") {
+      return (
+         <Combobox
+            emptyMessage="Nenhuma opção encontrada."
+            options={options ?? []}
+            placeholder="Selecionar..."
+            searchPlaceholder="Buscar..."
+            value={stringValue}
+            onValueChange={(v) => {
+               field.handleChange(v);
+               onCommit?.();
+            }}
+            onCreate={
+               onCreateOption
+                  ? (name) => {
+                       onCreateOption(name).then((id) => {
+                          field.handleChange(id);
+                          onCommit?.();
+                       });
+                    }
+                  : undefined
+            }
+         />
+      );
+   }
+
    return null;
 }
 
@@ -273,16 +352,25 @@ function EditableCell({
    options,
    schema,
    onSave,
+   onCreateOption,
    rowId,
    children,
 }: {
    value: unknown;
-   cellComponent: "text" | "textarea" | "select" | "tags";
+   cellComponent:
+      | "text"
+      | "textarea"
+      | "select"
+      | "tags"
+      | "money"
+      | "date"
+      | "combobox";
    editMode?: "inline" | "popover";
    label?: string;
    options?: Array<{ label: string; value: string }>;
    schema?: StandardSchemaV1<unknown>;
    onSave?: (rowId: string, value: unknown) => Promise<void>;
+   onCreateOption?: (name: string) => Promise<string>;
    rowId: string;
    children?: React.ReactNode;
 }) {
@@ -389,6 +477,7 @@ function EditableCell({
                      options={options}
                      onCancel={cancel}
                      onCommit={commit}
+                     onCreateOption={onCreateOption}
                   />
                )}
             </form.Field>
@@ -455,6 +544,7 @@ function EditableCell({
                            options={options}
                            onCancel={cancel}
                            onCommit={commit}
+                           onCreateOption={onCreateOption}
                         />
                         <FieldError
                            errors={field.state.meta.errors}
@@ -523,6 +613,7 @@ function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
                         schema={meta?.editSchema}
                         value={cell.getValue()}
                         onSave={meta?.onSave}
+                        onCreateOption={meta?.onCreateOption}
                      >
                         {flexRender(
                            cell.column.columnDef.cell,
@@ -1299,6 +1390,8 @@ function DraftRow() {
                               cellComponent={cellComp}
                               field={field as unknown as CellFieldApi}
                               label={meta?.label}
+                              options={meta?.editOptions}
+                              onCreateOption={meta?.onCreateOption}
                            />
                            <FieldError
                               errors={field.state.meta.errors}
@@ -1374,8 +1467,13 @@ export function DataTableContent<TData>({
    maxHeight,
    className,
 }: DataTableContentProps) {
-   const { table, groupBy, renderGroupHeader, hasEmptyState } =
-      useDataTable<TData>();
+   const {
+      table,
+      groupBy,
+      renderGroupHeader,
+      hasEmptyState,
+      isDraftRowActive,
+   } = useDataTable<TData>();
    const importState = useDataTableStore((s) => s.importState);
    const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
 
@@ -1391,7 +1489,12 @@ export function DataTableContent<TData>({
       overscan: 5,
    });
 
-   if (table.getCoreRowModel().rows.length === 0 && hasEmptyState) return null;
+   if (
+      table.getCoreRowModel().rows.length === 0 &&
+      hasEmptyState &&
+      !isDraftRowActive
+   )
+      return null;
 
    const columnCount = table.getVisibleLeafColumns().length;
    const virtualItems = isVirtualized ? virtualizer.getVirtualItems() : null;

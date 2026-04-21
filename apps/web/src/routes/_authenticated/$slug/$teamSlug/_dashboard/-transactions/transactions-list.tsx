@@ -1,26 +1,17 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   DropdownMenu,
-   DropdownMenuContent,
-   DropdownMenuItem,
-   DropdownMenuLabel,
-   DropdownMenuSeparator,
-   DropdownMenuTrigger,
-} from "@packages/ui/components/dropdown-menu";
-import {
    Empty,
    EmptyDescription,
    EmptyHeader,
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import {
+   useMutation,
+   useQueryClient,
+   useSuspenseQuery,
+} from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
-import type {
-   ColumnFiltersState,
-   OnChangeFn,
-   SortingState,
-} from "@tanstack/react-table";
 import dayjs from "dayjs";
 import {
    AlertTriangle,
@@ -29,14 +20,12 @@ import {
    CheckCircle2,
    FolderOpen,
    Landmark,
-   MoreHorizontal,
-   Pencil,
    Plus,
    RotateCcw,
    Trash2,
    Undo2,
 } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
    DataTableBulkActions,
@@ -44,25 +33,26 @@ import {
 } from "@/components/data-table/data-table-bulk-actions";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
+import { DataTableImportButton } from "@/components/data-table/data-table-import";
+import type { DataTableImportConfig } from "@/components/data-table/data-table-import";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import {
    DataTableExternalFilter,
    DataTableRoot,
 } from "@/components/data-table/data-table-root";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import { useTransactionPrerequisites } from "@/features/transactions/hooks/use-transaction-prerequisites";
-import { BulkCategorizeForm } from "@/features/transactions/ui/bulk-categorize-form";
-import { BulkMoveAccountForm } from "@/features/transactions/ui/bulk-move-account-form";
-import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
-import { TransactionPrerequisitesBlocker } from "@/features/transactions/ui/transaction-prerequisites-blocker";
-import {
-   buildTransactionColumns,
-   type TransactionRow,
-} from "@/features/transactions/ui/transactions-columns";
+import { useCsvFile } from "@/hooks/use-csv-file";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
-import { MarkPaidCredenza } from "@/routes/_authenticated/$slug/$teamSlug/_dashboard/-transactions/mark-paid-credenza";
+import { BulkCategorizeForm } from "./bulk-categorize-form";
+import { BulkMoveAccountForm } from "./bulk-move-account-form";
+import { MarkPaidCredenza } from "./mark-paid-credenza";
+import {
+   buildTransactionColumns,
+   type TransactionRow,
+} from "./transactions-columns";
 
 const routeApi = getRouteApi(
    "/_authenticated/$slug/$teamSlug/_dashboard/transactions",
@@ -70,46 +60,15 @@ const routeApi = getRouteApi(
 
 export function TransactionsList() {
    const navigate = routeApi.useNavigate();
-   const { slug, teamSlug } = routeApi.useParams();
-   const {
-      sorting,
-      columnFilters,
-      page,
-      pageSize,
-      view,
-      overdueOnly,
-      status,
-      search,
-   } = routeApi.useSearch();
+   const { page, pageSize, view, overdueOnly, status, search } =
+      routeApi.useSearch();
 
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
-   const { hasBankAccounts } = useTransactionPrerequisites();
-
-   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
-      (updater) => {
-         const next =
-            typeof updater === "function" ? updater(sorting) : updater;
-         navigate({
-            search: (prev) => ({ ...prev, sorting: next }),
-            replace: true,
-         });
-      },
-      [sorting, navigate],
-   );
-
-   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
-      useCallback(
-         (updater) => {
-            const next =
-               typeof updater === "function" ? updater(columnFilters) : updater;
-            navigate({
-               search: (prev) => ({ ...prev, columnFilters: next }),
-               replace: true,
-            });
-         },
-         [columnFilters, navigate],
-      );
+   const queryClient = useQueryClient();
+   const [isDraftActive, setIsDraftActive] = useState(false);
+   const { parse: parseCsv } = useCsvFile();
+   const { parse: parseXlsx } = useXlsxFile();
 
    const handleSearch = useCallback(
       (value: string) => {
@@ -168,9 +127,38 @@ export function TransactionsList() {
       orpc.bankAccounts.getAll.queryOptions({}),
    );
 
+   const { data: contacts } = useSuspenseQuery(
+      orpc.contacts.getAll.queryOptions({}),
+   );
+
+   const { data: categoriesResult } = useSuspenseQuery(
+      orpc.categories.getAll.queryOptions({}),
+   );
+
+   const { data: creditCardsResult } = useSuspenseQuery(
+      orpc.creditCards.getAll.queryOptions({ input: { pageSize: 100 } }),
+   );
+
    const transactionData = result.data;
    const total = result.total;
    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+   const createMutation = useMutation(
+      orpc.transactions.create.mutationOptions({
+         onSuccess: () => {
+            toast.success("Lançamento criado com sucesso.");
+            setIsDraftActive(false);
+         },
+         onError: (error) =>
+            toast.error(error.message || "Erro ao criar lançamento."),
+      }),
+   );
+
+   const importMutation = useMutation(
+      orpc.transactions.create.mutationOptions({
+         meta: { skipGlobalInvalidation: true },
+      }),
+   );
 
    const deleteMutation = useMutation(
       orpc.transactions.remove.mutationOptions({
@@ -219,44 +207,114 @@ export function TransactionsList() {
       }),
    );
 
-   const handleEdit = useCallback(
-      (transaction: TransactionRow) => {
-         openCredenza({
-            renderChildren: () => (
-               <TransactionCredenza
-                  mode="edit"
-                  onSuccess={closeCredenza}
-                  transaction={transaction}
-               />
-            ),
-         });
+   const createBankAccountMutation = useMutation(
+      orpc.bankAccounts.create.mutationOptions({
+         onError: (error) =>
+            toast.error(error.message || "Erro ao criar conta bancária."),
+      }),
+   );
+
+   const createContactMutation = useMutation(
+      orpc.contacts.create.mutationOptions({
+         onError: (error) =>
+            toast.error(error.message || "Erro ao criar contato."),
+      }),
+   );
+
+   const createCategoryMutation = useMutation(
+      orpc.categories.create.mutationOptions({
+         onError: (error) =>
+            toast.error(error.message || "Erro ao criar categoria."),
+      }),
+   );
+
+   const handleUpdate = useCallback(
+      async (id: string, patch: Record<string, unknown>) => {
+         await updateMutation.mutateAsync({ id, ...patch });
       },
-      [openCredenza, closeCredenza],
+      [updateMutation],
+   );
+
+   const handleCreateBankAccount = useCallback(
+      async (name: string): Promise<string> => {
+         const result = await createBankAccountMutation.mutateAsync({
+            name,
+            type: "checking",
+         });
+         return result.id;
+      },
+      [createBankAccountMutation],
+   );
+
+   const handleCreateContact = useCallback(
+      async (name: string): Promise<string> => {
+         const result = await createContactMutation.mutateAsync({
+            name,
+            type: "ambos",
+         });
+         return result.id;
+      },
+      [createContactMutation],
+   );
+
+   const handleCreateCategory = useCallback(
+      async (name: string): Promise<string> => {
+         const result = await createCategoryMutation.mutateAsync({
+            name,
+            type: "expense",
+         });
+         return result.id;
+      },
+      [createCategoryMutation],
    );
 
    const handleCreate = useCallback(() => {
-      if (!hasBankAccounts) {
-         openCredenza({
-            renderChildren: () => (
-               <TransactionPrerequisitesBlocker
-                  onAction={() => {
-                     closeCredenza();
-                     navigate({
-                        to: "/$slug/$teamSlug/bank-accounts",
-                        params: { slug, teamSlug },
-                     });
-                  }}
-               />
-            ),
+      setIsDraftActive(true);
+   }, []);
+
+   const handleDiscardDraft = useCallback(() => {
+      setIsDraftActive(false);
+   }, []);
+
+   const handleAddTransaction = useCallback(
+      async (data: Record<string, string | string[]>) => {
+         const type = String(data.type || "expense") as
+            | "income"
+            | "expense"
+            | "transfer";
+         const name = String(data.name ?? "").trim() || null;
+         const amount = String(data.amount || "");
+         const date =
+            String(data.date || "").trim() || dayjs().format("YYYY-MM-DD");
+         const bankAccountId = String(data.bankAccountName || "") || null;
+         const contactId = String(data.contactName || "") || null;
+         const categoryId = String(data.categoryName || "") || null;
+         const creditCardId = String(data.creditCardName || "") || null;
+         const dueDate = String(data.dueDate || "").trim() || null;
+         const txStatus = String(data.status || "pending") as
+            | "pending"
+            | "paid"
+            | "cancelled";
+
+         await createMutation.mutateAsync({
+            type,
+            name,
+            amount,
+            date,
+            bankAccountId,
+            destinationBankAccountId: null,
+            categoryId,
+            attachments: [],
+            description: null,
+            contactId,
+            creditCardId,
+            paymentMethod: null,
+            status: txStatus,
+            dueDate,
          });
-         return;
-      }
-      openCredenza({
-         renderChildren: () => (
-            <TransactionCredenza mode="create" onSuccess={closeCredenza} />
-         ),
-      });
-   }, [hasBankAccounts, openCredenza, closeCredenza, navigate, slug, teamSlug]);
+      },
+      [createMutation],
+   );
 
    const handleDelete = useCallback(
       (transaction: TransactionRow) => {
@@ -316,86 +374,214 @@ export function TransactionsList() {
       [reactivateMutation],
    );
 
-   const columns = useMemo(() => buildTransactionColumns(), []);
+   const importConfig: DataTableImportConfig = useMemo(
+      () => ({
+         accept: {
+            "text/csv": [".csv"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+               [".xlsx"],
+            "application/vnd.ms-excel": [".xls"],
+         },
+         parseFile: async (file: File) => {
+            const ext = file.name.split(".").pop()?.toLowerCase();
+            if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
+            return parseCsv(file);
+         },
+         mapRow: (row, i) => {
+            const rawDate = String(row.date ?? "").trim();
+            const rawAmount = String(row.amount ?? "").trim();
+            const rawType = String(row.type ?? "").trim();
+
+            const dateMatch = rawDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            const date = dateMatch
+               ? `${dateMatch[3]}-${dateMatch[2].padStart(2, "0")}-${dateMatch[1].padStart(2, "0")}`
+               : rawDate;
+
+            const amountNum = parseFloat(
+               rawAmount.replace(/[R$\s.]/g, "").replace(",", "."),
+            );
+            const amount = Number.isNaN(amountNum)
+               ? ""
+               : Math.abs(amountNum).toString();
+
+            const lower = rawType.toLowerCase();
+            let type: "income" | "expense" = "expense";
+            if (
+               lower.includes("créd") ||
+               lower.includes("cred") ||
+               lower === "c" ||
+               lower.includes("entrada") ||
+               lower.includes("receita")
+            ) {
+               type = "income";
+            } else if (
+               !(
+                  lower.includes("déb") ||
+                  lower.includes("deb") ||
+                  lower === "d" ||
+                  lower.includes("saíd") ||
+                  lower.includes("said") ||
+                  lower.includes("despesa")
+               )
+            ) {
+               type = amountNum < 0 ? "expense" : "income";
+            }
+
+            return {
+               id: `__import_${i}`,
+               date,
+               amount,
+               type,
+               name: String(row.name ?? "").trim() || null,
+               status: "pending",
+               dueDate: null,
+               bankAccountName: null,
+               bankAccountId: null,
+               contactName: null,
+               categoryName: null,
+               creditCardName: null,
+               suggestedCategoryId: null,
+               suggestedCategoryName: null,
+            };
+         },
+         onImport: async (rows) => {
+            const results = await Promise.allSettled(
+               rows.map((r) => {
+                  const date = String(r.date ?? "");
+                  const amount = String(r.amount ?? "");
+                  if (!date || !amount)
+                     return Promise.reject(new Error("skip"));
+                  return importMutation.mutateAsync({
+                     type: (r.type as "income" | "expense") ?? "expense",
+                     amount,
+                     date,
+                     name: r.name ? String(r.name) : null,
+                     bankAccountId: null,
+                     destinationBankAccountId: null,
+                     categoryId: null,
+                     attachments: [],
+                     description: null,
+                     contactId: null,
+                     creditCardId: null,
+                     paymentMethod: null,
+                     status: "pending",
+                     dueDate: null,
+                     autoCategorize: true,
+                  });
+               }),
+            );
+            const ok = results.filter((r) => r.status === "fulfilled").length;
+            const failed = results.filter(
+               (r) =>
+                  r.status === "rejected" &&
+                  (r.reason as Error)?.message !== "skip",
+            ).length;
+            if (ok > 0) toast.success(`${ok} lançamento(s) importado(s).`);
+            if (failed > 0) toast.error(`${failed} lançamento(s) com erro.`);
+            await queryClient.invalidateQueries({
+               queryKey: orpc.transactions.getAll.queryKey(),
+            });
+         },
+      }),
+      [parseCsv, parseXlsx, importMutation, queryClient],
+   );
+
+   const columns = useMemo(
+      () =>
+         buildTransactionColumns({
+            bankAccounts,
+            contacts,
+            categories: categoriesResult,
+            creditCards: creditCardsResult.data,
+            onUpdate: handleUpdate,
+            onCreateBankAccount: handleCreateBankAccount,
+            onCreateContact: handleCreateContact,
+            onCreateCategory: handleCreateCategory,
+         }),
+      [
+         bankAccounts,
+         contacts,
+         categoriesResult,
+         creditCardsResult,
+         handleUpdate,
+         handleCreateBankAccount,
+         handleCreateContact,
+         handleCreateCategory,
+      ],
+   );
 
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
          <DataTableRoot
             columns={columns}
-            columnFilters={columnFilters}
             data={transactionData}
             getRowId={(row) => row.id}
-            onColumnFiltersChange={handleColumnFiltersChange}
-            onSortingChange={handleSortingChange}
+            isDraftRowActive={isDraftActive}
+            onAddRow={handleAddTransaction}
+            onDiscardAddRow={handleDiscardDraft}
             renderActions={({ row }) => {
                const tx = row.original;
                const { status: rowStatus } = tx;
                return (
                   <>
+                     {rowStatus === "pending" && (
+                        <Button
+                           className="text-green-600 hover:text-green-700"
+                           onClick={() => handleMarkPaid(tx)}
+                           size="icon"
+                           tooltip="Marcar como pago"
+                           variant="ghost"
+                        >
+                           <CheckCircle2 className="size-4" />
+                           <span className="sr-only">Marcar como pago</span>
+                        </Button>
+                     )}
+                     {rowStatus === "paid" && (
+                        <Button
+                           onClick={() => handleMarkUnpaid(tx)}
+                           size="icon"
+                           tooltip="Desmarcar pago"
+                           variant="ghost"
+                        >
+                           <Undo2 className="size-4" />
+                           <span className="sr-only">Desmarcar pago</span>
+                        </Button>
+                     )}
+                     {rowStatus === "cancelled" && (
+                        <Button
+                           onClick={() => handleReactivate(tx)}
+                           size="icon"
+                           tooltip="Reativar"
+                           variant="ghost"
+                        >
+                           <RotateCcw className="size-4" />
+                           <span className="sr-only">Reativar</span>
+                        </Button>
+                     )}
+                     {(rowStatus === "pending" || rowStatus === "paid") && (
+                        <Button
+                           onClick={() => handleCancel(tx)}
+                           size="icon"
+                           tooltip="Cancelar"
+                           variant="ghost"
+                        >
+                           <Ban className="size-4" />
+                           <span className="sr-only">Cancelar</span>
+                        </Button>
+                     )}
                      <Button
-                        onClick={() => handleEdit(tx)}
-                        tooltip="Editar"
-                        variant="outline"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(tx)}
+                        size="icon"
+                        tooltip="Excluir"
+                        variant="ghost"
                      >
-                        <Pencil className="size-4" />
+                        <Trash2 className="size-4" />
+                        <span className="sr-only">Excluir</span>
                      </Button>
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                           <Button variant="outline">
-                              <MoreHorizontal className="size-4" />
-                              <span className="sr-only">Mais ações</span>
-                           </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                           <DropdownMenuSeparator />
-                           {rowStatus === "pending" && (
-                              <DropdownMenuItem
-                                 onClick={() => handleMarkPaid(tx)}
-                              >
-                                 <CheckCircle2 className="size-4" />
-                                 Marcar como pago
-                              </DropdownMenuItem>
-                           )}
-                           {rowStatus === "paid" && (
-                              <DropdownMenuItem
-                                 onClick={() => handleMarkUnpaid(tx)}
-                              >
-                                 <Undo2 className="size-4" />
-                                 Desmarcar pago
-                              </DropdownMenuItem>
-                           )}
-                           {(rowStatus === "pending" ||
-                              rowStatus === "paid") && (
-                              <DropdownMenuItem
-                                 onClick={() => handleCancel(tx)}
-                              >
-                                 <Ban className="size-4" />
-                                 Cancelar
-                              </DropdownMenuItem>
-                           )}
-                           {rowStatus === "cancelled" && (
-                              <DropdownMenuItem
-                                 onClick={() => handleReactivate(tx)}
-                              >
-                                 <RotateCcw className="size-4" />
-                                 Reativar
-                              </DropdownMenuItem>
-                           )}
-                           <DropdownMenuSeparator />
-                           <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => handleDelete(tx)}
-                           >
-                              <Trash2 className="size-4" />
-                              Excluir
-                           </DropdownMenuItem>
-                        </DropdownMenuContent>
-                     </DropdownMenu>
                   </>
                );
             }}
-            sorting={sorting}
             storageKey="montte:datatable:transactions"
          >
             <DataTableExternalFilter
@@ -411,6 +597,7 @@ export function TransactionsList() {
                searchDefaultValue={search}
                onSearch={handleSearch}
             >
+               <DataTableImportButton importConfig={importConfig} />
                <Button
                   onClick={handleCreate}
                   tooltip="Novo Lançamento"

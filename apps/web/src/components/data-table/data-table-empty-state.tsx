@@ -7,7 +7,7 @@ interface DataTableEmptyStateProps {
 }
 
 export function DataTableEmptyState({ children }: DataTableEmptyStateProps) {
-   const { store, table } = useDataTable();
+   const { store, table, isDraftRowActive } = useDataTable();
 
    useIsomorphicLayoutEffect(() => {
       store.setState((s) => ({ ...s, hasEmptyState: true }));
@@ -15,5 +15,6 @@ export function DataTableEmptyState({ children }: DataTableEmptyStateProps) {
    }, [store]);
 
    if (table.getCoreRowModel().rows.length > 0) return null;
+   if (isDraftRowActive) return null;
    return <>{children}</>;
 }

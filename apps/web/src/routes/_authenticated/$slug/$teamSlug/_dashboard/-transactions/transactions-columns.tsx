@@ -13,12 +13,16 @@ import { orpc } from "@/integrations/orpc/client";
 
 export type TransactionRow = Outputs["transactions"]["getAll"]["data"][number];
 
+export type BankAccountOption = { id: string; name: string };
+export type ContactOption = { id: string; name: string };
+export type CategoryOption = { id: string; name: string };
+export type CreditCardOption = { id: string; name: string };
+
 export function formatBRL(value: string | number): string {
    return format(of(String(value), "BRL"), "pt-BR");
 }
 
 function formatDate(dateStr: string): string {
-   // date is stored as YYYY-MM-DD
    const [year, month, day] = dateStr.split("-");
    return `${day}/${month}/${year}`;
 }
@@ -99,21 +103,53 @@ function StatusBadge({ status }: { status: "pending" | "paid" | "cancelled" }) {
    );
 }
 
-export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
+export function buildTransactionColumns(options?: {
+   bankAccounts?: BankAccountOption[];
+   contacts?: ContactOption[];
+   categories?: CategoryOption[];
+   creditCards?: CreditCardOption[];
+   onUpdate?: (id: string, patch: Record<string, unknown>) => Promise<void>;
+   onCreateBankAccount?: (name: string) => Promise<string>;
+   onCreateContact?: (name: string) => Promise<string>;
+   onCreateCategory?: (name: string) => Promise<string>;
+}): ColumnDef<TransactionRow>[] {
    return [
       {
          accessorKey: "status",
          header: "Status",
+         meta: {
+            label: "Status",
+            cellComponent: "select",
+            isEditable: true,
+            editMode: "inline",
+            editOptions: [
+               { value: "pending", label: "Pendente" },
+               { value: "paid", label: "Efetivado" },
+               { value: "cancelled", label: "Cancelado" },
+            ],
+            onSave: async (rowId, value) => {
+               await options?.onUpdate?.(rowId, { status: value });
+            },
+         },
          cell: ({ row }) => <StatusBadge status={row.original.status} />,
       },
       {
          accessorKey: "date",
          header: ({ table }) => {
             const rows = table.getRowModel().rows;
-            const allPending = rows.every(
-               (r) => r.original.status === "pending",
-            );
+            const allPending =
+               rows.length > 0 &&
+               rows.every((r) => r.original.status === "pending");
             return allPending ? "Vencimento" : "Data";
+         },
+         meta: {
+            label: "Data",
+            cellComponent: "date",
+            isEditable: true,
+            editMode: "inline",
+            onSave: async (rowId, value) => {
+               await options?.onUpdate?.(rowId, { date: value || null });
+            },
          },
          cell: ({ row }) => {
             const { status, date, dueDate } = row.original;
@@ -128,6 +164,15 @@ export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
       {
          accessorKey: "dueDate",
          header: "Vencimento",
+         meta: {
+            label: "Vencimento",
+            cellComponent: "date",
+            isEditable: true,
+            editMode: "inline",
+            onSave: async (rowId, value) => {
+               await options?.onUpdate?.(rowId, { dueDate: value || null });
+            },
+         },
          cell: ({ row }) => {
             const { dueDate } = row.original;
             if (!dueDate)
@@ -142,6 +187,17 @@ export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
       {
          accessorKey: "name",
          header: "Nome",
+         meta: {
+            label: "Nome",
+            cellComponent: "text",
+            isEditable: true,
+            editMode: "inline",
+            onSave: async (rowId, value) => {
+               await options?.onUpdate?.(rowId, {
+                  name: String(value).trim() || null,
+               });
+            },
+         },
          cell: ({ row }) => {
             const { name } = row.original;
             if (!name)
@@ -156,6 +212,20 @@ export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
       {
          accessorKey: "type",
          header: "Tipo",
+         meta: {
+            label: "Tipo",
+            cellComponent: "select",
+            isEditable: true,
+            editMode: "inline",
+            editOptions: [
+               { value: "income", label: "Receita" },
+               { value: "expense", label: "Despesa" },
+               { value: "transfer", label: "Transferência" },
+            ],
+            onSave: async (rowId, value) => {
+               await options?.onUpdate?.(rowId, { type: value });
+            },
+         },
          cell: ({ row }) => {
             const { type } = row.original;
             if (type === "income") {
@@ -177,6 +247,22 @@ export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
       {
          accessorKey: "contactName",
          header: "Fornecedor/Cliente",
+         meta: {
+            label: "Fornecedor/Cliente",
+            cellComponent: "combobox",
+            isEditable: true,
+            editMode: "inline",
+            editOptions: options?.contacts?.map((c) => ({
+               value: c.id,
+               label: c.name,
+            })),
+            onCreateOption: options?.onCreateContact,
+            onSave: async (rowId, value) => {
+               await options?.onUpdate?.(rowId, {
+                  contactId: String(value) || null,
+               });
+            },
+         },
          cell: ({ row }) => {
             const name = row.original.contactName;
             if (!name)
@@ -187,6 +273,22 @@ export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
       {
          accessorKey: "categoryName",
          header: "Categoria",
+         meta: {
+            label: "Categoria",
+            cellComponent: "combobox",
+            isEditable: true,
+            editMode: "inline",
+            editOptions: options?.categories?.map((c) => ({
+               value: c.id,
+               label: c.name,
+            })),
+            onCreateOption: options?.onCreateCategory,
+            onSave: async (rowId, value) => {
+               await options?.onUpdate?.(rowId, {
+                  categoryId: String(value) || null,
+               });
+            },
+         },
          cell: ({ row }) => {
             const name = row.original.categoryName;
             const hasSuggestion = !name && row.original.suggestedCategoryId;
@@ -205,6 +307,22 @@ export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
       {
          accessorKey: "bankAccountName",
          header: "Conta",
+         meta: {
+            label: "Conta",
+            cellComponent: "combobox",
+            isEditable: true,
+            editMode: "inline",
+            editOptions: options?.bankAccounts?.map((a) => ({
+               value: a.id,
+               label: a.name,
+            })),
+            onCreateOption: options?.onCreateBankAccount,
+            onSave: async (rowId, value) => {
+               await options?.onUpdate?.(rowId, {
+                  bankAccountId: String(value) || null,
+               });
+            },
+         },
          cell: ({ row }) => {
             const name = row.original.bankAccountName;
             if (!name)
@@ -215,6 +333,21 @@ export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
       {
          accessorKey: "creditCardName",
          header: "Cartão",
+         meta: {
+            label: "Cartão",
+            cellComponent: "combobox",
+            isEditable: true,
+            editMode: "inline",
+            editOptions: options?.creditCards?.map((c) => ({
+               value: c.id,
+               label: c.name,
+            })),
+            onSave: async (rowId, value) => {
+               await options?.onUpdate?.(rowId, {
+                  creditCardId: String(value) || null,
+               });
+            },
+         },
          cell: ({ row }) => {
             const name = row.original.creditCardName;
             if (!name)
@@ -230,6 +363,12 @@ export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
             align: "right",
             filterVariant: "range",
             exportable: true,
+            cellComponent: "money",
+            isEditable: true,
+            editMode: "inline",
+            onSave: async (rowId, value) => {
+               await options?.onUpdate?.(rowId, { amount: value });
+            },
          },
          cell: ({ row }) => {
             const { type, amount } = row.original;

@@ -3,20 +3,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { QueryBoundary } from "@/components/query-boundary";
-import { TransactionsList } from "@/features/transactions/ui/transactions-list";
-import { TransactionsSkeleton } from "@/features/transactions/ui/transactions-skeleton";
+import { TransactionsList } from "./-transactions/transactions-list";
+import { buildTransactionColumns } from "./-transactions/transactions-columns";
 import { orpc } from "@/integrations/orpc/client";
 
+const skeletonColumns = buildTransactionColumns();
+
 const transactionsSearchSchema = z.object({
-   sorting: z
-      .array(z.object({ id: z.string(), desc: z.boolean() }))
-      .catch([])
-      .default([]),
-   columnFilters: z
-      .array(z.object({ id: z.string(), value: z.unknown() }))
-      .catch([])
-      .default([]),
    page: z.number().int().min(1).catch(1).default(1),
    pageSize: z.number().int().catch(20).default(20),
    search: z.string().catch("").default(""),
@@ -72,7 +67,11 @@ export const Route = createFileRoute(
       );
    },
    pendingMs: 300,
-   pendingComponent: TransactionsSkeleton,
+   pendingComponent: () => (
+      <main className="flex h-full flex-col gap-4">
+         <DataTableSkeleton columns={skeletonColumns} />
+      </main>
+   ),
    head: () => ({
       meta: [{ title: "Lançamentos — Montte" }],
    }),
@@ -120,7 +119,7 @@ function TransactionsPage() {
          </Tabs>
          <div className="flex flex-1 flex-col min-h-0">
             <QueryBoundary
-               fallback={<TransactionsSkeleton />}
+               fallback={<DataTableSkeleton columns={skeletonColumns} />}
                errorTitle="Erro ao carregar lançamentos"
             >
                <TransactionsList />
