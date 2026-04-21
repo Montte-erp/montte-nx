@@ -18,6 +18,7 @@ import {
    Briefcase,
    Car,
    Coffee,
+   CornerDownRight,
    CreditCard,
    Dumbbell,
    Fuel,
@@ -61,9 +62,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
    fuel: Fuel,
 };
 
-export type CategoryRow = Outputs["categories"]["getAll"][number] & {
-   subcategories?: CategoryRow[];
-};
+export type CategoryRow = Outputs["categories"]["getPaginated"]["data"][number];
 
 export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
    return [
@@ -88,7 +87,9 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                </Tooltip>
             ) : null;
 
-            if (row.depth === 0 && (color || IconComponent)) {
+            const isSub = row.original.parentId !== null;
+
+            if (!isSub && (color || IconComponent)) {
                return (
                   <Announcement>
                      <AnnouncementTag>
@@ -122,21 +123,22 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
 
             return (
                <div className="flex items-center gap-2 min-w-0">
-                  {row.depth > 0 && (
-                     <div className="flex items-center gap-2 pl-2 border-l-2 border-muted-foreground/20">
-                        <span className="size-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
-                     </div>
+                  {isSub && (
+                     <CornerDownRight
+                        aria-hidden="true"
+                        className="size-4 shrink-0 text-muted-foreground/60"
+                     />
                   )}
                   <span
                      className={
-                        row.depth > 0
+                        isSub
                            ? "truncate text-muted-foreground"
                            : "font-medium truncate"
                      }
                   >
                      {name}
                   </span>
-                  {isDefault && row.depth === 0 && (
+                  {isDefault && !isSub && (
                      <Tooltip>
                         <TooltipTrigger asChild>
                            <span
@@ -174,22 +176,10 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
          },
       },
       {
-         id: "subcategories",
-         header: "Subcategorias",
-         cell: ({ row }) => {
-            if (row.depth > 0)
-               return <span className="text-sm text-muted-foreground">—</span>;
-            const count = row.original.subcategories?.length ?? 0;
-            if (count === 0)
-               return <span className="text-sm text-muted-foreground">—</span>;
-            return <Badge variant="secondary">{count}</Badge>;
-         },
-      },
-      {
          id: "keywords",
          header: "Palavras-chave",
          cell: ({ row }) => {
-            if (row.depth > 0)
+            if (row.original.parentId !== null)
                return <span className="text-sm text-muted-foreground">—</span>;
             const { keywords, keywordsUpdatedAt, updatedAt } = row.original;
             const count = keywords?.length ?? 0;

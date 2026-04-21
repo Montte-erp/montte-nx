@@ -129,16 +129,7 @@ function CategoriesList() {
    const { data: rows, total } = result;
    const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-   const categories: CategoryRow[] = useMemo(
-      () =>
-         rows
-            .filter((c) => c.parentId === null)
-            .map((parent) => ({
-               ...parent,
-               subcategories: rows.filter((c) => c.parentId === parent.id),
-            })),
-      [rows],
-   );
+   const categories: CategoryRow[] = rows;
 
    const deleteMutation = useMutation(
       orpc.categories.remove.mutationOptions({
@@ -313,7 +304,6 @@ function CategoriesList() {
             columns={columns}
             data={categories}
             getRowId={(row) => row.id}
-            getSubRows={(row) => row.subcategories}
             groupBy={groupBy ? (row) => row.type ?? "other" : undefined}
             renderGroupHeader={(key) =>
                key === "income"

@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { AppError, validateInput } from "@core/logging/errors";
 import { and, asc, desc, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { fromPromise, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
@@ -605,6 +606,7 @@ export function listCategoriesPaginated(
 ) {
    return fromPromise(
       (async () => {
+         const parentCat = alias(categories, "parent_cat");
          const base: SQL[] = [eq(categories.teamId, teamId)];
          if (opts.type) base.push(eq(categories.type, opts.type));
          if (!opts.includeArchived) base.push(eq(categories.isArchived, false));
@@ -614,69 +616,41 @@ export function listCategoriesPaginated(
             ? `%${trimmedSearch.replace(/[\\%_]/g, "\\$&")}%`
             : null;
 
-         let parentIds: string[];
          if (searchPattern) {
-            const matchedParents = await db
+            const matched = await db
                .selectDistinct({
-                  parentId: sql<string>`COALESCE(${categories.parentId}, ${categories.id})`,
+                  rootId: sql<string>`COALESCE(${categories.parentId}, ${categories.id})`,
                })
                .from(categories)
                .where(and(...base, ilike(categories.name, searchPattern)));
-            parentIds = matchedParents.map((r) => r.parentId);
-         } else {
-            parentIds = [];
-         }
-
-         const parentConditions: SQL[] = [
-            eq(categories.teamId, teamId),
-            isNull(categories.parentId),
-         ];
-         if (opts.type) parentConditions.push(eq(categories.type, opts.type));
-         if (!opts.includeArchived)
-            parentConditions.push(eq(categories.isArchived, false));
-         if (searchPattern) {
-            if (parentIds.length === 0) {
+            const rootIds = matched.map((r) => r.rootId);
+            if (rootIds.length === 0) {
                return { data: [] as Category[], total: 0 };
             }
-            parentConditions.push(inArray(categories.id, parentIds));
+            base.push(
+               sql`COALESCE(${categories.parentId}, ${categories.id}) IN ${rootIds}`,
+            );
          }
 
          const countRows = await db
             .select({ count: sql<number>`count(*)::int` })
             .from(categories)
-            .where(and(...parentConditions));
-         const count = countRows[0]?.count ?? 0;
+            .where(and(...base));
+         const total = countRows[0]?.count ?? 0;
 
+         const sortKey = sql`COALESCE(${parentCat.name}, ${categories.name})`;
+         const depthKey = sql`CASE WHEN ${categories.parentId} IS NULL THEN 0 ELSE 1 END`;
          const offset = Math.max(0, (opts.page - 1) * opts.pageSize);
-         const parents = await db
-            .select()
+         const rows = await db
+            .select({ c: categories })
             .from(categories)
-            .where(and(...parentConditions))
-            .orderBy(asc(categories.name))
+            .leftJoin(parentCat, eq(parentCat.id, categories.parentId))
+            .where(and(...base))
+            .orderBy(asc(sortKey), asc(depthKey), asc(categories.name))
             .limit(opts.pageSize)
             .offset(offset);
 
-         if (parents.length === 0) {
-            return { data: [] as Category[], total: count };
-         }
-
-         const subConditions: SQL[] = [
-            eq(categories.teamId, teamId),
-            inArray(
-               categories.parentId,
-               parents.map((p) => p.id),
-            ),
-         ];
-         if (!opts.includeArchived)
-            subConditions.push(eq(categories.isArchived, false));
-
-         const subs = await db
-            .select()
-            .from(categories)
-            .where(and(...subConditions))
-            .orderBy(asc(categories.name));
-
-         return { data: [...parents, ...subs], total: count };
+         return { data: rows.map((r) => r.c), total };
       })(),
       (e) =>
          e instanceof AppError
