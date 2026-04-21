@@ -1,7 +1,6 @@
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { setupTestDb } from "../helpers/setup-test-db";
 import { transactions } from "@core/database/schemas/transactions";
-import { bills } from "@core/database/schemas/bills";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import * as repo from "../../src/repositories/contacts-repository";
 
@@ -251,28 +250,6 @@ describe("contacts-repository", () => {
             amount: "100.00",
             date: "2026-01-15",
             bankAccountId: account!.id,
-            contactId: contact.id,
-         });
-
-         await expect(
-            repo.deleteContact(testDb.db, contact.id),
-         ).rejects.toThrow(/lançamentos vinculados/);
-      });
-
-      it("rejects deleting a contact with bills", async () => {
-         const teamId = randomTeamId();
-         const contact = await repo.createContact(
-            testDb.db,
-            teamId,
-            validCreateInput(),
-         );
-
-         await testDb.db.insert(bills).values({
-            teamId,
-            name: "Fatura",
-            type: "payable",
-            amount: "100.00",
-            dueDate: "2026-02-01",
             contactId: contact.id,
          });
 

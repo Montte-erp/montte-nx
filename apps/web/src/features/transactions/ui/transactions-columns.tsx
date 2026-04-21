@@ -75,16 +75,69 @@ function SuggestedCategoryCell({
    );
 }
 
+function StatusBadge({ status }: { status: "pending" | "paid" | "cancelled" }) {
+   if (status === "pending") {
+      return (
+         <Badge
+            className="border-amber-500 text-amber-600 dark:border-amber-400 dark:text-amber-400"
+            variant="outline"
+         >
+            Pendente
+         </Badge>
+      );
+   }
+   if (status === "cancelled") {
+      return <Badge variant="secondary">Cancelado</Badge>;
+   }
+   return (
+      <Badge
+         className="border-green-600 text-green-600 dark:border-green-500 dark:text-green-500"
+         variant="outline"
+      >
+         Efetivado
+      </Badge>
+   );
+}
+
 export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
    return [
       {
+         accessorKey: "status",
+         header: "Status",
+         cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
          accessorKey: "date",
-         header: "Data",
-         cell: ({ row }) => (
-            <span className="text-sm tabular-nums">
-               {formatDate(row.original.date)}
-            </span>
-         ),
+         header: ({ table }) => {
+            const rows = table.getRowModel().rows;
+            const allPending = rows.every(
+               (r) => r.original.status === "pending",
+            );
+            return allPending ? "Vencimento" : "Data";
+         },
+         cell: ({ row }) => {
+            const { status, date, dueDate } = row.original;
+            const display = status === "pending" && dueDate ? dueDate : date;
+            return (
+               <span className="text-sm tabular-nums">
+                  {formatDate(display)}
+               </span>
+            );
+         },
+      },
+      {
+         accessorKey: "dueDate",
+         header: "Vencimento",
+         cell: ({ row }) => {
+            const { dueDate } = row.original;
+            if (!dueDate)
+               return <span className="text-xs text-muted-foreground">—</span>;
+            return (
+               <span className="text-sm tabular-nums">
+                  {formatDate(dueDate)}
+               </span>
+            );
+         },
       },
       {
          accessorKey: "name",

@@ -54,8 +54,6 @@ const TX_HEADERS = [
    "subcategoria",
    "tags",
    "forma_pagamento",
-   "parcelado",
-   "num_parcelas",
    "contato",
 ] as const;
 
@@ -142,8 +140,6 @@ function mapTxToRow(tx: any): TxRow {
       subcategoria: "",
       tags: Array.isArray(tx.tagIds) ? tx.tagIds.join(";") : "",
       forma_pagamento: tx.paymentMethod ?? "",
-      parcelado: tx.isInstallment ? "Sim" : "Não",
-      num_parcelas: tx.installmentCount ?? "",
       contato: tx.contactName ?? "",
    };
 }

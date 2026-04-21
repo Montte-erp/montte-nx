@@ -10,7 +10,6 @@ import {
 import { financeSchema } from "@core/database/schemas/schemas";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { bills } from "@core/database/schemas/bills";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { transactions } from "@core/database/schemas/transactions";
 
@@ -40,9 +39,6 @@ export const creditCardStatements = financeSchema.table(
       closingDate: date("closing_date").notNull(),
       dueDate: date("due_date").notNull(),
       status: creditCardStatementStatusEnum("status").notNull().default("open"),
-      billId: uuid("bill_id").references(() => bills.id, {
-         onDelete: "set null",
-      }),
       paymentTransactionId: uuid("payment_transaction_id").references(
          () => transactions.id,
          { onDelete: "set null" },

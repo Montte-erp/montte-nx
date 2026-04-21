@@ -88,6 +88,8 @@ const transactionFormSchema = z.object({
    type: z.enum(["income", "expense", "transfer"]).default("income"),
    amount: z.string().default(""),
    date: z.date().optional(),
+   dueDate: z.date().optional(),
+   isPaid: z.boolean().default(true),
    bankAccountId: z.string().default(""),
    destinationBankAccountId: z.string().default(""),
    categoryId: z.string().default(""),
@@ -96,13 +98,7 @@ const transactionFormSchema = z.object({
    description: z.string().default(""),
    contactId: z.string().nullable().default(null),
    creditCardId: z.string().default(""),
-   createAsBill: z.boolean().default(false),
    paymentMethod: z.string().default(""),
-   isInstallment: z.boolean().default(false),
-   installmentCount: z.number().nullable().default(null),
-   isRecurring: z.boolean().default(false),
-   recurringFrequency: z.string().nullable().default(null),
-   recurringCount: z.number().nullable().default(null),
 });
 
 type TransactionFormValues = z.infer<typeof transactionFormSchema>;
@@ -110,6 +106,8 @@ type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 function buildTransactionDefaultValues(
    transaction?: TransactionRow,
 ): TransactionFormValues {
+   const status = transaction?.status;
+   const isPending = status === "pending";
    return transactionFormSchema.parse({
       name: transaction?.name,
       type: transaction?.type,
@@ -117,14 +115,16 @@ function buildTransactionDefaultValues(
       date: transaction?.date
          ? dayjs(`${transaction.date}T12:00:00`).toDate()
          : undefined,
+      dueDate: transaction?.dueDate
+         ? dayjs(`${transaction.dueDate}T12:00:00`).toDate()
+         : undefined,
+      isPaid: transaction ? !isPending : true,
       bankAccountId: transaction?.bankAccountId,
       destinationBankAccountId: transaction?.destinationBankAccountId,
       categoryId: transaction?.categoryId,
       contactId: transaction?.contactId,
       creditCardId: transaction?.creditCardId,
       paymentMethod: transaction?.paymentMethod,
-      isInstallment: transaction?.isInstallment,
-      installmentCount: transaction?.installmentCount,
    });
 }
 
@@ -737,35 +737,23 @@ function TransactionCredenzaContent({
    const updateMutation = useMutation(
       orpc.transactions.update.mutationOptions(),
    );
-   const billCreateMutation = useMutation(orpc.bills.create.mutationOptions());
 
    const form = useForm({
       defaultValues: buildTransactionDefaultValues(transaction),
       validators: {
          onSubmitAsync: async ({ value }) => {
-            const dateStr = value.date
-               ? dayjs(value.date).format("YYYY-MM-DD")
-               : "";
             const isTransfer = value.type === "transfer";
+            const isPaid = isTransfer ? true : value.isPaid;
+            const effectiveDate = isPaid ? value.date : value.dueDate;
+            const dateStr = effectiveDate
+               ? dayjs(effectiveDate).format("YYYY-MM-DD")
+               : "";
+            const dueDateStr =
+               !isPaid && value.dueDate
+                  ? dayjs(value.dueDate).format("YYYY-MM-DD")
+                  : null;
 
             try {
-               if (isCreate && value.createAsBill && value.type === "expense") {
-                  await billCreateMutation.mutateAsync({
-                     bill: {
-                        name: value.name?.trim() || "Despesa",
-                        type: "payable",
-                        amount: value.amount,
-                        dueDate: dateStr,
-                        bankAccountId: value.bankAccountId || null,
-                        categoryId: value.categoryId || null,
-                        description: value.description || null,
-                     },
-                  });
-                  toast.success("Conta a pagar criada com sucesso.");
-                  onSuccess();
-                  return null;
-               }
-
                const tagIdsTouched =
                   form.getFieldMeta("tagIds")?.isTouched ?? false;
 
@@ -793,11 +781,8 @@ function TransactionCredenzaContent({
                   paymentMethod: (isTransfer
                      ? null
                      : value.paymentMethod || null) as PaymentMethod | null,
-                  isInstallment: isTransfer ? false : value.isInstallment,
-                  installmentCount:
-                     !isTransfer && value.isInstallment
-                        ? value.installmentCount
-                        : null,
+                  status: isPaid ? ("paid" as const) : ("pending" as const),
+                  dueDate: dueDateStr,
                };
 
                if (isCreate) {
@@ -901,19 +886,10 @@ function TransactionCredenzaContent({
                                     form.setFieldValue("categoryId", "");
                                     form.setFieldValue("subcategoryId", "");
                                     form.setFieldValue("paymentMethod", "");
-                                    form.setFieldValue("isInstallment", false);
-                                    form.setFieldValue(
-                                       "installmentCount",
-                                       null,
-                                    );
-                                    form.setFieldValue("isRecurring", false);
-                                    form.setFieldValue(
-                                       "recurringFrequency",
-                                       null,
-                                    );
-                                    form.setFieldValue("recurringCount", null);
                                     form.setFieldValue("creditCardId", "");
                                     form.setFieldValue("contactId", null);
+                                    form.setFieldValue("isPaid", true);
+                                    form.setFieldValue("dueDate", undefined);
                                  } else {
                                     const currentCatId =
                                        form.getFieldValue("categoryId");
@@ -1212,45 +1188,138 @@ function TransactionCredenzaContent({
                               </>
                            ) : (
                               <>
+                                 <form.Field
+                                    name="isPaid"
+                                    children={(field) => (
+                                       <div className="flex items-center justify-between rounded-lg border p-3">
+                                          <label
+                                             className="text-sm font-medium cursor-pointer select-none"
+                                             htmlFor="isPaid"
+                                          >
+                                             Já efetivado?
+                                          </label>
+                                          <Switch
+                                             checked={field.state.value}
+                                             id="isPaid"
+                                             onCheckedChange={(v) => {
+                                                field.handleChange(v);
+                                                if (v) {
+                                                   form.setFieldValue(
+                                                      "dueDate",
+                                                      undefined,
+                                                   );
+                                                }
+                                             }}
+                                          />
+                                       </div>
+                                    )}
+                                 />
                                  <div className="grid grid-cols-3 gap-4">
-                                    <form.Field
-                                       name="date"
-                                       validators={{
-                                          onSubmit: requiredDateSchema,
-                                       }}
-                                       children={(field) => {
-                                          const isInvalid =
-                                             field.state.meta.isTouched &&
-                                             field.state.meta.errors.length > 0;
-                                          return (
-                                             <Field data-invalid={isInvalid}>
-                                                <FieldLabel>
-                                                   Data{" "}
-                                                   <span className="text-destructive">
-                                                      *
-                                                   </span>
-                                                </FieldLabel>
-                                                <DatePicker
-                                                   className="w-full"
-                                                   date={field.state.value}
-                                                   onSelect={(d) =>
-                                                      field.handleChange(
-                                                         d as Date,
-                                                      )
-                                                   }
-                                                   placeholder="Selecione"
-                                                />
-                                                {isInvalid && (
-                                                   <FieldError
-                                                      errors={
-                                                         field.state.meta.errors
-                                                      }
-                                                   />
-                                                )}
-                                             </Field>
-                                          );
-                                       }}
-                                    />
+                                    <form.Subscribe
+                                       selector={(s) => s.values.isPaid}
+                                    >
+                                       {(isPaid) =>
+                                          isPaid ? (
+                                             <form.Field
+                                                name="date"
+                                                validators={{
+                                                   onSubmit: requiredDateSchema,
+                                                }}
+                                                children={(field) => {
+                                                   const isInvalid =
+                                                      field.state.meta
+                                                         .isTouched &&
+                                                      field.state.meta.errors
+                                                         .length > 0;
+                                                   return (
+                                                      <Field
+                                                         data-invalid={
+                                                            isInvalid
+                                                         }
+                                                      >
+                                                         <FieldLabel>
+                                                            Data{" "}
+                                                            <span className="text-destructive">
+                                                               *
+                                                            </span>
+                                                         </FieldLabel>
+                                                         <DatePicker
+                                                            className="w-full"
+                                                            date={
+                                                               field.state.value
+                                                            }
+                                                            onSelect={(d) =>
+                                                               field.handleChange(
+                                                                  d as Date,
+                                                               )
+                                                            }
+                                                            placeholder="Selecione"
+                                                         />
+                                                         {isInvalid && (
+                                                            <FieldError
+                                                               errors={
+                                                                  field.state
+                                                                     .meta
+                                                                     .errors
+                                                               }
+                                                            />
+                                                         )}
+                                                      </Field>
+                                                   );
+                                                }}
+                                             />
+                                          ) : (
+                                             <form.Field
+                                                name="dueDate"
+                                                validators={{
+                                                   onSubmit: requiredDateSchema,
+                                                }}
+                                                children={(field) => {
+                                                   const isInvalid =
+                                                      field.state.meta
+                                                         .isTouched &&
+                                                      field.state.meta.errors
+                                                         .length > 0;
+                                                   return (
+                                                      <Field
+                                                         data-invalid={
+                                                            isInvalid
+                                                         }
+                                                      >
+                                                         <FieldLabel>
+                                                            Vencimento{" "}
+                                                            <span className="text-destructive">
+                                                               *
+                                                            </span>
+                                                         </FieldLabel>
+                                                         <DatePicker
+                                                            className="w-full"
+                                                            date={
+                                                               field.state.value
+                                                            }
+                                                            onSelect={(d) =>
+                                                               field.handleChange(
+                                                                  d as Date,
+                                                               )
+                                                            }
+                                                            placeholder="Selecione"
+                                                         />
+                                                         {isInvalid && (
+                                                            <FieldError
+                                                               errors={
+                                                                  field.state
+                                                                     .meta
+                                                                     .errors
+                                                               }
+                                                            />
+                                                         )}
+                                                      </Field>
+                                                   );
+                                                }}
+                                             />
+                                          )
+                                       }
+                                    </form.Subscribe>
 
                                     <form.Field
                                        name="amount"
@@ -1749,248 +1818,6 @@ function TransactionCredenzaContent({
                      );
                   }}
                />
-
-               <form.Subscribe
-                  selector={(s) => ({
-                     type: s.values.type,
-                     isInstallment: s.values.isInstallment,
-                     isRecurring: s.values.isRecurring,
-                  })}
-               >
-                  {({ type, isInstallment, isRecurring }) =>
-                     type !== "transfer" ? (
-                        <div className="flex flex-col gap-4">
-                           <div className="grid grid-cols-2 gap-4">
-                              <form.Field
-                                 name="isInstallment"
-                                 children={(field) => (
-                                    <div className="flex items-center justify-between rounded-lg border p-3">
-                                       <label
-                                          className="text-sm font-medium cursor-pointer select-none"
-                                          htmlFor="isInstallment"
-                                       >
-                                          Parcelado
-                                       </label>
-                                       <Switch
-                                          checked={field.state.value}
-                                          id="isInstallment"
-                                          onCheckedChange={(v) => {
-                                             field.handleChange(v);
-                                             if (!v)
-                                                form.setFieldValue(
-                                                   "installmentCount",
-                                                   null,
-                                                );
-                                             if (v) {
-                                                form.setFieldValue(
-                                                   "isRecurring",
-                                                   false,
-                                                );
-                                                form.setFieldValue(
-                                                   "recurringFrequency",
-                                                   null,
-                                                );
-                                             }
-                                          }}
-                                       />
-                                    </div>
-                                 )}
-                              />
-
-                              <form.Field
-                                 name="isRecurring"
-                                 children={(field) => (
-                                    <div className="flex items-center justify-between rounded-lg border p-3">
-                                       <label
-                                          className="text-sm font-medium cursor-pointer select-none"
-                                          htmlFor="isRecurring"
-                                       >
-                                          Recorrente
-                                       </label>
-                                       <Switch
-                                          checked={field.state.value}
-                                          id="isRecurring"
-                                          onCheckedChange={(v) => {
-                                             field.handleChange(v);
-                                             if (!v)
-                                                form.setFieldValue(
-                                                   "recurringFrequency",
-                                                   null,
-                                                );
-                                             if (v) {
-                                                form.setFieldValue(
-                                                   "isInstallment",
-                                                   false,
-                                                );
-                                                form.setFieldValue(
-                                                   "installmentCount",
-                                                   null,
-                                                );
-                                             }
-                                          }}
-                                       />
-                                    </div>
-                                 )}
-                              />
-                           </div>
-
-                           {isInstallment && (
-                              <form.Field
-                                 name="installmentCount"
-                                 children={(field) => (
-                                    <Field>
-                                       <FieldLabel htmlFor={field.name}>
-                                          Número de parcelas
-                                       </FieldLabel>
-                                       <Input
-                                          id={field.name}
-                                          name={field.name}
-                                          aria-invalid={
-                                             field.state.meta.isTouched &&
-                                             field.state.meta.errors.length > 0
-                                          }
-                                          max={72}
-                                          min={2}
-                                          onBlur={field.handleBlur}
-                                          onChange={(e) =>
-                                             field.handleChange(
-                                                e.target.value
-                                                   ? Number(e.target.value)
-                                                   : null,
-                                             )
-                                          }
-                                          placeholder="Ex: 3"
-                                          type="number"
-                                          value={field.state.value ?? ""}
-                                       />
-                                    </Field>
-                                 )}
-                              />
-                           )}
-
-                           {isRecurring && (
-                              <div className="grid grid-cols-2 gap-4">
-                                 <form.Field
-                                    name="recurringFrequency"
-                                    children={(field) => (
-                                       <Field>
-                                          <FieldLabel>Frequência</FieldLabel>
-                                          <Select
-                                             onValueChange={field.handleChange}
-                                             value={field.state.value ?? ""}
-                                          >
-                                             <SelectTrigger>
-                                                <SelectValue placeholder="Selecione a frequência" />
-                                             </SelectTrigger>
-                                             <SelectContent>
-                                                <SelectItem value="daily">
-                                                   Diária
-                                                </SelectItem>
-                                                <SelectItem value="weekly">
-                                                   Semanal
-                                                </SelectItem>
-                                                <SelectItem value="biweekly">
-                                                   Quinzenal
-                                                </SelectItem>
-                                                <SelectItem value="monthly">
-                                                   Mensal
-                                                </SelectItem>
-                                                <SelectItem value="yearly">
-                                                   Anual
-                                                </SelectItem>
-                                             </SelectContent>
-                                          </Select>
-                                       </Field>
-                                    )}
-                                 />
-
-                                 <form.Field
-                                    name="recurringCount"
-                                    children={(field) => (
-                                       <Field>
-                                          <FieldLabel htmlFor={field.name}>
-                                             Repetições
-                                          </FieldLabel>
-                                          <Input
-                                             id={field.name}
-                                             name={field.name}
-                                             aria-invalid={
-                                                field.state.meta.isTouched &&
-                                                field.state.meta.errors.length >
-                                                   0
-                                             }
-                                             max={120}
-                                             min={2}
-                                             onBlur={field.handleBlur}
-                                             onChange={(e) =>
-                                                field.handleChange(
-                                                   e.target.value
-                                                      ? Number(e.target.value)
-                                                      : null,
-                                                )
-                                             }
-                                             placeholder="Ex: 12"
-                                             type="number"
-                                             value={field.state.value ?? ""}
-                                          />
-                                       </Field>
-                                    )}
-                                 />
-                              </div>
-                           )}
-                        </div>
-                     ) : null
-                  }
-               </form.Subscribe>
-
-               {isCreate && (
-                  <form.Subscribe
-                     selector={(s) => ({
-                        date: s.values.date,
-                        type: s.values.type,
-                     })}
-                  >
-                     {({ date, type }) => {
-                        const isFuture = date && dayjs(date).isAfter(dayjs());
-                        return (
-                           <>
-                              {isFuture && (
-                                 <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-sm text-amber-700 dark:text-amber-300">
-                                    Este lançamento é no futuro. Considere
-                                    registrá-la como conta a pagar.
-                                 </div>
-                              )}
-
-                              {type === "expense" && (
-                                 <form.Field
-                                    name="createAsBill"
-                                    children={(field) => (
-                                       <Field>
-                                          <div className="flex items-center gap-2">
-                                             <Checkbox
-                                                checked={field.state.value}
-                                                id="createAsBill"
-                                                onCheckedChange={(v) =>
-                                                   field.handleChange(!!v)
-                                                }
-                                             />
-                                             <label
-                                                className="text-sm cursor-pointer select-none"
-                                                htmlFor="createAsBill"
-                                             >
-                                                Registrar como conta a pagar
-                                                (não pago ainda)
-                                             </label>
-                                          </div>
-                                       </Field>
-                                    )}
-                                 />
-                              )}
-                           </>
-                        );
-                     }}
-                  </form.Subscribe>
-               )}
             </FieldGroup>
          </CredenzaBody>
          <CredenzaFooter className="flex flex-col gap-2">
@@ -2015,24 +1842,16 @@ function TransactionCredenzaContent({
                selector={(state) => ({
                   canSubmit: state.canSubmit,
                   isSubmitting: state.isSubmitting,
-                  createAsBill:
-                     isCreate &&
-                     state.values.createAsBill &&
-                     state.values.type === "expense",
                })}
             >
-               {({ canSubmit, isSubmitting, createAsBill }) => (
+               {({ canSubmit, isSubmitting }) => (
                   <Button
                      className="w-full gap-2"
                      disabled={!canSubmit || isSubmitting}
                      type="submit"
                   >
                      {isSubmitting ? <Spinner className="size-4" /> : null}
-                     {createAsBill
-                        ? "Criar conta a pagar"
-                        : isCreate
-                          ? "Criar lançamento"
-                          : "Salvar alterações"}
+                     {isCreate ? "Criar lançamento" : "Salvar alterações"}
                   </Button>
                )}
             </form.Subscribe>

@@ -1,4 +1,6 @@
 import { Button } from "@packages/ui/components/button";
+import { Switch } from "@packages/ui/components/switch";
+import { Tabs, TabsList, TabsTrigger } from "@packages/ui/components/tabs";
 import type {
    ColumnFiltersState,
    OnChangeFn,
@@ -23,6 +25,7 @@ import { StatementImportCredenza } from "./-transactions/statement-import-creden
 import { TransactionPrerequisitesBlocker } from "@/features/transactions/ui/transaction-prerequisites-blocker";
 import { TransactionsList } from "@/features/transactions/ui/transactions-list";
 import { TransactionsSkeleton } from "@/features/transactions/ui/transactions-skeleton";
+import { TransactionsSummaryCards } from "./-transactions/transactions-summary-cards";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -37,13 +40,28 @@ const transactionsSearchSchema = z.object({
       .default([]),
    page: z.number().int().min(1).catch(1).default(1),
    pageSize: z.number().int().catch(20).default(20),
+   view: z
+      .enum(["all", "payable", "receivable", "settled", "cancelled"])
+      .catch("all")
+      .default("all"),
+   overdueOnly: z.boolean().catch(false).default(false),
+   status: z
+      .array(z.enum(["pending", "paid", "cancelled"]))
+      .catch([])
+      .default([]),
 });
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/transactions",
 )({
    validateSearch: transactionsSearchSchema,
-   loaderDeps: ({ search: { page, pageSize } }) => ({ page, pageSize }),
+   loaderDeps: ({ search: { page, pageSize, view, overdueOnly, status } }) => ({
+      page,
+      pageSize,
+      view,
+      overdueOnly,
+      status,
+   }),
    loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
          orpc.bankAccounts.getAll.queryOptions({}),
@@ -58,8 +76,17 @@ export const Route = createFileRoute(
          orpc.creditCards.getAll.queryOptions({ input: {} }),
       );
       context.queryClient.prefetchQuery(
+         orpc.transactions.getPayableSummary.queryOptions({}),
+      );
+      context.queryClient.prefetchQuery(
          orpc.transactions.getAll.queryOptions({
-            input: { page: deps.page, pageSize: deps.pageSize },
+            input: {
+               page: deps.page,
+               pageSize: deps.pageSize,
+               view: deps.view,
+               overdueOnly: deps.overdueOnly,
+               status: deps.status.length > 0 ? deps.status : undefined,
+            },
          }),
       );
       context.queryClient.prefetchQuery(
@@ -93,7 +120,8 @@ function TransactionsPage() {
       },
       [navigate],
    );
-   const { sorting, columnFilters, page, pageSize } = Route.useSearch();
+   const { sorting, columnFilters, page, pageSize, view, overdueOnly, status } =
+      Route.useSearch();
    const filtersWithPagination = { ...filters, page, pageSize };
 
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
@@ -123,6 +151,35 @@ function TransactionsPage() {
          },
          [columnFilters, navigate],
       );
+
+   const handleViewChange = useCallback(
+      (nextView: string) => {
+         navigate({
+            search: (prev) => ({
+               ...prev,
+               view: nextView as
+                  | "all"
+                  | "payable"
+                  | "receivable"
+                  | "settled"
+                  | "cancelled",
+               page: 1,
+            }),
+            replace: true,
+         });
+      },
+      [navigate],
+   );
+
+   const handleOverdueToggle = useCallback(
+      (checked: boolean) => {
+         navigate({
+            search: (prev) => ({ ...prev, overdueOnly: checked, page: 1 }),
+            replace: true,
+         });
+      },
+      [navigate],
+   );
 
    const handleCreate = useCallback(() => {
       if (!hasBankAccounts) {
@@ -189,14 +246,39 @@ function TransactionsPage() {
                   </span>
                </Button>
             }
-            description="Gerencie suas receitas, despesas e transferências"
+            description="Gerencie receitas, despesas e transferências"
             panelActions={panelActions}
             title="Lançamentos"
          />
-         <TransactionFilterBar
-            filters={filters}
-            onFiltersChange={handleFiltersChange}
-         />
+         <QueryBoundary
+            fallback={<TransactionsSkeleton />}
+            errorTitle="Erro ao carregar resumo"
+         >
+            <TransactionsSummaryCards />
+         </QueryBoundary>
+         <Tabs onValueChange={handleViewChange} value={view}>
+            <TabsList>
+               <TabsTrigger value="all">Todos</TabsTrigger>
+               <TabsTrigger value="payable">A Pagar</TabsTrigger>
+               <TabsTrigger value="receivable">A Receber</TabsTrigger>
+               <TabsTrigger value="settled">Efetivados</TabsTrigger>
+               <TabsTrigger value="cancelled">Cancelados</TabsTrigger>
+            </TabsList>
+         </Tabs>
+         <div className="flex items-center justify-between gap-4 rounded-lg border bg-card px-4 py-2.5">
+            <TransactionFilterBar
+               filters={filters}
+               onFiltersChange={handleFiltersChange}
+            />
+            <label className="flex items-center gap-2 text-sm font-medium">
+               <Switch
+                  checked={overdueOnly}
+                  id="overdueOnly"
+                  onCheckedChange={handleOverdueToggle}
+               />
+               Somente vencidos
+            </label>
+         </div>
          <QueryBoundary
             fallback={<TransactionsSkeleton />}
             errorTitle="Erro ao carregar lançamentos"
@@ -222,7 +304,10 @@ function TransactionsPage() {
                   })
                }
                onSortingChange={handleSortingChange}
+               overdueOnly={overdueOnly}
                sorting={sorting}
+               status={status}
+               view={view}
             />
          </QueryBoundary>
       </main>

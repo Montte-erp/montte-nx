@@ -28,16 +28,19 @@ import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import {
    ArrowLeftRight,
+   Ban,
+   CheckCircle2,
    FolderOpen,
    Hash,
    Landmark,
    MoreHorizontal,
    Pencil,
-   Repeat,
+   RotateCcw,
    Scale,
    Trash2,
    TrendingDown,
    TrendingUp,
+   Undo2,
 } from "lucide-react";
 import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import type {
@@ -48,7 +51,7 @@ import type {
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import { BillFromTransactionCredenza } from "@/features/bills/ui/bill-from-transaction-credenza";
+import { MarkPaidCredenza } from "@/routes/_authenticated/$slug/$teamSlug/_dashboard/-transactions/mark-paid-credenza";
 import { BulkCategorizeForm } from "@/features/transactions/ui/bulk-categorize-form";
 import { BulkMoveAccountForm } from "@/features/transactions/ui/bulk-move-account-form";
 import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
@@ -68,8 +71,18 @@ const [useTransactionsTableState] =
       null,
    );
 
+type TransactionsView =
+   | "all"
+   | "payable"
+   | "receivable"
+   | "settled"
+   | "cancelled";
+
 interface TransactionsListProps {
    filters: TransactionFilters;
+   view?: TransactionsView;
+   overdueOnly?: boolean;
+   status?: Array<"pending" | "paid" | "cancelled">;
    onPageChange: (page: number) => void;
    onPageSizeChange: (size: number) => void;
    sorting: SortingState;
@@ -80,6 +93,9 @@ interface TransactionsListProps {
 
 export function TransactionsList({
    filters,
+   view,
+   overdueOnly,
+   status,
    onPageChange,
    onPageSizeChange,
    sorting,
@@ -88,9 +104,16 @@ export function TransactionsList({
    onColumnFiltersChange,
 }: TransactionsListProps) {
    const [tableState, setTableState] = useTransactionsTableState();
+   const viewColumnVisibility = useMemo(() => {
+      const showDueDate = view === "payable" || view === "receivable";
+      return { dueDate: showDueDate };
+   }, [view]);
    const effectiveTableState: DataTableStoredState = {
       columnOrder: tableState?.columnOrder ?? [],
-      columnVisibility: tableState?.columnVisibility ?? {},
+      columnVisibility: {
+         ...(tableState?.columnVisibility ?? {}),
+         ...viewColumnVisibility,
+      },
       columnPinning: tableState?.columnPinning ?? {
          left: ["name"],
          right: ["amount"],
@@ -119,6 +142,9 @@ export function TransactionsList({
             creditCardId: filters.creditCardId,
             paymentMethod: filters.paymentMethod,
             categoryId: filters.categoryId,
+            view,
+            overdueOnly,
+            status: status && status.length > 0 ? status : undefined,
             page: filters.page,
             pageSize: filters.pageSize,
          },
@@ -199,26 +225,99 @@ export function TransactionsList({
       [openAlertDialog, deleteMutation],
    );
 
-   const handleRecurring = useCallback(
+   const markAsUnpaidMutation = useMutation(
+      orpc.transactions.markAsUnpaid.mutationOptions({
+         onSuccess: () => {
+            toast.success("Pagamento desmarcado.");
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao desmarcar pagamento.");
+         },
+      }),
+   );
+
+   const cancelMutation = useMutation(
+      orpc.transactions.cancel.mutationOptions({
+         onSuccess: () => {
+            toast.success("Lançamento cancelado.");
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao cancelar lançamento.");
+         },
+      }),
+   );
+
+   const reactivateMutation = useMutation(
+      orpc.transactions.reactivate.mutationOptions({
+         onSuccess: () => {
+            toast.success("Lançamento reativado.");
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao reativar lançamento.");
+         },
+      }),
+   );
+
+   const handleMarkPaid = useCallback(
       (tx: TransactionRow) => {
          openCredenza({
             renderChildren: () => (
-               <BillFromTransactionCredenza
-                  bankAccountId={tx.bankAccountId}
-                  categoryId={tx.categoryId}
-                  mode="recurring"
+               <MarkPaidCredenza
+                  mode="single"
                   onSuccess={closeCredenza}
-                  transactionAmount={tx.amount}
-                  transactionDate={tx.date}
                   transactionId={tx.id}
-                  transactionName={tx.name ?? ""}
-                  transactionType={tx.type}
                />
             ),
          });
       },
       [openCredenza, closeCredenza],
    );
+
+   const handleMarkUnpaid = useCallback(
+      (tx: TransactionRow) => {
+         markAsUnpaidMutation.mutate({ id: tx.id });
+      },
+      [markAsUnpaidMutation],
+   );
+
+   const handleCancel = useCallback(
+      (tx: TransactionRow) => {
+         openAlertDialog({
+            title: "Cancelar lançamento",
+            description:
+               "Tem certeza que deseja cancelar este lançamento? Ele ficará marcado como cancelado.",
+            actionLabel: "Cancelar lançamento",
+            cancelLabel: "Voltar",
+            variant: "destructive",
+            onAction: async () => {
+               await cancelMutation.mutateAsync({ id: tx.id });
+            },
+         });
+      },
+      [openAlertDialog, cancelMutation],
+   );
+
+   const handleReactivate = useCallback(
+      (tx: TransactionRow) => {
+         reactivateMutation.mutate({ id: tx.id, paid: false });
+      },
+      [reactivateMutation],
+   );
+
+   const handleBulkMarkPaid = useCallback(() => {
+      openCredenza({
+         renderChildren: () => (
+            <MarkPaidCredenza
+               ids={selectedIds}
+               mode="bulk"
+               onSuccess={() => {
+                  onClear();
+                  closeCredenza();
+               }}
+            />
+         ),
+      });
+   }, [openCredenza, closeCredenza, selectedIds, onClear]);
 
    const handleBulkDelete = useCallback(() => {
       openAlertDialog({
@@ -353,7 +452,7 @@ export function TransactionsList({
             }}
             renderActions={({ row }) => {
                const tx = row.original;
-               const isTransfer = tx.type === "transfer";
+               const { status } = tx;
                return (
                   <>
                      <Button
@@ -363,40 +462,76 @@ export function TransactionsList({
                      >
                         <Pencil className="size-4" />
                      </Button>
-                     <Button
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(tx)}
-                        tooltip="Excluir"
-                        variant="outline"
-                     >
-                        <Trash2 className="size-4" />
-                     </Button>
-                     {!isTransfer && (
-                        <DropdownMenu>
-                           <DropdownMenuTrigger asChild>
-                              <Button variant="outline">
-                                 <MoreHorizontal className="size-4" />
-                                 <span className="sr-only">Mais ações</span>
-                              </Button>
-                           </DropdownMenuTrigger>
-                           <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Mais ações</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                           <Button variant="outline">
+                              <MoreHorizontal className="size-4" />
+                              <span className="sr-only">Mais ações</span>
+                           </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                           <DropdownMenuSeparator />
+                           {status === "pending" && (
                               <DropdownMenuItem
-                                 onClick={() => handleRecurring(tx)}
+                                 onClick={() => handleMarkPaid(tx)}
                               >
-                                 <Repeat className="size-4" />
-                                 Criar Lançamento Recorrente
+                                 <CheckCircle2 className="size-4" />
+                                 Marcar como pago
                               </DropdownMenuItem>
-                           </DropdownMenuContent>
-                        </DropdownMenu>
-                     )}
+                           )}
+                           {status === "paid" && (
+                              <DropdownMenuItem
+                                 onClick={() => handleMarkUnpaid(tx)}
+                              >
+                                 <Undo2 className="size-4" />
+                                 Desmarcar pago
+                              </DropdownMenuItem>
+                           )}
+                           {(status === "pending" || status === "paid") && (
+                              <DropdownMenuItem
+                                 onClick={() => handleCancel(tx)}
+                              >
+                                 <Ban className="size-4" />
+                                 Cancelar
+                              </DropdownMenuItem>
+                           )}
+                           {status === "cancelled" && (
+                              <DropdownMenuItem
+                                 onClick={() => handleReactivate(tx)}
+                              >
+                                 <RotateCcw className="size-4" />
+                                 Reativar
+                              </DropdownMenuItem>
+                           )}
+                           <DropdownMenuSeparator />
+                           <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => handleDelete(tx)}
+                           >
+                              <Trash2 className="size-4" />
+                              Excluir
+                           </DropdownMenuItem>
+                        </DropdownMenuContent>
+                     </DropdownMenu>
                   </>
                );
             }}
             rowSelection={rowSelection}
          />
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
+            {selectedIds.every(
+               (id) =>
+                  transactionData.find((t) => t.id === id)?.status ===
+                  "pending",
+            ) && selectedCount > 0 ? (
+               <SelectionActionButton
+                  icon={<CheckCircle2 className="size-3.5" />}
+                  onClick={handleBulkMarkPaid}
+               >
+                  Marcar como pagas
+               </SelectionActionButton>
+            ) : null}
             <SelectionActionButton
                icon={<FolderOpen className="size-3.5" />}
                onClick={handleBulkCategorize}

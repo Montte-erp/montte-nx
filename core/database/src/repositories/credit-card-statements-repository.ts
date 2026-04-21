@@ -5,7 +5,6 @@ import type { DatabaseInstance } from "@core/database/client";
 import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
 import { creditCardStatementTotals } from "@core/database/schemas/credit-card-statement-totals";
 import { transactions } from "@core/database/schemas/transactions";
-import { bills } from "@core/database/schemas/bills";
 import {
    computeClosingDate,
    computeDueDate,
@@ -138,28 +137,6 @@ export async function getOrCreateStatement(
          return found;
       }
 
-      // Create a bill for the statement (contas a pagar)
-      const [bill] = await db
-         .insert(bills)
-         .values({
-            teamId: card.teamId,
-            name: `Fatura ${card.name} - ${dayjs(`${statementPeriod}-01`).format("MM/YYYY")}`,
-            type: "payable",
-            status: "pending",
-            amount: "0",
-            dueDate,
-            bankAccountId: card.bankAccountId,
-         })
-         .returning();
-
-      if (bill) {
-         await db
-            .update(creditCardStatements)
-            .set({ billId: bill.id })
-            .where(eq(creditCardStatements.id, statement.id));
-         statement.billId = bill.id;
-      }
-
       return statement;
    } catch (err) {
       propagateError(err);
@@ -238,19 +215,6 @@ export async function payStatement(
 
          if (!paymentTx)
             throw AppError.database("Failed to create payment transaction");
-
-         // 4. Update bill as paid
-         if (row.statement.billId) {
-            await tx
-               .update(bills)
-               .set({
-                  status: "paid",
-                  paidAt: dayjs().toDate(),
-                  amount,
-                  transactionId: paymentTx.id,
-               })
-               .where(eq(bills.id, row.statement.billId));
-         }
 
          // 5. Update statement
          const [updated] = await tx

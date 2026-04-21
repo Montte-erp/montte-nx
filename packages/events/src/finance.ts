@@ -4,10 +4,11 @@ import { type EmitFn, EVENT_CATEGORIES } from "./catalog";
 export const FINANCE_EVENTS = {
    "finance.transaction_created": "finance.transaction_created",
    "finance.transaction_updated": "finance.transaction_updated",
+   "finance.transaction_marked_paid": "finance.transaction_marked_paid",
+   "finance.transaction_cancelled": "finance.transaction_cancelled",
    "finance.bank_account_connected": "finance.bank_account_connected",
    "finance.category_created": "finance.category_created",
    "finance.tag_created": "finance.tag_created",
-   "finance.budget_alert_triggered": "finance.budget_alert_triggered",
    "finance.statement_imported": "finance.statement_imported",
 } as const;
 
@@ -124,25 +125,43 @@ export function emitFinanceTagCreated(
    });
 }
 
-export const financeBudgetAlertTriggeredSchema = z.object({
-   budgetGoalId: z.string().uuid(),
-   categoryId: z.string().uuid().optional(),
-   subcategoryId: z.string().uuid().optional(),
-   percentUsed: z.number(),
-   teamId: z.string().uuid(),
+export const financeTransactionMarkedPaidSchema = z.object({
+   transactionId: z.string().uuid(),
+   type: z.enum(["income", "expense", "transfer"]),
+   amountCents: z.number().int().nonnegative(),
 });
-export type FinanceBudgetAlertTriggeredEvent = z.infer<
-   typeof financeBudgetAlertTriggeredSchema
+export type FinanceTransactionMarkedPaidEvent = z.infer<
+   typeof financeTransactionMarkedPaidSchema
 >;
 
-export function emitFinanceBudgetAlertTriggered(
+export function emitFinanceTransactionMarkedPaid(
    emit: EmitFn,
    ctx: { organizationId: string; userId?: string; teamId?: string },
-   properties: FinanceBudgetAlertTriggeredEvent,
+   properties: FinanceTransactionMarkedPaidEvent,
 ) {
    return emit({
       ...ctx,
-      eventName: FINANCE_EVENTS["finance.budget_alert_triggered"],
+      eventName: FINANCE_EVENTS["finance.transaction_marked_paid"],
+      eventCategory: EVENT_CATEGORIES.finance,
+      properties,
+   });
+}
+
+export const financeTransactionCancelledSchema = z.object({
+   transactionId: z.string().uuid(),
+});
+export type FinanceTransactionCancelledEvent = z.infer<
+   typeof financeTransactionCancelledSchema
+>;
+
+export function emitFinanceTransactionCancelled(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: FinanceTransactionCancelledEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: FINANCE_EVENTS["finance.transaction_cancelled"],
       eventCategory: EVENT_CATEGORIES.finance,
       properties,
    });

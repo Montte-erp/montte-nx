@@ -10,7 +10,6 @@ import {
    createBankAccountSchema,
    updateBankAccountSchema,
 } from "@core/database/schemas/bank-accounts";
-import { bills } from "@core/database/schemas/bills";
 import { transactions } from "@core/database/schemas/transactions";
 
 export async function createBankAccount(
@@ -199,22 +198,22 @@ export async function computeBankAccountBalance(
       balance = subtract(balance, of(row?.transferOut ?? "0", currency));
       balance = add(balance, of(transferInRow?.transferIn ?? "0", currency));
 
-      const [billsRow] = await db
+      const [pendingRow] = await db
          .select({
-            pendingReceivable: sql<string>`COALESCE(SUM(CASE WHEN type = 'receivable' AND status = 'pending' THEN amount::numeric ELSE 0 END), 0)`,
-            pendingPayable: sql<string>`COALESCE(SUM(CASE WHEN type = 'payable' AND status = 'pending' THEN amount::numeric ELSE 0 END), 0)`,
+            pendingReceivable: sql<string>`COALESCE(SUM(CASE WHEN type = 'income' AND status = 'pending' THEN amount::numeric ELSE 0 END), 0)`,
+            pendingPayable: sql<string>`COALESCE(SUM(CASE WHEN type = 'expense' AND status = 'pending' THEN amount::numeric ELSE 0 END), 0)`,
          })
-         .from(bills)
-         .where(eq(bills.bankAccountId, accountId));
+         .from(transactions)
+         .where(eq(transactions.bankAccountId, accountId));
 
       let projected = balance;
       projected = add(
          projected,
-         of(billsRow?.pendingReceivable ?? "0", currency),
+         of(pendingRow?.pendingReceivable ?? "0", currency),
       );
       projected = subtract(
          projected,
-         of(billsRow?.pendingPayable ?? "0", currency),
+         of(pendingRow?.pendingPayable ?? "0", currency),
       );
 
       return {

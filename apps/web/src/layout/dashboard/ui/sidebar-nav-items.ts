@@ -9,10 +9,8 @@ import {
    LayoutDashboard,
    Lightbulb,
    Package,
-   Receipt,
    Tag,
    Tags,
-   Target,
    Users,
 } from "lucide-react";
 import type { SubSidebarSection } from "../hooks/use-sidebar-store";
@@ -129,22 +127,6 @@ export const navGroups: NavGroupDef[] = [
             icon: Tags,
             iconColor: "text-teal-500",
             route: "/$slug/$teamSlug/tags",
-            configurable: true,
-         },
-         {
-            id: "goals",
-            label: "Metas",
-            icon: Target,
-            iconColor: "text-red-500",
-            route: "/$slug/$teamSlug/goals",
-            configurable: true,
-         },
-         {
-            id: "bills",
-            label: "Contas a Pagar/Receber",
-            icon: Receipt,
-            iconColor: "text-yellow-500",
-            route: "/$slug/$teamSlug/bills",
             configurable: true,
          },
       ],

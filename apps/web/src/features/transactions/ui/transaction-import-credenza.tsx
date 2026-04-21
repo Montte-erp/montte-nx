@@ -1215,14 +1215,6 @@ function ConfirmStep({
                   | "cheque"
                   | "automatic_debit"
                   | null,
-               isInstallment: row.parcelado
-                  ? ["sim", "yes", "true", "1"].includes(
-                       row.parcelado.toLowerCase().trim(),
-                    )
-                  : false,
-               installmentCount: row.num_parcelas
-                  ? Number.parseInt(row.num_parcelas, 10) || null
-                  : null,
             };
          });
 

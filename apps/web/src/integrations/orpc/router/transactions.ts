@@ -5,13 +5,19 @@ import {
 } from "@f-o-t/condition-evaluator";
 import {
    bulkCreateTransactions,
+   bulkMarkTransactionsAsPaid,
+   cancelTransaction,
    createTransaction,
    createTransactionItems,
    deleteTransaction,
    ensureTransactionOwnership,
+   getPayableSummary as getPayableSummaryRepo,
    getTransactionsSummary,
    getTransactionWithTag,
    listTransactions,
+   markTransactionAsPaid,
+   markTransactionAsUnpaid,
+   reactivateTransaction,
    replaceTransactionItems,
    updateTransaction,
    updateTransactionCategory,
@@ -70,6 +76,24 @@ const filterSchema = z
       creditCardId: z.string().uuid().optional(),
       uncategorized: z.boolean().optional(),
       paymentMethod: z.string().optional(),
+      status: z
+         .union([
+            z.enum(["pending", "paid", "cancelled"]),
+            z.array(z.enum(["pending", "paid", "cancelled"])),
+         ])
+         .optional(),
+      dueDateFrom: z
+         .string()
+         .regex(/^\d{4}-\d{2}-\d{2}$/)
+         .optional(),
+      dueDateTo: z
+         .string()
+         .regex(/^\d{4}-\d{2}-\d{2}$/)
+         .optional(),
+      overdueOnly: z.boolean().optional(),
+      view: z
+         .enum(["all", "payable", "receivable", "settled", "cancelled"])
+         .optional(),
       page: z.number().int().positive().default(1),
       pageSize: z.number().int().positive().max(100).default(20),
       conditionGroup: ConditionGroup.optional(),
@@ -545,3 +569,68 @@ export const dismissSuggestedTag = protectedProcedure
       });
       return { ok: true };
    });
+
+export const markAsPaid = protectedProcedure
+   .input(
+      z.object({
+         id: z.string().uuid(),
+         paidDate: z
+            .string()
+            .regex(/^\d{4}-\d{2}-\d{2}$/)
+            .optional(),
+         bankAccountId: z.string().uuid().nullable().optional(),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      return markTransactionAsPaid(context.db, input.id, context.teamId, {
+         paidDate: input.paidDate,
+         bankAccountId: input.bankAccountId ?? undefined,
+      });
+   });
+
+export const markAsUnpaid = protectedProcedure
+   .input(idSchema)
+   .handler(async ({ context, input }) => {
+      return markTransactionAsUnpaid(context.db, input.id, context.teamId);
+   });
+
+export const cancel = protectedProcedure
+   .input(idSchema)
+   .handler(async ({ context, input }) => {
+      return cancelTransaction(context.db, input.id, context.teamId);
+   });
+
+export const reactivate = protectedProcedure
+   .input(z.object({ id: z.string().uuid(), paid: z.boolean().default(false) }))
+   .handler(async ({ context, input }) => {
+      return reactivateTransaction(
+         context.db,
+         input.id,
+         context.teamId,
+         input.paid,
+      );
+   });
+
+export const bulkMarkAsPaid = protectedProcedure
+   .input(
+      z.object({
+         ids: z.array(z.string().uuid()).min(1).max(500),
+         paidDate: z
+            .string()
+            .regex(/^\d{4}-\d{2}-\d{2}$/)
+            .optional(),
+         bankAccountId: z.string().uuid().nullable().optional(),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      return bulkMarkTransactionsAsPaid(context.db, input.ids, context.teamId, {
+         paidDate: input.paidDate,
+         bankAccountId: input.bankAccountId ?? undefined,
+      });
+   });
+
+export const getPayableSummary = protectedProcedure.handler(
+   async ({ context }) => {
+      return getPayableSummaryRepo(context.db, context.teamId);
+   },
+);

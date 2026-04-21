@@ -1,10 +1,8 @@
 import { sql } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import {
-   boolean,
    date,
    index,
-   integer,
    jsonb,
    numeric,
    text,
@@ -47,6 +45,12 @@ export const transactionTypeEnum = financeSchema.enum("transaction_type", [
    "transfer",
 ]);
 
+export const transactionStatusEnum = financeSchema.enum("transaction_status", [
+   "pending",
+   "paid",
+   "cancelled",
+]);
+
 export const transactions = financeSchema.table(
    "transactions",
    {
@@ -78,10 +82,9 @@ export const transactions = financeSchema.table(
       ),
       attachments: jsonb("attachments").$type<Attachment[]>(),
       paymentMethod: paymentMethodEnum("payment_method"),
-      isInstallment: boolean("is_installment").default(false).notNull(),
-      installmentCount: integer("installment_count"),
-      installmentNumber: integer("installment_number"),
-      installmentGroupId: uuid("installment_group_id"),
+      status: transactionStatusEnum("status").notNull().default("paid"),
+      dueDate: date("due_date"),
+      paidAt: timestamp("paid_at", { withTimezone: true }),
       statementPeriod: text("statement_period"),
       contactId: uuid("contact_id").references(() => contacts.id, {
          onDelete: "restrict",
@@ -116,6 +119,9 @@ export const transactions = financeSchema.table(
       ),
       index("transactions_tag_id_idx").on(table.tagId),
       index("transactions_suggested_tag_id_idx").on(table.suggestedTagId),
+      index("transactions_status_idx").on(table.status),
+      index("transactions_due_date_idx").on(table.dueDate),
+      index("transactions_status_type_idx").on(table.status, table.type),
    ],
 );
 
@@ -147,6 +153,8 @@ export const transactionItemSchema = createSelectSchema(transactionItems);
 export type Transaction = z.infer<typeof transactionSchema>;
 export type TransactionItem = z.infer<typeof transactionItemSchema>;
 export type TransactionType = (typeof transactionTypeEnum.enumValues)[number];
+export type TransactionStatus =
+   (typeof transactionStatusEnum.enumValues)[number];
 
 const numericPositive = (msg: string) =>
    z.string().refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {
@@ -172,11 +180,10 @@ const baseTransactionSchema = createInsertSchema(transactions).pick({
    tagId: true,
    paymentMethod: true,
    attachments: true,
-   isInstallment: true,
-   installmentCount: true,
-   installmentNumber: true,
-   installmentGroupId: true,
    statementPeriod: true,
+   status: true,
+   dueDate: true,
+   paidAt: true,
 });
 
 export const createTransactionSchema = baseTransactionSchema
@@ -205,6 +212,12 @@ export const createTransactionSchema = baseTransactionSchema
       categoryId: z.string().uuid().nullable().optional(),
       contactId: z.string().uuid().nullable().optional(),
       attachments: z.array(attachmentSchema).nullable().optional(),
+      status: z
+         .enum(["pending", "paid", "cancelled"])
+         .optional()
+         .default("paid"),
+      dueDate: dateSchema.nullable().optional(),
+      paidAt: z.date().nullable().optional(),
    })
    .superRefine((data, ctx) => {
       if (data.type === "transfer") {
@@ -279,8 +292,11 @@ export const updateTransactionSchema = baseTransactionSchema
       categoryId: z.string().uuid().nullable().optional(),
       contactId: z.string().uuid().nullable().optional(),
       attachments: z.array(attachmentSchema).nullable().optional(),
+      status: z.enum(["pending", "paid", "cancelled"]).optional(),
+      dueDate: dateSchema.nullable().optional(),
+      paidAt: z.date().nullable().optional(),
    })
    .partial();
 
-export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
-export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
+export type CreateTransactionInput = z.input<typeof createTransactionSchema>;
+export type UpdateTransactionInput = z.input<typeof updateTransactionSchema>;

@@ -13,6 +13,7 @@ import {
    gt,
    gte,
    ilike,
+   inArray,
    isNotNull,
    isNull,
    lt,
@@ -57,6 +58,15 @@ export interface ListTransactionsFilter {
    creditCardId?: string;
    paymentMethod?: string;
    conditionGroup?: ConditionGroup;
+   status?:
+      | "pending"
+      | "paid"
+      | "cancelled"
+      | ("pending" | "paid" | "cancelled")[];
+   dueDateFrom?: string;
+   dueDateTo?: string;
+   overdueOnly?: boolean;
+   view?: "all" | "payable" | "receivable" | "settled" | "cancelled";
 }
 
 function conditionToSql(condition: Condition) {
@@ -255,6 +265,33 @@ export async function listTransactions(
          );
       if (filter.uncategorized)
          conditions.push(isNull(transactions.categoryId));
+      if (filter.status) {
+         if (Array.isArray(filter.status)) {
+            conditions.push(inArray(transactions.status, filter.status));
+         } else {
+            conditions.push(eq(transactions.status, filter.status));
+         }
+      }
+      if (filter.dueDateFrom)
+         conditions.push(gte(transactions.dueDate, filter.dueDateFrom));
+      if (filter.dueDateTo)
+         conditions.push(lte(transactions.dueDate, filter.dueDateTo));
+      if (filter.overdueOnly) {
+         const today = dayjs().format("YYYY-MM-DD");
+         conditions.push(eq(transactions.status, "pending"));
+         conditions.push(lt(transactions.date, today));
+      }
+      if (filter.view === "payable") {
+         conditions.push(eq(transactions.type, "expense"));
+         conditions.push(eq(transactions.status, "pending"));
+      } else if (filter.view === "receivable") {
+         conditions.push(eq(transactions.type, "income"));
+         conditions.push(eq(transactions.status, "pending"));
+      } else if (filter.view === "settled") {
+         conditions.push(eq(transactions.status, "paid"));
+      } else if (filter.view === "cancelled") {
+         conditions.push(eq(transactions.status, "cancelled"));
+      }
 
       const isWeighted = filter.conditionGroup?.scoringMode === "weighted";
 
@@ -439,6 +476,33 @@ export async function getTransactionsSummary(
          );
       if (filter.uncategorized)
          conditions.push(isNull(transactions.categoryId));
+      if (filter.status) {
+         if (Array.isArray(filter.status)) {
+            conditions.push(inArray(transactions.status, filter.status));
+         } else {
+            conditions.push(eq(transactions.status, filter.status));
+         }
+      }
+      if (filter.dueDateFrom)
+         conditions.push(gte(transactions.dueDate, filter.dueDateFrom));
+      if (filter.dueDateTo)
+         conditions.push(lte(transactions.dueDate, filter.dueDateTo));
+      if (filter.overdueOnly) {
+         const today = dayjs().format("YYYY-MM-DD");
+         conditions.push(eq(transactions.status, "pending"));
+         conditions.push(lt(transactions.date, today));
+      }
+      if (filter.view === "payable") {
+         conditions.push(eq(transactions.type, "expense"));
+         conditions.push(eq(transactions.status, "pending"));
+      } else if (filter.view === "receivable") {
+         conditions.push(eq(transactions.type, "income"));
+         conditions.push(eq(transactions.status, "pending"));
+      } else if (filter.view === "settled") {
+         conditions.push(eq(transactions.status, "paid"));
+      } else if (filter.view === "cancelled") {
+         conditions.push(eq(transactions.status, "cancelled"));
+      }
 
       const whereClause = and(...conditions);
 
@@ -507,6 +571,165 @@ export async function updateTransaction(
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to update transaction");
+   }
+}
+
+export async function markTransactionAsPaid(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+   opts: { paidDate?: string; bankAccountId?: string | null } = {},
+) {
+   try {
+      return await db.transaction(async (tx) => {
+         const existing = await ensureTransactionOwnership(tx, id, teamId);
+         if (existing.status === "paid") {
+            throw AppError.conflict("Lançamento já está pago.");
+         }
+         if (existing.status === "cancelled") {
+            throw AppError.validation(
+               "Lançamento cancelado não pode ser pago.",
+            );
+         }
+         const paidDate = opts.paidDate ?? dayjs().format("YYYY-MM-DD");
+         const [row] = await tx
+            .update(transactions)
+            .set({
+               status: "paid",
+               paidAt: dayjs().toDate(),
+               date: paidDate,
+               ...(opts.bankAccountId !== undefined
+                  ? { bankAccountId: opts.bankAccountId }
+                  : {}),
+            })
+            .where(eq(transactions.id, id))
+            .returning();
+         if (!row) throw AppError.notFound("Lançamento não encontrado.");
+         return row;
+      });
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Falha ao marcar lançamento como pago.");
+   }
+}
+
+export async function markTransactionAsUnpaid(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
+   try {
+      return await db.transaction(async (tx) => {
+         const existing = await ensureTransactionOwnership(tx, id, teamId);
+         if (existing.status !== "paid") {
+            throw AppError.conflict(
+               "Apenas lançamentos pagos podem ser desmarcados.",
+            );
+         }
+         const [row] = await tx
+            .update(transactions)
+            .set({ status: "pending", paidAt: null })
+            .where(eq(transactions.id, id))
+            .returning();
+         if (!row) throw AppError.notFound("Lançamento não encontrado.");
+         return row;
+      });
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Falha ao desmarcar lançamento.");
+   }
+}
+
+export async function cancelTransaction(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
+   try {
+      return await db.transaction(async (tx) => {
+         const existing = await ensureTransactionOwnership(tx, id, teamId);
+         if (existing.status === "cancelled") {
+            throw AppError.conflict("Lançamento já está cancelado.");
+         }
+         const [row] = await tx
+            .update(transactions)
+            .set({ status: "cancelled" })
+            .where(eq(transactions.id, id))
+            .returning();
+         if (!row) throw AppError.notFound("Lançamento não encontrado.");
+         return row;
+      });
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Falha ao cancelar lançamento.");
+   }
+}
+
+export async function reactivateTransaction(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+   paid: boolean,
+) {
+   try {
+      return await db.transaction(async (tx) => {
+         const existing = await ensureTransactionOwnership(tx, id, teamId);
+         if (existing.status !== "cancelled") {
+            throw AppError.conflict(
+               "Apenas lançamentos cancelados podem ser reativados.",
+            );
+         }
+         const [row] = await tx
+            .update(transactions)
+            .set({
+               status: paid ? "paid" : "pending",
+               paidAt: paid ? dayjs().toDate() : null,
+            })
+            .where(eq(transactions.id, id))
+            .returning();
+         if (!row) throw AppError.notFound("Lançamento não encontrado.");
+         return row;
+      });
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Falha ao reativar lançamento.");
+   }
+}
+
+export async function bulkMarkTransactionsAsPaid(
+   db: DatabaseInstance,
+   ids: string[],
+   teamId: string,
+   opts: { paidDate?: string; bankAccountId?: string | null } = {},
+) {
+   const results = await Promise.allSettled(
+      ids.map((id) => markTransactionAsPaid(db, id, teamId, opts)),
+   );
+   return {
+      succeeded: results.filter((r) => r.status === "fulfilled").length,
+      failed: results.filter((r) => r.status === "rejected").length,
+   };
+}
+
+export async function getPayableSummary(db: DatabaseInstance, teamId: string) {
+   try {
+      const today = dayjs().format("YYYY-MM-DD");
+      const [row] = await db
+         .select({
+            totalPayable: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'expense' AND ${transactions.status} = 'pending' THEN ${transactions.amount}::numeric ELSE 0 END), 0)`,
+            totalReceivable: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' AND ${transactions.status} = 'pending' THEN ${transactions.amount}::numeric ELSE 0 END), 0)`,
+            overdueCount: sql<number>`COUNT(CASE WHEN ${transactions.status} = 'pending' AND ${transactions.date} < ${today} THEN 1 END)::int`,
+         })
+         .from(transactions)
+         .where(eq(transactions.teamId, teamId));
+      return {
+         totalPayable: row?.totalPayable ?? "0",
+         totalReceivable: row?.totalReceivable ?? "0",
+         overdueCount: row?.overdueCount ?? 0,
+      };
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Falha ao obter resumo de lançamentos.");
    }
 }
 

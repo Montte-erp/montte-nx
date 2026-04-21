@@ -12,18 +12,12 @@ import {
    user,
 } from "@core/database/schemas/auth";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
-import { bills, recurrenceSettings } from "@core/database/schemas/bills";
-import { budgetGoals } from "@core/database/schemas/budget-goals";
 import { categories } from "@core/database/schemas/categories";
 import { contacts } from "@core/database/schemas/contacts";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
 import { dashboards } from "@core/database/schemas/dashboards";
 import { events } from "@core/database/schemas/events";
-import {
-   financialGoalMovements,
-   financialGoals,
-} from "@core/database/schemas/financial-goals";
 import { insights } from "@core/database/schemas/insights";
 import {
    inventoryMovements,
@@ -122,43 +116,6 @@ export const twoFactorRelations = relations(twoFactor, ({ one }) => ({
    }),
 }));
 
-export const billsRelations = relations(bills, ({ one }) => ({
-   bankAccount: one(bankAccounts, {
-      fields: [bills.bankAccountId],
-      references: [bankAccounts.id],
-   }),
-   category: one(categories, {
-      fields: [bills.categoryId],
-      references: [categories.id],
-   }),
-   transaction: one(transactions, {
-      fields: [bills.transactionId],
-      references: [transactions.id],
-   }),
-   recurrenceSetting: one(recurrenceSettings, {
-      fields: [bills.recurrenceGroupId],
-      references: [recurrenceSettings.id],
-   }),
-   contact: one(contacts, {
-      fields: [bills.contactId],
-      references: [contacts.id],
-   }),
-}));
-
-export const recurrenceSettingsRelations = relations(
-   recurrenceSettings,
-   ({ many }) => ({
-      bills: many(bills),
-   }),
-);
-
-export const budgetGoalsRelations = relations(budgetGoals, ({ one }) => ({
-   category: one(categories, {
-      fields: [budgetGoals.categoryId],
-      references: [categories.id],
-   }),
-}));
-
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
    parent: one(categories, {
       fields: [categories.parentId],
@@ -219,31 +176,6 @@ export const insightsRelations = relations(insights, ({ one }) => ({
       references: [user.id],
    }),
 }));
-
-export const financialGoalsRelations = relations(
-   financialGoals,
-   ({ one, many }) => ({
-      category: one(categories, {
-         fields: [financialGoals.categoryId],
-         references: [categories.id],
-      }),
-      movements: many(financialGoalMovements),
-   }),
-);
-
-export const financialGoalMovementsRelations = relations(
-   financialGoalMovements,
-   ({ one }) => ({
-      goal: one(financialGoals, {
-         fields: [financialGoalMovements.goalId],
-         references: [financialGoals.id],
-      }),
-      transaction: one(transactions, {
-         fields: [financialGoalMovements.transactionId],
-         references: [transactions.id],
-      }),
-   }),
-);
 
 export const inventoryProductsRelations = relations(
    inventoryProducts,
@@ -308,7 +240,6 @@ export const resourcesRelations = relations(resources, ({ one }) => ({
 }));
 
 export const bankAccountsRelations = relations(bankAccounts, ({ many }) => ({
-   bills: many(bills),
    transactions: many(transactions, {
       relationName: "sourceAccount",
    }),
@@ -332,10 +263,6 @@ export const creditCardStatementsRelations = relations(
       creditCard: one(creditCards, {
          fields: [creditCardStatements.creditCardId],
          references: [creditCards.id],
-      }),
-      bill: one(bills, {
-         fields: [creditCardStatements.billId],
-         references: [bills.id],
       }),
       paymentTransaction: one(transactions, {
          fields: [creditCardStatements.paymentTransactionId],
