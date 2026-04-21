@@ -11,7 +11,6 @@ import {
    createTransactionItems,
    deleteTransaction,
    ensureTransactionOwnership,
-   getPayableSummary as getPayableSummaryRepo,
    getTransactionsSummary,
    getTransactionWithTag,
    listTransactions,
@@ -628,9 +627,3 @@ export const bulkMarkAsPaid = protectedProcedure
          bankAccountId: input.bankAccountId ?? undefined,
       });
    });
-
-export const getPayableSummary = protectedProcedure.handler(
-   async ({ context }) => {
-      return getPayableSummaryRepo(context.db, context.teamId);
-   },
-);

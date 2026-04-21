@@ -28,7 +28,6 @@ import {
    type UpdateTransactionInput,
    createTransactionSchema,
    updateTransactionSchema,
-   paymentMethodEnum,
    transactionItems,
    transactions,
 } from "@core/database/schemas/transactions";
@@ -711,41 +710,10 @@ export async function bulkMarkTransactionsAsPaid(
    };
 }
 
-export async function getPayableSummary(db: DatabaseInstance, teamId: string) {
-   try {
-      const today = dayjs().format("YYYY-MM-DD");
-      const [row] = await db
-         .select({
-            totalPayable: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'expense' AND ${transactions.status} = 'pending' THEN ${transactions.amount}::numeric ELSE 0 END), 0)`,
-            totalReceivable: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' AND ${transactions.status} = 'pending' THEN ${transactions.amount}::numeric ELSE 0 END), 0)`,
-            overdueCount: sql<number>`COUNT(CASE WHEN ${transactions.status} = 'pending' AND ${transactions.date} < ${today} THEN 1 END)::int`,
-         })
-         .from(transactions)
-         .where(eq(transactions.teamId, teamId));
-      return {
-         totalPayable: row?.totalPayable ?? "0",
-         totalReceivable: row?.totalReceivable ?? "0",
-         overdueCount: row?.overdueCount ?? 0,
-      };
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Falha ao obter resumo de lançamentos.");
-   }
-}
-
 export async function bulkCreateTransactions(
    db: DatabaseInstance,
    teamId: string,
-   rows: {
-      bankAccountId: string;
-      name: string | null;
-      type: "income" | "expense";
-      amount: string;
-      date: string;
-      description: string | null;
-      categoryId: string | null;
-      paymentMethod: (typeof paymentMethodEnum.enumValues)[number] | null;
-   }[],
+   rows: Omit<typeof transactions.$inferInsert, "teamId">[],
 ) {
    try {
       return await db

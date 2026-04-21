@@ -23,9 +23,7 @@ import { z } from "zod";
 import { orpc } from "@/integrations/orpc/client";
 
 interface MarkPaidCredenzaProps {
-   mode: "single" | "bulk";
-   transactionId?: string;
-   ids?: string[];
+   ids: string[];
    onSuccess: () => void;
 }
 
@@ -35,24 +33,14 @@ const requiredDateSchema = z
       message: "Campo obrigatório.",
    });
 
-export function MarkPaidCredenza({
-   mode,
-   transactionId,
-   ids,
-   onSuccess,
-}: MarkPaidCredenzaProps) {
+export function MarkPaidCredenza({ ids, onSuccess }: MarkPaidCredenzaProps) {
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
    );
 
-   const markSingle = useMutation(
-      orpc.transactions.markAsPaid.mutationOptions(),
-   );
    const markBulk = useMutation(
       orpc.transactions.bulkMarkAsPaid.mutationOptions(),
    );
-
-   const isPending = markSingle.isPending || markBulk.isPending;
 
    const form = useForm({
       defaultValues: {
@@ -62,21 +50,12 @@ export function MarkPaidCredenza({
       onSubmit: async ({ value }) => {
          const paidDate = dayjs(value.paidDate).format("YYYY-MM-DD");
          const bankAccountId = value.bankAccountId || null;
-         if (mode === "bulk" && ids && ids.length > 0) {
-            await markBulk.mutateAsync({ ids, paidDate, bankAccountId });
-            toast.success(
-               ids.length === 1
-                  ? "Lançamento marcado como pago."
-                  : `${ids.length} lançamentos marcados como pagos.`,
-            );
-         } else if (transactionId) {
-            await markSingle.mutateAsync({
-               id: transactionId,
-               paidDate,
-               bankAccountId,
-            });
-            toast.success("Lançamento marcado como pago.");
-         }
+         await markBulk.mutateAsync({ ids, paidDate, bankAccountId });
+         toast.success(
+            ids.length === 1
+               ? "Lançamento marcado como pago."
+               : `${ids.length} lançamentos marcados como pagos.`,
+         );
          onSuccess();
       },
    });
@@ -95,11 +74,7 @@ export function MarkPaidCredenza({
          }}
       >
          <CredenzaHeader>
-            <CredenzaTitle>
-               {mode === "bulk"
-                  ? "Marcar lançamentos como pagos"
-                  : "Marcar como pago"}
-            </CredenzaTitle>
+            <CredenzaTitle>Marcar lançamentos como pagos</CredenzaTitle>
          </CredenzaHeader>
          <CredenzaBody className="px-4">
             <FieldGroup>
@@ -149,8 +124,12 @@ export function MarkPaidCredenza({
             </FieldGroup>
          </CredenzaBody>
          <CredenzaFooter>
-            <Button className="w-full gap-2" disabled={isPending} type="submit">
-               {isPending ? <Spinner className="size-4" /> : null}
+            <Button
+               className="w-full gap-2"
+               disabled={markBulk.isPending}
+               type="submit"
+            >
+               {markBulk.isPending ? <Spinner className="size-4" /> : null}
                Confirmar pagamento
             </Button>
          </CredenzaFooter>
