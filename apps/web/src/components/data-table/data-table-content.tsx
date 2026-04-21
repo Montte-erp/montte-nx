@@ -434,6 +434,11 @@ function EditableCell({
 
    if (editMode === "inline") {
       if (!open) {
+         const resolvedLabel =
+            (cellComponent === "select" || cellComponent === "combobox") &&
+            options
+               ? options.find((o) => o.value === displayValue)?.label
+               : undefined;
          return (
             <Button
                aria-label={ariaLabel}
@@ -442,15 +447,16 @@ function EditableCell({
                variant="ghost"
                onClick={() => setOpen(true)}
             >
-               {children ?? (
-                  <span className="flex-1 truncate">
-                     {cellComponent === "select"
-                        ? (options?.find((o) => o.value === displayValue)
-                             ?.label ?? displayValue)
-                        : displayValue || (
-                             <span className="text-muted-foreground/40">—</span>
-                          )}
-                  </span>
+               {resolvedLabel ? (
+                  <span className="flex-1 truncate">{resolvedLabel}</span>
+               ) : (
+                  (children ?? (
+                     <span className="flex-1 truncate">
+                        {displayValue || (
+                           <span className="text-muted-foreground/40">—</span>
+                        )}
+                     </span>
+                  ))
                )}
                <Pencil className="size-3 shrink-0 text-muted-foreground opacity-0 group-hover/cell:opacity-100 transition-opacity" />
             </Button>
@@ -1492,7 +1498,8 @@ export function DataTableContent<TData>({
    if (
       table.getCoreRowModel().rows.length === 0 &&
       hasEmptyState &&
-      !isDraftRowActive
+      !isDraftRowActive &&
+      !importState
    )
       return null;
 
