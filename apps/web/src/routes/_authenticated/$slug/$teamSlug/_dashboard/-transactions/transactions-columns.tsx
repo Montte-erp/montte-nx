@@ -8,6 +8,16 @@ import {
 } from "@packages/ui/components/popover";
 import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
+import {
+   ArrowUpDown,
+   CalendarClock,
+   CalendarDays,
+   CircleDot,
+   CreditCard,
+   Landmark,
+   Tag,
+   User,
+} from "lucide-react";
 import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -122,6 +132,8 @@ export function buildTransactionColumns(options?: {
             cellComponent: "select",
             isEditable: true,
             editMode: "inline",
+            bulkEditIcon: CircleDot,
+            bulkEditAction: "Alterar status",
             editOptions: [
                { value: "pending", label: "Pendente" },
                { value: "paid", label: "Efetivado" },
@@ -147,6 +159,8 @@ export function buildTransactionColumns(options?: {
             cellComponent: "date",
             isEditable: true,
             editMode: "inline",
+            bulkEditIcon: CalendarDays,
+            bulkEditAction: "Alterar data",
             onSave: async (rowId, value) => {
                await options?.onUpdate?.(rowId, { date: value || null });
             },
@@ -169,6 +183,8 @@ export function buildTransactionColumns(options?: {
             cellComponent: "date",
             isEditable: true,
             editMode: "inline",
+            bulkEditIcon: CalendarClock,
+            bulkEditAction: "Alterar vencimento",
             onSave: async (rowId, value) => {
                await options?.onUpdate?.(rowId, { dueDate: value || null });
             },
@@ -217,6 +233,8 @@ export function buildTransactionColumns(options?: {
             cellComponent: "select",
             isEditable: true,
             editMode: "inline",
+            bulkEditIcon: ArrowUpDown,
+            bulkEditAction: "Alterar tipo",
             editOptions: [
                { value: "income", label: "Receita" },
                { value: "expense", label: "Despesa" },
@@ -252,6 +270,8 @@ export function buildTransactionColumns(options?: {
             cellComponent: "combobox",
             isEditable: true,
             editMode: "inline",
+            bulkEditIcon: User,
+            bulkEditAction: "Atribuir contato",
             editOptions: options?.contacts?.map((c) => ({
                value: c.id,
                label: c.name,
@@ -278,6 +298,8 @@ export function buildTransactionColumns(options?: {
             cellComponent: "combobox",
             isEditable: true,
             editMode: "inline",
+            bulkEditIcon: Tag,
+            bulkEditAction: "Categorizar",
             editOptions: options?.categories?.map((c) => ({
                value: c.id,
                label: c.name,
@@ -312,6 +334,8 @@ export function buildTransactionColumns(options?: {
             cellComponent: "combobox",
             isEditable: true,
             editMode: "inline",
+            bulkEditIcon: Landmark,
+            bulkEditAction: "Definir conta",
             editOptions: options?.bankAccounts?.map((a) => ({
                value: a.id,
                label: a.name,
@@ -338,6 +362,8 @@ export function buildTransactionColumns(options?: {
             cellComponent: "combobox",
             isEditable: true,
             editMode: "inline",
+            bulkEditIcon: CreditCard,
+            bulkEditAction: "Definir cartão",
             editOptions: options?.creditCards?.map((c) => ({
                value: c.id,
                label: c.name,

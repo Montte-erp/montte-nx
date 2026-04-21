@@ -1,4 +1,6 @@
 import { Button } from "@packages/ui/components/button";
+import { Calendar } from "@packages/ui/components/calendar";
+import { Combobox } from "@packages/ui/components/combobox";
 import {
    Empty,
    EmptyDescription,
@@ -6,6 +8,11 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import {
+   Popover,
+   PopoverContent,
+   PopoverTrigger,
+} from "@packages/ui/components/popover";
 import {
    useMutation,
    useQueryClient,
@@ -17,7 +24,9 @@ import {
    AlertTriangle,
    ArrowLeftRight,
    Ban,
+   CalendarDays,
    CheckCircle2,
+   CircleDot,
    FolderOpen,
    Landmark,
    Plus,
@@ -44,13 +53,11 @@ import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
-import { BulkCategorizeForm } from "./bulk-categorize-form";
-import { BulkMoveAccountForm } from "./bulk-move-account-form";
-import { MarkPaidCredenza } from "./mark-paid-credenza";
 import {
    buildTransactionColumns,
+   type BankAccountOption,
+   type CategoryOption,
    type TransactionRow,
 } from "./transactions-columns";
 
@@ -63,7 +70,6 @@ export function TransactionsList() {
    const { page, pageSize, view, overdueOnly, status, search } =
       routeApi.useSearch();
 
-   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const queryClient = useQueryClient();
    const [isDraftActive, setIsDraftActive] = useState(false);
@@ -636,92 +642,33 @@ export function TransactionsList() {
                   return (
                      <>
                         {allPending && (
-                           <SelectionActionButton
-                              icon={<CheckCircle2 />}
-                              onClick={() =>
-                                 openCredenza({
-                                    renderChildren: () => (
-                                       <MarkPaidCredenza
-                                          ids={selectedIds}
-                                          onSuccess={() => {
-                                             clearSelection();
-                                             closeCredenza();
-                                          }}
-                                       />
-                                    ),
-                                 })
-                              }
-                           >
-                              Marcar como pagas
-                           </SelectionActionButton>
+                           <BulkMarkPaidButton
+                              bankAccounts={bankAccounts}
+                              ids={selectedIds}
+                              onSuccess={clearSelection}
+                           />
                         )}
-                        <SelectionActionButton
-                           icon={<FolderOpen />}
-                           onClick={() =>
-                              openCredenza({
-                                 renderChildren: () => (
-                                    <BulkCategorizeForm
-                                       onApply={async (categoryId) => {
-                                          await Promise.all(
-                                             selectedIds.map((id) =>
-                                                updateMutation.mutateAsync({
-                                                   id,
-                                                   categoryId,
-                                                }),
-                                             ),
-                                          );
-                                          clearSelection();
-                                          closeCredenza();
-                                          toast.success(
-                                             `${selectedIds.length} ${selectedIds.length === 1 ? "lançamento categorizado" : "lançamentos categorizados"}.`,
-                                          );
-                                       }}
-                                       onCancel={closeCredenza}
-                                       selectedCount={selectedIds.length}
-                                    />
-                                 ),
-                              })
-                           }
-                        >
-                           Categorizar
-                        </SelectionActionButton>
-                        <SelectionActionButton
-                           icon={<Landmark />}
-                           onClick={() =>
-                              openCredenza({
-                                 renderChildren: () => (
-                                    <BulkMoveAccountForm
-                                       bankAccounts={bankAccounts}
-                                       onApply={async (
-                                          bankAccountId,
-                                          destinationBankAccountId,
-                                       ) => {
-                                          await Promise.all(
-                                             selectedIds.map((id) =>
-                                                updateMutation.mutateAsync({
-                                                   id,
-                                                   bankAccountId,
-                                                   destinationBankAccountId,
-                                                }),
-                                             ),
-                                          );
-                                          clearSelection();
-                                          closeCredenza();
-                                          toast.success(
-                                             `${selectedIds.length} ${selectedIds.length === 1 ? "lançamento convertido" : "lançamentos convertidos"} em transferências.`,
-                                          );
-                                       }}
-                                       onCancel={closeCredenza}
-                                       selectedCount={selectedIds.length}
-                                    />
-                                 ),
-                              })
-                           }
-                        >
-                           Mover conta
-                        </SelectionActionButton>
+                        <BulkStatusButton
+                           ids={selectedIds}
+                           onSuccess={clearSelection}
+                        />
+                        <BulkDateButton
+                           ids={selectedIds}
+                           onSuccess={clearSelection}
+                        />
+                        <BulkCategoryButton
+                           categories={categoriesResult ?? []}
+                           ids={selectedIds}
+                           onSuccess={clearSelection}
+                        />
+                        <BulkAccountButton
+                           bankAccounts={bankAccounts}
+                           ids={selectedIds}
+                           onSuccess={clearSelection}
+                        />
                         <SelectionActionButton
                            icon={<Trash2 />}
+                           variant="destructive"
                            onClick={() =>
                               openAlertDialog({
                                  title: `Excluir ${selectedIds.length} ${selectedIds.length === 1 ? "lançamento" : "lançamentos"}`,
@@ -731,7 +678,7 @@ export function TransactionsList() {
                                  cancelLabel: "Cancelar",
                                  variant: "destructive",
                                  onAction: async () => {
-                                    await Promise.all(
+                                    await Promise.allSettled(
                                        selectedIds.map((id) =>
                                           deleteMutation.mutateAsync({ id }),
                                        ),
@@ -740,7 +687,6 @@ export function TransactionsList() {
                                  },
                               })
                            }
-                           variant="destructive"
                         >
                            Excluir
                         </SelectionActionButton>
@@ -758,5 +704,259 @@ export function TransactionsList() {
             onPageSizeChange={handlePageSizeChange}
          />
       </div>
+   );
+}
+
+function BulkMarkPaidButton({
+   ids,
+   bankAccounts,
+   onSuccess,
+}: {
+   ids: string[];
+   bankAccounts: BankAccountOption[];
+   onSuccess: () => void;
+}) {
+   const [open, setOpen] = useState(false);
+   const [date, setDate] = useState<Date>(() => dayjs().toDate());
+   const [bankAccountId, setBankAccountId] = useState("");
+   const mutation = useMutation(
+      orpc.transactions.bulkMarkAsPaid.mutationOptions({
+         onError: (e) => toast.error(e.message || "Erro ao marcar como pago."),
+      }),
+   );
+
+   return (
+      <Popover open={open} onOpenChange={setOpen}>
+         <PopoverTrigger asChild>
+            <SelectionActionButton icon={<CheckCircle2 />}>
+               Marcar como pagas
+            </SelectionActionButton>
+         </PopoverTrigger>
+         <PopoverContent
+            align="start"
+            className="w-auto flex flex-col gap-4 p-4"
+         >
+            <p className="text-sm font-medium">Data do pagamento</p>
+            <Calendar
+               mode="single"
+               selected={date}
+               onSelect={(d) => d && setDate(d)}
+            />
+            <Combobox
+               emptyMessage="Nenhuma conta."
+               options={bankAccounts.map((a) => ({
+                  value: a.id,
+                  label: a.name,
+               }))}
+               placeholder="Conta bancária (opcional)"
+               searchPlaceholder="Buscar conta..."
+               value={bankAccountId}
+               onValueChange={setBankAccountId}
+            />
+            <Button
+               disabled={mutation.isPending}
+               size="sm"
+               onClick={async () => {
+                  await mutation.mutateAsync({
+                     ids,
+                     paidDate: dayjs(date).format("YYYY-MM-DD"),
+                     bankAccountId: bankAccountId || null,
+                  });
+                  toast.success(
+                     `${ids.length} ${ids.length === 1 ? "lançamento marcado" : "lançamentos marcados"} como pago(s).`,
+                  );
+                  setOpen(false);
+                  setBankAccountId("");
+                  onSuccess();
+               }}
+            >
+               Confirmar pagamento
+            </Button>
+         </PopoverContent>
+      </Popover>
+   );
+}
+
+function BulkStatusButton({
+   ids,
+   onSuccess,
+}: {
+   ids: string[];
+   onSuccess: () => void;
+}) {
+   const [open, setOpen] = useState(false);
+   const mutation = useMutation(
+      orpc.transactions.update.mutationOptions({
+         onError: (e) => toast.error(e.message || "Erro ao atualizar status."),
+      }),
+   );
+
+   const apply = async (status: "pending" | "paid" | "cancelled") => {
+      await Promise.allSettled(
+         ids.map((id) => mutation.mutateAsync({ id, status })),
+      );
+      setOpen(false);
+      onSuccess();
+   };
+
+   const statusOptions = [
+      { value: "pending" as const, label: "Pendente" },
+      { value: "paid" as const, label: "Efetivado" },
+      { value: "cancelled" as const, label: "Cancelado" },
+   ];
+
+   return (
+      <Popover open={open} onOpenChange={setOpen}>
+         <PopoverTrigger asChild>
+            <SelectionActionButton icon={<CircleDot />}>
+               Status
+            </SelectionActionButton>
+         </PopoverTrigger>
+         <PopoverContent align="start" className="w-44 p-1">
+            <div className="flex flex-col">
+               {statusOptions.map((opt) => (
+                  <Button
+                     key={opt.value}
+                     className="justify-start text-sm"
+                     disabled={mutation.isPending}
+                     variant="ghost"
+                     onClick={() => apply(opt.value)}
+                  >
+                     {opt.label}
+                  </Button>
+               ))}
+            </div>
+         </PopoverContent>
+      </Popover>
+   );
+}
+
+function BulkDateButton({
+   ids,
+   onSuccess,
+}: {
+   ids: string[];
+   onSuccess: () => void;
+}) {
+   const [open, setOpen] = useState(false);
+   const mutation = useMutation(
+      orpc.transactions.update.mutationOptions({
+         onError: (e) => toast.error(e.message || "Erro ao atualizar data."),
+      }),
+   );
+
+   return (
+      <Popover open={open} onOpenChange={setOpen}>
+         <PopoverTrigger asChild>
+            <SelectionActionButton icon={<CalendarDays />}>
+               Data
+            </SelectionActionButton>
+         </PopoverTrigger>
+         <PopoverContent align="start" className="w-auto p-0">
+            <Calendar
+               mode="single"
+               onSelect={async (d) => {
+                  if (!d) return;
+                  const date = dayjs(d).format("YYYY-MM-DD");
+                  await Promise.allSettled(
+                     ids.map((id) => mutation.mutateAsync({ id, date })),
+                  );
+                  setOpen(false);
+                  onSuccess();
+               }}
+            />
+         </PopoverContent>
+      </Popover>
+   );
+}
+
+function BulkCategoryButton({
+   ids,
+   categories,
+   onSuccess,
+}: {
+   ids: string[];
+   categories: CategoryOption[];
+   onSuccess: () => void;
+}) {
+   const [open, setOpen] = useState(false);
+   const mutation = useMutation(
+      orpc.transactions.update.mutationOptions({
+         onError: (e) => toast.error(e.message || "Erro ao categorizar."),
+      }),
+   );
+
+   return (
+      <Popover open={open} onOpenChange={setOpen}>
+         <PopoverTrigger asChild>
+            <SelectionActionButton icon={<FolderOpen />}>
+               Categoria
+            </SelectionActionButton>
+         </PopoverTrigger>
+         <PopoverContent align="start" className="w-64 p-2">
+            <Combobox
+               emptyMessage="Nenhuma categoria."
+               options={categories.map((c) => ({ value: c.id, label: c.name }))}
+               placeholder="Selecionar categoria..."
+               searchPlaceholder="Buscar..."
+               value=""
+               onValueChange={async (categoryId) => {
+                  await Promise.allSettled(
+                     ids.map((id) => mutation.mutateAsync({ id, categoryId })),
+                  );
+                  setOpen(false);
+                  onSuccess();
+               }}
+            />
+         </PopoverContent>
+      </Popover>
+   );
+}
+
+function BulkAccountButton({
+   ids,
+   bankAccounts,
+   onSuccess,
+}: {
+   ids: string[];
+   bankAccounts: BankAccountOption[];
+   onSuccess: () => void;
+}) {
+   const [open, setOpen] = useState(false);
+   const mutation = useMutation(
+      orpc.transactions.update.mutationOptions({
+         onError: (e) => toast.error(e.message || "Erro ao alterar conta."),
+      }),
+   );
+
+   return (
+      <Popover open={open} onOpenChange={setOpen}>
+         <PopoverTrigger asChild>
+            <SelectionActionButton icon={<Landmark />}>
+               Conta
+            </SelectionActionButton>
+         </PopoverTrigger>
+         <PopoverContent align="start" className="w-64 p-2">
+            <Combobox
+               emptyMessage="Nenhuma conta."
+               options={bankAccounts.map((a) => ({
+                  value: a.id,
+                  label: a.name,
+               }))}
+               placeholder="Selecionar conta..."
+               searchPlaceholder="Buscar..."
+               value=""
+               onValueChange={async (bankAccountId) => {
+                  await Promise.allSettled(
+                     ids.map((id) =>
+                        mutation.mutateAsync({ id, bankAccountId }),
+                     ),
+                  );
+                  setOpen(false);
+                  onSuccess();
+               }}
+            />
+         </PopoverContent>
+      </Popover>
    );
 }

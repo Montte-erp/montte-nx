@@ -105,12 +105,23 @@ declare module "@tanstack/react-table" {
       align?: "left" | "center" | "right";
       exportable?: boolean;
       isEditable?: boolean;
-      cellComponent?: "text" | "textarea" | "select" | "tags";
+      cellComponent?:
+         | "text"
+         | "textarea"
+         | "select"
+         | "tags"
+         | "money"
+         | "date"
+         | "combobox";
       editMode?: "inline" | "popover";
       editOptions?: Array<{ label: string; value: string }>;
       editSchema?: StandardSchemaV1<any>;
       onSave?: (rowId: string, value: unknown) => Promise<void>;
+      onCreateOption?: (name: string) => Promise<string>;
       isEditableForRow?: (row: TData) => boolean;
+      importIgnore?: boolean;
+      bulkEditIcon?: React.ElementType;
+      bulkEditAction?: string;
    }
 }
 

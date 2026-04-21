@@ -1,12 +1,9 @@
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { cn } from "@packages/ui/lib/utils";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { CheckCircle2, Lock } from "lucide-react";
 import type React from "react";
 import { useCallback } from "react";
-import { BankAccountForm } from "@/features/bank-accounts/ui/bank-accounts-form";
-import { CategoryForm } from "@/features/categories/ui/categories-form";
-import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
-import { useCredenza } from "@/hooks/use-credenza";
 import type { TaskDefinition } from "./task-definitions";
 
 interface QuickStartTaskProps {
@@ -24,31 +21,18 @@ export function QuickStartTask({
    isAutoDetected,
    onComplete,
 }: QuickStartTaskProps) {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const navigate = useNavigate();
+   const { slug, teamSlug } = useParams({
+      from: "/_authenticated/$slug/$teamSlug/_dashboard",
+   });
 
    const handleClick = useCallback(() => {
       if (isLocked || isCompleted) return;
-
-      if (task.id === "connect_bank_account") {
-         openCredenza({
-            renderChildren: () => (
-               <BankAccountForm mode="create" onSuccess={closeCredenza} />
-            ),
-         });
-      } else if (task.id === "create_category") {
-         openCredenza({
-            renderChildren: () => (
-               <CategoryForm mode="create" onSuccess={closeCredenza} />
-            ),
-         });
-      } else if (task.id === "add_transaction") {
-         openCredenza({
-            renderChildren: () => (
-               <TransactionCredenza mode="create" onSuccess={closeCredenza} />
-            ),
-         });
-      }
-   }, [isLocked, isCompleted, task.id, openCredenza, closeCredenza]);
+      navigate({
+         to: task.route as "/$slug/$teamSlug/transactions",
+         params: { slug, teamSlug },
+      });
+   }, [isLocked, isCompleted, task.route, navigate, slug, teamSlug]);
 
    const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {
@@ -99,17 +83,16 @@ export function QuickStartTask({
                />
             )}
          </div>
-
-         <div className="min-w-0 flex-1">
+         <div className="flex-1 min-w-0">
             <p
                className={cn(
-                  "text-sm font-medium leading-tight",
+                  "text-sm font-medium leading-snug",
                   isCompleted && "line-through text-muted-foreground",
                )}
             >
                {task.title}
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
+            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
                {task.description}
             </p>
          </div>

@@ -15,6 +15,15 @@ import {
 } from "lucide-react";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import { Calendar } from "@packages/ui/components/calendar";
+import {
+   Command,
+   CommandEmpty,
+   CommandGroup,
+   CommandInput,
+   CommandItem,
+   CommandList,
+} from "@packages/ui/components/command";
 import { DatePicker } from "@packages/ui/components/date-picker";
 import { MoneyInput } from "@packages/ui/components/money-input";
 import { MultiSelect } from "@packages/ui/components/multi-select";
@@ -636,6 +645,164 @@ function DataTableBodyRow<TData>({ row }: { row: Row<TData> }) {
    );
 }
 
+function ImportBulkEditButtons({
+   selectedIndices,
+   onUpdate,
+}: {
+   selectedIndices: Set<number>;
+   onUpdate: (key: string, value: unknown) => void;
+}) {
+   const { table } = useDataTable();
+   const [openCol, setOpenCol] = useState<string | null>(null);
+   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
+
+   const cols = table
+      .getVisibleLeafColumns()
+      .filter(
+         (col) =>
+            col.id !== "__select" &&
+            col.id !== "__actions" &&
+            !col.columnDef.meta?.importIgnore &&
+            col.columnDef.meta?.isEditable &&
+            (col.columnDef.meta.cellComponent === "combobox" ||
+               col.columnDef.meta.cellComponent === "select" ||
+               col.columnDef.meta.cellComponent === "date"),
+      );
+
+   if (cols.length === 0 || selectedIndices.size === 0) return null;
+
+   return (
+      <>
+         {cols.map((col) => {
+            const meta = col.columnDef.meta!;
+            const accKey =
+               "accessorKey" in col.columnDef &&
+               col.columnDef.accessorKey != null
+                  ? String(col.columnDef.accessorKey)
+                  : col.id;
+            const tooltipText =
+               meta.bulkEditAction ??
+               `Trocar ${(meta.label ?? accKey).toLowerCase()}`;
+            const isOpen = openCol === accKey;
+            const Icon = meta.bulkEditIcon;
+            const colOptions = meta.editOptions ?? [];
+
+            const triggerBtn = (
+               <PopoverTrigger asChild>
+                  <Button
+                     className="size-7"
+                     size="icon"
+                     tooltip={tooltipText}
+                     type="button"
+                     variant="outline"
+                  >
+                     {Icon ? (
+                        <Icon className="size-3.5" />
+                     ) : (
+                        (meta.label ?? accKey).slice(0, 2)
+                     )}
+                     <span className="sr-only">{tooltipText}</span>
+                  </Button>
+               </PopoverTrigger>
+            );
+
+            if (meta.cellComponent === "date") {
+               return (
+                  <Popover
+                     key={accKey}
+                     open={isOpen}
+                     onOpenChange={(v) => {
+                        setOpenCol(v ? accKey : null);
+                        if (v) setCalendarMonth(new Date());
+                     }}
+                  >
+                     {triggerBtn}
+                     <PopoverContent align="start" className="w-auto p-0">
+                        <Calendar
+                           captionLayout="dropdown"
+                           mode="single"
+                           month={calendarMonth}
+                           onMonthChange={setCalendarMonth}
+                           onSelect={(d) => {
+                              if (!d) return;
+                              const formatted = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                              onUpdate(accKey, formatted);
+                              setOpenCol(null);
+                           }}
+                        />
+                     </PopoverContent>
+                  </Popover>
+               );
+            }
+
+            if (meta.cellComponent === "select") {
+               return (
+                  <Popover
+                     key={accKey}
+                     open={isOpen}
+                     onOpenChange={(v) => setOpenCol(v ? accKey : null)}
+                  >
+                     {triggerBtn}
+                     <PopoverContent align="start" className="w-44 p-1">
+                        {colOptions.map((opt) => (
+                           <Button
+                              key={opt.value}
+                              className="w-full justify-start text-xs"
+                              size="sm"
+                              type="button"
+                              variant="ghost"
+                              onClick={() => {
+                                 onUpdate(accKey, opt.value);
+                                 setOpenCol(null);
+                              }}
+                           >
+                              {opt.label}
+                           </Button>
+                        ))}
+                     </PopoverContent>
+                  </Popover>
+               );
+            }
+
+            return (
+               <Popover
+                  key={accKey}
+                  open={isOpen}
+                  onOpenChange={(v) => setOpenCol(v ? accKey : null)}
+               >
+                  {triggerBtn}
+                  <PopoverContent align="start" className="w-60 p-0">
+                     <Command>
+                        <CommandInput placeholder="Buscar..." />
+                        <CommandList>
+                           <CommandEmpty>
+                              Nenhuma opção encontrada.
+                           </CommandEmpty>
+                           <CommandGroup>
+                              {colOptions.map((opt) => (
+                                 <CommandItem
+                                    key={opt.value}
+                                    keywords={[opt.label]}
+                                    value={opt.value}
+                                    onSelect={() => {
+                                       onUpdate(accKey, opt.value);
+                                       setOpenCol(null);
+                                    }}
+                                 >
+                                    {opt.label}
+                                 </CommandItem>
+                              ))}
+                           </CommandGroup>
+                        </CommandList>
+                     </Command>
+                  </PopoverContent>
+               </Popover>
+            );
+         })}
+      </>
+   );
+}
+
 function ImportSection() {
    const importState = useDataTableStore((s) => s.importState);
    if (!importState) return null;
@@ -921,14 +1088,43 @@ function ImportSectionInner() {
                            <span className="text-xs text-muted-foreground tabular-nums">
                               {selectedIndices.size} selecionada(s)
                            </span>
+                           <ImportBulkEditButtons
+                              selectedIndices={selectedIndices}
+                              onUpdate={(key, value) => {
+                                 store.setState((s) => {
+                                    if (!s.importState) return s;
+                                    const updatedRows = [
+                                       ...s.importState.importRows,
+                                    ];
+                                    for (const idx of selectedIndices) {
+                                       updatedRows[idx] = {
+                                          ...updatedRows[idx],
+                                          [key]: value,
+                                       };
+                                    }
+                                    return {
+                                       ...s,
+                                       importState: {
+                                          ...s.importState,
+                                          importRows: updatedRows,
+                                       },
+                                    };
+                                 });
+                              }}
+                           />
                            <Button
-                              className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                              onClick={() => removeRows(selectedIndices)}
+                              className="h-7 px-2 text-xs"
+                              onClick={() => {
+                                 for (const idx of selectedIndices) {
+                                    ignoreRow(idx);
+                                 }
+                                 setSelectedIndices(new Set());
+                              }}
                               size="sm"
                               type="button"
                               variant="ghost"
                            >
-                              Remover
+                              Ignorar
                            </Button>
                            <Separator orientation="vertical" className="h-4" />
                         </>
@@ -936,30 +1132,47 @@ function ImportSectionInner() {
                      <form.Subscribe selector={(s) => s.isSubmitting}>
                         {(isSubmitting) => (
                            <Button
-                              className="h-7 gap-2 px-3 text-xs"
+                              className="size-7"
                               disabled={isSubmitting}
-                              onClick={handleBulkSave}
-                              size="sm"
+                              onClick={() =>
+                                 openAlertDialog({
+                                    title: "Salvar importação?",
+                                    description: `${rawRows.length - ignoredIndices.size} linha(s) serão importadas.`,
+                                    actionLabel: "Salvar",
+                                    cancelLabel: "Cancelar",
+                                    onAction: async () => handleBulkSave(),
+                                 })
+                              }
+                              size="icon"
+                              tooltip={`Salvar ${rawRows.length - ignoredIndices.size} linha(s)`}
                               type="button"
-                              variant="outline"
                            >
                               {isSubmitting ? (
-                                 <Loader2 className="size-3 animate-spin" />
+                                 <Loader2 className="size-3.5 animate-spin" />
                               ) : (
-                                 <Check className="size-3" />
+                                 <Check className="size-3.5" />
                               )}
-                              Salvar {rawRows.length - ignoredIndices.size}{" "}
-                              linha(s)
+                              <span className="sr-only">Salvar importação</span>
                            </Button>
                         )}
                      </form.Subscribe>
                      <Button
-                        className="size-7 text-muted-foreground hover:text-destructive"
-                        onClick={discard}
+                        className="size-7"
+                        onClick={() =>
+                           openAlertDialog({
+                              title: "Descartar importação?",
+                              description:
+                                 "Todas as linhas pendentes serão descartadas. Esta ação não pode ser desfeita.",
+                              actionLabel: "Descartar",
+                              cancelLabel: "Cancelar",
+                              variant: "destructive",
+                              onAction: async () => discard(),
+                           })
+                        }
                         size="icon"
                         tooltip="Descartar importação"
                         type="button"
-                        variant="ghost"
+                        variant="destructive"
                      >
                         <X className="size-3.5" />
                         <span className="sr-only">Descartar importação</span>
