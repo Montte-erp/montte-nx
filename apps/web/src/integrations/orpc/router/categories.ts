@@ -7,6 +7,7 @@ import {
    ensureCategoryOwnership,
    importCategoriesBatch,
    listCategories,
+   listCategoriesPaginated,
    reactivateCategory,
    updateCategory,
 } from "@core/database/repositories/categories-repository";
@@ -92,6 +93,33 @@ export const getAll = protectedProcedure
          c.parentId === null
             ? matchingParentIds.has(c.id)
             : matchingParentIds.has(c.parentId),
+      );
+   });
+
+const getPaginatedInput = z.object({
+   type: z.enum(["income", "expense"]).optional(),
+   includeArchived: z.boolean().optional(),
+   search: z.string().optional(),
+   page: z.number().int().min(1).default(1),
+   pageSize: z.number().int().min(1).max(100).default(20),
+});
+
+export const getPaginated = protectedProcedure
+   .input(getPaginatedInput)
+   .handler(async ({ context, input }) => {
+      return (
+         await listCategoriesPaginated(context.db, context.teamId, {
+            type: input.type,
+            includeArchived: input.includeArchived,
+            search: input.search,
+            page: input.page,
+            pageSize: input.pageSize,
+         })
+      ).match(
+         (v) => v,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
       );
    });
 

@@ -3,10 +3,14 @@
 import { cn } from "@packages/ui/lib/utils";
 import type * as React from "react";
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+function Table({
+   className,
+   wrapperClassName,
+   ...props
+}: React.ComponentProps<"table"> & { wrapperClassName?: string }) {
    return (
       <div
-         className="relative w-full overflow-x-auto"
+         className={cn("relative w-full overflow-x-auto", wrapperClassName)}
          data-slot="table-container"
       >
          <table

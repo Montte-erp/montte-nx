@@ -371,6 +371,7 @@ function useDataTableRoot<TData>({
          columnVisibility: effectiveColumnVisibility,
          rowSelection,
          sorting,
+         expanded: getSubRows ? true : undefined,
          columnPinning: {
             left: ["__select"],
             right: renderActions ? ["__actions"] : [],

@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { AppError, validateInput } from "@core/logging/errors";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { fromPromise, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
@@ -589,6 +590,72 @@ export function listCategories(
          e instanceof AppError
             ? e
             : AppError.database("Failed to list categories", { cause: e }),
+   );
+}
+
+export function listCategoriesPaginated(
+   db: DatabaseInstance,
+   teamId: string,
+   opts: {
+      type?: "income" | "expense";
+      includeArchived?: boolean;
+      search?: string;
+      page: number;
+      pageSize: number;
+   },
+) {
+   return fromPromise(
+      (async () => {
+         const parentCat = alias(categories, "parent_cat");
+         const base: SQL[] = [eq(categories.teamId, teamId)];
+         if (opts.type) base.push(eq(categories.type, opts.type));
+         if (!opts.includeArchived) base.push(eq(categories.isArchived, false));
+
+         const trimmedSearch = opts.search?.trim();
+         const searchPattern = trimmedSearch
+            ? `%${trimmedSearch.replace(/[\\%_]/g, "\\$&")}%`
+            : null;
+
+         if (searchPattern) {
+            const matched = await db
+               .selectDistinct({
+                  rootId: sql<string>`COALESCE(${categories.parentId}, ${categories.id})`,
+               })
+               .from(categories)
+               .where(and(...base, ilike(categories.name, searchPattern)));
+            const rootIds = matched.map((r) => r.rootId);
+            if (rootIds.length === 0) {
+               return { data: [] as Category[], total: 0 };
+            }
+            base.push(
+               sql`COALESCE(${categories.parentId}, ${categories.id}) IN ${rootIds}`,
+            );
+         }
+
+         const countRows = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(categories)
+            .where(and(...base));
+         const total = countRows[0]?.count ?? 0;
+
+         const sortKey = sql`COALESCE(${parentCat.name}, ${categories.name})`;
+         const depthKey = sql`CASE WHEN ${categories.parentId} IS NULL THEN 0 ELSE 1 END`;
+         const offset = Math.max(0, (opts.page - 1) * opts.pageSize);
+         const rows = await db
+            .select({ c: categories })
+            .from(categories)
+            .leftJoin(parentCat, eq(parentCat.id, categories.parentId))
+            .where(and(...base))
+            .orderBy(asc(sortKey), asc(depthKey), asc(categories.name))
+            .limit(opts.pageSize)
+            .offset(offset);
+
+         return { data: rows.map((r) => r.c), total };
+      })(),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Falha ao listar categorias.", { cause: e }),
    );
 }
 
