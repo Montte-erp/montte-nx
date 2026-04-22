@@ -7,6 +7,7 @@ import {
 } from "@/components/blocks/announcement";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Banknote, Calendar, CalendarClock } from "lucide-react";
+import { z } from "zod";
 import type { Outputs } from "@/integrations/orpc/client";
 
 export type CreditCardRow = Outputs["creditCards"]["getAll"]["data"][number];
@@ -36,7 +37,9 @@ const STATUS_LABEL = {
    cancelled: "Cancelado",
 } as const;
 
-export function buildCreditCardColumns(): ColumnDef<CreditCardRow>[] {
+export function buildCreditCardColumns(options?: {
+   bankAccounts?: Array<{ id: string; name: string }>;
+}): ColumnDef<CreditCardRow>[] {
    return [
       {
          accessorKey: "name",
@@ -50,7 +53,11 @@ export function buildCreditCardColumns(): ColumnDef<CreditCardRow>[] {
                <span className="font-medium truncate">{row.original.name}</span>
             </div>
          ),
-         meta: { label: "Nome" },
+         meta: {
+            label: "Nome",
+            cellComponent: "text" as const,
+            editSchema: z.string().min(1, "Nome é obrigatório."),
+         },
       },
       {
          accessorKey: "brand",
@@ -92,7 +99,11 @@ export function buildCreditCardColumns(): ColumnDef<CreditCardRow>[] {
                </AnnouncementTitle>
             </Announcement>
          ),
-         meta: { label: "Fechamento" },
+         meta: {
+            label: "Fechamento",
+            cellComponent: "text" as const,
+            editSchema: z.coerce.number().int().min(1).max(31),
+         },
       },
       {
          accessorKey: "dueDay",
@@ -105,7 +116,25 @@ export function buildCreditCardColumns(): ColumnDef<CreditCardRow>[] {
                <AnnouncementTitle>Dia {row.original.dueDay}</AnnouncementTitle>
             </Announcement>
          ),
-         meta: { label: "Vencimento" },
+         meta: {
+            label: "Vencimento",
+            cellComponent: "text" as const,
+            editSchema: z.coerce.number().int().min(1).max(31),
+         },
+      },
+      {
+         accessorKey: "bankAccountId",
+         header: "Conta Bancária",
+         cell: () => <span className="text-muted-foreground">—</span>,
+         meta: {
+            label: "Conta Bancária",
+            cellComponent: "combobox" as const,
+            importIgnore: true,
+            editOptions: options?.bankAccounts?.map((a) => ({
+               value: a.id,
+               label: a.name,
+            })),
+         },
       },
       {
          accessorKey: "status",

@@ -26,7 +26,7 @@ import { createContextState } from "foxact/context-state";
 import { useLocalStorage } from "foxact/use-local-storage";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useSingleton } from "foxact/use-singleton";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo } from "react";
 import type React from "react";
 
 export type DataTableStoredState = {
@@ -224,23 +224,35 @@ function useDataTableRoot<TData>({
       }),
    ).current;
 
+   const applySorting = useEffectEvent((sorting: SortingState) => {
+      store.setState((s) => ({ ...s, sorting }));
+   });
+
+   const applyColumnFilters = useEffectEvent(
+      (columnFilters: ColumnFiltersState) => {
+         store.setState((s) => ({ ...s, columnFilters }));
+      },
+   );
+
+   const applyRowSelection = useEffectEvent(
+      (rowSelection: RowSelectionState) => {
+         store.setState((s) => ({ ...s, rowSelection }));
+      },
+   );
+
    useEffect(() => {
-      if (externalSorting !== undefined)
-         store.setState((s) => ({ ...s, sorting: externalSorting }));
-   }, [externalSorting, store]);
+      if (externalSorting !== undefined) applySorting(externalSorting);
+   }, [externalSorting]);
 
    useEffect(() => {
       if (externalColumnFilters !== undefined)
-         store.setState((s) => ({
-            ...s,
-            columnFilters: externalColumnFilters,
-         }));
-   }, [externalColumnFilters, store]);
+         applyColumnFilters(externalColumnFilters);
+   }, [externalColumnFilters]);
 
    useEffect(() => {
       if (externalRowSelection !== undefined)
-         store.setState((s) => ({ ...s, rowSelection: externalRowSelection }));
-   }, [externalRowSelection, store]);
+         applyRowSelection(externalRowSelection);
+   }, [externalRowSelection]);
 
    const persistDebounced = useDebouncedCallback(
       (update: Partial<DataTablePersistedState>) => {
