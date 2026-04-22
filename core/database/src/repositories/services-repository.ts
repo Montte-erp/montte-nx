@@ -1,4 +1,5 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
+import { fromPromise } from "neverthrow";
 import { and, eq, ilike, or, type SQL } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -229,7 +230,7 @@ export async function ensureVariantOwnership(
    return variant;
 }
 
-export async function bulkCreateServices(
+export function bulkCreateServices(
    db: DatabaseInstance,
    teamId: string,
    items: CreateServiceInput[],
@@ -237,13 +238,11 @@ export async function bulkCreateServices(
    const validated = items.map((item) =>
       validateInput(createServiceSchema, item),
    );
-   try {
-      return await db
+   return fromPromise(
+      db
          .insert(services)
          .values(validated.map((item) => ({ ...item, teamId })))
-         .returning();
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Falha ao importar serviços.");
-   }
+         .returning(),
+      (e) => AppError.database("Falha ao importar serviços.", { cause: e }),
+   );
 }

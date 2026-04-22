@@ -28,7 +28,7 @@ import {
    updateVariantSchema,
 } from "@core/database/schemas/services";
 import { createSubscriptionSchema } from "@core/database/schemas/subscriptions";
-import { AppError, WebAppError } from "@core/logging/errors";
+import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
@@ -60,6 +60,11 @@ export const bulkCreate = protectedProcedure
          context.db,
          context.teamId,
          input.items,
+      ).match(
+         (rows) => rows,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
       );
       if (inserted.length === 0) {
          throw WebAppError.internal("Falha ao importar os serviços.");
@@ -176,13 +181,13 @@ export const cancelSubscription = protectedProcedure
       );
 
       if (subscription.status !== "active") {
-         throw AppError.validation(
+         throw WebAppError.badRequest(
             "Apenas assinaturas ativas podem ser canceladas.",
          );
       }
 
       if (subscription.source === "asaas") {
-         throw AppError.validation(
+         throw WebAppError.badRequest(
             "Assinaturas do Asaas não podem ser canceladas aqui.",
          );
       }
