@@ -6,6 +6,7 @@ export const QUEUES = {
    suggestTag: "suggest-tag",
    deriveKeywords: "derive-keywords",
    deriveTagKeywords: "derive-tag-keywords",
+   nfseEmission: "nfse-emission",
 } as const;
 
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];

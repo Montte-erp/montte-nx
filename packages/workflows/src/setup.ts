@@ -6,6 +6,7 @@ import { backfillKeywordsWorkflow } from "./workflows/backfill-keywords-workflow
 import "./workflows/categorization-workflow";
 import "./workflows/derive-keywords-workflow";
 import "./workflows/derive-tag-keywords-workflow";
+import "./workflows/nfse-emission-workflow";
 import "./workflows/suggest-tag-workflow";
 import { createAllQueues } from "./workflow-factory";
 

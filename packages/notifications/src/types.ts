@@ -4,6 +4,7 @@ export const NOTIFICATION_TYPES = {
    AI_TAG_KEYWORD_DERIVED: "ai.tag_keyword_derived",
    AI_TAG_SUGGESTED: "ai.tag_suggested",
    CRON_KEYWORDS_BACKFILL: "cron.keywords_backfill",
+   NFSE_EMISSION_COMPLETED: "nfse.emission_completed",
 } as const;
 
 export type NotificationType =
@@ -28,6 +29,9 @@ export type NotificationPayloadMap = {
    };
    "cron.keywords_backfill": {
       count: number;
+   };
+   "nfse.emission_completed": {
+      numeroNota: string;
    };
 };
 
