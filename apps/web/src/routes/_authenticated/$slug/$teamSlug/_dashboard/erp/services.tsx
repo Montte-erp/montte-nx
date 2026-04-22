@@ -8,15 +8,8 @@ import {
 } from "@packages/ui/components/empty";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-   Briefcase,
-   Download,
-   Pencil,
-   Plus,
-   Trash2,
-   Upload,
-} from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { Briefcase, Plus, Trash2 } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
@@ -24,16 +17,8 @@ import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
-import { ServiceImportCredenza } from "@/features/services/ui/service-import-credenza";
-import { ServicesAnalyticsHeader } from "@/features/services/ui/services-analytics-header";
-import {
-   buildServiceColumns,
-   type ServiceRow,
-} from "@/features/services/ui/services-columns";
-import { ServiceForm } from "@/features/services/ui/services-form";
-import { exportServicesCsv } from "@/features/services/utils/export-services-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
+import { QueryBoundary } from "@/components/query-boundary";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
 import {
@@ -42,8 +27,18 @@ import {
 } from "@/components/data-table/data-table-root";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import { QueryBoundary } from "@/components/query-boundary";
+import {
+   DataTableImportButton,
+   type DataTableImportConfig,
+} from "@/components/data-table/data-table-import";
+import { useCsvFile } from "@/hooks/use-csv-file";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { orpc } from "@/integrations/orpc/client";
+import {
+   buildServiceColumns,
+   type ServiceRow,
+} from "./-services/services-columns";
+import { ServicesAnalyticsHeader } from "./-services/services-analytics-header";
 
 const SERVICES_BANNER: EarlyAccessBannerTemplate = {
    badgeLabel: "Serviços",
@@ -58,18 +53,8 @@ const SERVICES_BANNER: EarlyAccessBannerTemplate = {
    ],
 };
 
-const TYPE_FILTER_OPTIONS = [
-   { value: "service", label: "Prestação de serviço" },
-   { value: "product", label: "Produto" },
-   { value: "subscription", label: "Assinatura" },
-] as const;
-
 const servicesSearchSchema = z.object({
    search: z.string().catch("").default(""),
-   type: z
-      .enum(["service", "product", "subscription"])
-      .optional()
-      .catch(undefined),
    categoryId: z.string().optional().catch(undefined),
 });
 
@@ -99,15 +84,23 @@ function ServicesSkeleton() {
 
 function ServicesList() {
    const navigate = Route.useNavigate();
-   const { search, type, categoryId } = Route.useSearch();
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { search, categoryId } = Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
+   const { parse: parseCsv } = useCsvFile();
+   const { parse: parseXlsx } = useXlsxFile();
 
    const { data: servicesList } = useSuspenseQuery(
       orpc.services.getAll.queryOptions({}),
    );
    const { data: categories } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
+   );
+
+   const createMutation = useMutation(
+      orpc.services.create.mutationOptions({
+         onSuccess: () => toast.success("Serviço criado com sucesso."),
+         onError: (e) => toast.error(e.message),
+      }),
    );
 
    const deleteMutation = useMutation(
@@ -133,19 +126,66 @@ function ServicesList() {
       return result;
    }, [servicesList, search, categoryId]);
 
-   const handleEdit = useCallback(
-      (row: ServiceRow) => {
-         openCredenza({
-            renderChildren: () => (
-               <ServiceForm
-                  mode="edit"
-                  onSuccess={closeCredenza}
-                  service={row}
-               />
-            ),
-         });
+   const [isDraftActive, setIsDraftActive] = useState(false);
+
+   const handleDiscardDraft = useCallback(() => setIsDraftActive(false), []);
+
+   const handleAddService = useCallback(
+      async (data: Record<string, string | string[]>) => {
+         const name = String(data.name ?? "").trim();
+         if (!name) return;
+         const basePrice = String(data.basePrice ?? "0") || "0";
+         await createMutation.mutateAsync({ name, basePrice });
+         setIsDraftActive(false);
       },
-      [openCredenza, closeCredenza],
+      [createMutation],
+   );
+
+   const importConfig: DataTableImportConfig = useMemo(
+      () => ({
+         accept: {
+            "text/csv": [".csv"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+               [".xlsx"],
+            "application/vnd.ms-excel": [".xls"],
+         },
+         parseFile: async (file: File) => {
+            const ext = file.name.split(".").pop()?.toLowerCase();
+            if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
+            return parseCsv(file);
+         },
+         mapRow: (row, i): Record<string, unknown> => ({
+            id: `__import_${i}`,
+            name: String(row.name ?? "").trim(),
+            description: String(row.description ?? "").trim() || null,
+            basePrice:
+               String(row.basePrice ?? row.price ?? "0")
+                  .replace(/[R$\s.]/g, "")
+                  .replace(",", ".") || "0",
+            categoryId: null,
+            categoryName: null,
+            categoryColor: null,
+            tagId: null,
+            tagName: null,
+            tagColor: null,
+            isActive: true,
+         }),
+         onImport: async (rows) => {
+            await Promise.allSettled(
+               rows.map((r) =>
+                  createMutation.mutateAsync({
+                     name: String(r.name ?? "").trim(),
+                     basePrice: String(r.basePrice ?? "0") || "0",
+                     description:
+                        r.description != null
+                           ? String(r.description) || undefined
+                           : undefined,
+                  }),
+               ),
+            );
+         },
+      }),
+      [createMutation, parseCsv, parseXlsx],
    );
 
    const handleDelete = useCallback(
@@ -172,44 +212,20 @@ function ServicesList() {
          data={filtered}
          getRowId={(row) => row.id}
          storageKey="montte:datatable:services"
+         isDraftRowActive={isDraftActive}
+         onAddRow={handleAddService}
+         onDiscardAddRow={handleDiscardDraft}
          renderActions={({ row }) => (
-            <>
-               <Button
-                  onClick={() => handleEdit(row.original)}
-                  tooltip="Editar"
-                  variant="outline"
-               >
-                  <Pencil className="size-4" />
-               </Button>
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(row.original)}
-                  tooltip="Excluir"
-                  variant="outline"
-               >
-                  <Trash2 className="size-4" />
-               </Button>
-            </>
+            <Button
+               className="text-destructive hover:text-destructive"
+               onClick={() => handleDelete(row.original)}
+               tooltip="Excluir"
+               variant="outline"
+            >
+               <Trash2 className="size-4" />
+            </Button>
          )}
       >
-         {TYPE_FILTER_OPTIONS.map((opt) => (
-            <DataTableExternalFilter
-               key={opt.value}
-               id={`type:${opt.value}`}
-               label={opt.label}
-               group="Tipo"
-               active={type === opt.value}
-               onToggle={(active) =>
-                  navigate({
-                     search: (prev) => ({
-                        ...prev,
-                        type: active ? opt.value : undefined,
-                     }),
-                     replace: true,
-                  })
-               }
-            />
-         ))}
          {categories?.map((cat) => (
             <DataTableExternalFilter
                key={cat.id}
@@ -237,7 +253,17 @@ function ServicesList() {
                   replace: true,
                })
             }
-         />
+         >
+            <DataTableImportButton importConfig={importConfig} />
+            <Button
+               onClick={() => setIsDraftActive(true)}
+               size="icon-sm"
+               tooltip="Novo Serviço"
+               variant="outline"
+            >
+               <Plus />
+            </Button>
+         </DataTableToolbar>
          <DataTableContent />
          <DataTableEmptyState>
             <Empty>
@@ -257,56 +283,9 @@ function ServicesList() {
 }
 
 function ServicesPage() {
-   const { openCredenza, closeCredenza } = useCredenza();
-
-   const { data: servicesList } = useSuspenseQuery(
-      orpc.services.getAll.queryOptions({}),
-   );
-
-   const handleCreate = useCallback(() => {
-      openCredenza({
-         renderChildren: () => (
-            <ServiceForm mode="create" onSuccess={closeCredenza} />
-         ),
-      });
-   }, [openCredenza, closeCredenza]);
-
-   const handleImport = useCallback(() => {
-      openCredenza({
-         renderChildren: () => (
-            <ServiceImportCredenza onClose={closeCredenza} />
-         ),
-      });
-   }, [openCredenza, closeCredenza]);
-
-   const handleExport = useCallback(() => {
-      if (servicesList && servicesList.length > 0) {
-         exportServicesCsv(servicesList as ServiceRow[]);
-         toast.success("CSV exportado.");
-      } else {
-         toast.info("Nenhum serviço para exportar.");
-      }
-   }, [servicesList]);
-
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
-            actions={
-               <div className="flex items-center gap-2">
-                  <Button onClick={handleImport} variant="outline">
-                     <Upload className="size-4" />
-                     Importar
-                  </Button>
-                  <Button onClick={handleExport} variant="outline">
-                     <Download className="size-4" />
-                     Exportar
-                  </Button>
-                  <Button onClick={handleCreate}>
-                     <Plus className="size-4" />
-                     Novo Serviço
-                  </Button>
-               </div>
-            }
             description="Gerencie o catálogo de serviços"
             title="Serviços"
          />
