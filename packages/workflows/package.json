@@ -37,6 +37,8 @@
       "@tanstack/store": "catalog:tanstack",
       "dayjs": "catalog:ui",
       "neverthrow": "catalog:validation",
+      "playwright": "^1.59.1",
+      "steel-sdk": "^0.18.0",
       "zod": "catalog:validation"
    },
    "devDependencies": {
