@@ -1,5 +1,4 @@
 import { Badge } from "@packages/ui/components/badge";
-import { Button } from "@packages/ui/components/button";
 import {
    Card,
    CardContent,
@@ -16,11 +15,9 @@ import {
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { format, of } from "@f-o-t/money";
 import dayjs from "dayjs";
-import { Plus, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
-import { useCredenza } from "@/hooks/use-credenza";
-import { AddSubscriptionForm } from "./add-subscription-form";
 
 type Subscription = Outputs["services"]["getContactSubscriptions"][number];
 
@@ -105,29 +102,9 @@ export function ContactAssinaturasTab({ contactId }: { contactId: string }) {
          input: { contactId },
       }),
    );
-   const { openCredenza } = useCredenza();
-
-   function handleAdd() {
-      openCredenza({
-         renderChildren: () => (
-            <AddSubscriptionForm contactId={contactId} onSuccess={() => {}} />
-         ),
-      });
-   }
 
    return (
       <div className="flex flex-col gap-4">
-         <div className="flex items-center gap-4">
-            <h2 className="flex-1 text-sm font-medium text-muted-foreground">
-               {subscriptions.length} assinatura
-               {subscriptions.length !== 1 ? "s" : ""}
-            </h2>
-            <Button size="sm" variant="outline" onClick={handleAdd}>
-               <Plus className="size-4" />
-               Adicionar
-            </Button>
-         </div>
-
          {subscriptions.length === 0 ? (
             <Empty>
                <EmptyHeader>

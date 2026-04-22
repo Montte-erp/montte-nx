@@ -1,8 +1,17 @@
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { Button } from "@packages/ui/components/button";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
+import {
+   Archive,
+   ArchiveRestore,
+   ArrowRight,
+   Plus,
+   Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
 import {
@@ -10,6 +19,8 @@ import {
    closeContextPanel,
    useContextPanelInfo,
 } from "@/features/context-panel/use-context-panel";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { useCredenza } from "@/hooks/use-credenza";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { orpc } from "@/integrations/orpc/client";
 import {
@@ -18,6 +29,7 @@ import {
    TabsTrigger,
    TabsContent,
 } from "@packages/ui/components/tabs";
+import { AddSubscriptionForm } from "../-contacts/add-subscription-form";
 import { ContactAssinaturasTab } from "../-contacts/contact-assinaturas-tab";
 import { ContactPropertiesPanel } from "../-contacts/contact-properties-panel";
 import { ContactTransacoesTab } from "../-contacts/contact-transacoes-tab";
@@ -97,9 +109,48 @@ function ContactDetailContent() {
    const globalNavigate = useNavigate();
    const slug = useOrgSlug();
    const teamSlug = useTeamSlug();
+   const { openAlertDialog } = useAlertDialog();
+   const { openCredenza } = useCredenza();
+   const [activeTab, setActiveTab] = useState<"transacoes" | "servicos">(
+      "transacoes",
+   );
+   const [isDraftActive, setIsDraftActive] = useState(false);
 
    const { data: contact } = useSuspenseQuery(
       orpc.contacts.getById.queryOptions({ input: { id: contactId } }),
+   );
+
+   const deleteMutation = useMutation(
+      orpc.contacts.remove.mutationOptions({
+         onSuccess: () => {
+            toast.success("Contato excluído.");
+            globalNavigate({
+               to: "/$slug/$teamSlug/contacts",
+               params: { slug, teamSlug },
+            });
+         },
+         onError: (e) => toast.error(e.message),
+      }),
+   );
+
+   const archiveMutation = useMutation(
+      orpc.contacts.archive.mutationOptions({
+         onSuccess: () => {
+            toast.success("Contato arquivado.");
+            globalNavigate({
+               to: "/$slug/$teamSlug/contacts",
+               params: { slug, teamSlug },
+            });
+         },
+         onError: (e) => toast.error(e.message),
+      }),
+   );
+
+   const reactivateMutation = useMutation(
+      orpc.contacts.reactivate.mutationOptions({
+         onSuccess: () => toast.success("Contato reativado."),
+         onError: (e) => toast.error(e.message),
+      }),
    );
 
    useEffect(() => {
@@ -115,6 +166,60 @@ function ContactDetailContent() {
          : contact.document
       : TYPE_LABELS[contact.type];
 
+   function handleDelete() {
+      openAlertDialog({
+         title: "Excluir contato",
+         description: `Excluir "${contact.name}"? Lançamentos vinculados impedirão a exclusão.`,
+         actionLabel: "Excluir",
+         cancelLabel: "Cancelar",
+         variant: "destructive",
+         onAction: async () => {
+            await deleteMutation.mutateAsync({ id: contact.id });
+         },
+      });
+   }
+
+   function handleArchive() {
+      openAlertDialog({
+         title: "Arquivar contato",
+         description: `Arquivar "${contact.name}"? O contato ficará oculto mas seus lançamentos serão mantidos.`,
+         actionLabel: "Arquivar",
+         cancelLabel: "Cancelar",
+         variant: "destructive",
+         onAction: async () => {
+            await archiveMutation.mutateAsync({ id: contact.id });
+         },
+      });
+   }
+
+   function handleReactivate() {
+      reactivateMutation.mutate({ id: contact.id });
+   }
+
+   function handleViewHistory() {
+      globalNavigate({
+         to: "/$slug/$teamSlug/transactions",
+         params: { slug, teamSlug },
+         search: {
+            contactId,
+            page: 1,
+            pageSize: 20,
+            search: "",
+            view: "all",
+            overdueOnly: false,
+            status: [],
+         },
+      });
+   }
+
+   function handleAddService() {
+      openCredenza({
+         renderChildren: () => (
+            <AddSubscriptionForm contactId={contactId} onSuccess={() => {}} />
+         ),
+      });
+   }
+
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
@@ -128,20 +233,98 @@ function ContactDetailContent() {
             }
          />
 
-         <Tabs defaultValue="transacoes">
-            <TabsList>
-               <TabsTrigger value="transacoes">Transações</TabsTrigger>
-               <TabsTrigger value="assinaturas">Assinaturas</TabsTrigger>
-            </TabsList>
+         <Tabs
+            value={activeTab}
+            onValueChange={(v) => setActiveTab(v as "transacoes" | "servicos")}
+         >
+            <div className="flex items-center gap-2">
+               <TabsList>
+                  <TabsTrigger value="transacoes">Transações</TabsTrigger>
+                  <TabsTrigger value="servicos">Serviços</TabsTrigger>
+               </TabsList>
+               <div className="ml-auto flex items-center gap-2">
+                  {activeTab === "transacoes" && (
+                     <>
+                        <Button
+                           onClick={() => setIsDraftActive(true)}
+                           tooltip="Novo lançamento"
+                           variant="outline"
+                           size="icon-sm"
+                        >
+                           <Plus />
+                           <span className="sr-only">Novo lançamento</span>
+                        </Button>
+                        <Button
+                           onClick={handleViewHistory}
+                           tooltip="Ver histórico completo"
+                           variant="outline"
+                           size="icon-sm"
+                        >
+                           <ArrowRight />
+                           <span className="sr-only">
+                              Ver histórico completo
+                           </span>
+                        </Button>
+                        {contact.isArchived ? (
+                           <Button
+                              onClick={handleReactivate}
+                              disabled={reactivateMutation.isPending}
+                              tooltip="Reativar contato"
+                              variant="outline"
+                              size="icon-sm"
+                           >
+                              <ArchiveRestore />
+                              <span className="sr-only">Reativar contato</span>
+                           </Button>
+                        ) : (
+                           <Button
+                              onClick={handleArchive}
+                              disabled={archiveMutation.isPending}
+                              tooltip="Arquivar contato"
+                              variant="outline"
+                              size="icon-sm"
+                           >
+                              <Archive />
+                              <span className="sr-only">Arquivar contato</span>
+                           </Button>
+                        )}
+                        <Button
+                           onClick={handleDelete}
+                           disabled={deleteMutation.isPending}
+                           tooltip="Excluir contato"
+                           variant="outline"
+                           size="icon-sm"
+                        >
+                           <Trash2 className="text-destructive" />
+                           <span className="sr-only">Excluir contato</span>
+                        </Button>
+                     </>
+                  )}
+                  {activeTab === "servicos" && (
+                     <Button
+                        onClick={handleAddService}
+                        tooltip="Vincular serviço"
+                        variant="outline"
+                        size="icon-sm"
+                     >
+                        <Plus />
+                        <span className="sr-only">Vincular serviço</span>
+                     </Button>
+                  )}
+               </div>
+            </div>
+
             <TabsContent value="transacoes">
                <QueryBoundary fallback={null}>
                   <ContactTransacoesTab
                      contactId={contactId}
                      contact={contact}
+                     isDraftActive={isDraftActive}
+                     onDiscardDraft={() => setIsDraftActive(false)}
                   />
                </QueryBoundary>
             </TabsContent>
-            <TabsContent value="assinaturas">
+            <TabsContent value="servicos">
                <QueryBoundary fallback={null}>
                   <ContactAssinaturasTab contactId={contactId} />
                </QueryBoundary>

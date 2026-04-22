@@ -5,28 +5,11 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { Button } from "@packages/ui/components/button";
-import {
-   Popover,
-   PopoverContent,
-   PopoverTrigger,
-} from "@packages/ui/components/popover";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
-import {
-   Archive,
-   ArchiveRestore,
-   ArrowRight,
-   Plus,
-   Receipt,
-   RefreshCcw,
-   Trash2,
-} from "lucide-react";
+import { Receipt } from "lucide-react";
 import dayjs from "dayjs";
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
 import { DataTableRoot } from "@/components/data-table/data-table-root";
@@ -34,24 +17,20 @@ import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
 import { buildTransactionColumns } from "../-transactions/transactions-columns";
-import { AddSubscriptionForm } from "./add-subscription-form";
 
 type Contact = Outputs["contacts"]["getById"];
 
 export function ContactTransacoesTab({
    contactId,
    contact,
+   isDraftActive,
+   onDiscardDraft,
 }: {
    contactId: string;
    contact: Contact;
+   isDraftActive: boolean;
+   onDiscardDraft: () => void;
 }) {
-   const globalNavigate = useNavigate();
-   const slug = useOrgSlug();
-   const teamSlug = useTeamSlug();
-   const { openAlertDialog } = useAlertDialog();
-   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
-   const [isDraftActive, setIsDraftActive] = useState(false);
-
    const { data: result } = useSuspenseQuery(
       orpc.transactions.getAll.queryOptions({
          input: { contactId, page: 1, pageSize: 10 },
@@ -76,44 +55,11 @@ export function ContactTransacoesTab({
       }),
    );
 
-   const deleteMutation = useMutation(
-      orpc.contacts.remove.mutationOptions({
-         onSuccess: () => {
-            toast.success("Contato excluído.");
-            globalNavigate({
-               to: "/$slug/$teamSlug/contacts",
-               params: { slug, teamSlug },
-            });
-         },
-         onError: (e) => toast.error(e.message),
-      }),
-   );
-
-   const archiveMutation = useMutation(
-      orpc.contacts.archive.mutationOptions({
-         onSuccess: () => {
-            toast.success("Contato arquivado.");
-            globalNavigate({
-               to: "/$slug/$teamSlug/contacts",
-               params: { slug, teamSlug },
-            });
-         },
-         onError: (e) => toast.error(e.message),
-      }),
-   );
-
-   const reactivateMutation = useMutation(
-      orpc.contacts.reactivate.mutationOptions({
-         onSuccess: () => toast.success("Contato reativado."),
-         onError: (e) => toast.error(e.message),
-      }),
-   );
-
    const createMutation = useMutation(
       orpc.transactions.create.mutationOptions({
          onSuccess: () => {
             toast.success("Lançamento criado.");
-            setIsDraftActive(false);
+            onDiscardDraft();
          },
          onError: (e) => toast.error(e.message),
       }),
@@ -181,52 +127,6 @@ export function ContactTransacoesTab({
       ],
    );
 
-   function handleViewHistory() {
-      globalNavigate({
-         to: "/$slug/$teamSlug/transactions",
-         params: { slug, teamSlug },
-         search: {
-            contactId,
-            page: 1,
-            pageSize: 20,
-            search: "",
-            view: "all",
-            overdueOnly: false,
-            status: [],
-         },
-      });
-   }
-
-   function handleDelete() {
-      openAlertDialog({
-         title: "Excluir contato",
-         description: `Excluir "${contact.name}"? Lançamentos vinculados impedirão a exclusão.`,
-         actionLabel: "Excluir",
-         cancelLabel: "Cancelar",
-         variant: "destructive",
-         onAction: async () => {
-            await deleteMutation.mutateAsync({ id: contact.id });
-         },
-      });
-   }
-
-   function handleArchive() {
-      openAlertDialog({
-         title: "Arquivar contato",
-         description: `Arquivar "${contact.name}"? O contato ficará oculto mas seus lançamentos serão mantidos.`,
-         actionLabel: "Arquivar",
-         cancelLabel: "Cancelar",
-         variant: "destructive",
-         onAction: async () => {
-            await archiveMutation.mutateAsync({ id: contact.id });
-         },
-      });
-   }
-
-   function handleReactivate() {
-      reactivateMutation.mutate({ id: contact.id });
-   }
-
    return (
       <DataTableRoot
          storageKey="montte:datatable:contact-transactions"
@@ -235,81 +135,9 @@ export function ContactTransacoesTab({
          getRowId={(row) => row.id}
          isDraftRowActive={isDraftActive}
          onAddRow={handleAddTransaction}
-         onDiscardAddRow={() => setIsDraftActive(false)}
+         onDiscardAddRow={onDiscardDraft}
       >
-         <DataTableToolbar hideExport>
-            <Button
-               onClick={() => setIsDraftActive(true)}
-               tooltip="Novo lançamento"
-               variant="outline"
-               size="icon-sm"
-            >
-               <Plus />
-               <span className="sr-only">Novo lançamento</span>
-            </Button>
-            <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
-               <PopoverTrigger asChild>
-                  <Button
-                     tooltip="Vincular assinatura"
-                     variant="outline"
-                     size="icon-sm"
-                  >
-                     <RefreshCcw />
-                     <span className="sr-only">Vincular assinatura</span>
-                  </Button>
-               </PopoverTrigger>
-               <PopoverContent className="w-96 p-0" align="end">
-                  <Suspense fallback={null}>
-                     <AddSubscriptionForm
-                        contactId={contactId}
-                        onSuccess={() => setSubscriptionOpen(false)}
-                     />
-                  </Suspense>
-               </PopoverContent>
-            </Popover>
-            <Button
-               onClick={handleViewHistory}
-               tooltip="Ver histórico completo"
-               variant="outline"
-               size="icon-sm"
-            >
-               <ArrowRight />
-               <span className="sr-only">Ver histórico completo</span>
-            </Button>
-            {contact.isArchived ? (
-               <Button
-                  onClick={handleReactivate}
-                  disabled={reactivateMutation.isPending}
-                  tooltip="Reativar contato"
-                  variant="outline"
-                  size="icon-sm"
-               >
-                  <ArchiveRestore />
-                  <span className="sr-only">Reativar contato</span>
-               </Button>
-            ) : (
-               <Button
-                  onClick={handleArchive}
-                  disabled={archiveMutation.isPending}
-                  tooltip="Arquivar contato"
-                  variant="outline"
-                  size="icon-sm"
-               >
-                  <Archive />
-                  <span className="sr-only">Arquivar contato</span>
-               </Button>
-            )}
-            <Button
-               onClick={handleDelete}
-               disabled={deleteMutation.isPending}
-               tooltip="Excluir contato"
-               variant="outline"
-               size="icon-sm"
-            >
-               <Trash2 className="text-destructive" />
-               <span className="sr-only">Excluir contato</span>
-            </Button>
-         </DataTableToolbar>
+         <DataTableToolbar hideExport />
          <DataTableEmptyState>
             <Empty>
                <EmptyHeader>
