@@ -1,11 +1,3 @@
-import { Badge } from "@packages/ui/components/badge";
-import { Button } from "@packages/ui/components/button";
-import {
-   DropdownMenu,
-   DropdownMenuContent,
-   DropdownMenuItem,
-   DropdownMenuTrigger,
-} from "@packages/ui/components/dropdown-menu";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import {
    Tabs,
@@ -13,14 +5,11 @@ import {
    TabsList,
    TabsTrigger,
 } from "@packages/ui/components/tabs";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { MoreHorizontal, Trash2 } from "lucide-react";
 import { z } from "zod";
-import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
-import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { orpc } from "@/integrations/orpc/client";
 import { ContactDadosTab } from "../-contacts/contact-dados-tab";
@@ -103,18 +92,11 @@ const TYPE_LABELS = {
    ambos: "Ambos",
 } as const;
 
-const TYPE_VARIANTS = {
-   cliente: "default",
-   fornecedor: "secondary",
-   ambos: "outline",
-} as const;
-
 function ContactDetailContent() {
    const { contactId } = Route.useParams();
    const { tab } = Route.useSearch();
    const navigate = Route.useNavigate();
    const globalNavigate = useNavigate();
-   const { openAlertDialog } = useAlertDialog();
    const slug = useOrgSlug();
    const teamSlug = useTeamSlug();
 
@@ -122,69 +104,20 @@ function ContactDetailContent() {
       orpc.contacts.getById.queryOptions({ input: { id: contactId } }),
    );
 
-   const deleteMutation = useMutation(
-      orpc.contacts.remove.mutationOptions({
-         onSuccess: () => {
-            toast.success("Contato excluído.");
-            globalNavigate({
-               to: "/$slug/$teamSlug/contacts",
-               params: { slug, teamSlug },
-            });
-         },
-         onError: (e) => toast.error(e.message),
-      }),
-   );
-
-   function handleDelete() {
-      openAlertDialog({
-         title: "Excluir contato",
-         description: `Excluir "${contact.name}"? Lançamentos vinculados impedirão a exclusão.`,
-         actionLabel: "Excluir",
-         cancelLabel: "Cancelar",
-         variant: "destructive",
-         onAction: async () => {
-            await deleteMutation.mutateAsync({ id: contact.id });
-         },
-      });
-   }
+   const documentDescription = contact.document
+      ? `${contact.documentType?.toUpperCase()} ${contact.document}`
+      : TYPE_LABELS[contact.type];
 
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
             title={contact.name}
-            description={
-               <div className="flex items-center gap-2">
-                  <Badge variant={TYPE_VARIANTS[contact.type]}>
-                     {TYPE_LABELS[contact.type]}
-                  </Badge>
-                  {contact.isArchived && (
-                     <Badge variant="outline">Arquivado</Badge>
-                  )}
-               </div>
-            }
+            description={documentDescription}
             onBack={() =>
                globalNavigate({
                   to: "/$slug/$teamSlug/contacts",
                   params: { slug, teamSlug },
                })
-            }
-            actions={
-               <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                     <Button size="icon" variant="outline">
-                        <MoreHorizontal className="size-4" />
-                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                     <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={handleDelete}
-                     >
-                        <Trash2 className="size-4" />
-                        Excluir
-                     </DropdownMenuItem>
-                  </DropdownMenuContent>
-               </DropdownMenu>
             }
          />
          <div className="flex items-start gap-4">
