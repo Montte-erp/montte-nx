@@ -17,10 +17,13 @@ import {
    SidebarMenuItem,
    useSidebar,
 } from "@packages/ui/components/sidebar";
+import { Link } from "@tanstack/react-router";
 import { MessageSquare, Plus, Search } from "lucide-react";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 
 export function SidebarChatPanel() {
    const { setOpen } = useSidebar();
+   const { slug, teamSlug } = useDashboardSlugs();
 
    return (
       <>
@@ -29,12 +32,14 @@ export function SidebarChatPanel() {
             <SidebarMenu>
                <SidebarMenuItem>
                   <SidebarMenuButton asChild tooltip="Novo chat">
-                     <Button
-                        size="icon"
-                        variant="default"
-                        onClick={() => setOpen(true)}
-                     >
-                        <Plus />
+                     <Button asChild size="icon" variant="default">
+                        <Link
+                           params={{ slug, teamSlug }}
+                           search={(prev) => prev}
+                           to="/$slug/$teamSlug/chat"
+                        >
+                           <Plus />
+                        </Link>
                      </Button>
                   </SidebarMenuButton>
                </SidebarMenuItem>
@@ -65,11 +70,18 @@ export function SidebarChatPanel() {
                </InputGroup>
                <Button
                   aria-label="Novo chat"
+                  asChild
                   className="shrink-0"
                   size="icon"
                   variant="default"
                >
-                  <Plus />
+                  <Link
+                     params={{ slug, teamSlug }}
+                     search={(prev) => prev}
+                     to="/$slug/$teamSlug/chat"
+                  >
+                     <Plus />
+                  </Link>
                </Button>
             </div>
             <Empty className="border py-4">

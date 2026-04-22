@@ -14,12 +14,12 @@ import {
 import { useState } from "react";
 
 export const Route = createFileRoute(
-   "/_authenticated/$slug/$teamSlug/_dashboard/assistente",
+   "/_authenticated/$slug/$teamSlug/_dashboard/chat",
 )({
    head: () => ({
       meta: [{ title: "Rubi — Montte" }],
    }),
-   component: AssistentePage,
+   component: ChatPage,
 });
 
 const QUICK_ACTIONS = [
@@ -31,7 +31,7 @@ const QUICK_ACTIONS = [
    { icon: Upload, label: "Importar extrato" },
 ];
 
-function AssistentePage() {
+function ChatPage() {
    const [value, setValue] = useState("");
 
    return (
