@@ -13,10 +13,12 @@ import {
    SelectValue,
 } from "@packages/ui/components/select";
 import { Textarea } from "@packages/ui/components/textarea";
+import type { MaskitoOptions } from "@maskito/core";
+import { useMaskito } from "@maskito/react";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { format, of } from "@f-o-t/money";
 import { Pencil, TrendingDown, TrendingUp } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
@@ -97,6 +99,55 @@ export function ContactDadosTab({ contact }: { contact: Contact }) {
          cancelEdit();
       }
    }
+
+   const documentMaskOptions: MaskitoOptions = useMemo(
+      () => ({
+         mask: ({ value }: { value: string }) => {
+            const digits = value.replace(/\D/g, "");
+            if (digits.length <= 11) {
+               return [
+                  /\d/,
+                  /\d/,
+                  /\d/,
+                  ".",
+                  /\d/,
+                  /\d/,
+                  /\d/,
+                  ".",
+                  /\d/,
+                  /\d/,
+                  /\d/,
+                  "-",
+                  /\d/,
+                  /\d/,
+               ];
+            }
+            return [
+               /\d/,
+               /\d/,
+               ".",
+               /\d/,
+               /\d/,
+               /\d/,
+               ".",
+               /\d/,
+               /\d/,
+               /\d/,
+               "/",
+               /\d/,
+               /\d/,
+               /\d/,
+               /\d/,
+               "-",
+               /\d/,
+               /\d/,
+            ];
+         },
+      }),
+      [],
+   );
+
+   const documentInputRef = useMaskito({ options: documentMaskOptions });
 
    const typeLabels: Record<Contact["type"], string> = {
       cliente: "Cliente",
@@ -207,11 +258,18 @@ export function ContactDadosTab({ contact }: { contact: Contact }) {
                {editingField === "document" ? (
                   <input
                      autoFocus
+                     ref={documentInputRef}
                      className="w-full rounded border px-2 py-1 text-sm outline-none focus:ring-1"
+                     key={`document-${editingField}`}
                      placeholder="CPF ou CNPJ"
-                     value={editValue}
-                     onBlur={() => commitEdit("document")}
-                     onChange={(e) => setEditValue(e.target.value)}
+                     defaultValue={editValue}
+                     onBlur={(e) => {
+                        setEditValue(e.target.value);
+                        commitEdit("document");
+                     }}
+                     onInput={(e) =>
+                        setEditValue((e.target as HTMLInputElement).value)
+                     }
                      onKeyDown={(e) => handleKeyDown(e, "document")}
                   />
                ) : (

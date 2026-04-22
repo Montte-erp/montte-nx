@@ -11,8 +11,8 @@ import {
    useQueryClient,
    useSuspenseQuery,
 } from "@tanstack/react-query";
-import { getRouteApi } from "@tanstack/react-router";
-import { Plus, Trash2, Users } from "lucide-react";
+import { getRouteApi, Link } from "@tanstack/react-router";
+import { ExternalLink, Plus, Trash2, Users } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -21,7 +21,6 @@ import {
 } from "@/components/data-table/data-table-bulk-actions";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
-import { DataTableExportButton } from "@/components/data-table/data-table-export";
 import { DataTableImportButton } from "@/components/data-table/data-table-import";
 import type { DataTableImportConfig } from "@/components/data-table/data-table-import";
 import { DataTableRoot } from "@/components/data-table/data-table-root";
@@ -219,16 +218,36 @@ export function ContactsList() {
             onAddRow={handleAddContact}
             onDiscardAddRow={handleDiscardDraft}
             renderActions={({ row }) => (
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(row.original)}
-                  size="icon"
-                  tooltip="Excluir"
-                  variant="ghost"
-               >
-                  <Trash2 className="size-4" />
-                  <span className="sr-only">Excluir</span>
-               </Button>
+               <>
+                  <Button
+                     asChild
+                     size="icon"
+                     tooltip="Ver detalhes"
+                     variant="ghost"
+                  >
+                     <Link
+                        params={{
+                           slug,
+                           teamSlug,
+                           contactId: row.original.id,
+                        }}
+                        to="/$slug/$teamSlug/contacts/$contactId"
+                     >
+                        <ExternalLink className="size-4" />
+                        <span className="sr-only">Ver detalhes</span>
+                     </Link>
+                  </Button>
+                  <Button
+                     className="text-destructive hover:text-destructive"
+                     onClick={() => handleDelete(row.original)}
+                     size="icon"
+                     tooltip="Excluir"
+                     variant="ghost"
+                  >
+                     <Trash2 className="size-4" />
+                     <span className="sr-only">Excluir</span>
+                  </Button>
+               </>
             )}
             storageKey="montte:datatable:contacts"
          >
@@ -238,7 +257,6 @@ export function ContactsList() {
                onSearch={handleSearch}
             >
                <DataTableImportButton importConfig={importConfig} />
-               <DataTableExportButton />
                <Button
                   onClick={handleCreate}
                   size="icon-sm"
