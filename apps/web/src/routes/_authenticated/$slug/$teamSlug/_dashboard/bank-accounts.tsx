@@ -50,14 +50,6 @@ const searchSchema = z.object({
       .default("all"),
 });
 
-type TypeFilter =
-   | "all"
-   | "checking"
-   | "savings"
-   | "investment"
-   | "payment"
-   | "cash";
-
 const skeletonColumns = buildBankAccountColumns();
 
 export const Route = createFileRoute(
