@@ -104,6 +104,12 @@ const TYPE_LABELS = {
    ambos: "Ambos",
 } as const;
 
+const VALID_TABS = ["transacoes", "servicos"] as const;
+type ActiveTab = (typeof VALID_TABS)[number];
+function isValidTab(v: string): v is ActiveTab {
+   return (VALID_TABS as readonly string[]).includes(v);
+}
+
 function ContactDetailContent() {
    const { contactId } = Route.useParams();
    const globalNavigate = useNavigate();
@@ -111,9 +117,7 @@ function ContactDetailContent() {
    const teamSlug = useTeamSlug();
    const { openAlertDialog } = useAlertDialog();
    const { openCredenza } = useCredenza();
-   const [activeTab, setActiveTab] = useState<"transacoes" | "servicos">(
-      "transacoes",
-   );
+   const [activeTab, setActiveTab] = useState<ActiveTab>("transacoes");
    const [isDraftActive, setIsDraftActive] = useState(false);
 
    const { data: contact } = useSuspenseQuery(
@@ -235,7 +239,9 @@ function ContactDetailContent() {
 
          <Tabs
             value={activeTab}
-            onValueChange={(v) => setActiveTab(v as "transacoes" | "servicos")}
+            onValueChange={(v) => {
+               if (isValidTab(v)) setActiveTab(v);
+            }}
          >
             <div className="flex items-center gap-2">
                <TabsList>
