@@ -67,7 +67,7 @@ const routeApi = getRouteApi(
 
 export function TransactionsList() {
    const navigate = routeApi.useNavigate();
-   const { page, pageSize, view, overdueOnly, status, search } =
+   const { page, pageSize, view, overdueOnly, status, search, contactId } =
       routeApi.useSearch();
 
    const { openAlertDialog } = useAlertDialog();
@@ -125,6 +125,7 @@ export function TransactionsList() {
             status: status.length > 0 ? status : undefined,
             page,
             pageSize,
+            contactId: contactId || undefined,
          },
       }),
    );

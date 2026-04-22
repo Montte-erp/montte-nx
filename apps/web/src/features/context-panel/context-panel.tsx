@@ -140,12 +140,12 @@ function ContextPanelInner() {
 
    return (
       <Sidebar
-         className="px-0"
+         className="p-0 overflow-y-scroll"
          collapsible="offcanvas"
          side="right"
          variant="inset"
       >
-         <SidebarContent className="h-full overflow-hidden rounded-xl bg-muted">
+         <SidebarContent className="h-full overflow-x-hidden overflow-y-scroll rounded-lg bg-muted">
             {activeTab?.renderContent()}
          </SidebarContent>
       </Sidebar>

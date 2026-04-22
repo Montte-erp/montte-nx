@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { AppError, validateInput } from "@core/logging/errors";
-import { and, asc, count, desc, eq, inArray, sum } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, min, sum } from "drizzle-orm";
 import { fromPromise, fromThrowable, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -337,9 +337,14 @@ export function getContactTransactionStats(
             .select({ total: sum(transactions.amount) })
             .from(transactions)
             .where(and(where, eq(transactions.type, "expense")));
+         const [firstTxResult] = await db
+            .select({ date: min(transactions.date) })
+            .from(transactions)
+            .where(where);
          return {
             totalIncome: incomeResult?.total ?? "0",
             totalExpense: expenseResult?.total ?? "0",
+            firstTransactionDate: firstTxResult?.date ?? null,
          };
       })(),
       (e) =>

@@ -1,11 +1,15 @@
 import { Button } from "@packages/ui/components/button";
+import { Combobox } from "@packages/ui/components/combobox";
 import {
    CredenzaBody,
+   CredenzaDescription,
    CredenzaFooter,
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
+import { DatePicker } from "@packages/ui/components/date-picker";
 import { Label } from "@packages/ui/components/label";
+import { MoneyInput } from "@packages/ui/components/money-input";
 import {
    Select,
    SelectContent,
@@ -16,6 +20,7 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
 import type { Outputs } from "@/integrations/orpc/client";
@@ -49,9 +54,7 @@ function VariantSelector({
    function handleVariantChange(variantId: string) {
       onSelect(variantId);
       const variant = variants.find((v) => v.id === variantId);
-      if (variant) {
-         onPriceChange(variant.basePrice);
-      }
+      if (variant) onPriceChange(variant.basePrice);
    }
 
    return (
@@ -74,6 +77,29 @@ function VariantSelector({
    );
 }
 
+function ServiceCombobox({
+   value,
+   onValueChange,
+}: {
+   value: string;
+   onValueChange: (id: string) => void;
+}) {
+   const { data: services } = useSuspenseQuery(
+      orpc.services.getAll.queryOptions({ input: {} }),
+   );
+
+   return (
+      <Combobox
+         options={services.map((s) => ({ value: s.id, label: s.name }))}
+         value={value}
+         onValueChange={onValueChange}
+         placeholder="Selecione um serviço"
+         searchPlaceholder="Buscar serviço..."
+         emptyMessage="Nenhum serviço encontrado."
+      />
+   );
+}
+
 export function AddSubscriptionForm({
    contactId,
    onSuccess,
@@ -81,15 +107,14 @@ export function AddSubscriptionForm({
    contactId: string;
    onSuccess: () => void;
 }) {
-   const { data: services } = useSuspenseQuery(
-      orpc.services.getAll.queryOptions({ input: {} }),
-   );
    const queryClient = useQueryClient();
    const { closeCredenza } = useCredenza();
 
    const [serviceId, setServiceId] = useState("");
    const [variantId, setVariantId] = useState("");
-   const [startDate, setStartDate] = useState("");
+   const [startDate, setStartDate] = useState<Date | undefined>(
+      dayjs().toDate(),
+   );
    const [negotiatedPrice, setNegotiatedPrice] = useState("");
 
    const createMutation = useMutation(
@@ -120,7 +145,7 @@ export function AddSubscriptionForm({
       createMutation.mutate({
          contactId,
          variantId,
-         startDate,
+         startDate: dayjs(startDate).format("YYYY-MM-DD"),
          negotiatedPrice,
       });
    }
@@ -129,23 +154,32 @@ export function AddSubscriptionForm({
       <form onSubmit={handleSubmit}>
          <CredenzaHeader>
             <CredenzaTitle>Nova assinatura</CredenzaTitle>
+            <CredenzaDescription>
+               Vincule este contato a um serviço para acompanhar cobranças e
+               renovações.
+            </CredenzaDescription>
          </CredenzaHeader>
          <CredenzaBody>
             <div className="flex flex-col gap-4">
-               <div className="flex flex-col gap-2">
-                  <Label htmlFor="serviceId">Serviço</Label>
-                  <Select value={serviceId} onValueChange={handleServiceChange}>
-                     <SelectTrigger id="serviceId">
-                        <SelectValue placeholder="Selecione um serviço" />
-                     </SelectTrigger>
-                     <SelectContent>
-                        {services.map((s) => (
-                           <SelectItem key={s.id} value={s.id}>
-                              {s.name}
-                           </SelectItem>
-                        ))}
-                     </SelectContent>
-                  </Select>
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                     <Label>Serviço</Label>
+                     <Suspense fallback={<Skeleton className="h-10 w-full" />}>
+                        <ServiceCombobox
+                           value={serviceId}
+                           onValueChange={handleServiceChange}
+                        />
+                     </Suspense>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                     <Label>Data de início</Label>
+                     <DatePicker
+                        date={startDate}
+                        onSelect={setStartDate}
+                        placeholder="Selecione uma data"
+                     />
+                  </div>
                </div>
 
                {serviceId && (
@@ -160,27 +194,12 @@ export function AddSubscriptionForm({
                )}
 
                <div className="flex flex-col gap-2">
-                  <Label htmlFor="startDate">Data de início</Label>
-                  <input
-                     className="rounded-md border px-3 py-2 text-sm outline-none focus:ring-1"
-                     id="startDate"
-                     placeholder="AAAA-MM-DD"
-                     type="date"
-                     value={startDate}
-                     onChange={(e) => setStartDate(e.target.value)}
-                  />
-               </div>
-
-               <div className="flex flex-col gap-2">
-                  <Label htmlFor="negotiatedPrice">Preço negociado (R$)</Label>
-                  <input
-                     className="rounded-md border px-3 py-2 text-sm outline-none focus:ring-1"
+                  <Label htmlFor="negotiatedPrice">Preço negociado</Label>
+                  <MoneyInput
                      id="negotiatedPrice"
-                     placeholder="0.00"
-                     step="0.01"
-                     type="number"
                      value={negotiatedPrice}
-                     onChange={(e) => setNegotiatedPrice(e.target.value)}
+                     onValueChange={setNegotiatedPrice}
+                     placeholder="R$ 0,00"
                   />
                </div>
             </div>

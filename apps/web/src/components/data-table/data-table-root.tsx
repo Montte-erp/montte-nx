@@ -107,6 +107,7 @@ type DataTableContextValue<TData> = {
    isDraftRowActive?: boolean;
    onAddRow?: (data: Record<string, string | string[]>) => Promise<void>;
    onDiscardAddRow?: () => void;
+   draftRowDefaults?: Record<string, string>;
 };
 
 // oxlint-ignore no-explicit-any
@@ -140,6 +141,7 @@ export function useDataTable<TData>() {
       isDraftRowActive: ctx.isDraftRowActive,
       onAddRow: ctx.onAddRow,
       onDiscardAddRow: ctx.onDiscardAddRow,
+      draftRowDefaults: ctx.draftRowDefaults,
       renderExpandedRow: ctx.renderExpandedRow,
       sorting,
       columnFilters,
@@ -181,6 +183,7 @@ interface DataTableRootProps<TData> {
    isDraftRowActive?: boolean;
    onAddRow?: (data: Record<string, string | string[]>) => Promise<void>;
    onDiscardAddRow?: () => void;
+   draftRowDefaults?: Record<string, string>;
 }
 
 function useDataTableRoot<TData>({
@@ -202,6 +205,7 @@ function useDataTableRoot<TData>({
    isDraftRowActive,
    onAddRow,
    onDiscardAddRow,
+   draftRowDefaults,
 }: Omit<DataTableRootProps<TData>, "children">): DataTableContextValue<TData> {
    const [persisted, setPersisted] =
       useLocalStorage<DataTablePersistedState | null>(storageKey, null);
@@ -425,6 +429,7 @@ function useDataTableRoot<TData>({
          isDraftRowActive,
          onAddRow,
          onDiscardAddRow,
+         draftRowDefaults,
       }),
       [
          store,
@@ -437,6 +442,7 @@ function useDataTableRoot<TData>({
          isDraftRowActive,
          onAddRow,
          onDiscardAddRow,
+         draftRowDefaults,
       ],
    );
 }

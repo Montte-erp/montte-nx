@@ -1,5 +1,3 @@
-import { Badge } from "@packages/ui/components/badge";
-import { Button } from "@packages/ui/components/button";
 import {
    Empty,
    EmptyDescription,
@@ -7,138 +5,198 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import { Button } from "@packages/ui/components/button";
 import {
-   Table,
-   TableBody,
-   TableCell,
-   TableHead,
-   TableHeader,
-   TableRow,
-} from "@packages/ui/components/table";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { format, of } from "@f-o-t/money";
-import dayjs from "dayjs";
-import { ChevronLeft, ChevronRight, Receipt } from "lucide-react";
+   Popover,
+   PopoverContent,
+   PopoverTrigger,
+} from "@packages/ui/components/popover";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { ArrowRight, Receipt, RefreshCcw, Trash2 } from "lucide-react";
+import { Suspense, useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
+import { DataTableContent } from "@/components/data-table/data-table-content";
+import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
+import { DataTableRoot } from "@/components/data-table/data-table-root";
+import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
-import { Route } from "../contacts/$contactId";
+import { buildTransactionColumns } from "../-transactions/transactions-columns";
+import { AddSubscriptionForm } from "./add-subscription-form";
 
-type Transaction = Outputs["contacts"]["getTransactions"]["items"][number];
+type Contact = Outputs["contacts"]["getById"];
 
-const TYPE_LABELS: Record<Transaction["type"], string> = {
-   income: "Receita",
-   expense: "Despesa",
-   transfer: "Transferência",
-};
+export function ContactTransacoesTab({
+   contactId,
+   contact,
+}: {
+   contactId: string;
+   contact: Contact;
+}) {
+   const globalNavigate = useNavigate();
+   const slug = useOrgSlug();
+   const teamSlug = useTeamSlug();
+   const { openAlertDialog } = useAlertDialog();
+   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
 
-const STATUS_LABELS: Record<Transaction["status"], string> = {
-   paid: "Pago",
-   pending: "Pendente",
-   cancelled: "Cancelado",
-};
-
-const STATUS_VARIANTS: Record<
-   Transaction["status"],
-   "default" | "secondary" | "outline"
-> = {
-   paid: "default",
-   pending: "secondary",
-   cancelled: "outline",
-};
-
-export function ContactTransacoesTab({ contactId }: { contactId: string }) {
-   const { page, pageSize } = Route.useSearch();
-   const navigate = Route.useNavigate();
-
-   const { data } = useSuspenseQuery(
-      orpc.contacts.getTransactions.queryOptions({
-         input: { id: contactId, page, pageSize },
+   const { data: result } = useSuspenseQuery(
+      orpc.transactions.getAll.queryOptions({
+         input: { contactId, page: 1, pageSize: 10 },
       }),
    );
 
-   const totalPages = Math.max(1, Math.ceil(data.total / pageSize));
+   const { data: bankAccounts } = useSuspenseQuery(
+      orpc.bankAccounts.getAll.queryOptions({}),
+   );
 
-   function goToPage(next: number) {
-      navigate({
-         search: (prev) => ({ ...prev, page: next }),
-         replace: true,
+   const { data: categoriesResult } = useSuspenseQuery(
+      orpc.categories.getAll.queryOptions({}),
+   );
+
+   const { data: creditCardsResult } = useSuspenseQuery(
+      orpc.creditCards.getAll.queryOptions({ input: { pageSize: 100 } }),
+   );
+
+   const updateMutation = useMutation(
+      orpc.transactions.update.mutationOptions({
+         onError: (e) => toast.error(e.message),
+      }),
+   );
+
+   const deleteMutation = useMutation(
+      orpc.contacts.remove.mutationOptions({
+         onSuccess: () => {
+            toast.success("Contato excluído.");
+            globalNavigate({
+               to: "/$slug/$teamSlug/contacts",
+               params: { slug, teamSlug },
+            });
+         },
+         onError: (e) => toast.error(e.message),
+      }),
+   );
+
+   const handleUpdate = useCallback(
+      async (id: string, patch: Record<string, unknown>) => {
+         await updateMutation.mutateAsync({ id, ...patch });
+      },
+      [updateMutation],
+   );
+
+   const columns = useMemo(
+      () =>
+         buildTransactionColumns({
+            bankAccounts,
+            contacts: [{ id: contact.id, name: contact.name }],
+            categories: categoriesResult,
+            creditCards: creditCardsResult?.data,
+            onUpdate: handleUpdate,
+            getRowStatus: (id) => result.data.find((r) => r.id === id)?.status,
+         }),
+      [
+         bankAccounts,
+         contact,
+         categoriesResult,
+         creditCardsResult,
+         handleUpdate,
+         result.data,
+      ],
+   );
+
+   function handleViewHistory() {
+      globalNavigate({
+         to: "/$slug/$teamSlug/transactions",
+         params: { slug, teamSlug },
+         search: {
+            contactId,
+            page: 1,
+            pageSize: 20,
+            search: "",
+            view: "all",
+            overdueOnly: false,
+            status: [],
+         },
       });
    }
 
-   if (page === 1 && data.items.length === 0) {
-      return (
-         <Empty>
-            <EmptyHeader>
-               <EmptyMedia variant="icon">
-                  <Receipt className="size-6" />
-               </EmptyMedia>
-               <EmptyTitle>Nenhuma transação</EmptyTitle>
-               <EmptyDescription>
-                  Este contato ainda não possui transações vinculadas.
-               </EmptyDescription>
-            </EmptyHeader>
-         </Empty>
-      );
+   function handleDelete() {
+      openAlertDialog({
+         title: "Excluir contato",
+         description: `Excluir "${contact.name}"? Lançamentos vinculados impedirão a exclusão.`,
+         actionLabel: "Excluir",
+         cancelLabel: "Cancelar",
+         variant: "destructive",
+         onAction: async () => {
+            await deleteMutation.mutateAsync({ id: contact.id });
+         },
+      });
    }
 
    return (
-      <div className="flex flex-col gap-4">
-         <Table>
-            <TableHeader>
-               <TableRow>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Valor</TableHead>
-               </TableRow>
-            </TableHeader>
-            <TableBody>
-               {data.items.map((tx) => (
-                  <TableRow key={tx.id}>
-                     <TableCell className="font-medium">
-                        {tx.description}
-                     </TableCell>
-                     <TableCell>
-                        {dayjs(tx.date).format("DD/MM/YYYY")}
-                     </TableCell>
-                     <TableCell>{TYPE_LABELS[tx.type]}</TableCell>
-                     <TableCell>
-                        <Badge variant={STATUS_VARIANTS[tx.status]}>
-                           {STATUS_LABELS[tx.status]}
-                        </Badge>
-                     </TableCell>
-                     <TableCell className="text-right">
-                        {format(of(tx.amount, "BRL"), "pt-BR")}
-                     </TableCell>
-                  </TableRow>
-               ))}
-            </TableBody>
-         </Table>
-
-         <div className="flex items-center gap-4">
-            <span className="flex-1 text-xs text-muted-foreground">
-               {data.total} transações · página {page} de {totalPages}
-            </span>
+      <DataTableRoot
+         storageKey="montte:datatable:contact-transactions"
+         columns={columns}
+         data={result.data}
+         getRowId={(row) => row.id}
+      >
+         <DataTableToolbar hideExport>
+            <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
+               <PopoverTrigger asChild>
+                  <Button
+                     tooltip="Vincular assinatura"
+                     variant="outline"
+                     size="icon-sm"
+                  >
+                     <RefreshCcw />
+                     <span className="sr-only">Vincular assinatura</span>
+                  </Button>
+               </PopoverTrigger>
+               <PopoverContent className="w-96 p-0" align="end">
+                  <Suspense fallback={null}>
+                     <AddSubscriptionForm
+                        contactId={contactId}
+                        onSuccess={() => setSubscriptionOpen(false)}
+                     />
+                  </Suspense>
+               </PopoverContent>
+            </Popover>
             <Button
-               disabled={page <= 1}
-               size="sm"
+               onClick={handleViewHistory}
+               tooltip="Ver histórico completo"
                variant="outline"
-               onClick={() => goToPage(page - 1)}
+               size="icon-sm"
             >
-               <ChevronLeft className="size-4" />
-               Anterior
+               <ArrowRight />
+               <span className="sr-only">Ver histórico completo</span>
             </Button>
             <Button
-               disabled={page >= totalPages}
-               size="sm"
+               onClick={handleDelete}
+               disabled={deleteMutation.isPending}
+               tooltip="Excluir contato"
                variant="outline"
-               onClick={() => goToPage(page + 1)}
+               size="icon-sm"
             >
-               Próxima
-               <ChevronRight className="size-4" />
+               <Trash2 className="text-destructive" />
+               <span className="sr-only">Excluir contato</span>
             </Button>
-         </div>
-      </div>
+         </DataTableToolbar>
+         <DataTableEmptyState>
+            <Empty>
+               <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                     <Receipt className="size-6" />
+                  </EmptyMedia>
+                  <EmptyTitle>Nenhuma transação</EmptyTitle>
+                  <EmptyDescription>
+                     Este contato ainda não possui transações vinculadas.
+                  </EmptyDescription>
+               </EmptyHeader>
+            </Empty>
+         </DataTableEmptyState>
+         <DataTableContent />
+      </DataTableRoot>
    );
 }

@@ -1512,8 +1512,13 @@ function ImportSectionInner() {
 }
 
 function DraftRow() {
-   const { table, isDraftRowActive, onAddRow, onDiscardAddRow } =
-      useDataTable();
+   const {
+      table,
+      isDraftRowActive,
+      onAddRow,
+      onDiscardAddRow,
+      draftRowDefaults,
+   } = useDataTable();
    const visibleColumns = table.getVisibleLeafColumns();
 
    const defaultValues = useMemo(() => {
@@ -1524,10 +1529,12 @@ function DraftRow() {
          const fieldName = String(
             (col.columnDef as { accessorKey?: string }).accessorKey ?? col.id,
          );
-         values[fieldName] = meta.cellComponent === "tags" ? [] : "";
+         values[fieldName] =
+            draftRowDefaults?.[fieldName] ??
+            (meta.cellComponent === "tags" ? [] : "");
       }
       return values;
-   }, [visibleColumns]);
+   }, [visibleColumns, draftRowDefaults]);
 
    const form = useForm({
       defaultValues,
@@ -1745,7 +1752,7 @@ export function DataTableContent<TData>({
    return (
       <DataTableScrollContext.Provider value={scrollEl}>
          <div
-            className={cn("rounded-md border overflow-hidden", className)}
+            className={cn("rounded-md border overflow-auto", className)}
             ref={isVirtualized ? setScrollEl : undefined}
             style={isVirtualized ? { maxHeight, overflowY: "auto" } : undefined}
          >
