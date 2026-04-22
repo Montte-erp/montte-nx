@@ -11,7 +11,7 @@ import {
    useQueryClient,
    useSuspenseQuery,
 } from "@tanstack/react-query";
-import { getRouteApi } from "@tanstack/react-router";
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { ExternalLink, Plus, Trash2, Users } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -33,11 +33,12 @@ import { orpc } from "@/integrations/orpc/client";
 import { buildContactColumns, type ContactRow } from "./contacts-columns";
 
 const routeApi = getRouteApi(
-   "/_authenticated/$slug/$teamSlug/_dashboard/contacts",
+   "/_authenticated/$slug/$teamSlug/_dashboard/contacts/",
 );
 
 export function ContactsList() {
-   const navigate = routeApi.useNavigate();
+   const routeNavigate = routeApi.useNavigate();
+   const navigate = useNavigate();
    const { typeFilter, search } = routeApi.useSearch();
    const { openAlertDialog } = useAlertDialog();
    const queryClient = useQueryClient();
@@ -49,12 +50,12 @@ export function ContactsList() {
 
    const handleSearch = useCallback(
       (value: string) => {
-         navigate({
+         routeNavigate({
             search: (prev) => ({ ...prev, search: value }),
             replace: true,
          });
       },
-      [navigate],
+      [routeNavigate],
    );
 
    const { data: contacts } = useSuspenseQuery(
@@ -87,6 +88,12 @@ export function ContactsList() {
    const importMutation = useMutation(
       orpc.contacts.create.mutationOptions({
          meta: { skipGlobalInvalidation: true },
+      }),
+   );
+
+   const updateMutation = useMutation(
+      orpc.contacts.update.mutationOptions({
+         onError: (e) => toast.error(e.message || "Erro ao atualizar contato."),
       }),
    );
 
@@ -203,9 +210,16 @@ export function ContactsList() {
       [parseCsv, parseXlsx, importMutation, queryClient],
    );
 
+   const handleUpdate = useCallback(
+      async (id: string, patch: Record<string, unknown>) => {
+         await updateMutation.mutateAsync({ id, ...patch });
+      },
+      [updateMutation],
+   );
+
    const columns = useMemo(
-      () => buildContactColumns({ slug, teamSlug }),
-      [slug, teamSlug],
+      () => buildContactColumns({ slug, teamSlug }, handleUpdate),
+      [slug, teamSlug, handleUpdate],
    );
 
    return (

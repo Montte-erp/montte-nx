@@ -29,10 +29,10 @@ const TYPE_VARIANTS: Record<
    ambos: "outline",
 };
 
-export function buildContactColumns(slugs?: {
-   slug: string;
-   teamSlug: string;
-}): ColumnDef<ContactRow>[] {
+export function buildContactColumns(
+   slugs?: { slug: string; teamSlug: string },
+   onUpdate?: (id: string, patch: Record<string, unknown>) => Promise<void>,
+): ColumnDef<ContactRow>[] {
    return [
       {
          accessorKey: "name",
@@ -41,6 +41,12 @@ export function buildContactColumns(slugs?: {
             label: "Nome",
             cellComponent: "text" as const,
             editSchema: z.string().min(2, "Nome é obrigatório."),
+            isEditable: !!onUpdate,
+            onSave: onUpdate
+               ? async (rowId, value) => {
+                    await onUpdate(rowId, { name: value });
+                 }
+               : undefined,
          },
          cell: ({ row }) =>
             slugs ? (
@@ -71,6 +77,12 @@ export function buildContactColumns(slugs?: {
                { value: "ambos", label: "Ambos" },
             ],
             editSchema: z.enum(["cliente", "fornecedor", "ambos"]),
+            isEditable: !!onUpdate,
+            onSave: onUpdate
+               ? async (rowId, value) => {
+                    await onUpdate(rowId, { type: value });
+                 }
+               : undefined,
          },
          cell: ({ row }) => (
             <Badge variant={TYPE_VARIANTS[row.original.type]}>
@@ -106,6 +118,14 @@ export function buildContactColumns(slugs?: {
                .email("Email inválido.")
                .nullable()
                .optional(),
+            isEditable: !!onUpdate,
+            onSave: onUpdate
+               ? async (rowId, value) => {
+                    await onUpdate(rowId, {
+                       email: value === "" ? null : value,
+                    });
+                 }
+               : undefined,
          },
          cell: ({ row }) =>
             row.original.email ? (
@@ -121,6 +141,14 @@ export function buildContactColumns(slugs?: {
             label: "Telefone",
             cellComponent: "text" as const,
             editSchema: z.string().nullable().optional(),
+            isEditable: !!onUpdate,
+            onSave: onUpdate
+               ? async (rowId, value) => {
+                    await onUpdate(rowId, {
+                       phone: value === "" ? null : value,
+                    });
+                 }
+               : undefined,
          },
          cell: ({ row }) =>
             row.original.phone ? (
