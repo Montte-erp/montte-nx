@@ -17,10 +17,12 @@ import {
    Archive,
    ArchiveRestore,
    ArrowRight,
+   Plus,
    Receipt,
    RefreshCcw,
    Trash2,
 } from "lucide-react";
+import dayjs from "dayjs";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -48,6 +50,7 @@ export function ContactTransacoesTab({
    const teamSlug = useTeamSlug();
    const { openAlertDialog } = useAlertDialog();
    const [subscriptionOpen, setSubscriptionOpen] = useState(false);
+   const [isDraftActive, setIsDraftActive] = useState(false);
 
    const { data: result } = useSuspenseQuery(
       orpc.transactions.getAll.queryOptions({
@@ -106,11 +109,56 @@ export function ContactTransacoesTab({
       }),
    );
 
+   const createMutation = useMutation(
+      orpc.transactions.create.mutationOptions({
+         onSuccess: () => {
+            toast.success("Lançamento criado.");
+            setIsDraftActive(false);
+         },
+         onError: (e) => toast.error(e.message),
+      }),
+   );
+
    const handleUpdate = useCallback(
       async (id: string, patch: Record<string, unknown>) => {
          await updateMutation.mutateAsync({ id, ...patch });
       },
       [updateMutation],
+   );
+
+   const handleAddTransaction = useCallback(
+      async (data: Record<string, string | string[]>) => {
+         const type = String(data.type || "income") as
+            | "income"
+            | "expense"
+            | "transfer";
+         const name = String(data.name ?? "").trim() || null;
+         const amount = String(data.amount || "");
+         const date =
+            String(data.date || "").trim() || dayjs().format("YYYY-MM-DD");
+         const bankAccountId = String(data.bankAccountName || "") || null;
+         const categoryId = String(data.categoryName || "") || null;
+         const creditCardId = String(data.creditCardName || "") || null;
+         const dueDate = String(data.dueDate || "").trim() || null;
+         const txStatus = String(data.status || "pending") as
+            | "pending"
+            | "paid"
+            | "cancelled";
+
+         await createMutation.mutateAsync({
+            name,
+            type,
+            amount,
+            date,
+            bankAccountId,
+            contactId,
+            categoryId,
+            creditCardId: creditCardId || null,
+            dueDate,
+            status: txStatus,
+         });
+      },
+      [createMutation, contactId],
    );
 
    const columns = useMemo(
@@ -185,8 +233,20 @@ export function ContactTransacoesTab({
          columns={columns}
          data={result.data}
          getRowId={(row) => row.id}
+         isDraftRowActive={isDraftActive}
+         onAddRow={handleAddTransaction}
+         onDiscardAddRow={() => setIsDraftActive(false)}
       >
          <DataTableToolbar hideExport>
+            <Button
+               onClick={() => setIsDraftActive(true)}
+               tooltip="Novo lançamento"
+               variant="outline"
+               size="icon-sm"
+            >
+               <Plus />
+               <span className="sr-only">Novo lançamento</span>
+            </Button>
             <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
                <PopoverTrigger asChild>
                   <Button
