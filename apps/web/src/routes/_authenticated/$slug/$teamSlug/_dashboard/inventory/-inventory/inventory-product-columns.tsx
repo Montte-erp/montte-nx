@@ -1,5 +1,6 @@
 import { Badge } from "@packages/ui/components/badge";
 import type { ColumnDef } from "@tanstack/react-table";
+import { z } from "zod";
 
 export type InventoryProductRow = {
    id: string;
@@ -23,6 +24,13 @@ export function buildInventoryProductColumns(): ColumnDef<InventoryProductRow>[]
       {
          accessorKey: "name",
          header: "Produto",
+         meta: {
+            label: "Produto",
+            cellComponent: "text" as const,
+            editSchema: z
+               .string()
+               .min(2, "Nome deve ter no mínimo 2 caracteres."),
+         },
          cell: ({ row }) => (
             <span className="font-medium">{row.original.name}</span>
          ),
@@ -30,6 +38,10 @@ export function buildInventoryProductColumns(): ColumnDef<InventoryProductRow>[]
       {
          accessorKey: "description",
          header: "Descrição",
+         meta: {
+            label: "Descrição",
+            cellComponent: "text" as const,
+         },
          cell: ({ row }) => {
             const { description } = row.original;
             if (!description)
@@ -40,6 +52,20 @@ export function buildInventoryProductColumns(): ColumnDef<InventoryProductRow>[]
                </span>
             );
          },
+      },
+      {
+         accessorKey: "baseUnit",
+         header: "Unidade",
+         meta: {
+            label: "Unidade",
+            cellComponent: "text" as const,
+            editSchema: z.string().min(1, "Unidade é obrigatória.").max(10),
+         },
+         cell: ({ row }) => (
+            <span className="text-sm text-muted-foreground">
+               {row.original.baseUnit}
+            </span>
+         ),
       },
       {
          accessorKey: "currentStock",

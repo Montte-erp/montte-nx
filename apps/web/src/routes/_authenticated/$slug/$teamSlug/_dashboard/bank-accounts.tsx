@@ -8,8 +8,8 @@ import {
 } from "@packages/ui/components/empty";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, Landmark, Pencil, Plus, Trash2, Upload } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { Landmark, Plus, Trash2 } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { QueryBoundary } from "@/components/query-boundary";
@@ -22,27 +22,20 @@ import {
 } from "@/components/data-table/data-table-root";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import {
-   type BankAccountRow,
-   buildBankAccountColumns,
-} from "./-bank-accounts/bank-accounts-columns";
-import { BankAccountExportCredenza } from "./-bank-accounts/bank-account-export-credenza";
-import { BankAccountImportCredenza } from "./-bank-accounts/bank-account-import-credenza";
-import { BankAccountForm } from "@/features/bank-accounts/ui/bank-accounts-form";
+   DataTableImportButton,
+   type DataTableImportConfig,
+} from "@/components/data-table/data-table-import";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useCsvFile } from "@/hooks/use-csv-file";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { orpc } from "@/integrations/orpc/client";
+import {
+   buildBankAccountColumns,
+   type BankAccountRow,
+} from "./-bank-accounts/bank-accounts-columns";
 
-const ACCOUNT_TYPE_OPTIONS = [
-   { value: "checking", label: "Conta Corrente" },
-   { value: "savings", label: "Poupança" },
-   { value: "investment", label: "Investimento" },
-   { value: "payment", label: "Pagamento" },
-   { value: "cash", label: "Dinheiro" },
-] as const;
-
-const bankAccountsSearchSchema = z.object({
+const searchSchema = z.object({
    sorting: z
       .array(z.object({ id: z.string(), desc: z.boolean() }))
       .catch([])
@@ -51,18 +44,26 @@ const bankAccountsSearchSchema = z.object({
       .array(z.object({ id: z.string(), value: z.unknown() }))
       .catch([])
       .default([]),
-   type: z
-      .enum(["checking", "savings", "investment", "payment", "cash"])
-      .optional()
-      .catch(undefined),
+   typeFilter: z
+      .enum(["all", "checking", "savings", "investment", "payment", "cash"])
+      .catch("all")
+      .default("all"),
 });
+
+type TypeFilter =
+   | "all"
+   | "checking"
+   | "savings"
+   | "investment"
+   | "payment"
+   | "cash";
 
 const skeletonColumns = buildBankAccountColumns();
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts",
 )({
-   validateSearch: bankAccountsSearchSchema,
+   validateSearch: searchSchema,
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(
          orpc.bankAccounts.getAll.queryOptions({}),
@@ -81,45 +82,99 @@ function BankAccountsSkeleton() {
 }
 
 function BankAccountsList() {
-   const { sorting, columnFilters, type } = Route.useSearch();
    const navigate = Route.useNavigate();
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { sorting, columnFilters, typeFilter } = Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
+   const { parse: parseCsv } = useCsvFile();
+   const { parse: parseXlsx } = useXlsxFile();
 
-   const { data: accounts } = useSuspenseQuery(
+   const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
+   );
+
+   const createMutation = useMutation(
+      orpc.bankAccounts.create.mutationOptions({
+         onSuccess: () => toast.success("Conta criada com sucesso."),
+         onError: (e) => toast.error(e.message),
+      }),
    );
 
    const deleteMutation = useMutation(
       orpc.bankAccounts.remove.mutationOptions({
-         onSuccess: () => {
-            toast.success("Conta bancária excluída com sucesso.");
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao excluir conta bancária.");
-         },
+         onSuccess: () => toast.success("Conta excluída com sucesso."),
+         onError: (e) => toast.error(e.message),
       }),
    );
 
-   const handleEdit = useCallback(
-      (account: BankAccountRow) => {
-         openCredenza({
-            renderChildren: () => (
-               <BankAccountForm
-                  account={account}
-                  mode="edit"
-                  onSuccess={closeCredenza}
-               />
-            ),
+   const [isDraftActive, setIsDraftActive] = useState(false);
+
+   const handleDiscardDraft = useCallback(() => setIsDraftActive(false), []);
+
+   const handleAddAccount = useCallback(
+      async (data: Record<string, string | string[]>) => {
+         const name = String(data.name ?? "").trim();
+         const type = String(data.type ?? "") as BankAccountRow["type"];
+         if (!name || !type) return;
+         await createMutation.mutateAsync({
+            name,
+            type,
+            color: "#6366f1",
+            initialBalance: "0",
          });
+         setIsDraftActive(false);
       },
-      [openCredenza, closeCredenza],
+      [createMutation],
+   );
+
+   const importConfig: DataTableImportConfig = useMemo(
+      () => ({
+         accept: {
+            "text/csv": [".csv"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+               [".xlsx"],
+            "application/vnd.ms-excel": [".xls"],
+         },
+         parseFile: async (file: File) => {
+            const ext = file.name.split(".").pop()?.toLowerCase();
+            if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
+            return parseCsv(file);
+         },
+         mapRow: (row, i) => ({
+            id: `__import_${i}`,
+            teamId: "",
+            name: String(row.name ?? "").trim(),
+            type:
+               (String(row.type ?? "checking") as BankAccountRow["type"]) ||
+               "checking",
+            color: "#6366f1",
+            iconUrl: null,
+            initialBalance: String(row.initialBalance ?? "0"),
+            currentBalance: "0",
+            projectedBalance: "0",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+         }),
+         onImport: async (rows) => {
+            await Promise.allSettled(
+               rows.map((r) =>
+                  createMutation.mutateAsync({
+                     name: String(r.name ?? "").trim(),
+                     type: (String(r.type ?? "checking") ||
+                        "checking") as BankAccountRow["type"],
+                     color: "#6366f1",
+                     initialBalance: String(r.initialBalance ?? "0"),
+                  }),
+               ),
+            );
+         },
+      }),
+      [createMutation, parseCsv, parseXlsx],
    );
 
    const handleDelete = useCallback(
       (account: BankAccountRow) => {
          openAlertDialog({
-            title: "Excluir conta bancária",
+            title: "Excluir conta",
             description: `Tem certeza que deseja excluir a conta "${account.name}"? Esta ação não pode ser desfeita.`,
             actionLabel: "Excluir",
             cancelLabel: "Cancelar",
@@ -132,7 +187,13 @@ function BankAccountsList() {
       [openAlertDialog, deleteMutation],
    );
 
-   const filtered = type ? accounts.filter((a) => a.type === type) : accounts;
+   const filtered = useMemo(() => {
+      if (typeFilter === "all") return bankAccounts as BankAccountRow[];
+      return (bankAccounts as BankAccountRow[]).filter(
+         (a) => a.type === typeFilter,
+      );
+   }, [bankAccounts, typeFilter]);
+
    const columns = useMemo(() => buildBankAccountColumns(), []);
 
    return (
@@ -159,56 +220,69 @@ function BankAccountsList() {
                replace: true,
             });
          }}
+         isDraftRowActive={isDraftActive}
+         onAddRow={handleAddAccount}
+         onDiscardAddRow={handleDiscardDraft}
          renderActions={({ row }) => (
-            <>
-               <Button
-                  onClick={() => handleEdit(row.original)}
-                  tooltip="Editar"
-                  variant="outline"
-               >
-                  <Pencil className="size-4" />
-               </Button>
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(row.original)}
-                  tooltip="Excluir"
-                  variant="outline"
-               >
-                  <Trash2 className="size-4" />
-               </Button>
-            </>
+            <Button
+               className="text-destructive hover:text-destructive"
+               onClick={() => handleDelete(row.original)}
+               tooltip="Excluir"
+               variant="outline"
+            >
+               <Trash2 className="size-4" />
+            </Button>
          )}
       >
-         {ACCOUNT_TYPE_OPTIONS.map((opt) => (
+         {(
+            ["checking", "savings", "investment", "payment", "cash"] as const
+         ).map((key) => (
             <DataTableExternalFilter
-               key={opt.value}
-               id={`type:${opt.value}`}
-               label={opt.label}
-               group="Tipo de conta"
-               active={type === opt.value}
+               key={key}
+               id={`type:${key}`}
+               label={
+                  {
+                     checking: "Conta Corrente",
+                     savings: "Conta Poupança",
+                     investment: "Conta Investimento",
+                     payment: "Conta Pagamento",
+                     cash: "Caixa Físico",
+                  }[key]
+               }
+               group="Tipo"
+               active={typeFilter === key}
                onToggle={(active) =>
                   navigate({
                      search: (prev) => ({
                         ...prev,
-                        type: active ? opt.value : undefined,
+                        typeFilter: active ? key : "all",
                      }),
                      replace: true,
                   })
                }
             />
          ))}
-         <DataTableToolbar />
+         <DataTableToolbar>
+            <DataTableImportButton importConfig={importConfig} />
+            <Button
+               onClick={() => setIsDraftActive(true)}
+               size="icon-sm"
+               tooltip="Nova Conta"
+               variant="outline"
+            >
+               <Plus />
+            </Button>
+         </DataTableToolbar>
          <DataTableContent />
          <DataTableEmptyState>
             <Empty>
+               <EmptyMedia>
+                  <Landmark className="size-10" />
+               </EmptyMedia>
                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                     <Landmark className="size-6" />
-                  </EmptyMedia>
                   <EmptyTitle>Nenhuma conta bancária</EmptyTitle>
                   <EmptyDescription>
-                     Adicione uma conta bancária para começar a organizar suas
-                     finanças.
+                     Adicione uma conta para começar a gerenciar suas finanças.
                   </EmptyDescription>
                </EmptyHeader>
             </Empty>
@@ -218,53 +292,16 @@ function BankAccountsList() {
 }
 
 function BankAccountsPage() {
-   const { openCredenza, closeCredenza } = useCredenza();
-
-   const handleCreate = useCallback(() => {
-      openCredenza({
-         renderChildren: () => (
-            <BankAccountForm mode="create" onSuccess={closeCredenza} />
-         ),
-      });
-   }, [openCredenza, closeCredenza]);
-
-   const panelActions: PanelAction[] = [
-      {
-         icon: Upload,
-         label: "Importar",
-         onClick: () =>
-            openCredenza({
-               renderChildren: () => (
-                  <BankAccountImportCredenza onClose={closeCredenza} />
-               ),
-            }),
-      },
-      {
-         icon: Download,
-         label: "Exportar",
-         onClick: () =>
-            openCredenza({
-               renderChildren: () => (
-                  <BankAccountExportCredenza onClose={closeCredenza} />
-               ),
-            }),
-      },
-   ];
-
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
-            actions={
-               <Button onClick={handleCreate}>
-                  <Plus className="size-4" />
-                  Nova Conta
-               </Button>
-            }
-            description="Gerencie suas contas bancárias e saldos"
-            panelActions={panelActions}
+            description="Gerencie suas contas bancárias"
             title="Contas Bancárias"
          />
-         <QueryBoundary fallback={<BankAccountsSkeleton />}>
+         <QueryBoundary
+            fallback={<BankAccountsSkeleton />}
+            errorTitle="Erro ao carregar contas"
+         >
             <BankAccountsList />
          </QueryBoundary>
       </main>

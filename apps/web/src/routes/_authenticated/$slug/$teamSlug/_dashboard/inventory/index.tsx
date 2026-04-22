@@ -22,10 +22,9 @@ import {
    MoreHorizontal,
    Package,
    PackagePlus,
-   Pencil,
    Plus,
 } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
@@ -44,7 +43,6 @@ import {
    buildInventoryProductColumns,
    type InventoryProductRow,
 } from "./-inventory/inventory-product-columns";
-import { InventoryProductForm } from "./-inventory/inventory-product-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -114,6 +112,35 @@ function InventoryList() {
       }),
    );
 
+   const createMutation = useMutation(
+      orpc.inventory.createProduct.mutationOptions({
+         onSuccess: () => toast.success("Produto criado com sucesso."),
+         onError: (e) => toast.error(e.message),
+      }),
+   );
+
+   const [isDraftActive, setIsDraftActive] = useState(false);
+
+   const handleDiscardDraft = useCallback(() => setIsDraftActive(false), []);
+
+   const handleAddProduct = useCallback(
+      async (data: Record<string, string | string[]>) => {
+         const name = String(data.name ?? "").trim();
+         const baseUnit = String(data.baseUnit ?? "").trim();
+         if (!name || !baseUnit) return;
+         const description = String(data.description ?? "").trim() || null;
+         await createMutation.mutateAsync({
+            name,
+            baseUnit,
+            purchaseUnit: baseUnit,
+            purchaseUnitFactor: "1",
+            description,
+         });
+         setIsDraftActive(false);
+      },
+      [createMutation],
+   );
+
    const handleMovement = useCallback(
       (product: InventoryProductRow) => {
          openCredenza({
@@ -137,29 +164,6 @@ function InventoryList() {
       [openCredenza],
    );
 
-   const handleEdit = useCallback(
-      (product: InventoryProductRow) => {
-         openCredenza({
-            renderChildren: () => (
-               <InventoryProductForm
-                  defaultValues={{
-                     id: product.id,
-                     name: product.name,
-                     description: product.description,
-                     baseUnit: product.baseUnit,
-                     purchaseUnit: product.purchaseUnit,
-                     purchaseUnitFactor: "1",
-                     sellingPrice: product.sellingPrice,
-                  }}
-                  mode="edit"
-                  onSuccess={closeCredenza}
-               />
-            ),
-         });
-      },
-      [openCredenza, closeCredenza],
-   );
-
    const handleArchive = useCallback(
       (product: InventoryProductRow) => {
          openAlertDialog({
@@ -179,6 +183,9 @@ function InventoryList() {
          data={products}
          getRowId={(row) => row.id}
          storageKey="montte:datatable:inventory"
+         isDraftRowActive={isDraftActive}
+         onAddRow={handleAddProduct}
+         onDiscardAddRow={handleDiscardDraft}
          sorting={sorting}
          onSortingChange={(updater) => {
             const next =
@@ -219,10 +226,6 @@ function InventoryList() {
                         <History className="size-4" />
                         Ver histórico
                      </DropdownMenuItem>
-                     <DropdownMenuItem onClick={() => handleEdit(row.original)}>
-                        <Pencil className="size-4" />
-                        Editar
-                     </DropdownMenuItem>
                      <DropdownMenuSeparator />
                      <DropdownMenuItem
                         className="text-destructive"
@@ -236,7 +239,16 @@ function InventoryList() {
             </>
          )}
       >
-         <DataTableToolbar />
+         <DataTableToolbar>
+            <Button
+               onClick={() => setIsDraftActive(true)}
+               size="icon-sm"
+               tooltip="Novo Produto"
+               variant="outline"
+            >
+               <Plus />
+            </Button>
+         </DataTableToolbar>
          <DataTableContent />
          <DataTableEmptyState>
             <Empty>
@@ -256,25 +268,9 @@ function InventoryList() {
 }
 
 function InventoryPage() {
-   const { openCredenza, closeCredenza } = useCredenza();
-
-   const handleCreate = useCallback(() => {
-      openCredenza({
-         renderChildren: () => (
-            <InventoryProductForm mode="create" onSuccess={closeCredenza} />
-         ),
-      });
-   }, [openCredenza, closeCredenza]);
-
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
-            actions={
-               <Button onClick={handleCreate}>
-                  <Plus className="size-4" />
-                  Novo Produto
-               </Button>
-            }
             description="Controle de estoque e movimentações"
             title="Estoque"
          />

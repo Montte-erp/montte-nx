@@ -8,8 +8,8 @@ import {
 } from "@packages/ui/components/empty";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Pencil, Plus, Trash2, Users } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { Plus, Trash2, Users } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
@@ -17,13 +17,7 @@ import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
-import {
-   buildContactColumns,
-   type ContactRow,
-} from "@/features/contacts/ui/contacts-columns";
-import { ContactForm } from "@/features/contacts/ui/contacts-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
 import { QueryBoundary } from "@/components/query-boundary";
 import {
    DataTableBulkActions,
@@ -38,6 +32,10 @@ import {
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { orpc } from "@/integrations/orpc/client";
+import {
+   buildContactColumns,
+   type ContactRow,
+} from "./-contacts/contacts-columns";
 
 const tableSearchSchema = z.object({
    sorting: z
@@ -100,12 +98,18 @@ function ContactsSkeleton() {
 function ContactsList() {
    const navigate = Route.useNavigate();
    const { sorting, columnFilters, typeFilter } = Route.useSearch();
-   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
    const { data: contacts } = useSuspenseQuery(
       orpc.contacts.getAll.queryOptions({
          input: typeFilter !== "all" ? { type: typeFilter } : {},
+      }),
+   );
+
+   const createMutation = useMutation(
+      orpc.contacts.create.mutationOptions({
+         onSuccess: () => toast.success("Contato criado com sucesso."),
+         onError: (e) => toast.error(e.message),
       }),
    );
 
@@ -131,19 +135,19 @@ function ContactsList() {
       }),
    );
 
-   const handleEdit = useCallback(
-      (contact: ContactRow) => {
-         openCredenza({
-            renderChildren: () => (
-               <ContactForm
-                  contact={contact}
-                  mode="edit"
-                  onSuccess={closeCredenza}
-               />
-            ),
-         });
+   const [isDraftActive, setIsDraftActive] = useState(false);
+
+   const handleDiscardDraft = useCallback(() => setIsDraftActive(false), []);
+
+   const handleAddContact = useCallback(
+      async (data: Record<string, string | string[]>) => {
+         const name = String(data.name ?? "").trim();
+         const type = String(data.type ?? "") as ContactRow["type"];
+         if (!name || !type) return;
+         await createMutation.mutateAsync({ name, type });
+         setIsDraftActive(false);
       },
-      [openCredenza, closeCredenza],
+      [createMutation],
    );
 
    const handleDelete = useCallback(
@@ -167,7 +171,7 @@ function ContactsList() {
    return (
       <DataTableRoot
          columns={columns}
-         data={contacts}
+         data={contacts as ContactRow[]}
          getRowId={(row) => row.id}
          storageKey="montte:datatable:contacts"
          sorting={sorting}
@@ -188,15 +192,11 @@ function ContactsList() {
                replace: true,
             });
          }}
+         isDraftRowActive={isDraftActive}
+         onAddRow={handleAddContact}
+         onDiscardAddRow={handleDiscardDraft}
          renderActions={({ row }) => (
             <>
-               <Button
-                  onClick={() => handleEdit(row.original)}
-                  tooltip="Editar"
-                  variant="outline"
-               >
-                  <Pencil className="size-4" />
-               </Button>
                <Button
                   className="text-destructive hover:text-destructive"
                   onClick={() => handleDelete(row.original)}
@@ -226,7 +226,16 @@ function ContactsList() {
                }
             />
          ))}
-         <DataTableToolbar />
+         <DataTableToolbar>
+            <Button
+               onClick={() => setIsDraftActive(true)}
+               size="icon-sm"
+               tooltip="Novo Contato"
+               variant="outline"
+            >
+               <Plus />
+            </Button>
+         </DataTableToolbar>
          <DataTableContent />
          <DataTableEmptyState>
             <Empty>
@@ -272,25 +281,9 @@ function ContactsList() {
 }
 
 function ContactsPage() {
-   const { openCredenza, closeCredenza } = useCredenza();
-
-   const handleCreate = useCallback(() => {
-      openCredenza({
-         renderChildren: () => (
-            <ContactForm mode="create" onSuccess={closeCredenza} />
-         ),
-      });
-   }, [openCredenza, closeCredenza]);
-
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
-            actions={
-               <Button onClick={handleCreate}>
-                  <Plus className="size-4" />
-                  Novo Contato
-               </Button>
-            }
             description="Gerencie clientes e fornecedores"
             title="Contatos"
          />
