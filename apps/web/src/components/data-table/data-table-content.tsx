@@ -63,6 +63,7 @@ import {
    useRef,
    useState,
 } from "react";
+import { Fragment } from "react";
 import type React from "react";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
@@ -1634,11 +1635,13 @@ function DataTableBodyRows<TData>({
    rows,
    groupedRows,
    renderGroupHeader,
+   renderExpandedRow,
    columnCount,
 }: {
    rows: Row<TData>[];
    groupedRows: Map<string, Row<TData>[]> | null;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
+   renderExpandedRow?: (props: { row: Row<TData> }) => React.ReactNode;
    columnCount: number;
 }) {
    if (!rows.length) {
@@ -1652,16 +1655,24 @@ function DataTableBodyRows<TData>({
    }
 
    const renderRow = (row: Row<TData>) => (
-      <TableRow
-         className={cn(
-            "bg-card hover:bg-card",
-            row.getIsSelected() && "bg-muted/50",
+      <Fragment key={row.id}>
+         <TableRow
+            className={cn(
+               "bg-card hover:bg-card",
+               row.getIsSelected() && "bg-muted/50",
+            )}
+            data-state={row.getIsSelected() ? "selected" : undefined}
+         >
+            <DataTableBodyRow row={row} />
+         </TableRow>
+         {renderExpandedRow && row.getIsExpanded() && (
+            <TableRow className="hover:bg-transparent">
+               <TableCell className="p-0 border-b" colSpan={columnCount}>
+                  {renderExpandedRow({ row })}
+               </TableCell>
+            </TableRow>
          )}
-         data-state={row.getIsSelected() ? "selected" : undefined}
-         key={row.id}
-      >
-         <DataTableBodyRow row={row} />
-      </TableRow>
+      </Fragment>
    );
 
    if (groupedRows && renderGroupHeader) {
@@ -1694,6 +1705,7 @@ export function DataTableContent<TData>({
       table,
       groupBy,
       renderGroupHeader,
+      renderExpandedRow,
       hasEmptyState,
       isDraftRowActive,
    } = useDataTable<TData>();
@@ -1863,6 +1875,7 @@ export function DataTableContent<TData>({
                         <DataTableBodyRows
                            columnCount={columnCount}
                            groupedRows={null}
+                           renderExpandedRow={renderExpandedRow}
                            rows={virtualItems.map((v) => rows[v.index])}
                         />
                         {paddingBottom > 0 && (
@@ -1879,6 +1892,7 @@ export function DataTableContent<TData>({
                         columnCount={columnCount}
                         groupedRows={groupedRows}
                         renderGroupHeader={renderGroupHeader}
+                        renderExpandedRow={renderExpandedRow}
                         rows={rows}
                      />
                   )}

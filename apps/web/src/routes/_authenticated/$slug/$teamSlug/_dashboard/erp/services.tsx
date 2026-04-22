@@ -1,7 +1,4 @@
-import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
-import { DataTable } from "@packages/ui/components/data-table";
-import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import {
    Empty,
    EmptyDescription,
@@ -9,31 +6,19 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { Input } from "@packages/ui/components/input";
-import {
-   Select,
-   SelectContent,
-   SelectItem,
-   SelectTrigger,
-   SelectValue,
-} from "@packages/ui/components/select";
-import { Skeleton } from "@packages/ui/components/skeleton";
-import { TooltipProvider } from "@packages/ui/components/tooltip";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import type { ColumnFiltersState, SortingState } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
-import { createLocalStorageState } from "foxact/create-local-storage-state";
 import {
    Briefcase,
    Download,
    Pencil,
    Plus,
-   Search,
    Trash2,
    Upload,
 } from "lucide-react";
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
 import {
    EarlyAccessBanner,
@@ -49,6 +34,15 @@ import { ServiceForm } from "@/features/services/ui/services-form";
 import { exportServicesCsv } from "@/features/services/utils/export-services-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
+import { DataTableContent } from "@/components/data-table/data-table-content";
+import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
+import {
+   DataTableExternalFilter,
+   DataTableRoot,
+} from "@/components/data-table/data-table-root";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
+import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { QueryBoundary } from "@/components/query-boundary";
 import { orpc } from "@/integrations/orpc/client";
 
 const SERVICES_BANNER: EarlyAccessBannerTemplate = {
@@ -68,19 +62,28 @@ const TYPE_FILTER_OPTIONS = [
    { value: "service", label: "Prestação de serviço" },
    { value: "product", label: "Produto" },
    { value: "subscription", label: "Assinatura" },
-];
+] as const;
 
-const [useServicesTableState] =
-   createLocalStorageState<DataTableStoredState | null>(
-      "montte:datatable:services",
-      null,
-   );
+const servicesSearchSchema = z.object({
+   search: z.string().catch("").default(""),
+   type: z
+      .enum(["service", "product", "subscription"])
+      .optional()
+      .catch(undefined),
+   categoryId: z.string().optional().catch(undefined),
+});
+
+const skeletonColumns = buildServiceColumns();
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/erp/services",
 )({
+   validateSearch: servicesSearchSchema,
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(orpc.services.getAll.queryOptions({}));
+      context.queryClient.prefetchQuery(
+         orpc.categories.getAll.queryOptions({}),
+      );
    },
    pendingMs: 300,
    pendingComponent: ServicesSkeleton,
@@ -90,106 +93,22 @@ export const Route = createFileRoute(
    component: ServicesPage,
 });
 
-// =============================================================================
-// Skeleton
-// =============================================================================
-
 function ServicesSkeleton() {
-   return (
-      <div className="space-y-3">
-         {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton className="h-12 w-full" key={`skel-${i + 1}`} />
-         ))}
-      </div>
-   );
+   return <DataTableSkeleton columns={skeletonColumns} />;
 }
 
-// =============================================================================
-// Filters
-// =============================================================================
+function ServicesList() {
+   const navigate = Route.useNavigate();
+   const { search, type, categoryId } = Route.useSearch();
+   const { openCredenza, closeCredenza } = useCredenza();
+   const { openAlertDialog } = useAlertDialog();
 
-interface FiltersState {
-   search: string;
-   type: string;
-   categoryId: string;
-}
-
-function ServiceFilters({
-   filters,
-   onChange,
-   categories,
-}: {
-   filters: FiltersState;
-   onChange: (f: FiltersState) => void;
-   categories: { id: string; name: string }[] | undefined;
-}) {
-   return (
-      <div className="flex flex-wrap items-center gap-2">
-         <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-            <Input
-               className="pl-8"
-               onChange={(e) =>
-                  onChange({ ...filters, search: e.target.value })
-               }
-               placeholder="Buscar serviços..."
-               value={filters.search}
-            />
-         </div>
-         <Select
-            onValueChange={(v) =>
-               onChange({ ...filters, type: v === "all" ? "" : v })
-            }
-            value={filters.type || "all"}
-         >
-            <SelectTrigger className="w-[180px]">
-               <SelectValue placeholder="Tipo" />
-            </SelectTrigger>
-            <SelectContent>
-               <SelectItem value="all">Todos os tipos</SelectItem>
-               {TYPE_FILTER_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                     {opt.label}
-                  </SelectItem>
-               ))}
-            </SelectContent>
-         </Select>
-         <Select
-            onValueChange={(v) =>
-               onChange({ ...filters, categoryId: v === "all" ? "" : v })
-            }
-            value={filters.categoryId || "all"}
-         >
-            <SelectTrigger className="w-[180px]">
-               <SelectValue placeholder="Categoria" />
-            </SelectTrigger>
-            <SelectContent>
-               <SelectItem value="all">Todas categorias</SelectItem>
-               {categories?.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                     {cat.name}
-                  </SelectItem>
-               ))}
-            </SelectContent>
-         </Select>
-      </div>
-   );
-}
-
-// =============================================================================
-// List
-// =============================================================================
-
-function ServicesList({ filters }: { filters: FiltersState }) {
-   const [sorting, setSorting] = useState<SortingState>([]);
-   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-   const [tableState, setTableState] = useServicesTableState();
    const { data: servicesList } = useSuspenseQuery(
       orpc.services.getAll.queryOptions({}),
    );
-
-   const { openCredenza, closeCredenza } = useCredenza();
-   const { openAlertDialog } = useAlertDialog();
+   const { data: categories } = useSuspenseQuery(
+      orpc.categories.getAll.queryOptions({}),
+   );
 
    const deleteMutation = useMutation(
       orpc.services.remove.mutationOptions({
@@ -200,19 +119,19 @@ function ServicesList({ filters }: { filters: FiltersState }) {
 
    const filtered = useMemo(() => {
       let result = servicesList as ServiceRow[];
-      if (filters.search) {
-         const q = filters.search.toLowerCase();
+      if (search) {
+         const q = search.toLowerCase();
          result = result.filter(
             (s) =>
                s.name.toLowerCase().includes(q) ||
                s.description?.toLowerCase().includes(q),
          );
       }
-      if (filters.categoryId) {
-         result = result.filter((s) => s.categoryId === filters.categoryId);
+      if (categoryId) {
+         result = result.filter((s) => s.categoryId === categoryId);
       }
       return result;
-   }, [servicesList, filters]);
+   }, [servicesList, search, categoryId]);
 
    const handleEdit = useCallback(
       (row: ServiceRow) => {
@@ -245,82 +164,100 @@ function ServicesList({ filters }: { filters: FiltersState }) {
       [openAlertDialog, deleteMutation],
    );
 
-   if (servicesList.length === 0) {
-      return (
-         <Empty>
-            <EmptyMedia>
-               <Briefcase className="size-10" />
-            </EmptyMedia>
-            <EmptyHeader>
-               <EmptyTitle>Nenhum serviço cadastrado</EmptyTitle>
-               <EmptyDescription>
-                  Adicione serviços para começar a gerenciar seu catálogo.
-               </EmptyDescription>
-            </EmptyHeader>
-         </Empty>
-      );
-   }
-
    const columns = useMemo(() => buildServiceColumns(), []);
 
    return (
-      <div className="space-y-2">
-         <div className="flex items-center gap-2">
-            <Badge variant="secondary">{filtered.length} serviços</Badge>
-         </div>
-         <TooltipProvider>
-            <DataTable
-               columns={columns}
-               data={filtered}
-               getRowId={(row) => row.id}
-               sorting={sorting}
-               onSortingChange={setSorting}
-               columnFilters={columnFilters}
-               onColumnFiltersChange={setColumnFilters}
-               tableState={tableState}
-               onTableStateChange={setTableState}
-               renderActions={({ row }) => (
-                  <>
-                     <Button
-                        onClick={() => handleEdit(row.original)}
-                        tooltip="Editar"
-                        variant="outline"
-                     >
-                        <Pencil className="size-4" />
-                     </Button>
-                     <Button
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(row.original)}
-                        tooltip="Excluir"
-                        variant="outline"
-                     >
-                        <Trash2 className="size-4" />
-                     </Button>
-                  </>
-               )}
+      <DataTableRoot
+         columns={columns}
+         data={filtered}
+         getRowId={(row) => row.id}
+         storageKey="montte:datatable:services"
+         renderActions={({ row }) => (
+            <>
+               <Button
+                  onClick={() => handleEdit(row.original)}
+                  tooltip="Editar"
+                  variant="outline"
+               >
+                  <Pencil className="size-4" />
+               </Button>
+               <Button
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => handleDelete(row.original)}
+                  tooltip="Excluir"
+                  variant="outline"
+               >
+                  <Trash2 className="size-4" />
+               </Button>
+            </>
+         )}
+      >
+         {TYPE_FILTER_OPTIONS.map((opt) => (
+            <DataTableExternalFilter
+               key={opt.value}
+               id={`type:${opt.value}`}
+               label={opt.label}
+               group="Tipo"
+               active={type === opt.value}
+               onToggle={(active) =>
+                  navigate({
+                     search: (prev) => ({
+                        ...prev,
+                        type: active ? opt.value : undefined,
+                     }),
+                     replace: true,
+                  })
+               }
             />
-         </TooltipProvider>
-      </div>
+         ))}
+         {categories?.map((cat) => (
+            <DataTableExternalFilter
+               key={cat.id}
+               id={`category:${cat.id}`}
+               label={cat.name}
+               group="Categoria"
+               active={categoryId === cat.id}
+               onToggle={(active) =>
+                  navigate({
+                     search: (prev) => ({
+                        ...prev,
+                        categoryId: active ? cat.id : undefined,
+                     }),
+                     replace: true,
+                  })
+               }
+            />
+         ))}
+         <DataTableToolbar
+            searchPlaceholder="Buscar serviços..."
+            searchDefaultValue={search}
+            onSearch={(value) =>
+               navigate({
+                  search: (prev) => ({ ...prev, search: value }),
+                  replace: true,
+               })
+            }
+         />
+         <DataTableContent />
+         <DataTableEmptyState>
+            <Empty>
+               <EmptyMedia>
+                  <Briefcase className="size-10" />
+               </EmptyMedia>
+               <EmptyHeader>
+                  <EmptyTitle>Nenhum serviço cadastrado</EmptyTitle>
+                  <EmptyDescription>
+                     Adicione serviços para começar a gerenciar seu catálogo.
+                  </EmptyDescription>
+               </EmptyHeader>
+            </Empty>
+         </DataTableEmptyState>
+      </DataTableRoot>
    );
 }
 
-// =============================================================================
-// Page
-// =============================================================================
-
 function ServicesPage() {
    const { openCredenza, closeCredenza } = useCredenza();
-
-   const [filters, setFilters] = useState<FiltersState>({
-      search: "",
-      type: "",
-      categoryId: "",
-   });
-
-   const { data: categoriesResult } = useSuspenseQuery(
-      orpc.categories.getAll.queryOptions({}),
-   );
-   const categories = categoriesResult;
 
    const { data: servicesList } = useSuspenseQuery(
       orpc.services.getAll.queryOptions({}),
@@ -357,15 +294,15 @@ function ServicesPage() {
             actions={
                <div className="flex items-center gap-2">
                   <Button onClick={handleImport} variant="outline">
-                     <Upload className="size-4 mr-1" />
+                     <Upload className="size-4" />
                      Importar
                   </Button>
                   <Button onClick={handleExport} variant="outline">
-                     <Download className="size-4 mr-1" />
+                     <Download className="size-4" />
                      Exportar
                   </Button>
                   <Button onClick={handleCreate}>
-                     <Plus className="size-4 mr-1" />
+                     <Plus className="size-4" />
                      Novo Serviço
                   </Button>
                </div>
@@ -375,14 +312,9 @@ function ServicesPage() {
          />
          <ServicesAnalyticsHeader />
          <EarlyAccessBanner template={SERVICES_BANNER} />
-         <ServiceFilters
-            categories={categories}
-            filters={filters}
-            onChange={setFilters}
-         />
-         <Suspense fallback={<ServicesSkeleton />}>
-            <ServicesList filters={filters} />
-         </Suspense>
+         <QueryBoundary fallback={<ServicesSkeleton />}>
+            <ServicesList />
+         </QueryBoundary>
       </main>
    );
 }

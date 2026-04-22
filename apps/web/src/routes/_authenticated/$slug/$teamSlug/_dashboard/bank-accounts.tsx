@@ -1,6 +1,4 @@
 import { Button } from "@packages/ui/components/button";
-import { DataTable } from "@packages/ui/components/data-table";
-import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import {
    Empty,
    EmptyDescription,
@@ -8,21 +6,22 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import type {
-   ColumnFiltersState,
-   OnChangeFn,
-   SortingState,
-} from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
-import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Download, Landmark, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { QueryBoundary } from "@/components/query-boundary";
 import { DefaultHeader } from "@/components/default-header";
+import { DataTableContent } from "@/components/data-table/data-table-content";
+import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
+import {
+   DataTableExternalFilter,
+   DataTableRoot,
+} from "@/components/data-table/data-table-root";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
+import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import {
    type BankAccountRow,
@@ -30,11 +29,18 @@ import {
 } from "./-bank-accounts/bank-accounts-columns";
 import { BankAccountExportCredenza } from "./-bank-accounts/bank-account-export-credenza";
 import { BankAccountImportCredenza } from "./-bank-accounts/bank-account-import-credenza";
-import { BankAccountsFilterBar } from "./-bank-accounts/bank-accounts-filter-bar";
 import { BankAccountForm } from "@/features/bank-accounts/ui/bank-accounts-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
+
+const ACCOUNT_TYPE_OPTIONS = [
+   { value: "checking", label: "Conta Corrente" },
+   { value: "savings", label: "Poupança" },
+   { value: "investment", label: "Investimento" },
+   { value: "payment", label: "Pagamento" },
+   { value: "cash", label: "Dinheiro" },
+] as const;
 
 const bankAccountsSearchSchema = z.object({
    sorting: z
@@ -51,13 +57,7 @@ const bankAccountsSearchSchema = z.object({
       .catch(undefined),
 });
 
-export type BankAccountsSearch = z.infer<typeof bankAccountsSearchSchema>;
-
-const [useBankAccountsTableState] =
-   createLocalStorageState<DataTableStoredState | null>(
-      "montte:datatable:bank-accounts",
-      null,
-   );
+const skeletonColumns = buildBankAccountColumns();
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts",
@@ -77,56 +77,14 @@ export const Route = createFileRoute(
 });
 
 function BankAccountsSkeleton() {
-   return (
-      <div className="flex flex-col gap-4">
-         {Array.from({ length: 5 }).map((_, index) => (
-            <Skeleton className="h-12 w-full" key={`skeleton-${index + 1}`} />
-         ))}
-      </div>
-   );
+   return <DataTableSkeleton columns={skeletonColumns} />;
 }
 
-interface BankAccountsListProps {
-   navigate: ReturnType<typeof Route.useNavigate>;
-}
-
-function BankAccountsList({ navigate }: BankAccountsListProps) {
+function BankAccountsList() {
    const { sorting, columnFilters, type } = Route.useSearch();
-   const [tableState, setTableState] = useBankAccountsTableState();
+   const navigate = Route.useNavigate();
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
-
-   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
-      (updater) => {
-         const next =
-            typeof updater === "function"
-               ? updater(sorting as SortingState)
-               : updater;
-         navigate({
-            search: (prev: BankAccountsSearch) => ({ ...prev, sorting: next }),
-            replace: true,
-         });
-      },
-      [sorting, navigate],
-   );
-
-   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
-      useCallback(
-         (updater) => {
-            const next =
-               typeof updater === "function"
-                  ? updater(columnFilters as ColumnFiltersState)
-                  : updater;
-            navigate({
-               search: (prev: BankAccountsSearch) => ({
-                  ...prev,
-                  columnFilters: next,
-               }),
-               replace: true,
-            });
-         },
-         [columnFilters, navigate],
-      );
 
    const { data: accounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
@@ -177,34 +135,30 @@ function BankAccountsList({ navigate }: BankAccountsListProps) {
    const filtered = type ? accounts.filter((a) => a.type === type) : accounts;
    const columns = useMemo(() => buildBankAccountColumns(), []);
 
-   if (filtered.length === 0) {
-      return (
-         <Empty>
-            <EmptyHeader>
-               <EmptyMedia variant="icon">
-                  <Landmark className="size-6" />
-               </EmptyMedia>
-               <EmptyTitle>Nenhuma conta bancária</EmptyTitle>
-               <EmptyDescription>
-                  Adicione uma conta bancária para começar a organizar suas
-                  finanças.
-               </EmptyDescription>
-            </EmptyHeader>
-         </Empty>
-      );
-   }
-
    return (
-      <DataTable
+      <DataTableRoot
          columns={columns}
          data={filtered}
          getRowId={(row) => row.id}
-         sorting={sorting as SortingState}
-         onSortingChange={handleSortingChange}
-         columnFilters={columnFilters as ColumnFiltersState}
-         onColumnFiltersChange={handleColumnFiltersChange}
-         tableState={tableState}
-         onTableStateChange={setTableState}
+         storageKey="montte:datatable:bank-accounts"
+         sorting={sorting}
+         onSortingChange={(updater) => {
+            const next =
+               typeof updater === "function" ? updater(sorting) : updater;
+            navigate({
+               search: (prev) => ({ ...prev, sorting: next }),
+               replace: true,
+            });
+         }}
+         columnFilters={columnFilters}
+         onColumnFiltersChange={(updater) => {
+            const next =
+               typeof updater === "function" ? updater(columnFilters) : updater;
+            navigate({
+               search: (prev) => ({ ...prev, columnFilters: next }),
+               replace: true,
+            });
+         }}
          renderActions={({ row }) => (
             <>
                <Button
@@ -224,13 +178,46 @@ function BankAccountsList({ navigate }: BankAccountsListProps) {
                </Button>
             </>
          )}
-      />
+      >
+         {ACCOUNT_TYPE_OPTIONS.map((opt) => (
+            <DataTableExternalFilter
+               key={opt.value}
+               id={`type:${opt.value}`}
+               label={opt.label}
+               group="Tipo de conta"
+               active={type === opt.value}
+               onToggle={(active) =>
+                  navigate({
+                     search: (prev) => ({
+                        ...prev,
+                        type: active ? opt.value : undefined,
+                     }),
+                     replace: true,
+                  })
+               }
+            />
+         ))}
+         <DataTableToolbar />
+         <DataTableContent />
+         <DataTableEmptyState>
+            <Empty>
+               <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                     <Landmark className="size-6" />
+                  </EmptyMedia>
+                  <EmptyTitle>Nenhuma conta bancária</EmptyTitle>
+                  <EmptyDescription>
+                     Adicione uma conta bancária para começar a organizar suas
+                     finanças.
+                  </EmptyDescription>
+               </EmptyHeader>
+            </Empty>
+         </DataTableEmptyState>
+      </DataTableRoot>
    );
 }
 
 function BankAccountsPage() {
-   const navigate = Route.useNavigate();
-   const { type } = Route.useSearch();
    const { openCredenza, closeCredenza } = useCredenza();
 
    const handleCreate = useCallback(() => {
@@ -277,9 +264,8 @@ function BankAccountsPage() {
             panelActions={panelActions}
             title="Contas Bancárias"
          />
-         <BankAccountsFilterBar type={type} />
          <QueryBoundary fallback={<BankAccountsSkeleton />}>
-            <BankAccountsList navigate={navigate} />
+            <BankAccountsList />
          </QueryBoundary>
       </main>
    );

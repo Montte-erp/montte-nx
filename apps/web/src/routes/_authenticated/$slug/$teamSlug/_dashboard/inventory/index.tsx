@@ -1,9 +1,5 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   DataTable,
-   type DataTableStoredState,
-} from "@packages/ui/components/data-table";
-import {
    DropdownMenu,
    DropdownMenuContent,
    DropdownMenuItem,
@@ -17,15 +13,8 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { Skeleton } from "@packages/ui/components/skeleton";
-import type {
-   ColumnFiltersState,
-   OnChangeFn,
-   SortingState,
-} from "@tanstack/react-table";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { z } from "zod";
 import {
    Archive,
@@ -44,6 +33,11 @@ import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
+import { DataTableContent } from "@/components/data-table/data-table-content";
+import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
+import { DataTableRoot } from "@/components/data-table/data-table-root";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
+import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { InventoryHistorySheet } from "./-inventory/inventory-history-sheet";
 import { InventoryMovementCredenza } from "./-inventory/inventory-movement-credenza";
 import {
@@ -66,11 +60,20 @@ const searchSchema = z.object({
       .default([]),
 });
 
-const [useInventoryTableState] =
-   createLocalStorageState<DataTableStoredState | null>(
-      "montte:datatable:inventory",
-      null,
-   );
+const INVENTORY_BANNER: EarlyAccessBannerTemplate = {
+   badgeLabel: "Estoque",
+   message: "Esta funcionalidade está em conceito.",
+   ctaLabel: "Deixar feedback",
+   stage: "concept",
+   icon: Package,
+   bullets: [
+      "Cadastre produtos e controle o estoque",
+      "Registre entradas e saídas de movimentação",
+      "Seu feedback nos ajuda a melhorar",
+   ],
+};
+
+const skeletonColumns = buildInventoryProductColumns();
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/inventory/",
@@ -89,41 +92,13 @@ export const Route = createFileRoute(
    component: InventoryPage,
 });
 
-const INVENTORY_BANNER: EarlyAccessBannerTemplate = {
-   badgeLabel: "Estoque",
-   message: "Esta funcionalidade está em conceito.",
-   ctaLabel: "Deixar feedback",
-   stage: "concept",
-   icon: Package,
-   bullets: [
-      "Cadastre produtos e controle o estoque",
-      "Registre entradas e saídas de movimentação",
-      "Seu feedback nos ajuda a melhorar",
-   ],
-};
-
-// =============================================================================
-// Skeleton
-// =============================================================================
-
 function InventorySkeleton() {
-   return (
-      <div className="space-y-3">
-         {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton className="h-12 w-full" key={`skel-${i + 1}`} />
-         ))}
-      </div>
-   );
+   return <DataTableSkeleton columns={skeletonColumns} />;
 }
-
-// =============================================================================
-// List
-// =============================================================================
 
 function InventoryList() {
    const navigate = Route.useNavigate();
    const { sorting, columnFilters } = Route.useSearch();
-   const [tableState, setTableState] = useInventoryTableState();
 
    const { data: products } = useSuspenseQuery(
       orpc.inventory.getProducts.queryOptions({}),
@@ -131,37 +106,6 @@ function InventoryList() {
 
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
-
-   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
-      (updater) => {
-         const next =
-            typeof updater === "function" ? updater(sorting) : updater;
-         navigate({
-            search: (prev: z.infer<typeof searchSchema>) => ({
-               ...prev,
-               sorting: next,
-            }),
-            replace: true,
-         });
-      },
-      [navigate, sorting],
-   );
-
-   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
-      useCallback(
-         (updater) => {
-            const next =
-               typeof updater === "function" ? updater(columnFilters) : updater;
-            navigate({
-               search: (prev: z.infer<typeof searchSchema>) => ({
-                  ...prev,
-                  columnFilters: next,
-               }),
-               replace: true,
-            });
-         },
-         [navigate, columnFilters],
-      );
 
    const archiveMutation = useMutation(
       orpc.inventory.archiveProduct.mutationOptions({
@@ -229,40 +173,37 @@ function InventoryList() {
 
    const columns = useMemo(() => buildInventoryProductColumns(), []);
 
-   if (!products.length) {
-      return (
-         <Empty>
-            <EmptyMedia>
-               <Package className="size-10" />
-            </EmptyMedia>
-            <EmptyHeader>
-               <EmptyTitle>Nenhum produto cadastrado</EmptyTitle>
-               <EmptyDescription>
-                  Adicione produtos para começar a controlar o estoque.
-               </EmptyDescription>
-            </EmptyHeader>
-         </Empty>
-      );
-   }
-
    return (
-      <DataTable
+      <DataTableRoot
          columns={columns}
          data={products}
          getRowId={(row) => row.id}
+         storageKey="montte:datatable:inventory"
          sorting={sorting}
-         onSortingChange={handleSortingChange}
+         onSortingChange={(updater) => {
+            const next =
+               typeof updater === "function" ? updater(sorting) : updater;
+            navigate({
+               search: (prev) => ({ ...prev, sorting: next }),
+               replace: true,
+            });
+         }}
          columnFilters={columnFilters}
-         onColumnFiltersChange={handleColumnFiltersChange}
-         tableState={tableState}
-         onTableStateChange={setTableState}
+         onColumnFiltersChange={(updater) => {
+            const next =
+               typeof updater === "function" ? updater(columnFilters) : updater;
+            navigate({
+               search: (prev) => ({ ...prev, columnFilters: next }),
+               replace: true,
+            });
+         }}
          renderActions={({ row }) => (
             <>
                <Button
                   onClick={() => handleMovement(row.original)}
                   variant="outline"
                >
-                  <PackagePlus className="size-3.5 mr-1" />
+                  <PackagePlus className="size-3.5" />
                   Movimento
                </Button>
                <DropdownMenu>
@@ -294,13 +235,25 @@ function InventoryList() {
                </DropdownMenu>
             </>
          )}
-      />
+      >
+         <DataTableToolbar />
+         <DataTableContent />
+         <DataTableEmptyState>
+            <Empty>
+               <EmptyMedia>
+                  <Package className="size-10" />
+               </EmptyMedia>
+               <EmptyHeader>
+                  <EmptyTitle>Nenhum produto cadastrado</EmptyTitle>
+                  <EmptyDescription>
+                     Adicione produtos para começar a controlar o estoque.
+                  </EmptyDescription>
+               </EmptyHeader>
+            </Empty>
+         </DataTableEmptyState>
+      </DataTableRoot>
    );
 }
-
-// =============================================================================
-// Page
-// =============================================================================
 
 function InventoryPage() {
    const { openCredenza, closeCredenza } = useCredenza();
@@ -318,7 +271,7 @@ function InventoryPage() {
          <DefaultHeader
             actions={
                <Button onClick={handleCreate}>
-                  <Plus className="size-4 mr-1" />
+                  <Plus className="size-4" />
                   Novo Produto
                </Button>
             }

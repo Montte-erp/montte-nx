@@ -103,6 +103,7 @@ type DataTableContextValue<TData> = {
    onTableStateChange: (state: DataTableStoredState) => void;
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
+   renderExpandedRow?: (props: { row: Row<TData> }) => React.ReactNode;
    isDraftRowActive?: boolean;
    onAddRow?: (data: Record<string, string | string[]>) => Promise<void>;
    onDiscardAddRow?: () => void;
@@ -139,6 +140,7 @@ export function useDataTable<TData>() {
       isDraftRowActive: ctx.isDraftRowActive,
       onAddRow: ctx.onAddRow,
       onDiscardAddRow: ctx.onDiscardAddRow,
+      renderExpandedRow: ctx.renderExpandedRow,
       sorting,
       columnFilters,
       rowSelection,
@@ -174,6 +176,7 @@ interface DataTableRootProps<TData> {
    renderActions?: (props: { row: Row<TData> }) => React.ReactNode;
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
+   renderExpandedRow?: (props: { row: Row<TData> }) => React.ReactNode;
    getSubRows?: (row: TData) => TData[] | undefined;
    isDraftRowActive?: boolean;
    onAddRow?: (data: Record<string, string | string[]>) => Promise<void>;
@@ -194,6 +197,7 @@ function useDataTableRoot<TData>({
    renderActions,
    groupBy,
    renderGroupHeader,
+   renderExpandedRow,
    getSubRows,
    isDraftRowActive,
    onAddRow,
@@ -375,6 +379,7 @@ function useDataTableRoot<TData>({
       getFacetedUniqueValues: getFacetedUniqueValues(),
       getFacetedMinMaxValues: getFacetedMinMaxValues(),
       getRowId: (originalRow) => getRowId(originalRow),
+      getRowCanExpand: renderExpandedRow ? () => true : undefined,
       getSubRows,
       manualFiltering: true,
       manualSorting: true,
@@ -404,6 +409,7 @@ function useDataTableRoot<TData>({
          onTableStateChange,
          groupBy,
          renderGroupHeader,
+         renderExpandedRow,
          isDraftRowActive,
          onAddRow,
          onDiscardAddRow,
@@ -415,6 +421,7 @@ function useDataTableRoot<TData>({
          onTableStateChange,
          groupBy,
          renderGroupHeader,
+         renderExpandedRow,
          isDraftRowActive,
          onAddRow,
          onDiscardAddRow,
