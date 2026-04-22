@@ -171,7 +171,7 @@ function ServicesList() {
             isActive: true,
          }),
          onImport: async (rows) => {
-            await Promise.allSettled(
+            const results = await Promise.allSettled(
                rows.map((r) =>
                   createMutation.mutateAsync({
                      name: String(r.name ?? "").trim(),
@@ -183,6 +183,11 @@ function ServicesList() {
                   }),
                ),
             );
+            const failed = results.filter((r) => r.status === "rejected");
+            if (failed.length > 0)
+               throw new Error(
+                  `Falha ao importar ${failed.length} serviço(s).`,
+               );
          },
       }),
       [createMutation, parseCsv, parseXlsx],

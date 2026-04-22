@@ -8,6 +8,7 @@ import {
 } from "@packages/ui/components/empty";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import dayjs from "dayjs";
 import { Landmark, Plus, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -34,6 +35,21 @@ import {
    buildBankAccountColumns,
    type BankAccountRow,
 } from "./-bank-accounts/bank-accounts-columns";
+
+const VALID_TYPES = [
+   "checking",
+   "savings",
+   "investment",
+   "payment",
+   "cash",
+] as const;
+
+function resolveType(raw: unknown): BankAccountRow["type"] {
+   const str = String(raw ?? "");
+   if ((VALID_TYPES as readonly string[]).includes(str))
+      return str as BankAccountRow["type"];
+   return "checking";
+}
 
 const searchSchema = z.object({
    sorting: z
@@ -91,6 +107,12 @@ function BankAccountsList() {
       }),
    );
 
+   const bulkCreateMutation = useMutation(
+      orpc.bankAccounts.bulkCreate.mutationOptions({
+         onError: (e) => toast.error(e.message),
+      }),
+   );
+
    const deleteMutation = useMutation(
       orpc.bankAccounts.remove.mutationOptions({
          onSuccess: () => toast.success("Conta excluída com sucesso."),
@@ -105,7 +127,7 @@ function BankAccountsList() {
    const handleAddAccount = useCallback(
       async (data: Record<string, string | string[]>) => {
          const name = String(data.name ?? "").trim();
-         const type = String(data.type ?? "") as BankAccountRow["type"];
+         const type = resolveType(data.type);
          if (!name || !type) return;
          await createMutation.mutateAsync({
             name,
@@ -135,32 +157,27 @@ function BankAccountsList() {
             id: `__import_${i}`,
             teamId: "",
             name: String(row.name ?? "").trim(),
-            type:
-               (String(row.type ?? "checking") as BankAccountRow["type"]) ||
-               "checking",
+            type: resolveType(row.type),
             color: "#6366f1",
             iconUrl: null,
             initialBalance: String(row.initialBalance ?? "0"),
             currentBalance: "0",
             projectedBalance: "0",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: dayjs().toISOString(),
+            updatedAt: dayjs().toISOString(),
          }),
          onImport: async (rows) => {
-            await Promise.allSettled(
-               rows.map((r) =>
-                  createMutation.mutateAsync({
-                     name: String(r.name ?? "").trim(),
-                     type: (String(r.type ?? "checking") ||
-                        "checking") as BankAccountRow["type"],
-                     color: "#6366f1",
-                     initialBalance: String(r.initialBalance ?? "0"),
-                  }),
-               ),
-            );
+            await bulkCreateMutation.mutateAsync({
+               accounts: rows.map((r) => ({
+                  name: String(r.name ?? "").trim(),
+                  type: resolveType(r.type),
+                  color: "#6366f1",
+                  initialBalance: String(r.initialBalance ?? "0"),
+               })),
+            });
          },
       }),
-      [createMutation, parseCsv, parseXlsx],
+      [bulkCreateMutation, parseCsv, parseXlsx],
    );
 
    const handleDelete = useCallback(

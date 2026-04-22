@@ -58,9 +58,9 @@ function ChatPage() {
    const [selectedScope, setSelectedScope] = useState(SCOPES[0]);
 
    return (
-      <div className="flex h-full flex-col items-center justify-center gap-8">
+      <div className="flex h-full flex-col items-center justify-center gap-4">
          <div className="flex flex-col items-center gap-2 text-center">
-            <img src="/mascot.svg" alt="Rubi" className="mb-2 size-14" />
+            <img src="/mascot.svg" alt="Rubi" className="h-14 w-14" />
             <h1 className="text-2xl font-semibold">Como posso te ajudar?</h1>
             <p className="text-sm italic text-muted-foreground">
                Gerencie seu negócio com inteligência.
@@ -70,6 +70,7 @@ function ChatPage() {
          <div className="w-full max-w-4xl">
             <div className="rounded-xl border bg-card">
                <Textarea
+                  aria-label="Mensagem para o Rubi"
                   className="min-h-[100px] resize-none border-0 bg-transparent p-4 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                   placeholder="Faça uma pergunta..."
                   value={value}
@@ -81,15 +82,15 @@ function ChatPage() {
                   }}
                />
                <div className="flex items-center justify-between px-3 pb-3">
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2">
                      <Popover open={scopeOpen} onOpenChange={setScopeOpen}>
                         <PopoverTrigger asChild>
                            <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 gap-1.5 rounded-md px-2 text-xs text-muted-foreground hover:text-foreground"
+                              className="h-8 gap-2 rounded-md px-2 text-xs text-muted-foreground hover:text-foreground"
                            >
-                              <selectedScope.icon className="size-3.5" />
+                              <selectedScope.icon className="size-4" />
                               {selectedScope.label}
                               <ChevronDown className="size-3" />
                            </Button>
@@ -100,21 +101,21 @@ function ChatPage() {
                            sideOffset={4}
                         >
                            {SCOPES.map((scope) => (
-                              <button
+                              <Button
                                  key={scope.id}
-                                 type="button"
-                                 className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent"
+                                 variant="ghost"
+                                 className="flex w-full items-center justify-start gap-2 rounded-sm px-2 py-2 text-xs"
                                  onClick={() => {
                                     setSelectedScope(scope);
                                     setScopeOpen(false);
                                  }}
                               >
-                                 <scope.icon className="size-3.5 text-muted-foreground" />
+                                 <scope.icon className="size-4 text-muted-foreground" />
                                  <span>{scope.label}</span>
                                  {selectedScope.id === scope.id && (
                                     <Check className="ml-auto size-3 text-primary" />
                                  )}
-                              </button>
+                              </Button>
                            ))}
                         </PopoverContent>
                      </Popover>
@@ -134,18 +135,19 @@ function ChatPage() {
 
          <div className="flex max-w-4xl flex-wrap justify-center gap-2">
             {QUICK_PROMPTS.map(({ icon: Icon, label }) => (
-               <button
+               <Button
                   key={label}
                   type="button"
-                  className="flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  variant="outline"
+                  className="h-auto gap-2 rounded-md bg-card px-2 py-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
                   onClick={() => setValue(label)}
                >
                   <Icon
                      aria-hidden="true"
-                     className="size-3.5 shrink-0 text-foreground"
+                     className="size-4 shrink-0 text-foreground"
                   />
                   {label}
-               </button>
+               </Button>
             ))}
          </div>
       </div>

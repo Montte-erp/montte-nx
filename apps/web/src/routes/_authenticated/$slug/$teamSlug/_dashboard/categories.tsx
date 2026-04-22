@@ -68,6 +68,12 @@ const categoriesSearchSchema = z.object({
    pageSize: z.number().int().min(1).max(100).catch(20).default(20),
 });
 
+function parseCategoryType(raw: unknown): "income" | "expense" {
+   const str = String(raw ?? "").toLowerCase();
+   if (str === "income" || str === "expense") return str;
+   return "expense";
+}
+
 const skeletonColumns = buildCategoryColumns();
 
 export const Route = createFileRoute(
@@ -188,6 +194,13 @@ function CategoriesList() {
       }),
    );
 
+   const importBatchMutation = useMutation(
+      orpc.categories.importBatch.mutationOptions({
+         onError: (e) =>
+            toast.error(e.message || "Erro ao importar categorias."),
+      }),
+   );
+
    const updateMutation = useMutation(
       orpc.categories.update.mutationOptions({
          onError: (e) =>
@@ -201,8 +214,8 @@ function CategoriesList() {
    const handleAddCategory = useCallback(
       async (data: Record<string, string | string[]>) => {
          const name = String(data.name ?? "").trim();
-         const categoryType = String(data.type ?? "") as "income" | "expense";
-         if (!name || !categoryType) return;
+         const categoryType = parseCategoryType(data.type);
+         if (!name) return;
          await createMutation.mutateAsync({
             name,
             type: categoryType,
@@ -238,26 +251,19 @@ function CategoriesList() {
          },
          mapRow: (row): Record<string, unknown> => ({
             name: String(row.name ?? "").trim(),
-            type:
-               String(row.type ?? "expense") === "income"
-                  ? "income"
-                  : "expense",
+            type: parseCategoryType(row.type),
          }),
          onImport: async (importedRows) => {
-            await Promise.allSettled(
-               importedRows.map((r) =>
-                  createMutation.mutateAsync({
-                     name: String(r.name ?? ""),
-                     type: (String(r.type ?? "expense") === "income"
-                        ? "income"
-                        : "expense") as "income" | "expense",
-                     participatesDre: false,
-                  }),
-               ),
-            );
+            await importBatchMutation.mutateAsync({
+               categories: importedRows.map((r) => ({
+                  name: String(r.name ?? ""),
+                  type: parseCategoryType(r.type),
+                  participatesDre: false,
+               })),
+            });
          },
       }),
-      [createMutation, parseCsv, parseXlsx],
+      [importBatchMutation, parseCsv, parseXlsx],
    );
 
    const handleDelete = useCallback(

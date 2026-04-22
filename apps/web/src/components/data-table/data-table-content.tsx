@@ -1875,7 +1875,6 @@ export function DataTableContent<TData>({
                         <DataTableBodyRows
                            columnCount={columnCount}
                            groupedRows={null}
-                           renderExpandedRow={renderExpandedRow}
                            rows={virtualItems.map((v) => rows[v.index])}
                         />
                         {paddingBottom > 0 && (

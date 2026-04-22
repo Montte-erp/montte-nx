@@ -27,7 +27,6 @@ export function SidebarChatPanel() {
 
    return (
       <>
-         {/* Collapsed view */}
          <SidebarGroup className="group-data-[collapsible=icon]:block hidden">
             <SidebarMenu>
                <SidebarMenuItem>
@@ -55,7 +54,6 @@ export function SidebarChatPanel() {
             </SidebarMenu>
          </SidebarGroup>
 
-         {/* Expanded view */}
          <div className="flex flex-col gap-2 px-2 py-2 group-data-[collapsible=icon]:hidden">
             <div className="flex items-center gap-2">
                <InputGroup className="flex-1">
@@ -63,6 +61,7 @@ export function SidebarChatPanel() {
                      <Search aria-hidden="true" />
                   </InputGroupAddon>
                   <InputGroupInput
+                     aria-label="Pesquisar histórico de chats"
                      aria-readonly="true"
                      placeholder="Histórico de chats"
                      readOnly

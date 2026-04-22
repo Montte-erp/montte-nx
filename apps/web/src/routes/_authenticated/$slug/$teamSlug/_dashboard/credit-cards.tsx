@@ -6,7 +6,7 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { CreditCard, Plus, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -98,15 +98,14 @@ function CreditCardsList() {
    const { parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
 
-   const { data: result } = useSuspenseQuery(
-      orpc.creditCards.getAll.queryOptions({
-         input: { page, pageSize, search: search || undefined, status },
-      }),
-   );
-
-   const { data: bankAccounts } = useSuspenseQuery(
-      orpc.bankAccounts.getAll.queryOptions({}),
-   );
+   const [{ data: result }, { data: bankAccounts }] = useSuspenseQueries({
+      queries: [
+         orpc.creditCards.getAll.queryOptions({
+            input: { page, pageSize, search: search || undefined, status },
+         }),
+         orpc.bankAccounts.getAll.queryOptions({}),
+      ],
+   });
 
    const createMutation = useMutation(
       orpc.creditCards.create.mutationOptions({
@@ -123,6 +122,12 @@ function CreditCardsList() {
          onError: (error) => {
             toast.error(error.message || "Erro ao excluir cartão de crédito.");
          },
+      }),
+   );
+
+   const bulkCreateMutation = useMutation(
+      orpc.creditCards.bulkCreate.mutationOptions({
+         onError: (e) => toast.error(e.message),
       }),
    );
 
@@ -197,22 +202,20 @@ function CreditCardsList() {
                );
                return;
             }
-            await Promise.allSettled(
-               rows.map((r) =>
-                  createMutation.mutateAsync({
-                     name: String(r.name ?? ""),
-                     closingDay:
-                        typeof r.closingDay === "number" ? r.closingDay : 1,
-                     dueDay: typeof r.dueDay === "number" ? r.dueDay : 1,
-                     bankAccountId: firstBankAccountId,
-                     color: "#6366f1",
-                     creditLimit: String(r.creditLimit ?? "0"),
-                  }),
-               ),
-            );
+            await bulkCreateMutation.mutateAsync({
+               cards: rows.map((r) => ({
+                  name: String(r.name ?? ""),
+                  closingDay:
+                     typeof r.closingDay === "number" ? r.closingDay : 1,
+                  dueDay: typeof r.dueDay === "number" ? r.dueDay : 1,
+                  bankAccountId: firstBankAccountId,
+                  color: "#6366f1",
+                  creditLimit: String(r.creditLimit ?? "0"),
+               })),
+            });
          },
       }),
-      [createMutation, parseCsv, parseXlsx, bankAccounts],
+      [bulkCreateMutation, parseCsv, parseXlsx, bankAccounts],
    );
 
    const handleDelete = useCallback(
@@ -257,11 +260,9 @@ function CreditCardsList() {
                search: (prev) => ({
                   ...prev,
                   columnFilters: next,
-                  status:
-                     (statusFilter?.value as
-                        | "active"
-                        | "blocked"
-                        | "cancelled") ?? undefined,
+                  status: creditCardsSearchSchema.shape.status.parse(
+                     statusFilter?.value,
+                  ),
                   page: 1,
                }),
                replace: true,
@@ -312,7 +313,7 @@ function CreditCardsList() {
          <DataTableBulkActions<CreditCardRow>>
             {({ selectedRows, clearSelection }) => (
                <SelectionActionButton
-                  icon={<Trash2 className="size-3.5" />}
+                  icon={<Trash2 className="size-4" />}
                   variant="destructive"
                   onClick={() => {
                      const ids = selectedRows.map((r) => r.id);

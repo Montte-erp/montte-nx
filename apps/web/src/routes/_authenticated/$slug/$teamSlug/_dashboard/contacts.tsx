@@ -1,14 +1,23 @@
 import { Button } from "@packages/ui/components/button";
 import {
+   DataTable,
+   type DataTableStoredState,
+} from "@packages/ui/components/data-table";
+import {
    Empty,
    EmptyDescription,
    EmptyHeader,
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import {
+   SelectionActionBar,
+   SelectionActionButton,
+} from "@packages/ui/components/selection-action-bar";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Trash2, Users } from "lucide-react";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
+import { Trash2, Users } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -19,23 +28,18 @@ import {
 } from "@/features/billing/ui/early-access-banner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { QueryBoundary } from "@/components/query-boundary";
-import {
-   DataTableBulkActions,
-   SelectionActionButton,
-} from "@/components/data-table/data-table-bulk-actions";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
-import {
-   DataTableExternalFilter,
-   DataTableRoot,
-} from "@/components/data-table/data-table-root";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { orpc } from "@/integrations/orpc/client";
 import {
    buildContactColumns,
    type ContactRow,
 } from "./-contacts/contacts-columns";
+
+const [useContactsTableState, setContactsTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:contacts",
+      null,
+   );
 
 const tableSearchSchema = z.object({
    sorting: z
@@ -99,17 +103,14 @@ function ContactsList() {
    const navigate = Route.useNavigate();
    const { sorting, columnFilters, typeFilter } = Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
+   const [tableState] = useContactsTableState();
+   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>(
+      {},
+   );
 
    const { data: contacts } = useSuspenseQuery(
       orpc.contacts.getAll.queryOptions({
          input: typeFilter !== "all" ? { type: typeFilter } : {},
-      }),
-   );
-
-   const createMutation = useMutation(
-      orpc.contacts.create.mutationOptions({
-         onSuccess: () => toast.success("Contato criado com sucesso."),
-         onError: (e) => toast.error(e.message),
       }),
    );
 
@@ -135,21 +136,6 @@ function ContactsList() {
       }),
    );
 
-   const [isDraftActive, setIsDraftActive] = useState(false);
-
-   const handleDiscardDraft = useCallback(() => setIsDraftActive(false), []);
-
-   const handleAddContact = useCallback(
-      async (data: Record<string, string | string[]>) => {
-         const name = String(data.name ?? "").trim();
-         const type = String(data.type ?? "") as ContactRow["type"];
-         if (!name || !type) return;
-         await createMutation.mutateAsync({ name, type });
-         setIsDraftActive(false);
-      },
-      [createMutation],
-   );
-
    const handleDelete = useCallback(
       (contact: ContactRow) => {
          openAlertDialog({
@@ -166,78 +152,55 @@ function ContactsList() {
       [openAlertDialog, deleteMutation],
    );
 
+   const selectedIds = Object.keys(rowSelection).filter(
+      (id) => rowSelection[id],
+   );
+   const selectedContacts = contacts.filter((c) => selectedIds.includes(c.id));
+
+   const clearSelection = useCallback(() => setRowSelection({}), []);
+
+   const handleBulkDelete = useCallback(() => {
+      const ids = selectedContacts.map((c) => c.id);
+      openAlertDialog({
+         title: `Excluir ${ids.length} ${ids.length === 1 ? "contato" : "contatos"}`,
+         description:
+            "Tem certeza que deseja excluir os contatos selecionados? Esta ação não pode ser desfeita.",
+         actionLabel: "Excluir",
+         cancelLabel: "Cancelar",
+         variant: "destructive",
+         onAction: async () => {
+            await bulkDeleteMutation.mutateAsync({ ids });
+            clearSelection();
+         },
+      });
+   }, [selectedContacts, openAlertDialog, bulkDeleteMutation, clearSelection]);
+
    const columns = useMemo(() => buildContactColumns(), []);
 
    return (
-      <DataTableRoot
-         columns={columns}
-         data={contacts as ContactRow[]}
-         getRowId={(row) => row.id}
-         storageKey="montte:datatable:contacts"
-         sorting={sorting}
-         onSortingChange={(updater) => {
-            const next =
-               typeof updater === "function" ? updater(sorting) : updater;
-            navigate({
-               search: (prev) => ({ ...prev, sorting: next }),
-               replace: true,
-            });
-         }}
-         columnFilters={columnFilters}
-         onColumnFiltersChange={(updater) => {
-            const next =
-               typeof updater === "function" ? updater(columnFilters) : updater;
-            navigate({
-               search: (prev) => ({ ...prev, columnFilters: next }),
-               replace: true,
-            });
-         }}
-         isDraftRowActive={isDraftActive}
-         onAddRow={handleAddContact}
-         onDiscardAddRow={handleDiscardDraft}
-         renderActions={({ row }) => (
-            <>
+      <div className="flex flex-col gap-4">
+         <div className="flex flex-wrap items-center gap-2">
+            {(["cliente", "fornecedor", "ambos"] as const).map((key) => (
                <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(row.original)}
-                  tooltip="Excluir"
-                  variant="outline"
+                  key={key}
+                  size="sm"
+                  variant={typeFilter === key ? "default" : "outline"}
+                  onClick={() =>
+                     navigate({
+                        search: (prev) => ({
+                           ...prev,
+                           typeFilter: typeFilter === key ? "all" : key,
+                        }),
+                        replace: true,
+                     })
+                  }
                >
-                  <Trash2 className="size-4" />
+                  {TYPE_FILTER_LABELS[key]}
                </Button>
-            </>
-         )}
-      >
-         {(["cliente", "fornecedor", "ambos"] as const).map((key) => (
-            <DataTableExternalFilter
-               key={key}
-               id={`type:${key}`}
-               label={TYPE_FILTER_LABELS[key]}
-               group="Tipo de contato"
-               active={typeFilter === key}
-               onToggle={(active) =>
-                  navigate({
-                     search: (prev) => ({
-                        ...prev,
-                        typeFilter: active ? key : "all",
-                     }),
-                     replace: true,
-                  })
-               }
-            />
-         ))}
-         <DataTableToolbar>
-            <Button
-               onClick={() => setIsDraftActive(true)}
-               size="icon-sm"
-               tooltip="Novo Contato"
-               variant="outline"
-            >
-               <Plus />
-            </Button>
-         </DataTableToolbar>
-         <DataTableContent />
-         <DataTableEmptyState>
+            ))}
+         </div>
+
+         {contacts.length === 0 ? (
             <Empty>
                <EmptyHeader>
                   <EmptyMedia variant="icon">
@@ -250,33 +213,62 @@ function ContactsList() {
                   </EmptyDescription>
                </EmptyHeader>
             </Empty>
-         </DataTableEmptyState>
-         <DataTableBulkActions<ContactRow>>
-            {({ selectedRows, clearSelection }) => (
-               <SelectionActionButton
-                  icon={<Trash2 className="size-3.5" />}
-                  variant="destructive"
-                  onClick={() => {
-                     const ids = selectedRows.map((r) => r.id);
-                     openAlertDialog({
-                        title: `Excluir ${ids.length} ${ids.length === 1 ? "contato" : "contatos"}`,
-                        description:
-                           "Tem certeza que deseja excluir os contatos selecionados? Esta ação não pode ser desfeita.",
-                        actionLabel: "Excluir",
-                        cancelLabel: "Cancelar",
-                        variant: "destructive",
-                        onAction: async () => {
-                           await bulkDeleteMutation.mutateAsync({ ids });
-                           clearSelection();
-                        },
-                     });
-                  }}
-               >
-                  Excluir
-               </SelectionActionButton>
-            )}
-         </DataTableBulkActions>
-      </DataTableRoot>
+         ) : (
+            <DataTable
+               columns={columns}
+               data={contacts}
+               getRowId={(row) => row.id}
+               sorting={sorting}
+               onSortingChange={(updater) => {
+                  const next =
+                     typeof updater === "function" ? updater(sorting) : updater;
+                  navigate({
+                     search: (prev) => ({ ...prev, sorting: next }),
+                     replace: true,
+                  });
+               }}
+               columnFilters={columnFilters}
+               onColumnFiltersChange={(updater) => {
+                  const next =
+                     typeof updater === "function"
+                        ? updater(columnFilters)
+                        : updater;
+                  navigate({
+                     search: (prev) => ({ ...prev, columnFilters: next }),
+                     replace: true,
+                  });
+               }}
+               tableState={tableState}
+               onTableStateChange={setContactsTableState}
+               rowSelection={rowSelection}
+               onRowSelectionChange={setRowSelection}
+               renderActions={({ row }) => (
+                  <Button
+                     className="text-destructive hover:text-destructive"
+                     onClick={() => handleDelete(row.original)}
+                     size="icon"
+                     variant="ghost"
+                  >
+                     <Trash2 className="size-4" />
+                     <span className="sr-only">Excluir</span>
+                  </Button>
+               )}
+            />
+         )}
+
+         <SelectionActionBar
+            selectedCount={selectedIds.length}
+            onClear={clearSelection}
+         >
+            <SelectionActionButton
+               icon={<Trash2 className="size-3.5" />}
+               variant="destructive"
+               onClick={handleBulkDelete}
+            >
+               Excluir
+            </SelectionActionButton>
+         </SelectionActionBar>
+      </div>
    );
 }
 

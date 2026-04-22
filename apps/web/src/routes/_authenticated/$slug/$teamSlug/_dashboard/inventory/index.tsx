@@ -1,11 +1,8 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   DropdownMenu,
-   DropdownMenuContent,
-   DropdownMenuItem,
-   DropdownMenuSeparator,
-   DropdownMenuTrigger,
-} from "@packages/ui/components/dropdown-menu";
+   DataTable,
+   type DataTableStoredState,
+} from "@packages/ui/components/data-table";
 import {
    Empty,
    EmptyDescription,
@@ -15,16 +12,10 @@ import {
 } from "@packages/ui/components/empty";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { z } from "zod";
-import {
-   Archive,
-   History,
-   MoreHorizontal,
-   Package,
-   PackagePlus,
-   Plus,
-} from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { Archive, History, Package, PackagePlus, Plus } from "lucide-react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
@@ -32,11 +23,7 @@ import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
-import { DataTableRoot } from "@/components/data-table/data-table-root";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { InventoryHistorySheet } from "./-inventory/inventory-history-sheet";
 import { InventoryMovementCredenza } from "./-inventory/inventory-movement-credenza";
 import {
@@ -46,6 +33,12 @@ import {
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
+
+const [useInventoryTableState, setInventoryTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:inventory",
+      null,
+   );
 
 const searchSchema = z.object({
    sorting: z
@@ -97,6 +90,7 @@ function InventorySkeleton() {
 function InventoryList() {
    const navigate = Route.useNavigate();
    const { sorting, columnFilters } = Route.useSearch();
+   const [tableState] = useInventoryTableState();
 
    const { data: products } = useSuspenseQuery(
       orpc.inventory.getProducts.queryOptions({}),
@@ -110,35 +104,6 @@ function InventoryList() {
          onSuccess: () => toast.success("Produto arquivado."),
          onError: (e) => toast.error(e.message),
       }),
-   );
-
-   const createMutation = useMutation(
-      orpc.inventory.createProduct.mutationOptions({
-         onSuccess: () => toast.success("Produto criado com sucesso."),
-         onError: (e) => toast.error(e.message),
-      }),
-   );
-
-   const [isDraftActive, setIsDraftActive] = useState(false);
-
-   const handleDiscardDraft = useCallback(() => setIsDraftActive(false), []);
-
-   const handleAddProduct = useCallback(
-      async (data: Record<string, string | string[]>) => {
-         const name = String(data.name ?? "").trim();
-         const baseUnit = String(data.baseUnit ?? "").trim();
-         if (!name || !baseUnit) return;
-         const description = String(data.description ?? "").trim() || null;
-         await createMutation.mutateAsync({
-            name,
-            baseUnit,
-            purchaseUnit: baseUnit,
-            purchaseUnitFactor: "1",
-            description,
-         });
-         setIsDraftActive(false);
-      },
-      [createMutation],
    );
 
    const handleMovement = useCallback(
@@ -178,79 +143,13 @@ function InventoryList() {
    const columns = useMemo(() => buildInventoryProductColumns(), []);
 
    return (
-      <DataTableRoot
-         columns={columns}
-         data={products}
-         getRowId={(row) => row.id}
-         storageKey="montte:datatable:inventory"
-         isDraftRowActive={isDraftActive}
-         onAddRow={handleAddProduct}
-         onDiscardAddRow={handleDiscardDraft}
-         sorting={sorting}
-         onSortingChange={(updater) => {
-            const next =
-               typeof updater === "function" ? updater(sorting) : updater;
-            navigate({
-               search: (prev) => ({ ...prev, sorting: next }),
-               replace: true,
-            });
-         }}
-         columnFilters={columnFilters}
-         onColumnFiltersChange={(updater) => {
-            const next =
-               typeof updater === "function" ? updater(columnFilters) : updater;
-            navigate({
-               search: (prev) => ({ ...prev, columnFilters: next }),
-               replace: true,
-            });
-         }}
-         renderActions={({ row }) => (
-            <>
-               <Button
-                  onClick={() => handleMovement(row.original)}
-                  variant="outline"
-               >
-                  <PackagePlus className="size-3.5" />
-                  Movimento
-               </Button>
-               <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                     <Button variant="outline">
-                        <MoreHorizontal className="size-4" />
-                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                     <DropdownMenuItem
-                        onClick={() => handleHistory(row.original)}
-                     >
-                        <History className="size-4" />
-                        Ver histórico
-                     </DropdownMenuItem>
-                     <DropdownMenuSeparator />
-                     <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => handleArchive(row.original)}
-                     >
-                        <Archive className="size-4" />
-                        Arquivar
-                     </DropdownMenuItem>
-                  </DropdownMenuContent>
-               </DropdownMenu>
-            </>
-         )}
-      >
-         <DataTableToolbar>
-            <Button
-               onClick={() => setIsDraftActive(true)}
-               size="icon-sm"
-               tooltip="Novo Produto"
-               variant="outline"
-            >
+      <div className="flex flex-col gap-4">
+         <div className="flex items-center justify-end">
+            <Button size="icon-sm" tooltip="Novo Produto" variant="outline">
                <Plus />
             </Button>
-         </DataTableToolbar>
-         <DataTableContent />
-         <DataTableEmptyState>
+         </div>
+         {products.length === 0 ? (
             <Empty>
                <EmptyMedia>
                   <Package className="size-10" />
@@ -262,8 +161,64 @@ function InventoryList() {
                   </EmptyDescription>
                </EmptyHeader>
             </Empty>
-         </DataTableEmptyState>
-      </DataTableRoot>
+         ) : (
+            <DataTable
+               columns={columns}
+               data={products}
+               getRowId={(row) => row.id}
+               sorting={sorting}
+               onSortingChange={(updater) => {
+                  const next =
+                     typeof updater === "function" ? updater(sorting) : updater;
+                  navigate({
+                     search: (prev) => ({ ...prev, sorting: next }),
+                     replace: true,
+                  });
+               }}
+               columnFilters={columnFilters}
+               onColumnFiltersChange={(updater) => {
+                  const next =
+                     typeof updater === "function"
+                        ? updater(columnFilters)
+                        : updater;
+                  navigate({
+                     search: (prev) => ({ ...prev, columnFilters: next }),
+                     replace: true,
+                  });
+               }}
+               tableState={tableState}
+               onTableStateChange={setInventoryTableState}
+               renderActions={({ row }) => (
+                  <div className="flex items-center gap-2">
+                     <Button
+                        onClick={() => handleMovement(row.original)}
+                        variant="outline"
+                     >
+                        <PackagePlus className="size-3.5" />
+                        Movimento
+                     </Button>
+                     <Button
+                        onClick={() => handleHistory(row.original)}
+                        size="icon"
+                        variant="ghost"
+                     >
+                        <History className="size-4" />
+                        <span className="sr-only">Ver histórico</span>
+                     </Button>
+                     <Button
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleArchive(row.original)}
+                        size="icon"
+                        variant="ghost"
+                     >
+                        <Archive className="size-4" />
+                        <span className="sr-only">Arquivar</span>
+                     </Button>
+                  </div>
+               )}
+            />
+         )}
+      </div>
    );
 }
 
