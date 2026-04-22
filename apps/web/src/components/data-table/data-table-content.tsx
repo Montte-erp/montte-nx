@@ -339,10 +339,12 @@ function CellInput({
             onCreate={
                onCreateOption
                   ? (name) => {
-                       onCreateOption(name).then((id) => {
-                          field.handleChange(id);
-                          onCommit?.();
-                       });
+                       onCreateOption(name)
+                          .then((id) => {
+                             field.handleChange(id);
+                             onCommit?.();
+                          })
+                          .catch(() => undefined);
                     }
                   : undefined
             }
@@ -456,17 +458,16 @@ function EditableCell({
                variant="ghost"
                onClick={() => setOpen(true)}
             >
-               {resolvedLabel ? (
-                  <span className="flex-1 truncate">{resolvedLabel}</span>
-               ) : (
-                  (children ?? (
+               {children ??
+                  (resolvedLabel ? (
+                     <span className="flex-1 truncate">{resolvedLabel}</span>
+                  ) : (
                      <span className="flex-1 truncate">
                         {displayValue || (
                            <span className="text-muted-foreground/40">—</span>
                         )}
                      </span>
-                  ))
-               )}
+                  ))}
                <Pencil className="size-3 shrink-0 text-muted-foreground opacity-0 group-hover/cell:opacity-100 transition-opacity" />
             </Button>
          );
@@ -654,7 +655,7 @@ function ImportBulkEditButtons({
 }) {
    const { table } = useDataTable();
    const [openCol, setOpenCol] = useState<string | null>(null);
-   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
+   const [calendarMonth, setCalendarMonth] = useState<Date>(dayjs().toDate());
 
    const cols = table
       .getVisibleLeafColumns()
@@ -713,7 +714,7 @@ function ImportBulkEditButtons({
                      open={isOpen}
                      onOpenChange={(v) => {
                         setOpenCol(v ? accKey : null);
-                        if (v) setCalendarMonth(new Date());
+                        if (v) setCalendarMonth(dayjs().toDate());
                      }}
                   >
                      {triggerBtn}
@@ -725,7 +726,7 @@ function ImportBulkEditButtons({
                            onMonthChange={setCalendarMonth}
                            onSelect={(d) => {
                               if (!d) return;
-                              const formatted = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                              const formatted = dayjs(d).format("YYYY-MM-DD");
                               onUpdate(accKey, formatted);
                               setOpenCol(null);
                            }}
@@ -773,7 +774,10 @@ function ImportBulkEditButtons({
                   {triggerBtn}
                   <PopoverContent align="start" className="w-60 p-0">
                      <Command>
-                        <CommandInput placeholder="Buscar..." />
+                        <CommandInput
+                           aria-label="Buscar opção"
+                           placeholder="Buscar..."
+                        />
                         <CommandList>
                            <CommandEmpty>
                               Nenhuma opção encontrada.

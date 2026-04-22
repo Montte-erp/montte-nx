@@ -34,8 +34,8 @@ import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceStatementImported } from "@packages/events/finance";
 import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
-import { enqueueCategorizationWorkflow } from "@packages/workflows/workflows/categorization-workflow";
-import { enqueueSuggestTagWorkflow } from "@packages/workflows/workflows/suggest-tag-workflow";
+import { enqueueCategorizationWorkflow } from "@packages/workflows/workflows/categorization-enqueue";
+import { enqueueSuggestTagWorkflow } from "@packages/workflows/workflows/suggest-tag-enqueue";
 import { withCreditEnforcement } from "../middlewares/credit-enforcement";
 import { protectedProcedure } from "../server";
 
@@ -122,19 +122,33 @@ export const create = protectedProcedure
             ? { ...data, categoryId: null, type: "transfer" as const }
             : data;
 
-      const transaction = await createTransaction(
-         context.db,
-         context.teamId,
-         txData,
-         tagId ?? undefined,
+      const transaction = (
+         await createTransaction(
+            context.db,
+            context.teamId,
+            txData,
+            tagId ?? undefined,
+         )
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
       );
 
       if (items.length > 0 && transaction) {
-         await createTransactionItems(
-            context.db,
-            transaction.id,
-            context.teamId,
-            items,
+         (
+            await createTransactionItems(
+               context.db,
+               transaction.id,
+               context.teamId,
+               items,
+            )
+         ).match(
+            (v) => v,
+            (e) => {
+               throw e;
+            },
          );
       }
 
@@ -166,23 +180,45 @@ export const create = protectedProcedure
 export const getAll = protectedProcedure
    .input(filterSchema)
    .handler(async ({ context, input }) => {
-      return listTransactions(context.db, { teamId: context.teamId, ...input });
+      return (
+         await listTransactions(context.db, {
+            teamId: context.teamId,
+            ...input,
+         })
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
    });
 
 export const getSummary = protectedProcedure
    .input(filterSchema)
    .handler(async ({ context, input }) => {
-      return getTransactionsSummary(context.db, {
-         teamId: context.teamId,
-         ...input,
-      });
+      return (
+         await getTransactionsSummary(context.db, {
+            teamId: context.teamId,
+            ...input,
+         })
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
    });
 
 export const getById = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
       await ensureTransactionOwnership(context.db, input.id, context.teamId);
-      return getTransactionWithTag(context.db, input.id);
+      return (await getTransactionWithTag(context.db, input.id)).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
    });
 
 export const update = protectedProcedure
@@ -217,9 +253,23 @@ export const update = protectedProcedure
          });
       }
       const { id, tagId, items, ...data } = input;
-      const result = await updateTransaction(context.db, id, data, tagId);
+      const result = (
+         await updateTransaction(context.db, id, data, tagId)
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
       if (items !== undefined) {
-         await replaceTransactionItems(context.db, id, context.teamId, items);
+         (
+            await replaceTransactionItems(context.db, id, context.teamId, items)
+         ).match(
+            (v) => v,
+            (e) => {
+               throw e;
+            },
+         );
       }
       return result;
    });
@@ -228,7 +278,12 @@ export const remove = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
       await ensureTransactionOwnership(context.db, input.id, context.teamId);
-      await deleteTransaction(context.db, input.id);
+      (await deleteTransaction(context.db, input.id)).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
       return { success: true };
    });
 
@@ -299,10 +354,13 @@ export const importStatement = withCreditEnforcement(
          paymentMethod: t.paymentMethod ?? null,
       }));
 
-      const inserted = await bulkCreateTransactions(
-         context.db,
-         context.teamId,
-         rows,
+      const inserted = (
+         await bulkCreateTransactions(context.db, context.teamId, rows)
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
       );
 
       if (input.autoCategorize) {
@@ -478,11 +536,18 @@ export const importBulk = protectedProcedure
             tagId,
             date: data.date,
          });
-         const transaction = await createTransaction(
-            context.db,
-            context.teamId,
-            data,
-            tagId ?? undefined,
+         const transaction = (
+            await createTransaction(
+               context.db,
+               context.teamId,
+               data,
+               tagId ?? undefined,
+            )
+         ).match(
+            (v) => v,
+            (e) => {
+               throw e;
+            },
          );
          if (
             input.autoCategorize &&
@@ -522,10 +587,17 @@ export const acceptSuggestedCategory = protectedProcedure
             "Nenhuma sugestão de categoria disponível.",
          );
       }
-      await updateTransactionCategory(context.db, input.id, {
-         categoryId: tx.suggestedCategoryId,
-         suggestedCategoryId: null,
-      });
+      (
+         await updateTransactionCategory(context.db, input.id, {
+            categoryId: tx.suggestedCategoryId,
+            suggestedCategoryId: null,
+         })
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
       return { ok: true };
    });
 
@@ -533,9 +605,16 @@ export const dismissSuggestedCategory = protectedProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
       await ensureTransactionOwnership(context.db, input.id, context.teamId);
-      await updateTransactionCategory(context.db, input.id, {
-         suggestedCategoryId: null,
-      });
+      (
+         await updateTransactionCategory(context.db, input.id, {
+            suggestedCategoryId: null,
+         })
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
       return { ok: true };
    });
 
@@ -552,10 +631,17 @@ export const acceptSuggestedTag = protectedProcedure
             "Nenhuma sugestão de centro de custo disponível.",
          );
       }
-      await updateTransactionTag(context.db, input.id, {
-         tagId: tx.suggestedTagId,
-         suggestedTagId: null,
-      });
+      (
+         await updateTransactionTag(context.db, input.id, {
+            tagId: tx.suggestedTagId,
+            suggestedTagId: null,
+         })
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
       return { ok: true };
    });
 
@@ -563,9 +649,16 @@ export const dismissSuggestedTag = protectedProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
       await ensureTransactionOwnership(context.db, input.id, context.teamId);
-      await updateTransactionTag(context.db, input.id, {
-         suggestedTagId: null,
-      });
+      (
+         await updateTransactionTag(context.db, input.id, {
+            suggestedTagId: null,
+         })
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
       return { ok: true };
    });
 
@@ -581,32 +674,60 @@ export const markAsPaid = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      return markTransactionAsPaid(context.db, input.id, context.teamId, {
-         paidDate: input.paidDate,
-         bankAccountId: input.bankAccountId ?? undefined,
-      });
+      return (
+         await markTransactionAsPaid(context.db, input.id, context.teamId, {
+            paidDate: input.paidDate,
+            bankAccountId: input.bankAccountId ?? undefined,
+         })
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
    });
 
 export const markAsUnpaid = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      return markTransactionAsUnpaid(context.db, input.id, context.teamId);
+      return (
+         await markTransactionAsUnpaid(context.db, input.id, context.teamId)
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
    });
 
 export const cancel = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      return cancelTransaction(context.db, input.id, context.teamId);
+      return (
+         await cancelTransaction(context.db, input.id, context.teamId)
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
    });
 
 export const reactivate = protectedProcedure
    .input(z.object({ id: z.string().uuid(), paid: z.boolean().default(false) }))
    .handler(async ({ context, input }) => {
-      return reactivateTransaction(
-         context.db,
-         input.id,
-         context.teamId,
-         input.paid,
+      return (
+         await reactivateTransaction(
+            context.db,
+            input.id,
+            context.teamId,
+            input.paid,
+         )
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
       );
    });
 
@@ -622,8 +743,20 @@ export const bulkMarkAsPaid = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      return bulkMarkTransactionsAsPaid(context.db, input.ids, context.teamId, {
-         paidDate: input.paidDate,
-         bankAccountId: input.bankAccountId ?? undefined,
-      });
+      return (
+         await bulkMarkTransactionsAsPaid(
+            context.db,
+            input.ids,
+            context.teamId,
+            {
+               paidDate: input.paidDate,
+               bankAccountId: input.bankAccountId ?? undefined,
+            },
+         )
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
    });

@@ -1,4 +1,3 @@
-import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
 import { DBOS, WorkflowQueue } from "@dbos-inc/dbos-sdk";
 import {
@@ -21,9 +20,14 @@ export type CategorizationInput = {
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
 
-export const categorizationQueue = new WorkflowQueue("workflow:categorize", {
-   workerConcurrency: 10,
-});
+export const CATEGORIZATION_QUEUE_NAME = "workflow:categorize" as const;
+
+export const categorizationQueue = new WorkflowQueue(
+   CATEGORIZATION_QUEUE_NAME,
+   {
+      workerConcurrency: 10,
+   },
+);
 
 async function publishFailed(
    publisher: ReturnType<typeof getPublisher>,
@@ -104,7 +108,12 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
          () =>
             updateTransactionCategory(db, input.transactionId, {
                categoryId: keywordMatch.id,
-            }),
+            }).match(
+               (v) => v,
+               (e) => {
+                  throw e;
+               },
+            ),
          { name: "applyCategory" },
       );
       await DBOS.runStep(
@@ -169,7 +178,12 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
       () =>
          updateTransactionCategory(db, input.transactionId, {
             suggestedCategoryId: categoryId,
-         }),
+         }).match(
+            (v) => v,
+            (e) => {
+               throw e;
+            },
+         ),
       { name: "applyCategory" },
    );
 
@@ -193,17 +207,3 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
 export const categorizationWorkflow = DBOS.registerWorkflow(
    categorizationWorkflowFn,
 );
-
-export async function enqueueCategorizationWorkflow(
-   client: DBOSClient,
-   input: CategorizationInput,
-): Promise<void> {
-   await client.enqueue(
-      {
-         workflowName: categorizationWorkflowFn.name,
-         queueName: categorizationQueue.name,
-         workflowID: `categorize-${input.transactionId}`,
-      },
-      input,
-   );
-}

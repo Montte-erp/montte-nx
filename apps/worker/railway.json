@@ -1,11 +1,12 @@
 {
    "$schema": "https://railway.com/railway.schema.json",
    "build": {
-      "builder": "NIXPACKS",
-      "buildCommand": "bun install && cd apps/worker && bun run build"
+      "builder": "RAILPACK",
+      "buildCommand": "bun run worker:build",
+      "watchPatterns": ["/apps/worker/**", "/packages/**", "/core/**"]
    },
    "deploy": {
-      "startCommand": "bun apps/worker/dist/index.js",
+      "startCommand": "bun run worker:start",
       "restartPolicyType": "ON_FAILURE",
       "restartPolicyMaxRetries": 5,
       "drainingSeconds": 30

@@ -503,12 +503,15 @@ export function TransactionsList() {
             onCreateBankAccount: handleCreateBankAccount,
             onCreateContact: handleCreateContact,
             onCreateCategory: handleCreateCategory,
+            getRowStatus: (id) =>
+               transactionData.find((t) => t.id === id)?.status,
          }),
       [
          bankAccounts,
          contacts,
          categoriesResult,
          creditCardsResult,
+         transactionData,
          handleUpdate,
          handleCreateBankAccount,
          handleCreateContact,

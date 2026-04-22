@@ -58,7 +58,7 @@ function SuggestedCategoryCell({
                sugestão IA
             </Badge>
          </PopoverTrigger>
-         <PopoverContent className="w-56 p-3">
+         <PopoverContent className="w-56 p-4">
             {categoryName && (
                <p className="text-sm font-medium">{categoryName}</p>
             )}
@@ -122,6 +122,7 @@ export function buildTransactionColumns(options?: {
    onCreateBankAccount?: (name: string) => Promise<string>;
    onCreateContact?: (name: string) => Promise<string>;
    onCreateCategory?: (name: string) => Promise<string>;
+   getRowStatus?: (id: string) => string | undefined;
 }): ColumnDef<TransactionRow>[] {
    return [
       {
@@ -162,7 +163,9 @@ export function buildTransactionColumns(options?: {
             bulkEditIcon: CalendarDays,
             bulkEditAction: "Alterar data",
             onSave: async (rowId, value) => {
-               await options?.onUpdate?.(rowId, { date: value || null });
+               const status = options?.getRowStatus?.(rowId);
+               const field = status === "pending" ? "dueDate" : "date";
+               await options?.onUpdate?.(rowId, { [field]: value || null });
             },
          },
          cell: ({ row }) => {

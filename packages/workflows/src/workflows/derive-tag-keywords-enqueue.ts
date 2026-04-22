@@ -14,7 +14,7 @@ export type DeriveTagKeywordsInput = {
 export async function enqueueDeriveTagKeywordsWorkflow(
    client: DBOSClient,
    input: DeriveTagKeywordsInput,
-): Promise<void> {
+) {
    await client.enqueue(
       {
          workflowName: "deriveTagKeywordsWorkflowFn",

@@ -251,7 +251,7 @@ Empty states — always `Empty`/`EmptyHeader`/`EmptyMedia`/`EmptyTitle`/`EmptyDe
 Error handling rules below use `neverthrow` — open the `neverthrow` skill for `Result`, `ResultAsync`, `fromPromise`, `fromThrowable`, `safeTry` patterns.
 
 - No `as` casts — fix source types.
-- No redundant type annotations — only function params and exported boundaries.
+- No redundant type annotations — only function params and exported boundaries. Never annotate return types TypeScript can infer (e.g. no `: Promise<void>` on async functions whose body makes it obvious).
 - No unused params — remove entirely, never `_foo`.
 - No JSDoc, section comments, or inline explanations.
 - No barrel files (`index.ts` re-exports) — import from source directly.

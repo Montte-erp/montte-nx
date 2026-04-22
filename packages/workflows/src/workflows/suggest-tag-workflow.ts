@@ -1,4 +1,3 @@
-import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
 import { DBOS, WorkflowQueue } from "@dbos-inc/dbos-sdk";
 import dayjs from "dayjs";
@@ -20,7 +19,9 @@ export type SuggestTagInput = {
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
 
-export const suggestTagQueue = new WorkflowQueue("workflow:suggest-tag", {
+export const SUGGEST_TAG_QUEUE_NAME = "workflow:suggest-tag" as const;
+
+export const suggestTagQueue = new WorkflowQueue(SUGGEST_TAG_QUEUE_NAME, {
    workerConcurrency: 10,
 });
 
@@ -85,7 +86,12 @@ async function suggestTagWorkflowFn(input: SuggestTagInput) {
          () =>
             updateTransactionTag(db, input.transactionId, {
                suggestedTagId: keywordMatch.id,
-            }),
+            }).match(
+               (v) => v,
+               (e) => {
+                  throw e;
+               },
+            ),
          { name: "applyTag" },
       );
       await DBOS.runStep(
@@ -148,7 +154,12 @@ async function suggestTagWorkflowFn(input: SuggestTagInput) {
       () =>
          updateTransactionTag(db, input.transactionId, {
             suggestedTagId: tagId,
-         }),
+         }).match(
+            (v) => v,
+            (e) => {
+               throw e;
+            },
+         ),
       { name: "applyTag" },
    );
 
@@ -170,17 +181,3 @@ async function suggestTagWorkflowFn(input: SuggestTagInput) {
 }
 
 export const suggestTagWorkflow = DBOS.registerWorkflow(suggestTagWorkflowFn);
-
-export async function enqueueSuggestTagWorkflow(
-   client: DBOSClient,
-   input: SuggestTagInput,
-): Promise<void> {
-   await client.enqueue(
-      {
-         workflowName: suggestTagWorkflowFn.name,
-         queueName: suggestTagQueue.name,
-         workflowID: `suggest-tag-${input.transactionId}`,
-      },
-      input,
-   );
-}
