@@ -1,5 +1,6 @@
 import { Badge } from "@packages/ui/components/badge";
 import type { Outputs } from "@/integrations/orpc/client";
+import { z } from "zod";
 import {
    Announcement,
    AnnouncementTag,
@@ -64,11 +65,29 @@ const ICON_MAP: Record<string, LucideIcon> = {
 
 export type CategoryRow = Outputs["categories"]["getPaginated"]["data"][number];
 
-export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
+export function buildCategoryColumns(options?: {
+   onUpdate?: (
+      rowId: string,
+      data: { name?: string; type?: "income" | "expense" },
+   ) => Promise<void>;
+}): ColumnDef<CategoryRow>[] {
    return [
       {
          accessorKey: "name",
          header: "Nome",
+         meta: {
+            label: "Nome",
+            cellComponent: "text" as const,
+            isEditable: true,
+            editSchema: z.string().min(1, "Nome é obrigatório.").max(80),
+            isEditableForRow: (row: CategoryRow) =>
+               !row.isDefault && !row.isArchived,
+            onSave: options?.onUpdate
+               ? async (rowId: string, value: unknown) => {
+                    await options.onUpdate!(rowId, { name: String(value) });
+                 }
+               : undefined,
+         },
          cell: ({ row }) => {
             const { name, color, icon, isDefault } = row.original;
             const IconComponent = icon ? ICON_MAP[icon] : null;
@@ -159,6 +178,25 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
       {
          accessorKey: "type",
          header: "Tipo",
+         meta: {
+            label: "Tipo",
+            cellComponent: "select" as const,
+            isEditable: true,
+            editOptions: [
+               { value: "income", label: "Receita" },
+               { value: "expense", label: "Despesa" },
+            ],
+            editSchema: z.enum(["income", "expense"]),
+            isEditableForRow: (row: CategoryRow) =>
+               !row.isDefault && !row.isArchived && row.parentId === null,
+            onSave: options?.onUpdate
+               ? async (rowId: string, value: unknown) => {
+                    await options.onUpdate!(rowId, {
+                       type: String(value) as "income" | "expense",
+                    });
+                 }
+               : undefined,
+         },
          cell: ({ row }) => {
             const { type } = row.original;
             if (type === "income")

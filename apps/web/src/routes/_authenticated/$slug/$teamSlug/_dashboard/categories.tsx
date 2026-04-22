@@ -13,16 +13,14 @@ import {
    ArchiveRestore,
    FolderOpen,
    Layers,
-   Pencil,
    Plus,
    RefreshCw,
    Trash2,
    TrendingDown,
    TrendingUp,
-   Upload,
 } from "lucide-react";
 import { fromPromise } from "neverthrow";
-import { useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
@@ -32,6 +30,10 @@ import {
 } from "@/components/data-table/data-table-bulk-actions";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
+import {
+   DataTableImportButton,
+   type DataTableImportConfig,
+} from "@/components/data-table/data-table-import";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import {
    DataTableExternalFilter,
@@ -40,16 +42,14 @@ import {
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { QueryBoundary } from "@/components/query-boundary";
-import { CategoryForm } from "@/features/categories/ui/categories-form";
-import { SubcategoryForm } from "@/features/categories/ui/subcategory-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useCsvFile } from "@/hooks/use-csv-file";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { orpc } from "@/integrations/orpc/client";
 import {
    buildCategoryColumns,
    type CategoryRow,
 } from "./-categories/categories-columns";
-import { CategoryImportCredenza } from "./-categories/category-import-credenza";
 
 const categoriesSearchSchema = z.object({
    sorting: z
@@ -109,11 +109,12 @@ function CategoriesSkeleton() {
 }
 
 function CategoriesList() {
-   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const navigate = Route.useNavigate();
    const { search, type, includeArchived, groupBy, page, pageSize } =
       Route.useSearch();
+   const { parse: parseCsv } = useCsvFile();
+   const { parse: parseXlsx } = useXlsxFile();
 
    const { data: result } = useSuspenseQuery(
       orpc.categories.getPaginated.queryOptions({
@@ -180,75 +181,84 @@ function CategoriesList() {
       }),
    );
 
-   const handleEdit = useCallback(
-      (category: CategoryRow) => {
-         if (category.parentId !== null) {
-            const parent = rows.find((c) => c.id === category.parentId);
-            openCredenza({
-               renderChildren: () => (
-                  <SubcategoryForm
-                     mode="edit"
-                     id={category.id}
-                     name={category.name}
-                     parentName={parent?.name ?? ""}
-                     onSuccess={closeCredenza}
-                  />
+   const createMutation = useMutation(
+      orpc.categories.create.mutationOptions({
+         onSuccess: () => toast.success("Categoria criada com sucesso."),
+         onError: (e) => toast.error(e.message || "Erro ao criar categoria."),
+      }),
+   );
+
+   const updateMutation = useMutation(
+      orpc.categories.update.mutationOptions({
+         onError: (e) =>
+            toast.error(e.message || "Erro ao atualizar categoria."),
+      }),
+   );
+
+   const [isDraftActive, setIsDraftActive] = useState(false);
+   const handleDiscardDraft = useCallback(() => setIsDraftActive(false), []);
+
+   const handleAddCategory = useCallback(
+      async (data: Record<string, string | string[]>) => {
+         const name = String(data.name ?? "").trim();
+         const categoryType = String(data.type ?? "") as "income" | "expense";
+         if (!name || !categoryType) return;
+         await createMutation.mutateAsync({
+            name,
+            type: categoryType,
+            participatesDre: false,
+         });
+         setIsDraftActive(false);
+      },
+      [createMutation],
+   );
+
+   const handleUpdateCategory = useCallback(
+      async (
+         rowId: string,
+         data: { name?: string; type?: "income" | "expense" },
+      ) => {
+         await updateMutation.mutateAsync({ id: rowId, ...data });
+      },
+      [updateMutation],
+   );
+
+   const importConfig: DataTableImportConfig = useMemo(
+      () => ({
+         accept: {
+            "text/csv": [".csv"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+               [".xlsx"],
+            "application/vnd.ms-excel": [".xls"],
+         },
+         parseFile: async (file: File) => {
+            const ext = file.name.split(".").pop()?.toLowerCase();
+            if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
+            return parseCsv(file);
+         },
+         mapRow: (row): Record<string, unknown> => ({
+            name: String(row.name ?? "").trim(),
+            type:
+               String(row.type ?? "expense") === "income"
+                  ? "income"
+                  : "expense",
+         }),
+         onImport: async (importedRows) => {
+            await Promise.allSettled(
+               importedRows.map((r) =>
+                  createMutation.mutateAsync({
+                     name: String(r.name ?? ""),
+                     type: (String(r.type ?? "expense") === "income"
+                        ? "income"
+                        : "expense") as "income" | "expense",
+                     participatesDre: false,
+                  }),
                ),
-            });
-            return;
-         }
-         openCredenza({
-            renderChildren: () => (
-               <CategoryForm
-                  category={{
-                     id: category.id,
-                     name: category.name,
-                     color: category.color,
-                     icon: category.icon,
-                     type: category.type,
-                     description: category.description,
-                  }}
-                  mode="edit"
-                  onSuccess={closeCredenza}
-               />
-            ),
-         });
-      },
-      [openCredenza, closeCredenza, rows],
+            );
+         },
+      }),
+      [createMutation, parseCsv, parseXlsx],
    );
-
-   const handleAddSubcategory = useCallback(
-      (category: CategoryRow) => {
-         openCredenza({
-            renderChildren: () => (
-               <SubcategoryForm
-                  mode="create"
-                  onSuccess={closeCredenza}
-                  parentId={category.id}
-                  parentName={category.name}
-                  parentType={category.type === "income" ? "income" : "expense"}
-               />
-            ),
-         });
-      },
-      [openCredenza, closeCredenza],
-   );
-
-   const handleCreate = useCallback(() => {
-      openCredenza({
-         renderChildren: () => (
-            <CategoryForm mode="create" onSuccess={closeCredenza} />
-         ),
-      });
-   }, [openCredenza, closeCredenza]);
-
-   const handleImport = useCallback(() => {
-      openCredenza({
-         renderChildren: () => (
-            <CategoryImportCredenza onSuccess={closeCredenza} />
-         ),
-      });
-   }, [openCredenza, closeCredenza]);
 
    const handleDelete = useCallback(
       (category: CategoryRow) => {
@@ -296,7 +306,10 @@ function CategoriesList() {
       [openAlertDialog, unarchiveMutation],
    );
 
-   const columns = useMemo(() => buildCategoryColumns(), []);
+   const columns = useMemo(
+      () => buildCategoryColumns({ onUpdate: handleUpdateCategory }),
+      [handleUpdateCategory],
+   );
 
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
@@ -314,7 +327,6 @@ function CategoriesList() {
             }
             renderActions={({ row }) => {
                if (row.original.isDefault) return null;
-               const isSub = row.original.parentId !== null;
                const isArchived = row.original.isArchived;
 
                if (isArchived) {
@@ -339,24 +351,10 @@ function CategoriesList() {
                   );
                }
 
+               const isSub = row.original.parentId !== null;
+
                return (
                   <>
-                     {!isSub && (
-                        <Button
-                           onClick={() => handleAddSubcategory(row.original)}
-                           tooltip="Nova subcategoria"
-                           variant="outline"
-                        >
-                           <Plus />
-                        </Button>
-                     )}
-                     <Button
-                        onClick={() => handleEdit(row.original)}
-                        tooltip="Editar"
-                        variant="outline"
-                     >
-                        <Pencil />
-                     </Button>
                      {!isSub && (
                         <Button
                            disabled={regenerateKeywordsMutation.isPending}
@@ -391,6 +389,9 @@ function CategoriesList() {
                   </>
                );
             }}
+            isDraftRowActive={isDraftActive}
+            onAddRow={handleAddCategory}
+            onDiscardAddRow={handleDiscardDraft}
             storageKey="montte:datatable:categories"
          >
             <DataTableExternalFilter
@@ -467,23 +468,14 @@ function CategoriesList() {
                   })
                }
             >
+               <DataTableImportButton importConfig={importConfig} />
                <Button
-                  onClick={handleImport}
-                  tooltip="Importar"
-                  variant="outline"
-                  size="icon-sm"
-               >
-                  <Upload />
-                  <span className="sr-only">Importar</span>
-               </Button>
-               <Button
-                  onClick={handleCreate}
+                  onClick={() => setIsDraftActive(true)}
                   tooltip="Nova Categoria"
                   variant="outline"
                   size="icon-sm"
                >
                   <Plus />
-                  <span className="sr-only">Nova Categoria</span>
                </Button>
             </DataTableToolbar>
             <DataTableEmptyState>
