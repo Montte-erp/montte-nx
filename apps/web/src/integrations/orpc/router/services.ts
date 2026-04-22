@@ -137,14 +137,32 @@ export const getAllSubscriptions = protectedProcedure
          .optional(),
    )
    .handler(async ({ context, input }) => {
-      return listSubscriptionsByTeam(context.db, context.teamId, input?.status);
+      return (
+         await listSubscriptionsByTeam(
+            context.db,
+            context.teamId,
+            input?.status,
+         )
+      ).match(
+         (rows) => rows,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
    });
 
 export const getContactSubscriptions = protectedProcedure
    .input(z.object({ contactId: z.string().uuid() }))
    .handler(async ({ context, input }) => {
       await ensureContactOwnership(context.db, input.contactId, context.teamId);
-      return listSubscriptionsByContact(context.db, input.contactId);
+      return (
+         await listSubscriptionsByContact(context.db, input.contactId)
+      ).match(
+         (rows) => rows,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
    });
 
 export const createSubscription = protectedProcedure
@@ -162,13 +180,18 @@ export const createSubscription = protectedProcedure
       await ensureContactOwnership(context.db, input.contactId, context.teamId);
       await ensureVariantOwnership(context.db, input.variantId, context.teamId);
 
-      const sub = await createSubscriptionRepo(context.db, context.teamId, {
-         ...input,
-         source: "manual",
-         cancelAtPeriodEnd: false,
-      });
-
-      return sub;
+      return (
+         await createSubscriptionRepo(context.db, context.teamId, {
+            ...input,
+            source: "manual",
+            cancelAtPeriodEnd: false,
+         })
+      ).match(
+         (sub) => sub,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
    });
 
 export const cancelSubscription = protectedProcedure
@@ -178,6 +201,11 @@ export const cancelSubscription = protectedProcedure
          context.db,
          input.id,
          context.teamId,
+      ).match(
+         (sub) => sub,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
       );
 
       if (subscription.status !== "active") {
@@ -192,21 +220,38 @@ export const cancelSubscription = protectedProcedure
          );
       }
 
-      const cancelled = await updateSubscription(context.db, input.id, {
-         status: "cancelled",
-      });
-
-      return cancelled;
+      return (
+         await updateSubscription(context.db, input.id, {
+            status: "cancelled",
+         })
+      ).match(
+         (cancelled) => cancelled,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
    });
 
 export const getExpiringSoon = protectedProcedure.handler(
    async ({ context }) => {
-      return listExpiringSoon(context.db, context.teamId);
+      return (await listExpiringSoon(context.db, context.teamId)).match(
+         (rows) => rows,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
    },
 );
 
 export const getActiveCountByVariant = protectedProcedure.handler(
    async ({ context }) => {
-      return countActiveSubscriptionsByVariant(context.db, context.teamId);
+      return (
+         await countActiveSubscriptionsByVariant(context.db, context.teamId)
+      ).match(
+         (rows) => rows,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
    },
 );
