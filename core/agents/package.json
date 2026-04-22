@@ -31,6 +31,7 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
+      "@computesdk/e2b": "^1.7.44",
       "@core/database": "workspace:*",
       "@core/environment": "workspace:*",
       "@core/logging": "workspace:*",
@@ -38,6 +39,7 @@
       "@core/utils": "workspace:*",
       "@tanstack/ai": "catalog:tanstack-ai",
       "@tanstack/ai-openrouter": "catalog:tanstack-ai",
+      "computesdk": "^2.6.0",
       "neverthrow": "catalog:validation",
       "zod": "catalog:validation"
    },
