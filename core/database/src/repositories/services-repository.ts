@@ -228,3 +228,22 @@ export async function ensureVariantOwnership(
    }
    return variant;
 }
+
+export async function bulkCreateServices(
+   db: DatabaseInstance,
+   teamId: string,
+   items: CreateServiceInput[],
+) {
+   const validated = items.map((item) =>
+      validateInput(createServiceSchema, item),
+   );
+   try {
+      return await db
+         .insert(services)
+         .values(validated.map((item) => ({ ...item, teamId })))
+         .returning();
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Falha ao importar serviços.");
+   }
+}

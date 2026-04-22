@@ -1,5 +1,6 @@
 import { ensureContactOwnership } from "@core/database/repositories/contacts-repository";
 import {
+   bulkCreateServices,
    createService,
    createVariant as createVariantRepo,
    deleteService,
@@ -27,7 +28,7 @@ import {
    updateVariantSchema,
 } from "@core/database/schemas/services";
 import { createSubscriptionSchema } from "@core/database/schemas/subscriptions";
-import { AppError } from "@core/logging/errors";
+import { AppError, WebAppError } from "@core/logging/errors";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
@@ -50,6 +51,20 @@ export const create = protectedProcedure
    .input(createServiceSchema)
    .handler(async ({ context, input }) => {
       return createService(context.db, context.teamId, input);
+   });
+
+export const bulkCreate = protectedProcedure
+   .input(z.object({ items: z.array(createServiceSchema).min(1) }))
+   .handler(async ({ context, input }) => {
+      const inserted = await bulkCreateServices(
+         context.db,
+         context.teamId,
+         input.items,
+      );
+      if (inserted.length === 0) {
+         throw WebAppError.internal("Falha ao importar os serviços.");
+      }
+      return inserted;
    });
 
 export const update = protectedProcedure

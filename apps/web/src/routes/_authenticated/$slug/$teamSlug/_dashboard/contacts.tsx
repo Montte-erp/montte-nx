@@ -18,7 +18,7 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Trash2, Users } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
@@ -50,6 +50,7 @@ const tableSearchSchema = z.object({
       .array(z.object({ id: z.string(), value: z.unknown() }))
       .catch([])
       .default([]),
+   selectedIds: z.array(z.string()).catch([]).default([]),
    typeFilter: z
       .enum(["all", "cliente", "fornecedor", "ambos"])
       .catch("all")
@@ -101,11 +102,31 @@ function ContactsSkeleton() {
 
 function ContactsList() {
    const navigate = Route.useNavigate();
-   const { sorting, columnFilters, typeFilter } = Route.useSearch();
+   const { sorting, columnFilters, typeFilter, selectedIds } =
+      Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
    const [tableState] = useContactsTableState();
-   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>(
-      {},
+
+   const rowSelection = useMemo(
+      () => Object.fromEntries(selectedIds.map((id) => [id, true])),
+      [selectedIds],
+   );
+
+   const onRowSelectionChange = useCallback(
+      (
+         updater:
+            | Record<string, boolean>
+            | ((prev: Record<string, boolean>) => Record<string, boolean>),
+      ) => {
+         const next =
+            typeof updater === "function" ? updater(rowSelection) : updater;
+         const nextIds = Object.keys(next).filter((id) => next[id]);
+         navigate({
+            search: (prev) => ({ ...prev, selectedIds: nextIds }),
+            replace: true,
+         });
+      },
+      [navigate, rowSelection],
    );
 
    const { data: contacts } = useSuspenseQuery(
@@ -152,12 +173,16 @@ function ContactsList() {
       [openAlertDialog, deleteMutation],
    );
 
-   const selectedIds = Object.keys(rowSelection).filter(
-      (id) => rowSelection[id],
-   );
    const selectedContacts = contacts.filter((c) => selectedIds.includes(c.id));
 
-   const clearSelection = useCallback(() => setRowSelection({}), []);
+   const clearSelection = useCallback(
+      () =>
+         navigate({
+            search: (prev) => ({ ...prev, selectedIds: [] }),
+            replace: true,
+         }),
+      [navigate],
+   );
 
    const handleBulkDelete = useCallback(() => {
       const ids = selectedContacts.map((c) => c.id);
@@ -241,7 +266,7 @@ function ContactsList() {
                tableState={tableState}
                onTableStateChange={setContactsTableState}
                rowSelection={rowSelection}
-               onRowSelectionChange={setRowSelection}
+               onRowSelectionChange={onRowSelectionChange}
                renderActions={({ row }) => (
                   <Button
                      className="text-destructive hover:text-destructive"

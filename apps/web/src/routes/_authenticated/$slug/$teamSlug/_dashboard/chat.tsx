@@ -19,7 +19,6 @@ import {
    Tag,
    TrendingUp,
    Users,
-   Wallet,
 } from "lucide-react";
 import { useState } from "react";
 
