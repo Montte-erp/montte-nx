@@ -6,18 +6,9 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { Skeleton } from "@packages/ui/components/skeleton";
-import { Spinner } from "@packages/ui/components/spinner";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-   CreditCard,
-   Download,
-   Pencil,
-   Plus,
-   Trash2,
-   Upload,
-} from "lucide-react";
+import { CreditCard, Plus, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -34,17 +25,18 @@ import { DataTableRoot } from "@/components/data-table/data-table-root";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import {
+   DataTableImportButton,
+   type DataTableImportConfig,
+} from "@/components/data-table/data-table-import";
+import { useCsvFile } from "@/hooks/use-csv-file";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { orpc } from "@/integrations/orpc/client";
+import {
    buildCreditCardColumns,
    type CreditCardRow,
 } from "./-credit-cards/credit-cards-columns";
-import { CreditCardForm } from "./-credit-cards/credit-cards-form";
 import { CreditCardFaturaRow } from "./-credit-cards/credit-card-fatura-row";
-import { CreditCardsExportCredenza } from "./-credit-cards/credit-cards-export-credenza";
-import { CreditCardsImportCredenza } from "./-credit-cards/credit-cards-import-credenza";
-import type { PanelAction } from "@/features/context-panel/context-panel-store";
-import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
-import { orpc } from "@/integrations/orpc/client";
 
 const creditCardsSearchSchema = z.object({
    columnFilters: z
@@ -99,28 +91,27 @@ function CreditCardsSkeleton() {
    return <DataTableSkeleton columns={skeletonColumns} />;
 }
 
-function CreditCardFormSkeleton() {
-   return (
-      <div className="flex flex-col gap-4 p-4">
-         <Skeleton className="h-4 w-32" />
-         <Skeleton className="h-10 w-full" />
-         <Skeleton className="h-4 w-24" />
-         <Skeleton className="h-10 w-full" />
-         <Skeleton className="h-4 w-28" />
-         <Skeleton className="h-10 w-full" />
-      </div>
-   );
-}
-
 function CreditCardsList() {
    const navigate = Route.useNavigate();
    const { columnFilters, page, pageSize, search, status } = Route.useSearch();
-   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
+   const { parse: parseCsv } = useCsvFile();
+   const { parse: parseXlsx } = useXlsxFile();
 
    const { data: result } = useSuspenseQuery(
       orpc.creditCards.getAll.queryOptions({
          input: { page, pageSize, search: search || undefined, status },
+      }),
+   );
+
+   const { data: bankAccounts } = useSuspenseQuery(
+      orpc.bankAccounts.getAll.queryOptions({}),
+   );
+
+   const createMutation = useMutation(
+      orpc.creditCards.create.mutationOptions({
+         onSuccess: () => toast.success("Cartão criado com sucesso."),
+         onError: (e) => toast.error(e.message),
       }),
    );
 
@@ -148,24 +139,80 @@ function CreditCardsList() {
       }),
    );
 
-   const handleEdit = useCallback(
-      (card: CreditCardRow) => {
-         openCredenza({
-            renderChildren: () => (
-               <QueryBoundary
-                  fallback={<CreditCardFormSkeleton />}
-                  errorTitle="Erro ao carregar cartão"
-               >
-                  <CreditCardForm
-                     card={card}
-                     mode="edit"
-                     onSuccess={closeCredenza}
-                  />
-               </QueryBoundary>
-            ),
+   const [isDraftActive, setIsDraftActive] = useState(false);
+
+   const handleDiscardDraft = useCallback(() => setIsDraftActive(false), []);
+
+   const handleAddCard = useCallback(
+      async (data: Record<string, string | string[]>) => {
+         const name = String(data.name ?? "").trim();
+         const closingDay = parseInt(String(data.closingDay ?? ""), 10);
+         const dueDay = parseInt(String(data.dueDay ?? ""), 10);
+         const bankAccountId = String(data.bankAccountId ?? "").trim();
+         if (!name || !closingDay || !dueDay || !bankAccountId) return;
+         await createMutation.mutateAsync({
+            name,
+            closingDay,
+            dueDay,
+            bankAccountId,
+            color: "#6366f1",
+            creditLimit: "0",
          });
+         setIsDraftActive(false);
       },
-      [openCredenza, closeCredenza],
+      [createMutation],
+   );
+
+   const importConfig: DataTableImportConfig = useMemo(
+      () => ({
+         accept: {
+            "text/csv": [".csv"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+               [".xlsx"],
+            "application/vnd.ms-excel": [".xls"],
+         },
+         parseFile: async (file: File) => {
+            const ext = file.name.split(".").pop()?.toLowerCase();
+            if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
+            return parseCsv(file);
+         },
+         mapRow: (row, i): Record<string, unknown> => ({
+            id: `__import_${i}`,
+            name: String(row.name ?? "").trim(),
+            brand: String(row.brand ?? "") || null,
+            color: "#6366f1",
+            creditLimit: String(row.creditLimit ?? row.limite ?? "0"),
+            closingDay:
+               parseInt(String(row.closingDay ?? row.fechamento ?? "1"), 10) ||
+               1,
+            dueDay:
+               parseInt(String(row.dueDay ?? row.vencimento ?? "1"), 10) || 1,
+            status: "active",
+         }),
+         onImport: async (rows) => {
+            const firstBankAccountId = bankAccounts?.[0]?.id;
+            if (!firstBankAccountId) {
+               toast.error(
+                  "Nenhuma conta bancária disponível para importação.",
+               );
+               return;
+            }
+            await Promise.allSettled(
+               rows.map((r) =>
+                  createMutation.mutateAsync({
+                     name: String(r.name ?? ""),
+                     closingDay:
+                        typeof r.closingDay === "number" ? r.closingDay : 1,
+                     dueDay: typeof r.dueDay === "number" ? r.dueDay : 1,
+                     bankAccountId: firstBankAccountId,
+                     color: "#6366f1",
+                     creditLimit: String(r.creditLimit ?? "0"),
+                  }),
+               ),
+            );
+         },
+      }),
+      [createMutation, parseCsv, parseXlsx, bankAccounts],
    );
 
    const handleDelete = useCallback(
@@ -184,7 +231,16 @@ function CreditCardsList() {
       [openAlertDialog, deleteMutation],
    );
 
-   const columns = useMemo(() => buildCreditCardColumns(), []);
+   const columns = useMemo(
+      () =>
+         buildCreditCardColumns({
+            bankAccounts: (bankAccounts ?? []) as Array<{
+               id: string;
+               name: string;
+            }>,
+         }),
+      [bankAccounts],
+   );
 
    return (
       <DataTableRoot
@@ -193,9 +249,6 @@ function CreditCardsList() {
          getRowId={(row) => row.id}
          storageKey="montte:datatable:credit-cards"
          columnFilters={columnFilters}
-         renderExpandedRow={(props) => (
-            <CreditCardFaturaRow creditCardId={props.row.original.id} />
-         )}
          onColumnFiltersChange={(updater) => {
             const next =
                typeof updater === "function" ? updater(columnFilters) : updater;
@@ -214,27 +267,34 @@ function CreditCardsList() {
                replace: true,
             });
          }}
+         isDraftRowActive={isDraftActive}
+         onAddRow={handleAddCard}
+         onDiscardAddRow={handleDiscardDraft}
+         renderExpandedRow={(props) => (
+            <CreditCardFaturaRow creditCardId={props.row.original.id} />
+         )}
          renderActions={({ row }) => (
-            <>
-               <Button
-                  onClick={() => handleEdit(row.original)}
-                  tooltip="Editar"
-                  variant="outline"
-               >
-                  <Pencil className="size-4" />
-               </Button>
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(row.original)}
-                  tooltip="Excluir"
-                  variant="outline"
-               >
-                  <Trash2 className="size-4" />
-               </Button>
-            </>
+            <Button
+               className="text-destructive hover:text-destructive"
+               onClick={() => handleDelete(row.original)}
+               tooltip="Excluir"
+               variant="outline"
+            >
+               <Trash2 className="size-4" />
+            </Button>
          )}
       >
-         <DataTableToolbar />
+         <DataTableToolbar>
+            <DataTableImportButton importConfig={importConfig} />
+            <Button
+               onClick={() => setIsDraftActive(true)}
+               size="icon-sm"
+               tooltip="Novo Cartão"
+               variant="outline"
+            >
+               <Plus />
+            </Button>
+         </DataTableToolbar>
          <DataTableEmptyState>
             <Empty>
                <EmptyHeader>
@@ -297,74 +357,9 @@ function CreditCardsList() {
 }
 
 function CreditCardsPage() {
-   const { openCredenza, closeCredenza } = useCredenza();
-   const [exportFormat, setExportFormat] = useState<"csv" | "xlsx">("csv");
-
-   function handleCreate() {
-      openCredenza({
-         renderChildren: () => (
-            <QueryBoundary
-               fallback={<CreditCardFormSkeleton />}
-               errorTitle="Erro ao carregar formulário"
-            >
-               <CreditCardForm mode="create" onSuccess={closeCredenza} />
-            </QueryBoundary>
-         ),
-      });
-   }
-
-   function handleImport() {
-      openCredenza({
-         renderChildren: () => (
-            <CreditCardsImportCredenza onClose={closeCredenza} />
-         ),
-      });
-   }
-
-   function handleExport() {
-      openCredenza({
-         renderChildren: () => (
-            <QueryBoundary
-               fallback={
-                  <div className="flex items-center justify-center py-4">
-                     <Spinner className="size-4" />
-                  </div>
-               }
-               errorTitle="Erro ao carregar cartões"
-            >
-               <CreditCardsExportCredenza
-                  format={exportFormat}
-                  onFormatChange={setExportFormat}
-                  onClose={closeCredenza}
-               />
-            </QueryBoundary>
-         ),
-      });
-   }
-
-   const panelActions: PanelAction[] = [
-      {
-         icon: Upload,
-         label: "Importar",
-         onClick: handleImport,
-      },
-      {
-         icon: Download,
-         label: "Exportar",
-         onClick: handleExport,
-      },
-   ];
-
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
-            actions={
-               <Button onClick={handleCreate}>
-                  <Plus className="size-4" />
-                  Novo Cartão
-               </Button>
-            }
-            panelActions={panelActions}
             description="Gerencie seus cartões de crédito"
             title="Cartões de Crédito"
          />
