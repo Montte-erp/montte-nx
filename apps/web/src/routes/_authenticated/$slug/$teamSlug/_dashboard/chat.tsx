@@ -58,17 +58,9 @@ function ChatPage() {
    const [selectedScope, setSelectedScope] = useState(SCOPES[0]);
 
    return (
-      <div className="relative flex h-full flex-col items-center justify-center gap-8">
-         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="absolute left-1/2 top-0 h-[400px] w-[700px] -translate-x-1/2 -translate-y-1/4 rounded-full bg-primary/8 blur-3xl" />
-         </div>
-
+      <div className="flex h-full flex-col items-center justify-center gap-8">
          <div className="flex flex-col items-center gap-2 text-center">
-            <img
-               src="/mascot.svg"
-               alt="Rubi"
-               className="mb-2 size-14 drop-shadow-sm"
-            />
+            <img src="/mascot.svg" alt="Rubi" className="mb-2 size-14" />
             <h1 className="text-2xl font-semibold">Como posso te ajudar?</h1>
             <p className="text-sm italic text-muted-foreground">
                Gerencie suas finanças com inteligência.
