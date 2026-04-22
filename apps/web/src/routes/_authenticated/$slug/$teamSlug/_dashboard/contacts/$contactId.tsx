@@ -12,6 +12,13 @@ import {
 } from "@/features/context-panel/use-context-panel";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { orpc } from "@/integrations/orpc/client";
+import {
+   Tabs,
+   TabsList,
+   TabsTrigger,
+   TabsContent,
+} from "@packages/ui/components/tabs";
+import { ContactAssinaturasTab } from "../-contacts/contact-assinaturas-tab";
 import { ContactPropertiesPanel } from "../-contacts/contact-properties-panel";
 import { ContactTransacoesTab } from "../-contacts/contact-transacoes-tab";
 
@@ -121,9 +128,25 @@ function ContactDetailContent() {
             }
          />
 
-         <QueryBoundary fallback={null}>
-            <ContactTransacoesTab contactId={contactId} contact={contact} />
-         </QueryBoundary>
+         <Tabs defaultValue="transacoes">
+            <TabsList>
+               <TabsTrigger value="transacoes">Transações</TabsTrigger>
+               <TabsTrigger value="assinaturas">Assinaturas</TabsTrigger>
+            </TabsList>
+            <TabsContent value="transacoes">
+               <QueryBoundary fallback={null}>
+                  <ContactTransacoesTab
+                     contactId={contactId}
+                     contact={contact}
+                  />
+               </QueryBoundary>
+            </TabsContent>
+            <TabsContent value="assinaturas">
+               <QueryBoundary fallback={null}>
+                  <ContactAssinaturasTab contactId={contactId} />
+               </QueryBoundary>
+            </TabsContent>
+         </Tabs>
       </main>
    );
 }
