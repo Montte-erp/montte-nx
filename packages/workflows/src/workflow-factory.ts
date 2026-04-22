@@ -10,6 +10,10 @@ export const QUEUES = {
 
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
+export function createAllQueues(options: { workerConcurrency: number }) {
+   return Object.values(QUEUES).map((name) => createQueue(name, options));
+}
+
 export function createQueue(
    name: string,
    options: { workerConcurrency: number },

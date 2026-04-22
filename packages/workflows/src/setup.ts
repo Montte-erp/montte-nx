@@ -7,11 +7,9 @@ import "./workflows/categorization-workflow";
 import "./workflows/derive-keywords-workflow";
 import "./workflows/derive-tag-keywords-workflow";
 import "./workflows/suggest-tag-workflow";
-import { createQueue, QUEUES } from "./workflow-factory";
+import { createAllQueues } from "./workflow-factory";
 
-for (const name of Object.values(QUEUES)) {
-   createQueue(name, { workerConcurrency: 10 });
-}
+createAllQueues({ workerConcurrency: 10 });
 
 type LaunchConfig = WorkflowDeps & {
    systemDatabaseUrl: string;
