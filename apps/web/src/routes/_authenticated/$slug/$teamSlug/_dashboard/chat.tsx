@@ -44,12 +44,12 @@ const SCOPES = [
 ];
 
 const QUICK_PROMPTS = [
-   { icon: TrendingUp, label: "Qual foi meu gasto esse mês?" },
-   { icon: Tag, label: "Em qual categoria gastei mais?" },
-   { icon: Wallet, label: "Como está meu fluxo de caixa?" },
+   { icon: TrendingUp, label: "Como está meu fluxo de caixa?" },
    { icon: FileText, label: "Quais contas vencem essa semana?" },
    { icon: Users, label: "Clientes com faturas em aberto" },
+   { icon: Package, label: "Produtos com estoque baixo" },
    { icon: BarChart2, label: "Compare receitas e despesas" },
+   { icon: Tag, label: "Em qual categoria gastei mais?" },
 ];
 
 function ChatPage() {
@@ -63,7 +63,7 @@ function ChatPage() {
             <img src="/mascot.svg" alt="Rubi" className="mb-2 size-14" />
             <h1 className="text-2xl font-semibold">Como posso te ajudar?</h1>
             <p className="text-sm italic text-muted-foreground">
-               Gerencie suas finanças com inteligência.
+               Gerencie seu negócio com inteligência.
             </p>
          </div>
 
@@ -132,18 +132,20 @@ function ChatPage() {
             </div>
          </div>
 
-         <div className="flex max-w-2xl flex-wrap justify-center gap-2">
+         <div className="flex max-w-4xl flex-wrap justify-center gap-2">
             {QUICK_PROMPTS.map(({ icon: Icon, label }) => (
-               <Button
+               <button
                   key={label}
-                  className="gap-2 rounded-full"
-                  size="sm"
-                  variant="outline"
+                  type="button"
+                  className="flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                   onClick={() => setValue(label)}
                >
-                  <Icon aria-hidden="true" className="size-4" />
+                  <Icon
+                     aria-hidden="true"
+                     className="size-3.5 shrink-0 text-foreground"
+                  />
                   {label}
-               </Button>
+               </button>
             ))}
          </div>
       </div>
