@@ -2,7 +2,7 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { Button } from "@packages/ui/components/button";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { z } from "zod";
 import {
    Archive,
@@ -20,8 +20,12 @@ import {
    useContextPanelInfo,
 } from "@/features/context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
+import {
+   Popover,
+   PopoverContent,
+   PopoverTrigger,
+} from "@packages/ui/components/popover";
 import { orpc } from "@/integrations/orpc/client";
 import {
    Tabs,
@@ -116,8 +120,8 @@ function ContactDetailContent() {
    const slug = useOrgSlug();
    const teamSlug = useTeamSlug();
    const { openAlertDialog } = useAlertDialog();
-   const { openCredenza } = useCredenza();
    const [activeTab, setActiveTab] = useState<ActiveTab>("transacoes");
+   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
    const [isDraftActive, setIsDraftActive] = useState(false);
 
    const { data: contact } = useSuspenseQuery(
@@ -216,14 +220,6 @@ function ContactDetailContent() {
       });
    }
 
-   function handleAddService() {
-      openCredenza({
-         renderChildren: () => (
-            <AddSubscriptionForm contactId={contactId} onSuccess={() => {}} />
-         ),
-      });
-   }
-
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
@@ -307,15 +303,29 @@ function ContactDetailContent() {
                      </>
                   )}
                   {activeTab === "servicos" && (
-                     <Button
-                        onClick={handleAddService}
-                        tooltip="Vincular serviço"
-                        variant="outline"
-                        size="icon-sm"
+                     <Popover
+                        open={subscriptionOpen}
+                        onOpenChange={setSubscriptionOpen}
                      >
-                        <Plus />
-                        <span className="sr-only">Vincular serviço</span>
-                     </Button>
+                        <PopoverTrigger asChild>
+                           <Button
+                              tooltip="Vincular serviço"
+                              variant="outline"
+                              size="icon-sm"
+                           >
+                              <Plus />
+                              <span className="sr-only">Vincular serviço</span>
+                           </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-96 p-0" align="end">
+                           <Suspense fallback={null}>
+                              <AddSubscriptionForm
+                                 contactId={contactId}
+                                 onSuccess={() => setSubscriptionOpen(false)}
+                              />
+                           </Suspense>
+                        </PopoverContent>
+                     </Popover>
                   )}
                </div>
             </div>

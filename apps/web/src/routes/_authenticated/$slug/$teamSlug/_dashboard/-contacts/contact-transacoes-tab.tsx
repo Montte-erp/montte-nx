@@ -136,6 +136,7 @@ export function ContactTransacoesTab({
          isDraftRowActive={isDraftActive}
          onAddRow={handleAddTransaction}
          onDiscardAddRow={onDiscardDraft}
+         renderActions={() => <></>}
       >
          <DataTableToolbar hideExport />
          <DataTableEmptyState>
