@@ -11,7 +11,7 @@ import {
    useQueryClient,
    useSuspenseQuery,
 } from "@tanstack/react-query";
-import { getRouteApi, Link } from "@tanstack/react-router";
+import { getRouteApi } from "@tanstack/react-router";
 import { ExternalLink, Plus, Trash2, Users } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -220,22 +220,22 @@ export function ContactsList() {
             renderActions={({ row }) => (
                <>
                   <Button
-                     asChild
                      size="icon"
                      tooltip="Ver detalhes"
                      variant="ghost"
+                     onClick={() =>
+                        navigate({
+                           to: "/$slug/$teamSlug/contacts/$contactId",
+                           params: {
+                              slug,
+                              teamSlug,
+                              contactId: row.original.id,
+                           },
+                        })
+                     }
                   >
-                     <Link
-                        params={{
-                           slug,
-                           teamSlug,
-                           contactId: row.original.id,
-                        }}
-                        to="/$slug/$teamSlug/contacts/$contactId"
-                     >
-                        <ExternalLink className="size-4" />
-                        <span className="sr-only">Ver detalhes</span>
-                     </Link>
+                     <ExternalLink className="size-4" />
+                     <span className="sr-only">Ver detalhes</span>
                   </Button>
                   <Button
                      className="text-destructive hover:text-destructive"
