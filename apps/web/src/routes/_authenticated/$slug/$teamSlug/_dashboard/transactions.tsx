@@ -1,49 +1,45 @@
-import { Button } from "@packages/ui/components/button";
-import type {
-   ColumnFiltersState,
-   OnChangeFn,
-   SortingState,
-} from "@tanstack/react-table";
+import { Tabs, TabsList, TabsTrigger } from "@packages/ui/components/tabs";
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, Plus, Upload } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { QueryBoundary } from "@/components/query-boundary";
-import type { PanelAction } from "@/features/context-panel/context-panel-store";
-import { useTransactionPrerequisites } from "@/features/transactions/hooks/use-transaction-prerequisites";
-import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
-import { TransactionExportCredenza } from "@/features/transactions/ui/transaction-export-credenza";
-import {
-   DEFAULT_FILTERS,
-   TransactionFilterBar,
-   type TransactionFilters,
-} from "@/features/transactions/ui/transaction-filter-bar";
-import { StatementImportCredenza } from "./-transactions/statement-import-credenza";
-import { TransactionPrerequisitesBlocker } from "@/features/transactions/ui/transaction-prerequisites-blocker";
-import { TransactionsList } from "@/features/transactions/ui/transactions-list";
-import { TransactionsSkeleton } from "@/features/transactions/ui/transactions-skeleton";
-import { useCredenza } from "@/hooks/use-credenza";
+import { TransactionsList } from "./-transactions/transactions-list";
+import { buildTransactionColumns } from "./-transactions/transactions-columns";
 import { orpc } from "@/integrations/orpc/client";
 
+const skeletonColumns = buildTransactionColumns();
+
 const transactionsSearchSchema = z.object({
-   sorting: z
-      .array(z.object({ id: z.string(), desc: z.boolean() }))
-      .catch([])
-      .default([]),
-   columnFilters: z
-      .array(z.object({ id: z.string(), value: z.unknown() }))
-      .catch([])
-      .default([]),
    page: z.number().int().min(1).catch(1).default(1),
    pageSize: z.number().int().catch(20).default(20),
+   search: z.string().catch("").default(""),
+   view: z
+      .enum(["all", "payable", "receivable", "settled", "cancelled"])
+      .catch("all")
+      .default("all"),
+   overdueOnly: z.boolean().catch(false).default(false),
+   status: z
+      .array(z.enum(["pending", "paid", "cancelled"]))
+      .catch([])
+      .default([]),
 });
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/transactions",
 )({
    validateSearch: transactionsSearchSchema,
-   loaderDeps: ({ search: { page, pageSize } }) => ({ page, pageSize }),
+   loaderDeps: ({
+      search: { page, pageSize, view, overdueOnly, status, search },
+   }) => ({
+      page,
+      pageSize,
+      view,
+      overdueOnly,
+      status,
+      search,
+   }),
    loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
          orpc.bankAccounts.getAll.queryOptions({}),
@@ -59,20 +55,23 @@ export const Route = createFileRoute(
       );
       context.queryClient.prefetchQuery(
          orpc.transactions.getAll.queryOptions({
-            input: { page: deps.page, pageSize: deps.pageSize },
-         }),
-      );
-      context.queryClient.prefetchQuery(
-         orpc.transactions.getSummary.queryOptions({
             input: {
-               dateFrom: DEFAULT_FILTERS.dateFrom,
-               dateTo: DEFAULT_FILTERS.dateTo,
+               page: deps.page,
+               pageSize: deps.pageSize,
+               view: deps.view,
+               overdueOnly: deps.overdueOnly,
+               status: deps.status.length > 0 ? deps.status : undefined,
+               search: deps.search || undefined,
             },
          }),
       );
    },
    pendingMs: 300,
-   pendingComponent: TransactionsSkeleton,
+   pendingComponent: () => (
+      <main className="flex h-full flex-col gap-4">
+         <DataTableSkeleton columns={skeletonColumns} />
+      </main>
+   ),
    head: () => ({
       meta: [{ title: "Lançamentos — Montte" }],
    }),
@@ -80,151 +79,52 @@ export const Route = createFileRoute(
 });
 
 function TransactionsPage() {
-   const { openCredenza, closeCredenza } = useCredenza();
    const navigate = Route.useNavigate();
-   const { slug, teamSlug } = Route.useParams();
-   const { currentTeam } = Route.useRouteContext();
-   const { hasBankAccounts } = useTransactionPrerequisites();
-   const [filters, setFilters] = useState<TransactionFilters>(DEFAULT_FILTERS);
-   const handleFiltersChange = useCallback(
-      (nextFilters: TransactionFilters) => {
-         setFilters(nextFilters);
-         navigate({ search: (prev) => ({ ...prev, page: 1 }), replace: true });
-      },
-      [navigate],
-   );
-   const { sorting, columnFilters, page, pageSize } = Route.useSearch();
-   const filtersWithPagination = { ...filters, page, pageSize };
 
-   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
-      (updater) => {
-         const next =
-            typeof updater === "function" ? updater(sorting) : updater;
+   const handleViewChange = useCallback(
+      (nextView: string) => {
          navigate({
-            search: (prev) => ({ ...prev, sorting: next }),
+            search: (prev) => ({
+               ...prev,
+               view: nextView as
+                  | "all"
+                  | "payable"
+                  | "receivable"
+                  | "settled"
+                  | "cancelled",
+               page: 1,
+            }),
             replace: true,
          });
       },
-      [sorting, navigate],
+      [navigate],
    );
 
-   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
-      useCallback(
-         (updater) => {
-            const next =
-               typeof updater === "function" ? updater(columnFilters) : updater;
-            navigate({
-               search: (prev) => ({
-                  ...prev,
-                  columnFilters: next,
-               }),
-               replace: true,
-            });
-         },
-         [columnFilters, navigate],
-      );
-
-   const handleCreate = useCallback(() => {
-      if (!hasBankAccounts) {
-         openCredenza({
-            renderChildren: () => (
-               <TransactionPrerequisitesBlocker
-                  onAction={() => {
-                     closeCredenza();
-                     navigate({
-                        to: "/$slug/$teamSlug/bank-accounts",
-                        params: { slug, teamSlug },
-                     });
-                  }}
-               />
-            ),
-         });
-         return;
-      }
-      openCredenza({
-         renderChildren: () => (
-            <TransactionCredenza mode="create" onSuccess={closeCredenza} />
-         ),
-      });
-   }, [hasBankAccounts, openCredenza, closeCredenza, navigate, slug, teamSlug]);
-
-   const panelActions: PanelAction[] = [
-      {
-         icon: Upload,
-         label: "Importar",
-         onClick: () =>
-            openCredenza({
-               renderChildren: () => (
-                  <StatementImportCredenza
-                     teamId={currentTeam.id}
-                     onClose={closeCredenza}
-                  />
-               ),
-            }),
-      },
-      {
-         icon: Download,
-         label: "Exportar",
-         onClick: () =>
-            openCredenza({
-               renderChildren: () => (
-                  <TransactionExportCredenza
-                     dateFrom={filters.dateFrom}
-                     dateTo={filters.dateTo}
-                     onClose={closeCredenza}
-                  />
-               ),
-            }),
-      },
-   ];
+   const { view } = Route.useSearch();
 
    return (
-      <main className="flex flex-col gap-4">
+      <main className="flex h-full flex-col gap-4">
          <DefaultHeader
-            actions={
-               <Button onClick={handleCreate}>
-                  <Plus className="size-4" />
-                  <span className="sr-only sm:not-sr-only">
-                     Novo Lançamento
-                  </span>
-               </Button>
-            }
-            description="Gerencie suas receitas, despesas e transferências"
-            panelActions={panelActions}
+            description="Gerencie receitas, despesas e transferências"
             title="Lançamentos"
          />
-         <TransactionFilterBar
-            filters={filters}
-            onFiltersChange={handleFiltersChange}
-         />
-         <QueryBoundary
-            fallback={<TransactionsSkeleton />}
-            errorTitle="Erro ao carregar lançamentos"
-         >
-            <TransactionsList
-               columnFilters={columnFilters}
-               filters={filtersWithPagination}
-               onColumnFiltersChange={handleColumnFiltersChange}
-               onPageChange={(newPage) =>
-                  navigate({
-                     search: (prev) => ({ ...prev, page: newPage }),
-                     replace: true,
-                  })
-               }
-               onPageSizeChange={(newPageSize) =>
-                  navigate({
-                     search: (prev) => ({
-                        ...prev,
-                        pageSize: newPageSize,
-                        page: 1,
-                     }),
-                     replace: true,
-                  })
-               }
-               onSortingChange={handleSortingChange}
-               sorting={sorting}
-            />
-         </QueryBoundary>
+         <Tabs onValueChange={handleViewChange} value={view}>
+            <TabsList>
+               <TabsTrigger value="all">Todos</TabsTrigger>
+               <TabsTrigger value="payable">A Pagar</TabsTrigger>
+               <TabsTrigger value="receivable">A Receber</TabsTrigger>
+               <TabsTrigger value="settled">Efetivados</TabsTrigger>
+               <TabsTrigger value="cancelled">Cancelados</TabsTrigger>
+            </TabsList>
+         </Tabs>
+         <div className="flex flex-1 flex-col min-h-0">
+            <QueryBoundary
+               fallback={<DataTableSkeleton columns={skeletonColumns} />}
+               errorTitle="Erro ao carregar lançamentos"
+            >
+               <TransactionsList />
+            </QueryBoundary>
+         </div>
       </main>
    );
 }

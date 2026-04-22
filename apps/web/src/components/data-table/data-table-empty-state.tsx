@@ -1,13 +1,14 @@
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import type React from "react";
-import { useDataTable } from "./data-table-root";
+import { useDataTable, useDataTableStore } from "./data-table-root";
 
 interface DataTableEmptyStateProps {
    children: React.ReactNode;
 }
 
 export function DataTableEmptyState({ children }: DataTableEmptyStateProps) {
-   const { store, table } = useDataTable();
+   const { store, table, isDraftRowActive } = useDataTable();
+   const importState = useDataTableStore((s) => s.importState);
 
    useIsomorphicLayoutEffect(() => {
       store.setState((s) => ({ ...s, hasEmptyState: true }));
@@ -15,5 +16,7 @@ export function DataTableEmptyState({ children }: DataTableEmptyStateProps) {
    }, [store]);
 
    if (table.getCoreRowModel().rows.length > 0) return null;
+   if (isDraftRowActive) return null;
+   if (importState !== null) return null;
    return <>{children}</>;
 }

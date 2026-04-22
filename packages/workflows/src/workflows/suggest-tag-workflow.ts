@@ -1,6 +1,6 @@
-import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
-import { DBOS, WorkflowQueue } from "@dbos-inc/dbos-sdk";
+import { DBOS } from "@dbos-inc/dbos-sdk";
+import { createEnqueuer, QUEUES } from "../workflow-factory";
 import dayjs from "dayjs";
 import {
    findTagByKeywords,
@@ -19,10 +19,6 @@ export type SuggestTagInput = {
 };
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
-
-export const suggestTagQueue = new WorkflowQueue("workflow:suggest-tag", {
-   workerConcurrency: 10,
-});
 
 async function publishFailed(
    publisher: ReturnType<typeof getPublisher>,
@@ -85,7 +81,12 @@ async function suggestTagWorkflowFn(input: SuggestTagInput) {
          () =>
             updateTransactionTag(db, input.transactionId, {
                suggestedTagId: keywordMatch.id,
-            }),
+            }).match(
+               (v) => v,
+               (e) => {
+                  throw e;
+               },
+            ),
          { name: "applyTag" },
       );
       await DBOS.runStep(
@@ -148,7 +149,12 @@ async function suggestTagWorkflowFn(input: SuggestTagInput) {
       () =>
          updateTransactionTag(db, input.transactionId, {
             suggestedTagId: tagId,
-         }),
+         }).match(
+            (v) => v,
+            (e) => {
+               throw e;
+            },
+         ),
       { name: "applyTag" },
    );
 
@@ -171,16 +177,8 @@ async function suggestTagWorkflowFn(input: SuggestTagInput) {
 
 export const suggestTagWorkflow = DBOS.registerWorkflow(suggestTagWorkflowFn);
 
-export async function enqueueSuggestTagWorkflow(
-   client: DBOSClient,
-   input: SuggestTagInput,
-): Promise<void> {
-   await client.enqueue(
-      {
-         workflowName: suggestTagWorkflowFn.name,
-         queueName: suggestTagQueue.name,
-         workflowID: `suggest-tag-${input.transactionId}`,
-      },
-      input,
-   );
-}
+export const enqueueSuggestTagWorkflow = createEnqueuer<SuggestTagInput>(
+   suggestTagWorkflowFn.name,
+   QUEUES.suggestTag,
+   (i) => `suggest-tag-${i.transactionId}`,
+);

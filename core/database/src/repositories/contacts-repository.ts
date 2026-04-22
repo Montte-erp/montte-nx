@@ -11,7 +11,6 @@ import {
    updateContactSchema,
 } from "@core/database/schemas/contacts";
 import { transactions } from "@core/database/schemas/transactions";
-import { bills } from "@core/database/schemas/bills";
 
 export async function createContact(
    db: DatabaseInstance,
@@ -247,14 +246,7 @@ export async function contactHasLinks(
          .from(transactions)
          .where(eq(transactions.contactId, id));
 
-      if ((txResult?.total ?? 0) > 0) return true;
-
-      const [billResult] = await db
-         .select({ total: count() })
-         .from(bills)
-         .where(eq(bills.contactId, id));
-
-      return (billResult?.total ?? 0) > 0;
+      return (txResult?.total ?? 0) > 0;
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to check contact links");

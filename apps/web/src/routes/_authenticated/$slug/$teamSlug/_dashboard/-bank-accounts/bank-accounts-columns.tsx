@@ -22,6 +22,7 @@ import {
    Wallet,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { z } from "zod";
 
 export type BankAccountRow = {
    id: string;
@@ -45,6 +46,14 @@ const TYPE_LABELS: Record<BankAccountRow["type"], string> = {
    investment: "Conta Investimento",
 };
 
+const TYPE_EDIT_OPTIONS = [
+   { value: "checking", label: "Conta Corrente" },
+   { value: "savings", label: "Conta Poupança" },
+   { value: "investment", label: "Conta Investimento" },
+   { value: "payment", label: "Conta Pagamento" },
+   { value: "cash", label: "Caixa Físico" },
+];
+
 const TYPE_ICONS: Record<BankAccountRow["type"], ReactNode> = {
    cash: <Wallet className="size-3" />,
    checking: <Landmark className="size-3" />,
@@ -62,6 +71,11 @@ export function buildBankAccountColumns(): ColumnDef<BankAccountRow>[] {
       {
          accessorKey: "name",
          header: "Nome",
+         meta: {
+            label: "Nome",
+            cellComponent: "text" as const,
+            editSchema: z.string().min(1, "Nome é obrigatório."),
+         },
          cell: ({ row }) => (
             <span className="font-medium truncate">{row.original.name}</span>
          ),
@@ -140,6 +154,18 @@ export function buildBankAccountColumns(): ColumnDef<BankAccountRow>[] {
       {
          accessorKey: "type",
          header: "Tipo",
+         meta: {
+            label: "Tipo",
+            cellComponent: "select" as const,
+            editOptions: TYPE_EDIT_OPTIONS,
+            editSchema: z.enum([
+               "checking",
+               "savings",
+               "investment",
+               "payment",
+               "cash",
+            ]),
+         },
          cell: ({ row }) => (
             <Announcement>
                <AnnouncementTag className="flex items-center">

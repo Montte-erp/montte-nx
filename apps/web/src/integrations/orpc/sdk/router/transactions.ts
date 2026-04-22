@@ -40,10 +40,17 @@ export const list = sdkProcedure
    .input(ListTransactionsFilterSchema)
    .handler(async ({ context, input }) => {
       if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
-      const result = await listTransactions(context.db, {
-         teamId: context.teamId,
-         ...input,
-      });
+      const result = (
+         await listTransactions(context.db, {
+            teamId: context.teamId,
+            ...input,
+         })
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
       return {
          data: result.data.map(mapTransaction),
          total: result.total,
@@ -75,11 +82,18 @@ export const create = createBillableProcedure("finance.transaction_created")
          tagId,
          date: data.date,
       });
-      const tx = await createTransaction(
-         context.db,
-         context.teamId,
-         data,
-         tagId ?? undefined,
+      const tx = (
+         await createTransaction(
+            context.db,
+            context.teamId,
+            data,
+            tagId ?? undefined,
+         )
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
       );
       context.scheduleEmit(() =>
          emitFinanceTransactionCreated(context.emit, context.emitCtx, {
@@ -109,7 +123,12 @@ export const update = sdkProcedure
             date: data.date,
          });
       }
-      const tx = await updateTransaction(context.db, id, data, tagId);
+      const tx = (await updateTransaction(context.db, id, data, tagId)).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
       return mapTransaction(tx);
    });
 
@@ -118,7 +137,12 @@ export const remove = sdkProcedure
    .handler(async ({ context, input }) => {
       if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
       await ensureTransactionOwnership(context.db, input.id, context.teamId);
-      await deleteTransaction(context.db, input.id);
+      (await deleteTransaction(context.db, input.id)).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
       return { success: true };
    });
 
@@ -126,8 +150,15 @@ export const summary = sdkProcedure
    .input(ListTransactionsFilterSchema)
    .handler(async ({ context, input }) => {
       if (!context.teamId) throw WebAppError.unauthorized("Team ID required");
-      return await getTransactionsSummary(context.db, {
-         teamId: context.teamId,
-         ...input,
-      });
+      return (
+         await getTransactionsSummary(context.db, {
+            teamId: context.teamId,
+            ...input,
+         })
+      ).match(
+         (v) => v,
+         (e) => {
+            throw e;
+         },
+      );
    });

@@ -4,8 +4,6 @@ import * as analyticsRouter from "./analytics";
 import * as apiKeysRouter from "./api-keys";
 import * as bankAccountsRouter from "./bank-accounts";
 import * as billingRouter from "./billing";
-import * as billsRouter from "./bills";
-import * as budgetGoalsRouter from "./budget-goals";
 import * as categoriesRouter from "./categories";
 import * as contactSettingsRouter from "./contact-settings";
 import * as contactsRouter from "./contacts";
@@ -29,9 +27,7 @@ export default {
    analytics: analyticsRouter,
    apiKeys: apiKeysRouter,
    bankAccounts: bankAccountsRouter,
-   bills: billsRouter,
    billing: billingRouter,
-   budgetGoals: budgetGoalsRouter,
    creditCards: creditCardsRouter,
    categories: categoriesRouter,
    contactSettings: contactSettingsRouter,

@@ -1,6 +1,7 @@
 import { fromPromise } from "neverthrow";
 import dayjs from "dayjs";
 import { DBOS } from "@dbos-inc/dbos-sdk";
+import { createEnqueuer, QUEUES } from "../workflow-factory";
 import { updateTagKeywords } from "@core/database/repositories/tags-repository";
 import { emitAiTagKeywordDerived } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
@@ -11,9 +12,6 @@ import type { JobNotification } from "@packages/notifications/schema";
 import { getDeps, getPublisher } from "../context";
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
-
-export const DERIVE_TAG_KEYWORDS_QUEUE_NAME =
-   "workflow:derive-tag-keywords" as const;
 
 export type DeriveTagKeywordsInput = {
    tagId: string;
@@ -205,3 +203,9 @@ async function deriveTagKeywordsWorkflowFn(input: DeriveTagKeywordsInput) {
 export const deriveTagKeywordsWorkflow = DBOS.registerWorkflow(
    deriveTagKeywordsWorkflowFn,
 );
+
+export const enqueueDeriveTagKeywordsWorkflow =
+   createEnqueuer<DeriveTagKeywordsInput>(
+      deriveTagKeywordsWorkflowFn.name,
+      QUEUES.deriveTagKeywords,
+   );

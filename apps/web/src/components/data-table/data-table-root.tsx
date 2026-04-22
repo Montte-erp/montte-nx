@@ -26,7 +26,7 @@ import { createContextState } from "foxact/context-state";
 import { useLocalStorage } from "foxact/use-local-storage";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useSingleton } from "foxact/use-singleton";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo } from "react";
 import type React from "react";
 
 export type DataTableStoredState = {
@@ -76,6 +76,23 @@ declare module "@tanstack/react-table" {
       exportable?: boolean;
       exportIgnore?: boolean;
       importIgnore?: boolean;
+      isEditable?: boolean;
+      cellComponent?:
+         | "text"
+         | "textarea"
+         | "select"
+         | "tags"
+         | "money"
+         | "date"
+         | "combobox";
+      editMode?: "inline" | "popover";
+      editOptions?: Array<{ label: string; value: string }>;
+      // oxlint-ignore no-explicit-any
+      editSchema?: any;
+      // oxlint-ignore no-explicit-any
+      isEditableForRow?: (row: TData) => boolean;
+      onSave?: (rowId: string, value: unknown) => Promise<void>;
+      onCreateOption?: (name: string) => Promise<string>;
    }
 }
 
@@ -86,6 +103,7 @@ type DataTableContextValue<TData> = {
    onTableStateChange: (state: DataTableStoredState) => void;
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
+   renderExpandedRow?: (props: { row: Row<TData> }) => React.ReactNode;
    isDraftRowActive?: boolean;
    onAddRow?: (data: Record<string, string | string[]>) => Promise<void>;
    onDiscardAddRow?: () => void;
@@ -122,6 +140,7 @@ export function useDataTable<TData>() {
       isDraftRowActive: ctx.isDraftRowActive,
       onAddRow: ctx.onAddRow,
       onDiscardAddRow: ctx.onDiscardAddRow,
+      renderExpandedRow: ctx.renderExpandedRow,
       sorting,
       columnFilters,
       rowSelection,
@@ -157,6 +176,7 @@ interface DataTableRootProps<TData> {
    renderActions?: (props: { row: Row<TData> }) => React.ReactNode;
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
+   renderExpandedRow?: (props: { row: Row<TData> }) => React.ReactNode;
    getSubRows?: (row: TData) => TData[] | undefined;
    isDraftRowActive?: boolean;
    onAddRow?: (data: Record<string, string | string[]>) => Promise<void>;
@@ -177,6 +197,7 @@ function useDataTableRoot<TData>({
    renderActions,
    groupBy,
    renderGroupHeader,
+   renderExpandedRow,
    getSubRows,
    isDraftRowActive,
    onAddRow,
@@ -203,23 +224,35 @@ function useDataTableRoot<TData>({
       }),
    ).current;
 
+   const applySorting = useEffectEvent((sorting: SortingState) => {
+      store.setState((s) => ({ ...s, sorting }));
+   });
+
+   const applyColumnFilters = useEffectEvent(
+      (columnFilters: ColumnFiltersState) => {
+         store.setState((s) => ({ ...s, columnFilters }));
+      },
+   );
+
+   const applyRowSelection = useEffectEvent(
+      (rowSelection: RowSelectionState) => {
+         store.setState((s) => ({ ...s, rowSelection }));
+      },
+   );
+
    useEffect(() => {
-      if (externalSorting !== undefined)
-         store.setState((s) => ({ ...s, sorting: externalSorting }));
-   }, [externalSorting, store]);
+      if (externalSorting !== undefined) applySorting(externalSorting);
+   }, [externalSorting]);
 
    useEffect(() => {
       if (externalColumnFilters !== undefined)
-         store.setState((s) => ({
-            ...s,
-            columnFilters: externalColumnFilters,
-         }));
-   }, [externalColumnFilters, store]);
+         applyColumnFilters(externalColumnFilters);
+   }, [externalColumnFilters]);
 
    useEffect(() => {
       if (externalRowSelection !== undefined)
-         store.setState((s) => ({ ...s, rowSelection: externalRowSelection }));
-   }, [externalRowSelection, store]);
+         applyRowSelection(externalRowSelection);
+   }, [externalRowSelection]);
 
    const persistDebounced = useDebouncedCallback(
       (update: Partial<DataTablePersistedState>) => {
@@ -358,6 +391,7 @@ function useDataTableRoot<TData>({
       getFacetedUniqueValues: getFacetedUniqueValues(),
       getFacetedMinMaxValues: getFacetedMinMaxValues(),
       getRowId: (originalRow) => getRowId(originalRow),
+      getRowCanExpand: renderExpandedRow ? () => true : undefined,
       getSubRows,
       manualFiltering: true,
       manualSorting: true,
@@ -387,6 +421,7 @@ function useDataTableRoot<TData>({
          onTableStateChange,
          groupBy,
          renderGroupHeader,
+         renderExpandedRow,
          isDraftRowActive,
          onAddRow,
          onDiscardAddRow,
@@ -398,6 +433,7 @@ function useDataTableRoot<TData>({
          onTableStateChange,
          groupBy,
          renderGroupHeader,
+         renderExpandedRow,
          isDraftRowActive,
          onAddRow,
          onDiscardAddRow,

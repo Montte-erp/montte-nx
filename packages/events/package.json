@@ -75,10 +75,6 @@
       "./queues/webhook-delivery": {
          "types": "./dist/queues/webhook-delivery.d.ts",
          "default": "./dist/queues/webhook-delivery.js"
-      },
-      "./queues/budget-alerts": {
-         "types": "./dist/queues/budget-alerts.d.ts",
-         "default": "./dist/queues/budget-alerts.js"
       }
    },
    "scripts": {

@@ -1,5 +1,6 @@
 import { ensureContactOwnership } from "@core/database/repositories/contacts-repository";
 import {
+   bulkCreateServices,
    createService,
    createVariant as createVariantRepo,
    deleteService,
@@ -27,16 +28,9 @@ import {
    updateVariantSchema,
 } from "@core/database/schemas/services";
 import { createSubscriptionSchema } from "@core/database/schemas/subscriptions";
-import { AppError } from "@core/logging/errors";
-import { getLogger } from "@core/logging/root";
+import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
-import {
-   cancelPendingBillsForSubscription,
-   generateBillsForSubscription,
-} from "./services-bills";
-
-const logger = getLogger().child({ module: "router:services" });
 
 const idSchema = z.object({ id: z.string().uuid() });
 
@@ -57,6 +51,25 @@ export const create = protectedProcedure
    .input(createServiceSchema)
    .handler(async ({ context, input }) => {
       return createService(context.db, context.teamId, input);
+   });
+
+export const bulkCreate = protectedProcedure
+   .input(z.object({ items: z.array(createServiceSchema).min(1) }))
+   .handler(async ({ context, input }) => {
+      const inserted = await bulkCreateServices(
+         context.db,
+         context.teamId,
+         input.items,
+      ).match(
+         (rows) => rows,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+      if (inserted.length === 0) {
+         throw WebAppError.internal("Falha ao importar os serviços.");
+      }
+      return inserted;
    });
 
 export const update = protectedProcedure
@@ -147,33 +160,13 @@ export const createSubscription = protectedProcedure
    )
    .handler(async ({ context, input }) => {
       await ensureContactOwnership(context.db, input.contactId, context.teamId);
-      const variant = await ensureVariantOwnership(
-         context.db,
-         input.variantId,
-         context.teamId,
-      );
+      await ensureVariantOwnership(context.db, input.variantId, context.teamId);
 
       const sub = await createSubscriptionRepo(context.db, context.teamId, {
          ...input,
          source: "manual",
          cancelAtPeriodEnd: false,
       });
-
-      try {
-         const service = await ensureServiceOwnership(
-            context.db,
-            variant.serviceId,
-            context.teamId,
-         );
-         await generateBillsForSubscription(
-            context.db,
-            sub,
-            variant,
-            service.name,
-         );
-      } catch (err) {
-         logger.error({ err }, "Failed to generate bills for subscription");
-      }
 
       return sub;
    });
@@ -188,13 +181,13 @@ export const cancelSubscription = protectedProcedure
       );
 
       if (subscription.status !== "active") {
-         throw AppError.validation(
+         throw WebAppError.badRequest(
             "Apenas assinaturas ativas podem ser canceladas.",
          );
       }
 
       if (subscription.source === "asaas") {
-         throw AppError.validation(
+         throw WebAppError.badRequest(
             "Assinaturas do Asaas não podem ser canceladas aqui.",
          );
       }
@@ -202,12 +195,6 @@ export const cancelSubscription = protectedProcedure
       const cancelled = await updateSubscription(context.db, input.id, {
          status: "cancelled",
       });
-
-      await cancelPendingBillsForSubscription(context.db, input.id).catch(
-         (err) => {
-            logger.error({ err }, "Failed to cancel pending bills");
-         },
-      );
 
       return cancelled;
    });

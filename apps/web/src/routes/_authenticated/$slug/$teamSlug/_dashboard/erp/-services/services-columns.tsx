@@ -1,6 +1,7 @@
 import { format, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
 import type { ColumnDef } from "@tanstack/react-table";
+import { z } from "zod";
 
 export type ServiceRow = {
    id: string;
@@ -21,6 +22,11 @@ export function buildServiceColumns(): ColumnDef<ServiceRow>[] {
       {
          accessorKey: "name",
          header: "Nome",
+         meta: {
+            label: "Nome",
+            cellComponent: "text" as const,
+            editSchema: z.string().min(1, "Nome é obrigatório."),
+         },
          cell: ({ row }) => (
             <span className="font-medium">{row.original.name}</span>
          ),
@@ -28,6 +34,10 @@ export function buildServiceColumns(): ColumnDef<ServiceRow>[] {
       {
          accessorKey: "basePrice",
          header: "Preço padrão",
+         meta: {
+            label: "Preço padrão",
+            cellComponent: "money" as const,
+         },
          cell: ({ row }) => (
             <span>{format(of(row.original.basePrice, "BRL"), "pt-BR")}</span>
          ),

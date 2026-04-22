@@ -18,7 +18,14 @@ import {
 } from "@packages/ui/components/tooltip";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { Link } from "@tanstack/react-router";
-import { Command, PanelLeftClose, Search, Settings } from "lucide-react";
+import {
+   BotMessageSquare,
+   Command,
+   LayoutGrid,
+   PanelLeftClose,
+   Search,
+   Settings,
+} from "lucide-react";
 import type * as React from "react";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useSidebarTabs } from "@/layout/dashboard/hooks/use-sidebar-tabs";
@@ -34,7 +41,6 @@ import { SidebarScopeSwitcher } from "./sidebar-scope-switcher";
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
    const { sidebarTab, setTab } = useSidebarTabs();
    const { open: openSearch } = useSidebarCommandDialog();
-
    useHotkey("Mod+/", openKeyboardShortcuts);
 
    return (
@@ -49,6 +55,38 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             <div className="group-data-[collapsible=icon]:hidden">
                <SidebarBrowseTabs value={sidebarTab} onValueChange={setTab} />
             </div>
+            <div className="hidden group-data-[collapsible=icon]:flex justify-center">
+               <Tooltip>
+                  <TooltipTrigger asChild>
+                     <Button
+                        aria-label={
+                           sidebarTab === "navegar"
+                              ? "Modo Navegar"
+                              : "Modo Assistente"
+                        }
+                        size="icon"
+                        variant="ghost"
+                        onClick={() =>
+                           setTab(
+                              sidebarTab === "navegar"
+                                 ? "assistente"
+                                 : "navegar",
+                           )
+                        }
+                     >
+                        {sidebarTab === "navegar" ? (
+                           <LayoutGrid />
+                        ) : (
+                           <BotMessageSquare />
+                        )}
+                     </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                     {sidebarTab === "navegar" ? "Navegar" : "Assistente"}
+                  </TooltipContent>
+               </Tooltip>
+            </div>
+            <Separator />
          </SidebarHeader>
 
          <SidebarContent>

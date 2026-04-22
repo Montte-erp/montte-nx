@@ -19,7 +19,7 @@ import { cn } from "@packages/ui/lib/utils";
 import dayjs from "dayjs";
 import { CalendarIcon } from "lucide-react";
 import type { ChangeEvent, ChangeEventHandler } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export const title = "Date Picker with Month and Year Selector";
 
@@ -46,6 +46,9 @@ export const DatePicker = ({
    );
    const date = isControlled ? dateProp : internalDate;
    const [month, setMonth] = useState<Date>(dateProp ?? dayjs().toDate());
+   useEffect(() => {
+      if (dateProp) setMonth(dateProp);
+   }, [dateProp]);
 
    const handleCalendarChange = (
       value: string | number,

@@ -1,6 +1,5 @@
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { setupTestDb } from "../helpers/setup-test-db";
-import { bills } from "@core/database/schemas/bills";
 import { transactions } from "@core/database/schemas/transactions";
 import * as repo from "../../src/repositories/bank-accounts-repository";
 
@@ -281,45 +280,6 @@ describe("bank-accounts-repository", () => {
 
          expect(currentBalance).toBe("625.00");
          expect(projectedBalance).toBe("625.00");
-      });
-
-      it("includes pending bills in projected balance", async () => {
-         const teamId = randomTeamId();
-         const account = await repo.createBankAccount(
-            testDb.db,
-            teamId,
-            validCreateInput({ initialBalance: "1000.00" }),
-         );
-
-         await testDb.db.insert(bills).values({
-            teamId,
-            name: "Recebível",
-            type: "receivable",
-            status: "pending",
-            amount: "300.00",
-            dueDate: "2026-02-01",
-            bankAccountId: account.id,
-         });
-
-         await testDb.db.insert(bills).values({
-            teamId,
-            name: "Pagável",
-            type: "payable",
-            status: "pending",
-            amount: "150.00",
-            dueDate: "2026-02-15",
-            bankAccountId: account.id,
-         });
-
-         const { currentBalance, projectedBalance } =
-            await repo.computeBankAccountBalance(
-               testDb.db,
-               account.id,
-               "1000.00",
-            );
-
-         expect(currentBalance).toBe("1000.00");
-         expect(projectedBalance).toBe("1150.00");
       });
    });
 

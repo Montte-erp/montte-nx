@@ -231,7 +231,9 @@
       "test:coverage": "nx run-many -t test --parallel=3 -- --coverage",
       "typecheck": "nx run-many -t typecheck --parallel=8",
       "web:build": "bun run --filter=web build",
-      "web:start": "bun run --filter=web start"
+      "web:start": "bun run --filter=web start",
+      "worker:build": "bun run --filter=worker build",
+      "worker:start": "bun run --filter=worker start"
    },
    "devDependencies": {
       "@nx/js": "22.6.5",

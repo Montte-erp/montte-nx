@@ -14,36 +14,33 @@ import {
    SelectionActionBar,
    SelectionActionButton,
 } from "@packages/ui/components/selection-action-bar";
-import { Skeleton } from "@packages/ui/components/skeleton";
-import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
-import { Pencil, Plus, Trash2, Users } from "lucide-react";
-
+import { Trash2, Users } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
-
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { QueryBoundary } from "@/components/query-boundary";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
+import { orpc } from "@/integrations/orpc/client";
 import {
    buildContactColumns,
    type ContactRow,
-} from "@/features/contacts/ui/contacts-columns";
-import { ContactForm } from "@/features/contacts/ui/contacts-form";
-import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
-import { QueryBoundary } from "@/components/query-boundary";
-import { orpc } from "@/integrations/orpc/client";
-import type {
-   ColumnFiltersState,
-   OnChangeFn,
-   SortingState,
-} from "@tanstack/react-table";
-import { z } from "zod";
+} from "./-contacts/contacts-columns";
+
+const [useContactsTableState, setContactsTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:contacts",
+      null,
+   );
+
 const tableSearchSchema = z.object({
    sorting: z
       .array(z.object({ id: z.string(), desc: z.boolean() }))
@@ -53,32 +50,21 @@ const tableSearchSchema = z.object({
       .array(z.object({ id: z.string(), value: z.unknown() }))
       .catch([])
       .default([]),
+   selectedIds: z.array(z.string()).catch([]).default([]),
+   typeFilter: z
+      .enum(["all", "cliente", "fornecedor", "ambos"])
+      .catch("all")
+      .default("all"),
 });
-const [useContactsTableState] =
-   createLocalStorageState<DataTableStoredState | null>(
-      "montte:datatable:contacts",
-      null,
-   );
 
-export const Route = createFileRoute(
-   "/_authenticated/$slug/$teamSlug/_dashboard/contacts",
-)({
-   validateSearch: tableSearchSchema.extend({
-      typeFilter: z
-         .enum(["all", "cliente", "fornecedor", "ambos"])
-         .catch("all")
-         .default("all"),
-   }),
-   loader: ({ context }) => {
-      context.queryClient.prefetchQuery(orpc.contacts.getAll.queryOptions({}));
-   },
-   pendingMs: 300,
-   pendingComponent: ContactsSkeleton,
-   head: () => ({
-      meta: [{ title: "Contatos — Montte" }],
-   }),
-   component: ContactsPage,
-});
+type TypeFilter = "all" | "cliente" | "fornecedor" | "ambos";
+
+const TYPE_FILTER_LABELS: Record<TypeFilter, string> = {
+   all: "Todos",
+   cliente: "Clientes",
+   fornecedor: "Fornecedores",
+   ambos: "Ambos",
+};
 
 const CONTACTS_BANNER: EarlyAccessBannerTemplate = {
    badgeLabel: "Contatos",
@@ -93,38 +79,55 @@ const CONTACTS_BANNER: EarlyAccessBannerTemplate = {
    ],
 };
 
+const skeletonColumns = buildContactColumns();
+
+export const Route = createFileRoute(
+   "/_authenticated/$slug/$teamSlug/_dashboard/contacts",
+)({
+   validateSearch: tableSearchSchema,
+   loader: ({ context }) => {
+      context.queryClient.prefetchQuery(orpc.contacts.getAll.queryOptions({}));
+   },
+   pendingMs: 300,
+   pendingComponent: ContactsSkeleton,
+   head: () => ({
+      meta: [{ title: "Contatos — Montte" }],
+   }),
+   component: ContactsPage,
+});
+
 function ContactsSkeleton() {
-   return (
-      <div className="flex flex-col gap-4">
-         {Array.from({ length: 5 }).map((_, index) => (
-            <Skeleton className="h-12 w-full" key={`skeleton-${index + 1}`} />
-         ))}
-      </div>
-   );
+   return <DataTableSkeleton columns={skeletonColumns} />;
 }
-
-type TypeFilter = "all" | "cliente" | "fornecedor" | "ambos";
-
-const TYPE_FILTER_LABELS: Record<TypeFilter, string> = {
-   all: "Todos",
-   cliente: "Clientes",
-   fornecedor: "Fornecedores",
-   ambos: "Ambos",
-};
 
 function ContactsList() {
    const navigate = Route.useNavigate();
-   const { sorting, columnFilters, typeFilter } = Route.useSearch();
-   const [tableState, setTableState] = useContactsTableState();
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { sorting, columnFilters, typeFilter, selectedIds } =
+      Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
-   const {
-      rowSelection,
-      onRowSelectionChange,
-      selectedCount,
-      selectedIds,
-      onClear,
-   } = useRowSelection();
+   const [tableState] = useContactsTableState();
+
+   const rowSelection = useMemo(
+      () => Object.fromEntries(selectedIds.map((id) => [id, true])),
+      [selectedIds],
+   );
+
+   const onRowSelectionChange = useCallback(
+      (
+         updater:
+            | Record<string, boolean>
+            | ((prev: Record<string, boolean>) => Record<string, boolean>),
+      ) => {
+         const next =
+            typeof updater === "function" ? updater(rowSelection) : updater;
+         const nextIds = Object.keys(next).filter((id) => next[id]);
+         navigate({
+            search: (prev) => ({ ...prev, selectedIds: nextIds }),
+            replace: true,
+         });
+      },
+      [navigate, rowSelection],
+   );
 
    const { data: contacts } = useSuspenseQuery(
       orpc.contacts.getAll.queryOptions({
@@ -143,54 +146,15 @@ function ContactsList() {
       }),
    );
 
-   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
-      (updater) => {
-         const next =
-            typeof updater === "function"
-               ? updater(sorting as SortingState)
-               : updater;
-         navigate({
-            search: (prev: z.infer<typeof tableSearchSchema>) => ({
-               ...prev,
-               sorting: next,
-            }),
-            replace: true,
-         });
-      },
-      [navigate, sorting],
-   );
-
-   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
-      useCallback(
-         (updater) => {
-            const next =
-               typeof updater === "function"
-                  ? updater(columnFilters as ColumnFiltersState)
-                  : updater;
-            navigate({
-               search: (prev: z.infer<typeof tableSearchSchema>) => ({
-                  ...prev,
-                  columnFilters: next,
-               }),
-               replace: true,
-            });
+   const bulkDeleteMutation = useMutation(
+      orpc.contacts.bulkRemove.mutationOptions({
+         onSuccess: () => {
+            toast.success("Contatos excluídos com sucesso");
          },
-         [navigate, columnFilters],
-      );
-
-   const handleEdit = useCallback(
-      (contact: ContactRow) => {
-         openCredenza({
-            renderChildren: () => (
-               <ContactForm
-                  contact={contact}
-                  mode="edit"
-                  onSuccess={closeCredenza}
-               />
-            ),
-         });
-      },
-      [openCredenza, closeCredenza],
+         onError: () => {
+            toast.error("Erro ao excluir contatos");
+         },
+      }),
    );
 
    const handleDelete = useCallback(
@@ -209,145 +173,138 @@ function ContactsList() {
       [openAlertDialog, deleteMutation],
    );
 
-   const bulkDeleteMutation = useMutation(
-      orpc.contacts.bulkRemove.mutationOptions({
-         onSuccess: () => {
-            toast.success("Contatos excluídos com sucesso");
-            onClear();
-         },
-         onError: () => {
-            toast.error("Erro ao excluir contatos");
-         },
-      }),
+   const selectedContacts = contacts.filter((c) => selectedIds.includes(c.id));
+
+   const clearSelection = useCallback(
+      () =>
+         navigate({
+            search: (prev) => ({ ...prev, selectedIds: [] }),
+            replace: true,
+         }),
+      [navigate],
    );
 
    const handleBulkDelete = useCallback(() => {
+      const ids = selectedContacts.map((c) => c.id);
       openAlertDialog({
-         title: `Excluir ${selectedCount} ${selectedCount === 1 ? "contato" : "contatos"}`,
+         title: `Excluir ${ids.length} ${ids.length === 1 ? "contato" : "contatos"}`,
          description:
             "Tem certeza que deseja excluir os contatos selecionados? Esta ação não pode ser desfeita.",
          actionLabel: "Excluir",
          cancelLabel: "Cancelar",
          variant: "destructive",
          onAction: async () => {
-            await bulkDeleteMutation.mutateAsync({ ids: selectedIds });
+            await bulkDeleteMutation.mutateAsync({ ids });
+            clearSelection();
          },
       });
-   }, [openAlertDialog, selectedCount, selectedIds, bulkDeleteMutation]);
+   }, [selectedContacts, openAlertDialog, bulkDeleteMutation, clearSelection]);
 
    const columns = useMemo(() => buildContactColumns(), []);
 
-   if (contacts.length === 0) {
-      return (
-         <Empty>
-            <EmptyHeader>
-               <EmptyMedia variant="icon">
-                  <Users className="size-6" />
-               </EmptyMedia>
-               <EmptyTitle>Nenhum contato</EmptyTitle>
-               <EmptyDescription>
-                  Cadastre clientes e fornecedores para organizar suas
-                  transações.
-               </EmptyDescription>
-            </EmptyHeader>
-         </Empty>
-      );
-   }
-
    return (
-      <>
-         <DataTable
-            columns={columns}
-            data={contacts as ContactRow[]}
-            getRowId={(row) => row.id}
-            sorting={sorting as SortingState}
-            onSortingChange={handleSortingChange}
-            columnFilters={columnFilters as ColumnFiltersState}
-            onColumnFiltersChange={handleColumnFiltersChange}
-            tableState={tableState}
-            onTableStateChange={setTableState}
-            onRowSelectionChange={onRowSelectionChange}
-            renderActions={({ row }) => (
-               <>
-                  <Button
-                     onClick={() => handleEdit(row.original)}
-                     tooltip="Editar"
-                     variant="outline"
-                  >
-                     <Pencil className="size-4" />
-                  </Button>
-                  <Button
-                     className="text-destructive hover:text-destructive"
-                     onClick={() => handleDelete(row.original)}
-                     tooltip="Excluir"
-                     variant="outline"
-                  >
-                     <Trash2 className="size-4" />
-                  </Button>
-               </>
-            )}
-            rowSelection={rowSelection}
-         />
-         <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
-            <SelectionActionButton
-               icon={<Trash2 className="size-3.5" />}
-               onClick={handleBulkDelete}
-               variant="destructive"
-            >
-               Excluir
-            </SelectionActionButton>
-         </SelectionActionBar>
-      </>
-   );
-}
-
-function ContactsPage() {
-   const { openCredenza, closeCredenza } = useCredenza();
-   const { typeFilter } = Route.useSearch();
-   const navigate = Route.useNavigate();
-
-   const handleCreate = useCallback(() => {
-      openCredenza({
-         renderChildren: () => (
-            <ContactForm mode="create" onSuccess={closeCredenza} />
-         ),
-      });
-   }, [openCredenza, closeCredenza]);
-
-   return (
-      <main className="flex flex-col gap-4">
-         <DefaultHeader
-            actions={
-               <Button onClick={handleCreate}>
-                  <Plus className="size-4" />
-                  Novo Contato
-               </Button>
-            }
-            description="Gerencie clientes e fornecedores"
-            title="Contatos"
-         />
-         <EarlyAccessBanner template={CONTACTS_BANNER} />
-
-         <div className="flex gap-2 flex-wrap">
-            {(Object.keys(TYPE_FILTER_LABELS) as TypeFilter[]).map((key) => (
+      <div className="flex flex-col gap-4">
+         <div className="flex flex-wrap items-center gap-2">
+            {(["cliente", "fornecedor", "ambos"] as const).map((key) => (
                <Button
                   key={key}
+                  size="sm"
+                  variant={typeFilter === key ? "default" : "outline"}
                   onClick={() =>
                      navigate({
                         search: (prev) => ({
                            ...prev,
-                           typeFilter: key as TypeFilter,
+                           typeFilter: typeFilter === key ? "all" : key,
                         }),
                         replace: true,
                      })
                   }
-                  variant={typeFilter === key ? "default" : "outline"}
                >
                   {TYPE_FILTER_LABELS[key]}
                </Button>
             ))}
          </div>
 
+         {contacts.length === 0 ? (
+            <Empty>
+               <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                     <Users className="size-6" />
+                  </EmptyMedia>
+                  <EmptyTitle>Nenhum contato</EmptyTitle>
+                  <EmptyDescription>
+                     Cadastre clientes e fornecedores para organizar suas
+                     transações.
+                  </EmptyDescription>
+               </EmptyHeader>
+            </Empty>
+         ) : (
+            <DataTable
+               columns={columns}
+               data={contacts}
+               getRowId={(row) => row.id}
+               sorting={sorting}
+               onSortingChange={(updater) => {
+                  const next =
+                     typeof updater === "function" ? updater(sorting) : updater;
+                  navigate({
+                     search: (prev) => ({ ...prev, sorting: next }),
+                     replace: true,
+                  });
+               }}
+               columnFilters={columnFilters}
+               onColumnFiltersChange={(updater) => {
+                  const next =
+                     typeof updater === "function"
+                        ? updater(columnFilters)
+                        : updater;
+                  navigate({
+                     search: (prev) => ({ ...prev, columnFilters: next }),
+                     replace: true,
+                  });
+               }}
+               tableState={tableState}
+               onTableStateChange={setContactsTableState}
+               rowSelection={rowSelection}
+               onRowSelectionChange={onRowSelectionChange}
+               renderActions={({ row }) => (
+                  <Button
+                     className="text-destructive hover:text-destructive"
+                     onClick={() => handleDelete(row.original)}
+                     size="icon"
+                     variant="ghost"
+                  >
+                     <Trash2 className="size-4" />
+                     <span className="sr-only">Excluir</span>
+                  </Button>
+               )}
+            />
+         )}
+
+         <SelectionActionBar
+            selectedCount={selectedIds.length}
+            onClear={clearSelection}
+         >
+            <SelectionActionButton
+               icon={<Trash2 className="size-3.5" />}
+               variant="destructive"
+               onClick={handleBulkDelete}
+            >
+               Excluir
+            </SelectionActionButton>
+         </SelectionActionBar>
+      </div>
+   );
+}
+
+function ContactsPage() {
+   return (
+      <main className="flex flex-col gap-4">
+         <DefaultHeader
+            description="Gerencie clientes e fornecedores"
+            title="Contatos"
+         />
+         <EarlyAccessBanner template={CONTACTS_BANNER} />
          <QueryBoundary fallback={<ContactsSkeleton />}>
             <ContactsList />
          </QueryBoundary>

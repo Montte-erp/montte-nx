@@ -1,6 +1,6 @@
-import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
-import { DBOS, WorkflowQueue } from "@dbos-inc/dbos-sdk";
+import { DBOS } from "@dbos-inc/dbos-sdk";
+import { createEnqueuer, QUEUES } from "../workflow-factory";
 import {
    findCategoryByKeywords,
    listCategories,
@@ -20,10 +20,6 @@ export type CategorizationInput = {
 };
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
-
-export const categorizationQueue = new WorkflowQueue("workflow:categorize", {
-   workerConcurrency: 10,
-});
 
 async function publishFailed(
    publisher: ReturnType<typeof getPublisher>,
@@ -104,7 +100,12 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
          () =>
             updateTransactionCategory(db, input.transactionId, {
                categoryId: keywordMatch.id,
-            }),
+            }).match(
+               (v) => v,
+               (e) => {
+                  throw e;
+               },
+            ),
          { name: "applyCategory" },
       );
       await DBOS.runStep(
@@ -169,7 +170,12 @@ async function categorizationWorkflowFn(input: CategorizationInput) {
       () =>
          updateTransactionCategory(db, input.transactionId, {
             suggestedCategoryId: categoryId,
-         }),
+         }).match(
+            (v) => v,
+            (e) => {
+               throw e;
+            },
+         ),
       { name: "applyCategory" },
    );
 
@@ -194,16 +200,9 @@ export const categorizationWorkflow = DBOS.registerWorkflow(
    categorizationWorkflowFn,
 );
 
-export async function enqueueCategorizationWorkflow(
-   client: DBOSClient,
-   input: CategorizationInput,
-): Promise<void> {
-   await client.enqueue(
-      {
-         workflowName: categorizationWorkflowFn.name,
-         queueName: categorizationQueue.name,
-         workflowID: `categorize-${input.transactionId}`,
-      },
-      input,
+export const enqueueCategorizationWorkflow =
+   createEnqueuer<CategorizationInput>(
+      categorizationWorkflowFn.name,
+      QUEUES.categorize,
+      (i) => `categorize-${i.transactionId}`,
    );
-}

@@ -1,5 +1,6 @@
 import { Badge } from "@packages/ui/components/badge";
 import type { ColumnDef } from "@tanstack/react-table";
+import { z } from "zod";
 
 export type ContactRow = {
    id: string;
@@ -32,6 +33,11 @@ export function buildContactColumns(): ColumnDef<ContactRow>[] {
       {
          accessorKey: "name",
          header: "Nome",
+         meta: {
+            label: "Nome",
+            cellComponent: "text" as const,
+            editSchema: z.string().min(1, "Nome é obrigatório."),
+         },
          cell: ({ row }) => (
             <span className="font-medium">{row.original.name}</span>
          ),
@@ -39,6 +45,16 @@ export function buildContactColumns(): ColumnDef<ContactRow>[] {
       {
          accessorKey: "type",
          header: "Tipo",
+         meta: {
+            label: "Tipo",
+            cellComponent: "select" as const,
+            editOptions: [
+               { value: "cliente", label: "Cliente" },
+               { value: "fornecedor", label: "Fornecedor" },
+               { value: "ambos", label: "Ambos" },
+            ],
+            editSchema: z.enum(["cliente", "fornecedor", "ambos"]),
+         },
          cell: ({ row }) => (
             <Badge variant={TYPE_VARIANTS[row.original.type]}>
                {TYPE_LABELS[row.original.type]}

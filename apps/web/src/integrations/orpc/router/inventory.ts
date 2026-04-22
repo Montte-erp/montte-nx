@@ -105,64 +105,56 @@ export const registerMovement = protectedProcedure
          );
          unitPrice = input.unitPrice ?? input.totalAmount / baseQty;
 
-         try {
-            const bankAccountId =
-               input.bankAccountId ?? settings?.purchaseBankAccountId;
-            if (bankAccountId) {
-               const tx = await createTransaction(db, teamId, {
-                  type: "expense",
-                  name: `Compra: ${product.name} - ${input.purchasedQty} ${product.purchaseUnit}`,
-                  amount: String(input.totalAmount),
-                  date: input.date,
-                  bankAccountId,
-                  creditCardId:
-                     input.creditCardId ??
-                     settings?.purchaseCreditCardId ??
-                     null,
-                  categoryId:
-                     input.categoryId ?? settings?.purchaseCategoryId ?? null,
-                  contactId: input.supplierId ?? null,
-                  description: input.notes ?? null,
-               });
-               transactionId = tx?.id ?? null;
-            }
-         } catch {}
+         const bankAccountId =
+            input.bankAccountId ?? settings?.purchaseBankAccountId;
+         if (bankAccountId) {
+            const txResult = await createTransaction(db, teamId, {
+               type: "expense",
+               name: `Compra: ${product.name} - ${input.purchasedQty} ${product.purchaseUnit}`,
+               amount: String(input.totalAmount),
+               date: input.date,
+               bankAccountId,
+               creditCardId:
+                  input.creditCardId ?? settings?.purchaseCreditCardId ?? null,
+               categoryId:
+                  input.categoryId ?? settings?.purchaseCategoryId ?? null,
+               contactId: input.supplierId ?? null,
+               description: input.notes ?? null,
+            });
+            transactionId = txResult.isOk() ? txResult.value.id : null;
+         }
       } else if (input.type === "sale") {
          baseQty = input.qty;
          unitPrice = input.unitPrice ?? input.totalAmount / baseQty;
 
-         try {
-            const bankAccountId = settings?.purchaseBankAccountId;
-            if (bankAccountId) {
-               const tx = await createTransaction(db, teamId, {
-                  type: "income",
-                  name: `Venda: ${product.name} - ${baseQty} ${product.baseUnit}`,
-                  amount: String(input.totalAmount),
-                  date: input.date,
-                  bankAccountId,
-                  categoryId: settings?.saleCategoryId ?? null,
-                  description: input.notes ?? null,
-               });
-               transactionId = tx?.id ?? null;
-            }
-         } catch {}
+         const bankAccountId = settings?.purchaseBankAccountId;
+         if (bankAccountId) {
+            const txResult = await createTransaction(db, teamId, {
+               type: "income",
+               name: `Venda: ${product.name} - ${baseQty} ${product.baseUnit}`,
+               amount: String(input.totalAmount),
+               date: input.date,
+               bankAccountId,
+               categoryId: settings?.saleCategoryId ?? null,
+               description: input.notes ?? null,
+            });
+            transactionId = txResult.isOk() ? txResult.value.id : null;
+         }
       } else {
          baseQty = input.qty;
 
          const lossAmount = baseQty * Number(product.sellingPrice ?? 0);
          if (lossAmount > 0 && settings?.purchaseBankAccountId) {
-            try {
-               const tx = await createTransaction(db, teamId, {
-                  type: "expense",
-                  name: `Desperdício: ${product.name} - ${baseQty} ${product.baseUnit}`,
-                  amount: String(lossAmount),
-                  date: input.date,
-                  bankAccountId: settings.purchaseBankAccountId,
-                  categoryId: settings?.wasteCategoryId ?? null,
-                  description: input.notes ?? null,
-               });
-               transactionId = tx?.id ?? null;
-            } catch {}
+            const txResult = await createTransaction(db, teamId, {
+               type: "expense",
+               name: `Desperdício: ${product.name} - ${baseQty} ${product.baseUnit}`,
+               amount: String(lossAmount),
+               date: input.date,
+               bankAccountId: settings.purchaseBankAccountId,
+               categoryId: settings?.wasteCategoryId ?? null,
+               description: input.notes ?? null,
+            });
+            transactionId = txResult.isOk() ? txResult.value.id : null;
          }
       }
 
