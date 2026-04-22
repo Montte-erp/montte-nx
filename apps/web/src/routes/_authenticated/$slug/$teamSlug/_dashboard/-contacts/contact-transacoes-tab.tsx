@@ -13,7 +13,14 @@ import {
 } from "@packages/ui/components/popover";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Receipt, RefreshCcw, Trash2 } from "lucide-react";
+import {
+   Archive,
+   ArchiveRestore,
+   ArrowRight,
+   Receipt,
+   RefreshCcw,
+   Trash2,
+} from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -79,6 +86,26 @@ export function ContactTransacoesTab({
       }),
    );
 
+   const archiveMutation = useMutation(
+      orpc.contacts.archive.mutationOptions({
+         onSuccess: () => {
+            toast.success("Contato arquivado.");
+            globalNavigate({
+               to: "/$slug/$teamSlug/contacts",
+               params: { slug, teamSlug },
+            });
+         },
+         onError: (e) => toast.error(e.message),
+      }),
+   );
+
+   const reactivateMutation = useMutation(
+      orpc.contacts.reactivate.mutationOptions({
+         onSuccess: () => toast.success("Contato reativado."),
+         onError: (e) => toast.error(e.message),
+      }),
+   );
+
    const handleUpdate = useCallback(
       async (id: string, patch: Record<string, unknown>) => {
          await updateMutation.mutateAsync({ id, ...patch });
@@ -135,6 +162,23 @@ export function ContactTransacoesTab({
       });
    }
 
+   function handleArchive() {
+      openAlertDialog({
+         title: "Arquivar contato",
+         description: `Arquivar "${contact.name}"? O contato ficará oculto mas seus lançamentos serão mantidos.`,
+         actionLabel: "Arquivar",
+         cancelLabel: "Cancelar",
+         variant: "destructive",
+         onAction: async () => {
+            await archiveMutation.mutateAsync({ id: contact.id });
+         },
+      });
+   }
+
+   function handleReactivate() {
+      reactivateMutation.mutate({ id: contact.id });
+   }
+
    return (
       <DataTableRoot
          storageKey="montte:datatable:contact-transactions"
@@ -172,6 +216,29 @@ export function ContactTransacoesTab({
                <ArrowRight />
                <span className="sr-only">Ver histórico completo</span>
             </Button>
+            {contact.isArchived ? (
+               <Button
+                  onClick={handleReactivate}
+                  disabled={reactivateMutation.isPending}
+                  tooltip="Reativar contato"
+                  variant="outline"
+                  size="icon-sm"
+               >
+                  <ArchiveRestore />
+                  <span className="sr-only">Reativar contato</span>
+               </Button>
+            ) : (
+               <Button
+                  onClick={handleArchive}
+                  disabled={archiveMutation.isPending}
+                  tooltip="Arquivar contato"
+                  variant="outline"
+                  size="icon-sm"
+               >
+                  <Archive />
+                  <span className="sr-only">Arquivar contato</span>
+               </Button>
+            )}
             <Button
                onClick={handleDelete}
                disabled={deleteMutation.isPending}
