@@ -40,7 +40,7 @@ export function buildContactColumns(slugs?: {
          meta: {
             label: "Nome",
             cellComponent: "text" as const,
-            editSchema: z.string().min(1, "Nome é obrigatório."),
+            editSchema: z.string().min(2, "Nome é obrigatório."),
          },
          cell: ({ row }) =>
             slugs ? (
@@ -81,6 +81,9 @@ export function buildContactColumns(slugs?: {
       {
          accessorKey: "document",
          header: "Documento",
+         meta: {
+            label: "Documento",
+         },
          cell: ({ row }) => {
             const { document, documentType } = row.original;
             if (!document)
@@ -95,6 +98,15 @@ export function buildContactColumns(slugs?: {
       {
          accessorKey: "email",
          header: "Email",
+         meta: {
+            label: "Email",
+            cellComponent: "text" as const,
+            editSchema: z
+               .string()
+               .email("Email inválido.")
+               .nullable()
+               .optional(),
+         },
          cell: ({ row }) =>
             row.original.email ? (
                <span className="text-sm">{row.original.email}</span>
@@ -105,6 +117,11 @@ export function buildContactColumns(slugs?: {
       {
          accessorKey: "phone",
          header: "Telefone",
+         meta: {
+            label: "Telefone",
+            cellComponent: "text" as const,
+            editSchema: z.string().nullable().optional(),
+         },
          cell: ({ row }) =>
             row.original.phone ? (
                <span className="text-sm">{row.original.phone}</span>

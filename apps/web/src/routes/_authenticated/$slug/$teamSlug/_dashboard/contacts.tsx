@@ -1,71 +1,30 @@
-import { Button } from "@packages/ui/components/button";
-import {
-   DataTable,
-   type DataTableStoredState,
-} from "@packages/ui/components/data-table";
-import {
-   Empty,
-   EmptyDescription,
-   EmptyHeader,
-   EmptyMedia,
-   EmptyTitle,
-} from "@packages/ui/components/empty";
-import {
-   SelectionActionBar,
-   SelectionActionButton,
-} from "@packages/ui/components/selection-action-bar";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { Tabs, TabsList, TabsTrigger } from "@packages/ui/components/tabs";
 import { createFileRoute } from "@tanstack/react-router";
-import { createLocalStorageState } from "foxact/create-local-storage-state";
-import { Trash2, Users } from "lucide-react";
-import { useCallback, useMemo } from "react";
-import { toast } from "sonner";
+import { useCallback } from "react";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
-import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { QueryBoundary } from "@/components/query-boundary";
-import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
-import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { orpc } from "@/integrations/orpc/client";
-import {
-   buildContactColumns,
-   type ContactRow,
-} from "./-contacts/contacts-columns";
+import { buildContactColumns } from "./-contacts/contacts-columns";
+import { ContactsList } from "./-contacts/contacts-list";
+import { Users } from "lucide-react";
 
-const [useContactsTableState, setContactsTableState] =
-   createLocalStorageState<DataTableStoredState | null>(
-      "montte:datatable:contacts",
-      null,
-   );
+type TypeFilter = "all" | "cliente" | "fornecedor" | "ambos";
 
-const tableSearchSchema = z.object({
-   sorting: z
-      .array(z.object({ id: z.string(), desc: z.boolean() }))
-      .catch([])
-      .default([]),
-   columnFilters: z
-      .array(z.object({ id: z.string(), value: z.unknown() }))
-      .catch([])
-      .default([]),
-   selectedIds: z.array(z.string()).catch([]).default([]),
+const skeletonColumns = buildContactColumns();
+
+const contactsSearchSchema = z.object({
    typeFilter: z
       .enum(["all", "cliente", "fornecedor", "ambos"])
       .catch("all")
       .default("all"),
+   search: z.string().catch("").default(""),
 });
-
-type TypeFilter = "all" | "cliente" | "fornecedor" | "ambos";
-
-const TYPE_FILTER_LABELS: Record<TypeFilter, string> = {
-   all: "Todos",
-   cliente: "Clientes",
-   fornecedor: "Fornecedores",
-   ambos: "Ambos",
-};
 
 const CONTACTS_BANNER: EarlyAccessBannerTemplate = {
    badgeLabel: "Contatos",
@@ -80,240 +39,71 @@ const CONTACTS_BANNER: EarlyAccessBannerTemplate = {
    ],
 };
 
-const skeletonColumns = buildContactColumns();
-
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/contacts",
 )({
-   validateSearch: tableSearchSchema,
-   loader: ({ context }) => {
-      context.queryClient.prefetchQuery(orpc.contacts.getAll.queryOptions({}));
+   validateSearch: contactsSearchSchema,
+   loaderDeps: ({ search: { typeFilter } }) => ({ typeFilter }),
+   loader: ({ context, deps }) => {
+      context.queryClient.prefetchQuery(
+         orpc.contacts.getAll.queryOptions({
+            input: deps.typeFilter !== "all" ? { type: deps.typeFilter } : {},
+         }),
+      );
    },
    pendingMs: 300,
-   pendingComponent: ContactsSkeleton,
+   pendingComponent: () => (
+      <main className="flex h-full flex-col gap-4">
+         <DataTableSkeleton columns={skeletonColumns} />
+      </main>
+   ),
    head: () => ({
       meta: [{ title: "Contatos — Montte" }],
    }),
    component: ContactsPage,
 });
 
-function ContactsSkeleton() {
-   return <DataTableSkeleton columns={skeletonColumns} />;
-}
-
-function ContactsList() {
+function ContactsPage() {
    const navigate = Route.useNavigate();
-   const { sorting, columnFilters, typeFilter, selectedIds } =
-      Route.useSearch();
-   const { openAlertDialog } = useAlertDialog();
-   const [tableState] = useContactsTableState();
-   const slug = useOrgSlug();
-   const teamSlug = useTeamSlug();
+   const { typeFilter } = Route.useSearch();
 
-   const rowSelection = useMemo(
-      () => Object.fromEntries(selectedIds.map((id) => [id, true])),
-      [selectedIds],
-   );
-
-   const onRowSelectionChange = useCallback(
-      (
-         updater:
-            | Record<string, boolean>
-            | ((prev: Record<string, boolean>) => Record<string, boolean>),
-      ) => {
-         const next =
-            typeof updater === "function" ? updater(rowSelection) : updater;
-         const nextIds = Object.keys(next).filter((id) => next[id]);
+   const handleTypeChange = useCallback(
+      (nextType: string) => {
          navigate({
-            search: (prev) => ({ ...prev, selectedIds: nextIds }),
+            search: (prev) => ({
+               ...prev,
+               typeFilter: nextType as TypeFilter,
+               search: "",
+            }),
             replace: true,
          });
       },
-      [navigate, rowSelection],
-   );
-
-   const { data: contacts } = useSuspenseQuery(
-      orpc.contacts.getAll.queryOptions({
-         input: typeFilter !== "all" ? { type: typeFilter } : {},
-      }),
-   );
-
-   const deleteMutation = useMutation(
-      orpc.contacts.remove.mutationOptions({
-         onSuccess: () => {
-            toast.success("Contato excluído com sucesso.");
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao excluir contato.");
-         },
-      }),
-   );
-
-   const bulkDeleteMutation = useMutation(
-      orpc.contacts.bulkRemove.mutationOptions({
-         onSuccess: () => {
-            toast.success("Contatos excluídos com sucesso");
-         },
-         onError: () => {
-            toast.error("Erro ao excluir contatos");
-         },
-      }),
-   );
-
-   const handleDelete = useCallback(
-      (contact: ContactRow) => {
-         openAlertDialog({
-            title: "Excluir contato",
-            description: `Tem certeza que deseja excluir "${contact.name}"? Esta ação não pode ser desfeita.`,
-            actionLabel: "Excluir",
-            cancelLabel: "Cancelar",
-            variant: "destructive",
-            onAction: async () => {
-               await deleteMutation.mutateAsync({ id: contact.id });
-            },
-         });
-      },
-      [openAlertDialog, deleteMutation],
-   );
-
-   const selectedContacts = contacts.filter((c) => selectedIds.includes(c.id));
-
-   const clearSelection = useCallback(
-      () =>
-         navigate({
-            search: (prev) => ({ ...prev, selectedIds: [] }),
-            replace: true,
-         }),
       [navigate],
    );
 
-   const handleBulkDelete = useCallback(() => {
-      const ids = selectedContacts.map((c) => c.id);
-      openAlertDialog({
-         title: `Excluir ${ids.length} ${ids.length === 1 ? "contato" : "contatos"}`,
-         description:
-            "Tem certeza que deseja excluir os contatos selecionados? Esta ação não pode ser desfeita.",
-         actionLabel: "Excluir",
-         cancelLabel: "Cancelar",
-         variant: "destructive",
-         onAction: async () => {
-            await bulkDeleteMutation.mutateAsync({ ids });
-            clearSelection();
-         },
-      });
-   }, [selectedContacts, openAlertDialog, bulkDeleteMutation, clearSelection]);
-
-   const columns = useMemo(
-      () => buildContactColumns({ slug, teamSlug }),
-      [slug, teamSlug],
-   );
-
    return (
-      <div className="flex flex-col gap-4">
-         <div className="flex flex-wrap items-center gap-2">
-            {(["cliente", "fornecedor", "ambos"] as const).map((key) => (
-               <Button
-                  key={key}
-                  size="sm"
-                  variant={typeFilter === key ? "default" : "outline"}
-                  onClick={() =>
-                     navigate({
-                        search: (prev) => ({
-                           ...prev,
-                           typeFilter: typeFilter === key ? "all" : key,
-                        }),
-                        replace: true,
-                     })
-                  }
-               >
-                  {TYPE_FILTER_LABELS[key]}
-               </Button>
-            ))}
-         </div>
-
-         {contacts.length === 0 ? (
-            <Empty>
-               <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                     <Users className="size-6" />
-                  </EmptyMedia>
-                  <EmptyTitle>Nenhum contato</EmptyTitle>
-                  <EmptyDescription>
-                     Cadastre clientes e fornecedores para organizar suas
-                     transações.
-                  </EmptyDescription>
-               </EmptyHeader>
-            </Empty>
-         ) : (
-            <DataTable
-               columns={columns}
-               data={contacts}
-               getRowId={(row) => row.id}
-               sorting={sorting}
-               onSortingChange={(updater) => {
-                  const next =
-                     typeof updater === "function" ? updater(sorting) : updater;
-                  navigate({
-                     search: (prev) => ({ ...prev, sorting: next }),
-                     replace: true,
-                  });
-               }}
-               columnFilters={columnFilters}
-               onColumnFiltersChange={(updater) => {
-                  const next =
-                     typeof updater === "function"
-                        ? updater(columnFilters)
-                        : updater;
-                  navigate({
-                     search: (prev) => ({ ...prev, columnFilters: next }),
-                     replace: true,
-                  });
-               }}
-               tableState={tableState}
-               onTableStateChange={setContactsTableState}
-               rowSelection={rowSelection}
-               onRowSelectionChange={onRowSelectionChange}
-               renderActions={({ row }) => (
-                  <Button
-                     className="text-destructive hover:text-destructive"
-                     onClick={() => handleDelete(row.original)}
-                     size="icon"
-                     variant="ghost"
-                  >
-                     <Trash2 className="size-4" />
-                     <span className="sr-only">Excluir</span>
-                  </Button>
-               )}
-            />
-         )}
-
-         <SelectionActionBar
-            selectedCount={selectedIds.length}
-            onClear={clearSelection}
-         >
-            <SelectionActionButton
-               icon={<Trash2 className="size-3.5" />}
-               variant="destructive"
-               onClick={handleBulkDelete}
-            >
-               Excluir
-            </SelectionActionButton>
-         </SelectionActionBar>
-      </div>
-   );
-}
-
-function ContactsPage() {
-   return (
-      <main className="flex flex-col gap-4">
+      <main className="flex h-full flex-col gap-4">
          <DefaultHeader
             description="Gerencie clientes e fornecedores"
             title="Contatos"
          />
          <EarlyAccessBanner template={CONTACTS_BANNER} />
-         <QueryBoundary fallback={<ContactsSkeleton />}>
-            <ContactsList />
-         </QueryBoundary>
+         <Tabs onValueChange={handleTypeChange} value={typeFilter}>
+            <TabsList>
+               <TabsTrigger value="all">Todos</TabsTrigger>
+               <TabsTrigger value="cliente">Clientes</TabsTrigger>
+               <TabsTrigger value="fornecedor">Fornecedores</TabsTrigger>
+               <TabsTrigger value="ambos">Ambos</TabsTrigger>
+            </TabsList>
+         </Tabs>
+         <div className="flex flex-1 flex-col min-h-0">
+            <QueryBoundary
+               fallback={<DataTableSkeleton columns={skeletonColumns} />}
+               errorTitle="Erro ao carregar contatos"
+            >
+               <ContactsList />
+            </QueryBoundary>
+         </div>
       </main>
    );
 }
