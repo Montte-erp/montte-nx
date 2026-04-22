@@ -5,7 +5,13 @@ import {
 } from "@packages/ui/components/context-panel";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
-import { Input } from "@packages/ui/components/input";
+import {
+   InputGroup,
+   InputGroupAddon,
+   InputGroupButton,
+   InputGroupInput,
+   InputGroupTextarea,
+} from "@packages/ui/components/input-group";
 import {
    Item,
    ItemActions,
@@ -37,6 +43,7 @@ import dayjs from "dayjs";
 import {
    AlignLeft,
    Calendar,
+   Check,
    FileText,
    Info,
    Mail,
@@ -48,7 +55,7 @@ import {
    User,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
@@ -175,6 +182,7 @@ function InlineTextField({
    onCommit: (value: string) => void;
    onCancel: () => void;
 }) {
+   const cancelledRef = useRef(false);
    const form = useForm({
       defaultValues: { value: defaultValue },
       onSubmit: ({ value }) => onCommit(value.value),
@@ -183,21 +191,91 @@ function InlineTextField({
    return (
       <form.Field name="value">
          {(field) => (
-            <Input
-               autoFocus
-               aria-label="Editar campo"
-               className="h-6 px-1 py-0 text-xs"
-               id={field.name}
-               name={field.name}
-               type={inputType}
-               value={field.state.value}
-               onChange={(e) => field.handleChange(e.target.value)}
-               onBlur={onCancel}
-               onKeyDown={(e) => {
-                  if (e.key === "Enter") form.handleSubmit();
-                  if (e.key === "Escape") onCancel();
-               }}
-            />
+            <InputGroup>
+               <InputGroupInput
+                  autoFocus
+                  aria-label="Editar campo"
+                  className="text-xs"
+                  id={field.name}
+                  name={field.name}
+                  type={inputType}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={() => {
+                     if (!cancelledRef.current) form.handleSubmit();
+                  }}
+                  onKeyDown={(e) => {
+                     if (e.key === "Enter") form.handleSubmit();
+                     if (e.key === "Escape") {
+                        cancelledRef.current = true;
+                        onCancel();
+                     }
+                  }}
+               />
+               <InputGroupAddon align="inline-end">
+                  <InputGroupButton
+                     aria-label="Salvar"
+                     onMouseDown={(e) => e.preventDefault()}
+                     onClick={() => form.handleSubmit()}
+                  >
+                     <Check />
+                  </InputGroupButton>
+               </InputGroupAddon>
+            </InputGroup>
+         )}
+      </form.Field>
+   );
+}
+
+function InlineTextareaField({
+   defaultValue,
+   onCommit,
+   onCancel,
+}: {
+   defaultValue: string;
+   onCommit: (value: string) => void;
+   onCancel: () => void;
+}) {
+   const cancelledRef = useRef(false);
+   const form = useForm({
+      defaultValues: { value: defaultValue },
+      onSubmit: ({ value }) => onCommit(value.value),
+   });
+
+   return (
+      <form.Field name="value">
+         {(field) => (
+            <InputGroup>
+               <InputGroupTextarea
+                  autoFocus
+                  aria-label="Editar observações"
+                  className="min-h-16 text-xs"
+                  id={field.name}
+                  name={field.name}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={() => {
+                     if (!cancelledRef.current) form.handleSubmit();
+                  }}
+                  onKeyDown={(e) => {
+                     if (e.key === "Escape") {
+                        cancelledRef.current = true;
+                        onCancel();
+                     }
+                     if (e.key === "Enter" && (e.metaKey || e.ctrlKey))
+                        form.handleSubmit();
+                  }}
+               />
+               <InputGroupAddon align="inline-end">
+                  <InputGroupButton
+                     aria-label="Salvar"
+                     onMouseDown={(e) => e.preventDefault()}
+                     onClick={() => form.handleSubmit()}
+                  >
+                     <Check />
+                  </InputGroupButton>
+               </InputGroupAddon>
+            </InputGroup>
          )}
       </form.Field>
    );
@@ -214,6 +292,7 @@ function InlineDocumentField({
    onCommit: (value: string) => void;
    onCancel: () => void;
 }) {
+   const cancelledRef = useRef(false);
    const form = useForm({
       defaultValues: { value: defaultValue },
       onSubmit: ({ value }) => onCommit(value.value),
@@ -222,25 +301,41 @@ function InlineDocumentField({
    return (
       <form.Field name="value">
          {(field) => (
-            <Input
-               autoFocus
-               ref={inputRef}
-               aria-label="Editar documento"
-               className="h-6 px-1 py-0 font-mono text-xs"
-               id={field.name}
-               key="document-edit"
-               name={field.name}
-               placeholder="CPF ou CNPJ"
-               defaultValue={field.state.value}
-               onInput={(e) =>
-                  field.handleChange((e.target as HTMLInputElement).value)
-               }
-               onBlur={onCancel}
-               onKeyDown={(e) => {
-                  if (e.key === "Enter") form.handleSubmit();
-                  if (e.key === "Escape") onCancel();
-               }}
-            />
+            <InputGroup>
+               <InputGroupInput
+                  autoFocus
+                  ref={inputRef}
+                  aria-label="Editar documento"
+                  className="font-mono text-xs"
+                  id={field.name}
+                  key="document-edit"
+                  name={field.name}
+                  placeholder="CPF ou CNPJ"
+                  defaultValue={field.state.value}
+                  onInput={(e) =>
+                     field.handleChange((e.target as HTMLInputElement).value)
+                  }
+                  onBlur={() => {
+                     if (!cancelledRef.current) form.handleSubmit();
+                  }}
+                  onKeyDown={(e) => {
+                     if (e.key === "Enter") form.handleSubmit();
+                     if (e.key === "Escape") {
+                        cancelledRef.current = true;
+                        onCancel();
+                     }
+                  }}
+               />
+               <InputGroupAddon align="inline-end">
+                  <InputGroupButton
+                     aria-label="Salvar"
+                     onMouseDown={(e) => e.preventDefault()}
+                     onClick={() => form.handleSubmit()}
+                  >
+                     <Check />
+                  </InputGroupButton>
+               </InputGroupAddon>
+            </InputGroup>
          )}
       </form.Field>
    );
@@ -257,6 +352,7 @@ function InlinePhoneField({
    onCommit: (value: string) => void;
    onCancel: () => void;
 }) {
+   const cancelledRef = useRef(false);
    const form = useForm({
       defaultValues: { value: defaultValue },
       onSubmit: ({ value }) => onCommit(value.value),
@@ -265,24 +361,40 @@ function InlinePhoneField({
    return (
       <form.Field name="value">
          {(field) => (
-            <Input
-               autoFocus
-               ref={inputRef}
-               aria-label="Editar telefone"
-               className="h-6 px-1 py-0 text-xs"
-               id={field.name}
-               name={field.name}
-               placeholder="(00) 00000-0000"
-               defaultValue={field.state.value}
-               onInput={(e) =>
-                  field.handleChange((e.target as HTMLInputElement).value)
-               }
-               onBlur={onCancel}
-               onKeyDown={(e) => {
-                  if (e.key === "Enter") form.handleSubmit();
-                  if (e.key === "Escape") onCancel();
-               }}
-            />
+            <InputGroup>
+               <InputGroupInput
+                  autoFocus
+                  ref={inputRef}
+                  aria-label="Editar telefone"
+                  className="text-xs"
+                  id={field.name}
+                  name={field.name}
+                  placeholder="(00) 00000-0000"
+                  defaultValue={field.state.value}
+                  onInput={(e) =>
+                     field.handleChange((e.target as HTMLInputElement).value)
+                  }
+                  onBlur={() => {
+                     if (!cancelledRef.current) form.handleSubmit();
+                  }}
+                  onKeyDown={(e) => {
+                     if (e.key === "Enter") form.handleSubmit();
+                     if (e.key === "Escape") {
+                        cancelledRef.current = true;
+                        onCancel();
+                     }
+                  }}
+               />
+               <InputGroupAddon align="inline-end">
+                  <InputGroupButton
+                     aria-label="Salvar"
+                     onMouseDown={(e) => e.preventDefault()}
+                     onClick={() => form.handleSubmit()}
+                  >
+                     <Check />
+                  </InputGroupButton>
+               </InputGroupAddon>
+            </InputGroup>
          )}
       </form.Field>
    );
@@ -576,7 +688,7 @@ export function ContactPropertiesPanel({ contact }: { contact: Contact }) {
                }
                editNode={
                   editingField === "notes" ? (
-                     <InlineTextField
+                     <InlineTextareaField
                         defaultValue={contact.notes ?? ""}
                         onCommit={(v) => commitEdit("notes", v)}
                         onCancel={cancelEdit}
