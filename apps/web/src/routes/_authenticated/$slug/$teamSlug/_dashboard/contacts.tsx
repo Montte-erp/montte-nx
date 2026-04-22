@@ -28,6 +28,7 @@ import {
 } from "@/features/billing/ui/early-access-banner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { QueryBoundary } from "@/components/query-boundary";
+import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { orpc } from "@/integrations/orpc/client";
 import {
@@ -106,6 +107,8 @@ function ContactsList() {
       Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
    const [tableState] = useContactsTableState();
+   const slug = useOrgSlug();
+   const teamSlug = useTeamSlug();
 
    const rowSelection = useMemo(
       () => Object.fromEntries(selectedIds.map((id) => [id, true])),
@@ -200,7 +203,10 @@ function ContactsList() {
       });
    }, [selectedContacts, openAlertDialog, bulkDeleteMutation, clearSelection]);
 
-   const columns = useMemo(() => buildContactColumns(), []);
+   const columns = useMemo(
+      () => buildContactColumns({ slug, teamSlug }),
+      [slug, teamSlug],
+   );
 
    return (
       <div className="flex flex-col gap-4">

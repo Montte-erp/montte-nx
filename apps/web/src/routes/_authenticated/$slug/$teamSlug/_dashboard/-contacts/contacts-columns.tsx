@@ -1,5 +1,6 @@
 import { Badge } from "@packages/ui/components/badge";
 import type { ColumnDef } from "@tanstack/react-table";
+import { Link } from "@tanstack/react-router";
 import { z } from "zod";
 
 export type ContactRow = {
@@ -28,7 +29,10 @@ const TYPE_VARIANTS: Record<
    ambos: "outline",
 };
 
-export function buildContactColumns(): ColumnDef<ContactRow>[] {
+export function buildContactColumns(slugs?: {
+   slug: string;
+   teamSlug: string;
+}): ColumnDef<ContactRow>[] {
    return [
       {
          accessorKey: "name",
@@ -38,9 +42,22 @@ export function buildContactColumns(): ColumnDef<ContactRow>[] {
             cellComponent: "text" as const,
             editSchema: z.string().min(1, "Nome é obrigatório."),
          },
-         cell: ({ row }) => (
-            <span className="font-medium">{row.original.name}</span>
-         ),
+         cell: ({ row }) =>
+            slugs ? (
+               <Link
+                  className="font-medium hover:underline"
+                  params={{
+                     slug: slugs.slug,
+                     teamSlug: slugs.teamSlug,
+                     contactId: row.original.id,
+                  }}
+                  to="/$slug/$teamSlug/contacts/$contactId"
+               >
+                  {row.original.name}
+               </Link>
+            ) : (
+               <span className="font-medium">{row.original.name}</span>
+            ),
       },
       {
          accessorKey: "type",
