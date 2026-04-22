@@ -1,4 +1,5 @@
 import {
+   archiveContact,
    bulkDeleteContacts,
    createContact,
    deleteContact,
@@ -6,6 +7,7 @@ import {
    getContactTransactionStats,
    getContactTransactions,
    listContacts,
+   reactivateContact,
    updateContact,
 } from "@core/database/repositories/contacts-repository";
 import {
@@ -150,6 +152,40 @@ export const bulkRemove = protectedProcedure
          await bulkDeleteContacts(context.db, input.ids, context.teamId)
       ).match(
          () => ({ deleted: input.ids.length }),
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
+
+export const archive = protectedProcedure
+   .input(idSchema)
+   .handler(async ({ context, input }) => {
+      const ownership = await ensureContactOwnership(
+         context.db,
+         input.id,
+         context.teamId,
+      );
+      if (ownership.isErr()) throw WebAppError.fromAppError(ownership.error);
+      return (await archiveContact(context.db, input.id)).match(
+         (contact) => contact,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
+
+export const reactivate = protectedProcedure
+   .input(idSchema)
+   .handler(async ({ context, input }) => {
+      const ownership = await ensureContactOwnership(
+         context.db,
+         input.id,
+         context.teamId,
+      );
+      if (ownership.isErr()) throw WebAppError.fromAppError(ownership.error);
+      return (await reactivateContact(context.db, input.id)).match(
+         (contact) => contact,
          (e) => {
             throw WebAppError.fromAppError(e);
          },
