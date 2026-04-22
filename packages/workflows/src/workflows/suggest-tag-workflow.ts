@@ -1,5 +1,6 @@
 import { fromPromise } from "neverthrow";
-import { DBOS, WorkflowQueue } from "@dbos-inc/dbos-sdk";
+import { DBOS } from "@dbos-inc/dbos-sdk";
+import { createEnqueuer, QUEUES } from "../workflow-factory";
 import dayjs from "dayjs";
 import {
    findTagByKeywords,
@@ -18,12 +19,6 @@ export type SuggestTagInput = {
 };
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
-
-export const SUGGEST_TAG_QUEUE_NAME = "workflow:suggest-tag" as const;
-
-export const suggestTagQueue = new WorkflowQueue(SUGGEST_TAG_QUEUE_NAME, {
-   workerConcurrency: 10,
-});
 
 async function publishFailed(
    publisher: ReturnType<typeof getPublisher>,
@@ -181,3 +176,9 @@ async function suggestTagWorkflowFn(input: SuggestTagInput) {
 }
 
 export const suggestTagWorkflow = DBOS.registerWorkflow(suggestTagWorkflowFn);
+
+export const enqueueSuggestTagWorkflow = createEnqueuer<SuggestTagInput>(
+   suggestTagWorkflowFn.name,
+   QUEUES.suggestTag,
+   (i) => `suggest-tag-${i.transactionId}`,
+);

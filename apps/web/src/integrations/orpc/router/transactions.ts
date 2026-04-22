@@ -34,8 +34,8 @@ import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceStatementImported } from "@packages/events/finance";
 import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
-import { enqueueCategorizationWorkflow } from "@packages/workflows/workflows/categorization-enqueue";
-import { enqueueSuggestTagWorkflow } from "@packages/workflows/workflows/suggest-tag-enqueue";
+import { enqueueCategorizationWorkflow } from "@packages/workflows/workflows/categorization-workflow";
+import { enqueueSuggestTagWorkflow } from "@packages/workflows/workflows/suggest-tag-workflow";
 import { withCreditEnforcement } from "../middlewares/credit-enforcement";
 import { protectedProcedure } from "../server";
 

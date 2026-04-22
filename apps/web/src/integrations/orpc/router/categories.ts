@@ -19,7 +19,7 @@ import { user as userTable } from "@core/database/schemas/auth";
 import { WebAppError } from "@core/logging/errors";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { enqueueDeriveKeywordsWorkflow } from "@packages/workflows/workflows/derive-keywords-enqueue";
+import { enqueueDeriveKeywordsWorkflow } from "@packages/workflows/workflows/derive-keywords-workflow";
 import { protectedProcedure } from "../server";
 
 const idSchema = z.object({ id: z.string().uuid() });
