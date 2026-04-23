@@ -33,6 +33,7 @@
       "@core/stripe": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers",
       "@f-o-t/money": "catalog:fot",
+      "@modules/billing": "workspace:*",
       "@packages/events": "workspace:*",
       "@packages/notifications": "workspace:*",
       "@tanstack/store": "catalog:tanstack",

@@ -14,11 +14,15 @@
          "@core/stripe/*": ["../../core/stripe/src/*"],
          "@packages/events/*": ["../../packages/events/src/*"],
          "@packages/notifications/*": ["../../packages/notifications/src/*"],
+         "@modules/billing/*": ["../../modules/billing/src/*"],
          "@packages/workflows/*": ["./src/*"]
       }
    },
    "include": ["src"],
    "references": [
+      {
+         "path": "../../modules/billing"
+      },
       {
          "path": "../../core/agents"
       },

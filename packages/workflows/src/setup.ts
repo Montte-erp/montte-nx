@@ -7,10 +7,10 @@ import "./workflows/categorization-workflow";
 import "./workflows/derive-keywords-workflow";
 import "./workflows/derive-tag-keywords-workflow";
 import "./workflows/suggest-tag-workflow";
-import "./workflows/billing/usage-ingestion-workflow";
-import "./workflows/billing/benefit-lifecycle-workflow";
-import "./workflows/billing/period-end-invoice-workflow";
-import "./workflows/billing/trial-expiry-workflow";
+import "@modules/billing/workflows/usage-ingestion";
+import "@modules/billing/workflows/benefit-lifecycle";
+import "@modules/billing/workflows/period-end-invoice";
+import "@modules/billing/workflows/trial-expiry";
 import { createAllQueues } from "./workflow-factory";
 
 createAllQueues({ workerConcurrency: 10 });

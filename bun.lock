@@ -386,6 +386,44 @@
         "vitest": "catalog:testing",
       },
     },
+    "modules/billing": {
+      "name": "@modules/billing",
+      "version": "0.0.1",
+      "dependencies": {
+        "@core/authentication": "workspace:*",
+        "@core/database": "workspace:*",
+        "@core/logging": "workspace:*",
+        "@dbos-inc/dbos-sdk": "catalog:workers",
+        "@f-o-t/money": "catalog:fot",
+        "@packages/events": "workspace:*",
+        "@packages/notifications": "workspace:*",
+        "@packages/workflows": "workspace:*",
+        "dayjs": "catalog:ui",
+        "neverthrow": "catalog:validation",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
+        "typescript": "catalog:development",
+      },
+    },
+    "modules/services": {
+      "name": "@modules/services",
+      "version": "0.0.1",
+      "dependencies": {
+        "@core/authentication": "workspace:*",
+        "@core/database": "workspace:*",
+        "@core/logging": "workspace:*",
+        "@modules/billing": "workspace:*",
+        "@packages/events": "workspace:*",
+        "neverthrow": "catalog:validation",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
+        "typescript": "catalog:development",
+      },
+    },
     "packages/analytics": {
       "name": "@packages/analytics",
       "version": "0.1.0",
@@ -523,6 +561,8 @@
         "@core/redis": "workspace:*",
         "@core/stripe": "workspace:*",
         "@dbos-inc/dbos-sdk": "catalog:workers",
+        "@f-o-t/money": "catalog:fot",
+        "@modules/billing": "workspace:*",
         "@packages/events": "workspace:*",
         "@packages/notifications": "workspace:*",
         "@tanstack/store": "catalog:tanstack",
@@ -1206,6 +1246,10 @@
     "@microsoft/tsdoc": ["@microsoft/tsdoc@0.15.1", "", {}, "sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw=="],
 
     "@microsoft/tsdoc-config": ["@microsoft/tsdoc-config@0.17.1", "", { "dependencies": { "@microsoft/tsdoc": "0.15.1", "ajv": "~8.12.0", "jju": "~1.4.0", "resolve": "~1.22.2" } }, "sha512-UtjIFe0C6oYgTnad4q1QP4qXwLhe6tIpNTRStJ2RZEPIkqQPREAwE5spzVxsdn9UaEMUqhh0AqSx3X4nWAKXWw=="],
+
+    "@modules/billing": ["@modules/billing@workspace:modules/billing"],
+
+    "@modules/services": ["@modules/services@workspace:modules/services"],
 
     "@mongodb-js/saslprep": ["@mongodb-js/saslprep@1.4.6", "", { "dependencies": { "sparse-bitfield": "^3.0.3" } }, "sha512-y+x3H1xBZd38n10NZF/rEBlvDOOMQ6LKUTHqr8R9VkJ+mmQOYtJFxIlkkK8fZrtOiL6VixbOBWMbZGBdal3Z1g=="],
 
