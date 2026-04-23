@@ -7,6 +7,7 @@ import {
    FREE_TIER_LIMITS,
    STRIPE_METER_EVENTS,
 } from "@core/stripe/constants";
+import { getAllUsage } from "@packages/events/credits";
 import { z } from "zod";
 
 import { protectedProcedure } from "../server";
@@ -225,6 +226,34 @@ export const getEventCatalog = protectedProcedure.handler(
          (rows) => rows,
          (e) => {
             throw e;
+         },
+      );
+   },
+);
+
+export const getUsageSummary = protectedProcedure.handler(
+   async ({ context }) => {
+      const { db, redis, organizationId, userId } = context;
+
+      const userRecord = await db.query.user.findFirst({
+         where: (fields, { eq }) => eq(fields.id, userId),
+      });
+
+      const stripeCustomerId = userRecord?.stripeCustomerId ?? null;
+
+      const usageMap = await getAllUsage(organizationId, redis);
+
+      return Object.entries(FREE_TIER_LIMITS).map(
+         ([eventName, freeTierLimit]) => {
+            const used = usageMap[eventName] ?? 0;
+            return {
+               eventName,
+               used,
+               freeTierLimit,
+               pricePerEvent: EVENT_PRICES[eventName] ?? "0",
+               overageEnabled: !!stripeCustomerId,
+               withinFreeTier: used < freeTierLimit,
+            };
          },
       );
    },

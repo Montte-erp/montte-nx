@@ -1,6 +1,27 @@
 import { ensureContactOwnership } from "@core/database/repositories/contacts-repository";
-import { createBenefit as createBenefitRepo } from "@core/database/repositories/benefits-repository";
-import { createMeter as createMeterRepo } from "@core/database/repositories/meters-repository";
+import {
+   createBenefit as createBenefitRepo,
+   updateBenefit,
+   deleteBenefit,
+   ensureBenefitOwnership,
+   attachBenefitToService,
+   detachBenefitFromService,
+   listBenefitsByService,
+} from "@core/database/repositories/benefits-repository";
+import {
+   createMeter as createMeterRepo,
+   listMeters,
+   updateMeter,
+   deleteMeter,
+   ensureMeterOwnership,
+} from "@core/database/repositories/meters-repository";
+import {
+   addSubscriptionItem,
+   updateSubscriptionItemQuantity,
+   removeSubscriptionItem,
+   listSubscriptionItems,
+   ensureSubscriptionItemOwnership,
+} from "@core/database/repositories/subscription-items-repository";
 import {
    bulkCreateServices,
    createService,
@@ -22,8 +43,21 @@ import {
    listSubscriptionsByTeam,
    updateSubscription,
 } from "@core/database/repositories/subscriptions-repository";
-import { createBenefitSchema } from "@core/database/schemas/benefits";
-import { createMeterSchema } from "@core/database/schemas/meters";
+import {
+   createBenefitSchema,
+   benefits,
+   serviceBenefits,
+   updateBenefitSchema,
+} from "@core/database/schemas/benefits";
+import {
+   createMeterSchema,
+   updateMeterSchema,
+} from "@core/database/schemas/meters";
+import {
+   createSubscriptionItemSchema,
+   updateSubscriptionItemSchema,
+   subscriptionItems,
+} from "@core/database/schemas/subscription-items";
 import {
    createServiceSchema,
    updateServiceSchema,
@@ -31,7 +65,6 @@ import {
    updatePriceSchema as updateVariantSchema,
    servicePrices,
 } from "@core/database/schemas/services";
-import { subscriptionItems } from "@core/database/schemas/subscription-items";
 import {
    contactSubscriptions,
    createSubscriptionSchema,
@@ -45,7 +78,7 @@ import {
    emitUsageIngested,
 } from "@packages/events/service";
 import { enqueueUsageIngestionWorkflow } from "@packages/workflows/workflows/billing/usage-ingestion-workflow";
-import { eq, and, sum, sql } from "drizzle-orm";
+import { eq, and, sum, sql, count, asc } from "drizzle-orm";
 import { z } from "zod";
 import { createBillableProcedure } from "../billable";
 import { protectedProcedure } from "../server";
@@ -161,6 +194,18 @@ export const createVariant = protectedProcedure
    .input(z.object({ serviceId: z.string().uuid() }).merge(createVariantSchema))
    .handler(async ({ context, input }) => {
       const { serviceId, ...variantData } = input;
+      if (input.type === "metered") {
+         if (!input.meterId) {
+            throw WebAppError.badRequest(
+               "meterId é obrigatório para preços do tipo 'metered'.",
+            );
+         }
+         if (Number(input.basePrice) !== 0) {
+            throw WebAppError.badRequest(
+               "Preços do tipo 'metered' devem ter basePrice igual a '0'.",
+            );
+         }
+      }
       return (
          await ensureServiceOwnership(
             context.db,
@@ -186,6 +231,18 @@ export const updateVariant = protectedProcedure
    .input(idSchema.merge(updateVariantSchema))
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
+      if (input.type === "metered") {
+         if (input.meterId === null || input.meterId === undefined) {
+            throw WebAppError.badRequest(
+               "meterId é obrigatório para preços do tipo 'metered'.",
+            );
+         }
+         if (input.basePrice !== undefined && Number(input.basePrice) !== 0) {
+            throw WebAppError.badRequest(
+               "Preços do tipo 'metered' devem ter basePrice igual a '0'.",
+            );
+         }
+      }
       return (
          await ensureVariantOwnership(context.db, id, context.teamId).andThen(
             () => updateVariantRepo(context.db, id, data),
@@ -261,12 +318,20 @@ export const createSubscription = createBillableProcedure(
    "subscription.created",
 )
    .input(
-      createSubscriptionSchema.pick({
-         contactId: true,
-         startDate: true,
-         endDate: true,
-         notes: true,
-      }),
+      createSubscriptionSchema
+         .pick({
+            contactId: true,
+            startDate: true,
+            endDate: true,
+            notes: true,
+         })
+         .extend({
+            items: z
+               .array(
+                  createSubscriptionItemSchema.omit({ subscriptionId: true }),
+               )
+               .optional(),
+         }),
    )
    .handler(async ({ context, input }) => {
       const sub = (
@@ -287,6 +352,23 @@ export const createSubscription = createBillableProcedure(
             throw WebAppError.fromAppError(e);
          },
       );
+
+      if (input.items && input.items.length > 0) {
+         const itemResults = await Promise.allSettled(
+            input.items.map((item) =>
+               addSubscriptionItem(context.db, context.teamId, {
+                  ...item,
+                  subscriptionId: sub.id,
+               }),
+            ),
+         );
+         const failed = itemResults.filter((r) => r.status === "rejected");
+         if (failed.length > 0) {
+            throw WebAppError.internal(
+               "Falha ao adicionar itens à assinatura.",
+            );
+         }
+      }
 
       context.scheduleEmit(() =>
          emitSubscriptionCreated(context.emit, context.emitCtx, {
@@ -310,9 +392,9 @@ export const cancelSubscription = protectedProcedure
          },
       );
 
-      if (subscription.status !== "active") {
+      if (!["active", "trialing", "incomplete"].includes(subscription.status)) {
          throw WebAppError.badRequest(
-            "Apenas assinaturas ativas podem ser canceladas.",
+            "Apenas assinaturas ativas, em trial ou incompletas podem ser canceladas.",
          );
       }
 
@@ -334,16 +416,29 @@ export const cancelSubscription = protectedProcedure
       );
    });
 
-export const getExpiringSoon = protectedProcedure.handler(
-   async ({ context }) => {
-      return (await listExpiringSoon(context.db, context.teamId)).match(
+export const getExpiringSoon = protectedProcedure
+   .input(
+      z
+         .object({
+            status: z.enum(["active", "trialing"]).optional().default("active"),
+         })
+         .optional(),
+   )
+   .handler(async ({ context, input }) => {
+      return (
+         await listExpiringSoon(
+            context.db,
+            context.teamId,
+            undefined,
+            input?.status,
+         )
+      ).match(
          (rows) => rows,
          (e) => {
             throw WebAppError.fromAppError(e);
          },
       );
-   },
-);
+   });
 
 export const createMeter = createBillableProcedure("service.meter_created")
    .input(createMeterSchema)
@@ -446,3 +541,301 @@ export const getMrr = protectedProcedure.handler(async ({ context }) => {
 
    return { mrr: rows[0]?.total ?? "0" };
 });
+
+export const getMeters = protectedProcedure.handler(async ({ context }) => {
+   return (await listMeters(context.db, context.teamId)).match(
+      (rows) => rows,
+      (e) => {
+         throw WebAppError.fromAppError(e);
+      },
+   );
+});
+
+export const getMeterById = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      return (
+         await ensureMeterOwnership(context.db, input.id, context.teamId)
+      ).match(
+         (meter) => meter,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
+
+export const updateMeterById = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }).merge(updateMeterSchema))
+   .handler(async ({ context, input }) => {
+      const { id, ...data } = input;
+      return (
+         await ensureMeterOwnership(context.db, id, context.teamId).andThen(
+            () => updateMeter(context.db, id, data),
+         )
+      ).match(
+         (meter) => meter,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
+
+export const removeMeter = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      return (
+         await ensureMeterOwnership(
+            context.db,
+            input.id,
+            context.teamId,
+         ).andThen(() => deleteMeter(context.db, input.id))
+      ).match(
+         () => ({ success: true }),
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
+
+export const getBenefits = protectedProcedure.handler(async ({ context }) => {
+   const rows = await context.db
+      .select({
+         id: benefits.id,
+         teamId: benefits.teamId,
+         name: benefits.name,
+         type: benefits.type,
+         meterId: benefits.meterId,
+         creditAmount: benefits.creditAmount,
+         description: benefits.description,
+         isActive: benefits.isActive,
+         createdAt: benefits.createdAt,
+         updatedAt: benefits.updatedAt,
+         usedInServices: count(serviceBenefits.serviceId),
+      })
+      .from(benefits)
+      .leftJoin(serviceBenefits, eq(benefits.id, serviceBenefits.benefitId))
+      .where(eq(benefits.teamId, context.teamId))
+      .groupBy(benefits.id)
+      .orderBy(asc(benefits.name));
+   return rows;
+});
+
+export const getBenefitById = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      return (
+         await ensureBenefitOwnership(context.db, input.id, context.teamId)
+      ).match(
+         (benefit) => benefit,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
+
+export const updateBenefitById = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }).merge(updateBenefitSchema))
+   .handler(async ({ context, input }) => {
+      const { id, ...data } = input;
+      return (
+         await ensureBenefitOwnership(context.db, id, context.teamId).andThen(
+            () => updateBenefit(context.db, id, data),
+         )
+      ).match(
+         (benefit) => benefit,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
+
+export const removeBenefit = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      return (
+         await ensureBenefitOwnership(
+            context.db,
+            input.id,
+            context.teamId,
+         ).andThen(() => deleteBenefit(context.db, input.id))
+      ).match(
+         () => ({ success: true }),
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
+
+export const attachBenefit = protectedProcedure
+   .input(
+      z.object({
+         serviceId: z.string().uuid(),
+         benefitId: z.string().uuid(),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      return (
+         await ensureServiceOwnership(
+            context.db,
+            input.serviceId,
+            context.teamId,
+         )
+            .andThen(() =>
+               ensureBenefitOwnership(
+                  context.db,
+                  input.benefitId,
+                  context.teamId,
+               ),
+            )
+            .andThen(() =>
+               attachBenefitToService(
+                  context.db,
+                  input.serviceId,
+                  input.benefitId,
+               ),
+            )
+      ).match(
+         () => ({ success: true }),
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
+
+export const detachBenefit = protectedProcedure
+   .input(
+      z.object({
+         serviceId: z.string().uuid(),
+         benefitId: z.string().uuid(),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      return (
+         await ensureServiceOwnership(
+            context.db,
+            input.serviceId,
+            context.teamId,
+         ).andThen(() =>
+            detachBenefitFromService(
+               context.db,
+               input.serviceId,
+               input.benefitId,
+            ),
+         )
+      ).match(
+         () => ({ success: true }),
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
+
+export const getServiceBenefits = protectedProcedure
+   .input(z.object({ serviceId: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      return (
+         await ensureServiceOwnership(
+            context.db,
+            input.serviceId,
+            context.teamId,
+         ).andThen(() => listBenefitsByService(context.db, input.serviceId))
+      ).match(
+         (rows) => rows,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
+
+export const getActiveCountByPrice = protectedProcedure
+   .input(z.object({ priceId: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      const rows = await context.db
+         .select({ count: count() })
+         .from(subscriptionItems)
+         .innerJoin(
+            contactSubscriptions,
+            eq(subscriptionItems.subscriptionId, contactSubscriptions.id),
+         )
+         .where(
+            and(
+               eq(subscriptionItems.priceId, input.priceId),
+               eq(subscriptionItems.teamId, context.teamId),
+               eq(contactSubscriptions.status, "active"),
+            ),
+         );
+      return { count: rows[0]?.count ?? 0 };
+   });
+
+export const addItem = protectedProcedure
+   .input(createSubscriptionItemSchema)
+   .handler(async ({ context, input }) => {
+      return (
+         await ensureSubscriptionOwnership(
+            context.db,
+            input.subscriptionId,
+            context.teamId,
+         ).andThen(() => addSubscriptionItem(context.db, context.teamId, input))
+      ).match(
+         (item) => item,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
+
+export const updateItem = protectedProcedure
+   .input(
+      z.object({ id: z.string().uuid() }).merge(updateSubscriptionItemSchema),
+   )
+   .handler(async ({ context, input }) => {
+      const { id, ...data } = input;
+      return (
+         await ensureSubscriptionItemOwnership(
+            context.db,
+            id,
+            context.teamId,
+         ).andThen(() => updateSubscriptionItemQuantity(context.db, id, data))
+      ).match(
+         (item) => item,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
+
+export const removeItem = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      return (
+         await ensureSubscriptionItemOwnership(
+            context.db,
+            input.id,
+            context.teamId,
+         ).andThen(() => removeSubscriptionItem(context.db, input.id))
+      ).match(
+         () => ({ success: true }),
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
+
+export const listItems = protectedProcedure
+   .input(z.object({ subscriptionId: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      return (
+         await ensureSubscriptionOwnership(
+            context.db,
+            input.subscriptionId,
+            context.teamId,
+         ).andThen(() =>
+            listSubscriptionItems(context.db, input.subscriptionId),
+         )
+      ).match(
+         (items) => items,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+   });
