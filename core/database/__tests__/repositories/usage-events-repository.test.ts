@@ -1,7 +1,7 @@
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
+import { seed } from "drizzle-seed";
 import { setupTestDb } from "../helpers/setup-test-db";
-import { organization, team } from "@core/database/schemas/auth";
-import { contacts } from "@core/database/schemas/contacts";
+import * as schema from "@core/database/schema";
 import { upsertUsageEventSchema } from "@core/database/schemas/usage-events";
 import * as repo from "../../src/repositories/usage-events-repository";
 
@@ -15,37 +15,59 @@ afterAll(async () => {
    await testDb.cleanup();
 });
 
+function randomSeed() {
+   return Math.floor(Math.random() * 1_000_000);
+}
+
 async function seedTeam() {
-   const [org] = await testDb.db
-      .insert(organization)
-      .values({
-         name: "Test Org",
-         slug: `org-${crypto.randomUUID().slice(0, 8)}`,
-         createdAt: new Date(),
-      })
-      .returning();
-   const [tm] = await testDb.db
-      .insert(team)
-      .values({
-         name: "Test Team",
-         slug: `team-${crypto.randomUUID().slice(0, 8)}`,
-         organizationId: org!.id,
-         createdAt: new Date(),
-      })
-      .returning();
-   return tm!.id;
+   const orgId = crypto.randomUUID();
+   const teamId = crypto.randomUUID();
+
+   await seed(
+      testDb.db,
+      { organization: schema.organization },
+      { seed: randomSeed() },
+   ).refine((f) => ({
+      organization: {
+         count: 1,
+         columns: { id: f.default({ defaultValue: orgId }) },
+      },
+   }));
+
+   await seed(testDb.db, { team: schema.team }, { seed: randomSeed() }).refine(
+      (f) => ({
+         team: {
+            count: 1,
+            columns: {
+               id: f.default({ defaultValue: teamId }),
+               organizationId: f.default({ defaultValue: orgId }),
+            },
+         },
+      }),
+   );
+
+   return teamId;
 }
 
 async function seedContact(teamId: string) {
-   const [contact] = await testDb.db
-      .insert(contacts)
-      .values({
-         teamId,
-         name: `Contact ${crypto.randomUUID().slice(0, 8)}`,
-         type: "cliente",
-      })
-      .returning();
-   return contact!;
+   const contactId = crypto.randomUUID();
+
+   await seed(
+      testDb.db,
+      { contacts: schema.contacts },
+      { seed: randomSeed() },
+   ).refine((f) => ({
+      contacts: {
+         count: 1,
+         columns: {
+            id: f.default({ defaultValue: contactId }),
+            teamId: f.default({ defaultValue: teamId }),
+            type: f.default({ defaultValue: "cliente" }),
+         },
+      },
+   }));
+
+   return { id: contactId, teamId };
 }
 
 function validInput(teamId: string, overrides: Record<string, unknown> = {}) {

@@ -71,6 +71,7 @@
       "@types/pg": "catalog:database",
       "dotenv-cli": "catalog:environment",
       "drizzle-kit": "catalog:database",
+      "drizzle-seed": "catalog:database",
       "drizzle-zod": "catalog:database",
       "typescript": "catalog:development"
    }
