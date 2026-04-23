@@ -281,14 +281,15 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
       { name: "sendOperatorEmail" },
    );
 
-   if (input.contactEmail) {
+   const { contactEmail, contactName } = input;
+   if (contactEmail) {
       await DBOS.runStep(
          () =>
             resendClient.emails.send({
                from: "Montte <suporte@mail.montte.co>",
-               to: input.contactEmail!,
+               to: contactEmail,
                subject: `Sua fatura — ${dayjs(input.periodEnd).format("MM/YYYY")}`,
-               text: `Olá${input.contactName ? `, ${input.contactName}` : ""}!\n\nSua fatura para o período ${dayjs(input.periodStart).format("DD/MM/YYYY")} a ${dayjs(input.periodEnd).format("DD/MM/YYYY")} foi gerada.\nTotal: R$ ${computation.total}`,
+               text: `Olá${contactName ? `, ${contactName}` : ""}!\n\nSua fatura para o período ${dayjs(input.periodStart).format("DD/MM/YYYY")} a ${dayjs(input.periodEnd).format("DD/MM/YYYY")} foi gerada.\nTotal: R$ ${computation.total}`,
             }),
          { name: "sendContactEmail" },
       );
