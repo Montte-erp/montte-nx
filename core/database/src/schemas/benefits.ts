@@ -10,6 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { meters } from "@core/database/schemas/meters";
 import { services } from "@core/database/schemas/services";
 import { crmSchema } from "@core/database/schemas/schemas";
 
@@ -29,7 +30,9 @@ export const benefits = crmSchema.table(
       teamId: uuid("team_id").notNull(),
       name: text("name").notNull(),
       type: benefitTypeEnum("type").notNull(),
-      meterId: uuid("meter_id"),
+      meterId: uuid("meter_id").references(() => meters.id, {
+         onDelete: "set null",
+      }),
       creditAmount: integer("credit_amount"),
       description: text("description"),
       isActive: boolean("is_active").notNull().default(true),

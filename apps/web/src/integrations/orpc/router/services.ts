@@ -25,9 +25,15 @@ import {
    updateServiceSchema,
    createPriceSchema as createVariantSchema,
    updatePriceSchema as updateVariantSchema,
+   servicePrices,
 } from "@core/database/schemas/services";
-import { createSubscriptionSchema } from "@core/database/schemas/subscriptions";
+import { subscriptionItems } from "@core/database/schemas/subscription-items";
+import {
+   contactSubscriptions,
+   createSubscriptionSchema,
+} from "@core/database/schemas/subscriptions";
 import { WebAppError } from "@core/logging/errors";
+import { eq, and, sum, sql } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
@@ -314,3 +320,26 @@ export const getExpiringSoon = protectedProcedure.handler(
       );
    },
 );
+
+export const getMrr = protectedProcedure.handler(async ({ context }) => {
+   const rows = await context.db
+      .select({
+         total: sum(
+            sql<string>`(COALESCE(${subscriptionItems.negotiatedPrice}, ${servicePrices.basePrice})::numeric * ${subscriptionItems.quantity})`,
+         ),
+      })
+      .from(subscriptionItems)
+      .innerJoin(servicePrices, eq(subscriptionItems.priceId, servicePrices.id))
+      .innerJoin(
+         contactSubscriptions,
+         eq(subscriptionItems.subscriptionId, contactSubscriptions.id),
+      )
+      .where(
+         and(
+            eq(subscriptionItems.teamId, context.teamId),
+            eq(contactSubscriptions.status, "active"),
+         ),
+      );
+
+   return { mrr: rows[0]?.total ?? "0" };
+});

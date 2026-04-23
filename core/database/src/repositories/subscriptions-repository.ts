@@ -67,15 +67,23 @@ export function updateSubscription(
             .set({
                ...rest,
                trialEndsAt:
-                  trialEndsAt != null ? dayjs(trialEndsAt).toDate() : null,
+                  trialEndsAt === undefined
+                     ? undefined
+                     : trialEndsAt != null
+                       ? dayjs(trialEndsAt).toDate()
+                       : null,
                currentPeriodStart:
-                  currentPeriodStart != null
-                     ? dayjs(currentPeriodStart).toDate()
-                     : null,
+                  currentPeriodStart === undefined
+                     ? undefined
+                     : currentPeriodStart != null
+                       ? dayjs(currentPeriodStart).toDate()
+                       : null,
                currentPeriodEnd:
-                  currentPeriodEnd != null
-                     ? dayjs(currentPeriodEnd).toDate()
-                     : null,
+                  currentPeriodEnd === undefined
+                     ? undefined
+                     : currentPeriodEnd != null
+                       ? dayjs(currentPeriodEnd).toDate()
+                       : null,
                updatedAt: dayjs().toDate(),
             })
             .where(eq(contactSubscriptions.id, id))
@@ -162,7 +170,10 @@ export function upsertSubscriptionByExternalId(
                throw AppError.database("Falha ao salvar assinatura.");
             return created;
          })(),
-         (e) => AppError.database("Falha ao salvar assinatura.", { cause: e }),
+         (e) =>
+            e instanceof AppError
+               ? e
+               : AppError.database("Falha ao salvar assinatura.", { cause: e }),
       ),
    );
 }

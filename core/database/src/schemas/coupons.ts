@@ -13,6 +13,7 @@ import {
 import { z } from "zod";
 import { contacts } from "@core/database/schemas/contacts";
 import { crmSchema } from "@core/database/schemas/schemas";
+import { servicePrices } from "@core/database/schemas/services";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 
 export const couponScopeEnum = crmSchema.enum("coupon_scope", [
@@ -42,7 +43,9 @@ export const coupons = crmSchema.table(
       teamId: uuid("team_id").notNull(),
       code: text("code").notNull(),
       scope: couponScopeEnum("scope").notNull().default("team"),
-      priceId: uuid("price_id"),
+      priceId: uuid("price_id").references(() => servicePrices.id, {
+         onDelete: "set null",
+      }),
       type: couponTypeEnum("type").notNull(),
       amount: numeric("amount", { precision: 12, scale: 4 }).notNull(),
       duration: couponDurationEnum("duration").notNull(),
@@ -112,21 +115,43 @@ export type NewCouponRedemption = typeof couponRedemptions.$inferInsert;
 
 const amountSchema = z
    .string()
-   .refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {
+   .regex(/^\d+(\.\d+)?$/, "Valor deve ser um número positivo.")
+   .refine((v) => parseFloat(v) > 0, {
       message: "Valor deve ser um número positivo.",
    });
 
-export const createCouponSchema = z.object({
-   code: z.string().min(1).max(50, "Código deve ter no máximo 50 caracteres."),
-   scope: z.enum(couponScopeEnum.enumValues).default("team"),
-   priceId: z.string().uuid().nullable().optional(),
-   type: z.enum(couponTypeEnum.enumValues),
-   amount: amountSchema,
-   duration: z.enum(couponDurationEnum.enumValues),
-   durationMonths: z.number().int().min(1).nullable().optional(),
-   maxUses: z.number().int().min(1).nullable().optional(),
-   redeemBy: z.string().datetime().nullable().optional(),
-});
+export const createCouponSchema = z
+   .object({
+      code: z
+         .string()
+         .min(1)
+         .max(50, "Código deve ter no máximo 50 caracteres."),
+      scope: z.enum(couponScopeEnum.enumValues).default("team"),
+      priceId: z.string().uuid().nullable().optional(),
+      type: z.enum(couponTypeEnum.enumValues),
+      amount: amountSchema,
+      duration: z.enum(couponDurationEnum.enumValues),
+      durationMonths: z.number().int().min(1).nullable().optional(),
+      maxUses: z.number().int().min(1).nullable().optional(),
+      redeemBy: z.string().datetime().nullable().optional(),
+   })
+   .superRefine((data, ctx) => {
+      if (data.scope === "price" && !data.priceId) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "priceId é obrigatório quando escopo é 'price'.",
+            path: ["priceId"],
+         });
+      }
+      if (data.duration === "repeating" && !data.durationMonths) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message:
+               "durationMonths é obrigatório quando duração é 'repeating'.",
+            path: ["durationMonths"],
+         });
+      }
+   });
 
 export const updateCouponSchema = z.object({
    isActive: z.boolean().optional(),

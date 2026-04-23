@@ -1,5 +1,6 @@
 import { AppError, validateInput } from "@core/logging/errors";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
+import dayjs from "dayjs";
 import { fromPromise, fromThrowable, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -10,6 +11,7 @@ import {
    coupons,
    couponRedemptions,
 } from "@core/database/schemas/coupons";
+import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 
 const safeValidateCreate = fromThrowable(
    (data: CreateCouponInput) => validateInput(createCouponSchema, data),
@@ -44,14 +46,17 @@ export function createCoupon(
                   ...validated,
                   teamId,
                   redeemBy: validated.redeemBy
-                     ? new Date(validated.redeemBy)
+                     ? dayjs(validated.redeemBy).toDate()
                      : undefined,
                })
                .returning();
             if (!row) throw AppError.database("Falha ao criar cupom.");
             return row;
          }),
-         (e) => AppError.database("Falha ao criar cupom.", { cause: e }),
+         (e) =>
+            e instanceof AppError
+               ? e
+               : AppError.database("Falha ao criar cupom.", { cause: e }),
       ),
    );
 }
@@ -106,7 +111,7 @@ export function updateCoupon(
                   ...validated,
                   redeemBy:
                      validated.redeemBy != null
-                        ? new Date(validated.redeemBy)
+                        ? dayjs(validated.redeemBy).toDate()
                         : validated.redeemBy,
                })
                .where(eq(coupons.id, id))
@@ -144,15 +149,30 @@ export function redeemCoupon(
          if (!coupon || coupon.teamId !== teamId)
             throw AppError.notFound("Cupom não encontrado.");
          if (!coupon.isActive) throw AppError.validation("Cupom inativo.");
-         if (coupon.maxUses != null && coupon.usedCount >= coupon.maxUses)
-            throw AppError.validation("Limite de usos do cupom atingido.");
-         if (coupon.redeemBy && new Date() > coupon.redeemBy)
+         if (coupon.redeemBy && dayjs().isAfter(coupon.redeemBy))
             throw AppError.validation("Cupom expirado.");
 
-         await tx
+         const subscription = await tx.query.contactSubscriptions.findFirst({
+            where: (f, { eq }) => eq(f.id, params.subscriptionId),
+         });
+         if (!subscription || subscription.teamId !== teamId)
+            throw AppError.notFound("Assinatura não encontrada.");
+
+         const [updated] = await tx
             .update(coupons)
             .set({ usedCount: sql`${coupons.usedCount} + 1` })
-            .where(eq(coupons.id, params.couponId));
+            .where(
+               and(
+                  eq(coupons.id, params.couponId),
+                  coupon.maxUses != null
+                     ? sql`${coupons.usedCount} < ${coupon.maxUses}`
+                     : sql`true`,
+               ),
+            )
+            .returning();
+         if (!updated)
+            throw AppError.validation("Limite de usos do cupom atingido.");
+
          const [redemption] = await tx
             .insert(couponRedemptions)
             .values({
@@ -172,6 +192,9 @@ export function redeemCoupon(
          if (!redemption) throw AppError.database("Falha ao resgatar cupom.");
          return redemption;
       }),
-      (e) => AppError.database("Falha ao resgatar cupom.", { cause: e }),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Falha ao resgatar cupom.", { cause: e }),
    );
 }

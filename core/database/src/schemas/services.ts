@@ -182,6 +182,8 @@ export const updatePriceSchema = basePriceSchema
       basePrice: priceSchema.optional(),
       interval: z.enum(billingCycleEnum.enumValues).optional(),
       isActive: z.boolean().optional(),
+      priceCap: priceSchema.nullable().optional(),
+      trialDays: z.number().int().min(0).nullable().optional(),
    })
    .partial();
 

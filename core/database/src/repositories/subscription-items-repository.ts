@@ -1,5 +1,5 @@
 import { AppError, validateInput } from "@core/logging/errors";
-import { count, eq } from "drizzle-orm";
+import { count, eq, sql } from "drizzle-orm";
 import { fromPromise, fromThrowable, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -32,6 +32,9 @@ export function addSubscriptionItem(
    return safeValidateCreate(data).asyncAndThen((validated) =>
       fromPromise(
          db.transaction(async (tx) => {
+            await tx.execute(
+               sql`SELECT id FROM crm.contact_subscriptions WHERE id = ${validated.subscriptionId} FOR UPDATE`,
+            );
             const rows = await tx
                .select({ itemCount: count() })
                .from(subscriptionItems)
@@ -53,7 +56,10 @@ export function addSubscriptionItem(
             if (!row) throw AppError.database("Falha ao adicionar item.");
             return row;
          }),
-         (e) => AppError.database("Falha ao adicionar item.", { cause: e }),
+         (e) =>
+            e instanceof AppError
+               ? e
+               : AppError.database("Falha ao adicionar item.", { cause: e }),
       ),
    );
 }
@@ -75,7 +81,10 @@ export function updateSubscriptionItemQuantity(
                throw AppError.notFound("Item de assinatura não encontrado.");
             return row;
          }),
-         (e) => AppError.database("Falha ao atualizar item.", { cause: e }),
+         (e) =>
+            e instanceof AppError
+               ? e
+               : AppError.database("Falha ao atualizar item.", { cause: e }),
       ),
    );
 }

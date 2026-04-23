@@ -48,7 +48,11 @@ function AnalyticsContent() {
       orpc.services.getExpiringSoon.queryOptions({}),
    );
 
-   const mrrFormatted = formatAmount(of(0, "BRL"), "pt-BR");
+   const { data: mrrData } = useSuspenseQuery(
+      orpc.services.getMrr.queryOptions({}),
+   );
+
+   const mrrFormatted = formatAmount(of(mrrData.mrr, "BRL"), "pt-BR");
 
    const activeCount = activeSubscriptions.length;
    const expiringCount = expiringSoon.length;
