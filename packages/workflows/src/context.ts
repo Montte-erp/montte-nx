@@ -3,6 +3,7 @@ import type { DatabaseInstance } from "@core/database/client";
 import type { Redis } from "@core/redis/connection";
 import type { PostHog } from "@core/posthog/server";
 import type { StripeClient } from "@core/stripe";
+import type { ResendClient } from "@core/transactional/utils";
 import { createJobPublisher } from "@packages/notifications/publisher";
 
 export type WorkflowDeps = {
@@ -10,6 +11,7 @@ export type WorkflowDeps = {
    redis: Redis;
    posthog: PostHog;
    stripeClient: StripeClient;
+   resendClient: ResendClient;
 };
 
 type WorkflowContext = {

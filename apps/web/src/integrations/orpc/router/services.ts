@@ -1,4 +1,6 @@
 import { ensureContactOwnership } from "@core/database/repositories/contacts-repository";
+import { createBenefit as createBenefitRepo } from "@core/database/repositories/benefits-repository";
+import { createMeter as createMeterRepo } from "@core/database/repositories/meters-repository";
 import {
    bulkCreateServices,
    createService,
@@ -20,6 +22,8 @@ import {
    listSubscriptionsByTeam,
    updateSubscription,
 } from "@core/database/repositories/subscriptions-repository";
+import { createBenefitSchema } from "@core/database/schemas/benefits";
+import { createMeterSchema } from "@core/database/schemas/meters";
 import {
    createServiceSchema,
    updateServiceSchema,
@@ -32,9 +36,18 @@ import {
    contactSubscriptions,
    createSubscriptionSchema,
 } from "@core/database/schemas/subscriptions";
+import { upsertUsageEventSchema } from "@core/database/schemas/usage-events";
 import { WebAppError } from "@core/logging/errors";
+import {
+   emitServiceBenefitCreated,
+   emitServiceMeterCreated,
+   emitSubscriptionCreated,
+   emitUsageIngested,
+} from "@packages/events/service";
+import { enqueueUsageIngestionWorkflow } from "@packages/workflows/workflows/billing/usage-ingestion-workflow";
 import { eq, and, sum, sql } from "drizzle-orm";
 import { z } from "zod";
+import { createBillableProcedure } from "../billable";
 import { protectedProcedure } from "../server";
 
 const idSchema = z.object({ id: z.string().uuid() });
@@ -244,7 +257,9 @@ export const getContactSubscriptions = protectedProcedure
       );
    });
 
-export const createSubscription = protectedProcedure
+export const createSubscription = createBillableProcedure(
+   "subscription.created",
+)
    .input(
       createSubscriptionSchema.pick({
          contactId: true,
@@ -254,7 +269,7 @@ export const createSubscription = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      return (
+      const sub = (
          await ensureContactOwnership(
             context.db,
             input.contactId,
@@ -267,11 +282,20 @@ export const createSubscription = protectedProcedure
             }),
          )
       ).match(
-         (sub) => sub,
+         (s) => s,
          (e) => {
             throw WebAppError.fromAppError(e);
          },
       );
+
+      context.scheduleEmit(() =>
+         emitSubscriptionCreated(context.emit, context.emitCtx, {
+            subscriptionId: sub.id,
+            contactId: sub.contactId,
+         }),
+      );
+
+      return sub;
    });
 
 export const cancelSubscription = protectedProcedure
@@ -320,6 +344,79 @@ export const getExpiringSoon = protectedProcedure.handler(
       );
    },
 );
+
+export const createMeter = createBillableProcedure("service.meter_created")
+   .input(createMeterSchema)
+   .handler(async ({ context, input }) => {
+      const meter = (
+         await createMeterRepo(context.db, context.teamId, input)
+      ).match(
+         (m) => m,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+
+      context.scheduleEmit(() =>
+         emitServiceMeterCreated(context.emit, context.emitCtx, {
+            meterId: meter.id,
+            eventName: meter.eventName,
+         }),
+      );
+
+      return meter;
+   });
+
+export const createBenefit = createBillableProcedure("service.benefit_created")
+   .input(createBenefitSchema)
+   .handler(async ({ context, input }) => {
+      const benefit = (
+         await createBenefitRepo(context.db, context.teamId, input)
+      ).match(
+         (b) => b,
+         (e) => {
+            throw WebAppError.fromAppError(e);
+         },
+      );
+
+      context.scheduleEmit(() =>
+         emitServiceBenefitCreated(context.emit, context.emitCtx, {
+            benefitId: benefit.id,
+            name: benefit.name,
+         }),
+      );
+
+      return benefit;
+   });
+
+export const ingestUsage = createBillableProcedure("usage.ingested")
+   .input(upsertUsageEventSchema)
+   .handler(async ({ context, input }) => {
+      if (input.teamId !== context.teamId) {
+         throw WebAppError.forbidden(
+            "Você não tem permissão para registrar uso neste time.",
+         );
+      }
+
+      await enqueueUsageIngestionWorkflow(context.workflowClient, {
+         teamId: input.teamId,
+         meterId: input.meterId,
+         quantity: input.quantity,
+         idempotencyKey: input.idempotencyKey,
+         contactId: input.contactId ?? undefined,
+         properties: input.properties,
+      });
+
+      context.scheduleEmit(() =>
+         emitUsageIngested(context.emit, context.emitCtx, {
+            meterId: input.meterId,
+            contactId: input.contactId ?? undefined,
+            idempotencyKey: input.idempotencyKey,
+         }),
+      );
+
+      return { queued: true };
+   });
 
 export const getMrr = protectedProcedure.handler(async ({ context }) => {
    const rows = await context.db

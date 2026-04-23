@@ -1,5 +1,5 @@
 import { AppError, validateInput } from "@core/logging/errors";
-import { and, eq, ilike, or, type SQL } from "drizzle-orm";
+import { and, eq, ilike, inArray, or, type SQL } from "drizzle-orm";
 import { fromPromise, fromThrowable, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -235,6 +235,23 @@ export function ensurePriceOwnership(
          return err(AppError.notFound("Preço não encontrado."));
       return ok(price);
    });
+}
+
+export function listServicePricesByIds(
+   db: DatabaseInstance,
+   priceIds: string[],
+) {
+   if (priceIds.length === 0)
+      return fromPromise(Promise.resolve([]), (e) =>
+         AppError.database("", { cause: e }),
+      );
+   return fromPromise(
+      db.query.servicePrices.findMany({
+         where: (fields, { inArray: inArrayFn }) =>
+            inArrayFn(fields.id, priceIds),
+      }),
+      (e) => AppError.database("Falha ao listar preços.", { cause: e }),
+   );
 }
 
 export function bulkCreateServices(

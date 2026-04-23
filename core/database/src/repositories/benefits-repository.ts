@@ -1,5 +1,5 @@
 import { AppError, validateInput } from "@core/logging/errors";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { fromPromise, fromThrowable, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -143,6 +143,20 @@ export function detachBenefitFromService(
             cause: e,
          }),
    ).map(() => undefined);
+}
+
+export function listBenefitsByIds(db: DatabaseInstance, benefitIds: string[]) {
+   if (benefitIds.length === 0)
+      return fromPromise(Promise.resolve([]), (e) =>
+         AppError.database("", { cause: e }),
+      );
+   return fromPromise(
+      db.query.benefits.findMany({
+         where: (fields, { inArray: inArrayFn }) =>
+            inArrayFn(fields.id, benefitIds),
+      }),
+      (e) => AppError.database("Falha ao listar benefícios.", { cause: e }),
+   );
 }
 
 export function listBenefitsByService(db: DatabaseInstance, serviceId: string) {

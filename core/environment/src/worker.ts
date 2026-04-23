@@ -12,6 +12,8 @@ export const env = createEnv({
 
       STRIPE_SECRET_KEY: z.string(),
 
+      RESEND_API_KEY: z.string(),
+
       OPENROUTER_API_KEY: z.string().optional(),
 
       LOG_LEVEL: z
