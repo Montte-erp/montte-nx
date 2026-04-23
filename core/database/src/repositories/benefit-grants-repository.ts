@@ -24,8 +24,9 @@ export function grantBenefits(
                   status: "active" as const,
                })),
             )
-            .onConflictDoNothing({
+            .onConflictDoUpdate({
                target: [benefitGrants.subscriptionId, benefitGrants.benefitId],
+               set: { status: "active", revokedAt: null },
             })
             .returning();
          return rows;

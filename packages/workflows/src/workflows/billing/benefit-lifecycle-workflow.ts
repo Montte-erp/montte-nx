@@ -46,7 +46,12 @@ async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
 
    const benefitIds = benefits.map((b) => b.id);
 
-   const shouldRevoke = REVOKE_STATUSES.includes(input.newStatus);
+   const isUpgrade =
+      input.previousStatus !== undefined &&
+      GRANT_STATUSES.includes(input.previousStatus) &&
+      GRANT_STATUSES.includes(input.newStatus);
+
+   const shouldRevoke = REVOKE_STATUSES.includes(input.newStatus) || isUpgrade;
    const shouldGrant = GRANT_STATUSES.includes(input.newStatus);
 
    if (shouldRevoke) {
