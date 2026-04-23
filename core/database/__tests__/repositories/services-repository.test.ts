@@ -19,16 +19,16 @@ function randomTeamId() {
 function validServiceInput(overrides: Record<string, unknown> = {}) {
    return {
       name: "Consultoria Financeira",
-      basePrice: "150.00",
       ...overrides,
    };
 }
 
-function validVariantInput(overrides: Record<string, unknown> = {}) {
+function validPriceInput(overrides: Record<string, unknown> = {}) {
    return {
       name: "Hora",
       basePrice: "150.00",
-      billingCycle: "one_time" as const,
+      type: "flat" as const,
+      interval: "one_time" as const,
       ...overrides,
    };
 }
@@ -47,7 +47,6 @@ describe("services-repository", () => {
          expect(service).toMatchObject({
             teamId,
             name: "Consultoria Financeira",
-            basePrice: "150.00",
             isActive: true,
          });
          expect(service.id).toBeDefined();
@@ -142,12 +141,10 @@ describe("services-repository", () => {
 
          const updatedResult = await repo.updateService(testDb.db, created.id, {
             name: "Assessoria Contábil",
-            basePrice: "200.00",
          });
          const updated = updatedResult._unsafeUnwrap();
 
          expect(updated.name).toBe("Assessoria Contábil");
-         expect(updated.basePrice).toBe("200.00");
          expect(updated.id).toBe(created.id);
       });
    });
@@ -168,8 +165,8 @@ describe("services-repository", () => {
       });
    });
 
-   describe("variants", () => {
-      it("creates a variant linked to a service", async () => {
+   describe("prices", () => {
+      it("creates a price linked to a service", async () => {
          const teamId = randomTeamId();
          const serviceResult = await repo.createService(
             testDb.db,
@@ -178,25 +175,25 @@ describe("services-repository", () => {
          );
          const service = serviceResult._unsafeUnwrap();
 
-         const variantResult = await repo.createVariant(
+         const priceResult = await repo.createPrice(
             testDb.db,
             teamId,
             service.id,
-            validVariantInput(),
+            validPriceInput(),
          );
-         const variant = variantResult._unsafeUnwrap();
+         const price = priceResult._unsafeUnwrap();
 
-         expect(variant).toMatchObject({
+         expect(price).toMatchObject({
             serviceId: service.id,
             teamId,
             name: "Hora",
             basePrice: "150.00",
-            billingCycle: "one_time",
+            interval: "one_time",
          });
-         expect(variant.id).toBeDefined();
+         expect(price.id).toBeDefined();
       });
 
-      it("lists variants by service", async () => {
+      it("lists prices by service", async () => {
          const teamId = randomTeamId();
          const serviceResult = await repo.createService(
             testDb.db,
@@ -204,20 +201,20 @@ describe("services-repository", () => {
             validServiceInput(),
          );
          const service = serviceResult._unsafeUnwrap();
-         await repo.createVariant(
+         await repo.createPrice(
             testDb.db,
             teamId,
             service.id,
-            validVariantInput({ name: "Hora" }),
+            validPriceInput({ name: "Hora" }),
          );
-         await repo.createVariant(
+         await repo.createPrice(
             testDb.db,
             teamId,
             service.id,
-            validVariantInput({ name: "Mensal" }),
+            validPriceInput({ name: "Mensal" }),
          );
 
-         const listResult = await repo.listVariantsByService(
+         const listResult = await repo.listPricesByService(
             testDb.db,
             service.id,
          );
@@ -225,7 +222,7 @@ describe("services-repository", () => {
          expect(list).toHaveLength(2);
       });
 
-      it("updates a variant", async () => {
+      it("updates a price", async () => {
          const teamId = randomTeamId();
          const serviceResult = await repo.createService(
             testDb.db,
@@ -233,25 +230,23 @@ describe("services-repository", () => {
             validServiceInput(),
          );
          const service = serviceResult._unsafeUnwrap();
-         const variantResult = await repo.createVariant(
+         const priceResult = await repo.createPrice(
             testDb.db,
             teamId,
             service.id,
-            validVariantInput(),
+            validPriceInput(),
          );
-         const variant = variantResult._unsafeUnwrap();
+         const price = priceResult._unsafeUnwrap();
 
-         const updatedResult = await repo.updateVariant(testDb.db, variant.id, {
+         const updatedResult = await repo.updatePrice(testDb.db, price.id, {
             name: "Diária",
-            basePrice: "300.00",
          });
          const updated = updatedResult._unsafeUnwrap();
 
          expect(updated.name).toBe("Diária");
-         expect(updated.basePrice).toBe("300.00");
       });
 
-      it("deletes a variant", async () => {
+      it("deletes a price", async () => {
          const teamId = randomTeamId();
          const serviceResult = await repo.createService(
             testDb.db,
@@ -259,21 +254,21 @@ describe("services-repository", () => {
             validServiceInput(),
          );
          const service = serviceResult._unsafeUnwrap();
-         const variantResult = await repo.createVariant(
+         const priceResult = await repo.createPrice(
             testDb.db,
             teamId,
             service.id,
-            validVariantInput(),
+            validPriceInput(),
          );
-         const variant = variantResult._unsafeUnwrap();
+         const price = priceResult._unsafeUnwrap();
 
-         await repo.deleteVariant(testDb.db, variant.id);
-         const foundResult = await repo.getVariant(testDb.db, variant.id);
+         await repo.deletePrice(testDb.db, price.id);
+         const foundResult = await repo.getPrice(testDb.db, price.id);
          expect(foundResult._unsafeUnwrap()).toBeNull();
       });
 
-      it("getVariant returns null for non-existent id", async () => {
-         const result = await repo.getVariant(testDb.db, crypto.randomUUID());
+      it("getPrice returns null for non-existent id", async () => {
+         const result = await repo.getPrice(testDb.db, crypto.randomUUID());
          expect(result._unsafeUnwrap()).toBeNull();
       });
    });
