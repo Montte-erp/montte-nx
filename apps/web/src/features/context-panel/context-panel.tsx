@@ -18,7 +18,7 @@ import {
    SidebarContent,
    SidebarManager,
 } from "@packages/ui/components/sidebar";
-import { useStore, shallow } from "@tanstack/react-store";
+import { useSelector } from "@tanstack/react-store";
 import { Check, ChevronDown, Info } from "lucide-react";
 import type React from "react";
 import { ContextPanelAction } from "./context-panel-info";
@@ -72,14 +72,13 @@ function ViewSwitchPanelAction({ config }: { config: PageViewSwitchConfig }) {
 }
 
 function InfoContent() {
-   const { renderInfoContent, pageActions, pageViewSwitch } = useStore(
+   const { renderInfoContent, pageActions, pageViewSwitch } = useSelector(
       contextPanelStore,
       (s) => ({
          renderInfoContent: s.renderInfoContent,
          pageActions: s.pageActions,
          pageViewSwitch: s.pageViewSwitch,
       }),
-      shallow,
    );
 
    const infoContent = renderInfoContent?.() ?? null;
@@ -130,9 +129,9 @@ const INFO_TAB: ContextPanelTab = {
 };
 
 function ContextPanelInner() {
-   const activeTabMeta = useStore(activeTabMetaStore, (s) => s);
+   const activeTabMeta = useSelector(activeTabMetaStore, (s) => s);
 
-   const dynamicTabs = useStore(contextPanelStore, (s) => s.dynamicTabs);
+   const dynamicTabs = useSelector(contextPanelStore, (s) => s.dynamicTabs);
    const activeTab: ContextPanelTab | undefined =
       activeTabMeta?.id === "info"
          ? INFO_TAB
@@ -140,12 +139,12 @@ function ContextPanelInner() {
 
    return (
       <Sidebar
-         className="px-0"
+         className="p-0 overflow-y-scroll"
          collapsible="offcanvas"
          side="right"
          variant="inset"
       >
-         <SidebarContent className="h-full overflow-hidden rounded-xl bg-muted">
+         <SidebarContent className="h-full overflow-x-hidden overflow-y-scroll rounded-lg bg-muted">
             {activeTab?.renderContent()}
          </SidebarContent>
       </Sidebar>
@@ -153,7 +152,7 @@ function ContextPanelInner() {
 }
 
 export function GlobalContextPanel() {
-   const isOpen = useStore(contextPanelStore, (s) => s.isOpen);
+   const isOpen = useSelector(contextPanelStore, (s) => s.isOpen);
 
    return (
       <SidebarManager
@@ -170,8 +169,8 @@ export function GlobalContextPanel() {
 }
 
 export function ContextPanelTabContent() {
-   const activeTabMeta = useStore(activeTabMetaStore, (s) => s);
-   const dynamicTabs = useStore(contextPanelStore, (s) => s.dynamicTabs);
+   const activeTabMeta = useSelector(activeTabMetaStore, (s) => s);
+   const dynamicTabs = useSelector(contextPanelStore, (s) => s.dynamicTabs);
    const activeTab: ContextPanelTab | undefined =
       activeTabMeta?.id === "info"
          ? INFO_TAB

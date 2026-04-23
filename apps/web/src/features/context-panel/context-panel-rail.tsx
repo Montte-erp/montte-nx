@@ -88,7 +88,7 @@ export function ContextPanelRail() {
    };
 
    return (
-      <div className="hidden sm:flex flex-col shrink-0 h-full">
+      <div className="hidden sm:flex flex-col shrink-0 h-full pr-2 py-2">
          <div className="flex flex-col flex-1">
             {allTabMetas.map((tab) => (
                <button

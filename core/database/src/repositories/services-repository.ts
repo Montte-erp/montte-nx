@@ -1,6 +1,6 @@
-import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { fromPromise } from "neverthrow";
+import { AppError, validateInput } from "@core/logging/errors";
 import { and, eq, ilike, or, type SQL } from "drizzle-orm";
+import { fromPromise, fromThrowable, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateServiceInput,
@@ -22,212 +22,234 @@ export interface ListServicesFilters {
    categoryId?: string;
 }
 
-export async function createService(
+const safeValidateCreate = fromThrowable(
+   (data: CreateServiceInput) => validateInput(createServiceSchema, data),
+   (e) =>
+      e instanceof AppError
+         ? e
+         : AppError.validation("Dados inválidos.", { cause: e }),
+);
+
+const safeValidateUpdate = fromThrowable(
+   (data: UpdateServiceInput) => validateInput(updateServiceSchema, data),
+   (e) =>
+      e instanceof AppError
+         ? e
+         : AppError.validation("Dados inválidos.", { cause: e }),
+);
+
+const safeValidateCreateVariant = fromThrowable(
+   (data: CreateVariantInput) => validateInput(createVariantSchema, data),
+   (e) =>
+      e instanceof AppError
+         ? e
+         : AppError.validation("Dados inválidos.", { cause: e }),
+);
+
+const safeValidateUpdateVariant = fromThrowable(
+   (data: UpdateVariantInput) => validateInput(updateVariantSchema, data),
+   (e) =>
+      e instanceof AppError
+         ? e
+         : AppError.validation("Dados inválidos.", { cause: e }),
+);
+
+export function createService(
    db: DatabaseInstance,
    teamId: string,
    data: CreateServiceInput,
 ) {
-   const validated = validateInput(createServiceSchema, data);
-   try {
-      const [service] = await db
-         .insert(services)
-         .values({ ...validated, teamId })
-         .returning();
-      if (!service) throw AppError.database("Failed to create service");
-      return service;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to create service");
-   }
+   return safeValidateCreate(data).asyncAndThen((validated) =>
+      fromPromise(
+         db
+            .insert(services)
+            .values({ ...validated, teamId })
+            .returning(),
+         (e) => AppError.database("Falha ao criar serviço.", { cause: e }),
+      ).andThen(([service]) =>
+         service
+            ? ok(service)
+            : err(AppError.database("Falha ao criar serviço.")),
+      ),
+   );
 }
 
-export async function listServices(
+export function listServices(
    db: DatabaseInstance,
    teamId: string,
    filters?: ListServicesFilters,
 ) {
-   try {
-      const conditions: SQL[] = [eq(services.teamId, teamId)];
+   return fromPromise(
+      (async () => {
+         const conditions: SQL[] = [eq(services.teamId, teamId)];
 
-      if (filters?.search) {
-         const pattern = `%${filters.search}%`;
-         const searchCondition = or(
-            ilike(services.name, pattern),
-            ilike(services.description, pattern),
-         );
-         if (searchCondition) conditions.push(searchCondition);
-      }
+         if (filters?.search) {
+            const pattern = `%${filters.search}%`;
+            const searchCondition = or(
+               ilike(services.name, pattern),
+               ilike(services.description, pattern),
+            );
+            if (searchCondition) conditions.push(searchCondition);
+         }
 
-      if (filters?.categoryId) {
-         conditions.push(eq(services.categoryId, filters.categoryId));
-      }
+         if (filters?.categoryId) {
+            conditions.push(eq(services.categoryId, filters.categoryId));
+         }
 
-      return await db
-         .select({
-            id: services.id,
-            teamId: services.teamId,
-            name: services.name,
-            description: services.description,
-            basePrice: services.basePrice,
-            categoryId: services.categoryId,
-            tagId: services.tagId,
-            isActive: services.isActive,
-            createdAt: services.createdAt,
-            updatedAt: services.updatedAt,
-            categoryName: categories.name,
-            categoryColor: categories.color,
-            tagName: tags.name,
-            tagColor: tags.color,
-         })
-         .from(services)
-         .leftJoin(categories, eq(services.categoryId, categories.id))
-         .leftJoin(tags, eq(services.tagId, tags.id))
-         .where(and(...conditions))
-         .orderBy(services.name);
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to list services");
-   }
+         return db
+            .select({
+               id: services.id,
+               teamId: services.teamId,
+               name: services.name,
+               description: services.description,
+               basePrice: services.basePrice,
+               categoryId: services.categoryId,
+               tagId: services.tagId,
+               isActive: services.isActive,
+               createdAt: services.createdAt,
+               updatedAt: services.updatedAt,
+               categoryName: categories.name,
+               categoryColor: categories.color,
+               tagName: tags.name,
+               tagColor: tags.color,
+            })
+            .from(services)
+            .leftJoin(categories, eq(services.categoryId, categories.id))
+            .leftJoin(tags, eq(services.tagId, tags.id))
+            .where(and(...conditions))
+            .orderBy(services.name);
+      })(),
+      (e) => AppError.database("Falha ao listar serviços.", { cause: e }),
+   );
 }
 
-export async function getService(db: DatabaseInstance, id: string) {
-   try {
-      const service = await db.query.services.findFirst({
+export function getService(db: DatabaseInstance, id: string) {
+   return fromPromise(
+      db.query.services.findFirst({
          where: (fields, { eq }) => eq(fields.id, id),
-      });
-      return service ?? null;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to get service");
-   }
+      }),
+      (e) => AppError.database("Falha ao buscar serviço.", { cause: e }),
+   ).map((service) => service ?? null);
 }
 
-export async function updateService(
+export function updateService(
    db: DatabaseInstance,
    id: string,
    data: UpdateServiceInput,
 ) {
-   const validated = validateInput(updateServiceSchema, data);
-   try {
-      const [updated] = await db
-         .update(services)
-         .set(validated)
-         .where(eq(services.id, id))
-         .returning();
-      return updated ?? null;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to update service");
-   }
+   return safeValidateUpdate(data).asyncAndThen((validated) =>
+      fromPromise(
+         db
+            .update(services)
+            .set(validated)
+            .where(eq(services.id, id))
+            .returning(),
+         (e) => AppError.database("Falha ao atualizar serviço.", { cause: e }),
+      ).andThen(([updated]) =>
+         updated
+            ? ok(updated)
+            : err(AppError.notFound("Serviço não encontrado.")),
+      ),
+   );
 }
 
-export async function deleteService(db: DatabaseInstance, id: string) {
-   try {
-      await db.delete(services).where(eq(services.id, id));
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to delete service");
-   }
+export function deleteService(db: DatabaseInstance, id: string) {
+   return fromPromise(db.delete(services).where(eq(services.id, id)), (e) =>
+      AppError.database("Falha ao excluir serviço.", { cause: e }),
+   ).map(() => undefined);
 }
 
-export async function createVariant(
+export function createVariant(
    db: DatabaseInstance,
    teamId: string,
    serviceId: string,
    data: CreateVariantInput,
 ) {
-   const validated = validateInput(createVariantSchema, data);
-   try {
-      const [variant] = await db
-         .insert(serviceVariants)
-         .values({ ...validated, teamId, serviceId })
-         .returning();
-      if (!variant) throw AppError.database("Failed to create variant");
-      return variant;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to create variant");
-   }
+   return safeValidateCreateVariant(data).asyncAndThen((validated) =>
+      fromPromise(
+         db
+            .insert(serviceVariants)
+            .values({ ...validated, teamId, serviceId })
+            .returning(),
+         (e) => AppError.database("Falha ao criar variante.", { cause: e }),
+      ).andThen(([variant]) =>
+         variant
+            ? ok(variant)
+            : err(AppError.database("Falha ao criar variante.")),
+      ),
+   );
 }
 
-export async function listVariantsByService(
-   db: DatabaseInstance,
-   serviceId: string,
-) {
-   try {
-      return await db
+export function listVariantsByService(db: DatabaseInstance, serviceId: string) {
+   return fromPromise(
+      db
          .select()
          .from(serviceVariants)
          .where(eq(serviceVariants.serviceId, serviceId))
-         .orderBy(serviceVariants.name);
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to list variants");
-   }
+         .orderBy(serviceVariants.name),
+      (e) => AppError.database("Falha ao listar variantes.", { cause: e }),
+   );
 }
 
-export async function getVariant(db: DatabaseInstance, id: string) {
-   try {
-      const variant = await db.query.serviceVariants.findFirst({
+export function getVariant(db: DatabaseInstance, id: string) {
+   return fromPromise(
+      db.query.serviceVariants.findFirst({
          where: (fields, { eq }) => eq(fields.id, id),
-      });
-      return variant ?? null;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to get variant");
-   }
+      }),
+      (e) => AppError.database("Falha ao buscar variante.", { cause: e }),
+   ).map((variant) => variant ?? null);
 }
 
-export async function updateVariant(
+export function updateVariant(
    db: DatabaseInstance,
    id: string,
    data: UpdateVariantInput,
 ) {
-   const validated = validateInput(updateVariantSchema, data);
-   try {
-      const [updated] = await db
-         .update(serviceVariants)
-         .set(validated)
-         .where(eq(serviceVariants.id, id))
-         .returning();
-      return updated ?? null;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to update variant");
-   }
+   return safeValidateUpdateVariant(data).asyncAndThen((validated) =>
+      fromPromise(
+         db
+            .update(serviceVariants)
+            .set(validated)
+            .where(eq(serviceVariants.id, id))
+            .returning(),
+         (e) => AppError.database("Falha ao atualizar variante.", { cause: e }),
+      ).andThen(([updated]) =>
+         updated
+            ? ok(updated)
+            : err(AppError.notFound("Variante não encontrada.")),
+      ),
+   );
 }
 
-export async function deleteVariant(db: DatabaseInstance, id: string) {
-   try {
-      await db.delete(serviceVariants).where(eq(serviceVariants.id, id));
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to delete variant");
-   }
+export function deleteVariant(db: DatabaseInstance, id: string) {
+   return fromPromise(
+      db.delete(serviceVariants).where(eq(serviceVariants.id, id)),
+      (e) => AppError.database("Falha ao excluir variante.", { cause: e }),
+   ).map(() => undefined);
 }
 
-export async function ensureServiceOwnership(
+export function ensureServiceOwnership(
    db: DatabaseInstance,
    id: string,
    teamId: string,
 ) {
-   const service = await getService(db, id);
-   if (!service || service.teamId !== teamId) {
-      throw AppError.notFound("Serviço não encontrado.");
-   }
-   return service;
+   return getService(db, id).andThen((service) => {
+      if (!service || service.teamId !== teamId)
+         return err(AppError.notFound("Serviço não encontrado."));
+      return ok(service);
+   });
 }
 
-export async function ensureVariantOwnership(
+export function ensureVariantOwnership(
    db: DatabaseInstance,
    id: string,
    teamId: string,
 ) {
-   const variant = await getVariant(db, id);
-   if (!variant || variant.teamId !== teamId) {
-      throw AppError.notFound("Variação não encontrada.");
-   }
-   return variant;
+   return getVariant(db, id).andThen((variant) => {
+      if (!variant || variant.teamId !== teamId)
+         return err(AppError.notFound("Variação não encontrada."));
+      return ok(variant);
+   });
 }
 
 export function bulkCreateServices(
@@ -235,14 +257,20 @@ export function bulkCreateServices(
    teamId: string,
    items: CreateServiceInput[],
 ) {
-   const validated = items.map((item) =>
-      validateInput(createServiceSchema, item),
+   const safeValidateAll = fromThrowable(
+      () => items.map((item) => validateInput(createServiceSchema, item)),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.validation("Dados inválidos.", { cause: e }),
    );
-   return fromPromise(
-      db
-         .insert(services)
-         .values(validated.map((item) => ({ ...item, teamId })))
-         .returning(),
-      (e) => AppError.database("Falha ao importar serviços.", { cause: e }),
+   return safeValidateAll().asyncAndThen((validated) =>
+      fromPromise(
+         db
+            .insert(services)
+            .values(validated.map((item) => ({ ...item, teamId })))
+            .returning(),
+         (e) => AppError.database("Falha ao importar serviços.", { cause: e }),
+      ),
    );
 }

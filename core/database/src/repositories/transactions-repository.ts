@@ -195,8 +195,9 @@ export async function validateTransactionReferences(
    }
 
    if (refs.contactId) {
-      const contact = await getContact(db, refs.contactId);
-      if (!contact || contact.teamId !== teamId) {
+      const contactResult = await getContact(db, refs.contactId);
+      if (contactResult.isErr()) throw contactResult.error;
+      if (!contactResult.value || contactResult.value.teamId !== teamId) {
          throw AppError.validation("Contato inválido.");
       }
    }

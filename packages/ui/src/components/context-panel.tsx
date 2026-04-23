@@ -5,7 +5,7 @@ function ContextPanel({ className, ...props }: React.ComponentProps<"div">) {
    return (
       <div
          className={cn(
-            "px-2 pt-4 flex gap-4 h-full min-h-0 flex-col",
+            "px-2 overflow-y-scroll pt-4 flex gap-4 h-full min-h-0 flex-col",
             className,
          )}
          data-slot="context-panel"

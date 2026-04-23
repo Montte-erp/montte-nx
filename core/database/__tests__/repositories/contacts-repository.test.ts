@@ -30,46 +30,44 @@ describe("contacts-repository", () => {
    describe("validators", () => {
       it("rejects name shorter than 2 characters", async () => {
          const teamId = randomTeamId();
-         await expect(
-            repo.createContact(
-               testDb.db,
-               teamId,
-               validCreateInput({ name: "A" }),
-            ),
-         ).rejects.toThrow();
+         const result = await repo.createContact(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "A" }),
+         );
+         expect(result.isErr()).toBe(true);
       });
 
       it("rejects name longer than 120 characters", async () => {
          const teamId = randomTeamId();
-         await expect(
-            repo.createContact(
-               testDb.db,
-               teamId,
-               validCreateInput({ name: "A".repeat(121) }),
-            ),
-         ).rejects.toThrow();
+         const result = await repo.createContact(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "A".repeat(121) }),
+         );
+         expect(result.isErr()).toBe(true);
       });
 
       it("rejects invalid email", async () => {
          const teamId = randomTeamId();
-         await expect(
-            repo.createContact(
-               testDb.db,
-               teamId,
-               validCreateInput({ email: "not-an-email" }),
-            ),
-         ).rejects.toThrow();
+         const result = await repo.createContact(
+            testDb.db,
+            teamId,
+            validCreateInput({ email: "not-an-email" }),
+         );
+         expect(result.isErr()).toBe(true);
       });
    });
 
    describe("createContact", () => {
       it("creates a contact and returns it", async () => {
          const teamId = randomTeamId();
-         const contact = await repo.createContact(
+         const result = await repo.createContact(
             testDb.db,
             teamId,
             validCreateInput(),
          );
+         const contact = result._unsafeUnwrap();
 
          expect(contact).toMatchObject({
             teamId,
@@ -89,14 +87,16 @@ describe("contacts-repository", () => {
             teamId,
             validCreateInput({ name: "Active" }),
          );
-         const archived = await repo.createContact(
+         const archivedResult = await repo.createContact(
             testDb.db,
             teamId,
             validCreateInput({ name: "Archived" }),
          );
+         const archived = archivedResult._unsafeUnwrap();
          await repo.archiveContact(testDb.db, archived.id);
 
-         const list = await repo.listContacts(testDb.db, teamId);
+         const listResult = await repo.listContacts(testDb.db, teamId);
+         const list = listResult._unsafeUnwrap();
          expect(list).toHaveLength(1);
          expect(list[0]!.name).toBe("Active");
       });
@@ -108,19 +108,21 @@ describe("contacts-repository", () => {
             teamId,
             validCreateInput({ name: "Contact A" }),
          );
-         const b = await repo.createContact(
+         const bResult = await repo.createContact(
             testDb.db,
             teamId,
             validCreateInput({ name: "Contact B" }),
          );
+         const b = bResult._unsafeUnwrap();
          await repo.archiveContact(testDb.db, b.id);
 
-         const list = await repo.listContacts(
+         const listResult = await repo.listContacts(
             testDb.db,
             teamId,
             undefined,
             true,
          );
+         const list = listResult._unsafeUnwrap();
          expect(list).toHaveLength(2);
       });
 
@@ -137,7 +139,12 @@ describe("contacts-repository", () => {
             validCreateInput({ name: "Fornecedor", type: "fornecedor" }),
          );
 
-         const list = await repo.listContacts(testDb.db, teamId, "fornecedor");
+         const listResult = await repo.listContacts(
+            testDb.db,
+            teamId,
+            "fornecedor",
+         );
+         const list = listResult._unsafeUnwrap();
          expect(list).toHaveLength(1);
          expect(list[0]!.name).toBe("Fornecedor");
       });
@@ -146,34 +153,38 @@ describe("contacts-repository", () => {
    describe("getContact", () => {
       it("returns contact by id", async () => {
          const teamId = randomTeamId();
-         const created = await repo.createContact(
+         const createdResult = await repo.createContact(
             testDb.db,
             teamId,
             validCreateInput(),
          );
+         const created = createdResult._unsafeUnwrap();
 
-         const found = await repo.getContact(testDb.db, created.id);
+         const foundResult = await repo.getContact(testDb.db, created.id);
+         const found = foundResult._unsafeUnwrap();
          expect(found).toMatchObject({ id: created.id, name: "João Silva" });
       });
 
       it("returns null for non-existent id", async () => {
-         const found = await repo.getContact(testDb.db, crypto.randomUUID());
-         expect(found).toBeNull();
+         const result = await repo.getContact(testDb.db, crypto.randomUUID());
+         expect(result._unsafeUnwrap()).toBeNull();
       });
    });
 
    describe("updateContact", () => {
       it("updates a contact", async () => {
          const teamId = randomTeamId();
-         const created = await repo.createContact(
+         const createdResult = await repo.createContact(
             testDb.db,
             teamId,
             validCreateInput(),
          );
+         const created = createdResult._unsafeUnwrap();
 
-         const updated = await repo.updateContact(testDb.db, created.id, {
+         const updatedResult = await repo.updateContact(testDb.db, created.id, {
             name: "Maria Silva",
          });
+         const updated = updatedResult._unsafeUnwrap();
 
          expect(updated.name).toBe("Maria Silva");
          expect(updated.id).toBe(created.id);
@@ -183,13 +194,18 @@ describe("contacts-repository", () => {
    describe("archiveContact", () => {
       it("archives a contact", async () => {
          const teamId = randomTeamId();
-         const created = await repo.createContact(
+         const createdResult = await repo.createContact(
             testDb.db,
             teamId,
             validCreateInput(),
          );
+         const created = createdResult._unsafeUnwrap();
 
-         const archived = await repo.archiveContact(testDb.db, created.id);
+         const archivedResult = await repo.archiveContact(
+            testDb.db,
+            created.id,
+         );
+         const archived = archivedResult._unsafeUnwrap();
          expect(archived.isArchived).toBe(true);
       });
    });
@@ -197,17 +213,19 @@ describe("contacts-repository", () => {
    describe("reactivateContact", () => {
       it("reactivates an archived contact", async () => {
          const teamId = randomTeamId();
-         const created = await repo.createContact(
+         const createdResult = await repo.createContact(
             testDb.db,
             teamId,
             validCreateInput(),
          );
+         const created = createdResult._unsafeUnwrap();
          await repo.archiveContact(testDb.db, created.id);
 
-         const reactivated = await repo.reactivateContact(
+         const reactivatedResult = await repo.reactivateContact(
             testDb.db,
             created.id,
          );
+         const reactivated = reactivatedResult._unsafeUnwrap();
          expect(reactivated.isArchived).toBe(false);
       });
    });
@@ -215,24 +233,26 @@ describe("contacts-repository", () => {
    describe("deleteContact", () => {
       it("deletes a contact without links", async () => {
          const teamId = randomTeamId();
-         const created = await repo.createContact(
+         const createdResult = await repo.createContact(
             testDb.db,
             teamId,
             validCreateInput(),
          );
+         const created = createdResult._unsafeUnwrap();
 
          await repo.deleteContact(testDb.db, created.id);
-         const found = await repo.getContact(testDb.db, created.id);
-         expect(found).toBeNull();
+         const foundResult = await repo.getContact(testDb.db, created.id);
+         expect(foundResult._unsafeUnwrap()).toBeNull();
       });
 
       it("rejects deleting a contact with transactions", async () => {
          const teamId = randomTeamId();
-         const contact = await repo.createContact(
+         const contactResult = await repo.createContact(
             testDb.db,
             teamId,
             validCreateInput(),
          );
+         const contact = contactResult._unsafeUnwrap();
 
          const [account] = await testDb.db
             .insert(bankAccounts)
@@ -253,9 +273,11 @@ describe("contacts-repository", () => {
             contactId: contact.id,
          });
 
-         await expect(
-            repo.deleteContact(testDb.db, contact.id),
-         ).rejects.toThrow(/lançamentos vinculados/);
+         const result = await repo.deleteContact(testDb.db, contact.id);
+         expect(result.isErr()).toBe(true);
+         expect(result._unsafeUnwrapErr().message).toMatch(
+            /lançamentos vinculados/,
+         );
       });
    });
 });

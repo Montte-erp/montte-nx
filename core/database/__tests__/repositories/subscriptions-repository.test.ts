@@ -68,6 +68,14 @@ function validCreateInput(
    };
 }
 
+async function unwrap<T>(
+   result: Awaited<ReturnType<typeof repo.createSubscription>>,
+): Promise<T> {
+   const r = result as { isOk(): boolean; value: T; error: unknown };
+   if (!r.isOk()) throw r.error;
+   return r.value;
+}
+
 describe("subscriptions-repository", () => {
    describe("createSubscription", () => {
       it("creates with lifecycle fields", async () => {
@@ -75,11 +83,14 @@ describe("subscriptions-repository", () => {
          const variant = await createTestVariant(teamId);
          const contact = await createTestContact(teamId);
 
-         const sub = await repo.createSubscription(
+         const result = await repo.createSubscription(
             testDb.db,
             teamId,
             validCreateInput(contact.id, variant.id),
          );
+
+         expect(result.isOk()).toBe(true);
+         const sub = result._unsafeUnwrap();
 
          expect(sub).toMatchObject({
             teamId,
@@ -101,22 +112,26 @@ describe("subscriptions-repository", () => {
          const teamId = randomTeamId();
          const variant = await createTestVariant(teamId);
          const contact = await createTestContact(teamId);
-         const created = await repo.createSubscription(
+         const createResult = await repo.createSubscription(
             testDb.db,
             teamId,
             validCreateInput(contact.id, variant.id),
          );
+         const created = createResult._unsafeUnwrap();
 
-         const found = await repo.getSubscription(testDb.db, created.id);
+         const result = await repo.getSubscription(testDb.db, created.id);
+         expect(result.isOk()).toBe(true);
+         const found = result._unsafeUnwrap();
          expect(found).toMatchObject({ id: created.id });
       });
 
       it("returns null for non-existent id", async () => {
-         const found = await repo.getSubscription(
+         const result = await repo.getSubscription(
             testDb.db,
             crypto.randomUUID(),
          );
-         expect(found).toBeNull();
+         expect(result.isOk()).toBe(true);
+         expect(result._unsafeUnwrap()).toBeNull();
       });
    });
 
@@ -125,17 +140,21 @@ describe("subscriptions-repository", () => {
          const teamId = randomTeamId();
          const variant = await createTestVariant(teamId);
          const contact = await createTestContact(teamId);
-         const created = await repo.createSubscription(
-            testDb.db,
-            teamId,
-            validCreateInput(contact.id, variant.id),
-         );
+         const created = (
+            await repo.createSubscription(
+               testDb.db,
+               teamId,
+               validCreateInput(contact.id, variant.id),
+            )
+         )._unsafeUnwrap();
 
-         const updated = await repo.updateSubscription(testDb.db, created.id, {
+         const result = await repo.updateSubscription(testDb.db, created.id, {
             cancelAtPeriodEnd: true,
             status: "cancelled",
          });
 
+         expect(result.isOk()).toBe(true);
+         const updated = result._unsafeUnwrap();
          expect(updated.cancelAtPeriodEnd).toBe(true);
          expect(updated.status).toBe("cancelled");
          expect(updated.id).toBe(created.id);
@@ -147,56 +166,67 @@ describe("subscriptions-repository", () => {
          const teamId = randomTeamId();
          const variant = await createTestVariant(teamId);
          const contact = await createTestContact(teamId);
-         await repo.createSubscription(
-            testDb.db,
-            teamId,
-            validCreateInput(contact.id, variant.id),
-         );
-         await repo.createSubscription(
-            testDb.db,
-            teamId,
-            validCreateInput(contact.id, variant.id, {
-               startDate: "2026-02-01",
-            }),
-         );
+         await (
+            await repo.createSubscription(
+               testDb.db,
+               teamId,
+               validCreateInput(contact.id, variant.id),
+            )
+         )._unsafeUnwrap();
+         await (
+            await repo.createSubscription(
+               testDb.db,
+               teamId,
+               validCreateInput(contact.id, variant.id, {
+                  startDate: "2026-02-01",
+               }),
+            )
+         )._unsafeUnwrap();
 
-         const list = await repo.listSubscriptionsByTeam(testDb.db, teamId);
-         expect(list).toHaveLength(2);
+         const result = await repo.listSubscriptionsByTeam(testDb.db, teamId);
+         expect(result.isOk()).toBe(true);
+         expect(result._unsafeUnwrap()).toHaveLength(2);
       });
 
       it("filters by status", async () => {
          const teamId = randomTeamId();
          const variant = await createTestVariant(teamId);
          const contact = await createTestContact(teamId);
-         await repo.createSubscription(
-            testDb.db,
-            teamId,
-            validCreateInput(contact.id, variant.id),
-         );
-         const canceled = await repo.createSubscription(
-            testDb.db,
-            teamId,
-            validCreateInput(contact.id, variant.id, {
-               startDate: "2026-02-01",
-            }),
-         );
-         await repo.updateSubscription(testDb.db, canceled.id, {
-            status: "cancelled",
-         });
+         await (
+            await repo.createSubscription(
+               testDb.db,
+               teamId,
+               validCreateInput(contact.id, variant.id),
+            )
+         )._unsafeUnwrap();
+         const canceled = (
+            await repo.createSubscription(
+               testDb.db,
+               teamId,
+               validCreateInput(contact.id, variant.id, {
+                  startDate: "2026-02-01",
+               }),
+            )
+         )._unsafeUnwrap();
+         await (
+            await repo.updateSubscription(testDb.db, canceled.id, {
+               status: "cancelled",
+            })
+         )._unsafeUnwrap();
 
-         const activeList = await repo.listSubscriptionsByTeam(
+         const activeResult = await repo.listSubscriptionsByTeam(
             testDb.db,
             teamId,
             "active",
          );
-         expect(activeList).toHaveLength(1);
+         expect(activeResult._unsafeUnwrap()).toHaveLength(1);
 
-         const canceledList = await repo.listSubscriptionsByTeam(
+         const canceledResult = await repo.listSubscriptionsByTeam(
             testDb.db,
             teamId,
             "cancelled",
          );
-         expect(canceledList).toHaveLength(1);
+         expect(canceledResult._unsafeUnwrap()).toHaveLength(1);
       });
    });
 
@@ -205,16 +235,20 @@ describe("subscriptions-repository", () => {
          const teamId = randomTeamId();
          const variant = await createTestVariant(teamId);
          const contact = await createTestContact(teamId);
-         await repo.createSubscription(
-            testDb.db,
-            teamId,
-            validCreateInput(contact.id, variant.id),
-         );
+         await (
+            await repo.createSubscription(
+               testDb.db,
+               teamId,
+               validCreateInput(contact.id, variant.id),
+            )
+         )._unsafeUnwrap();
 
-         const list = await repo.listSubscriptionsByContact(
+         const result = await repo.listSubscriptionsByContact(
             testDb.db,
             contact.id,
          );
+         expect(result.isOk()).toBe(true);
+         const list = result._unsafeUnwrap();
          expect(list).toHaveLength(1);
          expect(list[0]!.contactId).toBe(contact.id);
       });
@@ -238,8 +272,10 @@ describe("subscriptions-repository", () => {
             },
          );
 
-         expect(result.externalId).toBe(extId);
-         expect(result.negotiatedPrice).toBe("399.00");
+         expect(result.isOk()).toBe(true);
+         const sub = result._unsafeUnwrap();
+         expect(sub.externalId).toBe(extId);
+         expect(sub.negotiatedPrice).toBe("399.00");
       });
 
       it("updates when externalId already exists", async () => {
@@ -248,12 +284,16 @@ describe("subscriptions-repository", () => {
          const contact = await createTestContact(teamId);
          const extId = `ext-${crypto.randomUUID().slice(0, 8)}`;
 
-         await repo.upsertSubscriptionByExternalId(testDb.db, extId, {
-            teamId,
-            ...validCreateInput(contact.id, variant.id, { externalId: extId }),
-         });
+         await (
+            await repo.upsertSubscriptionByExternalId(testDb.db, extId, {
+               teamId,
+               ...validCreateInput(contact.id, variant.id, {
+                  externalId: extId,
+               }),
+            })
+         )._unsafeUnwrap();
 
-         const updated = await repo.upsertSubscriptionByExternalId(
+         const result = await repo.upsertSubscriptionByExternalId(
             testDb.db,
             extId,
             {
@@ -266,6 +306,8 @@ describe("subscriptions-repository", () => {
             },
          );
 
+         expect(result.isOk()).toBe(true);
+         const updated = result._unsafeUnwrap();
          expect(updated.negotiatedPrice).toBe("499.00");
          expect(updated.status).toBe("completed");
       });
@@ -278,34 +320,46 @@ describe("subscriptions-repository", () => {
          const variant2 = await createTestVariant(teamId);
          const contact = await createTestContact(teamId);
 
-         await repo.createSubscription(
-            testDb.db,
-            teamId,
-            validCreateInput(contact.id, variant1.id),
-         );
-         await repo.createSubscription(
-            testDb.db,
-            teamId,
-            validCreateInput(contact.id, variant1.id),
-         );
-         await repo.createSubscription(
-            testDb.db,
-            teamId,
-            validCreateInput(contact.id, variant2.id),
-         );
-         const canceled = await repo.createSubscription(
-            testDb.db,
-            teamId,
-            validCreateInput(contact.id, variant2.id),
-         );
-         await repo.updateSubscription(testDb.db, canceled.id, {
-            status: "cancelled",
-         });
+         await (
+            await repo.createSubscription(
+               testDb.db,
+               teamId,
+               validCreateInput(contact.id, variant1.id),
+            )
+         )._unsafeUnwrap();
+         await (
+            await repo.createSubscription(
+               testDb.db,
+               teamId,
+               validCreateInput(contact.id, variant1.id),
+            )
+         )._unsafeUnwrap();
+         await (
+            await repo.createSubscription(
+               testDb.db,
+               teamId,
+               validCreateInput(contact.id, variant2.id),
+            )
+         )._unsafeUnwrap();
+         const canceled = (
+            await repo.createSubscription(
+               testDb.db,
+               teamId,
+               validCreateInput(contact.id, variant2.id),
+            )
+         )._unsafeUnwrap();
+         await (
+            await repo.updateSubscription(testDb.db, canceled.id, {
+               status: "cancelled",
+            })
+         )._unsafeUnwrap();
 
-         const counts = await repo.countActiveSubscriptionsByVariant(
+         const result = await repo.countActiveSubscriptionsByVariant(
             testDb.db,
             teamId,
          );
+         expect(result.isOk()).toBe(true);
+         const counts = result._unsafeUnwrap();
          const v1Count = counts.find((c) => c.variantId === variant1.id);
          const v2Count = counts.find((c) => c.variantId === variant2.id);
 
@@ -328,18 +382,24 @@ describe("subscriptions-repository", () => {
             .toISOString()
             .split("T")[0]!;
 
-         await repo.createSubscription(
-            testDb.db,
-            teamId,
-            validCreateInput(contact.id, variant.id, { endDate: in7Days }),
-         );
-         await repo.createSubscription(
-            testDb.db,
-            teamId,
-            validCreateInput(contact.id, variant.id, { endDate: in90Days }),
-         );
+         await (
+            await repo.createSubscription(
+               testDb.db,
+               teamId,
+               validCreateInput(contact.id, variant.id, { endDate: in7Days }),
+            )
+         )._unsafeUnwrap();
+         await (
+            await repo.createSubscription(
+               testDb.db,
+               teamId,
+               validCreateInput(contact.id, variant.id, { endDate: in90Days }),
+            )
+         )._unsafeUnwrap();
 
-         const expiring = await repo.listExpiringSoon(testDb.db, teamId, 30);
+         const result = await repo.listExpiringSoon(testDb.db, teamId, 30);
+         expect(result.isOk()).toBe(true);
+         const expiring = result._unsafeUnwrap();
          expect(expiring).toHaveLength(1);
          expect(expiring[0]!.endDate).toBe(in7Days);
       });

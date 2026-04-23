@@ -24,6 +24,7 @@ const transactionsSearchSchema = z.object({
       .array(z.enum(["pending", "paid", "cancelled"]))
       .catch([])
       .default([]),
+   contactId: z.string().catch("").default(""),
 });
 
 export const Route = createFileRoute(
@@ -31,7 +32,7 @@ export const Route = createFileRoute(
 )({
    validateSearch: transactionsSearchSchema,
    loaderDeps: ({
-      search: { page, pageSize, view, overdueOnly, status, search },
+      search: { page, pageSize, view, overdueOnly, status, search, contactId },
    }) => ({
       page,
       pageSize,
@@ -39,6 +40,7 @@ export const Route = createFileRoute(
       overdueOnly,
       status,
       search,
+      contactId,
    }),
    loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
@@ -62,6 +64,7 @@ export const Route = createFileRoute(
                overdueOnly: deps.overdueOnly,
                status: deps.status.length > 0 ? deps.status : undefined,
                search: deps.search || undefined,
+               contactId: deps.contactId || undefined,
             },
          }),
       );

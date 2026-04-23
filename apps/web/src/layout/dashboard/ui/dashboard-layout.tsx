@@ -38,7 +38,7 @@ function InlineContextPanel() {
          )}
          {...(!isOpen && { inert: true })}
       >
-         <div className="w-[28rem] h-full p-2">
+         <div className="w-[28rem] h-full pl-0 py-2 pr-2">
             <ContextPanelTabContent />
          </div>
       </div>
@@ -123,12 +123,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                            {children}
                         </main>
                      </div>
-                     <InlineContextPanel />
-                     <ContextPanelRail />
                   </div>
                   <AutoBugReporter />
                   <MonthlySatisfactionSurvey />
                </SidebarInset>
+               <InlineContextPanel />
+               <ContextPanelRail />
             </SidebarProvider>
          </SidebarManagerProvider>
       </EarlyAccessProvider>

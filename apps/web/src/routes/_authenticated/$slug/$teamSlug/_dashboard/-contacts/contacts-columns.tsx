@@ -1,5 +1,6 @@
 import { Badge } from "@packages/ui/components/badge";
 import type { ColumnDef } from "@tanstack/react-table";
+import { Link } from "@tanstack/react-router";
 import { z } from "zod";
 
 export type ContactRow = {
@@ -28,7 +29,10 @@ const TYPE_VARIANTS: Record<
    ambos: "outline",
 };
 
-export function buildContactColumns(): ColumnDef<ContactRow>[] {
+export function buildContactColumns(
+   slugs?: { slug: string; teamSlug: string },
+   onUpdate?: (id: string, patch: Record<string, unknown>) => Promise<void>,
+): ColumnDef<ContactRow>[] {
    return [
       {
          accessorKey: "name",
@@ -36,11 +40,30 @@ export function buildContactColumns(): ColumnDef<ContactRow>[] {
          meta: {
             label: "Nome",
             cellComponent: "text" as const,
-            editSchema: z.string().min(1, "Nome é obrigatório."),
+            editSchema: z.string().min(2, "Nome é obrigatório."),
+            isEditable: !!onUpdate,
+            onSave: onUpdate
+               ? async (rowId, value) => {
+                    await onUpdate(rowId, { name: value });
+                 }
+               : undefined,
          },
-         cell: ({ row }) => (
-            <span className="font-medium">{row.original.name}</span>
-         ),
+         cell: ({ row }) =>
+            slugs ? (
+               <Link
+                  className="font-medium hover:underline"
+                  params={{
+                     slug: slugs.slug,
+                     teamSlug: slugs.teamSlug,
+                     contactId: row.original.id,
+                  }}
+                  to="/$slug/$teamSlug/contacts/$contactId"
+               >
+                  {row.original.name}
+               </Link>
+            ) : (
+               <span className="font-medium">{row.original.name}</span>
+            ),
       },
       {
          accessorKey: "type",
@@ -54,6 +77,12 @@ export function buildContactColumns(): ColumnDef<ContactRow>[] {
                { value: "ambos", label: "Ambos" },
             ],
             editSchema: z.enum(["cliente", "fornecedor", "ambos"]),
+            isEditable: !!onUpdate,
+            onSave: onUpdate
+               ? async (rowId, value) => {
+                    await onUpdate(rowId, { type: value });
+                 }
+               : undefined,
          },
          cell: ({ row }) => (
             <Badge variant={TYPE_VARIANTS[row.original.type]}>
@@ -64,6 +93,9 @@ export function buildContactColumns(): ColumnDef<ContactRow>[] {
       {
          accessorKey: "document",
          header: "Documento",
+         meta: {
+            label: "Documento",
+         },
          cell: ({ row }) => {
             const { document, documentType } = row.original;
             if (!document)
@@ -78,6 +110,23 @@ export function buildContactColumns(): ColumnDef<ContactRow>[] {
       {
          accessorKey: "email",
          header: "Email",
+         meta: {
+            label: "Email",
+            cellComponent: "text" as const,
+            editSchema: z
+               .string()
+               .email("Email inválido.")
+               .nullable()
+               .optional(),
+            isEditable: !!onUpdate,
+            onSave: onUpdate
+               ? async (rowId, value) => {
+                    await onUpdate(rowId, {
+                       email: value === "" ? null : value,
+                    });
+                 }
+               : undefined,
+         },
          cell: ({ row }) =>
             row.original.email ? (
                <span className="text-sm">{row.original.email}</span>
@@ -88,6 +137,19 @@ export function buildContactColumns(): ColumnDef<ContactRow>[] {
       {
          accessorKey: "phone",
          header: "Telefone",
+         meta: {
+            label: "Telefone",
+            cellComponent: "text" as const,
+            editSchema: z.string().nullable().optional(),
+            isEditable: !!onUpdate,
+            onSave: onUpdate
+               ? async (rowId, value) => {
+                    await onUpdate(rowId, {
+                       phone: value === "" ? null : value,
+                    });
+                 }
+               : undefined,
+         },
          cell: ({ row }) =>
             row.original.phone ? (
                <span className="text-sm">{row.original.phone}</span>

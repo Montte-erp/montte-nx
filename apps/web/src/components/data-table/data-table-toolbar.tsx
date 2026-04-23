@@ -145,6 +145,7 @@ interface DataTableToolbarProps {
    onSearch?: (value: string) => Promise<void> | void;
    className?: string;
    children?: React.ReactNode;
+   hideExport?: boolean;
 }
 
 export function DataTableToolbar({
@@ -153,6 +154,7 @@ export function DataTableToolbar({
    onSearch,
    className,
    children,
+   hideExport = false,
 }: DataTableToolbarProps) {
    const { table, columnFilters } = useDataTable();
    const externalFilters = useDataTableStore((s) => s.externalFilters);
@@ -301,7 +303,7 @@ export function DataTableToolbar({
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
-               <DataTableExportButton />
+               {!hideExport && <DataTableExportButton />}
                {children}
             </div>
          </div>

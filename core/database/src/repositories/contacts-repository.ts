@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
-import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { and, asc, count, eq, inArray } from "drizzle-orm";
+import { AppError, validateInput } from "@core/logging/errors";
+import { and, asc, count, desc, eq, inArray, min, sum } from "drizzle-orm";
+import { fromPromise, fromThrowable, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateContactInput,
@@ -12,196 +13,243 @@ import {
 } from "@core/database/schemas/contacts";
 import { transactions } from "@core/database/schemas/transactions";
 
-export async function createContact(
+const safeValidateCreate = fromThrowable(
+   (data: CreateContactInput) => validateInput(createContactSchema, data),
+   (e) =>
+      e instanceof AppError
+         ? e
+         : AppError.validation("Dados inválidos.", { cause: e }),
+);
+
+const safeValidateUpdate = fromThrowable(
+   (data: UpdateContactInput) => validateInput(updateContactSchema, data),
+   (e) =>
+      e instanceof AppError
+         ? e
+         : AppError.validation("Dados inválidos.", { cause: e }),
+);
+
+export function createContact(
    db: DatabaseInstance,
    teamId: string,
    data: CreateContactInput,
 ) {
-   const validated = validateInput(createContactSchema, data);
-   try {
-      const [contact] = await db
-         .insert(contacts)
-         .values({ ...validated, teamId })
-         .returning();
-      if (!contact) throw AppError.database("Failed to create contact");
-      return contact;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to create contact");
-   }
+   return safeValidateCreate(data).asyncAndThen((validated) =>
+      fromPromise(
+         db
+            .insert(contacts)
+            .values({ ...validated, teamId })
+            .returning(),
+         (e) => AppError.database("Falha ao criar contato.", { cause: e }),
+      ).andThen(([contact]) =>
+         contact
+            ? ok(contact)
+            : err(AppError.database("Falha ao criar contato.")),
+      ),
+   );
 }
 
-export async function listContacts(
+export function listContacts(
    db: DatabaseInstance,
    teamId: string,
    type?: ContactType,
    includeArchived = false,
 ) {
-   try {
-      const conditions = [eq(contacts.teamId, teamId)];
-      if (type) conditions.push(eq(contacts.type, type));
-      if (!includeArchived) conditions.push(eq(contacts.isArchived, false));
-      return await db
+   const conditions = [eq(contacts.teamId, teamId)];
+   if (type) conditions.push(eq(contacts.type, type));
+   if (!includeArchived) conditions.push(eq(contacts.isArchived, false));
+   return fromPromise(
+      db
          .select()
          .from(contacts)
          .where(and(...conditions))
-         .orderBy(contacts.name);
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to list contacts");
-   }
+         .orderBy(contacts.name),
+      (e) => AppError.database("Falha ao listar contatos.", { cause: e }),
+   );
 }
 
-export async function getContact(db: DatabaseInstance, id: string) {
-   try {
-      const [contact] = await db
-         .select()
-         .from(contacts)
-         .where(eq(contacts.id, id));
-      return contact ?? null;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to get contact");
-   }
+export function getContact(db: DatabaseInstance, id: string) {
+   return fromPromise(
+      db.select().from(contacts).where(eq(contacts.id, id)),
+      (e) => AppError.database("Falha ao buscar contato.", { cause: e }),
+   ).map(([contact]) => contact ?? null);
 }
 
-export async function updateContact(
+export function updateContact(
    db: DatabaseInstance,
    id: string,
    data: UpdateContactInput,
 ) {
-   const validated = validateInput(updateContactSchema, data);
-   try {
-      const [updated] = await db
-         .update(contacts)
-         .set({ ...validated, updatedAt: dayjs().toDate() })
-         .where(eq(contacts.id, id))
-         .returning();
-      if (!updated) throw AppError.notFound("Contato não encontrado.");
-      return updated;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to update contact");
-   }
+   return safeValidateUpdate(data).asyncAndThen((validated) =>
+      fromPromise(
+         db
+            .update(contacts)
+            .set({ ...validated, updatedAt: dayjs().toDate() })
+            .where(eq(contacts.id, id))
+            .returning(),
+         (e) => AppError.database("Falha ao atualizar contato.", { cause: e }),
+      ).andThen(([updated]) =>
+         updated
+            ? ok(updated)
+            : err(AppError.notFound("Contato não encontrado.")),
+      ),
+   );
 }
 
-export async function archiveContact(db: DatabaseInstance, id: string) {
-   try {
-      const [updated] = await db
+export function archiveContact(db: DatabaseInstance, id: string) {
+   return fromPromise(
+      db
          .update(contacts)
          .set({ isArchived: true, updatedAt: dayjs().toDate() })
          .where(eq(contacts.id, id))
-         .returning();
-      if (!updated) throw AppError.notFound("Contato não encontrado.");
-      return updated;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to archive contact");
-   }
+         .returning(),
+      (e) => AppError.database("Falha ao arquivar contato.", { cause: e }),
+   ).andThen(([updated]) =>
+      updated ? ok(updated) : err(AppError.notFound("Contato não encontrado.")),
+   );
 }
 
-export async function reactivateContact(db: DatabaseInstance, id: string) {
-   try {
-      const [updated] = await db
+export function reactivateContact(db: DatabaseInstance, id: string) {
+   return fromPromise(
+      db
          .update(contacts)
          .set({ isArchived: false, updatedAt: dayjs().toDate() })
          .where(eq(contacts.id, id))
-         .returning();
-      if (!updated) throw AppError.notFound("Contato não encontrado.");
-      return updated;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to reactivate contact");
-   }
+         .returning(),
+      (e) => AppError.database("Falha ao reativar contato.", { cause: e }),
+   ).andThen(([updated]) =>
+      updated ? ok(updated) : err(AppError.notFound("Contato não encontrado.")),
+   );
 }
 
-export async function deleteContact(db: DatabaseInstance, id: string) {
-   try {
-      const hasLinks = await contactHasLinks(db, id);
-      if (hasLinks) {
-         throw AppError.conflict(
-            "Contato possui lançamentos vinculados. Arquive em vez de excluir.",
-         );
-      }
-      await db.delete(contacts).where(eq(contacts.id, id));
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to delete contact");
-   }
+export function contactHasLinks(db: DatabaseInstance, id: string) {
+   return fromPromise(
+      db
+         .select({ total: count() })
+         .from(transactions)
+         .where(eq(transactions.contactId, id)),
+      (e) =>
+         AppError.database("Falha ao verificar vínculos do contato.", {
+            cause: e,
+         }),
+   ).map(([result]) => (result?.total ?? 0) > 0);
 }
 
-export async function bulkDeleteContacts(
+export function deleteContact(db: DatabaseInstance, id: string) {
+   return fromPromise(
+      db.select().from(contacts).where(eq(contacts.id, id)),
+      (e) => AppError.database("Falha ao excluir contato.", { cause: e }),
+   )
+      .andThen(([contact]) =>
+         contact
+            ? ok(contact)
+            : err(AppError.notFound("Contato não encontrado.")),
+      )
+      .andThen(() => contactHasLinks(db, id))
+      .andThen((hasLinks) =>
+         hasLinks
+            ? err(
+                 AppError.conflict(
+                    "Contato possui lançamentos vinculados. Arquive em vez de excluir.",
+                 ),
+              )
+            : ok(undefined),
+      )
+      .andThen(() =>
+         fromPromise(db.delete(contacts).where(eq(contacts.id, id)), (e) =>
+            AppError.database("Falha ao excluir contato.", { cause: e }),
+         ),
+      );
+}
+
+export function bulkDeleteContacts(
    db: DatabaseInstance,
    ids: string[],
    teamId: string,
 ) {
-   try {
-      const existing = await db
+   return fromPromise(
+      db
          .select({ id: contacts.id })
          .from(contacts)
-         .where(and(inArray(contacts.id, ids), eq(contacts.teamId, teamId)));
-      if (existing.length !== ids.length) {
-         throw AppError.notFound("Um ou mais contatos não foram encontrados.");
-      }
-      const results = await Promise.allSettled(
-         ids.map(async (id) => {
-            const hasLinks = await contactHasLinks(db, id);
-            if (hasLinks) {
-               throw AppError.conflict(
-                  "Contato possui lançamentos vinculados. Arquive em vez de excluir.",
+         .where(and(inArray(contacts.id, ids), eq(contacts.teamId, teamId))),
+      (e) => AppError.database("Falha ao excluir contatos.", { cause: e }),
+   )
+      .andThen((existing) =>
+         existing.length !== ids.length
+            ? err(
+                 AppError.notFound(
+                    "Um ou mais contatos não foram encontrados.",
+                 ),
+              )
+            : ok(undefined),
+      )
+      .andThen(() =>
+         fromPromise(
+            (async () => {
+               const results = await Promise.allSettled(
+                  ids.map(async (id) => {
+                     const [result] = await db
+                        .select({ total: count() })
+                        .from(transactions)
+                        .where(eq(transactions.contactId, id));
+                     if ((result?.total ?? 0) > 0)
+                        throw AppError.conflict(
+                           "Contato possui lançamentos vinculados. Arquive em vez de excluir.",
+                        );
+                     await db.delete(contacts).where(eq(contacts.id, id));
+                  }),
                );
-            }
-            await db.delete(contacts).where(eq(contacts.id, id));
-         }),
+               const failed = results.filter(
+                  (r) => r.status === "rejected",
+               ).length;
+               if (failed > 0)
+                  throw AppError.database(
+                     `${failed} contato(s) não puderam ser excluídos.`,
+                  );
+            })(),
+            (e) =>
+               e instanceof AppError
+                  ? e
+                  : AppError.database("Falha ao excluir contatos.", {
+                       cause: e,
+                    }),
+         ),
       );
-      const failed = results.filter((r) => r.status === "rejected").length;
-      if (failed > 0) {
-         throw AppError.database(
-            `${failed} contato(s) não puderam ser excluídos.`,
-         );
-      }
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to bulk delete contacts");
-   }
 }
 
-export async function ensureContactOwnership(
+export function ensureContactOwnership(
    db: DatabaseInstance,
    id: string,
    teamId: string,
 ) {
-   const contact = await getContact(db, id);
-   if (!contact || contact.teamId !== teamId) {
-      throw AppError.notFound("Contato não encontrado.");
-   }
-   return contact;
+   return getContact(db, id).andThen((contact) => {
+      if (!contact || contact.teamId !== teamId)
+         return err(AppError.notFound("Contato não encontrado."));
+      return ok(contact);
+   });
 }
 
-export async function getContactByExternalId(
+export function getContactByExternalId(
    db: DatabaseInstance,
    externalId: string,
    teamId: string,
    type?: ContactType,
 ) {
-   try {
-      const conditions = [
-         eq(contacts.externalId, externalId),
-         eq(contacts.teamId, teamId),
-      ];
-      if (type) conditions.push(eq(contacts.type, type));
-      const [contact] = await db
+   const conditions = [
+      eq(contacts.externalId, externalId),
+      eq(contacts.teamId, teamId),
+   ];
+   if (type) conditions.push(eq(contacts.type, type));
+   return fromPromise(
+      db
          .select()
          .from(contacts)
-         .where(and(...conditions));
-      return contact ?? null;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to get contact by external id");
-   }
+         .where(and(...conditions)),
+      (e) => AppError.database("Falha ao buscar contato.", { cause: e }),
+   ).map(([contact]) => contact ?? null);
 }
 
-export async function listContactsPaginated(
+export function listContactsPaginated(
    db: DatabaseInstance,
    teamId: string,
    options: {
@@ -211,44 +259,97 @@ export async function listContactsPaginated(
       includeArchived?: boolean;
    },
 ) {
-   try {
-      const { page, limit, type, includeArchived = false } = options;
-      const conditions = [eq(contacts.teamId, teamId)];
-      if (type) conditions.push(eq(contacts.type, type));
-      if (!includeArchived) conditions.push(eq(contacts.isArchived, false));
-      const where = and(...conditions);
-      const [totalResult] = await db
-         .select({ value: count() })
-         .from(contacts)
-         .where(where);
-      const total = totalResult?.value ?? 0;
-      const items = await db
-         .select()
-         .from(contacts)
-         .where(where)
-         .orderBy(asc(contacts.name))
-         .limit(limit)
-         .offset((page - 1) * limit);
-      return { items, total };
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to list contacts");
-   }
+   const { page, limit, type, includeArchived = false } = options;
+   const conditions = [eq(contacts.teamId, teamId)];
+   if (type) conditions.push(eq(contacts.type, type));
+   if (!includeArchived) conditions.push(eq(contacts.isArchived, false));
+   const where = and(...conditions);
+   return fromPromise(
+      (async () => {
+         const [totalResult] = await db
+            .select({ value: count() })
+            .from(contacts)
+            .where(where);
+         const total = totalResult?.value ?? 0;
+         const items = await db
+            .select()
+            .from(contacts)
+            .where(where)
+            .orderBy(asc(contacts.name))
+            .limit(limit)
+            .offset((page - 1) * limit);
+         return { items, total };
+      })(),
+      (e) => AppError.database("Falha ao listar contatos.", { cause: e }),
+   );
 }
 
-export async function contactHasLinks(
+export function getContactTransactions(
    db: DatabaseInstance,
-   id: string,
-): Promise<boolean> {
-   try {
-      const [txResult] = await db
-         .select({ total: count() })
-         .from(transactions)
-         .where(eq(transactions.contactId, id));
+   contactId: string,
+   teamId: string,
+   options: { page: number; limit: number },
+) {
+   const { page, limit } = options;
+   return fromPromise(
+      (async () => {
+         const where = and(
+            eq(transactions.contactId, contactId),
+            eq(transactions.teamId, teamId),
+         );
+         const [totalResult] = await db
+            .select({ value: count() })
+            .from(transactions)
+            .where(where);
+         const total = totalResult?.value ?? 0;
+         const items = await db
+            .select()
+            .from(transactions)
+            .where(where)
+            .orderBy(desc(transactions.date))
+            .limit(limit)
+            .offset((page - 1) * limit);
+         return { items, total };
+      })(),
+      (e) =>
+         AppError.database("Falha ao listar transações do contato.", {
+            cause: e,
+         }),
+   );
+}
 
-      return (txResult?.total ?? 0) > 0;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to check contact links");
-   }
+export function getContactTransactionStats(
+   db: DatabaseInstance,
+   contactId: string,
+   teamId: string,
+) {
+   return fromPromise(
+      (async () => {
+         const where = and(
+            eq(transactions.contactId, contactId),
+            eq(transactions.teamId, teamId),
+         );
+         const [incomeResult] = await db
+            .select({ total: sum(transactions.amount) })
+            .from(transactions)
+            .where(and(where, eq(transactions.type, "income")));
+         const [expenseResult] = await db
+            .select({ total: sum(transactions.amount) })
+            .from(transactions)
+            .where(and(where, eq(transactions.type, "expense")));
+         const [firstTxResult] = await db
+            .select({ date: min(transactions.date) })
+            .from(transactions)
+            .where(where);
+         return {
+            totalIncome: incomeResult?.total ?? "0",
+            totalExpense: expenseResult?.total ?? "0",
+            firstTransactionDate: firstTxResult?.date ?? null,
+         };
+      })(),
+      (e) =>
+         AppError.database("Falha ao buscar estatísticas do contato.", {
+            cause: e,
+         }),
+   );
 }

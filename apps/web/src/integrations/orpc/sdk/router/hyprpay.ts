@@ -45,7 +45,7 @@ export const create = impl.create.handler(async ({ context, input }) => {
    const teamIdResult = requireTeamId(context.teamId);
    if (teamIdResult.isErr()) throw teamIdResult.error;
    const teamId = teamIdResult.value;
-   const contact = await createContact(context.db, teamId, {
+   const contactResult = await createContact(context.db, teamId, {
       name: input.name,
       type: "cliente",
       email: input.email ?? null,
@@ -53,37 +53,43 @@ export const create = impl.create.handler(async ({ context, input }) => {
       document: input.document ?? null,
       externalId: input.externalId ?? null,
    });
-   return mapCustomer(contact);
+   if (contactResult.isErr())
+      throw WebAppError.fromAppError(contactResult.error);
+   return mapCustomer(contactResult.value);
 });
 
 export const get = impl.get.handler(async ({ context, input }) => {
    const teamIdResult = requireTeamId(context.teamId);
    if (teamIdResult.isErr()) throw teamIdResult.error;
    const teamId = teamIdResult.value;
-   const contact = await getContactByExternalId(
+   const contactResult = await getContactByExternalId(
       context.db,
       input.externalId,
       teamId,
       "cliente",
    );
-   if (!contact || contact.isArchived) {
+   if (contactResult.isErr())
+      throw WebAppError.fromAppError(contactResult.error);
+   if (!contactResult.value || contactResult.value.isArchived) {
       throw new WebAppError("NOT_FOUND", {
          message: "Cliente não encontrado.",
          source: "hyprpay",
       });
    }
-   return mapCustomer(contact);
+   return mapCustomer(contactResult.value);
 });
 
 export const list = impl.list.handler(async ({ context, input }) => {
    const teamIdResult = requireTeamId(context.teamId);
    if (teamIdResult.isErr()) throw teamIdResult.error;
    const teamId = teamIdResult.value;
-   const { items, total } = await listContactsPaginated(context.db, teamId, {
+   const listResult = await listContactsPaginated(context.db, teamId, {
       page: input.page,
       limit: input.limit,
       type: "cliente",
    });
+   if (listResult.isErr()) throw WebAppError.fromAppError(listResult.error);
+   const { items, total } = listResult.value;
    return {
       items: items.map(mapCustomer),
       total,
@@ -98,18 +104,26 @@ export const update = impl.update.handler(async ({ context, input }) => {
    if (teamIdResult.isErr()) throw teamIdResult.error;
    const teamId = teamIdResult.value;
    const { externalId, ...data } = input;
-   const existing = await getContactByExternalId(
+   const existingResult = await getContactByExternalId(
       context.db,
       externalId,
       teamId,
       "cliente",
    );
-   if (!existing) {
+   if (existingResult.isErr())
+      throw WebAppError.fromAppError(existingResult.error);
+   if (!existingResult.value) {
       throw new WebAppError("NOT_FOUND", {
          message: "Cliente não encontrado.",
          source: "hyprpay",
       });
    }
-   const updated = await updateContact(context.db, existing.id, data);
-   return mapCustomer(updated);
+   const updatedResult = await updateContact(
+      context.db,
+      existingResult.value.id,
+      data,
+   );
+   if (updatedResult.isErr())
+      throw WebAppError.fromAppError(updatedResult.error);
+   return mapCustomer(updatedResult.value);
 });
