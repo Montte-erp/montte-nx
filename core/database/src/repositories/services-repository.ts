@@ -102,7 +102,6 @@ export function listServices(
                teamId: services.teamId,
                name: services.name,
                description: services.description,
-               basePrice: services.basePrice,
                categoryId: services.categoryId,
                tagId: services.tagId,
                isActive: services.isActive,

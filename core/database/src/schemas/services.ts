@@ -12,8 +12,17 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { categories } from "@core/database/schemas/categories";
 import { billingCycleEnum } from "@core/database/schemas/subscriptions";
+import { meters } from "@core/database/schemas/meters";
 import { tags } from "@core/database/schemas/tags";
 import { crmSchema } from "@core/database/schemas/schemas";
+
+export const pricingTypeEnum = crmSchema.enum("pricing_type", [
+   "flat",
+   "per_unit",
+   "metered",
+]);
+
+export type PricingType = (typeof pricingTypeEnum.enumValues)[number];
 
 export const services = crmSchema.table(
    "services",
@@ -24,9 +33,6 @@ export const services = crmSchema.table(
       teamId: uuid("team_id").notNull(),
       name: text("name").notNull(),
       description: text("description"),
-      basePrice: numeric("base_price", { precision: 12, scale: 2 })
-         .notNull()
-         .default("0"),
       categoryId: uuid("category_id").references(() => categories.id, {
          onDelete: "set null",
       }),
@@ -43,8 +49,8 @@ export const services = crmSchema.table(
    (table) => [index("services_team_id_idx").on(table.teamId)],
 );
 
-export const serviceVariants = crmSchema.table(
-   "service_variants",
+export const servicePrices = crmSchema.table(
+   "service_prices",
    {
       id: uuid("id")
          .default(sql`pg_catalog.gen_random_uuid()`)
@@ -54,8 +60,15 @@ export const serviceVariants = crmSchema.table(
          .references(() => services.id, { onDelete: "cascade" }),
       teamId: uuid("team_id").notNull(),
       name: text("name").notNull(),
+      type: pricingTypeEnum("type").notNull().default("flat"),
       basePrice: numeric("base_price", { precision: 12, scale: 2 }).notNull(),
-      billingCycle: billingCycleEnum("billing_cycle").notNull(),
+      interval: billingCycleEnum("interval").notNull(),
+      meterId: uuid("meter_id").references(() => meters.id, {
+         onDelete: "set null",
+      }),
+      priceCap: numeric("price_cap", { precision: 12, scale: 2 }),
+      trialDays: integer("trial_days"),
+      autoEnroll: boolean("auto_enroll").notNull().default(false),
       isActive: boolean("is_active").notNull().default(true),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
@@ -66,8 +79,9 @@ export const serviceVariants = crmSchema.table(
          .$onUpdate(() => new Date()),
    },
    (table) => [
-      index("service_variants_service_id_idx").on(table.serviceId),
-      index("service_variants_team_id_idx").on(table.teamId),
+      index("service_prices_service_id_idx").on(table.serviceId),
+      index("service_prices_team_id_idx").on(table.teamId),
+      index("service_prices_meter_id_idx").on(table.meterId),
    ],
 );
 
@@ -100,8 +114,8 @@ export const resources = crmSchema.table(
 
 export type Service = typeof services.$inferSelect;
 export type NewService = typeof services.$inferInsert;
-export type ServiceVariant = typeof serviceVariants.$inferSelect;
-export type NewServiceVariant = typeof serviceVariants.$inferInsert;
+export type ServicePrice = typeof servicePrices.$inferSelect;
+export type NewServicePrice = typeof servicePrices.$inferInsert;
 export type Resource = typeof resources.$inferSelect;
 export type NewResource = typeof resources.$inferInsert;
 
@@ -119,7 +133,6 @@ const priceSchema = z
 const baseServiceSchema = createInsertSchema(services).pick({
    name: true,
    description: true,
-   basePrice: true,
    categoryId: true,
    tagId: true,
 });
@@ -127,7 +140,6 @@ const baseServiceSchema = createInsertSchema(services).pick({
 export const createServiceSchema = baseServiceSchema.extend({
    name: nameSchema,
    description: z.string().max(500).nullable().optional(),
-   basePrice: priceSchema.default("0"),
    categoryId: z.string().uuid().nullable().optional(),
    tagId: z.string().uuid().nullable().optional(),
 });
@@ -136,37 +148,53 @@ export const updateServiceSchema = baseServiceSchema
    .extend({
       name: nameSchema.optional(),
       description: z.string().max(500).nullable().optional(),
-      basePrice: priceSchema.optional(),
       categoryId: z.string().uuid().nullable().optional(),
       tagId: z.string().uuid().nullable().optional(),
       isActive: z.boolean().optional(),
    })
    .partial();
 
-const baseVariantSchema = createInsertSchema(serviceVariants).pick({
+const basePriceSchema = createInsertSchema(servicePrices).pick({
    name: true,
+   type: true,
    basePrice: true,
-   billingCycle: true,
+   interval: true,
+   meterId: true,
+   priceCap: true,
+   trialDays: true,
+   autoEnroll: true,
 });
 
-export const createVariantSchema = baseVariantSchema.extend({
+export const createPriceSchema = basePriceSchema.extend({
    name: nameSchema,
+   type: z.enum(pricingTypeEnum.enumValues).default("flat"),
    basePrice: priceSchema,
-   billingCycle: z.enum(["hourly", "monthly", "annual", "one_time"]),
+   interval: z.enum(billingCycleEnum.enumValues),
+   meterId: z.string().uuid().nullable().optional(),
+   priceCap: priceSchema.nullable().optional(),
+   trialDays: z.number().int().min(0).nullable().optional(),
+   autoEnroll: z.boolean().default(false),
 });
 
-export const updateVariantSchema = baseVariantSchema
+export const updatePriceSchema = basePriceSchema
    .extend({
       name: nameSchema.optional(),
       basePrice: priceSchema.optional(),
-      billingCycle: z
-         .enum(["hourly", "monthly", "annual", "one_time"])
-         .optional(),
+      interval: z.enum(billingCycleEnum.enumValues).optional(),
       isActive: z.boolean().optional(),
    })
    .partial();
 
 export type CreateServiceInput = z.infer<typeof createServiceSchema>;
 export type UpdateServiceInput = z.infer<typeof updateServiceSchema>;
-export type CreateVariantInput = z.infer<typeof createVariantSchema>;
-export type UpdateVariantInput = z.infer<typeof updateVariantSchema>;
+export type CreatePriceInput = z.infer<typeof createPriceSchema>;
+export type UpdatePriceInput = z.infer<typeof updatePriceSchema>;
+
+// Legacy aliases — keep until router/repo are updated in later tasks
+export const serviceVariants = servicePrices;
+export type ServiceVariant = ServicePrice;
+export type NewServiceVariant = NewServicePrice;
+export const createVariantSchema = createPriceSchema;
+export const updateVariantSchema = updatePriceSchema;
+export type CreateVariantInput = CreatePriceInput;
+export type UpdateVariantInput = UpdatePriceInput;

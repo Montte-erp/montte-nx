@@ -128,7 +128,7 @@ export function listSubscriptionsByContact(
             updatedAt: contactSubscriptions.updatedAt,
             serviceName: services.name,
             variantName: serviceVariants.name,
-            billingCycle: serviceVariants.billingCycle,
+            billingCycle: serviceVariants.interval,
             serviceId: services.id,
          })
          .from(contactSubscriptions)
