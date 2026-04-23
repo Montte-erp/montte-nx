@@ -210,12 +210,11 @@ export const servicesRelations = relations(services, ({ one, many }) => ({
 
 export const serviceVariantsRelations = relations(
    serviceVariants,
-   ({ one, many }) => ({
+   ({ one }) => ({
       service: one(services, {
          fields: [serviceVariants.serviceId],
          references: [services.id],
       }),
-      subscriptions: many(contactSubscriptions),
    }),
 );
 
@@ -225,10 +224,6 @@ export const contactSubscriptionsRelations = relations(
       contact: one(contacts, {
          fields: [contactSubscriptions.contactId],
          references: [contacts.id],
-      }),
-      variant: one(serviceVariants, {
-         fields: [contactSubscriptions.variantId],
-         references: [serviceVariants.id],
       }),
    }),
 );
