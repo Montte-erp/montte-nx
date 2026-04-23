@@ -325,7 +325,13 @@ export const getMrr = protectedProcedure.handler(async ({ context }) => {
    const rows = await context.db
       .select({
          total: sum(
-            sql<string>`(COALESCE(${subscriptionItems.negotiatedPrice}, ${servicePrices.basePrice})::numeric * ${subscriptionItems.quantity})`,
+            sql<string>`
+  CASE ${servicePrices.interval}
+    WHEN 'monthly' THEN COALESCE(${subscriptionItems.negotiatedPrice}, ${servicePrices.basePrice})::numeric * ${subscriptionItems.quantity}::numeric
+    WHEN 'annual' THEN COALESCE(${subscriptionItems.negotiatedPrice}, ${servicePrices.basePrice})::numeric * ${subscriptionItems.quantity}::numeric / 12
+    ELSE 0::numeric
+  END
+`,
          ),
       })
       .from(subscriptionItems)

@@ -10,6 +10,7 @@ import {
    uniqueIndex,
    uuid,
 } from "drizzle-orm/pg-core";
+import { of, toMinorUnitsString } from "@f-o-t/money";
 import { z } from "zod";
 import { contacts } from "@core/database/schemas/contacts";
 import { crmSchema } from "@core/database/schemas/schemas";
@@ -116,7 +117,7 @@ export type NewCouponRedemption = typeof couponRedemptions.$inferInsert;
 const amountSchema = z
    .string()
    .regex(/^\d+(\.\d+)?$/, "Valor deve ser um número positivo.")
-   .refine((v) => parseFloat(v) > 0, {
+   .refine((v) => Number(toMinorUnitsString(of(v, "BRL"))) > 0, {
       message: "Valor deve ser um número positivo.",
    });
 

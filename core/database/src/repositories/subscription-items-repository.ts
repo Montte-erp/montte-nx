@@ -32,9 +32,11 @@ export function addSubscriptionItem(
    return safeValidateCreate(data).asyncAndThen((validated) =>
       fromPromise(
          db.transaction(async (tx) => {
-            await tx.execute(
-               sql`SELECT id FROM crm.contact_subscriptions WHERE id = ${validated.subscriptionId} FOR UPDATE`,
+            const lockRows = await tx.execute(
+               sql`SELECT id FROM crm.contact_subscriptions WHERE id = ${validated.subscriptionId} AND team_id = ${teamId} FOR UPDATE`,
             );
+            if (lockRows.rows.length === 0)
+               throw AppError.notFound("Assinatura não encontrada.");
             const rows = await tx
                .select({ itemCount: count() })
                .from(subscriptionItems)
