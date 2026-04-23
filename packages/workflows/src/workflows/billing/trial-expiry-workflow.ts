@@ -16,6 +16,7 @@ export type TrialExpiryInput = {
    operatorEmail: string;
    contactEmail?: string;
    contactName?: string;
+   emailFrom?: string;
 };
 
 async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
@@ -48,7 +49,7 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
          } satisfies JobNotification);
 
          await resendClient.emails.send({
-            from: "Montte <suporte@mail.montte.co>",
+            from: input.emailFrom ?? "Montte <suporte@mail.montte.co>",
             to: input.operatorEmail,
             subject: "Período de teste expira em 3 dias",
             text: `O período de teste da assinatura ${input.subscriptionId} expira em 3 dias (${dayjs(input.trialEndsAt).format("DD/MM/YYYY")}).`,
@@ -56,7 +57,7 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
 
          if (contactEmail) {
             await resendClient.emails.send({
-               from: "Montte <suporte@mail.montte.co>",
+               from: input.emailFrom ?? "Montte <suporte@mail.montte.co>",
                to: contactEmail,
                subject: "Seu período de teste expira em 3 dias",
                text: `Olá${contactName ? `, ${contactName}` : ""}!\n\nSeu período de teste expira em 3 dias (${dayjs(input.trialEndsAt).format("DD/MM/YYYY")}). Após essa data, sua assinatura será ativada automaticamente.`,
@@ -131,7 +132,7 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
          const { contactEmail, contactName } = input;
 
          await resendClient.emails.send({
-            from: "Montte <suporte@mail.montte.co>",
+            from: input.emailFrom ?? "Montte <suporte@mail.montte.co>",
             to: input.operatorEmail,
             subject: "Período de teste encerrado — assinatura ativa",
             text: `O período de teste da assinatura ${input.subscriptionId} foi encerrado. A assinatura está agora ativa.`,
@@ -139,7 +140,7 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
 
          if (contactEmail) {
             await resendClient.emails.send({
-               from: "Montte <suporte@mail.montte.co>",
+               from: input.emailFrom ?? "Montte <suporte@mail.montte.co>",
                to: contactEmail,
                subject: "Seu período de teste encerrou — assinatura ativa",
                text: `Olá${contactName ? `, ${contactName}` : ""}!\n\nSeu período de teste encerrou e sua assinatura está agora ativa.`,

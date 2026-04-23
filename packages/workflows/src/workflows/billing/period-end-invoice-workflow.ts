@@ -23,6 +23,7 @@ export type PeriodEndInvoiceInput = {
    operatorEmail: string;
    contactEmail?: string;
    contactName?: string;
+   emailFrom?: string;
 };
 
 async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
@@ -273,7 +274,7 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
    await DBOS.runStep(
       () =>
          resendClient.emails.send({
-            from: "Montte <suporte@mail.montte.co>",
+            from: input.emailFrom ?? "Montte <suporte@mail.montte.co>",
             to: input.operatorEmail,
             subject: `Fatura gerada — ${dayjs(input.periodEnd).format("MM/YYYY")}`,
             text: `Fatura ${invoice.id} gerada para o período ${dayjs(input.periodStart).format("DD/MM/YYYY")} a ${dayjs(input.periodEnd).format("DD/MM/YYYY")}.\nTotal: R$ ${computation.total}`,
@@ -286,7 +287,7 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
       await DBOS.runStep(
          () =>
             resendClient.emails.send({
-               from: "Montte <suporte@mail.montte.co>",
+               from: input.emailFrom ?? "Montte <suporte@mail.montte.co>",
                to: contactEmail,
                subject: `Sua fatura — ${dayjs(input.periodEnd).format("MM/YYYY")}`,
                text: `Olá${contactName ? `, ${contactName}` : ""}!\n\nSua fatura para o período ${dayjs(input.periodStart).format("DD/MM/YYYY")} a ${dayjs(input.periodEnd).format("DD/MM/YYYY")} foi gerada.\nTotal: R$ ${computation.total}`,

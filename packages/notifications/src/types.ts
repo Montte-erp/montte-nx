@@ -38,6 +38,7 @@ export type NotificationPayloadMap = {
       invoiceId: string;
       subscriptionId: string;
       total: string;
+      currency: string;
    };
    "billing.trial_expiring": {
       subscriptionId: string;
