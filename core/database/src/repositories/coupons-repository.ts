@@ -138,13 +138,19 @@ export function ensureCouponOwnership(
 
 export function countCouponRedemptionsBySubscription(
    db: DatabaseInstance,
+   couponId: string,
    subscriptionId: string,
 ) {
    return fromPromise(
       db
          .select({ count: count() })
          .from(couponRedemptions)
-         .where(eq(couponRedemptions.subscriptionId, subscriptionId))
+         .where(
+            and(
+               eq(couponRedemptions.couponId, couponId),
+               eq(couponRedemptions.subscriptionId, subscriptionId),
+            ),
+         )
          .then(([row]) => row?.count ?? 0),
       (e) => AppError.database("Falha ao contar resgates.", { cause: e }),
    );

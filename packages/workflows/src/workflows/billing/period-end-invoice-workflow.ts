@@ -5,6 +5,7 @@ import {
    add,
    subtract,
    multiply,
+   percentage,
    zero,
    greaterThan,
    toMajorUnitsString,
@@ -121,6 +122,7 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
             if (coupon) {
                redemptionCount = await countCouponRedemptionsBySubscription(
                   db,
+                  coupon.id,
                   input.subscriptionId,
                ).match(
                   (v) => v,
@@ -227,7 +229,7 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
             if (applyDiscount) {
                discountMoney =
                   coupon.type === "percent"
-                     ? multiply(subtotalMoney, Number(coupon.amount) / 100)
+                     ? percentage(subtotalMoney, Number(coupon.amount))
                      : of(coupon.amount, "BRL");
 
                couponSnapshot = {
