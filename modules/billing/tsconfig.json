@@ -1,0 +1,46 @@
+{
+   "extends": "@tooling/typescript/tsconfig.package.json",
+   "compilerOptions": {
+      "paths": {
+         "@core/database": ["../../core/database/src/index.ts"],
+         "@core/database/*": ["../../core/database/src/*"],
+         "@core/logging": ["../../core/logging/src/logger.ts"],
+         "@core/logging/*": ["../../core/logging/src/*"],
+         "@core/authentication/*": ["../../core/authentication/src/*"],
+         "@core/redis/*": ["../../core/redis/src/*"],
+         "@core/stripe": ["../../core/stripe/src/index.ts"],
+         "@packages/events/*": ["../../packages/events/src/*"],
+         "@packages/notifications/*": ["../../packages/notifications/src/*"],
+         "@packages/workflows/*": ["../../packages/workflows/src/*"],
+         "@modules/billing/*": ["./src/*"],
+         "@modules/services/*": ["../services/src/*"]
+      }
+   },
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../../core/authentication"
+      },
+      {
+         "path": "../../core/redis"
+      },
+      {
+         "path": "../../core/stripe"
+      },
+      {
+         "path": "../../core/logging"
+      },
+      {
+         "path": "../../core/database"
+      },
+      {
+         "path": "../../packages/events"
+      },
+      {
+         "path": "../../packages/notifications"
+      },
+      {
+         "path": "../../packages/workflows"
+      }
+   ]
+}

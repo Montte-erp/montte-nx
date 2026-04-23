@@ -194,6 +194,7 @@
          "libraries/*",
          "core/*",
          "packages/*",
+         "modules/*",
          "apps/*"
       ]
    },
