@@ -1,4 +1,5 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
+import dayjs from "dayjs";
 import { createEnqueuer, QUEUES } from "../../workflow-factory";
 import { upsertUsageEvent } from "@core/database/repositories/usage-events-repository";
 import { NOTIFICATION_TYPES } from "@packages/notifications/types";
@@ -42,7 +43,7 @@ async function usageIngestionWorkflowFn(input: UsageIngestionInput) {
       () =>
          publisher.publish("job.notification", {
             jobId: input.idempotencyKey,
-            timestamp: new Date().toISOString(),
+            timestamp: dayjs().toISOString(),
             type: NOTIFICATION_TYPES.BILLING_USAGE_INGESTED,
             status: "completed",
             message: `Uso registrado para medidor ${input.meterId}.`,
@@ -66,5 +67,5 @@ export const enqueueUsageIngestionWorkflow =
    createEnqueuer<UsageIngestionInput>(
       usageIngestionWorkflowFn.name,
       QUEUES.usageIngestion,
-      (i) => `usage-ingest-${i.idempotencyKey}`,
+      (i) => `usage-ingest-${i.teamId}-${i.idempotencyKey}`,
    );
