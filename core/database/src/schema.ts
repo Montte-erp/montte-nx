@@ -1,6 +1,7 @@
 export * from "@core/database/schemas/agents";
 export * from "@core/database/schemas/auth";
 export * from "@core/database/schemas/bank-accounts";
+export * from "@core/database/schemas/benefit-grants";
 export * from "@core/database/schemas/benefits";
 export * from "@core/database/schemas/categories";
 export * from "@core/database/schemas/contact-settings";
