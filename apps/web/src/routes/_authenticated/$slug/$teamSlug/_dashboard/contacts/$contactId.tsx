@@ -39,7 +39,6 @@ import { ContactPropertiesPanel } from "../-contacts/contact-properties-panel";
 import { ContactTransacoesTab } from "../-contacts/contact-transacoes-tab";
 
 const VALID_TABS = ["transacoes", "servicos"] as const;
-type ActiveTab = (typeof VALID_TABS)[number];
 
 const searchSchema = z.object({
    tab: z.enum(VALID_TABS).catch("transacoes").default("transacoes"),
@@ -116,6 +115,7 @@ const TYPE_LABELS = {
 function ContactDetailContent() {
    const { contactId } = Route.useParams();
    const globalNavigate = useNavigate();
+   const navigate = Route.useNavigate();
    const slug = useOrgSlug();
    const teamSlug = useTeamSlug();
    const { openAlertDialog } = useAlertDialog();
@@ -236,7 +236,7 @@ function ContactDetailContent() {
             value={activeTab}
             onValueChange={(v) => {
                if (v === "transacoes" || v === "servicos") {
-                  globalNavigate({
+                  navigate({
                      search: (prev) => ({ ...prev, tab: v }),
                      replace: true,
                   });

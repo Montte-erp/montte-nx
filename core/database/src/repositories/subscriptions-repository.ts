@@ -85,14 +85,13 @@ export function updateSubscription(
 export function listSubscriptionsByTeam(
    db: DatabaseInstance,
    teamId: string,
-   status?: string,
+   status?: SubscriptionStatus,
 ) {
    return fromPromise(
       (async () => {
          const conditions = [eq(contactSubscriptions.teamId, teamId)];
          if (status) {
-            const normalizedStatus = status as SubscriptionStatus;
-            conditions.push(eq(contactSubscriptions.status, normalizedStatus));
+            conditions.push(eq(contactSubscriptions.status, status));
          }
          return db
             .select()
