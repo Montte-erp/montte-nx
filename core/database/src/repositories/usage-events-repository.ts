@@ -1,5 +1,5 @@
 import { AppError, validateInput } from "@core/logging/errors";
-import { and, eq, gte, lte, sql, sum } from "drizzle-orm";
+import { and, eq, gte, lte, sum } from "drizzle-orm";
 import { fromPromise, fromThrowable } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -65,7 +65,7 @@ export function summarizeUsageByMeter(
       db
          .select({
             meterId: usageEvents.meterId,
-            total: sum(sql<number>`${usageEvents.quantity}::numeric`),
+            total: sum(usageEvents.quantity),
          })
          .from(usageEvents)
          .where(

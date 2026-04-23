@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
    index,
    jsonb,
+   numeric,
    text,
    timestamp,
    uniqueIndex,
@@ -26,7 +27,7 @@ export const usageEvents = platformSchema.table(
          onDelete: "set null",
       }),
       meterId: text("meter_id").notNull(),
-      quantity: text("quantity").notNull(),
+      quantity: numeric("quantity", { precision: 20, scale: 6 }).notNull(),
       properties: jsonb("properties")
          .$type<Record<string, unknown>>()
          .notNull()
@@ -66,9 +67,13 @@ export const upsertUsageEventSchema = createInsertSchema(usageEvents)
          .nullable()
          .optional(),
       meterId: z.string().min(1, "ID do medidor é obrigatório."),
-      quantity: z.string().refine((v) => !Number.isNaN(Number(v)), {
-         message: "Quantidade deve ser um número válido.",
-      }),
+      quantity: z
+         .string()
+         .min(1, "Quantidade é obrigatória.")
+         .refine((v) => {
+            const n = Number(v);
+            return !Number.isNaN(n) && Number.isFinite(n) && n >= 0;
+         }, "Quantidade deve ser um número positivo finito."),
       properties: z.record(z.string(), z.unknown()).optional().default({}),
       idempotencyKey: z.string().min(1, "Chave de idempotência é obrigatória."),
    });
