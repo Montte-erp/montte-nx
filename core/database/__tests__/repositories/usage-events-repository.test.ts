@@ -3,6 +3,7 @@ import { seed } from "drizzle-seed";
 import { setupTestDb } from "../helpers/setup-test-db";
 import * as schema from "@core/database/schema";
 import { upsertUsageEventSchema } from "@core/database/schemas/usage-events";
+import { meters } from "@core/database/schemas/meters";
 import * as repo from "../../src/repositories/usage-events-repository";
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
@@ -68,6 +69,18 @@ async function seedContact(teamId: string) {
    }));
 
    return { id: contactId, teamId };
+}
+
+async function seedMeter(teamId: string) {
+   const [row] = await testDb.db
+      .insert(meters)
+      .values({
+         teamId,
+         name: "API calls",
+         eventName: `api.call.${crypto.randomUUID().slice(0, 8)}`,
+      })
+      .returning();
+   return row!.id;
 }
 
 function validInput(teamId: string, overrides: Record<string, unknown> = {}) {
@@ -149,7 +162,8 @@ describe("usage-events-repository", () => {
    describe("upsertUsageEvent", () => {
       it("inserts and returns the event", async () => {
          const teamId = await seedTeam();
-         const input = validInput(teamId);
+         const meterId = await seedMeter(teamId);
+         const input = validInput(teamId, { meterId });
 
          const result = await repo.upsertUsageEvent(testDb.db, input);
 
@@ -164,7 +178,8 @@ describe("usage-events-repository", () => {
 
       it("returns null on duplicate idempotencyKey — no error", async () => {
          const teamId = await seedTeam();
-         const input = validInput(teamId);
+         const meterId = await seedMeter(teamId);
+         const input = validInput(teamId, { meterId });
 
          await repo.upsertUsageEvent(testDb.db, input);
          const duplicate = await repo.upsertUsageEvent(testDb.db, input);
@@ -175,15 +190,19 @@ describe("usage-events-repository", () => {
 
       it("same idempotencyKey on different team is allowed", async () => {
          const [teamA, teamB] = await Promise.all([seedTeam(), seedTeam()]);
+         const [meterA, meterB] = await Promise.all([
+            seedMeter(teamA),
+            seedMeter(teamB),
+         ]);
          const key = crypto.randomUUID();
 
          const a = await repo.upsertUsageEvent(
             testDb.db,
-            validInput(teamA, { idempotencyKey: key }),
+            validInput(teamA, { idempotencyKey: key, meterId: meterA }),
          );
          const b = await repo.upsertUsageEvent(
             testDb.db,
-            validInput(teamB, { idempotencyKey: key }),
+            validInput(teamB, { idempotencyKey: key, meterId: meterB }),
          );
 
          expect(a._unsafeUnwrap()).not.toBeNull();
@@ -192,11 +211,12 @@ describe("usage-events-repository", () => {
 
       it("stores contactId when provided", async () => {
          const teamId = await seedTeam();
+         const meterId = await seedMeter(teamId);
          const contact = await seedContact(teamId);
 
          const result = await repo.upsertUsageEvent(
             testDb.db,
-            validInput(teamId, { contactId: contact.id }),
+            validInput(teamId, { contactId: contact.id, meterId }),
          );
 
          expect(result._unsafeUnwrap()!.contactId).toBe(contact.id);
@@ -214,16 +234,17 @@ describe("usage-events-repository", () => {
    describe("listUsageEventsByContact", () => {
       it("returns only events for that contact", async () => {
          const teamId = await seedTeam();
+         const meterId = await seedMeter(teamId);
          const contact = await seedContact(teamId);
          const other = await seedContact(teamId);
 
          await repo.upsertUsageEvent(
             testDb.db,
-            validInput(teamId, { contactId: contact.id }),
+            validInput(teamId, { contactId: contact.id, meterId }),
          );
          await repo.upsertUsageEvent(
             testDb.db,
-            validInput(teamId, { contactId: other.id }),
+            validInput(teamId, { contactId: other.id, meterId }),
          );
 
          const result = await repo.listUsageEventsByContact(
@@ -255,7 +276,7 @@ describe("usage-events-repository", () => {
    describe("summarizeUsageByMeter", () => {
       it("sums quantity per meter within period", async () => {
          const teamId = await seedTeam();
-         const meterId = crypto.randomUUID();
+         const meterId = await seedMeter(teamId);
          const from = new Date(Date.now() - 60_000);
          const to = new Date(Date.now() + 60_000);
 
@@ -283,7 +304,7 @@ describe("usage-events-repository", () => {
 
       it("excludes events outside period", async () => {
          const teamId = await seedTeam();
-         const meterId = crypto.randomUUID();
+         const meterId = await seedMeter(teamId);
 
          await repo.upsertUsageEvent(
             testDb.db,
@@ -303,8 +324,10 @@ describe("usage-events-repository", () => {
 
       it("returns separate totals per meter", async () => {
          const teamId = await seedTeam();
-         const meterA = crypto.randomUUID();
-         const meterB = crypto.randomUUID();
+         const [meterA, meterB] = await Promise.all([
+            seedMeter(teamId),
+            seedMeter(teamId),
+         ]);
          const from = new Date(Date.now() - 60_000);
          const to = new Date(Date.now() + 60_000);
 

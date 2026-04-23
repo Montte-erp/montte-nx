@@ -134,8 +134,7 @@ function ServicesList() {
       async (data: Record<string, string | string[]>) => {
          const name = String(data.name ?? "").trim();
          if (!name) return;
-         const basePrice = String(data.basePrice ?? "0") || "0";
-         await createMutation.mutateAsync({ name, basePrice });
+         await createMutation.mutateAsync({ name });
          setIsDraftActive(false);
       },
       [createMutation],
@@ -158,10 +157,6 @@ function ServicesList() {
             id: `__import_${i}`,
             name: String(row.name ?? "").trim(),
             description: String(row.description ?? "").trim() || null,
-            basePrice:
-               String(row.basePrice ?? row.price ?? "0")
-                  .replace(/[R$\s.]/g, "")
-                  .replace(",", ".") || "0",
             categoryId: null,
             categoryName: null,
             categoryColor: null,
@@ -175,7 +170,6 @@ function ServicesList() {
                rows.map((r) =>
                   createMutation.mutateAsync({
                      name: String(r.name ?? "").trim(),
-                     basePrice: String(r.basePrice ?? "0") || "0",
                      description:
                         r.description != null
                            ? String(r.description) || undefined

@@ -1,7 +1,8 @@
 import { formatAmount, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQueries } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { Calendar, DollarSign, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
@@ -38,22 +39,21 @@ function StatCard({ label, value, icon, children }: StatCardProps) {
 // =============================================================================
 
 function AnalyticsContent() {
-   const { data: activeSubscriptions } = useSuspenseQuery(
-      orpc.services.getAllSubscriptions.queryOptions({
-         input: { status: "active" },
-      }),
-   );
+   const [
+      { data: activeSubscriptions },
+      { data: expiringSoon },
+      { data: mrrData },
+   ] = useSuspenseQueries({
+      queries: [
+         orpc.services.getAllSubscriptions.queryOptions({
+            input: { status: "active" },
+         }),
+         orpc.services.getExpiringSoon.queryOptions({}),
+         orpc.services.getMrr.queryOptions({}),
+      ],
+   });
 
-   const { data: expiringSoon } = useSuspenseQuery(
-      orpc.services.getExpiringSoon.queryOptions({}),
-   );
-
-   const mrr = activeSubscriptions.reduce(
-      (sum, sub) => sum + Math.round(Number(sub.negotiatedPrice) * 100),
-      0,
-   );
-
-   const mrrFormatted = formatAmount(of(mrr, "BRL"), "pt-BR");
+   const mrrFormatted = formatAmount(of(mrrData.mrr, "BRL"), "pt-BR");
 
    const activeCount = activeSubscriptions.length;
    const expiringCount = expiringSoon.length;
@@ -83,12 +83,7 @@ function AnalyticsContent() {
                <div className="flex flex-wrap gap-1">
                   {expiringBadges.map((sub) => (
                      <Badge key={sub.id} variant="outline">
-                        {sub.endDate
-                           ? new Date(sub.endDate).toLocaleDateString("pt-BR", {
-                                day: "2-digit",
-                                month: "2-digit",
-                             })
-                           : "—"}
+                        {sub.endDate ? dayjs(sub.endDate).format("DD/MM") : "—"}
                      </Badge>
                   ))}
                </div>

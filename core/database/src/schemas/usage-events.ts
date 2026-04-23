@@ -3,16 +3,17 @@ import {
    index,
    jsonb,
    numeric,
-   text,
    timestamp,
    uniqueIndex,
    uuid,
+   text,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { platformSchema } from "@core/database/schemas/schemas";
 import { team } from "@core/database/schemas/auth";
 import { contacts } from "@core/database/schemas/contacts";
+import { meters } from "@core/database/schemas/meters";
 
 export const usageEvents = platformSchema.table(
    "usage_events",
@@ -26,7 +27,9 @@ export const usageEvents = platformSchema.table(
       contactId: uuid("contact_id").references(() => contacts.id, {
          onDelete: "set null",
       }),
-      meterId: text("meter_id").notNull(),
+      meterId: uuid("meter_id")
+         .notNull()
+         .references(() => meters.id, { onDelete: "restrict" }),
       quantity: numeric("quantity", { precision: 20, scale: 6 }).notNull(),
       properties: jsonb("properties")
          .$type<Record<string, unknown>>()
@@ -66,7 +69,7 @@ export const upsertUsageEventSchema = createInsertSchema(usageEvents)
          .uuid("ID do contato inválido.")
          .nullable()
          .optional(),
-      meterId: z.string().min(1, "ID do medidor é obrigatório."),
+      meterId: z.string().uuid("ID do medidor inválido."),
       quantity: z
          .string()
          .min(1, "Quantidade é obrigatória.")

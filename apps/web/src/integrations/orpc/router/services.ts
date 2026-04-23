@@ -2,18 +2,17 @@ import { ensureContactOwnership } from "@core/database/repositories/contacts-rep
 import {
    bulkCreateServices,
    createService,
-   createVariant as createVariantRepo,
+   createPrice as createVariantRepo,
    deleteService,
-   deleteVariant,
+   deletePrice as deleteVariant,
    ensureServiceOwnership,
-   ensureVariantOwnership,
+   ensurePriceOwnership as ensureVariantOwnership,
    listServices,
-   listVariantsByService,
+   listPricesByService as listVariantsByService,
    updateService,
-   updateVariant as updateVariantRepo,
+   updatePrice as updateVariantRepo,
 } from "@core/database/repositories/services-repository";
 import {
-   countActiveSubscriptionsByVariant,
    createSubscription as createSubscriptionRepo,
    ensureSubscriptionOwnership,
    listExpiringSoon,
@@ -24,11 +23,17 @@ import {
 import {
    createServiceSchema,
    updateServiceSchema,
-   createVariantSchema,
-   updateVariantSchema,
+   createPriceSchema as createVariantSchema,
+   updatePriceSchema as updateVariantSchema,
+   servicePrices,
 } from "@core/database/schemas/services";
-import { createSubscriptionSchema } from "@core/database/schemas/subscriptions";
+import { subscriptionItems } from "@core/database/schemas/subscription-items";
+import {
+   contactSubscriptions,
+   createSubscriptionSchema,
+} from "@core/database/schemas/subscriptions";
 import { WebAppError } from "@core/logging/errors";
+import { eq, and, sum, sql } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
@@ -243,10 +248,8 @@ export const createSubscription = protectedProcedure
    .input(
       createSubscriptionSchema.pick({
          contactId: true,
-         variantId: true,
          startDate: true,
          endDate: true,
-         negotiatedPrice: true,
          notes: true,
       }),
    )
@@ -256,21 +259,13 @@ export const createSubscription = protectedProcedure
             context.db,
             input.contactId,
             context.teamId,
+         ).andThen(() =>
+            createSubscriptionRepo(context.db, context.teamId, {
+               ...input,
+               source: "manual",
+               cancelAtPeriodEnd: false,
+            }),
          )
-            .andThen(() =>
-               ensureVariantOwnership(
-                  context.db,
-                  input.variantId,
-                  context.teamId,
-               ),
-            )
-            .andThen(() =>
-               createSubscriptionRepo(context.db, context.teamId, {
-                  ...input,
-                  source: "manual",
-                  cancelAtPeriodEnd: false,
-               }),
-            )
       ).match(
          (sub) => sub,
          (e) => {
@@ -326,15 +321,31 @@ export const getExpiringSoon = protectedProcedure.handler(
    },
 );
 
-export const getActiveCountByVariant = protectedProcedure.handler(
-   async ({ context }) => {
-      return (
-         await countActiveSubscriptionsByVariant(context.db, context.teamId)
-      ).match(
-         (rows) => rows,
-         (e) => {
-            throw WebAppError.fromAppError(e);
-         },
+export const getMrr = protectedProcedure.handler(async ({ context }) => {
+   const rows = await context.db
+      .select({
+         total: sum(
+            sql<string>`
+  CASE ${servicePrices.interval}
+    WHEN 'monthly' THEN COALESCE(${subscriptionItems.negotiatedPrice}, ${servicePrices.basePrice})::numeric * ${subscriptionItems.quantity}::numeric
+    WHEN 'annual' THEN COALESCE(${subscriptionItems.negotiatedPrice}, ${servicePrices.basePrice})::numeric * ${subscriptionItems.quantity}::numeric / 12
+    ELSE 0::numeric
+  END
+`,
+         ),
+      })
+      .from(subscriptionItems)
+      .innerJoin(servicePrices, eq(subscriptionItems.priceId, servicePrices.id))
+      .innerJoin(
+         contactSubscriptions,
+         eq(subscriptionItems.subscriptionId, contactSubscriptions.id),
+      )
+      .where(
+         and(
+            eq(subscriptionItems.teamId, context.teamId),
+            eq(contactSubscriptions.status, "active"),
+         ),
       );
-   },
-);
+
+   return { mrr: rows[0]?.total ?? "0" };
+});

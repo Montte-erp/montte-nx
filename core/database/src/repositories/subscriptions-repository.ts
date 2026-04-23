@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { AppError, validateInput } from "@core/logging/errors";
-import { and, count, desc, eq, gte, lte } from "drizzle-orm";
+import { and, desc, eq, gte, lte } from "drizzle-orm";
 import { fromPromise, fromThrowable, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -11,24 +11,17 @@ import {
    createSubscriptionSchema,
    updateSubscriptionSchema,
 } from "@core/database/schemas/subscriptions";
-import { services, serviceVariants } from "@core/database/schemas/services";
 
 const safeValidateCreate = fromThrowable(
    (data: CreateSubscriptionInput) =>
       validateInput(createSubscriptionSchema, data),
-   (e) =>
-      e instanceof AppError
-         ? e
-         : AppError.validation("Dados inválidos.", { cause: e }),
+   (e) => AppError.validation("Dados inválidos.", { cause: e }),
 );
 
 const safeValidateUpdate = fromThrowable(
    (data: UpdateSubscriptionInput) =>
       validateInput(updateSubscriptionSchema, data),
-   (e) =>
-      e instanceof AppError
-         ? e
-         : AppError.validation("Dados inválidos.", { cause: e }),
+   (e) => AppError.validation("Dados inválidos.", { cause: e }),
 );
 
 export function createSubscription(
@@ -65,11 +58,34 @@ export function updateSubscription(
    id: string,
    data: UpdateSubscriptionInput,
 ) {
-   return safeValidateUpdate(data).asyncAndThen((validated) =>
-      fromPromise(
+   return safeValidateUpdate(data).asyncAndThen((validated) => {
+      const { trialEndsAt, currentPeriodStart, currentPeriodEnd, ...rest } =
+         validated;
+      return fromPromise(
          db
             .update(contactSubscriptions)
-            .set({ ...validated, updatedAt: dayjs().toDate() })
+            .set({
+               ...rest,
+               trialEndsAt:
+                  trialEndsAt === undefined
+                     ? undefined
+                     : trialEndsAt != null
+                       ? dayjs(trialEndsAt).toDate()
+                       : null,
+               currentPeriodStart:
+                  currentPeriodStart === undefined
+                     ? undefined
+                     : currentPeriodStart != null
+                       ? dayjs(currentPeriodStart).toDate()
+                       : null,
+               currentPeriodEnd:
+                  currentPeriodEnd === undefined
+                     ? undefined
+                     : currentPeriodEnd != null
+                       ? dayjs(currentPeriodEnd).toDate()
+                       : null,
+               updatedAt: dayjs().toDate(),
+            })
             .where(eq(contactSubscriptions.id, id))
             .returning(),
          (e) =>
@@ -78,8 +94,8 @@ export function updateSubscription(
          updated
             ? ok(updated)
             : err(AppError.notFound("Assinatura não encontrada.")),
-      ),
-   );
+      );
+   });
 }
 
 export function listSubscriptionsByTeam(
@@ -108,35 +124,8 @@ export function listSubscriptionsByContact(
 ) {
    return fromPromise(
       db
-         .select({
-            id: contactSubscriptions.id,
-            teamId: contactSubscriptions.teamId,
-            contactId: contactSubscriptions.contactId,
-            variantId: contactSubscriptions.variantId,
-            startDate: contactSubscriptions.startDate,
-            endDate: contactSubscriptions.endDate,
-            negotiatedPrice: contactSubscriptions.negotiatedPrice,
-            notes: contactSubscriptions.notes,
-            status: contactSubscriptions.status,
-            source: contactSubscriptions.source,
-            externalId: contactSubscriptions.externalId,
-            currentPeriodStart: contactSubscriptions.currentPeriodStart,
-            currentPeriodEnd: contactSubscriptions.currentPeriodEnd,
-            cancelAtPeriodEnd: contactSubscriptions.cancelAtPeriodEnd,
-            canceledAt: contactSubscriptions.canceledAt,
-            createdAt: contactSubscriptions.createdAt,
-            updatedAt: contactSubscriptions.updatedAt,
-            serviceName: services.name,
-            variantName: serviceVariants.name,
-            billingCycle: serviceVariants.billingCycle,
-            serviceId: services.id,
-         })
+         .select()
          .from(contactSubscriptions)
-         .leftJoin(
-            serviceVariants,
-            eq(contactSubscriptions.variantId, serviceVariants.id),
-         )
-         .leftJoin(services, eq(serviceVariants.serviceId, services.id))
          .where(eq(contactSubscriptions.contactId, contactId))
          .orderBy(desc(contactSubscriptions.createdAt)),
       (e) =>
@@ -163,10 +152,7 @@ export function upsertSubscriptionByExternalId(
                   .update(contactSubscriptions)
                   .set({
                      status: validated.status,
-                     negotiatedPrice: validated.negotiatedPrice,
                      endDate: validated.endDate,
-                     currentPeriodStart: validated.currentPeriodStart,
-                     currentPeriodEnd: validated.currentPeriodEnd,
                      updatedAt: dayjs().toDate(),
                   })
                   .where(eq(contactSubscriptions.id, existing.id))
@@ -189,29 +175,6 @@ export function upsertSubscriptionByExternalId(
                ? e
                : AppError.database("Falha ao salvar assinatura.", { cause: e }),
       ),
-   );
-}
-
-export function countActiveSubscriptionsByVariant(
-   db: DatabaseInstance,
-   teamId: string,
-) {
-   return fromPromise(
-      db
-         .select({
-            variantId: contactSubscriptions.variantId,
-            count: count(),
-         })
-         .from(contactSubscriptions)
-         .where(
-            and(
-               eq(contactSubscriptions.teamId, teamId),
-               eq(contactSubscriptions.status, "active"),
-            ),
-         )
-         .groupBy(contactSubscriptions.variantId),
-      (e) =>
-         AppError.database("Falha ao contar assinaturas ativas.", { cause: e }),
    );
 }
 

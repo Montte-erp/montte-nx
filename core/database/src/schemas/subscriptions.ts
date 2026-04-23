@@ -1,17 +1,9 @@
 import { sql } from "drizzle-orm";
-import {
-   boolean,
-   date,
-   index,
-   numeric,
-   text,
-   timestamp,
-   uuid,
-} from "drizzle-orm/pg-core";
+import { boolean, index, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { contacts, serviceSourceEnum } from "@core/database/schemas/contacts";
-import { serviceVariants } from "@core/database/schemas/services";
+import { coupons } from "@core/database/schemas/coupons";
 import { crmSchema } from "@core/database/schemas/schemas";
 
 export const billingCycleEnum = crmSchema.enum("billing_cycle", [
@@ -20,11 +12,15 @@ export const billingCycleEnum = crmSchema.enum("billing_cycle", [
    "annual",
    "one_time",
 ]);
+
 export const subscriptionStatusEnum = crmSchema.enum("subscription_status", [
    "active",
+   "trialing",
+   "incomplete",
    "completed",
    "cancelled",
 ]);
+
 export type BillingCycle = (typeof billingCycleEnum.enumValues)[number];
 export type SubscriptionStatus =
    (typeof subscriptionStatusEnum.enumValues)[number];
@@ -39,21 +35,20 @@ export const contactSubscriptions = crmSchema.table(
       contactId: uuid("contact_id")
          .notNull()
          .references(() => contacts.id, { onDelete: "cascade" }),
-      variantId: uuid("variant_id")
-         .notNull()
-         .references(() => serviceVariants.id, { onDelete: "cascade" }),
-      startDate: date("start_date").notNull(),
-      endDate: date("end_date"),
-      negotiatedPrice: numeric("negotiated_price", {
-         precision: 12,
-         scale: 2,
-      }).notNull(),
+      startDate: text("start_date").notNull(),
+      endDate: text("end_date"),
       notes: text("notes"),
       status: subscriptionStatusEnum("status").notNull().default("active"),
       source: serviceSourceEnum("source").notNull().default("manual"),
       externalId: text("external_id"),
-      currentPeriodStart: date("current_period_start"),
-      currentPeriodEnd: date("current_period_end"),
+      couponId: uuid("coupon_id").references(() => coupons.id, {
+         onDelete: "set null",
+      }),
+      trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+      currentPeriodStart: timestamp("current_period_start", {
+         withTimezone: true,
+      }),
+      currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
       cancelAtPeriodEnd: boolean("cancel_at_period_end")
          .notNull()
          .default(false),
@@ -69,9 +64,9 @@ export const contactSubscriptions = crmSchema.table(
    (table) => [
       index("contact_subscriptions_team_id_idx").on(table.teamId),
       index("contact_subscriptions_contact_id_idx").on(table.contactId),
-      index("contact_subscriptions_variant_id_idx").on(table.variantId),
       index("contact_subscriptions_external_id_idx").on(table.externalId),
       index("contact_subscriptions_status_idx").on(table.status),
+      index("contact_subscriptions_coupon_id_idx").on(table.couponId),
    ],
 );
 
@@ -79,44 +74,33 @@ export type ContactSubscription = typeof contactSubscriptions.$inferSelect;
 export type NewContactSubscription = typeof contactSubscriptions.$inferInsert;
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
 const dateStringSchema = z
    .string()
    .regex(ISO_DATE_REGEX, "Data deve estar no formato YYYY-MM-DD.");
 
-const priceSchema = z.string().refine((v) => !Number.isNaN(Number(v)), {
-   message: "Preço deve ser um número válido.",
-});
-
 const baseSubscriptionSchema = createInsertSchema(contactSubscriptions).pick({
    contactId: true,
-   variantId: true,
    startDate: true,
    endDate: true,
-   negotiatedPrice: true,
    notes: true,
    status: true,
    source: true,
    externalId: true,
-   currentPeriodStart: true,
-   currentPeriodEnd: true,
+   couponId: true,
    cancelAtPeriodEnd: true,
 });
 
 export const createSubscriptionSchema = baseSubscriptionSchema.extend({
    contactId: z.string().uuid("ID do contato inválido."),
-   variantId: z.string().uuid("ID da variante inválido."),
    startDate: dateStringSchema,
    endDate: dateStringSchema.nullable().optional(),
-   negotiatedPrice: priceSchema,
    notes: z
       .string()
       .max(500, "Notas devem ter no máximo 500 caracteres.")
       .nullable()
       .optional(),
    externalId: z.string().nullable().optional(),
-   currentPeriodStart: dateStringSchema.nullable().optional(),
-   currentPeriodEnd: dateStringSchema.nullable().optional(),
+   couponId: z.string().uuid().nullable().optional(),
    cancelAtPeriodEnd: z.boolean().default(false),
 });
 
@@ -124,16 +108,17 @@ export const updateSubscriptionSchema = baseSubscriptionSchema
    .extend({
       startDate: dateStringSchema.optional(),
       endDate: dateStringSchema.nullable().optional(),
-      negotiatedPrice: priceSchema.optional(),
       notes: z
          .string()
          .max(500, "Notas devem ter no máximo 500 caracteres.")
          .nullable()
          .optional(),
       externalId: z.string().nullable().optional(),
-      currentPeriodStart: dateStringSchema.nullable().optional(),
-      currentPeriodEnd: dateStringSchema.nullable().optional(),
+      couponId: z.string().uuid().nullable().optional(),
       cancelAtPeriodEnd: z.boolean().optional(),
+      trialEndsAt: z.string().datetime().nullable().optional(),
+      currentPeriodStart: z.string().datetime().nullable().optional(),
+      currentPeriodEnd: z.string().datetime().nullable().optional(),
    })
    .partial();
 

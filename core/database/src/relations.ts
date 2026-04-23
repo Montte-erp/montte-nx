@@ -12,8 +12,10 @@ import {
    user,
 } from "@core/database/schemas/auth";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { benefits, serviceBenefits } from "@core/database/schemas/benefits";
 import { categories } from "@core/database/schemas/categories";
 import { contacts } from "@core/database/schemas/contacts";
+import { coupons, couponRedemptions } from "@core/database/schemas/coupons";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
 import { dashboards } from "@core/database/schemas/dashboards";
@@ -23,11 +25,13 @@ import {
    inventoryMovements,
    inventoryProducts,
 } from "@core/database/schemas/inventory";
+import { meters } from "@core/database/schemas/meters";
 import {
    resources,
    services,
-   serviceVariants,
+   servicePrices,
 } from "@core/database/schemas/services";
+import { subscriptionItems } from "@core/database/schemas/subscription-items";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 import { tags } from "@core/database/schemas/tags";
 import {
@@ -195,6 +199,12 @@ export const inventoryMovementsRelations = relations(
    }),
 );
 
+export const metersRelations = relations(meters, ({ many }) => ({
+   prices: many(servicePrices),
+   usageEvents: many(usageEvents),
+   benefits: many(benefits),
+}));
+
 export const servicesRelations = relations(services, ({ one, many }) => ({
    category: one(categories, {
       fields: [services.categoryId],
@@ -204,31 +214,101 @@ export const servicesRelations = relations(services, ({ one, many }) => ({
       fields: [services.tagId],
       references: [tags.id],
    }),
-   variants: many(serviceVariants),
+   prices: many(servicePrices),
    resources: many(resources),
+   serviceBenefits: many(serviceBenefits),
 }));
 
-export const serviceVariantsRelations = relations(
-   serviceVariants,
+export const servicePricesRelations = relations(
+   servicePrices,
    ({ one, many }) => ({
       service: one(services, {
-         fields: [serviceVariants.serviceId],
+         fields: [servicePrices.serviceId],
          references: [services.id],
       }),
-      subscriptions: many(contactSubscriptions),
+      meter: one(meters, {
+         fields: [servicePrices.meterId],
+         references: [meters.id],
+      }),
+      subscriptionItems: many(subscriptionItems),
    }),
 );
 
 export const contactSubscriptionsRelations = relations(
    contactSubscriptions,
-   ({ one }) => ({
+   ({ one, many }) => ({
       contact: one(contacts, {
          fields: [contactSubscriptions.contactId],
          references: [contacts.id],
       }),
-      variant: one(serviceVariants, {
-         fields: [contactSubscriptions.variantId],
-         references: [serviceVariants.id],
+      coupon: one(coupons, {
+         fields: [contactSubscriptions.couponId],
+         references: [coupons.id],
+      }),
+      items: many(subscriptionItems),
+      redemptions: many(couponRedemptions),
+   }),
+);
+
+export const subscriptionItemsRelations = relations(
+   subscriptionItems,
+   ({ one }) => ({
+      subscription: one(contactSubscriptions, {
+         fields: [subscriptionItems.subscriptionId],
+         references: [contactSubscriptions.id],
+      }),
+      price: one(servicePrices, {
+         fields: [subscriptionItems.priceId],
+         references: [servicePrices.id],
+      }),
+   }),
+);
+
+export const couponsRelations = relations(coupons, ({ one, many }) => ({
+   redemptions: many(couponRedemptions),
+   subscriptions: many(contactSubscriptions),
+   price: one(servicePrices, {
+      fields: [coupons.priceId],
+      references: [servicePrices.id],
+   }),
+}));
+
+export const couponRedemptionsRelations = relations(
+   couponRedemptions,
+   ({ one }) => ({
+      coupon: one(coupons, {
+         fields: [couponRedemptions.couponId],
+         references: [coupons.id],
+      }),
+      subscription: one(contactSubscriptions, {
+         fields: [couponRedemptions.subscriptionId],
+         references: [contactSubscriptions.id],
+      }),
+      contact: one(contacts, {
+         fields: [couponRedemptions.contactId],
+         references: [contacts.id],
+      }),
+   }),
+);
+
+export const benefitsRelations = relations(benefits, ({ one, many }) => ({
+   serviceBenefits: many(serviceBenefits),
+   meter: one(meters, {
+      fields: [benefits.meterId],
+      references: [meters.id],
+   }),
+}));
+
+export const serviceBenefitsRelations = relations(
+   serviceBenefits,
+   ({ one }) => ({
+      service: one(services, {
+         fields: [serviceBenefits.serviceId],
+         references: [services.id],
+      }),
+      benefit: one(benefits, {
+         fields: [serviceBenefits.benefitId],
+         references: [benefits.id],
       }),
    }),
 );
@@ -327,6 +407,10 @@ export const usageEventsRelations = relations(usageEvents, ({ one }) => ({
    contact: one(contacts, {
       fields: [usageEvents.contactId],
       references: [contacts.id],
+   }),
+   meter: one(meters, {
+      fields: [usageEvents.meterId],
+      references: [meters.id],
    }),
 }));
 
