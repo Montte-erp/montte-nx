@@ -10,6 +10,7 @@ import "./workflows/suggest-tag-workflow";
 import "./workflows/billing/usage-ingestion-workflow";
 import "./workflows/billing/benefit-lifecycle-workflow";
 import "./workflows/billing/period-end-invoice-workflow";
+import "./workflows/billing/trial-expiry-workflow";
 import { createAllQueues } from "./workflow-factory";
 
 createAllQueues({ workerConcurrency: 10 });

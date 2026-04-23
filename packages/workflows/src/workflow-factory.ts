@@ -9,6 +9,7 @@ export const QUEUES = {
    usageIngestion: "usage-ingestion",
    benefitLifecycle: "benefit-lifecycle",
    periodEndInvoice: "period-end-invoice",
+   trialExpiry: "trial-expiry",
 } as const;
 
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
