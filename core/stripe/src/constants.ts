@@ -22,6 +22,10 @@ export const FREE_TIER_LIMITS: Record<string, number> = {
    "finance.statement_imported": 10,
    "ai.keyword_derived": 100,
    "notifications.delivered": 1000,
+   "subscription.created": 50,
+   "usage.ingested": 1000,
+   "service.meter_created": 10,
+   "service.benefit_created": 20,
 };
 
 export const EVENT_PRICES: Record<string, string> = {
@@ -33,6 +37,10 @@ export const EVENT_PRICES: Record<string, string> = {
    "finance.statement_imported": "0.020000",
    "ai.keyword_derived": "0.010000",
    "notifications.delivered": "0.001000",
+   "subscription.created": "0.010000",
+   "usage.ingested": "0.000500",
+   "service.meter_created": "0.050000",
+   "service.benefit_created": "0.020000",
 };
 
 export const STRIPE_METER_EVENTS: Record<string, string> = {
@@ -44,4 +52,8 @@ export const STRIPE_METER_EVENTS: Record<string, string> = {
    "finance.statement_imported": "finance_statement_imports",
    "ai.keyword_derived": "ai_keyword_derived",
    "notifications.delivered": "notifications_delivered",
+   "subscription.created": "subscription_creates",
+   "usage.ingested": "usage_ingested",
+   "service.meter_created": "service_meter_creates",
+   "service.benefit_created": "service_benefit_creates",
 };
