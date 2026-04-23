@@ -7,6 +7,7 @@ import * as billingRouter from "./billing";
 import * as categoriesRouter from "./categories";
 import * as contactSettingsRouter from "./contact-settings";
 import * as contactsRouter from "./contacts";
+import * as couponsRouter from "./coupons";
 import * as creditCardsRouter from "./credit-cards";
 import * as dashboardsRouter from "./dashboards";
 import * as financialSettingsRouter from "./financial-settings";
@@ -32,6 +33,7 @@ export default {
    categories: categoriesRouter,
    contactSettings: contactSettingsRouter,
    contacts: contactsRouter,
+   coupons: couponsRouter,
    dashboards: dashboardsRouter,
    financialSettings: financialSettingsRouter,
    insights: insightsRouter,

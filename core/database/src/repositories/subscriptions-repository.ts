@@ -194,6 +194,7 @@ export function listExpiringSoon(
    db: DatabaseInstance,
    teamId: string,
    withinDays = 30,
+   status: "active" | "trialing" = "active",
 ) {
    return fromPromise(
       (async () => {
@@ -205,7 +206,7 @@ export function listExpiringSoon(
             .where(
                and(
                   eq(contactSubscriptions.teamId, teamId),
-                  eq(contactSubscriptions.status, "active"),
+                  eq(contactSubscriptions.status, status),
                   gte(contactSubscriptions.endDate, now),
                   lte(contactSubscriptions.endDate, futureDate),
                ),
