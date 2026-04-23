@@ -4,6 +4,11 @@ export const NOTIFICATION_TYPES = {
    AI_TAG_KEYWORD_DERIVED: "ai.tag_keyword_derived",
    AI_TAG_SUGGESTED: "ai.tag_suggested",
    CRON_KEYWORDS_BACKFILL: "cron.keywords_backfill",
+   BILLING_INVOICE_GENERATED: "billing.invoice_generated",
+   BILLING_TRIAL_EXPIRING: "billing.trial_expiring",
+   BILLING_BENEFIT_GRANTED: "billing.benefit_granted",
+   BILLING_BENEFIT_REVOKED: "billing.benefit_revoked",
+   BILLING_USAGE_INGESTED: "billing.usage_ingested",
 } as const;
 
 export type NotificationType =
@@ -29,6 +34,19 @@ export type NotificationPayloadMap = {
    "cron.keywords_backfill": {
       count: number;
    };
+   "billing.invoice_generated": {
+      invoiceId: string;
+      subscriptionId: string;
+      total: string;
+   };
+   "billing.trial_expiring": {
+      subscriptionId: string;
+      trialEndsAt: string;
+      daysLeft: number;
+   };
+   "billing.benefit_granted": { subscriptionId: string; benefitIds: string[] };
+   "billing.benefit_revoked": { subscriptionId: string; benefitIds: string[] };
+   "billing.usage_ingested": { meterId: string; idempotencyKey: string };
 };
 
 export function getPayload<T extends keyof NotificationPayloadMap>(
