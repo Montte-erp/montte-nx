@@ -7,21 +7,21 @@ import {
    attachBenefitToService,
    detachBenefitFromService,
    listBenefitsByService,
-} from "@core/database/repositories/benefits-repository";
+} from "@modules/services/db/benefits";
 import {
    createMeter as createMeterRepo,
    listMeters,
    updateMeter,
    deleteMeter,
    ensureMeterOwnership,
-} from "@core/database/repositories/meters-repository";
+} from "@modules/services/db/meters";
 import {
    addSubscriptionItem,
    updateSubscriptionItemQuantity,
    removeSubscriptionItem,
    listSubscriptionItems,
    ensureSubscriptionItemOwnership,
-} from "@core/database/repositories/subscription-items-repository";
+} from "@modules/billing/db/subscription-items";
 import {
    bulkCreateServices,
    createService,
@@ -34,7 +34,7 @@ import {
    listPricesByService as listVariantsByService,
    updateService,
    updatePrice as updateVariantRepo,
-} from "@core/database/repositories/services-repository";
+} from "@modules/services/db/services";
 import {
    createSubscription as createSubscriptionRepo,
    ensureSubscriptionOwnership,
@@ -42,7 +42,7 @@ import {
    listSubscriptionsByContact,
    listSubscriptionsByTeam,
    updateSubscription,
-} from "@core/database/repositories/subscriptions-repository";
+} from "@modules/billing/db/subscriptions";
 import {
    createBenefitSchema,
    benefits,
@@ -74,9 +74,11 @@ import { WebAppError } from "@core/logging/errors";
 import {
    emitServiceBenefitCreated,
    emitServiceMeterCreated,
+} from "@modules/services/events/events";
+import {
    emitSubscriptionCreated,
    emitUsageIngested,
-} from "@packages/events/service";
+} from "@modules/billing/events/events";
 import { enqueueUsageIngestionWorkflow } from "@packages/workflows/workflows/billing/usage-ingestion-workflow";
 import { eq, and, sum, sql, count, asc } from "drizzle-orm";
 import { z } from "zod";
