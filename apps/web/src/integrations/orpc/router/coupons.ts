@@ -10,7 +10,7 @@ import {
    getCouponByCode,
    listCoupons,
    updateCoupon,
-} from "@core/database/repositories/coupons-repository";
+} from "@modules/services/db/coupons";
 import { z } from "zod";
 import dayjs from "dayjs";
 import { protectedProcedure } from "../server";

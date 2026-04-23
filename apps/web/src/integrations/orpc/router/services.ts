@@ -79,7 +79,7 @@ import {
    emitSubscriptionCreated,
    emitUsageIngested,
 } from "@modules/billing/events/events";
-import { enqueueUsageIngestionWorkflow } from "@packages/workflows/workflows/billing/usage-ingestion-workflow";
+import { enqueueUsageIngestionWorkflow } from "@modules/billing/workflows/usage-ingestion";
 import { eq, and, sum, sql, count, asc } from "drizzle-orm";
 import { z } from "zod";
 import { createBillableProcedure } from "../billable";
