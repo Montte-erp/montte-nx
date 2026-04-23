@@ -2,18 +2,17 @@ import { ensureContactOwnership } from "@core/database/repositories/contacts-rep
 import {
    bulkCreateServices,
    createService,
-   createVariant as createVariantRepo,
+   createPrice as createVariantRepo,
    deleteService,
-   deleteVariant,
+   deletePrice as deleteVariant,
    ensureServiceOwnership,
-   ensureVariantOwnership,
+   ensurePriceOwnership as ensureVariantOwnership,
    listServices,
-   listVariantsByService,
+   listPricesByService as listVariantsByService,
    updateService,
-   updateVariant as updateVariantRepo,
+   updatePrice as updateVariantRepo,
 } from "@core/database/repositories/services-repository";
 import {
-   countActiveSubscriptionsByVariant,
    createSubscription as createSubscriptionRepo,
    ensureSubscriptionOwnership,
    listExpiringSoon,
@@ -24,8 +23,8 @@ import {
 import {
    createServiceSchema,
    updateServiceSchema,
-   createVariantSchema,
-   updateVariantSchema,
+   createPriceSchema as createVariantSchema,
+   updatePriceSchema as updateVariantSchema,
 } from "@core/database/schemas/services";
 import { createSubscriptionSchema } from "@core/database/schemas/subscriptions";
 import { WebAppError } from "@core/logging/errors";
@@ -243,10 +242,8 @@ export const createSubscription = protectedProcedure
    .input(
       createSubscriptionSchema.pick({
          contactId: true,
-         variantId: true,
          startDate: true,
          endDate: true,
-         negotiatedPrice: true,
          notes: true,
       }),
    )
@@ -256,21 +253,13 @@ export const createSubscription = protectedProcedure
             context.db,
             input.contactId,
             context.teamId,
+         ).andThen(() =>
+            createSubscriptionRepo(context.db, context.teamId, {
+               ...input,
+               source: "manual",
+               cancelAtPeriodEnd: false,
+            }),
          )
-            .andThen(() =>
-               ensureVariantOwnership(
-                  context.db,
-                  input.variantId,
-                  context.teamId,
-               ),
-            )
-            .andThen(() =>
-               createSubscriptionRepo(context.db, context.teamId, {
-                  ...input,
-                  source: "manual",
-                  cancelAtPeriodEnd: false,
-               }),
-            )
       ).match(
          (sub) => sub,
          (e) => {
@@ -318,19 +307,6 @@ export const cancelSubscription = protectedProcedure
 export const getExpiringSoon = protectedProcedure.handler(
    async ({ context }) => {
       return (await listExpiringSoon(context.db, context.teamId)).match(
-         (rows) => rows,
-         (e) => {
-            throw WebAppError.fromAppError(e);
-         },
-      );
-   },
-);
-
-export const getActiveCountByVariant = protectedProcedure.handler(
-   async ({ context }) => {
-      return (
-         await countActiveSubscriptionsByVariant(context.db, context.teamId)
-      ).match(
          (rows) => rows,
          (e) => {
             throw WebAppError.fromAppError(e);

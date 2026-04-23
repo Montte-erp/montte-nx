@@ -4,15 +4,15 @@ import { fromPromise, fromThrowable, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateServiceInput,
-   type CreateVariantInput,
+   type CreatePriceInput,
    type UpdateServiceInput,
-   type UpdateVariantInput,
+   type UpdatePriceInput,
    createServiceSchema,
-   createVariantSchema,
+   createPriceSchema,
    services,
-   serviceVariants,
+   servicePrices,
    updateServiceSchema,
-   updateVariantSchema,
+   updatePriceSchema,
 } from "@core/database/schemas/services";
 import { categories } from "@core/database/schemas/categories";
 import { tags } from "@core/database/schemas/tags";
@@ -38,16 +38,16 @@ const safeValidateUpdate = fromThrowable(
          : AppError.validation("Dados inválidos.", { cause: e }),
 );
 
-const safeValidateCreateVariant = fromThrowable(
-   (data: CreateVariantInput) => validateInput(createVariantSchema, data),
+const safeValidateCreatePrice = fromThrowable(
+   (data: CreatePriceInput) => validateInput(createPriceSchema, data),
    (e) =>
       e instanceof AppError
          ? e
          : AppError.validation("Dados inválidos.", { cause: e }),
 );
 
-const safeValidateUpdateVariant = fromThrowable(
-   (data: UpdateVariantInput) => validateInput(updateVariantSchema, data),
+const safeValidateUpdatePrice = fromThrowable(
+   (data: UpdatePriceInput) => validateInput(updatePriceSchema, data),
    (e) =>
       e instanceof AppError
          ? e
@@ -158,72 +158,70 @@ export function deleteService(db: DatabaseInstance, id: string) {
    ).map(() => undefined);
 }
 
-export function createVariant(
+export function createPrice(
    db: DatabaseInstance,
    teamId: string,
    serviceId: string,
-   data: CreateVariantInput,
+   data: CreatePriceInput,
 ) {
-   return safeValidateCreateVariant(data).asyncAndThen((validated) =>
+   return safeValidateCreatePrice(data).asyncAndThen((validated) =>
       fromPromise(
          db
-            .insert(serviceVariants)
+            .insert(servicePrices)
             .values({ ...validated, teamId, serviceId })
             .returning(),
-         (e) => AppError.database("Falha ao criar variante.", { cause: e }),
-      ).andThen(([variant]) =>
-         variant
-            ? ok(variant)
-            : err(AppError.database("Falha ao criar variante.")),
+         (e) => AppError.database("Falha ao criar preço.", { cause: e }),
+      ).andThen(([price]) =>
+         price ? ok(price) : err(AppError.database("Falha ao criar preço.")),
       ),
    );
 }
 
-export function listVariantsByService(db: DatabaseInstance, serviceId: string) {
+export function listPricesByService(db: DatabaseInstance, serviceId: string) {
    return fromPromise(
       db
          .select()
-         .from(serviceVariants)
-         .where(eq(serviceVariants.serviceId, serviceId))
-         .orderBy(serviceVariants.name),
-      (e) => AppError.database("Falha ao listar variantes.", { cause: e }),
+         .from(servicePrices)
+         .where(eq(servicePrices.serviceId, serviceId))
+         .orderBy(servicePrices.name),
+      (e) => AppError.database("Falha ao listar preços.", { cause: e }),
    );
 }
 
-export function getVariant(db: DatabaseInstance, id: string) {
+export function getPrice(db: DatabaseInstance, id: string) {
    return fromPromise(
-      db.query.serviceVariants.findFirst({
+      db.query.servicePrices.findFirst({
          where: (fields, { eq }) => eq(fields.id, id),
       }),
-      (e) => AppError.database("Falha ao buscar variante.", { cause: e }),
-   ).map((variant) => variant ?? null);
+      (e) => AppError.database("Falha ao buscar preço.", { cause: e }),
+   ).map((price) => price ?? null);
 }
 
-export function updateVariant(
+export function updatePrice(
    db: DatabaseInstance,
    id: string,
-   data: UpdateVariantInput,
+   data: UpdatePriceInput,
 ) {
-   return safeValidateUpdateVariant(data).asyncAndThen((validated) =>
+   return safeValidateUpdatePrice(data).asyncAndThen((validated) =>
       fromPromise(
          db
-            .update(serviceVariants)
+            .update(servicePrices)
             .set(validated)
-            .where(eq(serviceVariants.id, id))
+            .where(eq(servicePrices.id, id))
             .returning(),
-         (e) => AppError.database("Falha ao atualizar variante.", { cause: e }),
+         (e) => AppError.database("Falha ao atualizar preço.", { cause: e }),
       ).andThen(([updated]) =>
          updated
             ? ok(updated)
-            : err(AppError.notFound("Variante não encontrada.")),
+            : err(AppError.notFound("Preço não encontrado.")),
       ),
    );
 }
 
-export function deleteVariant(db: DatabaseInstance, id: string) {
+export function deletePrice(db: DatabaseInstance, id: string) {
    return fromPromise(
-      db.delete(serviceVariants).where(eq(serviceVariants.id, id)),
-      (e) => AppError.database("Falha ao excluir variante.", { cause: e }),
+      db.delete(servicePrices).where(eq(servicePrices.id, id)),
+      (e) => AppError.database("Falha ao excluir preço.", { cause: e }),
    ).map(() => undefined);
 }
 
@@ -239,15 +237,15 @@ export function ensureServiceOwnership(
    });
 }
 
-export function ensureVariantOwnership(
+export function ensurePriceOwnership(
    db: DatabaseInstance,
    id: string,
    teamId: string,
 ) {
-   return getVariant(db, id).andThen((variant) => {
-      if (!variant || variant.teamId !== teamId)
-         return err(AppError.notFound("Variação não encontrada."));
-      return ok(variant);
+   return getPrice(db, id).andThen((price) => {
+      if (!price || price.teamId !== teamId)
+         return err(AppError.notFound("Preço não encontrado."));
+      return ok(price);
    });
 }
 

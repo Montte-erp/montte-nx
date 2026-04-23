@@ -30,7 +30,6 @@ import {
    resources,
    services,
    servicePrices,
-   serviceVariants,
 } from "@core/database/schemas/services";
 import { subscriptionItems } from "@core/database/schemas/subscription-items";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
@@ -231,17 +230,6 @@ export const servicePricesRelations = relations(
          references: [meters.id],
       }),
       subscriptionItems: many(subscriptionItems),
-   }),
-);
-
-// Legacy alias — same object as servicePrices
-export const serviceVariantsRelations = relations(
-   serviceVariants,
-   ({ one }) => ({
-      service: one(services, {
-         fields: [serviceVariants.serviceId],
-         references: [services.id],
-      }),
    }),
 );
 

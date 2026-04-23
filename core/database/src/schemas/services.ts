@@ -189,12 +189,3 @@ export type CreateServiceInput = z.infer<typeof createServiceSchema>;
 export type UpdateServiceInput = z.infer<typeof updateServiceSchema>;
 export type CreatePriceInput = z.infer<typeof createPriceSchema>;
 export type UpdatePriceInput = z.infer<typeof updatePriceSchema>;
-
-// Legacy aliases — keep until router/repo are updated in later tasks
-export const serviceVariants = servicePrices;
-export type ServiceVariant = ServicePrice;
-export type NewServiceVariant = NewServicePrice;
-export const createVariantSchema = createPriceSchema;
-export const updateVariantSchema = updatePriceSchema;
-export type CreateVariantInput = CreatePriceInput;
-export type UpdateVariantInput = UpdatePriceInput;
