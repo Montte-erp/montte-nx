@@ -13,7 +13,6 @@ import {
    EmptyTitle,
 } from "@packages/ui/components/empty";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { format, of } from "@f-o-t/money";
 import dayjs from "dayjs";
 import { RefreshCw } from "lucide-react";
 import type { Outputs } from "@/integrations/orpc/client";
@@ -23,6 +22,8 @@ type Subscription = Outputs["services"]["getContactSubscriptions"][number];
 
 const STATUS_LABELS: Record<Subscription["status"], string> = {
    active: "Ativa",
+   trialing: "Em teste",
+   incomplete: "Incompleta",
    completed: "Concluída",
    cancelled: "Cancelada",
 };
@@ -32,15 +33,10 @@ const STATUS_VARIANTS: Record<
    "default" | "secondary" | "outline"
 > = {
    active: "default",
+   trialing: "default",
+   incomplete: "outline",
    completed: "secondary",
    cancelled: "outline",
-};
-
-const BILLING_CYCLE_LABELS: Record<string, string> = {
-   hourly: "Por hora",
-   monthly: "Mensal",
-   annual: "Anual",
-   one_time: "Único",
 };
 
 function SubscriptionCard({ sub }: { sub: Subscription }) {
@@ -49,27 +45,15 @@ function SubscriptionCard({ sub }: { sub: Subscription }) {
          <CardHeader>
             <div className="flex items-center gap-2">
                <CardTitle className="flex-1 text-sm">
-                  {sub.serviceName ?? "Serviço removido"}
+                  Assinatura {sub.id.slice(0, 8)}
                </CardTitle>
                <Badge variant={STATUS_VARIANTS[sub.status]}>
                   {STATUS_LABELS[sub.status]}
                </Badge>
             </div>
-            {sub.variantName && sub.billingCycle && (
-               <span className="text-xs text-muted-foreground">
-                  {sub.variantName} —{" "}
-                  {BILLING_CYCLE_LABELS[sub.billingCycle] ?? sub.billingCycle}
-               </span>
-            )}
          </CardHeader>
          <CardContent>
             <div className="flex flex-col gap-2 text-sm">
-               <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Valor:</span>
-                  <span className="font-medium">
-                     {format(of(sub.negotiatedPrice, "BRL"), "pt-BR")}
-                  </span>
-               </div>
                <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">Início:</span>
                   <span>{dayjs(sub.startDate).format("DD/MM/YYYY")}</span>

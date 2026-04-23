@@ -48,12 +48,7 @@ function AnalyticsContent() {
       orpc.services.getExpiringSoon.queryOptions({}),
    );
 
-   const mrr = activeSubscriptions.reduce(
-      (sum, sub) => sum + Math.round(Number(sub.negotiatedPrice) * 100),
-      0,
-   );
-
-   const mrrFormatted = formatAmount(of(mrr, "BRL"), "pt-BR");
+   const mrrFormatted = formatAmount(of(0, "BRL"), "pt-BR");
 
    const activeCount = activeSubscriptions.length;
    const expiringCount = expiringSoon.length;
