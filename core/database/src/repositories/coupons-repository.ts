@@ -13,18 +13,12 @@ import {
 
 const safeValidateCreate = fromThrowable(
    (data: CreateCouponInput) => validateInput(createCouponSchema, data),
-   (e) =>
-      e instanceof AppError
-         ? e
-         : AppError.validation("Dados inválidos.", { cause: e }),
+   (e) => AppError.validation("Dados inválidos.", { cause: e }),
 );
 
 const safeValidateUpdate = fromThrowable(
    (data: UpdateCouponInput) => validateInput(updateCouponSchema, data),
-   (e) =>
-      e instanceof AppError
-         ? e
-         : AppError.validation("Dados inválidos.", { cause: e }),
+   (e) => AppError.validation("Dados inválidos.", { cause: e }),
 );
 
 export function createCoupon(
@@ -57,10 +51,7 @@ export function createCoupon(
             if (!row) throw AppError.database("Falha ao criar cupom.");
             return row;
          }),
-         (e) =>
-            e instanceof AppError
-               ? e
-               : AppError.database("Falha ao criar cupom.", { cause: e }),
+         (e) => AppError.database("Falha ao criar cupom.", { cause: e }),
       ),
    );
 }
@@ -93,11 +84,10 @@ export function getCouponByCode(
 
 export function listCoupons(db: DatabaseInstance, teamId: string) {
    return fromPromise(
-      db
-         .select()
-         .from(coupons)
-         .where(eq(coupons.teamId, teamId))
-         .orderBy(coupons.createdAt),
+      db.query.coupons.findMany({
+         where: (fields, { eq }) => eq(fields.teamId, teamId),
+         orderBy: (fields, { asc }) => [asc(fields.createdAt)],
+      }),
       (e) => AppError.database("Falha ao listar cupons.", { cause: e }),
    );
 }
@@ -109,21 +99,22 @@ export function updateCoupon(
 ) {
    return safeValidateUpdate(data).asyncAndThen((validated) =>
       fromPromise(
-         db
-            .update(coupons)
-            .set({
-               ...validated,
-               redeemBy: validated.redeemBy
-                  ? new Date(validated.redeemBy)
-                  : validated.redeemBy,
-            })
-            .where(eq(coupons.id, id))
-            .returning(),
+         db.transaction(async (tx) => {
+            const [row] = await tx
+               .update(coupons)
+               .set({
+                  ...validated,
+                  redeemBy:
+                     validated.redeemBy != null
+                        ? new Date(validated.redeemBy)
+                        : validated.redeemBy,
+               })
+               .where(eq(coupons.id, id))
+               .returning();
+            if (!row) throw AppError.notFound("Cupom não encontrado.");
+            return row;
+         }),
          (e) => AppError.database("Falha ao atualizar cupom.", { cause: e }),
-      ).andThen(([updated]) =>
-         updated
-            ? ok(updated)
-            : err(AppError.notFound("Cupom não encontrado.")),
       ),
    );
 }
@@ -152,11 +143,11 @@ export function redeemCoupon(
          });
          if (!coupon || coupon.teamId !== teamId)
             throw AppError.notFound("Cupom não encontrado.");
-         if (!coupon.isActive) throw AppError.badRequest("Cupom inativo.");
+         if (!coupon.isActive) throw AppError.validation("Cupom inativo.");
          if (coupon.maxUses != null && coupon.usedCount >= coupon.maxUses)
-            throw AppError.badRequest("Limite de usos do cupom atingido.");
+            throw AppError.validation("Limite de usos do cupom atingido.");
          if (coupon.redeemBy && new Date() > coupon.redeemBy)
-            throw AppError.badRequest("Cupom expirado.");
+            throw AppError.validation("Cupom expirado.");
 
          await tx
             .update(coupons)
@@ -181,9 +172,6 @@ export function redeemCoupon(
          if (!redemption) throw AppError.database("Falha ao resgatar cupom.");
          return redemption;
       }),
-      (e) =>
-         e instanceof AppError
-            ? e
-            : AppError.database("Falha ao resgatar cupom.", { cause: e }),
+      (e) => AppError.database("Falha ao resgatar cupom.", { cause: e }),
    );
 }

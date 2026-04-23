@@ -24,34 +24,22 @@ export interface ListServicesFilters {
 
 const safeValidateCreate = fromThrowable(
    (data: CreateServiceInput) => validateInput(createServiceSchema, data),
-   (e) =>
-      e instanceof AppError
-         ? e
-         : AppError.validation("Dados inválidos.", { cause: e }),
+   (e) => AppError.validation("Dados inválidos.", { cause: e }),
 );
 
 const safeValidateUpdate = fromThrowable(
    (data: UpdateServiceInput) => validateInput(updateServiceSchema, data),
-   (e) =>
-      e instanceof AppError
-         ? e
-         : AppError.validation("Dados inválidos.", { cause: e }),
+   (e) => AppError.validation("Dados inválidos.", { cause: e }),
 );
 
 const safeValidateCreatePrice = fromThrowable(
    (data: CreatePriceInput) => validateInput(createPriceSchema, data),
-   (e) =>
-      e instanceof AppError
-         ? e
-         : AppError.validation("Dados inválidos.", { cause: e }),
+   (e) => AppError.validation("Dados inválidos.", { cause: e }),
 );
 
 const safeValidateUpdatePrice = fromThrowable(
    (data: UpdatePriceInput) => validateInput(updatePriceSchema, data),
-   (e) =>
-      e instanceof AppError
-         ? e
-         : AppError.validation("Dados inválidos.", { cause: e }),
+   (e) => AppError.validation("Dados inválidos.", { cause: e }),
 );
 
 export function createService(

@@ -13,18 +13,12 @@ import {
 
 const safeValidateCreate = fromThrowable(
    (data: CreateBenefitInput) => validateInput(createBenefitSchema, data),
-   (e) =>
-      e instanceof AppError
-         ? e
-         : AppError.validation("Dados inválidos.", { cause: e }),
+   (e) => AppError.validation("Dados inválidos.", { cause: e }),
 );
 
 const safeValidateUpdate = fromThrowable(
    (data: UpdateBenefitInput) => validateInput(updateBenefitSchema, data),
-   (e) =>
-      e instanceof AppError
-         ? e
-         : AppError.validation("Dados inválidos.", { cause: e }),
+   (e) => AppError.validation("Dados inválidos.", { cause: e }),
 );
 
 export function createBenefit(
@@ -42,10 +36,7 @@ export function createBenefit(
             if (!row) throw AppError.database("Falha ao criar benefício.");
             return row;
          }),
-         (e) =>
-            e instanceof AppError
-               ? e
-               : AppError.database("Falha ao criar benefício.", { cause: e }),
+         (e) => AppError.database("Falha ao criar benefício.", { cause: e }),
       ),
    );
 }
@@ -61,11 +52,10 @@ export function getBenefit(db: DatabaseInstance, id: string) {
 
 export function listBenefits(db: DatabaseInstance, teamId: string) {
    return fromPromise(
-      db
-         .select()
-         .from(benefits)
-         .where(eq(benefits.teamId, teamId))
-         .orderBy(benefits.name),
+      db.query.benefits.findMany({
+         where: (fields, { eq }) => eq(fields.teamId, teamId),
+         orderBy: (fields, { asc }) => [asc(fields.name)],
+      }),
       (e) => AppError.database("Falha ao listar benefícios.", { cause: e }),
    );
 }
@@ -77,24 +67,27 @@ export function updateBenefit(
 ) {
    return safeValidateUpdate(data).asyncAndThen((validated) =>
       fromPromise(
-         db
-            .update(benefits)
-            .set(validated)
-            .where(eq(benefits.id, id))
-            .returning(),
+         db.transaction(async (tx) => {
+            const [row] = await tx
+               .update(benefits)
+               .set(validated)
+               .where(eq(benefits.id, id))
+               .returning();
+            if (!row) throw AppError.notFound("Benefício não encontrado.");
+            return row;
+         }),
          (e) =>
             AppError.database("Falha ao atualizar benefício.", { cause: e }),
-      ).andThen(([updated]) =>
-         updated
-            ? ok(updated)
-            : err(AppError.notFound("Benefício não encontrado.")),
       ),
    );
 }
 
 export function deleteBenefit(db: DatabaseInstance, id: string) {
-   return fromPromise(db.delete(benefits).where(eq(benefits.id, id)), (e) =>
-      AppError.database("Falha ao excluir benefício.", { cause: e }),
+   return fromPromise(
+      db.transaction(async (tx) => {
+         await tx.delete(benefits).where(eq(benefits.id, id));
+      }),
+      (e) => AppError.database("Falha ao excluir benefício.", { cause: e }),
    ).map(() => undefined);
 }
 
@@ -116,11 +109,12 @@ export function attachBenefitToService(
    benefitId: string,
 ) {
    return fromPromise(
-      db
-         .insert(serviceBenefits)
-         .values({ serviceId, benefitId })
-         .onConflictDoNothing()
-         .returning(),
+      db.transaction(async (tx) => {
+         await tx
+            .insert(serviceBenefits)
+            .values({ serviceId, benefitId })
+            .onConflictDoNothing();
+      }),
       (e) =>
          AppError.database("Falha ao associar benefício ao serviço.", {
             cause: e,
@@ -134,14 +128,16 @@ export function detachBenefitFromService(
    benefitId: string,
 ) {
    return fromPromise(
-      db
-         .delete(serviceBenefits)
-         .where(
-            and(
-               eq(serviceBenefits.serviceId, serviceId),
-               eq(serviceBenefits.benefitId, benefitId),
-            ),
-         ),
+      db.transaction(async (tx) => {
+         await tx
+            .delete(serviceBenefits)
+            .where(
+               and(
+                  eq(serviceBenefits.serviceId, serviceId),
+                  eq(serviceBenefits.benefitId, benefitId),
+               ),
+            );
+      }),
       (e) =>
          AppError.database("Falha ao remover benefício do serviço.", {
             cause: e,
@@ -151,11 +147,10 @@ export function detachBenefitFromService(
 
 export function listBenefitsByService(db: DatabaseInstance, serviceId: string) {
    return fromPromise(
-      db
-         .select({ benefit: benefits })
-         .from(serviceBenefits)
-         .innerJoin(benefits, eq(serviceBenefits.benefitId, benefits.id))
-         .where(eq(serviceBenefits.serviceId, serviceId)),
+      db.query.serviceBenefits.findMany({
+         where: (fields, { eq }) => eq(fields.serviceId, serviceId),
+         with: { benefit: true },
+      }),
       (e) =>
          AppError.database("Falha ao listar benefícios do serviço.", {
             cause: e,

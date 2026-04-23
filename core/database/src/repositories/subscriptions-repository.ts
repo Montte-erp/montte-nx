@@ -15,19 +15,13 @@ import {
 const safeValidateCreate = fromThrowable(
    (data: CreateSubscriptionInput) =>
       validateInput(createSubscriptionSchema, data),
-   (e) =>
-      e instanceof AppError
-         ? e
-         : AppError.validation("Dados inválidos.", { cause: e }),
+   (e) => AppError.validation("Dados inválidos.", { cause: e }),
 );
 
 const safeValidateUpdate = fromThrowable(
    (data: UpdateSubscriptionInput) =>
       validateInput(updateSubscriptionSchema, data),
-   (e) =>
-      e instanceof AppError
-         ? e
-         : AppError.validation("Dados inválidos.", { cause: e }),
+   (e) => AppError.validation("Dados inválidos.", { cause: e }),
 );
 
 export function createSubscription(
@@ -168,10 +162,7 @@ export function upsertSubscriptionByExternalId(
                throw AppError.database("Falha ao salvar assinatura.");
             return created;
          })(),
-         (e) =>
-            e instanceof AppError
-               ? e
-               : AppError.database("Falha ao salvar assinatura.", { cause: e }),
+         (e) => AppError.database("Falha ao salvar assinatura.", { cause: e }),
       ),
    );
 }

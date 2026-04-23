@@ -15,19 +15,13 @@ const MAX_ITEMS_PER_SUBSCRIPTION = 20;
 const safeValidateCreate = fromThrowable(
    (data: CreateSubscriptionItemInput) =>
       validateInput(createSubscriptionItemSchema, data),
-   (e) =>
-      e instanceof AppError
-         ? e
-         : AppError.validation("Dados inválidos.", { cause: e }),
+   (e) => AppError.validation("Dados inválidos.", { cause: e }),
 );
 
 const safeValidateUpdate = fromThrowable(
    (data: UpdateSubscriptionItemInput) =>
       validateInput(updateSubscriptionItemSchema, data),
-   (e) =>
-      e instanceof AppError
-         ? e
-         : AppError.validation("Dados inválidos.", { cause: e }),
+   (e) => AppError.validation("Dados inválidos.", { cause: e }),
 );
 
 export function addSubscriptionItem(
@@ -38,7 +32,7 @@ export function addSubscriptionItem(
    return safeValidateCreate(data).asyncAndThen((validated) =>
       fromPromise(
          db.transaction(async (tx) => {
-            const [{ itemCount }] = await tx
+            const rows = await tx
                .select({ itemCount: count() })
                .from(subscriptionItems)
                .where(
@@ -47,7 +41,8 @@ export function addSubscriptionItem(
                      validated.subscriptionId,
                   ),
                );
-            if ((itemCount ?? 0) >= MAX_ITEMS_PER_SUBSCRIPTION)
+            const itemCount = rows[0]?.itemCount ?? 0;
+            if (itemCount >= MAX_ITEMS_PER_SUBSCRIPTION)
                throw AppError.validation(
                   `Limite de ${MAX_ITEMS_PER_SUBSCRIPTION} itens por assinatura atingido.`,
                );
@@ -58,10 +53,7 @@ export function addSubscriptionItem(
             if (!row) throw AppError.database("Falha ao adicionar item.");
             return row;
          }),
-         (e) =>
-            e instanceof AppError
-               ? e
-               : AppError.database("Falha ao adicionar item.", { cause: e }),
+         (e) => AppError.database("Falha ao adicionar item.", { cause: e }),
       ),
    );
 }
@@ -73,23 +65,26 @@ export function updateSubscriptionItemQuantity(
 ) {
    return safeValidateUpdate(data).asyncAndThen((validated) =>
       fromPromise(
-         db
-            .update(subscriptionItems)
-            .set(validated)
-            .where(eq(subscriptionItems.id, id))
-            .returning(),
+         db.transaction(async (tx) => {
+            const [row] = await tx
+               .update(subscriptionItems)
+               .set(validated)
+               .where(eq(subscriptionItems.id, id))
+               .returning();
+            if (!row)
+               throw AppError.notFound("Item de assinatura não encontrado.");
+            return row;
+         }),
          (e) => AppError.database("Falha ao atualizar item.", { cause: e }),
-      ).andThen(([updated]) =>
-         updated
-            ? ok(updated)
-            : err(AppError.notFound("Item de assinatura não encontrado.")),
       ),
    );
 }
 
 export function removeSubscriptionItem(db: DatabaseInstance, id: string) {
    return fromPromise(
-      db.delete(subscriptionItems).where(eq(subscriptionItems.id, id)),
+      db.transaction(async (tx) => {
+         await tx.delete(subscriptionItems).where(eq(subscriptionItems.id, id));
+      }),
       (e) => AppError.database("Falha ao remover item.", { cause: e }),
    ).map(() => undefined);
 }
@@ -99,11 +94,10 @@ export function listSubscriptionItems(
    subscriptionId: string,
 ) {
    return fromPromise(
-      db
-         .select()
-         .from(subscriptionItems)
-         .where(eq(subscriptionItems.subscriptionId, subscriptionId))
-         .orderBy(subscriptionItems.createdAt),
+      db.query.subscriptionItems.findMany({
+         where: (fields, { eq }) => eq(fields.subscriptionId, subscriptionId),
+         orderBy: (fields, { asc }) => [asc(fields.createdAt)],
+      }),
       (e) =>
          AppError.database("Falha ao listar itens da assinatura.", {
             cause: e,
