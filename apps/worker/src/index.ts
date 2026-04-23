@@ -5,6 +5,7 @@ import { createDb } from "@core/database/client";
 import { createRedis } from "@core/redis/connection";
 import { createPostHog } from "@core/posthog/server";
 import { createStripeClient } from "@core/stripe";
+import { createResendClient } from "@core/transactional/utils";
 import { launchDBOS } from "@packages/workflows/setup";
 
 initOtel({
@@ -20,6 +21,7 @@ const db = createDb({ databaseUrl: env.DATABASE_URL });
 const redis = createRedis(env.REDIS_URL);
 const posthog = createPostHog(env.POSTHOG_KEY, env.POSTHOG_HOST);
 const stripeClient = createStripeClient(env.STRIPE_SECRET_KEY);
+const resendClient = createResendClient(env.RESEND_API_KEY);
 
 logger.info("Starting worker");
 
@@ -28,6 +30,7 @@ launchDBOS({
    redis,
    posthog,
    stripeClient,
+   resendClient,
    systemDatabaseUrl: env.DATABASE_URL,
    logLevel: env.LOG_LEVEL,
    onShutdown: async () => {
