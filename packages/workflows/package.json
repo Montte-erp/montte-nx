@@ -32,6 +32,7 @@
       "@core/redis": "workspace:*",
       "@core/stripe": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers",
+      "@f-o-t/money": "catalog:fot",
       "@packages/events": "workspace:*",
       "@packages/notifications": "workspace:*",
       "@tanstack/store": "catalog:tanstack",

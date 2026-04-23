@@ -1,5 +1,5 @@
 import { AppError, validateInput } from "@core/logging/errors";
-import { and, eq, sql } from "drizzle-orm";
+import { and, count, eq, sql } from "drizzle-orm";
 import dayjs from "dayjs";
 import { fromPromise, fromThrowable, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
@@ -134,6 +134,20 @@ export function ensureCouponOwnership(
          return err(AppError.notFound("Cupom não encontrado."));
       return ok(coupon);
    });
+}
+
+export function countCouponRedemptionsBySubscription(
+   db: DatabaseInstance,
+   subscriptionId: string,
+) {
+   return fromPromise(
+      db
+         .select({ count: count() })
+         .from(couponRedemptions)
+         .where(eq(couponRedemptions.subscriptionId, subscriptionId))
+         .then(([row]) => row?.count ?? 0),
+      (e) => AppError.database("Falha ao contar resgates.", { cause: e }),
+   );
 }
 
 export function redeemCoupon(

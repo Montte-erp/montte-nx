@@ -1,15 +1,27 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import dayjs from "dayjs";
-import { count, eq, inArray } from "drizzle-orm";
+import {
+   of,
+   add,
+   subtract,
+   multiply,
+   zero,
+   greaterThan,
+   toMajorUnitsString,
+} from "@f-o-t/money";
 import { createEnqueuer, QUEUES } from "../../workflow-factory";
 import { getSubscription } from "@core/database/repositories/subscriptions-repository";
 import { createInvoice } from "@core/database/repositories/invoices-repository";
 import { listGrantsBySubscription } from "@core/database/repositories/benefit-grants-repository";
 import { summarizeUsageByMeter } from "@core/database/repositories/usage-events-repository";
-import { subscriptionItems } from "@core/database/schemas/subscription-items";
-import { servicePrices } from "@core/database/schemas/services";
-import { benefits } from "@core/database/schemas/benefits";
-import { coupons, couponRedemptions } from "@core/database/schemas/coupons";
+import { listSubscriptionItems } from "@core/database/repositories/subscription-items-repository";
+import { listServicePricesByIds } from "@core/database/repositories/services-repository";
+import { listBenefitsByIds } from "@core/database/repositories/benefits-repository";
+import {
+   getCoupon,
+   countCouponRedemptionsBySubscription,
+} from "@core/database/repositories/coupons-repository";
+import type { Coupon } from "@core/database/schemas/coupons";
 import type { InvoiceLineItem } from "@core/database/schemas/invoices";
 import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import type { JobNotification } from "@packages/notifications/schema";
@@ -48,19 +60,23 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
                `Assinatura ${input.subscriptionId} não encontrada.`,
             );
 
-         const items = await db.query.subscriptionItems.findMany({
-            where: (fields, { eq: eqFn }) =>
-               eqFn(fields.subscriptionId, input.subscriptionId),
-         });
+         const items = await listSubscriptionItems(
+            db,
+            input.subscriptionId,
+         ).match(
+            (v) => v,
+            (e) => {
+               throw e;
+            },
+         );
 
          const priceIds = items.map((i) => i.priceId);
-         const prices =
-            priceIds.length > 0
-               ? await db
-                    .select()
-                    .from(servicePrices)
-                    .where(inArray(servicePrices.id, priceIds))
-               : [];
+         const prices = await listServicePricesByIds(db, priceIds).match(
+            (v) => v,
+            (e) => {
+               throw e;
+            },
+         );
 
          const usageSummary = await summarizeUsageByMeter(db, input.teamId, {
             from: dayjs(input.periodStart).toDate(),
@@ -84,32 +100,34 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
 
          const activeGrants = grants.filter((g) => g.status === "active");
          const benefitIds = activeGrants.map((g) => g.benefitId);
-         const activeBenefits =
-            benefitIds.length > 0
-               ? await db
-                    .select()
-                    .from(benefits)
-                    .where(inArray(benefits.id, benefitIds))
-               : [];
+         const activeBenefits = await listBenefitsByIds(db, benefitIds).match(
+            (v) => v,
+            (e) => {
+               throw e;
+            },
+         );
 
-         let coupon: typeof coupons.$inferSelect | null = null;
+         let coupon: Coupon | null = null;
          let redemptionCount = 0;
 
          if (sub.couponId) {
-            const [couponRow] = await db
-               .select()
-               .from(coupons)
-               .where(eq(coupons.id, sub.couponId));
-            coupon = couponRow ?? null;
+            coupon = await getCoupon(db, sub.couponId).match(
+               (v) => v,
+               (e) => {
+                  throw e;
+               },
+            );
 
             if (coupon) {
-               const [countRow] = await db
-                  .select({ count: count() })
-                  .from(couponRedemptions)
-                  .where(
-                     eq(couponRedemptions.subscriptionId, input.subscriptionId),
-                  );
-               redemptionCount = countRow?.count ?? 0;
+               redemptionCount = await countCouponRedemptionsBySubscription(
+                  db,
+                  input.subscriptionId,
+               ).match(
+                  (v) => v,
+                  (e) => {
+                     throw e;
+                  },
+               );
             }
          }
 
@@ -150,8 +168,8 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
 
             const unitPrice =
                item.negotiatedPrice != null
-                  ? Number(item.negotiatedPrice)
-                  : Number(price.basePrice);
+                  ? of(item.negotiatedPrice, "BRL")
+                  : of(price.basePrice, "BRL");
 
             let quantity = item.quantity;
 
@@ -164,27 +182,30 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
                quantity = Math.max(0, usageTotal - creditAmount);
             }
 
-            let subtotal = quantity * unitPrice;
+            let subtotalForItem = multiply(unitPrice, quantity);
 
             if (price.priceCap != null) {
-               subtotal = Math.min(subtotal, Number(price.priceCap));
+               const cap = of(price.priceCap, "BRL");
+               if (greaterThan(subtotalForItem, cap)) {
+                  subtotalForItem = cap;
+               }
             }
 
             lineItems.push({
                description: price.name,
                meterId: price.meterId ?? null,
                quantity: quantity.toFixed(2),
-               unitPrice: unitPrice.toFixed(2),
-               subtotal: subtotal.toFixed(2),
+               unitPrice: toMajorUnitsString(unitPrice),
+               subtotal: toMajorUnitsString(subtotalForItem),
             });
          }
 
-         const subtotalCents = lineItems.reduce(
-            (sum, li) => sum + Number(li.subtotal),
-            0,
+         const subtotalMoney = lineItems.reduce(
+            (sum, li) => add(sum, of(li.subtotal, "BRL")),
+            zero("BRL"),
          );
 
-         let discountAmount = 0;
+         let discountMoney = zero("BRL");
          let couponSnapshot: {
             code: string;
             type: string;
@@ -204,10 +225,10 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
             }
 
             if (applyDiscount) {
-               discountAmount =
+               discountMoney =
                   coupon.type === "percent"
-                     ? subtotalCents * (Number(coupon.amount) / 100)
-                     : Number(coupon.amount);
+                     ? multiply(subtotalMoney, Number(coupon.amount) / 100)
+                     : of(coupon.amount, "BRL");
 
                couponSnapshot = {
                   code: coupon.code,
@@ -218,13 +239,16 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
             }
          }
 
-         const total = Math.max(0, subtotalCents - discountAmount);
+         const rawTotal = subtract(subtotalMoney, discountMoney);
+         const totalMoney = greaterThan(rawTotal, zero("BRL"))
+            ? rawTotal
+            : zero("BRL");
 
          return {
             lineItems,
-            subtotal: subtotalCents.toFixed(2),
-            discountAmount: discountAmount.toFixed(2),
-            total: total.toFixed(2),
+            subtotal: toMajorUnitsString(subtotalMoney),
+            discountAmount: toMajorUnitsString(discountMoney),
+            total: toMajorUnitsString(totalMoney),
             couponSnapshot,
          };
       },
@@ -244,6 +268,7 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
             total: computation.total,
             lineItems: computation.lineItems,
             couponSnapshot: computation.couponSnapshot,
+            currency: "BRL",
          }).match(
             (v) => v,
             (e) => {
@@ -266,6 +291,7 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
                invoiceId: invoice.id,
                subscriptionId: input.subscriptionId,
                total: computation.total,
+               currency: "BRL",
             },
          } satisfies JobNotification),
       { name: "publishNotification" },
