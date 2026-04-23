@@ -34,6 +34,7 @@ import {
    transactionItems,
    transactions,
 } from "@core/database/schemas/transactions";
+import { usageEvents } from "@core/database/schemas/usage-events";
 import {
    webhookDeliveries,
    webhookEndpoints,
@@ -317,6 +318,17 @@ export const transactionItemsRelations = relations(
       }),
    }),
 );
+
+export const usageEventsRelations = relations(usageEvents, ({ one }) => ({
+   team: one(team, {
+      fields: [usageEvents.teamId],
+      references: [team.id],
+   }),
+   contact: one(contacts, {
+      fields: [usageEvents.contactId],
+      references: [contacts.id],
+   }),
+}));
 
 export const webhookEndpointsRelations = relations(
    webhookEndpoints,

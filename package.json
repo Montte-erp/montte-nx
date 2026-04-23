@@ -35,6 +35,7 @@
             "@types/pg": "^8.20.0",
             "drizzle-kit": "0.31.10",
             "drizzle-orm": "0.45.2",
+            "drizzle-seed": "0.3.1",
             "drizzle-zod": "0.8.3",
             "pg": "^8.18.0"
          },

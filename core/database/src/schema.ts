@@ -17,6 +17,7 @@ export * from "@core/database/schemas/settings-financial";
 export * from "@core/database/schemas/subscriptions";
 export * from "@core/database/schemas/tags";
 export * from "@core/database/schemas/transactions";
+export * from "@core/database/schemas/usage-events";
 export * from "@core/database/schemas/webhooks";
 export * from "@core/database/relations";
 export {
