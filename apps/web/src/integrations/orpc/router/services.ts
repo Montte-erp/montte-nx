@@ -167,19 +167,14 @@ export const getContactSubscriptions = protectedProcedure
 
 export const createSubscription = protectedProcedure
    .input(
-      createSubscriptionSchema
-         .pick({
-            contactId: true,
-            variantId: true,
-            startDate: true,
-            endDate: true,
-            negotiatedPrice: true,
-            notes: true,
-         })
-         .extend({
-            variantId: z.string().uuid().optional(),
-            negotiatedPrice: z.string().optional(),
-         }),
+      createSubscriptionSchema.pick({
+         contactId: true,
+         variantId: true,
+         startDate: true,
+         endDate: true,
+         negotiatedPrice: true,
+         notes: true,
+      }),
    )
    .handler(async ({ context, input }) => {
       await ensureContactOwnership(context.db, input.contactId, context.teamId);

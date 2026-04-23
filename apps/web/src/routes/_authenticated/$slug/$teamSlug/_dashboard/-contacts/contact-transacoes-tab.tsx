@@ -20,6 +20,18 @@ import { buildTransactionColumns } from "../-transactions/transactions-columns";
 
 type Contact = Outputs["contacts"]["getById"];
 
+const TX_TYPES = ["income", "expense", "transfer"] as const;
+type TxType = (typeof TX_TYPES)[number];
+function isTxType(v: string): v is TxType {
+   return (TX_TYPES as readonly string[]).includes(v);
+}
+
+const TX_STATUSES = ["pending", "paid", "cancelled"] as const;
+type TxStatus = (typeof TX_STATUSES)[number];
+function isTxStatus(v: string): v is TxStatus {
+   return (TX_STATUSES as readonly string[]).includes(v);
+}
+
 export function ContactTransacoesTab({
    contactId,
    contact,
@@ -74,10 +86,8 @@ export function ContactTransacoesTab({
 
    const handleAddTransaction = useCallback(
       async (data: Record<string, string | string[]>) => {
-         const type = String(data.type || "income") as
-            | "income"
-            | "expense"
-            | "transfer";
+         const rawType = String(data.type || "");
+         const type = isTxType(rawType) ? rawType : "income";
          const name = String(data.name ?? "").trim() || null;
          const amount = String(data.amount || "");
          const date =
@@ -86,10 +96,8 @@ export function ContactTransacoesTab({
          const categoryId = String(data.categoryName || "") || null;
          const creditCardId = String(data.creditCardName || "") || null;
          const dueDate = String(data.dueDate || "").trim() || null;
-         const txStatus = String(data.status || "pending") as
-            | "pending"
-            | "paid"
-            | "cancelled";
+         const rawStatus = String(data.status || "");
+         const txStatus = isTxStatus(rawStatus) ? rawStatus : "pending";
 
          await createMutation.mutateAsync({
             name,

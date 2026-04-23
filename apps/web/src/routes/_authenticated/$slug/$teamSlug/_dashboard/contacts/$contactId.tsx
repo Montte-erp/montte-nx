@@ -38,7 +38,12 @@ import { ContactAssinaturasTab } from "../-contacts/contact-assinaturas-tab";
 import { ContactPropertiesPanel } from "../-contacts/contact-properties-panel";
 import { ContactTransacoesTab } from "../-contacts/contact-transacoes-tab";
 
-const searchSchema = z.object({});
+const VALID_TABS = ["transacoes", "servicos"] as const;
+type ActiveTab = (typeof VALID_TABS)[number];
+
+const searchSchema = z.object({
+   tab: z.enum(VALID_TABS).catch("transacoes").default("transacoes"),
+});
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/contacts/$contactId",
@@ -108,19 +113,13 @@ const TYPE_LABELS = {
    ambos: "Ambos",
 } as const;
 
-const VALID_TABS = ["transacoes", "servicos"] as const;
-type ActiveTab = (typeof VALID_TABS)[number];
-function isValidTab(v: string): v is ActiveTab {
-   return (VALID_TABS as readonly string[]).includes(v);
-}
-
 function ContactDetailContent() {
    const { contactId } = Route.useParams();
    const globalNavigate = useNavigate();
    const slug = useOrgSlug();
    const teamSlug = useTeamSlug();
    const { openAlertDialog } = useAlertDialog();
-   const [activeTab, setActiveTab] = useState<ActiveTab>("transacoes");
+   const { tab: activeTab } = Route.useSearch();
    const [subscriptionOpen, setSubscriptionOpen] = useState(false);
    const [isDraftActive, setIsDraftActive] = useState(false);
 
@@ -236,7 +235,12 @@ function ContactDetailContent() {
          <Tabs
             value={activeTab}
             onValueChange={(v) => {
-               if (isValidTab(v)) setActiveTab(v);
+               if (v === "transacoes" || v === "servicos") {
+                  globalNavigate({
+                     search: (prev) => ({ ...prev, tab: v }),
+                     replace: true,
+                  });
+               }
             }}
          >
             <div className="flex items-center gap-2">

@@ -34,6 +34,7 @@ interface ComboboxProps {
    className?: string;
    disabled?: boolean;
    defaultOpen?: boolean;
+   id?: string;
    onBlur?: React.FocusEventHandler<HTMLButtonElement>;
    onCreate?: (name: string) => void;
    createLabel?: string;
@@ -51,6 +52,7 @@ export function Combobox({
    className,
    disabled = false,
    defaultOpen = false,
+   id,
    onBlur,
    onCreate,
    createLabel = "Criar",
@@ -110,6 +112,7 @@ export function Combobox({
                aria-expanded={open}
                className={cn("flex truncate items-center gap-2", className)}
                disabled={disabled}
+               id={id}
                onBlur={onBlur}
                role="combobox"
                variant="outline"
