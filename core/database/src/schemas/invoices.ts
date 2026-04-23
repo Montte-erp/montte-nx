@@ -4,6 +4,7 @@ import {
    jsonb,
    numeric,
    timestamp,
+   uniqueIndex,
    uuid,
    text,
 } from "drizzle-orm/pg-core";
@@ -40,6 +41,7 @@ export const invoices = platformSchema.table(
       subscriptionId: uuid("subscription_id")
          .notNull()
          .references(() => contactSubscriptions.id, { onDelete: "restrict" }),
+      currency: text("currency").notNull().default("BRL"),
       status: invoiceStatusEnum("status").notNull().default("draft"),
       periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
       periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
@@ -74,6 +76,11 @@ export const invoices = platformSchema.table(
       index("invoices_subscription_id_idx").on(table.subscriptionId),
       index("invoices_status_idx").on(table.status),
       index("invoices_period_end_idx").on(table.periodEnd),
+      uniqueIndex("invoices_subscription_period_idx").on(
+         table.subscriptionId,
+         table.periodStart,
+         table.periodEnd,
+      ),
    ],
 );
 
