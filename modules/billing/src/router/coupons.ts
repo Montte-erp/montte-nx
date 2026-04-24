@@ -14,6 +14,24 @@ import {
    validateCouponInputSchema,
 } from "../contracts/coupons";
 
+const couponByIdProcedure = protectedProcedure
+   .input(getCouponInputSchema)
+   .use(({ context, input, next }) =>
+      ensureCouponOwnership(context.db, input.id, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   );
+
+const couponByUpdateInputProcedure = protectedProcedure
+   .input(updateCouponInputSchema)
+   .use(({ context, input, next }) =>
+      ensureCouponOwnership(context.db, input.id, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   );
+
 export const list = protectedProcedure.handler(async ({ context }) =>
    (await listCoupons(context.db, context.teamId)).match(
       (rows) => rows,
@@ -23,22 +41,14 @@ export const list = protectedProcedure.handler(async ({ context }) =>
    ),
 );
 
-export const get = protectedProcedure
-   .input(getCouponInputSchema)
-   .use(({ context, input, next }) =>
-      ensureCouponOwnership(context.db, input.id, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) =>
-      (await getCoupon(context.db, input.id)).match(
-         (row) => row,
-         (e) => {
-            throw WebAppError.fromAppError(e);
-         },
-      ),
-   );
+export const get = couponByIdProcedure.handler(async ({ context, input }) =>
+   (await getCoupon(context.db, input.id)).match(
+      (row) => row,
+      (e) => {
+         throw WebAppError.fromAppError(e);
+      },
+   ),
+);
 
 export const create = protectedProcedure
    .input(createCouponSchema)
@@ -51,15 +61,8 @@ export const create = protectedProcedure
       ),
    );
 
-export const update = protectedProcedure
-   .input(updateCouponInputSchema)
-   .use(({ context, input, next }) =>
-      ensureCouponOwnership(context.db, input.id, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) => {
+export const update = couponByUpdateInputProcedure.handler(
+   async ({ context, input }) => {
       const { id, ...data } = input;
       return (await updateCoupon(context.db, id, data)).match(
          (row) => row,
@@ -67,24 +70,18 @@ export const update = protectedProcedure
             throw WebAppError.fromAppError(e);
          },
       );
-   });
+   },
+);
 
-export const deactivate = protectedProcedure
-   .input(getCouponInputSchema)
-   .use(({ context, input, next }) =>
-      ensureCouponOwnership(context.db, input.id, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) =>
+export const deactivate = couponByIdProcedure.handler(
+   async ({ context, input }) =>
       (await updateCoupon(context.db, input.id, { isActive: false })).match(
          (row) => row,
          (e) => {
             throw WebAppError.fromAppError(e);
          },
       ),
-   );
+);
 
 export const validate = protectedProcedure
    .input(validateCouponInputSchema)

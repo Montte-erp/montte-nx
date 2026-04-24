@@ -1,51 +1,10 @@
-import { ensureContactOwnership } from "@core/database/repositories/contacts-repository";
-import {
-   createBenefit as createBenefitRepo,
-   deleteBenefit,
-   ensureBenefitOwnership,
-   attachBenefitToService,
-   detachBenefitFromService,
-   listBenefitsByService,
-   updateBenefit,
-} from "@core/database/repositories/benefits-repository";
-import {
-   createMeter as createMeterRepo,
-   deleteMeter,
-   ensureMeterOwnership,
-   listMeters,
-   updateMeter,
-} from "@core/database/repositories/meters-repository";
-import {
-   addSubscriptionItem,
-   ensureSubscriptionItemOwnership,
-   listSubscriptionItems,
-   removeSubscriptionItem,
-   updateSubscriptionItemQuantity,
-} from "@core/database/repositories/subscription-items-repository";
-import {
-   bulkCreateServices,
-   createService,
-   createPrice as createVariantRepo,
-   deletePrice as deleteVariant,
-   deleteService,
-   ensurePriceOwnership as ensureVariantOwnership,
-   ensureServiceOwnership,
-   listPricesByService as listVariantsByService,
-   listServices,
-   updatePrice as updateVariantRepo,
-   updateService,
-} from "@core/database/repositories/services-repository";
-import {
-   createSubscription as createSubscriptionRepo,
-   ensureSubscriptionOwnership,
-   listExpiringSoon,
-   listSubscriptionsByContact,
-   listSubscriptionsByTeam,
-   updateSubscription,
-} from "@core/database/repositories/subscriptions-repository";
+import dayjs from "dayjs";
+import { and, asc, count, eq, sql, sum } from "drizzle-orm";
+import { fromPromise } from "neverthrow";
 import { benefits, serviceBenefits } from "@core/database/schemas/benefits";
+import { meters } from "@core/database/schemas/meters";
+import { services, servicePrices } from "@core/database/schemas/services";
 import { subscriptionItems } from "@core/database/schemas/subscription-items";
-import { servicePrices } from "@core/database/schemas/services";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure, billableProcedure } from "@core/orpc/server";
@@ -73,15 +32,397 @@ import {
    updateBenefitInputSchema,
    updateSubscriptionItemInputSchema,
 } from "../contracts/services";
-import { and, asc, count, eq, sql, sum } from "drizzle-orm";
+
+const MAX_ITEMS_PER_SUBSCRIPTION = 20;
+
+// --- Ownership middleware builders ---
+
+const updateServiceProcedure = protectedProcedure
+   .input(updateServiceInputSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.services.findFirst({
+            where: (f, { eq }) => eq(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (service) =>
+            service?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Serviço não encontrado."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const serviceByIdProcedure = protectedProcedure
+   .input(idInputSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.services.findFirst({
+            where: (f, { eq }) => eq(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (service) =>
+            service?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Serviço não encontrado."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const serviceByServiceIdProcedure = protectedProcedure
+   .input(serviceIdInputSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.services.findFirst({
+            where: (f, { eq }) => eq(f.id, input.serviceId),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (service) =>
+            service?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Serviço não encontrado."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const createVariantProcedure = protectedProcedure
+   .input(createPriceForServiceInputSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.services.findFirst({
+            where: (f, { eq }) => eq(f.id, input.serviceId),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (service) =>
+            service?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Serviço não encontrado."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const updateVariantProcedure = protectedProcedure
+   .input(updatePriceInputSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.servicePrices.findFirst({
+            where: (f, { eq }) => eq(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (price) =>
+            price?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(WebAppError.notFound("Preço não encontrado.")),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const variantByIdProcedure = protectedProcedure
+   .input(idInputSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.servicePrices.findFirst({
+            where: (f, { eq }) => eq(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (price) =>
+            price?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(WebAppError.notFound("Preço não encontrado.")),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const contactSubscriptionsProcedure = protectedProcedure
+   .input(contactIdInputSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.contacts.findFirst({
+            where: (f, { eq }) => eq(f.id, input.contactId),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (contact) =>
+            contact?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Contato não encontrado."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const createSubscriptionProcedure = billableProcedure
+   .input(createSubscriptionWithItemsInputSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.contacts.findFirst({
+            where: (f, { eq }) => eq(f.id, input.contactId),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (contact) =>
+            contact?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Contato não encontrado."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const updateMeterProcedure = protectedProcedure
+   .input(updateMeterInputSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.meters.findFirst({
+            where: (f, { eq }) => eq(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (meter) =>
+            meter?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Medidor não encontrado."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const meterByIdProcedure = protectedProcedure
+   .input(idInputSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.meters.findFirst({
+            where: (f, { eq }) => eq(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (meter) =>
+            meter?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Medidor não encontrado."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const updateBenefitProcedure = protectedProcedure
+   .input(updateBenefitInputSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.benefits.findFirst({
+            where: (f, { eq }) => eq(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (benefit) =>
+            benefit?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Benefício não encontrado."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const benefitByIdProcedure = protectedProcedure
+   .input(idInputSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.benefits.findFirst({
+            where: (f, { eq }) => eq(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (benefit) =>
+            benefit?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Benefício não encontrado."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const attachBenefitProcedure = protectedProcedure
+   .input(serviceBenefitLinkSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.services.findFirst({
+            where: (f, { eq }) => eq(f.id, input.serviceId),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (service) =>
+            service?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Serviço não encontrado."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   )
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.benefits.findFirst({
+            where: (f, { eq }) => eq(f.id, input.benefitId),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (benefit) =>
+            benefit?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Benefício não encontrado."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const detachBenefitProcedure = protectedProcedure
+   .input(serviceBenefitLinkSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.services.findFirst({
+            where: (f, { eq }) => eq(f.id, input.serviceId),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (service) =>
+            service?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Serviço não encontrado."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const addItemProcedure = protectedProcedure
+   .input(createSubscriptionItemSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.contactSubscriptions.findFirst({
+            where: (f, { eq }) => eq(f.id, input.subscriptionId),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (sub) =>
+            sub?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Assinatura não encontrada."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const updateItemProcedure = protectedProcedure
+   .input(updateSubscriptionItemInputSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.subscriptionItems.findFirst({
+            where: (f, { eq }) => eq(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (item) =>
+            item?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Item de assinatura não encontrado."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const subscriptionItemByIdProcedure = protectedProcedure
+   .input(idInputSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.subscriptionItems.findFirst({
+            where: (f, { eq }) => eq(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (item) =>
+            item?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Item de assinatura não encontrado."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+const listItemsProcedure = protectedProcedure
+   .input(subscriptionIdInputSchema)
+   .use(({ context, input, next }) =>
+      fromPromise(
+         context.db.query.contactSubscriptions.findFirst({
+            where: (f, { eq }) => eq(f.id, input.subscriptionId),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).match(
+         (sub) =>
+            sub?.teamId === context.teamId
+               ? next({})
+               : Promise.reject(
+                    WebAppError.notFound("Assinatura não encontrada."),
+                 ),
+         (e) => Promise.reject(e),
+      ),
+   );
+
+// --- Handlers ---
 
 export const getAll = protectedProcedure
    .input(listServicesInputSchema)
    .handler(async ({ context, input }) =>
-      (await listServices(context.db, context.teamId, input)).match(
+      (
+         await fromPromise(
+            context.db.query.services.findMany({
+               where: (f, { eq, and, or, ilike }) => {
+                  const conditions = [eq(f.teamId, context.teamId)];
+                  if (input?.search) {
+                     const pattern = `%${input.search}%`;
+                     conditions.push(
+                        or(
+                           ilike(f.name, pattern),
+                           ilike(f.description, pattern),
+                        )!,
+                     );
+                  }
+                  if (input?.categoryId)
+                     conditions.push(eq(f.categoryId, input.categoryId));
+                  return and(...conditions);
+               },
+               with: { category: true, tag: true },
+               orderBy: (f, { asc }) => [asc(f.name)],
+            }),
+            () => WebAppError.internal("Falha ao listar serviços."),
+         )
+      ).match(
          (rows) => rows,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       ),
    );
@@ -89,10 +430,25 @@ export const getAll = protectedProcedure
 export const create = protectedProcedure
    .input(createServiceSchema)
    .handler(async ({ context, input }) =>
-      (await createService(context.db, context.teamId, input)).match(
+      (
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               const [row] = await tx
+                  .insert(services)
+                  .values({ ...input, teamId: context.teamId })
+                  .returning();
+               if (!row) throw WebAppError.internal("Falha ao criar serviço.");
+               return row;
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal("Falha ao criar serviço."),
+         )
+      ).match(
          (service) => service,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       ),
    );
@@ -100,12 +456,28 @@ export const create = protectedProcedure
 export const bulkCreate = protectedProcedure
    .input(bulkCreateServicesInputSchema)
    .handler(async ({ context, input }) => {
-      const inserted = (
-         await bulkCreateServices(context.db, context.teamId, input.items)
-      ).match(
+      const result = await fromPromise(
+         context.db.transaction(async (tx) => {
+            const rows = await tx
+               .insert(services)
+               .values(
+                  input.items.map((item) => ({
+                     ...item,
+                     teamId: context.teamId,
+                  })),
+               )
+               .returning();
+            return rows;
+         }),
+         (e) =>
+            e instanceof WebAppError
+               ? e
+               : WebAppError.internal("Falha ao importar serviços."),
+      );
+      const inserted = result.match(
          (rows) => rows,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       );
       if (inserted.length === 0)
@@ -113,76 +485,91 @@ export const bulkCreate = protectedProcedure
       return inserted;
    });
 
-export const update = protectedProcedure
-   .input(updateServiceInputSchema)
-   .use(({ context, input, next }) =>
-      ensureServiceOwnership(context.db, input.id, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) => {
+export const update = updateServiceProcedure.handler(
+   async ({ context, input }) => {
       const { id, ...data } = input;
-      return (await updateService(context.db, id, data)).match(
+      return (
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               const [row] = await tx
+                  .update(services)
+                  .set(data)
+                  .where(eq(services.id, id))
+                  .returning();
+               if (!row) throw WebAppError.notFound("Serviço não encontrado.");
+               return row;
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal("Falha ao atualizar serviço."),
+         )
+      ).match(
          (service) => service,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       );
-   });
+   },
+);
 
-export const remove = protectedProcedure
-   .input(idInputSchema)
-   .use(({ context, input, next }) =>
-      ensureServiceOwnership(context.db, input.id, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) =>
-      (await deleteService(context.db, input.id)).match(
-         () => ({ success: true as const }),
-         (e) => {
-            throw WebAppError.fromAppError(e);
-         },
-      ),
-   );
-
-export const exportAll = protectedProcedure.handler(async ({ context }) =>
-   (await listServices(context.db, context.teamId)).match(
-      (rows) => rows,
+export const remove = serviceByIdProcedure.handler(async ({ context, input }) =>
+   (
+      await fromPromise(
+         context.db.transaction(async (tx) => {
+            await tx.delete(services).where(eq(services.id, input.id));
+         }),
+         (e) =>
+            e instanceof WebAppError
+               ? e
+               : WebAppError.internal("Falha ao excluir serviço."),
+      )
+   ).match(
+      () => ({ success: true as const }),
       (e) => {
-         throw WebAppError.fromAppError(e);
+         throw e;
       },
    ),
 );
 
-export const getVariants = protectedProcedure
-   .input(serviceIdInputSchema)
-   .use(({ context, input, next }) =>
-      ensureServiceOwnership(context.db, input.serviceId, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) =>
-      (await listVariantsByService(context.db, input.serviceId)).match(
+export const exportAll = protectedProcedure.handler(async ({ context }) =>
+   (
+      await fromPromise(
+         context.db.query.services.findMany({
+            where: (f, { eq }) => eq(f.teamId, context.teamId),
+            with: { category: true, tag: true },
+            orderBy: (f, { asc }) => [asc(f.name)],
+         }),
+         () => WebAppError.internal("Falha ao listar serviços."),
+      )
+   ).match(
+      (rows) => rows,
+      (e) => {
+         throw e;
+      },
+   ),
+);
+
+export const getVariants = serviceByServiceIdProcedure.handler(
+   async ({ context, input }) =>
+      (
+         await fromPromise(
+            context.db.query.servicePrices.findMany({
+               where: (f, { eq }) => eq(f.serviceId, input.serviceId),
+               orderBy: (f, { asc }) => [asc(f.name)],
+            }),
+            () => WebAppError.internal("Falha ao listar preços."),
+         )
+      ).match(
          (variants) => variants,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       ),
-   );
+);
 
-export const createVariant = protectedProcedure
-   .input(createPriceForServiceInputSchema)
-   .use(({ context, input, next }) =>
-      ensureServiceOwnership(context.db, input.serviceId, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) => {
+export const createVariant = createVariantProcedure.handler(
+   async ({ context, input }) => {
       const { serviceId, ...variantData } = input;
       if (input.type === "metered") {
          if (!input.meterId)
@@ -195,29 +582,31 @@ export const createVariant = protectedProcedure
             );
       }
       return (
-         await createVariantRepo(
-            context.db,
-            context.teamId,
-            serviceId,
-            variantData,
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               const [row] = await tx
+                  .insert(servicePrices)
+                  .values({ ...variantData, teamId: context.teamId, serviceId })
+                  .returning();
+               if (!row) throw WebAppError.internal("Falha ao criar preço.");
+               return row;
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal("Falha ao criar preço."),
          )
       ).match(
          (variant) => variant,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       );
-   });
+   },
+);
 
-export const updateVariant = protectedProcedure
-   .input(updatePriceInputSchema)
-   .use(({ context, input, next }) =>
-      ensureVariantOwnership(context.db, input.id, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) => {
+export const updateVariant = updateVariantProcedure.handler(
+   async ({ context, input }) => {
       const { id, ...data } = input;
       if (input.type === "metered") {
          if (input.meterId === null || input.meterId === undefined)
@@ -229,114 +618,167 @@ export const updateVariant = protectedProcedure
                "Preços do tipo 'metered' devem ter basePrice igual a '0'.",
             );
       }
-      return (await updateVariantRepo(context.db, id, data)).match(
+      return (
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               const [row] = await tx
+                  .update(servicePrices)
+                  .set(data)
+                  .where(eq(servicePrices.id, id))
+                  .returning();
+               if (!row) throw WebAppError.notFound("Preço não encontrado.");
+               return row;
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal("Falha ao atualizar preço."),
+         )
+      ).match(
          (variant) => variant,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       );
-   });
+   },
+);
 
-export const removeVariant = protectedProcedure
-   .input(idInputSchema)
-   .use(({ context, input, next }) =>
-      ensureVariantOwnership(context.db, input.id, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) =>
-      (await deleteVariant(context.db, input.id)).match(
+export const removeVariant = variantByIdProcedure.handler(
+   async ({ context, input }) =>
+      (
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               await tx
+                  .delete(servicePrices)
+                  .where(eq(servicePrices.id, input.id));
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal("Falha ao excluir preço."),
+         )
+      ).match(
          () => ({ success: true as const }),
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       ),
-   );
+);
 
 export const getAllSubscriptions = protectedProcedure
    .input(listSubscriptionsInputSchema)
    .handler(async ({ context, input }) =>
       (
-         await listSubscriptionsByTeam(
-            context.db,
-            context.teamId,
-            input?.status,
+         await fromPromise(
+            context.db.query.contactSubscriptions.findMany({
+               where: (f, { eq, and }) =>
+                  input?.status
+                     ? and(
+                          eq(f.teamId, context.teamId),
+                          eq(f.status, input.status),
+                       )
+                     : eq(f.teamId, context.teamId),
+            }),
+            () => WebAppError.internal("Falha ao listar assinaturas."),
          )
       ).match(
          (rows) => rows,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       ),
    );
 
-export const getContactSubscriptions = protectedProcedure
-   .input(contactIdInputSchema)
-   .use(({ context, input, next }) =>
-      ensureContactOwnership(context.db, input.contactId, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) =>
-      (await listSubscriptionsByContact(context.db, input.contactId)).match(
+export const getContactSubscriptions = contactSubscriptionsProcedure.handler(
+   async ({ context, input }) =>
+      (
+         await fromPromise(
+            context.db.query.contactSubscriptions.findMany({
+               where: (f, { eq }) => eq(f.contactId, input.contactId),
+               orderBy: (f, { desc }) => [desc(f.createdAt)],
+            }),
+            () =>
+               WebAppError.internal("Falha ao listar assinaturas do contato."),
+         )
+      ).match(
          (rows) => rows,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       ),
-   );
+);
 
-export const createSubscription = billableProcedure
-   .input(createSubscriptionWithItemsInputSchema)
-   .use(({ context, input, next }) =>
-      ensureContactOwnership(context.db, input.contactId, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) => {
-      const sub = (
-         await createSubscriptionRepo(context.db, context.teamId, {
-            ...input,
-            source: "manual",
-            cancelAtPeriodEnd: false,
-         })
+export const createSubscription = createSubscriptionProcedure.handler(
+   async ({ context, input }) => {
+      return (
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               const { items, ...subscriptionData } = input;
+               const [sub] = await tx
+                  .insert(contactSubscriptions)
+                  .values({
+                     ...subscriptionData,
+                     teamId: context.teamId,
+                     source: "manual",
+                     cancelAtPeriodEnd: false,
+                  })
+                  .returning();
+               if (!sub)
+                  throw WebAppError.internal("Falha ao criar assinatura.");
+
+               if (items && items.length > 0) {
+                  const results = await Promise.allSettled(
+                     items.map((item) =>
+                        tx
+                           .insert(subscriptionItems)
+                           .values({
+                              ...item,
+                              subscriptionId: sub.id,
+                              teamId: context.teamId,
+                           })
+                           .returning(),
+                     ),
+                  );
+                  if (results.some((r) => r.status === "rejected"))
+                     throw WebAppError.internal(
+                        "Falha ao adicionar itens à assinatura.",
+                     );
+               }
+
+               return sub;
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal("Falha ao criar assinatura."),
+         )
       ).match(
-         (s) => s,
+         (sub) => sub,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       );
-
-      if (input.items && input.items.length > 0) {
-         const results = await Promise.allSettled(
-            input.items.map((item) =>
-               addSubscriptionItem(context.db, context.teamId, {
-                  ...item,
-                  subscriptionId: sub.id,
-               }),
-            ),
-         );
-         if (results.some((r) => r.status === "rejected"))
-            throw WebAppError.internal(
-               "Falha ao adicionar itens à assinatura.",
-            );
-      }
-
-      return sub;
-   });
+   },
+);
 
 export const cancelSubscription = protectedProcedure
    .input(idInputSchema)
    .handler(async ({ context, input }) => {
       const subscription = (
-         await ensureSubscriptionOwnership(context.db, input.id, context.teamId)
+         await fromPromise(
+            context.db.query.contactSubscriptions.findFirst({
+               where: (f, { eq }) => eq(f.id, input.id),
+            }),
+            () => WebAppError.internal("Falha ao buscar assinatura."),
+         )
       ).match(
-         (sub) => sub,
+         (sub) => {
+            if (!sub || sub.teamId !== context.teamId)
+               throw WebAppError.notFound("Assinatura não encontrada.");
+            return sub;
+         },
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       );
 
@@ -350,40 +792,79 @@ export const cancelSubscription = protectedProcedure
          );
 
       return (
-         await updateSubscription(context.db, input.id, { status: "cancelled" })
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               const [updated] = await tx
+                  .update(contactSubscriptions)
+                  .set({ status: "cancelled", updatedAt: dayjs().toDate() })
+                  .where(eq(contactSubscriptions.id, input.id))
+                  .returning();
+               if (!updated)
+                  throw WebAppError.notFound("Assinatura não encontrada.");
+               return updated;
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal("Falha ao cancelar assinatura."),
+         )
       ).match(
          (cancelled) => cancelled,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       );
    });
 
 export const getExpiringSoon = protectedProcedure
    .input(listExpiringSoonInputSchema)
-   .handler(async ({ context, input }) =>
-      (
-         await listExpiringSoon(
-            context.db,
-            context.teamId,
-            undefined,
-            input?.status,
+   .handler(async ({ context, input }) => {
+      const now = dayjs().format("YYYY-MM-DD");
+      const futureDate = dayjs().add(30, "day").format("YYYY-MM-DD");
+      return (
+         await fromPromise(
+            context.db.query.contactSubscriptions.findMany({
+               where: (f, { eq, and, gte, lte }) =>
+                  and(
+                     eq(f.teamId, context.teamId),
+                     eq(f.status, input?.status ?? "active"),
+                     gte(f.endDate, now),
+                     lte(f.endDate, futureDate),
+                  ),
+            }),
+            () =>
+               WebAppError.internal("Falha ao listar assinaturas expirando."),
          )
       ).match(
          (rows) => rows,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
-      ),
-   );
+      );
+   });
 
 export const createMeter = billableProcedure
    .input(createMeterSchema)
    .handler(async ({ context, input }) =>
-      (await createMeterRepo(context.db, context.teamId, input)).match(
+      (
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               const [row] = await tx
+                  .insert(meters)
+                  .values({ ...input, teamId: context.teamId })
+                  .returning();
+               if (!row) throw WebAppError.internal("Falha ao criar medidor.");
+               return row;
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal("Falha ao criar medidor."),
+         )
+      ).match(
          (meter) => meter,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       ),
    );
@@ -391,10 +872,26 @@ export const createMeter = billableProcedure
 export const createBenefit = billableProcedure
    .input(createBenefitSchema)
    .handler(async ({ context, input }) =>
-      (await createBenefitRepo(context.db, context.teamId, input)).match(
+      (
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               const [row] = await tx
+                  .insert(benefits)
+                  .values({ ...input, teamId: context.teamId })
+                  .returning();
+               if (!row)
+                  throw WebAppError.internal("Falha ao criar benefício.");
+               return row;
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal("Falha ao criar benefício."),
+         )
+      ).match(
          (benefit) => benefit,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       ),
    );
@@ -407,10 +904,8 @@ export const ingestUsage = billableProcedure
             "Você não tem permissão para registrar uso neste time.",
          );
 
-      const customerId = context.organizationId;
-
       const result = await context.hyprpayClient.usage.ingest({
-         customerId,
+         customerId: context.organizationId,
          meterId: input.meterId,
          quantity: Number(input.quantity),
          idempotencyKey: input.idempotencyKey,
@@ -454,10 +949,18 @@ export const getMrr = protectedProcedure.handler(async ({ context }) => {
 });
 
 export const getMeters = protectedProcedure.handler(async ({ context }) =>
-   (await listMeters(context.db, context.teamId)).match(
+   (
+      await fromPromise(
+         context.db.query.meters.findMany({
+            where: (f, { eq }) => eq(f.teamId, context.teamId),
+            orderBy: (f, { asc }) => [asc(f.name)],
+         }),
+         () => WebAppError.internal("Falha ao listar medidores."),
+      )
+   ).match(
       (rows) => rows,
       (e) => {
-         throw WebAppError.fromAppError(e);
+         throw e;
       },
    ),
 );
@@ -465,48 +968,72 @@ export const getMeters = protectedProcedure.handler(async ({ context }) =>
 export const getMeterById = protectedProcedure
    .input(idInputSchema)
    .handler(async ({ context, input }) =>
-      (await ensureMeterOwnership(context.db, input.id, context.teamId)).match(
-         (meter) => meter,
+      (
+         await fromPromise(
+            context.db.query.meters.findFirst({
+               where: (f, { eq }) => eq(f.id, input.id),
+            }),
+            () => WebAppError.internal("Falha ao buscar medidor."),
+         )
+      ).match(
+         (meter) => {
+            if (!meter || meter.teamId !== context.teamId)
+               throw WebAppError.notFound("Medidor não encontrado.");
+            return meter;
+         },
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       ),
    );
 
-export const updateMeterById = protectedProcedure
-   .input(updateMeterInputSchema)
-   .use(({ context, input, next }) =>
-      ensureMeterOwnership(context.db, input.id, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) => {
+export const updateMeterById = updateMeterProcedure.handler(
+   async ({ context, input }) => {
       const { id, ...data } = input;
-      return (await updateMeter(context.db, id, data)).match(
+      return (
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               const [row] = await tx
+                  .update(meters)
+                  .set(data)
+                  .where(eq(meters.id, id))
+                  .returning();
+               if (!row) throw WebAppError.notFound("Medidor não encontrado.");
+               return row;
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal("Falha ao atualizar medidor."),
+         )
+      ).match(
          (meter) => meter,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       );
-   });
+   },
+);
 
-export const removeMeter = protectedProcedure
-   .input(idInputSchema)
-   .use(({ context, input, next }) =>
-      ensureMeterOwnership(context.db, input.id, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) =>
-      (await deleteMeter(context.db, input.id)).match(
+export const removeMeter = meterByIdProcedure.handler(
+   async ({ context, input }) =>
+      (
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               await tx.delete(meters).where(eq(meters.id, input.id));
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal("Falha ao excluir medidor."),
+         )
+      ).match(
          () => ({ success: true as const }),
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       ),
-   );
+);
 
 export const getBenefits = protectedProcedure.handler(async ({ context }) => {
    const rows = await context.db
@@ -535,118 +1062,148 @@ export const getBenefitById = protectedProcedure
    .input(idInputSchema)
    .handler(async ({ context, input }) =>
       (
-         await ensureBenefitOwnership(context.db, input.id, context.teamId)
+         await fromPromise(
+            context.db.query.benefits.findFirst({
+               where: (f, { eq }) => eq(f.id, input.id),
+            }),
+            () => WebAppError.internal("Falha ao buscar benefício."),
+         )
       ).match(
-         (benefit) => benefit,
+         (benefit) => {
+            if (!benefit || benefit.teamId !== context.teamId)
+               throw WebAppError.notFound("Benefício não encontrado.");
+            return benefit;
+         },
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       ),
    );
 
-export const updateBenefitById = protectedProcedure
-   .input(updateBenefitInputSchema)
-   .use(({ context, input, next }) =>
-      ensureBenefitOwnership(context.db, input.id, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) => {
+export const updateBenefitById = updateBenefitProcedure.handler(
+   async ({ context, input }) => {
       const { id, ...data } = input;
-      return (await updateBenefit(context.db, id, data)).match(
+      return (
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               const [row] = await tx
+                  .update(benefits)
+                  .set(data)
+                  .where(eq(benefits.id, id))
+                  .returning();
+               if (!row)
+                  throw WebAppError.notFound("Benefício não encontrado.");
+               return row;
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal("Falha ao atualizar benefício."),
+         )
+      ).match(
          (benefit) => benefit,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       );
-   });
+   },
+);
 
-export const removeBenefit = protectedProcedure
-   .input(idInputSchema)
-   .use(({ context, input, next }) =>
-      ensureBenefitOwnership(context.db, input.id, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) =>
-      (await deleteBenefit(context.db, input.id)).match(
-         () => ({ success: true as const }),
-         (e) => {
-            throw WebAppError.fromAppError(e);
-         },
-      ),
-   );
-
-export const attachBenefit = protectedProcedure
-   .input(serviceBenefitLinkSchema)
-   .use(({ context, input, next }) =>
-      ensureServiceOwnership(context.db, input.serviceId, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .use(({ context, input, next }) =>
-      ensureBenefitOwnership(context.db, input.benefitId, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) =>
+export const removeBenefit = benefitByIdProcedure.handler(
+   async ({ context, input }) =>
       (
-         await attachBenefitToService(
-            context.db,
-            input.serviceId,
-            input.benefitId,
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               await tx.delete(benefits).where(eq(benefits.id, input.id));
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal("Falha ao excluir benefício."),
          )
       ).match(
          () => ({ success: true as const }),
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       ),
-   );
+);
 
-export const detachBenefit = protectedProcedure
-   .input(serviceBenefitLinkSchema)
-   .use(({ context, input, next }) =>
-      ensureServiceOwnership(context.db, input.serviceId, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) =>
+export const attachBenefit = attachBenefitProcedure.handler(
+   async ({ context, input }) =>
       (
-         await detachBenefitFromService(
-            context.db,
-            input.serviceId,
-            input.benefitId,
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               await tx
+                  .insert(serviceBenefits)
+                  .values({
+                     serviceId: input.serviceId,
+                     benefitId: input.benefitId,
+                  })
+                  .onConflictDoNothing();
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal(
+                       "Falha ao associar benefício ao serviço.",
+                    ),
          )
       ).match(
          () => ({ success: true as const }),
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       ),
-   );
+);
 
-export const getServiceBenefits = protectedProcedure
-   .input(serviceIdInputSchema)
-   .use(({ context, input, next }) =>
-      ensureServiceOwnership(context.db, input.serviceId, context.teamId).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) =>
-      (await listBenefitsByService(context.db, input.serviceId)).match(
-         (rows) => rows,
+export const detachBenefit = detachBenefitProcedure.handler(
+   async ({ context, input }) =>
+      (
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               await tx
+                  .delete(serviceBenefits)
+                  .where(
+                     and(
+                        eq(serviceBenefits.serviceId, input.serviceId),
+                        eq(serviceBenefits.benefitId, input.benefitId),
+                     ),
+                  );
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal(
+                       "Falha ao remover benefício do serviço.",
+                    ),
+         )
+      ).match(
+         () => ({ success: true as const }),
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       ),
-   );
+);
+
+export const getServiceBenefits = serviceByServiceIdProcedure.handler(
+   async ({ context, input }) =>
+      (
+         await fromPromise(
+            context.db.query.serviceBenefits.findMany({
+               where: (f, { eq }) => eq(f.serviceId, input.serviceId),
+               with: { benefit: true },
+            }),
+            () =>
+               WebAppError.internal("Falha ao listar benefícios do serviço."),
+         )
+      ).match(
+         (rows) => rows.map((r) => r.benefit),
+         (e) => {
+            throw e;
+         },
+      ),
+);
 
 export const getActiveCountByPrice = protectedProcedure
    .input(priceIdInputSchema)
@@ -668,87 +1225,114 @@ export const getActiveCountByPrice = protectedProcedure
       return { count: rows[0]?.count ?? 0 };
    });
 
-export const addItem = protectedProcedure
-   .input(createSubscriptionItemSchema)
-   .use(({ context, input, next }) =>
-      ensureSubscriptionOwnership(
-         context.db,
-         input.subscriptionId,
-         context.teamId,
-      ).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) =>
-      (await addSubscriptionItem(context.db, context.teamId, input)).match(
-         (item) => item,
-         (e) => {
-            throw WebAppError.fromAppError(e);
-         },
-      ),
-   );
+export const addItem = addItemProcedure.handler(async ({ context, input }) =>
+   (
+      await fromPromise(
+         context.db.transaction(async (tx) => {
+            const lock = await tx.execute(
+               sql`SELECT id FROM crm.contact_subscriptions WHERE id = ${input.subscriptionId} AND team_id = ${context.teamId} FOR UPDATE`,
+            );
+            if (lock.rows.length === 0)
+               throw WebAppError.notFound("Assinatura não encontrada.");
 
-export const updateItem = protectedProcedure
-   .input(updateSubscriptionItemInputSchema)
-   .use(({ context, input, next }) =>
-      ensureSubscriptionItemOwnership(
-         context.db,
-         input.id,
-         context.teamId,
-      ).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) => {
+            const [countRow] = await tx
+               .select({ itemCount: count() })
+               .from(subscriptionItems)
+               .where(
+                  eq(subscriptionItems.subscriptionId, input.subscriptionId),
+               );
+            if ((countRow?.itemCount ?? 0) >= MAX_ITEMS_PER_SUBSCRIPTION)
+               throw WebAppError.badRequest(
+                  `Limite de ${MAX_ITEMS_PER_SUBSCRIPTION} itens por assinatura atingido.`,
+               );
+
+            const [row] = await tx
+               .insert(subscriptionItems)
+               .values({ ...input, teamId: context.teamId })
+               .returning();
+            if (!row) throw WebAppError.internal("Falha ao adicionar item.");
+            return row;
+         }),
+         (e) =>
+            e instanceof WebAppError
+               ? e
+               : WebAppError.internal("Falha ao adicionar item."),
+      )
+   ).match(
+      (item) => item,
+      (e) => {
+         throw e;
+      },
+   ),
+);
+
+export const updateItem = updateItemProcedure.handler(
+   async ({ context, input }) => {
       const { id, ...data } = input;
-      return (await updateSubscriptionItemQuantity(context.db, id, data)).match(
+      return (
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               const [row] = await tx
+                  .update(subscriptionItems)
+                  .set(data)
+                  .where(eq(subscriptionItems.id, id))
+                  .returning();
+               if (!row)
+                  throw WebAppError.notFound(
+                     "Item de assinatura não encontrado.",
+                  );
+               return row;
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal("Falha ao atualizar item."),
+         )
+      ).match(
          (item) => item,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       );
-   });
+   },
+);
 
-export const removeItem = protectedProcedure
-   .input(idInputSchema)
-   .use(({ context, input, next }) =>
-      ensureSubscriptionItemOwnership(
-         context.db,
-         input.id,
-         context.teamId,
+export const removeItem = subscriptionItemByIdProcedure.handler(
+   async ({ context, input }) =>
+      (
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               await tx
+                  .delete(subscriptionItems)
+                  .where(eq(subscriptionItems.id, input.id));
+            }),
+            (e) =>
+               e instanceof WebAppError
+                  ? e
+                  : WebAppError.internal("Falha ao remover item."),
+         )
       ).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) =>
-      (await removeSubscriptionItem(context.db, input.id)).match(
          () => ({ success: true as const }),
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       ),
-   );
+);
 
-export const listItems = protectedProcedure
-   .input(subscriptionIdInputSchema)
-   .use(({ context, input, next }) =>
-      ensureSubscriptionOwnership(
-         context.db,
-         input.subscriptionId,
-         context.teamId,
+export const listItems = listItemsProcedure.handler(
+   async ({ context, input }) =>
+      (
+         await fromPromise(
+            context.db.query.subscriptionItems.findMany({
+               where: (f, { eq }) => eq(f.subscriptionId, input.subscriptionId),
+               orderBy: (f, { asc }) => [asc(f.createdAt)],
+            }),
+            () => WebAppError.internal("Falha ao listar itens da assinatura."),
+         )
       ).match(
-         () => next({}),
-         (e) => Promise.reject(WebAppError.fromAppError(e)),
-      ),
-   )
-   .handler(async ({ context, input }) =>
-      (await listSubscriptionItems(context.db, input.subscriptionId)).match(
          (items) => items,
          (e) => {
-            throw WebAppError.fromAppError(e);
+            throw e;
          },
       ),
-   );
+);
