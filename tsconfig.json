@@ -50,6 +50,9 @@
       },
       {
          "path": "./core/dbos"
+      },
+      {
+         "path": "./modules/billing"
       }
    ]
 }
