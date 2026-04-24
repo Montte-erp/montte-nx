@@ -9,8 +9,8 @@ import {
 } from "@core/database/repositories/contacts-repository";
 import type { Contact } from "@core/database/schemas/contacts";
 import { hyprpayContract } from "@montte/hyprpay/contract";
-import { sdkProcedure } from "../server";
-import type { SdkContext } from "../server";
+import { sdkProcedure } from "../../server";
+import type { SdkContext } from "../../server";
 
 const impl = implementerInternal(
    hyprpayContract,
