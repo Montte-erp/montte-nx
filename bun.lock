@@ -224,12 +224,20 @@
       "name": "@core/dbos",
       "version": "0.1.0",
       "dependencies": {
+        "@core/database": "workspace:*",
         "@dbos-inc/dbos-sdk": "catalog:workers",
       },
       "devDependencies": {
         "@tooling/typescript": "workspace:*",
         "typescript": "catalog:development",
+        "vitest": "catalog:testing",
       },
+      "peerDependencies": {
+        "vitest": "catalog:testing",
+      },
+      "optionalPeers": [
+        "vitest",
+      ],
     },
     "core/environment": {
       "name": "@core/environment",
