@@ -112,6 +112,36 @@ const subscriptionsContract = {
       .output(z.object({ success: z.boolean() })),
 };
 
+const usageEventSchema = z.object({
+   teamId: z.string(),
+   meterId: z.string(),
+   quantity: z.string(),
+   idempotencyKey: z.string(),
+   contactId: z.string().nullable(),
+   properties: z.record(z.string(), z.unknown()),
+   timestamp: z.string(),
+});
+
+const usageContract = {
+   ingest: oc
+      .input(
+         z.object({
+            customerId: z.string(),
+            meterId: z.string(),
+            quantity: z.number().positive(),
+            properties: z.record(z.string(), z.unknown()).optional(),
+            idempotencyKey: z.string().optional(),
+         }),
+      )
+      .output(z.object({ queued: z.boolean(), idempotencyKey: z.string() })),
+
+   list: oc
+      .input(
+         z.object({ customerId: z.string(), meterId: z.string().optional() }),
+      )
+      .output(z.array(usageEventSchema)),
+};
+
 export const hyprpayContract = {
    create: oc
       .input(
@@ -148,8 +178,10 @@ export const hyprpayContract = {
       .output(customerSchema),
 
    subscriptions: subscriptionsContract,
+   usage: usageContract,
 };
 
+export type HyprPayUsageEventFromContract = z.infer<typeof usageEventSchema>;
 export type HyprPayCustomerFromContract = z.infer<typeof customerSchema>;
 export type HyprPaySubscriptionFromContract = z.infer<
    typeof subscriptionSchema
