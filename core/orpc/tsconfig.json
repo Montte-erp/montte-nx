@@ -1,0 +1,30 @@
+{
+   "extends": "@tooling/typescript/core.json",
+   "compilerOptions": {
+      "paths": {
+         "@core/authentication/*": ["../../core/authentication/src/*"],
+         "@core/database": ["../../core/database/src/index.ts"],
+         "@core/database/*": ["../../core/database/src/*"],
+         "@core/environment/*": ["../../core/environment/src/*"],
+         "@core/logging": ["../../core/logging/src/logger.ts"],
+         "@core/logging/*": ["../../core/logging/src/*"],
+         "@core/posthog/*": ["../../core/posthog/src/*"],
+         "@core/redis/*": ["../../core/redis/src/*"],
+         "@core/stripe": ["../../core/stripe/src/index.ts"],
+         "@core/stripe/*": ["../../core/stripe/src/*"],
+         "@core/utils/*": ["../../core/utils/src/*"],
+         "@packages/notifications/*": ["../../packages/notifications/src/*"]
+      }
+   },
+   "references": [
+      { "path": "../authentication" },
+      { "path": "../database" },
+      { "path": "../logging" },
+      { "path": "../posthog" },
+      { "path": "../redis" },
+      { "path": "../stripe" },
+      { "path": "../utils" },
+      { "path": "../../packages/notifications" }
+   ],
+   "include": ["src"]
+}

@@ -1,0 +1,47 @@
+{
+   "name": "@core/orpc",
+   "version": "0.1.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      "./context": {
+         "types": "./dist/context.d.ts",
+         "default": "./dist/context.js"
+      },
+      "./procedures": {
+         "types": "./dist/procedures.d.ts",
+         "default": "./dist/procedures.js"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "test": "vitest run --passWithNoTests",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@core/authentication": "workspace:*",
+      "@core/database": "workspace:*",
+      "@core/logging": "workspace:*",
+      "@core/posthog": "workspace:*",
+      "@core/redis": "workspace:*",
+      "@core/stripe": "workspace:*",
+      "@core/utils": "workspace:*",
+      "@dbos-inc/dbos-sdk": "catalog:workers",
+      "@opentelemetry/api-logs": "catalog:telemetry",
+      "@orpc/server": "catalog:orpc",
+      "@packages/notifications": "workspace:*",
+      "dayjs": "catalog:ui",
+      "neverthrow": "catalog:validation"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development"
+   }
+}
