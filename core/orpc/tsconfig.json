@@ -5,6 +5,7 @@
          "@core/authentication/*": ["../../core/authentication/dist/*"],
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],
+         "@core/dbos/*": ["../../core/dbos/src/*"],
          "@core/environment/*": ["../../core/environment/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
@@ -12,17 +13,20 @@
          "@core/redis/*": ["../../core/redis/src/*"],
          "@core/stripe": ["../../core/stripe/src/index.ts"],
          "@core/stripe/*": ["../../core/stripe/src/*"],
+         "@core/transactional/*": ["../../core/transactional/src/*"],
          "@core/utils/*": ["../../core/utils/src/*"],
          "@packages/notifications/*": ["../../packages/notifications/src/*"]
       }
    },
    "references": [
       { "path": "../database" },
+      { "path": "../dbos" },
       { "path": "../environment" },
       { "path": "../logging" },
       { "path": "../posthog" },
       { "path": "../redis" },
       { "path": "../stripe" },
+      { "path": "../transactional" },
       { "path": "../utils" },
       { "path": "../../packages/notifications" }
    ],
