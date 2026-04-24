@@ -1,5 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { setupTestDb, withTestTransaction } from "./setup-test-db";
+import {
+   setupTestDb,
+   withTestTransaction,
+} from "../../src/testing/setup-test-db";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 
 describe("setupTestDb", () => {

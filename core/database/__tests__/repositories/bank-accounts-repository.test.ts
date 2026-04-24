@@ -1,5 +1,5 @@
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
-import { setupTestDb } from "../helpers/setup-test-db";
+import { setupTestDb } from "../../src/testing/setup-test-db";
 import { transactions } from "@core/database/schemas/transactions";
 import * as repo from "../../src/repositories/bank-accounts-repository";
 

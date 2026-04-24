@@ -1,5 +1,5 @@
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
-import { setupTestDb } from "../helpers/setup-test-db";
+import { setupTestDb } from "../../src/testing/setup-test-db";
 import * as repo from "../../src/repositories/inventory-repository";
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;

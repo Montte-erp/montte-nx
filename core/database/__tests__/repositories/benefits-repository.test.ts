@@ -1,6 +1,6 @@
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { seed } from "drizzle-seed";
-import { setupTestDb } from "../helpers/setup-test-db";
+import { setupTestDb } from "../../src/testing/setup-test-db";
 import * as schema from "@core/database/schema";
 import { services } from "@core/database/schemas/services";
 import * as repo from "../../src/repositories/benefits-repository";

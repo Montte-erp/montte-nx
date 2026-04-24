@@ -1,8 +1,8 @@
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { pushSchema } from "drizzle-kit/api";
-import * as schema from "@core/database/schema";
-import type { DatabaseInstance } from "@core/database/client";
+import * as schema from "../schema";
+import type { DatabaseInstance } from "../client";
 
 export async function setupTestDb() {
    const client = new PGlite();

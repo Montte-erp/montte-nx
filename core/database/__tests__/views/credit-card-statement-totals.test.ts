@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { setupTestDb } from "../helpers/setup-test-db";
+import { setupTestDb } from "../../src/testing/setup-test-db";
 import { creditCardStatementTotals } from "@core/database/schemas/credit-card-statement-totals";
 import { transactions } from "@core/database/schemas/transactions";
 import { creditCards } from "@core/database/schemas/credit-cards";

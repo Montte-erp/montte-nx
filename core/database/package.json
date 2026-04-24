@@ -31,6 +31,10 @@
       "./schemas/*": {
          "types": "./dist/schemas/*.d.ts",
          "default": "./dist/schemas/*.js"
+      },
+      "./testing/*": {
+         "types": "./dist/testing/*.d.ts",
+         "default": "./dist/testing/*.js"
       }
    },
    "scripts": {
