@@ -1,34 +1,18 @@
 import { implementerInternal } from "@orpc/server";
-import { err, ok } from "neverthrow";
-import type { Result } from "neverthrow";
 import { WebAppError } from "@core/logging/errors";
 
 type BenefitCheckStatus = "granted" | "revoked" | "not_found";
 import { hyprpayContract } from "@montte/hyprpay/contract";
 import { sdkProcedure } from "../../server";
-import type { SdkContext } from "../../server";
 import { getContactByExternalId } from "@core/database/repositories/contacts-repository";
 import { listGrantsWithBenefitsByContact } from "@core/database/repositories/benefit-grants-repository";
+import { requireTeamId } from "./utils";
 
 const impl = implementerInternal(
    hyprpayContract.benefits,
    sdkProcedure["~orpc"].config,
    [...sdkProcedure["~orpc"].middlewares],
 );
-
-function requireTeamId(
-   teamId: SdkContext["teamId"],
-): Result<string, WebAppError<"FORBIDDEN">> {
-   if (!teamId)
-      return err(
-         new WebAppError("FORBIDDEN", {
-            message:
-               "Esta operação requer uma chave de API vinculada a um projeto.",
-            source: "hyprpay",
-         }),
-      );
-   return ok(teamId);
-}
 
 export const check = impl.check.handler(async ({ context, input }) => {
    const teamIdResult = requireTeamId(context.teamId);
@@ -56,9 +40,11 @@ export const check = impl.check.handler(async ({ context, input }) => {
    );
    if (grantsResult.isErr()) throw WebAppError.fromAppError(grantsResult.error);
 
-   const match = grantsResult.value.find(
+   const allMatches = grantsResult.value.filter(
       (row) => row.benefit.id === input.benefitId,
    );
+   const match =
+      allMatches.find((row) => row.grant.status === "active") ?? allMatches[0];
 
    if (!match) {
       const status: BenefitCheckStatus = "not_found";

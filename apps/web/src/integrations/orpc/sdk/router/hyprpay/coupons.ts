@@ -1,5 +1,4 @@
 import { implementerInternal } from "@orpc/server";
-import { err, ok } from "neverthrow";
 import dayjs from "dayjs";
 import { WebAppError } from "@core/logging/errors";
 import { getCouponByCode } from "@core/database/repositories/coupons-repository";
@@ -7,29 +6,13 @@ import type { Coupon } from "@core/database/schemas/coupons";
 import { hyprpayContract } from "@montte/hyprpay/contract";
 import type { HyprPayCouponFromContract } from "@montte/hyprpay/contract";
 import { sdkProcedure } from "../../server";
-import type { SdkContext } from "../../server";
-import type { Result } from "neverthrow";
+import { requireTeamId } from "./utils";
 
 const impl = implementerInternal(
    hyprpayContract.coupons,
    sdkProcedure["~orpc"].config,
    [...sdkProcedure["~orpc"].middlewares],
 );
-
-function requireTeamId(
-   teamId: SdkContext["teamId"],
-): Result<string, WebAppError<"FORBIDDEN">> {
-   if (!teamId) {
-      return err(
-         new WebAppError("FORBIDDEN", {
-            message:
-               "Esta operação requer uma chave de API vinculada a um projeto.",
-            source: "hyprpay",
-         }),
-      );
-   }
-   return ok(teamId);
-}
 
 type InvalidReason =
    | "not_found"

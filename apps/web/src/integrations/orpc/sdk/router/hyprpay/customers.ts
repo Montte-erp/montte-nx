@@ -1,5 +1,4 @@
 import { implementerInternal } from "@orpc/server";
-import { Result, err, ok } from "neverthrow";
 import { WebAppError } from "@core/logging/errors";
 import {
    createContact,
@@ -10,28 +9,13 @@ import {
 import type { Contact } from "@core/database/schemas/contacts";
 import { hyprpayContract } from "@montte/hyprpay/contract";
 import { sdkProcedure } from "../../server";
-import type { SdkContext } from "../../server";
+import { requireTeamId } from "./utils";
 
 const impl = implementerInternal(
    hyprpayContract,
    sdkProcedure["~orpc"].config,
    [...sdkProcedure["~orpc"].middlewares],
 );
-
-function requireTeamId(
-   teamId: SdkContext["teamId"],
-): Result<string, WebAppError<"FORBIDDEN">> {
-   if (!teamId) {
-      return err(
-         new WebAppError("FORBIDDEN", {
-            message:
-               "Esta operação requer uma chave de API vinculada a um projeto.",
-            source: "hyprpay",
-         }),
-      );
-   }
-   return ok(teamId);
-}
 
 function mapCustomer(contact: Contact) {
    return {

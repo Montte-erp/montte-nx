@@ -1,9 +1,8 @@
 import { implementerInternal } from "@orpc/server";
-import { err, ok } from "neverthrow";
 import { WebAppError } from "@core/logging/errors";
 import { hyprpayContract } from "@montte/hyprpay/contract";
 import { sdkProcedure } from "../../server";
-import type { SdkContext } from "../../server";
+import { requireTeamId } from "./utils";
 import {
    createSubscriptionWithItems,
    listSubscriptionsByContact,
@@ -30,18 +29,6 @@ const impl = implementerInternal(
    sdkProcedure["~orpc"].config,
    [...sdkProcedure["~orpc"].middlewares],
 );
-
-function requireTeamId(teamId: SdkContext["teamId"]) {
-   if (!teamId)
-      return err(
-         new WebAppError("FORBIDDEN", {
-            message:
-               "Esta operação requer uma chave de API vinculada a um projeto.",
-            source: "hyprpay",
-         }),
-      );
-   return ok(teamId);
-}
 
 function mapSubscription(sub: ContactSubscription) {
    return {
@@ -101,13 +88,32 @@ export const create = impl.create.handler(async ({ context, input }) => {
       );
       if (couponResult.isErr())
          throw WebAppError.fromAppError(couponResult.error);
-      if (!couponResult.value || !couponResult.value.isActive) {
+      const coupon = couponResult.value;
+      if (!coupon) {
          throw new WebAppError("BAD_REQUEST", {
-            message: "Cupom inválido ou inativo.",
+            message: "Cupom não encontrado.",
             source: "hyprpay",
          });
       }
-      couponId = couponResult.value.id;
+      if (!coupon.isActive) {
+         throw new WebAppError("BAD_REQUEST", {
+            message: "Cupom inativo.",
+            source: "hyprpay",
+         });
+      }
+      if (coupon.redeemBy && dayjs().isAfter(coupon.redeemBy)) {
+         throw new WebAppError("BAD_REQUEST", {
+            message: "Cupom expirado.",
+            source: "hyprpay",
+         });
+      }
+      if (coupon.maxUses != null && coupon.usedCount >= coupon.maxUses) {
+         throw new WebAppError("BAD_REQUEST", {
+            message: "Cupom sem usos restantes.",
+            source: "hyprpay",
+         });
+      }
+      couponId = coupon.id;
    }
 
    const subscriptionResult = await createSubscriptionWithItems(

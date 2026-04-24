@@ -1,12 +1,13 @@
 import { implementerInternal } from "@orpc/server";
-import { err, fromPromise, ok } from "neverthrow";
+import { fromPromise } from "neverthrow";
 import { SignJWT } from "jose";
 import { WebAppError } from "@core/logging/errors";
 import { env } from "@core/environment/web";
+import { getDomain } from "@core/environment/helpers";
 import { hyprpayContract } from "@montte/hyprpay/contract";
 import { sdkProcedure } from "../../server";
-import type { SdkContext } from "../../server";
 import { getContactByExternalId } from "@core/database/repositories/contacts-repository";
+import { requireTeamId } from "./utils";
 import dayjs from "dayjs";
 
 const impl = implementerInternal(
@@ -14,18 +15,6 @@ const impl = implementerInternal(
    sdkProcedure["~orpc"].config,
    [...sdkProcedure["~orpc"].middlewares],
 );
-
-function requireTeamId(teamId: SdkContext["teamId"]) {
-   if (!teamId)
-      return err(
-         new WebAppError("FORBIDDEN", {
-            message:
-               "Esta operação requer uma chave de API vinculada a um projeto.",
-            source: "hyprpay",
-         }),
-      );
-   return ok(teamId);
-}
 
 export const createSession = impl.createSession.handler(
    async ({ context, input }) => {
@@ -69,7 +58,7 @@ export const createSession = impl.createSession.handler(
       );
       if (signResult.isErr()) throw signResult.error;
 
-      const baseUrl = env.APP_URL ?? "https://app.montte.co";
+      const baseUrl = getDomain();
       const url = `${baseUrl}/portal/${teamId}?token=${signResult.value}`;
 
       return { url, expiresAt: expiresAt.toISOString() };

@@ -25,7 +25,6 @@ export interface ListCustomersInput {
    limit?: number;
 }
 
-// Subscriptions
 export interface CreateSubscriptionInput {
    customerId: string;
    items: Array<{ priceId: string; quantity?: number }>;
@@ -49,7 +48,6 @@ export interface UpdateSubscriptionItemInput {
    negotiatedPrice?: string | null;
 }
 
-// Usage
 export interface IngestUsageInput {
    customerId: string;
    meterId: string;
@@ -63,19 +61,16 @@ export interface ListUsageInput {
    meterId?: string;
 }
 
-// Benefits
 export interface CheckBenefitInput {
    customerId: string;
    benefitId: string;
 }
 
-// Coupons
 export interface ValidateCouponInput {
    code: string;
    priceId?: string;
 }
 
-// Portal
 export interface CreatePortalSessionInput {
    customerId: string;
 }

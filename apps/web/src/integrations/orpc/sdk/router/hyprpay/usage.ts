@@ -1,33 +1,18 @@
 import { implementerInternal } from "@orpc/server";
-import { err, ok, fromPromise } from "neverthrow";
-import type { Result } from "neverthrow";
+import { fromPromise } from "neverthrow";
 import { WebAppError } from "@core/logging/errors";
 import { hyprpayContract } from "@montte/hyprpay/contract";
 import { sdkProcedure } from "../../server";
-import type { SdkContext } from "../../server";
 import { getContactByExternalId } from "@core/database/repositories/contacts-repository";
 import { listUsageEventsByContact } from "@core/database/repositories/usage-events-repository";
 import { enqueueUsageIngestionWorkflow } from "@packages/workflows/workflows/billing/usage-ingestion-workflow";
+import { requireTeamId } from "./utils";
 
 const impl = implementerInternal(
    hyprpayContract.usage,
    sdkProcedure["~orpc"].config,
    [...sdkProcedure["~orpc"].middlewares],
 );
-
-function requireTeamId(
-   teamId: SdkContext["teamId"],
-): Result<string, WebAppError<"FORBIDDEN">> {
-   if (!teamId)
-      return err(
-         new WebAppError("FORBIDDEN", {
-            message:
-               "Esta operação requer uma chave de API vinculada a um projeto.",
-            source: "hyprpay",
-         }),
-      );
-   return ok(teamId);
-}
 
 export const ingest = impl.ingest.handler(async ({ context, input }) => {
    const teamIdResult = requireTeamId(context.teamId);
@@ -94,18 +79,14 @@ export const list = impl.list.handler(async ({ context, input }) => {
       context.db,
       teamId,
       contactResult.value.id,
+      input.meterId,
    );
    if (eventsResult.isErr()) throw WebAppError.fromAppError(eventsResult.error);
 
-   const events = eventsResult.value;
-   const filtered = input.meterId
-      ? events.filter((e) => e.meterId === input.meterId)
-      : events;
-
-   return filtered.map((e) => ({
+   return eventsResult.value.map((e) => ({
       teamId: e.teamId,
       meterId: e.meterId,
-      quantity: e.quantity,
+      quantity: Number(e.quantity),
       idempotencyKey: e.idempotencyKey,
       contactId: e.contactId ?? null,
       properties: e.properties,

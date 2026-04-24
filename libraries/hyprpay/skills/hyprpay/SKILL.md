@@ -62,7 +62,10 @@ await hyprpay.subscriptions.cancel({ subscriptionId: sub.id });
 await hyprpay.subscriptions.cancel({ subscriptionId: sub.id, cancelAtPeriodEnd: true });
 
 // List
-const subs = await hyprpay.subscriptions.list(user.id).match(...);
+const subs = await hyprpay.subscriptions.list(user.id).match(
+   (v) => v,
+   (e) => { throw e },
+);
 
 // Manage items
 await hyprpay.subscriptions.addItem({ subscriptionId: sub.id, priceId: "price-456" });

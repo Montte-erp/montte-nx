@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { AppError, validateInput } from "@core/logging/errors";
-import { and, count, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, lte } from "drizzle-orm";
 import { fromPromise, fromThrowable, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -81,12 +81,6 @@ export function createSubscriptionWithItems(
                   throw AppError.validation(
                      "Dados inválidos para item de assinatura.",
                   );
-
-               const lockRows = await tx.execute(
-                  sql`SELECT id FROM crm.contact_subscriptions WHERE id = ${subscription.id} AND team_id = ${teamId} FOR UPDATE`,
-               );
-               if (lockRows.rows.length === 0)
-                  throw AppError.notFound("Assinatura não encontrada.");
 
                const rows = await tx
                   .select({ itemCount: count() })

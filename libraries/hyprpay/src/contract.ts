@@ -115,7 +115,7 @@ const subscriptionsContract = {
 const usageEventSchema = z.object({
    teamId: z.string(),
    meterId: z.string(),
-   quantity: z.string(),
+   quantity: z.number(),
    idempotencyKey: z.string(),
    contactId: z.string().nullable(),
    properties: z.record(z.string(), z.unknown()),
