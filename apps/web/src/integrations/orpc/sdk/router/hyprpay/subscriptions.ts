@@ -5,7 +5,7 @@ import { hyprpayContract } from "@montte/hyprpay/contract";
 import { sdkProcedure } from "../../server";
 import type { SdkContext } from "../../server";
 import {
-   createSubscription,
+   createSubscriptionWithItems,
    listSubscriptionsByContact,
    updateSubscription,
    ensureSubscriptionOwnership,
@@ -110,28 +110,29 @@ export const create = impl.create.handler(async ({ context, input }) => {
       couponId = couponResult.value.id;
    }
 
-   const subscriptionResult = await createSubscription(context.db, teamId, {
-      contactId: contact.id,
-      startDate: dayjs().format("YYYY-MM-DD"),
-      status: "active",
-      source: "manual",
-      couponId,
-      cancelAtPeriodEnd: false,
-   });
-   if (subscriptionResult.isErr())
-      throw WebAppError.fromAppError(subscriptionResult.error);
-   const subscription = subscriptionResult.value;
-
-   for (const item of input.items) {
-      const itemResult = await addSubscriptionItem(context.db, teamId, {
-         subscriptionId: subscription.id,
+   const subscriptionResult = await createSubscriptionWithItems(
+      context.db,
+      teamId,
+      {
+         contactId: contact.id,
+         startDate: dayjs().format("YYYY-MM-DD"),
+         status: "active",
+         source: "manual",
+         couponId,
+         cancelAtPeriodEnd: false,
+      },
+      input.items.map((item) => ({
          priceId: item.priceId,
          quantity: item.quantity ?? 1,
-      });
-      if (itemResult.isErr()) throw WebAppError.fromAppError(itemResult.error);
-   }
+      })),
+   );
+   if (subscriptionResult.isErr())
+      throw WebAppError.fromAppError(subscriptionResult.error);
 
-   return { subscription: mapSubscription(subscription), checkoutUrl: null };
+   return {
+      subscription: mapSubscription(subscriptionResult.value),
+      checkoutUrl: null,
+   };
 });
 
 export const cancel = impl.cancel.handler(async ({ context, input }) => {

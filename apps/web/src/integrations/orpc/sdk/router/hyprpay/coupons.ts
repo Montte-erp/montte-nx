@@ -8,10 +8,10 @@ import { hyprpayContract } from "@montte/hyprpay/contract";
 import type { HyprPayCouponFromContract } from "@montte/hyprpay/contract";
 import { sdkProcedure } from "../../server";
 import type { SdkContext } from "../../server";
-import { Result } from "neverthrow";
+import type { Result } from "neverthrow";
 
 const impl = implementerInternal(
-   hyprpayContract,
+   hyprpayContract.coupons,
    sdkProcedure["~orpc"].config,
    [...sdkProcedure["~orpc"].middlewares],
 );
@@ -61,35 +61,27 @@ function mapCoupon(coupon: Coupon): HyprPayCouponFromContract {
    };
 }
 
-export const validate = impl.coupons.validate.handler(
-   async ({ context, input }) => {
-      const teamIdResult = requireTeamId(context.teamId);
-      if (teamIdResult.isErr()) throw teamIdResult.error;
-      const teamId = teamIdResult.value;
+export const validate = impl.validate.handler(async ({ context, input }) => {
+   const teamIdResult = requireTeamId(context.teamId);
+   if (teamIdResult.isErr()) throw teamIdResult.error;
+   const teamId = teamIdResult.value;
 
-      const couponResult = await getCouponByCode(
-         context.db,
-         teamId,
-         input.code,
-      );
-      if (couponResult.isErr())
-         throw WebAppError.fromAppError(couponResult.error);
+   const couponResult = await getCouponByCode(context.db, teamId, input.code);
+   if (couponResult.isErr()) throw WebAppError.fromAppError(couponResult.error);
 
-      const coupon = couponResult.value;
+   const coupon = couponResult.value;
 
-      if (!coupon) return invalid("not_found");
-      if (!coupon.isActive) return invalid("inactive");
-      if (coupon.redeemBy && dayjs().isAfter(coupon.redeemBy))
-         return invalid("expired");
-      if (coupon.maxUses != null && coupon.usedCount >= coupon.maxUses)
-         return invalid("max_uses_reached");
-      if (
-         coupon.scope === "price" &&
-         input.priceId != null &&
-         coupon.priceId !== input.priceId
-      )
-         return invalid("price_scope_mismatch");
+   if (!coupon) return invalid("not_found");
+   if (!coupon.isActive) return invalid("inactive");
+   if (coupon.redeemBy && dayjs().isAfter(coupon.redeemBy))
+      return invalid("expired");
+   if (coupon.maxUses != null && coupon.usedCount >= coupon.maxUses)
+      return invalid("max_uses_reached");
+   if (
+      coupon.scope === "price" &&
+      (input.priceId == null || coupon.priceId !== input.priceId)
+   )
+      return invalid("price_scope_mismatch");
 
-      return { valid: true, coupon: mapCoupon(coupon) };
-   },
-);
+   return { valid: true, coupon: mapCoupon(coupon) };
+});
