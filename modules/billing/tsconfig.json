@@ -15,6 +15,7 @@
          "@core/redis/*": ["../../core/redis/src/*"],
          "@core/authentication/*": ["../../core/authentication/dist/*"],
          "@core/transactional/*": ["../../core/transactional/src/*"],
+         "@packages/events/*": ["../../packages/events/src/*"],
          "@packages/notifications/*": ["../../packages/notifications/src/*"]
       }
    },
@@ -25,7 +26,8 @@
       { "path": "../../core/logging" },
       { "path": "../../core/redis" },
       { "path": "../../core/transactional" },
+      { "path": "../../packages/events" },
       { "path": "../../packages/notifications" }
    ],
-   "include": ["src"]
+   "include": ["src", "__tests__"]
 }
