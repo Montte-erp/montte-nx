@@ -15,6 +15,14 @@
       "./procedures": {
          "types": "./dist/procedures.d.ts",
          "default": "./dist/procedures.js"
+      },
+      "./sdk-context": {
+         "types": "./dist/sdk-context.d.ts",
+         "default": "./dist/sdk-context.js"
+      },
+      "./sdk-procedure": {
+         "types": "./dist/sdk-procedure.d.ts",
+         "default": "./dist/sdk-procedure.js"
       }
    },
    "scripts": {
