@@ -1,4 +1,7 @@
-import { createAuth } from "@core/authentication/server";
+import {
+   createAuth,
+   createHyprPayClientFromEnv,
+} from "@core/authentication/server";
 import { createDb } from "@core/database/client";
 import { env } from "@core/environment/web";
 import { createPostHog } from "@core/posthog/server";
@@ -24,6 +27,7 @@ const auth = createAuth({
 });
 const workflowClient = createWorkflowClient(env.DATABASE_URL);
 const jobPublisher = createJobPublisher(redis);
+const hyprpayClient = createHyprPayClientFromEnv(env);
 
 export const { publicProcedure, authenticatedProcedure, protectedProcedure } =
    createORPCProcedures({
@@ -34,4 +38,5 @@ export const { publicProcedure, authenticatedProcedure, protectedProcedure } =
       stripeClient,
       workflowClient,
       jobPublisher,
+      hyprpayClient,
    });

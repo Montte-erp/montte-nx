@@ -1,4 +1,7 @@
-import type { AuthInstance } from "@core/authentication/server";
+import type {
+   AuthInstance,
+   createHyprPayClientFromEnv,
+} from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog } from "@core/posthog/server";
 import type { Redis } from "@core/redis/connection";
@@ -20,6 +23,7 @@ export interface ORPCContextWithAuth extends ORPCContext {
    redis: Redis;
    workflowClient: DBOSClient;
    jobPublisher: ReturnType<typeof createJobPublisher>;
+   hyprpayClient: ReturnType<typeof createHyprPayClientFromEnv>;
 }
 
 export interface ORPCContextAuthenticated extends ORPCContextWithAuth {

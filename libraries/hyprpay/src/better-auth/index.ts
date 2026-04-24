@@ -5,6 +5,7 @@ import { createHyprPayClient } from "../client";
 import type { HyprPayCustomerFromContract as HyprPayCustomer } from "../contract";
 
 interface HyprPayPluginOptions {
+   client?: ReturnType<typeof createHyprPayClient>;
    apiKey?: string;
    baseUrl?: string;
    createCustomerOnSignUp?: boolean;
@@ -23,12 +24,14 @@ interface HyprPayPluginOptions {
 }
 
 export function hyprpay(options: HyprPayPluginOptions = {}): BetterAuthPlugin {
-   const sdkClient = options.apiKey
-      ? createHyprPayClient({
-           apiKey: options.apiKey,
-           baseUrl: options.baseUrl,
-        })
-      : null;
+   const sdkClient =
+      options.client ??
+      (options.apiKey
+         ? createHyprPayClient({
+              apiKey: options.apiKey,
+              baseUrl: options.baseUrl,
+           })
+         : null);
 
    const defaultMapper = (user: {
       id: string;

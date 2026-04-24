@@ -4,7 +4,10 @@ import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, os } from "@orpc/server";
 import type { BuilderWithMiddlewares } from "@orpc/server";
 import type { AnySchema } from "@orpc/contract";
-import type { AuthInstance } from "@core/authentication/server";
+import type {
+   AuthInstance,
+   createHyprPayClientFromEnv,
+} from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog } from "@core/posthog/server";
 import {
@@ -34,6 +37,7 @@ export interface ORPCProcedureDeps {
    stripeClient: StripeClient;
    workflowClient: Promise<DBOSClient>;
    jobPublisher: ReturnType<typeof createJobPublisher>;
+   hyprpayClient: ReturnType<typeof createHyprPayClientFromEnv>;
 }
 
 const otelLogger = logs.getLogger("montte-web-orpc");
@@ -85,6 +89,7 @@ export function createORPCProcedures(deps: ORPCProcedureDeps): ORPCProcedures {
             redis: deps.redis,
             workflowClient: await deps.workflowClient,
             jobPublisher: deps.jobPublisher,
+            hyprpayClient: deps.hyprpayClient,
          },
       });
    });

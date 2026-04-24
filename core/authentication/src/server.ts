@@ -1,6 +1,7 @@
 import { apiKey } from "@better-auth/api-key";
 import { stripe as stripePlugin } from "@better-auth/stripe";
 import { hyprpay } from "@montte/hyprpay/better-auth";
+import { createHyprPayClient, type HyprPayClient } from "@montte/hyprpay";
 import { findMemberByUserId } from "@core/database/repositories/auth-repository";
 import * as schema from "@core/database/schema";
 import { getDomain, isProduction } from "@core/environment/helpers";
@@ -76,13 +77,29 @@ export interface CreateAuthDeps {
       STRIPE_BOOST_PRICE_ID?: string;
       STRIPE_SCALE_PRICE_ID?: string;
       STRIPE_ENTERPRISE_PRICE_ID?: string;
+      HYPRPAY_API_KEY?: string;
+      HYPRPAY_BASE_URL?: string;
    };
+}
+
+export function createHyprPayClientFromEnv(env: {
+   HYPRPAY_API_KEY?: string;
+   HYPRPAY_BASE_URL?: string;
+}): HyprPayClient | null {
+   return env.HYPRPAY_API_KEY
+      ? createHyprPayClient({
+           apiKey: env.HYPRPAY_API_KEY,
+           baseUrl: env.HYPRPAY_BASE_URL,
+        })
+      : null;
 }
 
 export function createAuth(deps: CreateAuthDeps) {
    const { db, redis, posthog, stripeClient, resendClient, env } = deps;
 
-   return betterAuth({
+   const hyprpayClient = createHyprPayClientFromEnv(env);
+
+   const auth = betterAuth({
       baseURL: env.BETTER_AUTH_URL,
       secret: env.BETTER_AUTH_SECRET,
       trustedOrigins: env.BETTER_AUTH_TRUSTED_ORIGINS.split(","),
@@ -454,10 +471,12 @@ export function createAuth(deps: CreateAuthDeps) {
             },
          }),
 
-         hyprpay(),
+         hyprpay({ client: hyprpayClient ?? undefined }),
          tanstackStartCookies(),
       ],
    });
+
+   return auth;
 }
 
 export type AuthInstance = ReturnType<typeof createAuth>;
