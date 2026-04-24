@@ -155,12 +155,12 @@ export function createORPCProcedures(deps: ORPCProcedureDeps): ORPCProcedures {
             attributes: otelIdentity,
          });
 
-         if (userId && deps.posthog) {
-            identifyUser(deps.posthog, userId, {
+         if (userId && context.posthog) {
+            identifyUser(context.posthog, userId, {
                email: userEmail,
                name: userName,
             });
-            if (organizationId) setGroup(deps.posthog, organizationId, {});
+            if (organizationId) setGroup(context.posthog, organizationId, {});
          }
 
          const result = await fromPromise(
@@ -188,11 +188,11 @@ export function createORPCProcedures(deps: ORPCProcedureDeps): ORPCProcedures {
             },
          });
 
-         if (userId && deps.posthog) {
+         if (userId && context.posthog) {
             const safeCapture = fromThrowable(() => {
                const rootPath = path[0];
                if (!isSuccess && error) {
-                  captureError(deps.posthog!, {
+                  captureError(context.posthog!, {
                      code: "INTERNAL_SERVER_ERROR",
                      errorId: crypto.randomUUID(),
                      input: sanitizeData(input),
@@ -202,7 +202,7 @@ export function createORPCProcedures(deps: ORPCProcedureDeps): ORPCProcedures {
                      userId: userId!,
                   });
                }
-               captureServerEvent(deps.posthog!, {
+               captureServerEvent(context.posthog!, {
                   userId: userId!,
                   event: "orpc_request",
                   properties: {
