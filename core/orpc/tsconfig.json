@@ -1,6 +1,9 @@
 {
    "extends": "@tooling/typescript/core.json",
    "compilerOptions": {
+      "composite": false,
+      "declaration": true,
+      "declarationMap": true,
       "paths": {
          "@core/authentication/*": ["../../core/authentication/dist/*"],
          "@core/database": ["../../core/database/src/index.ts"],
@@ -11,10 +14,9 @@
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
-         "@core/stripe": ["../../core/stripe/src/index.ts"],
-         "@core/stripe/*": ["../../core/stripe/src/*"],
          "@core/transactional/*": ["../../core/transactional/src/*"],
          "@core/utils/*": ["../../core/utils/src/*"],
+         "@montte/hyprpay": ["../../libraries/hyprpay/dist/esm/src/index.d.ts"],
          "@packages/notifications/*": ["../../packages/notifications/src/*"]
       }
    },
@@ -25,7 +27,6 @@
       { "path": "../logging" },
       { "path": "../posthog" },
       { "path": "../redis" },
-      { "path": "../stripe" },
       { "path": "../transactional" },
       { "path": "../utils" },
       { "path": "../../packages/notifications" }

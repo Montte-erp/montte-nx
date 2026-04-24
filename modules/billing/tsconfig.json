@@ -6,14 +6,13 @@
          "@core/database/*": ["../../core/database/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
-         "@core/orpc/*": ["../../core/orpc/src/*"],
-         "@core/authentication/*": ["../../core/authentication/src/*"]
+         "@core/orpc/*": ["../../core/orpc/dist/*"],
+         "@core/authentication/*": ["../../core/authentication/dist/*"]
       }
    },
    "references": [
       { "path": "../../core/database" },
-      { "path": "../../core/logging" },
-      { "path": "../../core/orpc" }
+      { "path": "../../core/logging" }
    ],
    "include": ["src"]
 }

@@ -48,9 +48,7 @@ import { subscriptionItems } from "@core/database/schemas/subscription-items";
 import { servicePrices } from "@core/database/schemas/services";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 import { WebAppError } from "@core/logging/errors";
-import { protectedProcedure } from "@core/orpc/server";
-import { createBillableProcedure } from "@core/orpc/billable";
-import { BILLING_EVENTS } from "../constants";
+import { protectedProcedure, billableProcedure } from "@core/orpc/server";
 import {
    createServiceSchema,
    createSubscriptionItemSchema,
@@ -288,9 +286,7 @@ export const getContactSubscriptions = protectedProcedure
       ),
    );
 
-export const createSubscription = createBillableProcedure(
-   BILLING_EVENTS.subscriptionCreated,
-)
+export const createSubscription = billableProcedure
    .input(createSubscriptionWithItemsInputSchema)
    .handler(async ({ context, input }) => {
       const sub = (
@@ -379,7 +375,7 @@ export const getExpiringSoon = protectedProcedure
       ),
    );
 
-export const createMeter = createBillableProcedure(BILLING_EVENTS.meterCreated)
+export const createMeter = billableProcedure
    .input(createMeterSchema)
    .handler(async ({ context, input }) =>
       (await createMeterRepo(context.db, context.teamId, input)).match(
@@ -390,9 +386,7 @@ export const createMeter = createBillableProcedure(BILLING_EVENTS.meterCreated)
       ),
    );
 
-export const createBenefit = createBillableProcedure(
-   BILLING_EVENTS.benefitCreated,
-)
+export const createBenefit = billableProcedure
    .input(createBenefitSchema)
    .handler(async ({ context, input }) =>
       (await createBenefitRepo(context.db, context.teamId, input)).match(
@@ -403,7 +397,7 @@ export const createBenefit = createBillableProcedure(
       ),
    );
 
-export const ingestUsage = createBillableProcedure(BILLING_EVENTS.usageIngested)
+export const ingestUsage = billableProcedure
    .input(upsertUsageEventSchema)
    .handler(async ({ context, input }) => {
       if (input.teamId !== context.teamId)

@@ -27,8 +27,7 @@ export const env = createEnv({
 
       RESEND_API_KEY: z.string(),
 
-      HYPRPAY_API_KEY: z.string().optional(),
-      HYPRPAY_BASE_URL: z.url().optional(),
+      HYPRPAY_API_KEY: z.string().min(1),
 
       MINIO_ENDPOINT: z.string(),
       MINIO_ACCESS_KEY: z.string().optional(),

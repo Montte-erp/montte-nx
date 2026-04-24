@@ -8,14 +8,6 @@
    ],
    "type": "module",
    "exports": {
-      "./context": {
-         "types": "./dist/context.d.ts",
-         "default": "./dist/context.js"
-      },
-      "./procedures": {
-         "types": "./dist/procedures.d.ts",
-         "default": "./dist/procedures.js"
-      },
       "./sdk-context": {
          "types": "./dist/sdk-context.d.ts",
          "default": "./dist/sdk-context.js"
@@ -27,10 +19,6 @@
       "./server": {
          "types": "./dist/server.d.ts",
          "default": "./dist/server.js"
-      },
-      "./billable": {
-         "types": "./dist/billable.d.ts",
-         "default": "./dist/billable.js"
       }
    },
    "scripts": {
@@ -49,10 +37,10 @@
       "@core/logging": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",
-      "@core/stripe": "workspace:*",
       "@core/transactional": "workspace:*",
       "@core/utils": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers",
+      "@montte/hyprpay": "workspace:*",
       "@opentelemetry/api-logs": "catalog:telemetry",
       "@orpc/server": "catalog:orpc",
       "@packages/notifications": "workspace:*",

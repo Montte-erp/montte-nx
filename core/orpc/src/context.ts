@@ -1,13 +1,10 @@
-import type {
-   AuthInstance,
-   createHyprPayClientFromEnv,
-} from "@core/authentication/server";
+import type { AuthInstance } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog } from "@core/posthog/server";
 import type { Redis } from "@core/redis/connection";
-import type { StripeClient } from "@core/stripe";
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import type { createJobPublisher } from "@packages/notifications/publisher";
+import type { HyprPayClient } from "@montte/hyprpay";
 
 export interface ORPCContext {
    headers: Headers;
@@ -19,11 +16,10 @@ export interface ORPCContextWithAuth extends ORPCContext {
    db: DatabaseInstance;
    session: Awaited<ReturnType<AuthInstance["api"]["getSession"]>> | null;
    posthog: PostHog;
-   stripeClient: StripeClient;
    redis: Redis;
    workflowClient: DBOSClient;
    jobPublisher: ReturnType<typeof createJobPublisher>;
-   hyprpayClient: ReturnType<typeof createHyprPayClientFromEnv>;
+   hyprpayClient: HyprPayClient;
 }
 
 export interface ORPCContextAuthenticated extends ORPCContextWithAuth {
