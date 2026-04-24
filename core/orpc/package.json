@@ -19,6 +19,10 @@
       "./server": {
          "types": "./dist/server.d.ts",
          "default": "./dist/server.js"
+      },
+      "./testing/*": {
+         "types": "./dist/testing/*.d.ts",
+         "default": "./dist/testing/*.js"
       }
    },
    "scripts": {
@@ -50,6 +54,15 @@
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
-      "typescript": "catalog:development"
+      "typescript": "catalog:development",
+      "vitest": "catalog:testing"
+   },
+   "peerDependencies": {
+      "vitest": "catalog:testing"
+   },
+   "peerDependenciesMeta": {
+      "vitest": {
+         "optional": true
+      }
    }
 }

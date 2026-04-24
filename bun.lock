@@ -316,7 +316,14 @@
       "devDependencies": {
         "@tooling/typescript": "workspace:*",
         "typescript": "catalog:development",
+        "vitest": "catalog:testing",
       },
+      "peerDependencies": {
+        "vitest": "catalog:testing",
+      },
+      "optionalPeers": [
+        "vitest",
+      ],
     },
     "core/posthog": {
       "name": "@core/posthog",
