@@ -1,5 +1,6 @@
 import { implementerInternal } from "@orpc/server";
 import { fromPromise } from "neverthrow";
+import { db } from "@/integrations/singletons";
 import { WebAppError } from "@core/logging/errors";
 import { usageEvents } from "@core/database/schemas/usage-events";
 import { hyprpayContract } from "@montte/hyprpay/contract";
@@ -20,14 +21,15 @@ export const ingest = impl.ingest.handler(async ({ context, input }) => {
    const teamId = teamIdResult.value;
 
    const contactResult = await getContactByExternalId(
-      context.db,
+      db,
       input.customerId,
       teamId,
       "cliente",
    );
    if (contactResult.isErr())
       throw WebAppError.fromAppError(contactResult.error);
-   if (!contactResult.value)
+   const contact = contactResult.value;
+   if (!contact)
       throw new WebAppError("NOT_FOUND", {
          message: "Cliente não encontrado.",
          source: "hyprpay",
@@ -36,7 +38,7 @@ export const ingest = impl.ingest.handler(async ({ context, input }) => {
    const idempotencyKey = input.idempotencyKey ?? crypto.randomUUID();
 
    const result = await fromPromise(
-      context.db.transaction(async (tx) => {
+      db.transaction(async (tx) => {
          await tx
             .insert(usageEvents)
             .values({
@@ -44,7 +46,7 @@ export const ingest = impl.ingest.handler(async ({ context, input }) => {
                meterId: input.meterId,
                quantity: String(input.quantity),
                idempotencyKey,
-               contactId: contactResult.value.id,
+               contactId: contact.id,
                properties: input.properties ?? {},
             })
             .onConflictDoNothing({
@@ -69,23 +71,24 @@ export const list = impl.list.handler(async ({ context, input }) => {
    const teamId = teamIdResult.value;
 
    const contactResult = await getContactByExternalId(
-      context.db,
+      db,
       input.customerId,
       teamId,
       "cliente",
    );
    if (contactResult.isErr())
       throw WebAppError.fromAppError(contactResult.error);
-   if (!contactResult.value)
+   const contact = contactResult.value;
+   if (!contact)
       throw new WebAppError("NOT_FOUND", {
          message: "Cliente não encontrado.",
          source: "hyprpay",
       });
 
    const eventsResult = await listUsageEventsByContact(
-      context.db,
+      db,
       teamId,
-      contactResult.value.id,
+      contact.id,
       input.meterId,
    );
    if (eventsResult.isErr()) throw WebAppError.fromAppError(eventsResult.error);

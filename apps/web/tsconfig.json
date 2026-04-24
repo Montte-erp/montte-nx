@@ -55,9 +55,6 @@
          "path": "../../packages/analytics"
       },
       {
-         "path": "../../libraries/cli"
-      },
-      {
          "path": "../../core/utils"
       },
       {

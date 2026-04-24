@@ -352,10 +352,11 @@ export function createDbosMocks(): DbosMocks {
    };
 }
 
-export function registerDbosMocks(mocks: DbosMocks) {
-   vi.mock("@dbos-inc/dbos-sdk", () => ({
+// oxlint-ignore no-explicit-any
+export function dbosSdkMockFactory(mocks: DbosMocks) {
+   return {
       DBOS: {
-         logger: { info: mocks.infoSpy, warn: vi.fn(), error: vi.fn() },
+         logger: { info: mocks.infoSpy, warn: mocks.warnSpy, error: mocks.errorSpy },
          runStep: mocks.runStepSpy,
          sleepms: mocks.sleepSpy,
          registerWorkflow: <F extends (...args: any[]) => any>(fn: F) => fn,
@@ -363,32 +364,40 @@ export function registerDbosMocks(mocks: DbosMocks) {
       WorkflowQueue: class WorkflowQueue {
          constructor(public name: string, public options?: unknown) {}
       },
-   }));
-   vi.mock("@dbos-inc/drizzle-datasource", () => {
-      class DrizzleDataSource {
-         constructor(
-            public name: string,
-            public config: unknown,
-            public schema: unknown,
-         ) {}
-         runTransaction<T>(fn: () => Promise<T>, _opts?: unknown): Promise<T> {
-            return fn();
-         }
-         static get client() {
-            return mocks.getActiveDb();
-         }
+   };
+}
+
+export function drizzleDataSourceMockFactory(mocks: DbosMocks) {
+   class DrizzleDataSource {
+      constructor(
+         public name: string,
+         public config: unknown,
+         public schema: unknown,
+      ) {}
+      runTransaction<T>(fn: () => Promise<T>): Promise<T> {
+         return fn();
       }
-      return { DrizzleDataSource };
-   });
+      static get client() {
+         return mocks.getActiveDb();
+      }
+   }
+   return { DrizzleDataSource };
 }
 ```
 
-**Note:** `vi.mock` calls must execute before the workflow-under-test module loads. Consumers wire this by hoisting the call at module scope:
+**Note:** `vi.mock(path, factory)` only hoists above imports when it appears LITERALLY at module scope in the test file. Wrapping it in a helper hides it from vitest's AST transform. Consumers therefore keep the `vi.mock` calls at their own call-site and pass the exported factories:
 ```ts
-import { createDbosMocks, registerDbosMocks } from "@core/dbos/testing/mock-dbos";
 import { vi } from "vitest";
+import {
+   createDbosMocks,
+   dbosSdkMockFactory,
+   drizzleDataSourceMockFactory,
+} from "@core/dbos/testing/mock-dbos";
+
 const mocks = vi.hoisted(() => createDbosMocks());
-registerDbosMocks(mocks);
+vi.mock("@dbos-inc/dbos-sdk", () => dbosSdkMockFactory(mocks));
+vi.mock("@dbos-inc/drizzle-datasource", () => drizzleDataSourceMockFactory(mocks));
+
 // then import the workflow under test
 ```
 
@@ -783,12 +792,20 @@ vi.mock("@core/transactional/client", () => ({
 }));
 ```
 
-Workflow test files import this helper BEFORE importing the workflow-under-test so the `vi.mock` calls land first:
+Workflow test files wire all `vi.mock` calls at literal module scope BEFORE importing the workflow-under-test so vitest hoists them above imports:
 ```ts
-import { createDbosMocks, registerDbosMocks } from "@core/dbos/testing/mock-dbos";
 import { vi } from "vitest";
+import {
+   createDbosMocks,
+   dbosSdkMockFactory,
+   drizzleDataSourceMockFactory,
+} from "@core/dbos/testing/mock-dbos";
+
 const mocks = vi.hoisted(() => createDbosMocks());
-registerDbosMocks(mocks);
+vi.mock("@dbos-inc/dbos-sdk", () => dbosSdkMockFactory(mocks));
+vi.mock("@dbos-inc/drizzle-datasource", () =>
+   drizzleDataSourceMockFactory(mocks),
+);
 import "../helpers/mock-billing-context";
 
 // now safe to import workflows
@@ -1068,9 +1085,17 @@ Every workflow test file:
 ```ts
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
-import { createDbosMocks, registerDbosMocks } from "@core/dbos/testing/mock-dbos";
+import {
+   createDbosMocks,
+   dbosSdkMockFactory,
+   drizzleDataSourceMockFactory,
+} from "@core/dbos/testing/mock-dbos";
+
 const dbosMocks = vi.hoisted(() => createDbosMocks());
-registerDbosMocks(dbosMocks);
+vi.mock("@dbos-inc/dbos-sdk", () => dbosSdkMockFactory(dbosMocks));
+vi.mock("@dbos-inc/drizzle-datasource", () =>
+   drizzleDataSourceMockFactory(dbosMocks),
+);
 import { billingPublisherSpy, billingResendSpies } from "../helpers/mock-billing-context";
 
 import { setupTestDb } from "@core/database/testing/setup-test-db";

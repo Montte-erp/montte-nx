@@ -16,7 +16,7 @@
          "@core/redis/*": ["../../core/redis/src/*"],
          "@core/stripe": ["../../core/stripe/src/index.ts"],
          "@core/stripe/*": ["../../core/stripe/src/*"],
-         "@core/transactional/*": ["../../core/transactional/src/*"],
+         "@core/transactional/*": ["../../core/transactional/dist/*"],
          "@modules/billing/workflows": [
             "../../modules/billing/src/workflows/setup.ts"
          ],
