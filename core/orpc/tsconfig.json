@@ -19,6 +19,7 @@
    "references": [
       { "path": "../authentication" },
       { "path": "../database" },
+      { "path": "../environment" },
       { "path": "../logging" },
       { "path": "../posthog" },
       { "path": "../redis" },
