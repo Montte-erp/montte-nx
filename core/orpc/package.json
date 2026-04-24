@@ -42,6 +42,7 @@
       "@dbos-inc/dbos-sdk": "catalog:workers",
       "@montte/hyprpay": "workspace:*",
       "@opentelemetry/api-logs": "catalog:telemetry",
+      "@orpc/contract": "catalog:orpc",
       "@orpc/server": "catalog:orpc",
       "@packages/notifications": "workspace:*",
       "dayjs": "catalog:ui",
