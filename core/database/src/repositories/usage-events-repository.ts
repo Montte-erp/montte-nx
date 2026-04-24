@@ -41,11 +41,16 @@ export function listUsageEventsByContact(
    db: DatabaseInstance,
    teamId: string,
    contactId: string,
+   meterId?: string,
 ) {
    return fromPromise(
       db.query.usageEvents.findMany({
          where: (fields, { eq, and }) =>
-            and(eq(fields.teamId, teamId), eq(fields.contactId, contactId)),
+            and(
+               eq(fields.teamId, teamId),
+               eq(fields.contactId, contactId),
+               ...(meterId ? [eq(fields.meterId, meterId)] : []),
+            ),
       }),
       (e) => AppError.database("Falha ao listar eventos de uso.", { cause: e }),
    );

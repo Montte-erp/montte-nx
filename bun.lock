@@ -96,6 +96,7 @@
         "drizzle-orm": "catalog:database",
         "drizzle-zod": "catalog:database",
         "foxact": "catalog:ui",
+        "jose": "^6.2.1",
         "lucide-react": "catalog:ui",
         "neverthrow": "^8.1.1",
         "posthog-js": "catalog:analytics-client",
@@ -369,7 +370,7 @@
     },
     "libraries/hyprpay": {
       "name": "@montte/hyprpay",
-      "version": "0.1.6",
+      "version": "0.2.0",
       "dependencies": {
         "@orpc/client": "catalog:orpc",
         "@orpc/contract": "catalog:orpc",
@@ -523,6 +524,7 @@
         "@core/redis": "workspace:*",
         "@core/stripe": "workspace:*",
         "@dbos-inc/dbos-sdk": "catalog:workers",
+        "@f-o-t/money": "catalog:fot",
         "@packages/events": "workspace:*",
         "@packages/notifications": "workspace:*",
         "@tanstack/store": "catalog:tanstack",
@@ -1963,7 +1965,7 @@
 
     "@tanstack/hotkeys": ["@tanstack/hotkeys@0.7.1", "", { "dependencies": { "@tanstack/store": "^0.9.3" } }, "sha512-YHVO1z6wnvUCu7bg870Kv5k2D+FIuIOSIcbN0dAmTTsJ3mLMDLwcTVx0qVaq+SZp1B514JJTqGVstvUp85yIpQ=="],
 
-    "@tanstack/intent": ["@tanstack/intent@0.0.32", "", { "dependencies": { "cac": "^6.7.14", "yaml": "^2.7.0" }, "bin": { "intent": "dist/cli.mjs", "intent-library": "dist/intent-library.mjs" } }, "sha512-Dyv97rN1QhoJjYzUULztRsRUj8IYuq3k2+XsN9WVAF1IGoVSXpg50EykBWWQs0scti59HZmnIKSHQcw5DoxMHQ=="],
+    "@tanstack/intent": ["@tanstack/intent@0.0.34", "", { "dependencies": { "cac": "^6.7.14", "yaml": "^2.7.0" }, "bin": { "intent": "dist/cli.mjs", "intent-library": "dist/intent-library.mjs" } }, "sha512-J/uLkR7fj+HpxjboWLSj3BwCIu/5Ah7k/Xe1h+3lpj22EURT7lEn7mEOW61F71MftYAyePGdRIvy8QGyB1y6Dw=="],
 
     "@tanstack/match-sorter-utils": ["@tanstack/match-sorter-utils@8.19.4", "", { "dependencies": { "remove-accents": "0.5.0" } }, "sha512-Wo1iKt2b9OT7d+YGhvEPD3DXvPv2etTusIMhMUoG7fbhmxcXCtIjJDEygy91Y2JFlwGyjqiBPRozme7UD8hoqg=="],
 

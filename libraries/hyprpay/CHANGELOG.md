@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 — 2026-04-23
+
+### Added
+- `subscriptions` namespace: `create`, `cancel`, `list`, `addItem`, `updateItem`, `removeItem`
+- `usage` namespace: `ingest` (DBOS-backed, durable, idempotent), `list`
+- `benefits` namespace: `check` (granted/revoked/not_found), `list` with benefit details
+- `coupons` namespace: `validate` with structured error reasons and price-scope check
+- `customerPortal` namespace: `createSession` — signed JWT URL, 15-min TTL
+- New input types: `CreateSubscriptionInput`, `CancelSubscriptionInput`, `AddSubscriptionItemInput`, `UpdateSubscriptionItemInput`, `IngestUsageInput`, `ListUsageInput`, `CheckBenefitInput`, `ValidateCouponInput`
+
 ## [0.1.6]
 
 ### Added

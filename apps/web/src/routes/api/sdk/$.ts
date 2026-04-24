@@ -5,7 +5,7 @@ import { BatchHandlerPlugin } from "@orpc/server/plugins";
 import { FetchLoggingPlugin } from "@core/logging/orpc-plugin";
 import { createFileRoute } from "@tanstack/react-router";
 import pino from "pino";
-import { db, posthog } from "@/integrations/singletons";
+import { db, posthog, workflowClient } from "@/integrations/singletons";
 import sdkRouter from "@/integrations/orpc/sdk/router";
 
 const logger = pino({ name: "montte-web-sdk" });
@@ -25,7 +25,7 @@ const handler = new RPCHandler(sdkRouter, {
 async function handle({ request }: { request: Request }) {
    const { response } = await handler.handle(request, {
       prefix: "/api/sdk",
-      context: { db, posthog, request },
+      context: { db, posthog, request, workflowClient: await workflowClient },
    });
    return response ?? new Response("Not Found", { status: 404 });
 }

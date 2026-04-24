@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { AppError, validateInput } from "@core/logging/errors";
-import { and, desc, eq, gte, lte } from "drizzle-orm";
+import { and, count, desc, eq, gte, lte } from "drizzle-orm";
 import { fromPromise, fromThrowable, ok, err } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -11,6 +11,12 @@ import {
    createSubscriptionSchema,
    updateSubscriptionSchema,
 } from "@core/database/schemas/subscriptions";
+import {
+   subscriptionItems,
+   createSubscriptionItemSchema,
+} from "@core/database/schemas/subscription-items";
+
+const MAX_ITEMS_PER_SUBSCRIPTION = 20;
 
 const safeValidateCreate = fromThrowable(
    (data: CreateSubscriptionInput) =>
@@ -40,6 +46,70 @@ export function createSubscription(
          subscription
             ? ok(subscription)
             : err(AppError.database("Falha ao criar assinatura.")),
+      ),
+   );
+}
+
+type CreateSubscriptionItemData = {
+   priceId: string;
+   quantity: number;
+};
+
+export function createSubscriptionWithItems(
+   db: DatabaseInstance,
+   teamId: string,
+   data: CreateSubscriptionInput,
+   items: CreateSubscriptionItemData[],
+) {
+   return safeValidateCreate(data).asyncAndThen((validated) =>
+      fromPromise(
+         db.transaction(async (tx) => {
+            const [subscription] = await tx
+               .insert(contactSubscriptions)
+               .values({ ...validated, teamId })
+               .returning();
+            if (!subscription)
+               throw AppError.database("Falha ao criar assinatura.");
+
+            for (const item of items) {
+               const parsed = createSubscriptionItemSchema.safeParse({
+                  subscriptionId: subscription.id,
+                  priceId: item.priceId,
+                  quantity: item.quantity,
+               });
+               if (!parsed.success)
+                  throw AppError.validation(
+                     "Dados inválidos para item de assinatura.",
+                  );
+
+               const rows = await tx
+                  .select({ itemCount: count() })
+                  .from(subscriptionItems)
+                  .where(eq(subscriptionItems.subscriptionId, subscription.id));
+               const itemCount = rows[0]?.itemCount ?? 0;
+               if (itemCount >= MAX_ITEMS_PER_SUBSCRIPTION)
+                  throw AppError.validation(
+                     `Limite de ${MAX_ITEMS_PER_SUBSCRIPTION} itens por assinatura atingido.`,
+                  );
+
+               const [inserted] = await tx
+                  .insert(subscriptionItems)
+                  .values({ ...parsed.data, teamId })
+                  .returning();
+               if (!inserted)
+                  throw AppError.database(
+                     "Falha ao adicionar item à assinatura.",
+                  );
+            }
+
+            return subscription;
+         }),
+         (e) =>
+            e instanceof AppError
+               ? e
+               : AppError.database("Falha ao criar assinatura com itens.", {
+                    cause: e,
+                 }),
       ),
    );
 }

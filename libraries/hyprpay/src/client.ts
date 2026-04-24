@@ -6,10 +6,18 @@ import { hyprpayContract } from "./contract";
 import type { HyprPayCustomerFromContract as HyprPayCustomer } from "./contract";
 import { HyprPayError } from "./errors";
 import type {
+   AddSubscriptionItemInput,
+   CancelSubscriptionInput,
+   CheckBenefitInput,
    CreateCustomerInput,
+   CreateSubscriptionInput,
    HyprPayListResult,
+   IngestUsageInput,
    ListCustomersInput,
+   ListUsageInput,
    UpdateCustomerInput,
+   UpdateSubscriptionItemInput,
+   ValidateCouponInput,
 } from "./types";
 
 const DEFAULT_BASE_URL = "https://app.montte.co";
@@ -75,6 +83,96 @@ export function createHyprPayClient(config: HyprPayClientConfig) {
          ): ResultAsync<HyprPayCustomer, HyprPayError> {
             return ResultAsync.fromPromise(
                orpc.update({ externalId, ...data }),
+               mapToHyprPayError,
+            );
+         },
+      },
+
+      subscriptions: {
+         create(input: CreateSubscriptionInput) {
+            return ResultAsync.fromPromise(
+               orpc.subscriptions.create(input),
+               mapToHyprPayError,
+            );
+         },
+         cancel(input: CancelSubscriptionInput) {
+            return ResultAsync.fromPromise(
+               orpc.subscriptions.cancel({
+                  subscriptionId: input.subscriptionId,
+                  cancelAtPeriodEnd: input.cancelAtPeriodEnd ?? false,
+               }),
+               mapToHyprPayError,
+            );
+         },
+         list(customerId: string) {
+            return ResultAsync.fromPromise(
+               orpc.subscriptions.list({ customerId }),
+               mapToHyprPayError,
+            );
+         },
+         addItem(input: AddSubscriptionItemInput) {
+            return ResultAsync.fromPromise(
+               orpc.subscriptions.addItem(input),
+               mapToHyprPayError,
+            );
+         },
+         updateItem(input: UpdateSubscriptionItemInput) {
+            return ResultAsync.fromPromise(
+               orpc.subscriptions.updateItem(input),
+               mapToHyprPayError,
+            );
+         },
+         removeItem(itemId: string) {
+            return ResultAsync.fromPromise(
+               orpc.subscriptions.removeItem({ itemId }),
+               mapToHyprPayError,
+            );
+         },
+      },
+
+      usage: {
+         ingest(input: IngestUsageInput) {
+            return ResultAsync.fromPromise(
+               orpc.usage.ingest(input),
+               mapToHyprPayError,
+            );
+         },
+         list(input: ListUsageInput) {
+            return ResultAsync.fromPromise(
+               orpc.usage.list(input),
+               mapToHyprPayError,
+            );
+         },
+      },
+
+      benefits: {
+         check(input: CheckBenefitInput) {
+            return ResultAsync.fromPromise(
+               orpc.benefits.check(input),
+               mapToHyprPayError,
+            );
+         },
+         list(customerId: string) {
+            return ResultAsync.fromPromise(
+               orpc.benefits.list({ customerId }),
+               mapToHyprPayError,
+            );
+         },
+      },
+
+      coupons: {
+         validate(input: ValidateCouponInput) {
+            return ResultAsync.fromPromise(
+               orpc.coupons.validate(input),
+               mapToHyprPayError,
+            );
+         },
+      },
+
+      customerPortal: {
+         createSession(customerId: string) {
+            return ResultAsync.fromPromise(
+               orpc.customerPortal.createSession({ customerId }),
                mapToHyprPayError,
             );
          },
