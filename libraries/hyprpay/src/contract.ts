@@ -21,6 +21,97 @@ const listResultSchema = z.object({
    pages: z.number(),
 });
 
+const subscriptionItemSchema = z.object({
+   id: z.string(),
+   subscriptionId: z.string(),
+   priceId: z.string(),
+   quantity: z.number(),
+   negotiatedPrice: z.string().nullable(),
+   createdAt: z.string(),
+   updatedAt: z.string(),
+});
+
+const subscriptionSchema = z.object({
+   id: z.string(),
+   contactId: z.string(),
+   teamId: z.string(),
+   status: z.enum([
+      "active",
+      "trialing",
+      "incomplete",
+      "completed",
+      "cancelled",
+   ]),
+   startDate: z.string(),
+   endDate: z.string().nullable(),
+   couponId: z.string().nullable(),
+   cancelAtPeriodEnd: z.boolean(),
+   checkoutUrl: z.string().nullable(),
+   createdAt: z.string(),
+   updatedAt: z.string(),
+});
+
+const subscriptionsContract = {
+   create: oc
+      .input(
+         z.object({
+            customerId: z.string(),
+            items: z
+               .array(
+                  z.object({
+                     priceId: z.string(),
+                     quantity: z.number().int().min(1).optional(),
+                  }),
+               )
+               .min(1),
+            couponCode: z.string().optional(),
+         }),
+      )
+      .output(
+         z.object({
+            subscription: subscriptionSchema,
+            checkoutUrl: z.string().nullable(),
+         }),
+      ),
+
+   cancel: oc
+      .input(
+         z.object({
+            subscriptionId: z.string(),
+            cancelAtPeriodEnd: z.boolean().default(false),
+         }),
+      )
+      .output(subscriptionSchema),
+
+   list: oc
+      .input(z.object({ customerId: z.string() }))
+      .output(z.array(subscriptionSchema)),
+
+   addItem: oc
+      .input(
+         z.object({
+            subscriptionId: z.string(),
+            priceId: z.string(),
+            quantity: z.number().int().min(1).optional(),
+         }),
+      )
+      .output(subscriptionItemSchema),
+
+   updateItem: oc
+      .input(
+         z.object({
+            itemId: z.string(),
+            quantity: z.number().int().min(1).optional(),
+            negotiatedPrice: z.string().nullable().optional(),
+         }),
+      )
+      .output(subscriptionItemSchema),
+
+   removeItem: oc
+      .input(z.object({ itemId: z.string() }))
+      .output(z.object({ success: z.boolean() })),
+};
+
 export const hyprpayContract = {
    create: oc
       .input(
@@ -55,6 +146,14 @@ export const hyprpayContract = {
          }),
       )
       .output(customerSchema),
+
+   subscriptions: subscriptionsContract,
 };
 
 export type HyprPayCustomerFromContract = z.infer<typeof customerSchema>;
+export type HyprPaySubscriptionFromContract = z.infer<
+   typeof subscriptionSchema
+>;
+export type HyprPaySubscriptionItemFromContract = z.infer<
+   typeof subscriptionItemSchema
+>;
