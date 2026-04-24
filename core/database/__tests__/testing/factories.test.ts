@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { setupTestDb } from "../../src/testing/setup-test-db";
 import { seedTeam, seedUser } from "../../src/testing/factories";
-import { organization, team, user } from "../../src/schemas/auth";
+import { organization, team, user } from "@core/database/schemas/auth";
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 

@@ -9,6 +9,7 @@ function rand() {
 export async function seedTeam(db: DatabaseInstance) {
    const organizationId = crypto.randomUUID();
    const teamId = crypto.randomUUID();
+   const now = new Date();
    await seed(
       db,
       { organization: schema.organization },
@@ -16,7 +17,10 @@ export async function seedTeam(db: DatabaseInstance) {
    ).refine((f) => ({
       organization: {
          count: 1,
-         columns: { id: f.default({ defaultValue: organizationId }) },
+         columns: {
+            id: f.default({ defaultValue: organizationId }),
+            createdAt: f.default({ defaultValue: now }),
+         },
       },
    }));
    await seed(db, { team: schema.team }, { seed: rand() }).refine((f) => ({
@@ -25,6 +29,7 @@ export async function seedTeam(db: DatabaseInstance) {
          columns: {
             id: f.default({ defaultValue: teamId }),
             organizationId: f.default({ defaultValue: organizationId }),
+            createdAt: f.default({ defaultValue: now }),
          },
       },
    }));
