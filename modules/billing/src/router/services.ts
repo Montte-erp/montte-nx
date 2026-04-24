@@ -115,13 +115,15 @@ export const bulkCreate = protectedProcedure
 
 export const update = protectedProcedure
    .input(updateServiceInputSchema)
+   .use(({ context, input, next }) =>
+      ensureServiceOwnership(context.db, input.id, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
-      return (
-         await ensureServiceOwnership(context.db, id, context.teamId).andThen(
-            () => updateService(context.db, id, data),
-         )
-      ).match(
+      return (await updateService(context.db, id, data)).match(
          (service) => service,
          (e) => {
             throw WebAppError.fromAppError(e);
@@ -131,14 +133,14 @@ export const update = protectedProcedure
 
 export const remove = protectedProcedure
    .input(idInputSchema)
+   .use(({ context, input, next }) =>
+      ensureServiceOwnership(context.db, input.id, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
    .handler(async ({ context, input }) =>
-      (
-         await ensureServiceOwnership(
-            context.db,
-            input.id,
-            context.teamId,
-         ).andThen(() => deleteService(context.db, input.id))
-      ).match(
+      (await deleteService(context.db, input.id)).match(
          () => ({ success: true as const }),
          (e) => {
             throw WebAppError.fromAppError(e);
@@ -157,14 +159,14 @@ export const exportAll = protectedProcedure.handler(async ({ context }) =>
 
 export const getVariants = protectedProcedure
    .input(serviceIdInputSchema)
+   .use(({ context, input, next }) =>
+      ensureServiceOwnership(context.db, input.serviceId, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
    .handler(async ({ context, input }) =>
-      (
-         await ensureServiceOwnership(
-            context.db,
-            input.serviceId,
-            context.teamId,
-         ).andThen(() => listVariantsByService(context.db, input.serviceId))
-      ).match(
+      (await listVariantsByService(context.db, input.serviceId)).match(
          (variants) => variants,
          (e) => {
             throw WebAppError.fromAppError(e);
@@ -174,6 +176,12 @@ export const getVariants = protectedProcedure
 
 export const createVariant = protectedProcedure
    .input(createPriceForServiceInputSchema)
+   .use(({ context, input, next }) =>
+      ensureServiceOwnership(context.db, input.serviceId, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
    .handler(async ({ context, input }) => {
       const { serviceId, ...variantData } = input;
       if (input.type === "metered") {
@@ -187,17 +195,11 @@ export const createVariant = protectedProcedure
             );
       }
       return (
-         await ensureServiceOwnership(
+         await createVariantRepo(
             context.db,
-            serviceId,
             context.teamId,
-         ).andThen(() =>
-            createVariantRepo(
-               context.db,
-               context.teamId,
-               serviceId,
-               variantData,
-            ),
+            serviceId,
+            variantData,
          )
       ).match(
          (variant) => variant,
@@ -209,6 +211,12 @@ export const createVariant = protectedProcedure
 
 export const updateVariant = protectedProcedure
    .input(updatePriceInputSchema)
+   .use(({ context, input, next }) =>
+      ensureVariantOwnership(context.db, input.id, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
       if (input.type === "metered") {
@@ -221,11 +229,7 @@ export const updateVariant = protectedProcedure
                "Preços do tipo 'metered' devem ter basePrice igual a '0'.",
             );
       }
-      return (
-         await ensureVariantOwnership(context.db, id, context.teamId).andThen(
-            () => updateVariantRepo(context.db, id, data),
-         )
-      ).match(
+      return (await updateVariantRepo(context.db, id, data)).match(
          (variant) => variant,
          (e) => {
             throw WebAppError.fromAppError(e);
@@ -235,14 +239,14 @@ export const updateVariant = protectedProcedure
 
 export const removeVariant = protectedProcedure
    .input(idInputSchema)
+   .use(({ context, input, next }) =>
+      ensureVariantOwnership(context.db, input.id, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
    .handler(async ({ context, input }) =>
-      (
-         await ensureVariantOwnership(
-            context.db,
-            input.id,
-            context.teamId,
-         ).andThen(() => deleteVariant(context.db, input.id))
-      ).match(
+      (await deleteVariant(context.db, input.id)).match(
          () => ({ success: true as const }),
          (e) => {
             throw WebAppError.fromAppError(e);
@@ -269,16 +273,14 @@ export const getAllSubscriptions = protectedProcedure
 
 export const getContactSubscriptions = protectedProcedure
    .input(contactIdInputSchema)
+   .use(({ context, input, next }) =>
+      ensureContactOwnership(context.db, input.contactId, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
    .handler(async ({ context, input }) =>
-      (
-         await ensureContactOwnership(
-            context.db,
-            input.contactId,
-            context.teamId,
-         ).andThen(() =>
-            listSubscriptionsByContact(context.db, input.contactId),
-         )
-      ).match(
+      (await listSubscriptionsByContact(context.db, input.contactId)).match(
          (rows) => rows,
          (e) => {
             throw WebAppError.fromAppError(e);
@@ -288,19 +290,19 @@ export const getContactSubscriptions = protectedProcedure
 
 export const createSubscription = billableProcedure
    .input(createSubscriptionWithItemsInputSchema)
+   .use(({ context, input, next }) =>
+      ensureContactOwnership(context.db, input.contactId, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
    .handler(async ({ context, input }) => {
       const sub = (
-         await ensureContactOwnership(
-            context.db,
-            input.contactId,
-            context.teamId,
-         ).andThen(() =>
-            createSubscriptionRepo(context.db, context.teamId, {
-               ...input,
-               source: "manual",
-               cancelAtPeriodEnd: false,
-            }),
-         )
+         await createSubscriptionRepo(context.db, context.teamId, {
+            ...input,
+            source: "manual",
+            cancelAtPeriodEnd: false,
+         })
       ).match(
          (s) => s,
          (e) => {
@@ -405,9 +407,6 @@ export const ingestUsage = billableProcedure
             "Você não tem permissão para registrar uso neste time.",
          );
 
-      if (!context.hyprpayClient)
-         throw WebAppError.internal("HyprPay não está configurado.");
-
       const customerId = context.organizationId;
 
       const result = await context.hyprpayClient.usage.ingest({
@@ -476,13 +475,15 @@ export const getMeterById = protectedProcedure
 
 export const updateMeterById = protectedProcedure
    .input(updateMeterInputSchema)
+   .use(({ context, input, next }) =>
+      ensureMeterOwnership(context.db, input.id, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
-      return (
-         await ensureMeterOwnership(context.db, id, context.teamId).andThen(
-            () => updateMeter(context.db, id, data),
-         )
-      ).match(
+      return (await updateMeter(context.db, id, data)).match(
          (meter) => meter,
          (e) => {
             throw WebAppError.fromAppError(e);
@@ -492,14 +493,14 @@ export const updateMeterById = protectedProcedure
 
 export const removeMeter = protectedProcedure
    .input(idInputSchema)
+   .use(({ context, input, next }) =>
+      ensureMeterOwnership(context.db, input.id, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
    .handler(async ({ context, input }) =>
-      (
-         await ensureMeterOwnership(
-            context.db,
-            input.id,
-            context.teamId,
-         ).andThen(() => deleteMeter(context.db, input.id))
-      ).match(
+      (await deleteMeter(context.db, input.id)).match(
          () => ({ success: true as const }),
          (e) => {
             throw WebAppError.fromAppError(e);
@@ -545,13 +546,15 @@ export const getBenefitById = protectedProcedure
 
 export const updateBenefitById = protectedProcedure
    .input(updateBenefitInputSchema)
+   .use(({ context, input, next }) =>
+      ensureBenefitOwnership(context.db, input.id, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
-      return (
-         await ensureBenefitOwnership(context.db, id, context.teamId).andThen(
-            () => updateBenefit(context.db, id, data),
-         )
-      ).match(
+      return (await updateBenefit(context.db, id, data)).match(
          (benefit) => benefit,
          (e) => {
             throw WebAppError.fromAppError(e);
@@ -561,14 +564,14 @@ export const updateBenefitById = protectedProcedure
 
 export const removeBenefit = protectedProcedure
    .input(idInputSchema)
+   .use(({ context, input, next }) =>
+      ensureBenefitOwnership(context.db, input.id, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
    .handler(async ({ context, input }) =>
-      (
-         await ensureBenefitOwnership(
-            context.db,
-            input.id,
-            context.teamId,
-         ).andThen(() => deleteBenefit(context.db, input.id))
-      ).match(
+      (await deleteBenefit(context.db, input.id)).match(
          () => ({ success: true as const }),
          (e) => {
             throw WebAppError.fromAppError(e);
@@ -578,27 +581,25 @@ export const removeBenefit = protectedProcedure
 
 export const attachBenefit = protectedProcedure
    .input(serviceBenefitLinkSchema)
+   .use(({ context, input, next }) =>
+      ensureServiceOwnership(context.db, input.serviceId, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
+   .use(({ context, input, next }) =>
+      ensureBenefitOwnership(context.db, input.benefitId, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
    .handler(async ({ context, input }) =>
       (
-         await ensureServiceOwnership(
+         await attachBenefitToService(
             context.db,
             input.serviceId,
-            context.teamId,
+            input.benefitId,
          )
-            .andThen(() =>
-               ensureBenefitOwnership(
-                  context.db,
-                  input.benefitId,
-                  context.teamId,
-               ),
-            )
-            .andThen(() =>
-               attachBenefitToService(
-                  context.db,
-                  input.serviceId,
-                  input.benefitId,
-               ),
-            )
       ).match(
          () => ({ success: true as const }),
          (e) => {
@@ -609,18 +610,18 @@ export const attachBenefit = protectedProcedure
 
 export const detachBenefit = protectedProcedure
    .input(serviceBenefitLinkSchema)
+   .use(({ context, input, next }) =>
+      ensureServiceOwnership(context.db, input.serviceId, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
    .handler(async ({ context, input }) =>
       (
-         await ensureServiceOwnership(
+         await detachBenefitFromService(
             context.db,
             input.serviceId,
-            context.teamId,
-         ).andThen(() =>
-            detachBenefitFromService(
-               context.db,
-               input.serviceId,
-               input.benefitId,
-            ),
+            input.benefitId,
          )
       ).match(
          () => ({ success: true as const }),
@@ -632,14 +633,14 @@ export const detachBenefit = protectedProcedure
 
 export const getServiceBenefits = protectedProcedure
    .input(serviceIdInputSchema)
+   .use(({ context, input, next }) =>
+      ensureServiceOwnership(context.db, input.serviceId, context.teamId).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
    .handler(async ({ context, input }) =>
-      (
-         await ensureServiceOwnership(
-            context.db,
-            input.serviceId,
-            context.teamId,
-         ).andThen(() => listBenefitsByService(context.db, input.serviceId))
-      ).match(
+      (await listBenefitsByService(context.db, input.serviceId)).match(
          (rows) => rows,
          (e) => {
             throw WebAppError.fromAppError(e);
@@ -669,14 +670,18 @@ export const getActiveCountByPrice = protectedProcedure
 
 export const addItem = protectedProcedure
    .input(createSubscriptionItemSchema)
-   .handler(async ({ context, input }) =>
-      (
-         await ensureSubscriptionOwnership(
-            context.db,
-            input.subscriptionId,
-            context.teamId,
-         ).andThen(() => addSubscriptionItem(context.db, context.teamId, input))
+   .use(({ context, input, next }) =>
+      ensureSubscriptionOwnership(
+         context.db,
+         input.subscriptionId,
+         context.teamId,
       ).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
+   .handler(async ({ context, input }) =>
+      (await addSubscriptionItem(context.db, context.teamId, input)).match(
          (item) => item,
          (e) => {
             throw WebAppError.fromAppError(e);
@@ -686,15 +691,19 @@ export const addItem = protectedProcedure
 
 export const updateItem = protectedProcedure
    .input(updateSubscriptionItemInputSchema)
+   .use(({ context, input, next }) =>
+      ensureSubscriptionItemOwnership(
+         context.db,
+         input.id,
+         context.teamId,
+      ).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
-      return (
-         await ensureSubscriptionItemOwnership(
-            context.db,
-            id,
-            context.teamId,
-         ).andThen(() => updateSubscriptionItemQuantity(context.db, id, data))
-      ).match(
+      return (await updateSubscriptionItemQuantity(context.db, id, data)).match(
          (item) => item,
          (e) => {
             throw WebAppError.fromAppError(e);
@@ -704,14 +713,18 @@ export const updateItem = protectedProcedure
 
 export const removeItem = protectedProcedure
    .input(idInputSchema)
-   .handler(async ({ context, input }) =>
-      (
-         await ensureSubscriptionItemOwnership(
-            context.db,
-            input.id,
-            context.teamId,
-         ).andThen(() => removeSubscriptionItem(context.db, input.id))
+   .use(({ context, input, next }) =>
+      ensureSubscriptionItemOwnership(
+         context.db,
+         input.id,
+         context.teamId,
       ).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
+   .handler(async ({ context, input }) =>
+      (await removeSubscriptionItem(context.db, input.id)).match(
          () => ({ success: true as const }),
          (e) => {
             throw WebAppError.fromAppError(e);
@@ -721,16 +734,18 @@ export const removeItem = protectedProcedure
 
 export const listItems = protectedProcedure
    .input(subscriptionIdInputSchema)
-   .handler(async ({ context, input }) =>
-      (
-         await ensureSubscriptionOwnership(
-            context.db,
-            input.subscriptionId,
-            context.teamId,
-         ).andThen(() =>
-            listSubscriptionItems(context.db, input.subscriptionId),
-         )
+   .use(({ context, input, next }) =>
+      ensureSubscriptionOwnership(
+         context.db,
+         input.subscriptionId,
+         context.teamId,
       ).match(
+         () => next({}),
+         (e) => Promise.reject(WebAppError.fromAppError(e)),
+      ),
+   )
+   .handler(async ({ context, input }) =>
+      (await listSubscriptionItems(context.db, input.subscriptionId)).match(
          (items) => items,
          (e) => {
             throw WebAppError.fromAppError(e);

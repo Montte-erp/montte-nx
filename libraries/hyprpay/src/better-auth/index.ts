@@ -5,9 +5,7 @@ import { createHyprPayClient } from "../client";
 import type { HyprPayCustomerFromContract as HyprPayCustomer } from "../contract";
 
 interface HyprPayPluginOptions {
-   client?: ReturnType<typeof createHyprPayClient>;
-   apiKey?: string;
-   baseUrl?: string;
+   client: ReturnType<typeof createHyprPayClient>;
    createCustomerOnSignUp?: boolean;
    syncCustomerOnUpdate?: boolean;
    customerData?: (user: { id: string; name: string; email: string }) => {
@@ -23,15 +21,8 @@ interface HyprPayPluginOptions {
    ) => Promise<void>;
 }
 
-export function hyprpay(options: HyprPayPluginOptions = {}): BetterAuthPlugin {
-   const sdkClient =
-      options.client ??
-      (options.apiKey
-         ? createHyprPayClient({
-              apiKey: options.apiKey,
-              baseUrl: options.baseUrl,
-           })
-         : null);
+export function hyprpay(options: HyprPayPluginOptions): BetterAuthPlugin {
+   const { client } = options;
 
    const defaultMapper = (user: {
       id: string;
@@ -55,11 +46,9 @@ export function hyprpay(options: HyprPayPluginOptions = {}): BetterAuthPlugin {
                      create: {
                         after: async (user) => {
                            if (!options.createCustomerOnSignUp) return;
-                           if (!sdkClient) return;
 
                            const input = mapper(user);
-                           const result =
-                              await sdkClient.customers.create(input);
+                           const result = await client.customers.create(input);
 
                            if (result.isErr()) {
                               console.error(
@@ -87,9 +76,8 @@ export function hyprpay(options: HyprPayPluginOptions = {}): BetterAuthPlugin {
                         after: async (user) => {
                            if (!options.syncCustomerOnUpdate) return;
                            if (!user.name) return;
-                           if (!sdkClient) return;
 
-                           const result = await sdkClient.customers.update(
+                           const result = await client.customers.update(
                               user.id,
                               { name: user.name },
                            );

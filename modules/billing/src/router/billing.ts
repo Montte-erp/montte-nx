@@ -1,5 +1,4 @@
 import { fromPromise } from "neverthrow";
-import { eventCatalog } from "@core/database/schemas/event-catalog";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import {
@@ -10,10 +9,9 @@ import {
 export const getEventCatalog = protectedProcedure.handler(
    async ({ context }) => {
       const result = await fromPromise(
-         context.db
-            .select()
-            .from(eventCatalog)
-            .orderBy(eventCatalog.category, eventCatalog.displayName),
+         context.db.query.eventCatalog.findMany({
+            orderBy: (t, { asc }) => [asc(t.category), asc(t.displayName)],
+         }),
          () => WebAppError.internal("Falha ao buscar catálogo de eventos."),
       );
       return result.match(
@@ -28,9 +26,6 @@ export const getEventCatalog = protectedProcedure.handler(
 export const getUsageSummary = protectedProcedure
    .input(getUsageSummaryInputSchema)
    .handler(async ({ context, input }) => {
-      if (!context.hyprpayClient)
-         throw WebAppError.internal("HyprPay não está configurado.");
-
       const result = await context.hyprpayClient.usage.list({
          customerId: input.customerId,
       });
@@ -46,9 +41,6 @@ export const getUsageSummary = protectedProcedure
 export const getCustomerPortalSession = protectedProcedure
    .input(getCustomerPortalSessionInputSchema)
    .handler(async ({ context, input }) => {
-      if (!context.hyprpayClient)
-         throw WebAppError.internal("HyprPay não está configurado.");
-
       const result = await context.hyprpayClient.customerPortal.createSession(
          input.customerId,
       );
