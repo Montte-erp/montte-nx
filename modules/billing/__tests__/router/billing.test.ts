@@ -7,13 +7,28 @@ import {
    it,
    vi,
 } from "vitest";
-import { call } from "@orpc/server";
+import { call, os } from "@orpc/server";
 import { okAsync, errAsync } from "neverthrow";
 import { setupTestDb } from "@core/database/testing/setup-test-db";
 import { seedTeam } from "@core/database/testing/factories";
 import { createTestContext } from "@core/orpc/testing/create-test-context";
 import { eventCatalog } from "@core/database/schemas/event-catalog";
 import { createHyprpayMock } from "../helpers/hyprpay-mock";
+
+// Replace the real orpc server (which wires real db/auth/posthog singletons at
+// module load) with a pass-through procedure that only runs the handler. The
+// handlers under test only read `context.db`, `context.hyprpayClient` and
+// throw WebAppError — they don't care about middleware-enriched fields.
+vi.mock("@core/orpc/server", () => {
+   const base = os.$context<Record<string, unknown>>();
+   return {
+      publicProcedure: base,
+      authenticatedProcedure: base,
+      protectedProcedure: base,
+      billableProcedure: base,
+   };
+});
+
 import * as billing from "../../src/router/billing";
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
