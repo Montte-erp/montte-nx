@@ -8,6 +8,7 @@ interface HyprPayPluginOptions {
    apiKey: string;
    baseUrl?: string;
    createCustomerOnSignUp?: boolean;
+   syncCustomerOnUpdate?: boolean;
    customerData?: (user: { id: string; name: string; email: string }) => {
       name: string;
       email?: string;
@@ -78,7 +79,7 @@ export function hyprpay(options: HyprPayPluginOptions): BetterAuthPlugin {
                      },
                      update: {
                         after: async (user) => {
-                           if (!options.createCustomerOnSignUp) return;
+                           if (!options.syncCustomerOnUpdate) return;
                            if (!user.name) return;
 
                            const result = await sdkClient.customers.update(
