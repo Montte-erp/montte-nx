@@ -11,6 +11,14 @@
       "./client": {
          "types": "./dist/client.d.ts",
          "default": "./dist/client.js"
+      },
+      "./factory": {
+         "types": "./dist/factory.d.ts",
+         "default": "./dist/factory.js"
+      },
+      "./errors": {
+         "types": "./dist/errors.d.ts",
+         "default": "./dist/errors.js"
       }
    },
    "scripts": {

@@ -6,8 +6,11 @@ import { meters } from "@core/database/schemas/meters";
 import { services, servicePrices } from "@core/database/schemas/services";
 import { subscriptionItems } from "@core/database/schemas/subscription-items";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
+import { usageEvents } from "@core/database/schemas/usage-events";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure, billableProcedure } from "@core/orpc/server";
+import { enqueueBenefitLifecycleWorkflow } from "../workflows/benefit-lifecycle-workflow";
+import { enqueueTrialExpiryWorkflow } from "../workflows/trial-expiry-workflow";
 import {
    createServiceSchema,
    createSubscriptionItemSchema,
@@ -710,11 +713,11 @@ export const getContactSubscriptions = contactSubscriptionsProcedure.handler(
 
 export const createSubscription = createSubscriptionProcedure.handler(
    async ({ context, input }) => {
-      return (
+      const sub = (
          await fromPromise(
             context.db.transaction(async (tx) => {
                const { items, ...subscriptionData } = input;
-               const [sub] = await tx
+               const [row] = await tx
                   .insert(contactSubscriptions)
                   .values({
                      ...subscriptionData,
@@ -723,7 +726,7 @@ export const createSubscription = createSubscriptionProcedure.handler(
                      cancelAtPeriodEnd: false,
                   })
                   .returning();
-               if (!sub)
+               if (!row)
                   throw WebAppError.internal("Falha ao criar assinatura.");
 
                if (items && items.length > 0) {
@@ -733,7 +736,7 @@ export const createSubscription = createSubscriptionProcedure.handler(
                            .insert(subscriptionItems)
                            .values({
                               ...item,
-                              subscriptionId: sub.id,
+                              subscriptionId: row.id,
                               teamId: context.teamId,
                            })
                            .returning(),
@@ -745,7 +748,7 @@ export const createSubscription = createSubscriptionProcedure.handler(
                      );
                }
 
-               return sub;
+               return row;
             }),
             (e) =>
                e instanceof WebAppError
@@ -753,11 +756,54 @@ export const createSubscription = createSubscriptionProcedure.handler(
                   : WebAppError.internal("Falha ao criar assinatura."),
          )
       ).match(
-         (sub) => sub,
+         (row) => row,
          (e) => {
             throw e;
          },
       );
+
+      if (sub.status === "trialing" && sub.trialEndsAt) {
+         void fromPromise(
+            enqueueTrialExpiryWorkflow(context.workflowClient, {
+               teamId: sub.teamId,
+               subscriptionId: sub.id,
+               trialEndsAt: sub.trialEndsAt.toISOString(),
+               operatorEmail: context.session.user.email,
+            }),
+            () =>
+               WebAppError.internal("Falha ao enfileirar workflow de trial."),
+         ).match(
+            () => {},
+            (e) => {
+               throw e;
+            },
+         );
+      } else if (input.items?.length) {
+         const price = await context.db.query.servicePrices.findFirst({
+            where: (f, { eq }) => eq(f.id, input.items![0].priceId),
+         });
+         if (price) {
+            void fromPromise(
+               enqueueBenefitLifecycleWorkflow(context.workflowClient, {
+                  teamId: sub.teamId,
+                  subscriptionId: sub.id,
+                  serviceId: price.serviceId,
+                  newStatus: sub.status,
+               }),
+               () =>
+                  WebAppError.internal(
+                     "Falha ao enfileirar workflow de benefícios.",
+                  ),
+            ).match(
+               () => {},
+               (e) => {
+                  throw e;
+               },
+            );
+         }
+      }
+
+      return sub;
    },
 );
 
@@ -791,7 +837,7 @@ export const cancelSubscription = protectedProcedure
             "Assinaturas do Asaas não podem ser canceladas aqui.",
          );
 
-      return (
+      const cancelled = (
          await fromPromise(
             context.db.transaction(async (tx) => {
                const [updated] = await tx
@@ -809,11 +855,39 @@ export const cancelSubscription = protectedProcedure
                   : WebAppError.internal("Falha ao cancelar assinatura."),
          )
       ).match(
-         (cancelled) => cancelled,
+         (row) => row,
          (e) => {
             throw e;
          },
       );
+
+      const firstItem = await context.db.query.subscriptionItems.findFirst({
+         where: (f, { eq }) => eq(f.subscriptionId, cancelled.id),
+         with: { price: true },
+      });
+
+      if (firstItem?.price) {
+         void fromPromise(
+            enqueueBenefitLifecycleWorkflow(context.workflowClient, {
+               teamId: cancelled.teamId,
+               subscriptionId: cancelled.id,
+               serviceId: firstItem.price.serviceId,
+               newStatus: "cancelled",
+               previousStatus: subscription.status,
+            }),
+            () =>
+               WebAppError.internal(
+                  "Falha ao enfileirar workflow de benefícios.",
+               ),
+         ).match(
+            () => {},
+            (e) => {
+               throw e;
+            },
+         );
+      }
+
+      return cancelled;
    });
 
 export const getExpiringSoon = protectedProcedure
@@ -904,18 +978,29 @@ export const ingestUsage = billableProcedure
             "Você não tem permissão para registrar uso neste time.",
          );
 
-      const result = await context.hyprpayClient.usage.ingest({
-         customerId: context.organizationId,
-         meterId: input.meterId,
-         quantity: Number(input.quantity),
-         idempotencyKey: input.idempotencyKey,
-         properties: input.properties ?? {},
-      });
-
-      return result.match(
-         (r) => ({ queued: r.queued }),
-         () => {
-            throw WebAppError.internal("Falha ao registrar uso.");
+      return (
+         await fromPromise(
+            context.db.transaction(async (tx) => {
+               await tx
+                  .insert(usageEvents)
+                  .values({
+                     teamId: input.teamId,
+                     meterId: input.meterId,
+                     quantity: input.quantity,
+                     idempotencyKey: input.idempotencyKey,
+                     contactId: input.contactId,
+                     properties: input.properties ?? {},
+                  })
+                  .onConflictDoNothing({
+                     target: [usageEvents.teamId, usageEvents.idempotencyKey],
+                  });
+            }),
+            () => WebAppError.internal("Falha ao registrar evento de uso."),
+         )
+      ).match(
+         () => ({ success: true as const }),
+         (e) => {
+            throw e;
          },
       );
    });

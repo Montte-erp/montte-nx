@@ -7,15 +7,25 @@
       "paths": {
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],
+         "@core/dbos/*": ["../../core/dbos/src/*"],
+         "@core/environment/*": ["../../core/environment/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
-         "@core/authentication/*": ["../../core/authentication/dist/*"]
+         "@core/redis/*": ["../../core/redis/src/*"],
+         "@core/authentication/*": ["../../core/authentication/dist/*"],
+         "@core/transactional/*": ["../../core/transactional/src/*"],
+         "@packages/notifications/*": ["../../packages/notifications/src/*"]
       }
    },
    "references": [
       { "path": "../../core/database" },
-      { "path": "../../core/logging" }
+      { "path": "../../core/dbos" },
+      { "path": "../../core/environment" },
+      { "path": "../../core/logging" },
+      { "path": "../../core/redis" },
+      { "path": "../../core/transactional" },
+      { "path": "../../packages/notifications" }
    ],
    "include": ["src"]
 }

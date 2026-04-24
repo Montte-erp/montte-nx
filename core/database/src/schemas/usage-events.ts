@@ -64,11 +64,7 @@ export const upsertUsageEventSchema = createInsertSchema(usageEvents)
    })
    .extend({
       teamId: z.string().uuid("ID do time inválido."),
-      contactId: z
-         .string()
-         .uuid("ID do contato inválido.")
-         .nullable()
-         .optional(),
+      contactId: z.string().uuid("ID do contato inválido."),
       meterId: z.string().uuid("ID do medidor inválido."),
       quantity: z
          .string()
