@@ -62,6 +62,7 @@
    "devDependencies": {
       "@tanstack/vite-config": "0.5.2",
       "@types/bun": "latest",
+      "better-auth": "catalog:auth",
       "esbuild": "^0.25.4",
       "publint": "latest",
       "typescript": "catalog:development",
