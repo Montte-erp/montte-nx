@@ -7,19 +7,13 @@
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
-         "@core/stripe": ["../../core/stripe/src/index.ts"],
-         "@core/stripe/*": ["../../core/stripe/src/*"],
-         "@packages/events/*": ["../../packages/events/src/*"],
-         "@packages/workflows/*": ["../../packages/workflows/src/*"]
+         "@core/authentication/*": ["../../core/authentication/src/*"]
       }
    },
    "references": [
       { "path": "../../core/database" },
       { "path": "../../core/logging" },
-      { "path": "../../core/orpc" },
-      { "path": "../../core/stripe" },
-      { "path": "../../packages/events" },
-      { "path": "../../packages/workflows" }
+      { "path": "../../core/orpc" }
    ],
    "include": ["src"]
 }
