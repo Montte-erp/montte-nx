@@ -47,7 +47,11 @@
       "zod": "catalog:validation"
    },
    "devDependencies": {
+      "@electric-sql/pglite": "^0.3.15",
       "@tooling/typescript": "workspace:*",
-      "typescript": "catalog:development"
+      "drizzle-kit": "catalog:database",
+      "drizzle-seed": "catalog:database",
+      "typescript": "catalog:development",
+      "vitest": "catalog:testing"
    }
 }
