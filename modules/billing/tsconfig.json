@@ -1,12 +1,15 @@
 {
    "extends": "@tooling/typescript/core.json",
    "compilerOptions": {
+      "composite": false,
+      "declaration": false,
+      "declarationMap": false,
       "paths": {
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
-         "@core/orpc/*": ["../../core/orpc/dist/*"],
+         "@core/orpc/*": ["../../core/orpc/src/*"],
          "@core/authentication/*": ["../../core/authentication/dist/*"]
       }
    },

@@ -2,8 +2,9 @@
    "extends": "@tooling/typescript/core.json",
    "compilerOptions": {
       "composite": false,
-      "declaration": true,
-      "declarationMap": true,
+      "declaration": false,
+      "declarationMap": false,
+      "noEmit": true,
       "paths": {
          "@core/authentication/*": ["../../core/authentication/dist/*"],
          "@core/database": ["../../core/database/src/index.ts"],

@@ -1,13 +1,7 @@
 import dayjs from "dayjs";
-import { fromPromise, fromThrowable } from "neverthrow";
+import { err, fromPromise, fromThrowable, ok } from "neverthrow";
 import { logs } from "@opentelemetry/api-logs";
-import {
-   ORPCError,
-   os,
-   type BuilderWithMiddlewares,
-   type Context,
-} from "@orpc/server";
-import type { Schema } from "@orpc/contract";
+import { ORPCError, os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
 import { createHyprPayClient } from "@montte/hyprpay";
 import { createDb } from "@core/database/client";
@@ -72,28 +66,45 @@ const withDeps = base.use(async ({ context, next }) => {
    });
 });
 
-const withAuth = withDeps.use(async ({ context, next }) => {
+const withAuth = withDeps.use(({ context, next }) => {
    const { session } = context;
-   if (!session?.user)
-      throw new ORPCError("UNAUTHORIZED", {
-         message: "You must be logged in to access this resource",
-      });
-   return next({
-      context: { ...context, session, userId: session.user.id },
-   });
+   return (
+      session?.user
+         ? ok(session)
+         : err(
+              new ORPCError("UNAUTHORIZED", {
+                 message: "You must be logged in to access this resource",
+              }),
+           )
+   ).match(
+      (s) => next({ context: { ...context, session: s, userId: s.user.id } }),
+      (e) => Promise.reject(e),
+   );
 });
 
-const withOrganization = withAuth.use(async ({ context, next }) => {
+const withOrganization = withAuth.use(({ context, next }) => {
    const { session } = context;
    const organizationId = session.session.activeOrganizationId;
-   if (!organizationId)
-      throw new ORPCError("FORBIDDEN", {
-         message: "No active organization selected",
-      });
    const teamId = session.session.activeTeamId;
-   if (!teamId)
-      throw new ORPCError("FORBIDDEN", { message: "No active team selected" });
-   return next({ context: { ...context, organizationId, teamId } });
+   return (
+      !organizationId
+         ? err(
+              new ORPCError("FORBIDDEN", {
+                 message: "No active organization selected",
+              }),
+           )
+         : !teamId
+           ? err(
+                new ORPCError("FORBIDDEN", {
+                   message: "No active team selected",
+                }),
+             )
+           : ok({ organizationId, teamId })
+   ).match(
+      ({ organizationId, teamId }) =>
+         next({ context: { ...context, organizationId, teamId } }),
+      (e) => Promise.reject(e),
+   );
 });
 
 const withTelemetry = withOrganization.use(
@@ -192,12 +203,13 @@ const withTelemetry = withOrganization.use(
          safeCapture();
       }
 
-      if (result.isErr()) {
-         const err = result.error;
-         if (err instanceof AppError) throw WebAppError.fromAppError(err);
-         throw err;
-      }
-      return result.value;
+      return result.match(
+         (value) => value,
+         (e) =>
+            Promise.reject(
+               e instanceof AppError ? WebAppError.fromAppError(e) : e,
+            ),
+      );
    },
 );
 
@@ -219,19 +231,7 @@ export type {
    ORPCContextWithOrganization,
 };
 
-type Procedure<TCurrent extends Context> = BuilderWithMiddlewares<
-   ORPCContext,
-   TCurrent,
-   Schema<unknown, unknown>,
-   Schema<unknown, unknown>,
-   Record<never, never>,
-   Record<never, never>
->;
-
-export const publicProcedure: Procedure<ORPCContextWithAuth> = withDeps;
-export const authenticatedProcedure: Procedure<ORPCContextAuthenticated> =
-   withAuth;
-export const protectedProcedure: Procedure<ORPCContextWithOrganization> =
-   withTelemetry;
-export const billableProcedure: Procedure<ORPCContextWithOrganization> =
-   withBilling;
+export const publicProcedure = withDeps;
+export const authenticatedProcedure = withAuth;
+export const protectedProcedure = withTelemetry;
+export const billableProcedure = withBilling;
