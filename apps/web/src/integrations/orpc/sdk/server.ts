@@ -4,11 +4,13 @@ import type { DatabaseInstance } from "@core/database/client";
 import { WebAppError } from "@core/logging/errors";
 import { authenticateRequest } from "./utils/sdk-auth";
 import type { AuthError } from "./utils/sdk-auth";
+import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 
 interface BaseContext {
    db: DatabaseInstance;
    posthog: PostHog;
    request: Request;
+   workflowClient: DBOSClient;
 }
 
 interface SdkContext extends BaseContext {
