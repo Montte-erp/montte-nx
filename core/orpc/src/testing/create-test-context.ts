@@ -10,6 +10,8 @@ export function createPosthogMock() {
    };
 }
 
+// Returns `undefined` from `enqueue`. Handlers that introspect the workflow
+// handle (e.g. `handle.workflowID`) must pass a richer mock via `overrides.extras`.
 export function createWorkflowClientMock() {
    return { enqueue: vi.fn().mockResolvedValue(undefined) };
 }
@@ -34,6 +36,7 @@ export function createTestContext(
    const organizationId = overrides.organizationId ?? crypto.randomUUID();
    const userId = overrides.userId ?? crypto.randomUUID();
    const userEmail = overrides.userEmail ?? `test-${userId}@example.com`;
+   const headers = new Headers();
 
    return {
       db,
@@ -48,8 +51,10 @@ export function createTestContext(
             activeTeamId: teamId,
          },
       },
-      headers: new Headers(),
-      request: new Request("http://localhost", { headers: new Headers() }),
+      headers,
+      request: new Request("http://localhost", { headers }),
+      // auth + redis are deliberate test-only escape hatches. Handlers under test
+      // must not traverse these singletons — that is middleware territory.
       auth: {} as never,
       posthog: createPosthogMock(),
       redis: {} as never,
