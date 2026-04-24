@@ -56,6 +56,7 @@
         "@maskito/core": "catalog:ui",
         "@maskito/kit": "catalog:ui",
         "@maskito/react": "catalog:ui",
+        "@modules/billing": "workspace:*",
         "@montte/cli": "workspace:*",
         "@montte/hyprpay": "workspace:*",
         "@orpc/client": "catalog:orpc",

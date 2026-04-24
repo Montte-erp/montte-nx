@@ -111,7 +111,18 @@ function ServicesList() {
    );
 
    const filtered = useMemo(() => {
-      let result = servicesList as ServiceRow[];
+      let result: ServiceRow[] = servicesList.map((s) => ({
+         id: s.id,
+         name: s.name,
+         description: s.description,
+         categoryId: s.categoryId,
+         categoryName: s.category?.name ?? null,
+         categoryColor: s.category?.color ?? null,
+         tagId: s.tagId,
+         tagName: s.tag?.name ?? null,
+         tagColor: s.tag?.color ?? null,
+         isActive: s.isActive,
+      }));
       if (search) {
          const q = search.toLowerCase();
          result = result.filter(

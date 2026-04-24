@@ -5,13 +5,13 @@
    "license": "Apache-2.0",
    "type": "module",
    "exports": {
-      "./router": {
-         "types": "./dist/router/index.d.ts",
-         "default": "./dist/router/index.js"
+      "./router/*": {
+         "types": "./dist/router/*.d.ts",
+         "default": "./dist/router/*.js"
       },
-      "./contracts": {
-         "types": "./dist/contracts/index.d.ts",
-         "default": "./dist/contracts/index.js"
+      "./contracts/*": {
+         "types": "./dist/contracts/*.d.ts",
+         "default": "./dist/contracts/*.js"
       },
       "./constants": {
          "types": "./dist/constants.d.ts",
