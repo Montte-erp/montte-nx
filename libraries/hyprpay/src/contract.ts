@@ -174,6 +174,40 @@ const usageContract = {
       .output(z.array(usageEventSchema)),
 };
 
+const couponDetailSchema = z.object({
+   id: z.string(),
+   code: z.string(),
+   type: z.enum(["percent", "fixed"]),
+   amount: z.string(),
+   duration: z.enum(["once", "repeating", "forever"]),
+   durationMonths: z.number().nullable(),
+   scope: z.enum(["team", "price"]),
+   priceId: z.string().nullable(),
+   maxUses: z.number().nullable(),
+   usedCount: z.number(),
+   redeemBy: z.string().nullable(),
+});
+
+const couponsContract = {
+   validate: oc
+      .input(z.object({ code: z.string(), priceId: z.string().optional() }))
+      .output(
+         z.discriminatedUnion("valid", [
+            z.object({ valid: z.literal(true), coupon: couponDetailSchema }),
+            z.object({
+               valid: z.literal(false),
+               reason: z.enum([
+                  "not_found",
+                  "inactive",
+                  "expired",
+                  "max_uses_reached",
+                  "price_scope_mismatch",
+               ]),
+            }),
+         ]),
+      ),
+};
+
 export const hyprpayContract = {
    create: oc
       .input(
@@ -212,6 +246,7 @@ export const hyprpayContract = {
    subscriptions: subscriptionsContract,
    usage: usageContract,
    benefits: benefitsContract,
+   coupons: couponsContract,
 };
 
 export type HyprPayUsageEventFromContract = z.infer<typeof usageEventSchema>;
@@ -225,3 +260,4 @@ export type HyprPaySubscriptionItemFromContract = z.infer<
 export type HyprPayBenefitGrantFromContract = z.infer<
    typeof benefitGrantSchema
 >;
+export type HyprPayCouponFromContract = z.infer<typeof couponDetailSchema>;
