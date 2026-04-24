@@ -1,6 +1,22 @@
 import type { DatabaseInstance } from "@core/database/client";
 import { vi } from "vitest";
 
+// Consumer pattern (vi.mock must appear literally in the test file so vitest
+// hoists it above imports):
+//
+//    import { vi } from "vitest";
+//    import {
+//       createDbosMocks,
+//       dbosSdkMockFactory,
+//       drizzleDataSourceMockFactory,
+//    } from "@core/dbos/testing/mock-dbos";
+//
+//    const mocks = vi.hoisted(() => createDbosMocks());
+//    vi.mock("@dbos-inc/dbos-sdk", () => dbosSdkMockFactory(mocks));
+//    vi.mock("@dbos-inc/drizzle-datasource", () => drizzleDataSourceMockFactory(mocks));
+//
+//    // workflow imports go here
+
 export type DbosMocks = {
    runStepSpy: ReturnType<typeof vi.fn>;
    sleepSpy: ReturnType<typeof vi.fn>;
@@ -29,8 +45,9 @@ export function createDbosMocks(): DbosMocks {
    };
 }
 
-export function registerDbosMocks(mocks: DbosMocks) {
-   vi.mock("@dbos-inc/dbos-sdk", () => ({
+// oxlint-ignore no-explicit-any
+export function dbosSdkMockFactory(mocks: DbosMocks) {
+   return {
       DBOS: {
          logger: {
             info: mocks.infoSpy,
@@ -39,7 +56,6 @@ export function registerDbosMocks(mocks: DbosMocks) {
          },
          runStep: mocks.runStepSpy,
          sleepms: mocks.sleepSpy,
-         // oxlint-ignore no-explicit-any
          registerWorkflow: <F extends (...args: any[]) => any>(fn: F) => fn,
       },
       WorkflowQueue: class WorkflowQueue {
@@ -48,22 +64,22 @@ export function registerDbosMocks(mocks: DbosMocks) {
             public options?: unknown,
          ) {}
       },
-   }));
+   };
+}
 
-   vi.mock("@dbos-inc/drizzle-datasource", () => {
-      class DrizzleDataSource {
-         constructor(
-            public name: string,
-            public config: unknown,
-            public schema: unknown,
-         ) {}
-         runTransaction<T>(fn: () => Promise<T>): Promise<T> {
-            return fn();
-         }
-         static get client() {
-            return mocks.getActiveDb();
-         }
+export function drizzleDataSourceMockFactory(mocks: DbosMocks) {
+   class DrizzleDataSource {
+      constructor(
+         public name: string,
+         public config: unknown,
+         public schema: unknown,
+      ) {}
+      runTransaction<T>(fn: () => Promise<T>): Promise<T> {
+         return fn();
       }
-      return { DrizzleDataSource };
-   });
+      static get client() {
+         return mocks.getActiveDb();
+      }
+   }
+   return { DrizzleDataSource };
 }
