@@ -6,6 +6,7 @@
          "@core/agents/*": ["../../core/agents/src/*"],
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],
+         "@core/dbos/*": ["../../core/dbos/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
@@ -20,7 +21,16 @@
    "include": ["src"],
    "references": [
       {
-         "path": "../../core/agents"
+         "path": "../../core/transactional"
+      },
+      {
+         "path": "../../core/dbos"
+      },
+      {
+         "path": "../notifications"
+      },
+      {
+         "path": "../events"
       },
       {
          "path": "../../core/stripe"
@@ -38,10 +48,7 @@
          "path": "../../core/database"
       },
       {
-         "path": "../../packages/events"
-      },
-      {
-         "path": "../../packages/notifications"
+         "path": "../../core/agents"
       }
    ]
 }

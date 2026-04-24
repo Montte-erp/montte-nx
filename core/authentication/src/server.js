@@ -1,6 +1,5 @@
 import { apiKey } from "@better-auth/api-key";
 import { hyprpay } from "@montte/hyprpay/better-auth";
-import type { HyprPayClient } from "@montte/hyprpay";
 import { findMemberByUserId } from "@core/database/repositories/auth-repository";
 import * as schema from "@core/database/schema";
 import { getDomain, isProduction } from "@core/environment/helpers";
@@ -21,13 +20,7 @@ import {
 } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { z } from "zod";
-import type { DatabaseInstance } from "@core/database/client";
-import type { PostHog } from "@core/posthog/server";
-import type { Redis } from "@core/redis/connection";
-import type { ResendClient } from "@core/transactional/utils";
-
 const logger = getLogger().child({ module: "auth" });
-
 export const cnpjDataSchema = z.object({
    cnpj: z.string(),
    razao_social: z.string(),
@@ -46,60 +39,34 @@ export const cnpjDataSchema = z.object({
    qsa: z.array(z.unknown()),
    regime_tributario: z.array(z.unknown()).nullable(),
 });
-
-export type CnpjData = z.infer<typeof cnpjDataSchema>;
-
 export const ORGANIZATION_LIMIT = 3;
-
-const devMagicLinkStore = new Map<string, string>();
-
-export function getDevMagicLink(email: string): string | undefined {
+const devMagicLinkStore = new Map();
+export function getDevMagicLink(email) {
    const url = devMagicLinkStore.get(email);
    devMagicLinkStore.delete(email);
    return url;
 }
-
-export interface CreateAuthDeps {
-   db: DatabaseInstance;
-   redis: Redis;
-   posthog: PostHog;
-   resendClient: ResendClient;
-   hyprpayClient: HyprPayClient;
-   env: {
-      BETTER_AUTH_URL?: string;
-      BETTER_AUTH_SECRET: string;
-      BETTER_AUTH_TRUSTED_ORIGINS: string;
-      BETTER_AUTH_GOOGLE_CLIENT_ID: string;
-      BETTER_AUTH_GOOGLE_CLIENT_SECRET: string;
-   };
-}
-
-export function createAuth(deps: CreateAuthDeps) {
+export function createAuth(deps) {
    const { db, redis, resendClient, hyprpayClient, env } = deps;
-
    const auth = betterAuth({
       baseURL: env.BETTER_AUTH_URL,
       secret: env.BETTER_AUTH_SECRET,
       trustedOrigins: env.BETTER_AUTH_TRUSTED_ORIGINS.split(","),
-
       account: {
          accountLinking: {
             enabled: true,
          },
       },
-
       socialProviders: {
          google: {
             clientId: env.BETTER_AUTH_GOOGLE_CLIENT_ID,
             clientSecret: env.BETTER_AUTH_GOOGLE_CLIENT_SECRET,
          },
       },
-
       advanced: {
          database: { generateId: "uuid" },
          cookiePrefix: "montte",
       },
-
       secondaryStorage: {
          get: (key) => redis.get(`better-auth:${key}`),
          set: async (key, value, ttl) => {
@@ -112,13 +79,11 @@ export function createAuth(deps: CreateAuthDeps) {
          },
          delete: (key) => redis.del(`better-auth:${key}`).then(() => undefined),
       },
-
       database: drizzleAdapter(db, {
          provider: "pg",
          transaction: true,
          schema,
       }),
-
       databaseHooks: {
          session: {
             create: {
@@ -128,13 +93,11 @@ export function createAuth(deps: CreateAuthDeps) {
                         db,
                         session.userId,
                      );
-
                      if (member?.organizationId) {
                         const existingTeam = await db.query.team.findFirst({
                            where: (fields, { eq }) =>
                               eq(fields.organizationId, member.organizationId),
                         });
-
                         return {
                            data: {
                               ...session,
@@ -143,7 +106,6 @@ export function createAuth(deps: CreateAuthDeps) {
                            },
                         };
                      }
-
                      return { data: session };
                   } catch (error) {
                      logger.error(
@@ -156,21 +118,17 @@ export function createAuth(deps: CreateAuthDeps) {
             },
          },
       },
-
       emailAndPassword: {
          enabled: true,
          requireEmailVerification: isProduction,
       },
-
       emailVerification: {
          autoSignInAfterVerification: true,
          sendOnSignUp: isProduction,
       },
-
       experimental: {
          joins: true,
       },
-
       session: {
          storeSessionInDatabase: true,
          cookieCache: {
@@ -178,7 +136,6 @@ export function createAuth(deps: CreateAuthDeps) {
             maxAge: 5 * 60,
          },
       },
-
       user: {
          changeEmail: {
             enabled: true,
@@ -187,7 +144,6 @@ export function createAuth(deps: CreateAuthDeps) {
             enabled: true,
          },
       },
-
       plugins: [
          magicLink({
             expiresIn: 60 * 15,
@@ -203,7 +159,6 @@ export function createAuth(deps: CreateAuthDeps) {
                });
             },
          }),
-
          emailOTP({
             expiresIn: 60 * 10,
             otpLength: 6,
@@ -219,9 +174,7 @@ export function createAuth(deps: CreateAuthDeps) {
                await sendEmailOTP(resendClient, { email, otp, type });
             },
          }),
-
          lastLoginMethod(),
-
          organization({
             organizationLimit: ORGANIZATION_LIMIT,
             schema: {
@@ -332,7 +285,6 @@ export function createAuth(deps: CreateAuthDeps) {
                maximumTeams: 10,
             },
          }),
-
          twoFactor({
             issuer: "Montte",
             skipVerificationOnEnable: false,
@@ -345,20 +297,15 @@ export function createAuth(deps: CreateAuthDeps) {
                length: 10,
             },
          }),
-
          apiKey({
             enableSessionForAPIKeys: true,
             enableMetadata: true,
             defaultPrefix: "mntt_",
             apiKeyHeaders: ["sdk-api-key", "x-api-key"],
          }),
-
          hyprpay({ client: hyprpayClient }),
          tanstackStartCookies(),
       ],
    });
-
    return auth;
 }
-
-export type AuthInstance = ReturnType<typeof createAuth>;

@@ -7,6 +7,7 @@ import { createPostHog } from "@core/posthog/server";
 import { createStripeClient } from "@core/stripe";
 import { createResendClient } from "@core/transactional/utils";
 import { launchDBOS } from "@packages/workflows/setup";
+import { setupBillingWorkflows } from "@modules/billing/workflows";
 
 initOtel({
    serviceName: "montte-worker",
@@ -24,6 +25,8 @@ const stripeClient = createStripeClient(env.STRIPE_SECRET_KEY);
 const resendClient = createResendClient(env.RESEND_API_KEY);
 
 logger.info("Starting worker");
+
+setupBillingWorkflows({ redis, resendClient, workerConcurrency: 10 });
 
 launchDBOS({
    db,

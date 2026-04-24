@@ -13,8 +13,8 @@
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
-         "@core/authentication/*": ["../../core/authentication/dist/*"],
-         "@core/transactional/*": ["../../core/transactional/src/*"],
+         "@core/authentication/*": ["../../core/authentication/src/*"],
+         "@core/transactional/*": ["../../core/transactional/dist/*"],
          "@packages/events/*": ["../../packages/events/src/*"],
          "@packages/notifications/*": ["../../packages/notifications/src/*"]
       }
@@ -25,7 +25,6 @@
       { "path": "../../core/environment" },
       { "path": "../../core/logging" },
       { "path": "../../core/redis" },
-      { "path": "../../core/transactional" },
       { "path": "../../packages/events" },
       { "path": "../../packages/notifications" }
    ],

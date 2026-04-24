@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { eq } from "drizzle-orm";
-import { fromPromise } from "neverthrow";
+import { err, fromPromise, ok } from "neverthrow";
 import { coupons } from "@core/database/schemas/coupons";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
@@ -13,176 +13,142 @@ import {
 
 const couponByIdProcedure = protectedProcedure
    .input(getCouponInputSchema)
-   .use(({ context, input, next }) =>
-      fromPromise(
+   .use(async ({ context, next }, input) => {
+      const result = await fromPromise(
          context.db.query.coupons.findFirst({
-            where: (f, { eq }) => eq(f.id, input.id),
+            where: (f, { eq: eqFn }) => eqFn(f.id, input.id),
          }),
          () => WebAppError.internal("Falha ao verificar permissão."),
-      ).match(
-         (coupon) =>
-            coupon?.teamId === context.teamId
-               ? next({})
-               : Promise.reject(WebAppError.notFound("Cupom não encontrado.")),
-         (e) => Promise.reject(e),
-      ),
-   );
+      ).andThen((coupon) =>
+         !coupon || coupon.teamId !== context.teamId
+            ? err(WebAppError.notFound("Cupom não encontrado."))
+            : ok(coupon),
+      );
+      if (result.isErr()) throw result.error;
+      return next({ context: { coupon: result.value } });
+   });
 
 const couponByUpdateInputProcedure = protectedProcedure
    .input(updateCouponInputSchema)
-   .use(({ context, input, next }) =>
-      fromPromise(
+   .use(async ({ context, next }, input) => {
+      const result = await fromPromise(
          context.db.query.coupons.findFirst({
-            where: (f, { eq }) => eq(f.id, input.id),
+            where: (f, { eq: eqFn }) => eqFn(f.id, input.id),
          }),
          () => WebAppError.internal("Falha ao verificar permissão."),
-      ).match(
-         (coupon) =>
-            coupon?.teamId === context.teamId
-               ? next({})
-               : Promise.reject(WebAppError.notFound("Cupom não encontrado.")),
-         (e) => Promise.reject(e),
-      ),
+      ).andThen((coupon) =>
+         !coupon || coupon.teamId !== context.teamId
+            ? err(WebAppError.notFound("Cupom não encontrado."))
+            : ok(coupon),
+      );
+      if (result.isErr()) throw result.error;
+      return next({ context: { coupon: result.value } });
+   });
+
+export const list = protectedProcedure.handler(async ({ context }) => {
+   const result = await fromPromise(
+      context.db.query.coupons.findMany({
+         where: (f, { eq: eqFn }) => eqFn(f.teamId, context.teamId),
+         orderBy: (f, { asc }) => [asc(f.createdAt)],
+      }),
+      () => WebAppError.internal("Falha ao listar cupons."),
    );
+   if (result.isErr()) throw result.error;
+   return result.value;
+});
 
-export const list = protectedProcedure.handler(async ({ context }) =>
-   (
-      await fromPromise(
-         context.db.query.coupons.findMany({
-            where: (f, { eq }) => eq(f.teamId, context.teamId),
-            orderBy: (f, { asc }) => [asc(f.createdAt)],
-         }),
-         () => WebAppError.internal("Falha ao listar cupons."),
-      )
-   ).match(
-      (rows) => rows,
-      (e) => {
-         throw e;
-      },
-   ),
-);
-
-export const get = couponByIdProcedure.handler(async ({ context, input }) =>
-   (
-      await fromPromise(
-         context.db.query.coupons.findFirst({
-            where: (f, { eq }) => eq(f.id, input.id),
-         }),
-         () => WebAppError.internal("Falha ao buscar cupom."),
-      )
-   ).match(
-      (coupon) => {
-         if (!coupon) throw WebAppError.notFound("Cupom não encontrado.");
-         return coupon;
-      },
-      (e) => {
-         throw e;
-      },
-   ),
-);
+export const get = couponByIdProcedure.handler(({ context }) => context.coupon);
 
 export const create = protectedProcedure
    .input(createCouponSchema)
-   .handler(async ({ context, input }) =>
-      (
-         await fromPromise(
-            context.db.transaction(async (tx) => {
-               const existing = await tx.query.coupons.findFirst({
-                  where: (f, { and, eq, sql }) =>
-                     and(
-                        eq(f.teamId, context.teamId),
-                        sql`lower(${f.code}) = lower(${input.code})`,
-                     ),
-               });
-               if (existing)
-                  throw WebAppError.conflict(
-                     "Já existe um cupom com esse código.",
-                  );
+   .handler(async ({ context, input }) => {
+      const existing = await fromPromise(
+         context.db.query.coupons.findFirst({
+            where: (f, { and, eq: eqFn, sql }) =>
+               and(
+                  eqFn(f.teamId, context.teamId),
+                  sql`lower(${f.code}) = lower(${input.code})`,
+               ),
+         }),
+         () => WebAppError.internal("Falha ao verificar cupom existente."),
+      );
+      if (existing.isErr()) throw existing.error;
+      if (existing.value)
+         throw WebAppError.conflict("Já existe um cupom com esse código.");
 
-               const [row] = await tx
-                  .insert(coupons)
-                  .values({
-                     ...input,
-                     teamId: context.teamId,
-                     redeemBy: input.redeemBy
-                        ? dayjs(input.redeemBy).toDate()
-                        : undefined,
-                  })
-                  .returning();
-               if (!row) throw WebAppError.internal("Falha ao criar cupom.");
-               return row;
-            }),
-            (e) =>
-               e instanceof WebAppError
-                  ? e
-                  : WebAppError.internal("Falha ao criar cupom."),
-         )
-      ).match(
-         (row) => row,
-         (e) => {
-            throw e;
-         },
-      ),
-   );
+      const result = await fromPromise(
+         context.db.transaction(async (tx) => {
+            const [row] = await tx
+               .insert(coupons)
+               .values({
+                  ...input,
+                  teamId: context.teamId,
+                  redeemBy: input.redeemBy
+                     ? dayjs(input.redeemBy).toDate()
+                     : undefined,
+               })
+               .returning();
+            return row;
+         }),
+         () => WebAppError.internal("Falha ao criar cupom."),
+      );
+      if (result.isErr()) throw result.error;
+      if (!result.value)
+         throw WebAppError.internal(
+            "Falha ao criar cupom: insert retornou vazio.",
+         );
+      return result.value;
+   });
 
 export const update = couponByUpdateInputProcedure.handler(
    async ({ context, input }) => {
       const { id, ...data } = input;
-      return (
-         await fromPromise(
-            context.db.transaction(async (tx) => {
-               const [row] = await tx
-                  .update(coupons)
-                  .set({
-                     ...data,
-                     redeemBy:
-                        data.redeemBy != null
-                           ? dayjs(data.redeemBy).toDate()
-                           : data.redeemBy,
-                  })
-                  .where(eq(coupons.id, id))
-                  .returning();
-               if (!row) throw WebAppError.notFound("Cupom não encontrado.");
-               return row;
-            }),
-            (e) =>
-               e instanceof WebAppError
-                  ? e
-                  : WebAppError.internal("Falha ao atualizar cupom."),
-         )
-      ).match(
-         (row) => row,
-         (e) => {
-            throw e;
-         },
+      const result = await fromPromise(
+         context.db.transaction(async (tx) => {
+            const [row] = await tx
+               .update(coupons)
+               .set({
+                  ...data,
+                  redeemBy:
+                     data.redeemBy != null
+                        ? dayjs(data.redeemBy).toDate()
+                        : data.redeemBy,
+               })
+               .where(eq(coupons.id, id))
+               .returning();
+            return row;
+         }),
+         () => WebAppError.internal("Falha ao atualizar cupom."),
       );
+      if (result.isErr()) throw result.error;
+      if (!result.value)
+         throw WebAppError.internal(
+            "Falha ao atualizar cupom: update retornou vazio.",
+         );
+      return result.value;
    },
 );
 
 export const deactivate = couponByIdProcedure.handler(
-   async ({ context, input }) =>
-      (
-         await fromPromise(
-            context.db.transaction(async (tx) => {
-               const [row] = await tx
-                  .update(coupons)
-                  .set({ isActive: false })
-                  .where(eq(coupons.id, input.id))
-                  .returning();
-               if (!row) throw WebAppError.notFound("Cupom não encontrado.");
-               return row;
-            }),
-            (e) =>
-               e instanceof WebAppError
-                  ? e
-                  : WebAppError.internal("Falha ao desativar cupom."),
-         )
-      ).match(
-         (row) => row,
-         (e) => {
-            throw e;
-         },
-      ),
+   async ({ context, input }) => {
+      const result = await fromPromise(
+         context.db.transaction(async (tx) => {
+            const [row] = await tx
+               .update(coupons)
+               .set({ isActive: false })
+               .where(eq(coupons.id, input.id))
+               .returning();
+            return row;
+         }),
+         () => WebAppError.internal("Falha ao desativar cupom."),
+      );
+      if (result.isErr()) throw result.error;
+      if (!result.value)
+         throw WebAppError.internal(
+            "Falha ao desativar cupom: update retornou vazio.",
+         );
+      return result.value;
+   },
 );
 
 export const validate = protectedProcedure
@@ -192,10 +158,6 @@ export const validate = protectedProcedure
          code: input.code,
          priceId: input.priceId,
       });
-      return result.match(
-         (v) => v,
-         () => {
-            throw WebAppError.internal("Falha ao validar cupom.");
-         },
-      );
+      if (result.isErr()) throw WebAppError.internal("Falha ao validar cupom.");
+      return result.value;
    });

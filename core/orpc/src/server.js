@@ -19,13 +19,6 @@ import { createResendClient } from "@core/transactional/utils";
 import { createWorkflowClient } from "@core/dbos/client";
 import { sanitizeData } from "@core/utils/sanitization";
 import { createJobPublisher } from "@packages/notifications/publisher";
-import type {
-   ORPCContext,
-   ORPCContextAuthenticated,
-   ORPCContextWithAuth,
-   ORPCContextWithOrganization,
-} from "./context";
-
 const db = createDb({ databaseUrl: env.DATABASE_URL });
 const redis = createRedis(env.REDIS_URL);
 const posthog = createPostHog(env.POSTHOG_KEY, env.POSTHOG_HOST);
@@ -41,11 +34,8 @@ const auth = createAuth({
 });
 const workflowClient = createWorkflowClient(env.DATABASE_URL);
 const jobPublisher = createJobPublisher(redis);
-
 const otelLogger = logs.getLogger("montte-web-orpc");
-
-const base = os.$context<ORPCContext>();
-
+const base = os.$context();
 const withDeps = base.use(async ({ context, next }) => {
    const sessionResult = await fromPromise(
       (async () => auth.api.getSession({ headers: context.headers }))(),
@@ -65,7 +55,6 @@ const withDeps = base.use(async ({ context, next }) => {
       },
    });
 });
-
 const withAuth = withDeps.use(({ context, next }) => {
    const { session } = context;
    return (
@@ -81,7 +70,6 @@ const withAuth = withDeps.use(({ context, next }) => {
       (e) => Promise.reject(e),
    );
 });
-
 const withOrganization = withAuth.use(({ context, next }) => {
    const { session } = context;
    const organizationId = session.session.activeOrganizationId;
@@ -106,7 +94,6 @@ const withOrganization = withAuth.use(({ context, next }) => {
       (e) => Promise.reject(e),
    );
 });
-
 const withTelemetry = withOrganization.use(
    async ({ context, path, next }, input) => {
       const startDate = dayjs().toDate();
@@ -116,7 +103,6 @@ const withTelemetry = withOrganization.use(
       const organizationId = context.organizationId;
       const teamId = context.teamId;
       const sessionId = context.headers.get("x-posthog-session-id");
-
       const otelIdentity = {
          posthogDistinctId: userId ?? "anonymous",
          ...(sessionId ? { sessionId } : {}),
@@ -124,13 +110,11 @@ const withTelemetry = withOrganization.use(
          teamId,
          path: path.join("."),
       };
-
       otelLogger.emit({
          severityText: "info",
          body: `oRPC request: ${path.join(".")}`,
          attributes: otelIdentity,
       });
-
       if (userId && context.posthog) {
          identifyUser(context.posthog, userId, {
             email: userEmail,
@@ -138,16 +122,12 @@ const withTelemetry = withOrganization.use(
          });
          if (organizationId) setGroup(context.posthog, organizationId, {});
       }
-
-      const result = await fromPromise(
-         (async () => next())(),
-         (err): Error => (err instanceof Error ? err : new Error(String(err))),
+      const result = await fromPromise((async () => next())(), (err) =>
+         err instanceof Error ? err : new Error(String(err)),
       );
-
       const durationMs = Date.now() - startDate.getTime();
       const isSuccess = result.isOk();
       const error = result.isErr() ? result.error : null;
-
       otelLogger.emit({
          severityText: isSuccess ? "info" : "error",
          body: isSuccess
@@ -162,23 +142,22 @@ const withTelemetry = withOrganization.use(
                : {}),
          },
       });
-
       if (userId && context.posthog) {
          const safeCapture = fromThrowable(() => {
             const rootPath = path[0];
             if (!isSuccess && error) {
-               captureError(context.posthog!, {
+               captureError(context.posthog, {
                   code: "INTERNAL_SERVER_ERROR",
                   errorId: crypto.randomUUID(),
                   input: sanitizeData(input),
                   message: error.message,
                   organizationId: organizationId || undefined,
                   path: path.join("."),
-                  userId: userId!,
+                  userId: userId,
                });
             }
-            captureServerEvent(context.posthog!, {
-               userId: userId!,
+            captureServerEvent(context.posthog, {
+               userId: userId,
                event: "orpc_request",
                properties: {
                   durationMs,
@@ -202,7 +181,6 @@ const withTelemetry = withOrganization.use(
          });
          safeCapture();
       }
-
       return result.match(
          (value) => value,
          (e) =>
@@ -212,7 +190,6 @@ const withTelemetry = withOrganization.use(
       );
    },
 );
-
 const withBilling = withTelemetry.use(async ({ context, path, next }) => {
    const result = await next({});
    context.hyprpayClient.usage
@@ -236,14 +213,6 @@ const withBilling = withTelemetry.use(async ({ context, path, next }) => {
       });
    return result;
 });
-
-export type {
-   ORPCContext,
-   ORPCContextWithAuth,
-   ORPCContextAuthenticated,
-   ORPCContextWithOrganization,
-};
-
 export const publicProcedure = withDeps;
 export const authenticatedProcedure = withAuth;
 export const protectedProcedure = withTelemetry;

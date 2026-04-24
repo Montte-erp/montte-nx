@@ -333,7 +333,7 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
          () =>
             publisher.publish("job.notification", {
                jobId: crypto.randomUUID(),
-               timestamp: new Date().toISOString(),
+               timestamp: dayjs().toISOString(),
                type: NOTIFICATION_TYPES.BILLING_INVOICE_GENERATED,
                status: "completed",
                message: `Fatura gerada para assinatura ${input.subscriptionId}.`,

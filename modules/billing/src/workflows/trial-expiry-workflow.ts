@@ -47,7 +47,7 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
 
             await publisher.publish("job.notification", {
                jobId: crypto.randomUUID(),
-               timestamp: new Date().toISOString(),
+               timestamp: dayjs().toISOString(),
                type: NOTIFICATION_TYPES.BILLING_TRIAL_EXPIRING,
                status: "started",
                message: `Período de teste expira em 3 dias para assinatura ${input.subscriptionId}.`,
@@ -138,7 +138,7 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
          () =>
             publisher.publish("job.notification", {
                jobId: crypto.randomUUID(),
-               timestamp: new Date().toISOString(),
+               timestamp: dayjs().toISOString(),
                type: NOTIFICATION_TYPES.BILLING_TRIAL_EXPIRING,
                status: "completed",
                message: `Período de teste encerrado — assinatura ${input.subscriptionId} ativada.`,

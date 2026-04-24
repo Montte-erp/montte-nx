@@ -40,7 +40,22 @@
          "path": "../../core/transactional"
       },
       {
+         "path": "../../packages/workflows"
+      },
+      {
+         "path": "../../packages/ui"
+      },
+      {
+         "path": "../../packages/notifications"
+      },
+      {
+         "path": "../../packages/events"
+      },
+      {
          "path": "../../packages/analytics"
+      },
+      {
+         "path": "../../libraries/cli"
       },
       {
          "path": "../../core/utils"
@@ -64,22 +79,7 @@
          "path": "../../core/environment"
       },
       {
-         "path": "../../packages/ui"
-      },
-      {
-         "path": "../../packages/events"
-      },
-      {
-         "path": "../../core/agents"
-      },
-      {
          "path": "../../core/database"
-      },
-      {
-         "path": "../../packages/notifications"
-      },
-      {
-         "path": "../../packages/workflows"
       }
    ]
 }

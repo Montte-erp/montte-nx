@@ -17,15 +17,14 @@ export class WorkflowError extends Error {
 
       Error.captureStackTrace?.(this, WorkflowError);
 
-      DBOS.logger.error(
-         {
-            err: this,
-            code,
-            ...(options?.data ? { data: options.data } : {}),
-            ...(options?.cause ? { cause: String(options.cause) } : {}),
-         },
+      const logFn = code < 500 ? DBOS.logger.warn : DBOS.logger.error;
+      logFn.call(DBOS.logger, {
+         err: this,
+         code,
          message,
-      );
+         ...(options?.data ? { data: options.data } : {}),
+         ...(options?.cause ? { cause: String(options.cause) } : {}),
+      });
    }
 
    static database(

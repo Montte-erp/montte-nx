@@ -16,6 +16,10 @@
       "./constants": {
          "types": "./dist/constants.d.ts",
          "default": "./dist/constants.js"
+      },
+      "./workflows": {
+         "types": "./dist/workflows/setup.d.ts",
+         "default": "./dist/workflows/setup.js"
       }
    },
    "scripts": {

@@ -139,7 +139,9 @@
         "@core/posthog": "workspace:*",
         "@core/redis": "workspace:*",
         "@core/stripe": "workspace:*",
+        "@core/transactional": "workspace:*",
         "@dbos-inc/dbos-sdk": "catalog:workers",
+        "@modules/billing": "workspace:*",
         "@packages/workflows": "workspace:*",
       },
       "devDependencies": {
@@ -427,6 +429,38 @@
         "vitest": "catalog:testing",
       },
     },
+    "modules/billing": {
+      "name": "@modules/billing",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/database": "workspace:*",
+        "@core/dbos": "workspace:*",
+        "@core/environment": "workspace:*",
+        "@core/logging": "workspace:*",
+        "@core/orpc": "workspace:*",
+        "@core/redis": "workspace:*",
+        "@core/transactional": "workspace:*",
+        "@dbos-inc/dbos-sdk": "catalog:workers",
+        "@dbos-inc/drizzle-datasource": "catalog:workers",
+        "@f-o-t/money": "catalog:fot",
+        "@orpc/server": "catalog:orpc",
+        "@packages/notifications": "workspace:*",
+        "@tanstack/store": "catalog:tanstack",
+        "dayjs": "catalog:ui",
+        "drizzle-orm": "catalog:database",
+        "drizzle-zod": "catalog:database",
+        "neverthrow": "catalog:validation",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@electric-sql/pglite": "^0.3.15",
+        "@tooling/typescript": "workspace:*",
+        "drizzle-kit": "catalog:database",
+        "drizzle-seed": "catalog:database",
+        "typescript": "catalog:development",
+        "vitest": "catalog:testing",
+      },
+    },
     "packages/analytics": {
       "name": "@packages/analytics",
       "version": "0.1.0",
@@ -559,6 +593,7 @@
       "dependencies": {
         "@core/agents": "workspace:*",
         "@core/database": "workspace:*",
+        "@core/dbos": "workspace:*",
         "@core/logging": "workspace:*",
         "@core/posthog": "workspace:*",
         "@core/redis": "workspace:*",
@@ -1086,6 +1121,8 @@
 
     "@dbos-inc/dbos-sdk": ["@dbos-inc/dbos-sdk@4.14.6", "", { "dependencies": { "commander": "12.0.0", "pg": "8.11.3", "serialize-error": "8.1.0", "superjson": "^1.13.3", "ws": "^8.18.1", "yaml": "^2.8.3" }, "bin": { "dbos": "dist/src/cli/cli.js", "dbos-sdk": "dist/src/cli/cli.js" } }, "sha512-uf7s8Z1fov3gAd5MLPK4SQX9sCgzJ4uF7W8Z5KZiEhUtCr0SsOJZb96Nse1YpXNohL5Npz1tEkNH9n+ThDlwRA=="],
 
+    "@dbos-inc/drizzle-datasource": ["@dbos-inc/drizzle-datasource@4.15.5", "", { "dependencies": { "pg": "^8.11.3", "superjson": "^1.13" }, "peerDependencies": { "@dbos-inc/dbos-sdk": "*", "drizzle-orm": "*" } }, "sha512-3YWZlz4cDpkzZeatfLMJiuehspcuPVWo4qNMT0qk+h22A/OYfGyNeadn2r2aRt0OotGQpZz6GY5uTCv75bHqFQ=="],
+
     "@dnd-kit/accessibility": ["@dnd-kit/accessibility@3.1.1", "", { "dependencies": { "tslib": "^2.0.0" }, "peerDependencies": { "react": ">=16.8.0" } }, "sha512-2P+YgaXF+gRsIihwwY1gCsQSYnu9Zyj2py8kY5fFvUM1qm2WA2u639R6YNVfU4GWr+ZM5mqEsfHZZLoRONbemw=="],
 
     "@dnd-kit/core": ["@dnd-kit/core@6.3.1", "", { "dependencies": { "@dnd-kit/accessibility": "^3.1.1", "@dnd-kit/utilities": "^3.2.2", "tslib": "^2.0.0" }, "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-xkGBRQQab4RLwgXxoqETICr6S5JlogafbhNsidmrkVv2YRs5MLwpjoF2qpiGjQt8S9AoxtIV603s0GIUpY5eYQ=="],
@@ -1253,6 +1290,8 @@
     "@microsoft/tsdoc": ["@microsoft/tsdoc@0.15.1", "", {}, "sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw=="],
 
     "@microsoft/tsdoc-config": ["@microsoft/tsdoc-config@0.17.1", "", { "dependencies": { "@microsoft/tsdoc": "0.15.1", "ajv": "~8.12.0", "jju": "~1.4.0", "resolve": "~1.22.2" } }, "sha512-UtjIFe0C6oYgTnad4q1QP4qXwLhe6tIpNTRStJ2RZEPIkqQPREAwE5spzVxsdn9UaEMUqhh0AqSx3X4nWAKXWw=="],
+
+    "@modules/billing": ["@modules/billing@workspace:modules/billing"],
 
     "@mongodb-js/saslprep": ["@mongodb-js/saslprep@1.4.6", "", { "dependencies": { "sparse-bitfield": "^3.0.3" } }, "sha512-y+x3H1xBZd38n10NZF/rEBlvDOOMQ6LKUTHqr8R9VkJ+mmQOYtJFxIlkkK8fZrtOiL6VixbOBWMbZGBdal3Z1g=="],
 
@@ -2010,7 +2049,7 @@
 
     "@tanstack/hotkeys": ["@tanstack/hotkeys@0.7.1", "", { "dependencies": { "@tanstack/store": "^0.9.3" } }, "sha512-YHVO1z6wnvUCu7bg870Kv5k2D+FIuIOSIcbN0dAmTTsJ3mLMDLwcTVx0qVaq+SZp1B514JJTqGVstvUp85yIpQ=="],
 
-    "@tanstack/intent": ["@tanstack/intent@0.0.35", "", { "dependencies": { "cac": "^6.7.14", "yaml": "^2.7.0" }, "bin": { "intent": "dist/cli.mjs", "intent-library": "dist/intent-library.mjs" } }, "sha512-Cl9qda72sYu32QUtJ3jKhSokfDpTx5olVza84tFDTlYM0ugh+/tFpPHmvekCz2TP+csm+w7sjxILueP/P2/lRw=="],
+    "@tanstack/intent": ["@tanstack/intent@0.0.36", "", { "dependencies": { "cac": "^6.7.14", "yaml": "^2.7.0" }, "bin": { "intent": "dist/cli.mjs", "intent-library": "dist/intent-library.mjs" } }, "sha512-rtHHeZN+JwnDzPKE++CSwrljNxmJg8Pu5rnZeAB/enxcQrBiUmVthqMqEmJ27sa3Rf/sqE9cPA/7IlNc4ApXKw=="],
 
     "@tanstack/match-sorter-utils": ["@tanstack/match-sorter-utils@8.19.4", "", { "dependencies": { "remove-accents": "0.5.0" } }, "sha512-Wo1iKt2b9OT7d+YGhvEPD3DXvPv2etTusIMhMUoG7fbhmxcXCtIjJDEygy91Y2JFlwGyjqiBPRozme7UD8hoqg=="],
 

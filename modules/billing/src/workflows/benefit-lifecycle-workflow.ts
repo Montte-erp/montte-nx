@@ -103,7 +103,7 @@ async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
             () =>
                publisher.publish("job.notification", {
                   jobId: crypto.randomUUID(),
-                  timestamp: new Date().toISOString(),
+                  timestamp: dayjs().toISOString(),
                   type: NOTIFICATION_TYPES.BILLING_BENEFIT_REVOKED,
                   status: "completed",
                   message: `Benefícios revogados para assinatura ${input.subscriptionId}.`,
@@ -168,7 +168,7 @@ async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
             () =>
                publisher.publish("job.notification", {
                   jobId: crypto.randomUUID(),
-                  timestamp: new Date().toISOString(),
+                  timestamp: dayjs().toISOString(),
                   type: NOTIFICATION_TYPES.BILLING_BENEFIT_GRANTED,
                   status: "completed",
                   message: `Benefícios concedidos para assinatura ${input.subscriptionId}.`,

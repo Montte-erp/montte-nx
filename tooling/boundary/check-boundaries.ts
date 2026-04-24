@@ -4,12 +4,14 @@
  * Module boundary enforcement for the monorepo.
  *
  * Rules:
- *   apps      → can import from: packages, core, libraries, tooling
- *   packages  → can import from: core, tooling
+ *   apps      → can import from: modules, packages, core, libraries, tooling
+ *   modules   → can import from: packages, core, libraries, tooling
+ *   packages  → can import from: core, libraries, tooling
  *   libraries → can import from: packages, core, tooling
- *   core      → can import from: tooling
+ *   core      → can import from: libraries, packages, tooling
  *   tooling   → cannot import from any workspace layer
  *
+ * Libraries are published to npm (external-like) and may be consumed anywhere.
  * Packages within the same layer CAN import from each other.
  */
 
@@ -18,15 +20,23 @@ import { join, relative } from "node:path";
 
 const ROOT = join(import.meta.dirname, "../..");
 
-const LAYERS = ["tooling", "core", "packages", "libraries", "apps"] as const;
+const LAYERS = [
+   "tooling",
+   "core",
+   "packages",
+   "libraries",
+   "modules",
+   "apps",
+] as const;
 type Layer = (typeof LAYERS)[number];
 
 const ALLOWED_DEPS: Record<Layer, Layer[]> = {
    tooling: [],
-   core: ["tooling"],
-   packages: ["core", "tooling"],
+   core: ["tooling", "libraries", "packages"],
+   packages: ["core", "tooling", "libraries"],
    libraries: ["packages", "core", "tooling"],
-   apps: ["packages", "core", "libraries", "tooling"],
+   modules: ["packages", "core", "libraries", "tooling"],
+   apps: ["modules", "packages", "core", "libraries", "tooling"],
 };
 
 const SCOPES: Record<Layer, string[]> = {
@@ -34,6 +44,7 @@ const SCOPES: Record<Layer, string[]> = {
    core: ["@core/"],
    packages: ["@packages/"],
    libraries: ["@montte/"],
+   modules: ["@modules/"],
    apps: [],
 };
 

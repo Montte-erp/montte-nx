@@ -51,7 +51,7 @@
    "scripts": {
       "build": "vite build && bun run scripts/build-subpaths.ts && publint --strict",
       "test": "vitest run --passWithNoTests --exclude 'dist/**'",
-      "typecheck": "tsc --noEmit"
+      "typecheck": "tsc"
    },
    "dependencies": {
       "@orpc/client": "catalog:orpc",
