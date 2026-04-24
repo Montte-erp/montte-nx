@@ -43,51 +43,42 @@ import {
    listSubscriptionsByTeam,
    updateSubscription,
 } from "@core/database/repositories/subscriptions-repository";
-import {
-   createBenefitSchema,
-   benefits,
-   serviceBenefits,
-   updateBenefitSchema,
-} from "@core/database/schemas/benefits";
-import {
-   createMeterSchema,
-   updateMeterSchema,
-} from "@core/database/schemas/meters";
-import {
-   createSubscriptionItemSchema,
-   subscriptionItems,
-   updateSubscriptionItemSchema,
-} from "@core/database/schemas/subscription-items";
-import {
-   createPriceSchema as createVariantSchema,
-   createServiceSchema,
-   servicePrices,
-   updatePriceSchema as updateVariantSchema,
-   updateServiceSchema,
-} from "@core/database/schemas/services";
-import {
-   contactSubscriptions,
-   createSubscriptionSchema,
-} from "@core/database/schemas/subscriptions";
-import { upsertUsageEventSchema } from "@core/database/schemas/usage-events";
+import { benefits, serviceBenefits } from "@core/database/schemas/benefits";
+import { subscriptionItems } from "@core/database/schemas/subscription-items";
+import { servicePrices } from "@core/database/schemas/services";
+import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import { createBillableProcedure } from "@core/orpc/billable";
-import { BILLING_EVENTS } from "../events";
+import { BILLING_EVENTS } from "../constants";
+import {
+   createServiceSchema,
+   createSubscriptionItemSchema,
+   createMeterSchema,
+   createBenefitSchema,
+   upsertUsageEventSchema,
+   listServicesInputSchema,
+   listSubscriptionsInputSchema,
+   createSubscriptionWithItemsInputSchema,
+   listExpiringSoonInputSchema,
+   serviceBenefitLinkSchema,
+   idInputSchema,
+   serviceIdInputSchema,
+   priceIdInputSchema,
+   contactIdInputSchema,
+   subscriptionIdInputSchema,
+   bulkCreateServicesInputSchema,
+   createPriceForServiceInputSchema,
+   updateServiceInputSchema,
+   updatePriceInputSchema,
+   updateMeterInputSchema,
+   updateBenefitInputSchema,
+   updateSubscriptionItemInputSchema,
+} from "../contracts/services";
 import { and, asc, count, eq, sql, sum } from "drizzle-orm";
-import { z } from "zod";
-
-const idSchema = z.object({ id: z.string().uuid() });
 
 export const getAll = protectedProcedure
-   .input(
-      z
-         .object({
-            search: z.string().optional(),
-            categoryId: z.string().uuid().optional(),
-         })
-         .optional(),
-   )
+   .input(listServicesInputSchema)
    .handler(async ({ context, input }) =>
       (await listServices(context.db, context.teamId, input)).match(
          (rows) => rows,
@@ -109,7 +100,7 @@ export const create = protectedProcedure
    );
 
 export const bulkCreate = protectedProcedure
-   .input(z.object({ items: z.array(createServiceSchema).min(1) }))
+   .input(bulkCreateServicesInputSchema)
    .handler(async ({ context, input }) => {
       const inserted = (
          await bulkCreateServices(context.db, context.teamId, input.items)
@@ -125,7 +116,7 @@ export const bulkCreate = protectedProcedure
    });
 
 export const update = protectedProcedure
-   .input(idSchema.merge(updateServiceSchema))
+   .input(updateServiceInputSchema)
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
       return (
@@ -141,7 +132,7 @@ export const update = protectedProcedure
    });
 
 export const remove = protectedProcedure
-   .input(idSchema)
+   .input(idInputSchema)
    .handler(async ({ context, input }) =>
       (
          await ensureServiceOwnership(
@@ -167,7 +158,7 @@ export const exportAll = protectedProcedure.handler(async ({ context }) =>
 );
 
 export const getVariants = protectedProcedure
-   .input(z.object({ serviceId: z.string().uuid() }))
+   .input(serviceIdInputSchema)
    .handler(async ({ context, input }) =>
       (
          await ensureServiceOwnership(
@@ -184,7 +175,7 @@ export const getVariants = protectedProcedure
    );
 
 export const createVariant = protectedProcedure
-   .input(z.object({ serviceId: z.string().uuid() }).merge(createVariantSchema))
+   .input(createPriceForServiceInputSchema)
    .handler(async ({ context, input }) => {
       const { serviceId, ...variantData } = input;
       if (input.type === "metered") {
@@ -219,7 +210,7 @@ export const createVariant = protectedProcedure
    });
 
 export const updateVariant = protectedProcedure
-   .input(idSchema.merge(updateVariantSchema))
+   .input(updatePriceInputSchema)
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
       if (input.type === "metered") {
@@ -245,7 +236,7 @@ export const updateVariant = protectedProcedure
    });
 
 export const removeVariant = protectedProcedure
-   .input(idSchema)
+   .input(idInputSchema)
    .handler(async ({ context, input }) =>
       (
          await ensureVariantOwnership(
@@ -262,13 +253,7 @@ export const removeVariant = protectedProcedure
    );
 
 export const getAllSubscriptions = protectedProcedure
-   .input(
-      z
-         .object({
-            status: z.enum(["active", "completed", "cancelled"]).optional(),
-         })
-         .optional(),
-   )
+   .input(listSubscriptionsInputSchema)
    .handler(async ({ context, input }) =>
       (
          await listSubscriptionsByTeam(
@@ -285,7 +270,7 @@ export const getAllSubscriptions = protectedProcedure
    );
 
 export const getContactSubscriptions = protectedProcedure
-   .input(z.object({ contactId: z.string().uuid() }))
+   .input(contactIdInputSchema)
    .handler(async ({ context, input }) =>
       (
          await ensureContactOwnership(
@@ -306,17 +291,7 @@ export const getContactSubscriptions = protectedProcedure
 export const createSubscription = createBillableProcedure(
    BILLING_EVENTS.subscriptionCreated,
 )
-   .input(
-      createSubscriptionSchema
-         .pick({ contactId: true, startDate: true, endDate: true, notes: true })
-         .extend({
-            items: z
-               .array(
-                  createSubscriptionItemSchema.omit({ subscriptionId: true }),
-               )
-               .optional(),
-         }),
-   )
+   .input(createSubscriptionWithItemsInputSchema)
    .handler(async ({ context, input }) => {
       const sub = (
          await ensureContactOwnership(
@@ -356,7 +331,7 @@ export const createSubscription = createBillableProcedure(
    });
 
 export const cancelSubscription = protectedProcedure
-   .input(idSchema)
+   .input(idInputSchema)
    .handler(async ({ context, input }) => {
       const subscription = (
          await ensureSubscriptionOwnership(context.db, input.id, context.teamId)
@@ -387,13 +362,7 @@ export const cancelSubscription = protectedProcedure
    });
 
 export const getExpiringSoon = protectedProcedure
-   .input(
-      z
-         .object({
-            status: z.enum(["active", "trialing"]).optional().default("active"),
-         })
-         .optional(),
-   )
+   .input(listExpiringSoonInputSchema)
    .handler(async ({ context, input }) =>
       (
          await listExpiringSoon(
@@ -501,7 +470,7 @@ export const getMeters = protectedProcedure.handler(async ({ context }) =>
 );
 
 export const getMeterById = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idInputSchema)
    .handler(async ({ context, input }) =>
       (await ensureMeterOwnership(context.db, input.id, context.teamId)).match(
          (meter) => meter,
@@ -512,7 +481,7 @@ export const getMeterById = protectedProcedure
    );
 
 export const updateMeterById = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }).merge(updateMeterSchema))
+   .input(updateMeterInputSchema)
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
       return (
@@ -528,7 +497,7 @@ export const updateMeterById = protectedProcedure
    });
 
 export const removeMeter = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idInputSchema)
    .handler(async ({ context, input }) =>
       (
          await ensureMeterOwnership(
@@ -568,7 +537,7 @@ export const getBenefits = protectedProcedure.handler(async ({ context }) => {
 });
 
 export const getBenefitById = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idInputSchema)
    .handler(async ({ context, input }) =>
       (
          await ensureBenefitOwnership(context.db, input.id, context.teamId)
@@ -581,7 +550,7 @@ export const getBenefitById = protectedProcedure
    );
 
 export const updateBenefitById = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }).merge(updateBenefitSchema))
+   .input(updateBenefitInputSchema)
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
       return (
@@ -597,7 +566,7 @@ export const updateBenefitById = protectedProcedure
    });
 
 export const removeBenefit = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idInputSchema)
    .handler(async ({ context, input }) =>
       (
          await ensureBenefitOwnership(
@@ -614,12 +583,7 @@ export const removeBenefit = protectedProcedure
    );
 
 export const attachBenefit = protectedProcedure
-   .input(
-      z.object({
-         serviceId: z.string().uuid(),
-         benefitId: z.string().uuid(),
-      }),
-   )
+   .input(serviceBenefitLinkSchema)
    .handler(async ({ context, input }) =>
       (
          await ensureServiceOwnership(
@@ -650,12 +614,7 @@ export const attachBenefit = protectedProcedure
    );
 
 export const detachBenefit = protectedProcedure
-   .input(
-      z.object({
-         serviceId: z.string().uuid(),
-         benefitId: z.string().uuid(),
-      }),
-   )
+   .input(serviceBenefitLinkSchema)
    .handler(async ({ context, input }) =>
       (
          await ensureServiceOwnership(
@@ -678,7 +637,7 @@ export const detachBenefit = protectedProcedure
    );
 
 export const getServiceBenefits = protectedProcedure
-   .input(z.object({ serviceId: z.string().uuid() }))
+   .input(serviceIdInputSchema)
    .handler(async ({ context, input }) =>
       (
          await ensureServiceOwnership(
@@ -695,7 +654,7 @@ export const getServiceBenefits = protectedProcedure
    );
 
 export const getActiveCountByPrice = protectedProcedure
-   .input(z.object({ priceId: z.string().uuid() }))
+   .input(priceIdInputSchema)
    .handler(async ({ context, input }) => {
       const rows = await context.db
          .select({ count: count() })
@@ -732,9 +691,7 @@ export const addItem = protectedProcedure
    );
 
 export const updateItem = protectedProcedure
-   .input(
-      z.object({ id: z.string().uuid() }).merge(updateSubscriptionItemSchema),
-   )
+   .input(updateSubscriptionItemInputSchema)
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
       return (
@@ -752,7 +709,7 @@ export const updateItem = protectedProcedure
    });
 
 export const removeItem = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idInputSchema)
    .handler(async ({ context, input }) =>
       (
          await ensureSubscriptionItemOwnership(
@@ -769,7 +726,7 @@ export const removeItem = protectedProcedure
    );
 
 export const listItems = protectedProcedure
-   .input(z.object({ subscriptionId: z.string().uuid() }))
+   .input(subscriptionIdInputSchema)
    .handler(async ({ context, input }) =>
       (
          await ensureSubscriptionOwnership(

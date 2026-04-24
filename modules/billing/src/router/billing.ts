@@ -2,7 +2,10 @@ import { fromPromise } from "neverthrow";
 import { eventCatalog } from "@core/database/schemas/event-catalog";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
-import { z } from "zod";
+import {
+   getUsageSummaryInputSchema,
+   getCustomerPortalSessionInputSchema,
+} from "../contracts/billing";
 
 export const getEventCatalog = protectedProcedure.handler(
    async ({ context }) => {
@@ -23,7 +26,7 @@ export const getEventCatalog = protectedProcedure.handler(
 );
 
 export const getUsageSummary = protectedProcedure
-   .input(z.object({ customerId: z.string() }))
+   .input(getUsageSummaryInputSchema)
    .handler(async ({ context, input }) => {
       if (!context.hyprpayClient)
          throw WebAppError.internal("HyprPay não está configurado.");
@@ -41,7 +44,7 @@ export const getUsageSummary = protectedProcedure
    });
 
 export const getCustomerPortalSession = protectedProcedure
-   .input(z.object({ customerId: z.string() }))
+   .input(getCustomerPortalSessionInputSchema)
    .handler(async ({ context, input }) => {
       if (!context.hyprpayClient)
          throw WebAppError.internal("HyprPay não está configurado.");

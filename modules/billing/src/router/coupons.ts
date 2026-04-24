@@ -1,9 +1,5 @@
 import { WebAppError } from "@core/logging/errors";
 import {
-   createCouponSchema,
-   updateCouponSchema,
-} from "@core/database/schemas/coupons";
-import {
    createCoupon,
    ensureCouponOwnership,
    getCoupon,
@@ -12,8 +8,13 @@ import {
    updateCoupon,
 } from "@core/database/repositories/coupons-repository";
 import { protectedProcedure } from "@core/orpc/server";
-import { z } from "zod";
 import dayjs from "dayjs";
+import {
+   createCouponSchema,
+   getCouponInputSchema,
+   updateCouponInputSchema,
+   validateCouponInputSchema,
+} from "../contracts/coupons";
 
 export const list = protectedProcedure.handler(async ({ context }) =>
    (await listCoupons(context.db, context.teamId)).match(
@@ -25,7 +26,7 @@ export const list = protectedProcedure.handler(async ({ context }) =>
 );
 
 export const get = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(getCouponInputSchema)
    .handler(async ({ context, input }) => {
       (await ensureCouponOwnership(context.db, input.id, context.teamId)).match(
          () => {},
@@ -53,7 +54,7 @@ export const create = protectedProcedure
    );
 
 export const update = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }).merge(updateCouponSchema))
+   .input(updateCouponInputSchema)
    .handler(async ({ context, input }) => {
       (await ensureCouponOwnership(context.db, input.id, context.teamId)).match(
          () => {},
@@ -71,7 +72,7 @@ export const update = protectedProcedure
    });
 
 export const deactivate = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(getCouponInputSchema)
    .handler(async ({ context, input }) => {
       (await ensureCouponOwnership(context.db, input.id, context.teamId)).match(
          () => {},
@@ -90,12 +91,7 @@ export const deactivate = protectedProcedure
    });
 
 export const validate = protectedProcedure
-   .input(
-      z.object({
-         code: z.string().min(1),
-         priceId: z.string().uuid().optional(),
-      }),
-   )
+   .input(validateCouponInputSchema)
    .handler(async ({ context, input }) => {
       if (context.hyprpayClient) {
          const result = await context.hyprpayClient.coupons.validate({

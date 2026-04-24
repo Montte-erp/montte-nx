@@ -9,9 +9,13 @@
          "types": "./dist/router/index.d.ts",
          "default": "./dist/router/index.js"
       },
-      "./events": {
-         "types": "./dist/events.d.ts",
-         "default": "./dist/events.js"
+      "./contracts": {
+         "types": "./dist/contracts/index.d.ts",
+         "default": "./dist/contracts/index.js"
+      },
+      "./constants": {
+         "types": "./dist/constants.d.ts",
+         "default": "./dist/constants.js"
       }
    },
    "scripts": {
@@ -26,9 +30,11 @@
       "@core/database": "workspace:*",
       "@core/logging": "workspace:*",
       "@core/orpc": "workspace:*",
+      "@f-o-t/money": "catalog:fot",
       "@orpc/server": "catalog:orpc",
       "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",
+      "drizzle-zod": "catalog:database",
       "neverthrow": "catalog:validation",
       "zod": "catalog:validation"
    },
