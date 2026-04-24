@@ -8,7 +8,7 @@ import {
    vi,
 } from "vitest";
 import { call } from "@orpc/server";
-import { ok, err } from "neverthrow";
+import { okAsync, errAsync } from "neverthrow";
 import { setupTestDb } from "@core/database/testing/setup-test-db";
 import { seedTeam } from "@core/database/testing/factories";
 import { createTestContext } from "@core/orpc/testing/create-test-context";
@@ -103,7 +103,7 @@ describe("billing router", () => {
       it("returns hyprpay data on ok result", async () => {
          const hyprpayClient = createHyprpayMock();
          hyprpayClient.usage.list.mockReturnValueOnce(
-            Promise.resolve(ok([{ id: "evt_1" }])),
+            okAsync([{ id: "evt_1" }]),
          );
          const ctx = createTestContext(testDb.db, {
             extras: { hyprpayClient },
@@ -122,7 +122,7 @@ describe("billing router", () => {
       it("throws INTERNAL when hyprpay returns err result", async () => {
          const hyprpayClient = createHyprpayMock();
          hyprpayClient.usage.list.mockReturnValueOnce(
-            Promise.resolve(err(new Error("boom"))),
+            errAsync(new Error("boom")),
          );
          const ctx = createTestContext(testDb.db, {
             extras: { hyprpayClient },
@@ -144,9 +144,7 @@ describe("billing router", () => {
       it("returns session data on ok result", async () => {
          const hyprpayClient = createHyprpayMock();
          hyprpayClient.customerPortal.createSession.mockReturnValueOnce(
-            Promise.resolve(
-               ok({ url: "https://billing.hyprpay.dev/session/abc" }),
-            ),
+            okAsync({ url: "https://billing.hyprpay.dev/session/abc" }),
          );
          const ctx = createTestContext(testDb.db, {
             extras: { hyprpayClient },
@@ -167,7 +165,7 @@ describe("billing router", () => {
       it("throws INTERNAL when hyprpay returns err result", async () => {
          const hyprpayClient = createHyprpayMock();
          hyprpayClient.customerPortal.createSession.mockReturnValueOnce(
-            Promise.resolve(err(new Error("boom"))),
+            errAsync(new Error("boom")),
          );
          const ctx = createTestContext(testDb.db, {
             extras: { hyprpayClient },
