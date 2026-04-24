@@ -122,6 +122,38 @@ const usageEventSchema = z.object({
    timestamp: z.string(),
 });
 
+const benefitGrantSchema = z.object({
+   id: z.string(),
+   benefitId: z.string(),
+   subscriptionId: z.string(),
+   status: z.enum(["active", "revoked"]),
+   grantedAt: z.string(),
+   revokedAt: z.string().nullable(),
+   benefit: z.object({
+      id: z.string(),
+      name: z.string(),
+      type: z.enum(["credits", "feature_access", "custom"]),
+      description: z.string().nullable(),
+   }),
+});
+
+const benefitsContract = {
+   check: oc
+      .input(z.object({ customerId: z.string(), benefitId: z.string() }))
+      .output(
+         z.object({
+            status: z.enum(["granted", "revoked", "not_found"]),
+            grantedAt: z.string().nullable(),
+            revokedAt: z.string().nullable(),
+            subscriptionId: z.string().nullable(),
+         }),
+      ),
+
+   list: oc
+      .input(z.object({ customerId: z.string() }))
+      .output(z.array(benefitGrantSchema)),
+};
+
 const usageContract = {
    ingest: oc
       .input(
@@ -179,6 +211,7 @@ export const hyprpayContract = {
 
    subscriptions: subscriptionsContract,
    usage: usageContract,
+   benefits: benefitsContract,
 };
 
 export type HyprPayUsageEventFromContract = z.infer<typeof usageEventSchema>;
@@ -188,4 +221,7 @@ export type HyprPaySubscriptionFromContract = z.infer<
 >;
 export type HyprPaySubscriptionItemFromContract = z.infer<
    typeof subscriptionItemSchema
+>;
+export type HyprPayBenefitGrantFromContract = z.infer<
+   typeof benefitGrantSchema
 >;

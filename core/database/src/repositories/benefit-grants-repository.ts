@@ -1,9 +1,11 @@
 import { AppError } from "@core/logging/errors";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { fromPromise, ok } from "neverthrow";
 import dayjs from "dayjs";
 import type { DatabaseInstance } from "@core/database/client";
 import { benefitGrants } from "@core/database/schemas/benefit-grants";
+import { benefits } from "@core/database/schemas/benefits";
+import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 
 export function grantBenefits(
    db: DatabaseInstance,
@@ -62,6 +64,43 @@ export function listGrantsBySubscription(
       }),
       (e) =>
          AppError.database("Falha ao listar concessões de benefícios.", {
+            cause: e,
+         }),
+   );
+}
+
+export function listGrantsWithBenefitsByContact(
+   db: DatabaseInstance,
+   teamId: string,
+   contactId: string,
+) {
+   return fromPromise(
+      (async () => {
+         const subs = await db
+            .select({ id: contactSubscriptions.id })
+            .from(contactSubscriptions)
+            .where(
+               and(
+                  eq(contactSubscriptions.contactId, contactId),
+                  eq(contactSubscriptions.teamId, teamId),
+               ),
+            );
+
+         if (subs.length === 0) return [];
+
+         const subIds = subs.map((s) => s.id);
+
+         return db
+            .select({
+               grant: benefitGrants,
+               benefit: benefits,
+            })
+            .from(benefitGrants)
+            .innerJoin(benefits, eq(benefitGrants.benefitId, benefits.id))
+            .where(inArray(benefitGrants.subscriptionId, subIds));
+      })(),
+      (e) =>
+         AppError.database("Falha ao buscar concessões de benefícios.", {
             cause: e,
          }),
    );
