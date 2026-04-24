@@ -2,7 +2,7 @@
    "extends": "@tooling/typescript/core.json",
    "compilerOptions": {
       "paths": {
-         "@core/authentication/*": ["../../core/authentication/src/*"],
+         "@core/authentication/*": ["../../core/authentication/dist/*"],
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],
          "@core/environment/*": ["../../core/environment/src/*"],
@@ -17,7 +17,6 @@
       }
    },
    "references": [
-      { "path": "../authentication" },
       { "path": "../database" },
       { "path": "../environment" },
       { "path": "../logging" },
