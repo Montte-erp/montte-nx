@@ -23,7 +23,7 @@
       "format": "oxfmt --write ./src",
       "format:check": "oxfmt --check ./src",
       "test": "vitest run --passWithNoTests",
-      "typecheck": "tsgo",
+      "typecheck": "tsc --noEmit",
       "auth-schema-generate": "dotenv -e ../../apps/web/.env.local -- npx auth generate --config ./src/cli-config.ts --output ../database/src/schemas/auth.ts"
    },
    "dependencies": {
@@ -37,6 +37,7 @@
       "@core/redis": "workspace:*",
       "@core/stripe": "workspace:*",
       "@core/transactional": "workspace:*",
+      "@montte/hyprpay": "workspace:*",
       "better-auth": "catalog:auth",
       "react": "catalog:react",
       "react-dom": "catalog:react"

@@ -1,5 +1,6 @@
 import { apiKey } from "@better-auth/api-key";
 import { stripe as stripePlugin } from "@better-auth/stripe";
+import { hyprpay } from "@montte/hyprpay/better-auth";
 import { findMemberByUserId } from "@core/database/repositories/auth-repository";
 import * as schema from "@core/database/schema";
 import { getDomain, isProduction } from "@core/environment/helpers";
@@ -453,6 +454,7 @@ export function createAuth(deps: CreateAuthDeps) {
             },
          }),
 
+         hyprpay(),
          tanstackStartCookies(),
       ],
    });
