@@ -3,6 +3,7 @@ import * as subscriptions from "./subscriptions";
 import * as usage from "./usage";
 import * as benefits from "./benefits";
 import * as coupons from "./coupons";
+import * as customerPortal from "./customer-portal";
 
 export default {
    create,
@@ -13,4 +14,5 @@ export default {
    usage,
    benefits,
    coupons,
+   customerPortal,
 };

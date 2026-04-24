@@ -7,6 +7,7 @@ export const env = createEnv({
       REDIS_URL: z.url().optional().default("redis://localhost:6379"),
 
       BETTER_AUTH_SECRET: z.string().min(32),
+      JWT_SECRET: z.string().min(32),
       BETTER_AUTH_URL: z.url().optional().default("http://localhost:3000"),
       BETTER_AUTH_TRUSTED_ORIGINS: z.string(),
       BETTER_AUTH_GOOGLE_CLIENT_ID: z.string(),

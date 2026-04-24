@@ -79,6 +79,7 @@
       "drizzle-orm": "catalog:database",
       "drizzle-zod": "catalog:database",
       "foxact": "catalog:ui",
+      "jose": "^6.2.1",
       "lucide-react": "catalog:ui",
       "neverthrow": "^8.1.1",
       "posthog-js": "catalog:analytics-client",

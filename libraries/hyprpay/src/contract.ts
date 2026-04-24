@@ -208,6 +208,12 @@ const couponsContract = {
       ),
 };
 
+const customerPortalContract = {
+   createSession: oc
+      .input(z.object({ customerId: z.string() }))
+      .output(z.object({ url: z.string(), expiresAt: z.string() })),
+};
+
 export const hyprpayContract = {
    create: oc
       .input(
@@ -247,6 +253,7 @@ export const hyprpayContract = {
    usage: usageContract,
    benefits: benefitsContract,
    coupons: couponsContract,
+   customerPortal: customerPortalContract,
 };
 
 export type HyprPayUsageEventFromContract = z.infer<typeof usageEventSchema>;
