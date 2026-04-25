@@ -1,21 +1,25 @@
 import type { DatabaseInstance } from "@core/database/client";
 import { vi } from "vitest";
 
-// Consumer pattern (vi.mock must appear literally in the test file so vitest
-// hoists it above imports):
+// Consumer pattern — `vi.hoisted` runs ABOVE imports, so use the async form
+// and re-import this module inside each factory:
 //
 //    import { vi } from "vitest";
-//    import {
-//       createDbosMocks,
-//       dbosSdkMockFactory,
-//       drizzleDataSourceMockFactory,
-//    } from "@core/dbos/testing/mock-dbos";
 //
-//    const mocks = vi.hoisted(() => createDbosMocks());
-//    vi.mock("@dbos-inc/dbos-sdk", () => dbosSdkMockFactory(mocks));
-//    vi.mock("@dbos-inc/drizzle-datasource", () => drizzleDataSourceMockFactory(mocks));
+//    const dbosMocks = vi.hoisted(async () => {
+//       const mod = await import("@core/dbos/testing/mock-dbos");
+//       return mod.createDbosMocks();
+//    });
+//    vi.mock("@dbos-inc/dbos-sdk", async () => {
+//       const mod = await import("@core/dbos/testing/mock-dbos");
+//       return mod.dbosSdkMockFactory(await dbosMocks);
+//    });
+//    vi.mock("@dbos-inc/drizzle-datasource", async () => {
+//       const mod = await import("@core/dbos/testing/mock-dbos");
+//       return mod.drizzleDataSourceMockFactory(await dbosMocks);
+//    });
 //
-//    // workflow imports go here
+//    // workflow imports go here. In hooks, await dbosMocks before .setActiveDb().
 
 export type DbosMocks = {
    runStepSpy: ReturnType<typeof vi.fn>;
