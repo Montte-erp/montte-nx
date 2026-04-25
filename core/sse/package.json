@@ -23,6 +23,10 @@
       "./subscriber": {
          "types": "./dist/subscriber.d.ts",
          "default": "./dist/subscriber.js"
+      },
+      "./define": {
+         "types": "./dist/define.d.ts",
+         "default": "./dist/define.js"
       }
    },
    "scripts": {
