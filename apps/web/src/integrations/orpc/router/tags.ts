@@ -11,7 +11,10 @@ import {
    reactivateTag,
    updateTag,
 } from "@core/database/repositories/tags-repository";
-import { createTagSchema, updateTagSchema } from "@core/database/schemas/tags";
+import {
+   createTagSchema,
+   updateTagSchema,
+} from "@modules/classification/contracts/tags";
 import { user as userTable } from "@core/database/schemas/auth";
 import { WebAppError } from "@core/logging/errors";
 import { eq } from "drizzle-orm";

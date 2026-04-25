@@ -14,7 +14,7 @@ import {
 import {
    createCategorySchema,
    updateCategorySchema,
-} from "@core/database/schemas/categories";
+} from "@modules/classification/contracts/categories";
 import { user as userTable } from "@core/database/schemas/auth";
 import { WebAppError } from "@core/logging/errors";
 import { eq } from "drizzle-orm";
