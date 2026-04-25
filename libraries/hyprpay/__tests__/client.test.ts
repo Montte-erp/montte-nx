@@ -56,6 +56,7 @@ describe("createHyprPayClient", () => {
          const err = result._unsafeUnwrapErr();
          expect(err).toBeInstanceOf(HyprPayError);
          expect(err.code).toBe("NOT_FOUND");
+         expect(err.message).toBe("not found");
       });
 
       it("wraps network errors", async () => {

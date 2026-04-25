@@ -3,7 +3,6 @@ import { RPCLink } from "@orpc/client/fetch";
 import type { ContractRouterClient } from "@orpc/contract";
 import { ResultAsync } from "neverthrow";
 import { hyprpayContract } from "./contract";
-import type { HyprPayCustomerFromContract as HyprPayCustomer } from "./contract";
 import { HyprPayError } from "./errors";
 import type {
    AddSubscriptionItemInput,
@@ -11,7 +10,6 @@ import type {
    CheckBenefitInput,
    CreateCustomerInput,
    CreateSubscriptionInput,
-   HyprPayListResult,
    IngestUsageInput,
    ListCustomersInput,
    ListUsageInput,
@@ -29,14 +27,22 @@ export interface HyprPayClientConfig {
 
 function mapToHyprPayError(err: unknown): HyprPayError {
    if (err instanceof HyprPayError) return err;
+
    if (err && typeof err === "object" && "status" in err) {
-      const status = Number((err as { status: number }).status);
-      const message = err instanceof Error ? err.message : "Unknown error";
+      const rawStatus = err.status;
+      const status =
+         typeof rawStatus === "number" ? rawStatus : Number(rawStatus);
+      const message =
+         "message" in err && typeof err.message === "string"
+            ? err.message
+            : "Unknown error";
       return HyprPayError.fromStatusCode(status, message);
    }
+
    if (err instanceof Error && err.message.toLowerCase().includes("timeout")) {
       return HyprPayError.timeout(err.message);
    }
+
    return HyprPayError.network(
       err instanceof Error ? err.message : "Network error",
    );
@@ -55,32 +61,25 @@ export function createHyprPayClient(config: HyprPayClientConfig) {
 
    return {
       customers: {
-         create(
-            input: CreateCustomerInput,
-         ): ResultAsync<HyprPayCustomer, HyprPayError> {
+         create(input: CreateCustomerInput) {
             return ResultAsync.fromPromise(
                orpc.create(input),
                mapToHyprPayError,
             );
          },
-         get(externalId: string): ResultAsync<HyprPayCustomer, HyprPayError> {
+         get(externalId: string) {
             return ResultAsync.fromPromise(
                orpc.get({ externalId }),
                mapToHyprPayError,
             );
          },
-         list(
-            input: ListCustomersInput = {},
-         ): ResultAsync<HyprPayListResult<HyprPayCustomer>, HyprPayError> {
+         list(input: ListCustomersInput = {}) {
             return ResultAsync.fromPromise(
                orpc.list({ page: input.page ?? 1, limit: input.limit ?? 20 }),
                mapToHyprPayError,
             );
          },
-         update(
-            externalId: string,
-            data: UpdateCustomerInput,
-         ): ResultAsync<HyprPayCustomer, HyprPayError> {
+         update(externalId: string, data: UpdateCustomerInput) {
             return ResultAsync.fromPromise(
                orpc.update({ externalId, ...data }),
                mapToHyprPayError,
