@@ -41,6 +41,8 @@ ls core/ai 2>/dev/null && echo EXISTS || echo OK   # must print OK (we'll create
 
 ## Task 0 — Update TanStack AI + OpenRouter catalog versions
 
+**Status:** ✅ Done. Bumped to `@tanstack/ai ^0.14.0`, `@tanstack/ai-react ^0.8.0`, `@tanstack/ai-openrouter ^0.8.2` (commit `18faa9b3`). A follow-up patch (commit `c6154656`) applies `bun patch @tanstack/ai-openrouter` to add `deepseek/deepseek-v4-pro` and `deepseek/deepseek-v4-flash` to `OPENROUTER_CHAT_MODELS` so `core/ai/src/models.ts` does not need `@ts-expect-error` directives. Patch file at `patches/@tanstack%2Fai-openrouter@0.8.2.patch`; auto-applied on `bun install` via `package.json` `patchedDependencies`. Self-heals — when upstream lands the IDs natively, the patch will fail to apply (signal to delete it).
+
 **Files:**
 - Modify: `package.json` — `pnpm.catalogs.tanstack-ai` block
 
@@ -156,13 +158,21 @@ Copy verbatim from `core/agents/src/middleware/posthog.ts`. Replace the inline `
 
 ```ts
 import { openRouterText } from "@tanstack/ai-openrouter";
-import { env } from "@core/environment/server";
 
-const apiKey = env.OPENROUTER_API_KEY;
+const serverURL = process.env.OPENROUTER_BASE_URL || undefined;
+const baseConfig = serverURL ? { serverURL } : undefined;
 
-export const proModel = openRouterText("deepseek/deepseek-v4-pro", { apiKey });
-export const flashModel = openRouterText("deepseek/deepseek-v4-flash", { apiKey });
+export const proModel = openRouterText("deepseek/deepseek-v4-pro", baseConfig);
+export const flashModel = openRouterText(
+   "deepseek/deepseek-v4-flash",
+   baseConfig,
+);
 ```
+
+Notes:
+- The `@tanstack/ai-openrouter` SDK reads `OPENROUTER_API_KEY` from `process.env` directly (`getOpenRouterApiKeyFromEnv`), so do NOT pass `apiKey` as a config option — the second arg is `Omit<SDKOptions, 'apiKey'>`. `@core/environment` is therefore NOT needed in `@core/ai`'s `dependencies`.
+- The `OPENROUTER_BASE_URL` env override exists so aimock-driven tests can point the SDK at a local mock server. Set the env BEFORE importing this module (e.g. via vitest `test.env` config) — the module reads `process.env` once at load time.
+- The deepseek IDs require the `@tanstack/ai-openrouter` patch from Task 0 (committed at `c6154656`). Without that patch, replace the model literals with `as` casts, OR use `// @ts-expect-error` directives placed on the line immediately before the model string (formatters split the call across lines).
 
 **Step 1.6 — Verify**
 
