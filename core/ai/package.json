@@ -24,6 +24,8 @@
    "scripts": {
       "build": "tsc --build",
       "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
       "typecheck": "tsgo"
    },
    "dependencies": {
