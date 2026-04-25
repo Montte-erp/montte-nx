@@ -805,6 +805,61 @@ describe("services router", () => {
          });
       });
 
+      it("createSubscription enqueues benefit-lifecycle for each unique item service", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const contact = await makeContact(testDb.db, { teamId });
+         const serviceA = await makeService(testDb.db, { teamId });
+         const priceA = await makePrice(testDb.db, {
+            teamId,
+            serviceId: serviceA.id,
+         });
+         const serviceB = await makeService(testDb.db, { teamId });
+         const priceB = await makePrice(testDb.db, {
+            teamId,
+            serviceId: serviceB.id,
+         });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+
+         const result = await call(
+            servicesRouter.createSubscription,
+            {
+               contactId: contact.id,
+               startDate: dayjs().format("YYYY-MM-DD"),
+               items: [
+                  { priceId: priceA.id, quantity: 1 },
+                  { priceId: priceB.id, quantity: 1 },
+               ],
+            },
+            { context: ctx },
+         );
+         await new Promise((r) => setImmediate(r));
+
+         expect(ctx.workflowClient.enqueue).toHaveBeenCalledTimes(2);
+         expect(ctx.workflowClient.enqueue).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({
+               teamId,
+               subscriptionId: result.id,
+               serviceId: serviceA.id,
+               newStatus: "active",
+            }),
+         );
+         expect(ctx.workflowClient.enqueue).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({
+               teamId,
+               subscriptionId: result.id,
+               serviceId: serviceB.id,
+               newStatus: "active",
+            }),
+         );
+         expect(result.status).toBe("active");
+      });
+
       it("createSubscription throws NOT_FOUND for cross-team contact", async () => {
          const { teamId: otherTeamId } = await seedTeam(testDb.db);
          const otherContact = await makeContact(testDb.db, {
