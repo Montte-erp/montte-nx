@@ -169,6 +169,19 @@
         "typescript": "catalog:development",
       },
     },
+    "core/ai": {
+      "name": "@core/ai",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/posthog": "workspace:*",
+        "@tanstack/ai": "catalog:tanstack-ai",
+        "@tanstack/ai-openrouter": "catalog:tanstack-ai",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
+        "typescript": "catalog:development",
+      },
+    },
     "core/authentication": {
       "name": "@core/authentication",
       "version": "0.8.1",
@@ -1099,6 +1112,8 @@
     "@commitlint/types": ["@commitlint/types@20.5.0", "", { "dependencies": { "conventional-commits-parser": "^6.3.0", "picocolors": "^1.1.1" } }, "sha512-ZJoS8oSq2CAZEpc/YI9SulLrdiIyXeHb/OGqGrkUP6Q7YV+0ouNAa7GjqRdXeQPncHQIDz/jbCTlHScvYvO/gA=="],
 
     "@core/agents": ["@core/agents@workspace:core/agents"],
+
+    "@core/ai": ["@core/ai@workspace:core/ai"],
 
     "@core/authentication": ["@core/authentication@workspace:core/authentication"],
 

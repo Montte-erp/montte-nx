@@ -46,6 +46,9 @@
          "path": "./core/agents"
       },
       {
+         "path": "./core/ai"
+      },
+      {
          "path": "./core/dbos"
       },
       {
