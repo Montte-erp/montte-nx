@@ -4,6 +4,8 @@
       "composite": false,
       "declaration": false,
       "declarationMap": false,
+      "noEmit": true,
+      "jsx": "react-jsx",
       "paths": {
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],
@@ -18,15 +20,5 @@
          "@packages/notifications/*": ["../../packages/notifications/src/*"]
       }
    },
-   "references": [
-      { "path": "../../core/database" },
-      { "path": "../../core/dbos" },
-      { "path": "../../core/environment" },
-      { "path": "../../core/logging" },
-      { "path": "../../core/redis" },
-      { "path": "../../core/transactional" },
-      { "path": "../../packages/events" },
-      { "path": "../../packages/notifications" }
-   ],
    "include": ["src"]
 }

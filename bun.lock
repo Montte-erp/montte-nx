@@ -458,6 +458,7 @@
         "@dbos-inc/dbos-sdk": "catalog:workers",
         "@dbos-inc/drizzle-datasource": "catalog:workers",
         "@f-o-t/money": "catalog:fot",
+        "@montte/hyprpay": "workspace:*",
         "@orpc/server": "catalog:orpc",
         "@packages/notifications": "workspace:*",
         "@tanstack/store": "catalog:tanstack",

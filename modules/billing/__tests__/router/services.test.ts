@@ -31,6 +31,7 @@ import {
    makeSubscriptionItem,
 } from "../helpers/billing-factories";
 import { createHyprpayMock } from "../helpers/hyprpay-mock";
+import "../helpers/mock-billing-context";
 
 vi.mock("@core/orpc/server", async () =>
    (await import("@core/orpc/testing/mock-server")).createMockServerModule(),

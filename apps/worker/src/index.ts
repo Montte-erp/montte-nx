@@ -7,7 +7,7 @@ import { createPostHog } from "@core/posthog/server";
 import { createStripeClient } from "@core/stripe";
 import { createResendClient } from "@core/transactional/utils";
 import { launchDBOS } from "@packages/workflows/setup";
-import { setupBillingWorkflows } from "@modules/billing/workflows";
+import { setupBillingWorkflows } from "@modules/billing/workflows/setup";
 
 initOtel({
    serviceName: "montte-worker",

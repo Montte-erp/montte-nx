@@ -17,9 +17,7 @@
          "@core/stripe": ["../../core/stripe/src/index.ts"],
          "@core/stripe/*": ["../../core/stripe/src/*"],
          "@core/transactional/*": ["../../core/transactional/dist/*"],
-         "@modules/billing/workflows": [
-            "../../modules/billing/src/workflows/setup.ts"
-         ],
+         "@modules/billing/*": ["../../modules/billing/src/*"],
          "@packages/workflows/*": ["../../packages/workflows/src/*"],
          "@packages/events/*": ["../../packages/events/src/*"],
          "@packages/notifications/*": ["../../packages/notifications/src/*"]

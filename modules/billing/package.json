@@ -5,25 +5,12 @@
    "license": "Apache-2.0",
    "type": "module",
    "exports": {
-      "./router/*": {
-         "types": "./dist/router/*.d.ts",
-         "default": "./dist/router/*.js"
-      },
-      "./contracts/*": {
-         "types": "./dist/contracts/*.d.ts",
-         "default": "./dist/contracts/*.js"
-      },
-      "./constants": {
-         "types": "./dist/constants.d.ts",
-         "default": "./dist/constants.js"
-      },
-      "./workflows": {
-         "types": "./dist/workflows/setup.d.ts",
-         "default": "./dist/workflows/setup.js"
-      }
+      "./router/*": "./src/router/*.ts",
+      "./contracts/*": "./src/contracts/*.ts",
+      "./workflows/*": "./src/workflows/*.ts",
+      "./*": "./src/*.ts"
    },
    "scripts": {
-      "build": "tsc --build",
       "check": "oxlint ./src",
       "format": "oxfmt --write ./src",
       "format:check": "oxfmt --check ./src",
@@ -41,6 +28,7 @@
       "@dbos-inc/dbos-sdk": "catalog:workers",
       "@dbos-inc/drizzle-datasource": "catalog:workers",
       "@f-o-t/money": "catalog:fot",
+      "@montte/hyprpay": "workspace:*",
       "@orpc/server": "catalog:orpc",
       "@packages/notifications": "workspace:*",
       "@tanstack/store": "catalog:tanstack",
