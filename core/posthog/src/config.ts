@@ -1,7 +1,6 @@
 export const POSTHOG_PROMPTS = {
-   categorizeTransaction: "montte-categorize-transaction",
+   classifyTransaction: "montte-classify-transaction",
    deriveKeywords: "montte-derive-keywords",
-   suggestTag: "montte-suggest-tag",
 } as const;
 
 export const FEATURE_FLAG_KEYS = [
