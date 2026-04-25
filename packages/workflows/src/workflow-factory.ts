@@ -7,10 +7,6 @@ export const QUEUES = {
    suggestTag: "suggest-tag",
    deriveKeywords: "derive-keywords",
    deriveTagKeywords: "derive-tag-keywords",
-   usageIngestion: "usage-ingestion",
-   benefitLifecycle: "benefit-lifecycle",
-   periodEndInvoice: "period-end-invoice",
-   trialExpiry: "trial-expiry",
 } as const;
 
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];

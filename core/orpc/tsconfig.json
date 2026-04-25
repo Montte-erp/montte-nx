@@ -17,8 +17,8 @@
          "@core/redis/*": ["../../core/redis/src/*"],
          "@core/transactional/*": ["../../core/transactional/src/*"],
          "@core/utils/*": ["../../core/utils/src/*"],
-         "@montte/hyprpay": ["../../libraries/hyprpay/dist/esm/src/index.d.ts"],
-         "@montte/hyprpay/*": ["../../libraries/hyprpay/dist/esm/src/*"],
+         "@montte/hyprpay": ["../../libraries/hyprpay/dist/esm/index.d.ts"],
+         "@montte/hyprpay/*": ["../../libraries/hyprpay/dist/esm/*"],
          "@packages/notifications/*": ["../../packages/notifications/src/*"]
       }
    },

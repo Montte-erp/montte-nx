@@ -15,31 +15,31 @@
    "exports": {
       ".": {
          "import": {
-            "types": "./dist/esm/src/index.d.ts",
+            "types": "./dist/esm/index.d.ts",
             "default": "./dist/esm/index.js"
          },
          "require": {
-            "types": "./dist/cjs/src/index.d.cts",
+            "types": "./dist/cjs/index.d.cts",
             "default": "./dist/cjs/index.cjs"
          }
       },
       "./better-auth": {
          "import": {
-            "types": "./dist/esm/src/better-auth/index.d.ts",
+            "types": "./dist/esm/better-auth/index.d.ts",
             "default": "./dist/esm/better-auth/index.js"
          },
          "require": {
-            "types": "./dist/cjs/src/better-auth/index.d.cts",
+            "types": "./dist/cjs/better-auth/index.d.cts",
             "default": "./dist/cjs/better-auth/index.cjs"
          }
       },
       "./contract": {
          "import": {
-            "types": "./dist/esm/src/contract.d.ts",
+            "types": "./dist/esm/contract.d.ts",
             "default": "./dist/esm/contract.js"
          },
          "require": {
-            "types": "./dist/cjs/src/contract.d.cts",
+            "types": "./dist/cjs/contract.d.cts",
             "default": "./dist/cjs/contract.cjs"
          }
       },
@@ -51,7 +51,7 @@
    "scripts": {
       "build": "vite build && bun run scripts/build-subpaths.ts && publint --strict",
       "test": "vitest run --passWithNoTests --exclude 'dist/**'",
-      "typecheck": "tsc"
+      "typecheck": "tsc --noEmit"
    },
    "dependencies": {
       "@orpc/client": "catalog:orpc",
