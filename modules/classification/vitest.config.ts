@@ -26,6 +26,8 @@ export default defineConfig({
          MINIO_ENDPOINT: "http://localhost:9000",
          NODE_ENV: "test",
          LOG_LEVEL: "error",
+         OPENROUTER_API_KEY: "mock",
+         OPENROUTER_BASE_URL: "http://127.0.0.1:14010/v1",
       },
    },
 });

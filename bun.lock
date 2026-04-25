@@ -520,6 +520,7 @@
         "zod": "catalog:validation",
       },
       "devDependencies": {
+        "@copilotkit/aimock": "^1.15.1",
         "@electric-sql/pglite": "^0.3.15",
         "@electric-sql/pglite-socket": "^0.0.20",
         "@tooling/typescript": "workspace:*",
@@ -1148,6 +1149,8 @@
     "@commitlint/parse": ["@commitlint/parse@20.5.0", "", { "dependencies": { "@commitlint/types": "^20.5.0", "conventional-changelog-angular": "^8.2.0", "conventional-commits-parser": "^6.3.0" } }, "sha512-SeKWHBMk7YOTnnEWUhx+d1a9vHsjjuo6Uo1xRfPNfeY4bdYFasCH1dDpAv13Lyn+dDPOels+jP6D2GRZqzc5fA=="],
 
     "@commitlint/types": ["@commitlint/types@20.5.0", "", { "dependencies": { "conventional-commits-parser": "^6.3.0", "picocolors": "^1.1.1" } }, "sha512-ZJoS8oSq2CAZEpc/YI9SulLrdiIyXeHb/OGqGrkUP6Q7YV+0ouNAa7GjqRdXeQPncHQIDz/jbCTlHScvYvO/gA=="],
+
+    "@copilotkit/aimock": ["@copilotkit/aimock@1.15.1", "", { "peerDependencies": { "jest": ">=29", "vitest": ">=3" }, "optionalPeers": ["jest", "vitest"], "bin": { "aimock": "dist/aimock-cli.js", "llmock": "dist/cli.js" } }, "sha512-DG9p6fKdYmuTW0zaUe9iDbgB/CM3SWhpdhVBrszQ6+L2UW4+DZB0gvICFQXRWhVXMpqxEkI9Pqhm/MtMb8li9A=="],
 
     "@core/agents": ["@core/agents@workspace:core/agents"],
 
