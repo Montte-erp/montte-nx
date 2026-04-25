@@ -711,6 +711,9 @@
     "@tailwindcss/oxide",
     "protobufjs",
   ],
+  "patchedDependencies": {
+    "@tanstack/ai-openrouter@0.8.2": "patches/@tanstack%2Fai-openrouter@0.8.2.patch",
+  },
   "catalogs": {
     "analytics-client": {
       "posthog-js": "^1.369.3",
