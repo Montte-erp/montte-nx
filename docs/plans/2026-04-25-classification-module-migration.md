@@ -356,6 +356,8 @@ git commit -m "feat(modules/classification): scaffold package mirroring @modules
 
 ## Task 5 — Move Zod contracts (categories + tags)
 
+**Status:** ✅ Done (commit `27d0b3a2`). Plan deviation: Option A — Zod schemas physically stay in `core/database/src/schemas/{categories,tags}.ts`; `modules/classification/src/contracts/{categories,tags}.ts` are pure re-exports. Avoids a circular dep (classification re-imports the Drizzle table from `@core/database`, so a back-compat re-export from `@core/database` to `@modules/classification` would close the cycle). Apps/web routers updated to canonical path `@modules/classification/contracts/*`. Validators test moved. Task 14 will physically relocate the Zod source once the repos in `core/database` are deleted.
+
 **Files:**
 - Create: `modules/classification/src/contracts/categories.ts`
 - Create: `modules/classification/src/contracts/tags.ts`
@@ -533,6 +535,8 @@ git commit -m "feat(classification): add classificationDataSource + workflow con
 **Files:**
 - Create: `modules/classification/src/ai/classify.ts`
 - Create: `modules/classification/__tests__/ai/classify.test.ts`
+
+**Testing AI actions (applies to Tasks 7, 8):** use [aimock](https://github.com/CopilotKit/aimock) (live demo: https://aimock.copilotkit.dev/) to fake OpenRouter responses. Prefer mocking the LLM at the HTTP boundary via aimock over `vi.mock("@tanstack/ai", ...)` where practical — gives realistic streaming + tool-call shapes. The `vi.mock` snippets below remain valid as a fallback for unit tests that just need a stubbed `chat()` return.
 
 **Step 7.1 — Write the failing test**
 
