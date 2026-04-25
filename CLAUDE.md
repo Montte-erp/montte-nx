@@ -428,6 +428,8 @@ export async function setupBillingWorkflows(deps: { redis, resendClient, workerC
 
 **Workflow testing — mock `@dbos-inc/dbos-sdk`** (DBOS's official unit-test pattern). Use `vi.hoisted` + `dbosSdkMockFactory` / `drizzleDataSourceMockFactory` from `@core/dbos/testing/mock-dbos`. Critical: `registerWorkflow` must return the function directly (not the durable wrapper). pglite-backed `setupTestDb()` runs the real schema in-memory for assertions. For time-mocked end-to-end runs, `vi.useFakeTimers()` + `vi.setSystemTime(T0)` and invoke the workflow function directly — `DBOS.startWorkflow` mock captures the next-period enqueue with `delaySeconds`, no real wait. See `__tests__/workflows/period-end-invoice.test.ts` for an example.
 
+**Workflow integration smoke** — `__tests__/integration/dbos-smoke.test.ts` boots a real DBOS runtime against an in-memory pglite Postgres exposed via `@electric-sql/pglite-socket` (TCP server). Validates that `enqueueOptions.delaySeconds` actually fires under the real durable runtime — no docker, no external Postgres. Run via `bunx nx run @modules/billing:test` like any other test.
+
 Single agent `rubiAgent`:
 
 ```typescript
