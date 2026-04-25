@@ -9,14 +9,19 @@ import {
 } from "vitest";
 import { call } from "@orpc/server";
 import dayjs from "dayjs";
-import { eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { setupTestDb } from "@core/database/testing/setup-test-db";
 import { seedTeam } from "@core/database/testing/factories";
 import { createTestContext } from "@core/orpc/testing/create-test-context";
 import { servicePrices, services } from "@core/database/schemas/services";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 import { categories } from "@core/database/schemas/categories";
+import { meters } from "@core/database/schemas/meters";
+import { benefits, serviceBenefits } from "@core/database/schemas/benefits";
+import { usageEvents } from "@core/database/schemas/usage-events";
 import {
+   attachBenefit,
+   makeBenefit,
    makeContact,
    makeMeter,
    makePrice,
@@ -979,6 +984,585 @@ describe("services router", () => {
          });
          const ids = result.map((r) => r.id).sort();
          expect(ids).toEqual([subToday.id, subTen.id].sort());
+      });
+   });
+
+   describe("meters", () => {
+      it("createMeter inserts row with teamId", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            servicesRouter.createMeter,
+            {
+               name: "Medidor Novo",
+               eventName: "billing.test_event",
+               aggregation: "sum",
+            },
+            { context: ctx },
+         );
+         expect(result.teamId).toBe(teamId);
+         expect(result.name).toBe("Medidor Novo");
+         expect(result.eventName).toBe("billing.test_event");
+      });
+
+      it("getMeters returns only current team's meters ordered by name asc", async () => {
+         const { teamId: teamA } = await seedTeam(testDb.db);
+         const { teamId: teamB } = await seedTeam(testDb.db);
+         await makeMeter(testDb.db, { teamId: teamA, name: "Beta" });
+         await makeMeter(testDb.db, { teamId: teamA, name: "Alpha" });
+         await makeMeter(testDb.db, { teamId: teamB, name: "OutroTime" });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId: teamA,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(servicesRouter.getMeters, undefined, {
+            context: ctx,
+         });
+         expect(result).toHaveLength(2);
+         expect(result.map((m) => m.name)).toEqual(["Alpha", "Beta"]);
+      });
+
+      it("getMeterById returns meter on happy path", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const meter = await makeMeter(testDb.db, { teamId });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            servicesRouter.getMeterById,
+            { id: meter.id },
+            { context: ctx },
+         );
+         expect(result.id).toBe(meter.id);
+      });
+
+      it("getMeterById throws NOT_FOUND for cross-team meter", async () => {
+         const { teamId: otherTeamId } = await seedTeam(testDb.db);
+         const meter = await makeMeter(testDb.db, { teamId: otherTeamId });
+         const { teamId } = await seedTeam(testDb.db);
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         await expect(
+            call(
+               servicesRouter.getMeterById,
+               { id: meter.id },
+               { context: ctx },
+            ),
+         ).rejects.toSatisfy(
+            (e: Error & { code?: string }) => e.code === "NOT_FOUND",
+         );
+      });
+
+      it("updateMeterById flips isActive and persists", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const meter = await makeMeter(testDb.db, { teamId });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            servicesRouter.updateMeterById,
+            { id: meter.id, isActive: false },
+            { context: ctx },
+         );
+         expect(result.isActive).toBe(false);
+
+         const [persisted] = await testDb.db
+            .select()
+            .from(meters)
+            .where(eq(meters.id, meter.id));
+         expect(persisted?.isActive).toBe(false);
+      });
+
+      it("updateMeterById throws NOT_FOUND for cross-team meter", async () => {
+         const { teamId: otherTeamId } = await seedTeam(testDb.db);
+         const meter = await makeMeter(testDb.db, { teamId: otherTeamId });
+         const { teamId } = await seedTeam(testDb.db);
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         await expect(
+            call(
+               servicesRouter.updateMeterById,
+               { id: meter.id, isActive: false },
+               { context: ctx },
+            ),
+         ).rejects.toSatisfy(
+            (e: Error & { code?: string }) => e.code === "NOT_FOUND",
+         );
+      });
+
+      it("removeMeter deletes the meter row", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const meter = await makeMeter(testDb.db, { teamId });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            servicesRouter.removeMeter,
+            { id: meter.id },
+            { context: ctx },
+         );
+         expect(result).toEqual({ success: true });
+
+         const rows = await testDb.db
+            .select()
+            .from(meters)
+            .where(eq(meters.id, meter.id));
+         expect(rows).toHaveLength(0);
+      });
+
+      it("removeMeter throws NOT_FOUND for cross-team meter", async () => {
+         const { teamId: otherTeamId } = await seedTeam(testDb.db);
+         const meter = await makeMeter(testDb.db, { teamId: otherTeamId });
+         const { teamId } = await seedTeam(testDb.db);
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         await expect(
+            call(
+               servicesRouter.removeMeter,
+               { id: meter.id },
+               { context: ctx },
+            ),
+         ).rejects.toSatisfy(
+            (e: Error & { code?: string }) => e.code === "NOT_FOUND",
+         );
+      });
+   });
+
+   describe("benefits", () => {
+      it("createBenefit inserts row with teamId", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            servicesRouter.createBenefit,
+            {
+               name: "Acesso Premium",
+               type: "feature_access",
+            },
+            { context: ctx },
+         );
+         expect(result.teamId).toBe(teamId);
+         expect(result.name).toBe("Acesso Premium");
+         expect(result.type).toBe("feature_access");
+      });
+
+      it("getBenefits returns aggregated usedInServices count", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const benefit = await makeBenefit(testDb.db, {
+            teamId,
+            name: "Bundle",
+         });
+         const serviceA = await makeService(testDb.db, { teamId });
+         const serviceB = await makeService(testDb.db, { teamId });
+         await attachBenefit(testDb.db, {
+            serviceId: serviceA.id,
+            benefitId: benefit.id,
+         });
+         await attachBenefit(testDb.db, {
+            serviceId: serviceB.id,
+            benefitId: benefit.id,
+         });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(servicesRouter.getBenefits, undefined, {
+            context: ctx,
+         });
+         expect(result).toHaveLength(1);
+         expect(result[0]?.id).toBe(benefit.id);
+         expect(result[0]?.usedInServices).toBe(2);
+      });
+
+      it("getBenefitById returns benefit on happy path", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const benefit = await makeBenefit(testDb.db, { teamId });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            servicesRouter.getBenefitById,
+            { id: benefit.id },
+            { context: ctx },
+         );
+         expect(result.id).toBe(benefit.id);
+      });
+
+      it("getBenefitById throws NOT_FOUND for cross-team benefit", async () => {
+         const { teamId: otherTeamId } = await seedTeam(testDb.db);
+         const benefit = await makeBenefit(testDb.db, { teamId: otherTeamId });
+         const { teamId } = await seedTeam(testDb.db);
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         await expect(
+            call(
+               servicesRouter.getBenefitById,
+               { id: benefit.id },
+               { context: ctx },
+            ),
+         ).rejects.toSatisfy(
+            (e: Error & { code?: string }) => e.code === "NOT_FOUND",
+         );
+      });
+
+      it("updateBenefitById changes name and persists", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const benefit = await makeBenefit(testDb.db, {
+            teamId,
+            name: "Antigo",
+         });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            servicesRouter.updateBenefitById,
+            { id: benefit.id, name: "Novo" },
+            { context: ctx },
+         );
+         expect(result.name).toBe("Novo");
+
+         const [persisted] = await testDb.db
+            .select()
+            .from(benefits)
+            .where(eq(benefits.id, benefit.id));
+         expect(persisted?.name).toBe("Novo");
+      });
+
+      it("updateBenefitById throws NOT_FOUND for cross-team benefit", async () => {
+         const { teamId: otherTeamId } = await seedTeam(testDb.db);
+         const benefit = await makeBenefit(testDb.db, { teamId: otherTeamId });
+         const { teamId } = await seedTeam(testDb.db);
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         await expect(
+            call(
+               servicesRouter.updateBenefitById,
+               { id: benefit.id, name: "Hack" },
+               { context: ctx },
+            ),
+         ).rejects.toSatisfy(
+            (e: Error & { code?: string }) => e.code === "NOT_FOUND",
+         );
+      });
+
+      it("removeBenefit deletes the benefit row", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const benefit = await makeBenefit(testDb.db, { teamId });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            servicesRouter.removeBenefit,
+            { id: benefit.id },
+            { context: ctx },
+         );
+         expect(result).toEqual({ success: true });
+
+         const rows = await testDb.db
+            .select()
+            .from(benefits)
+            .where(eq(benefits.id, benefit.id));
+         expect(rows).toHaveLength(0);
+      });
+
+      it("removeBenefit throws NOT_FOUND for cross-team benefit", async () => {
+         const { teamId: otherTeamId } = await seedTeam(testDb.db);
+         const benefit = await makeBenefit(testDb.db, { teamId: otherTeamId });
+         const { teamId } = await seedTeam(testDb.db);
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         await expect(
+            call(
+               servicesRouter.removeBenefit,
+               { id: benefit.id },
+               { context: ctx },
+            ),
+         ).rejects.toSatisfy(
+            (e: Error & { code?: string }) => e.code === "NOT_FOUND",
+         );
+      });
+
+      it("attachBenefit then detachBenefit, with idempotent re-attach", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const service = await makeService(testDb.db, { teamId });
+         const benefit = await makeBenefit(testDb.db, { teamId });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+
+         const first = await call(
+            servicesRouter.attachBenefit,
+            { serviceId: service.id, benefitId: benefit.id },
+            { context: ctx },
+         );
+         expect(first).toEqual({ success: true });
+
+         // Idempotent re-attach (onConflictDoNothing)
+         const second = await call(
+            servicesRouter.attachBenefit,
+            { serviceId: service.id, benefitId: benefit.id },
+            { context: ctx },
+         );
+         expect(second).toEqual({ success: true });
+
+         const linksAfterAttach = await testDb.db
+            .select()
+            .from(serviceBenefits)
+            .where(
+               and(
+                  eq(serviceBenefits.serviceId, service.id),
+                  eq(serviceBenefits.benefitId, benefit.id),
+               ),
+            );
+         expect(linksAfterAttach).toHaveLength(1);
+
+         const detach = await call(
+            servicesRouter.detachBenefit,
+            { serviceId: service.id, benefitId: benefit.id },
+            { context: ctx },
+         );
+         expect(detach).toEqual({ success: true });
+
+         const linksAfterDetach = await testDb.db
+            .select()
+            .from(serviceBenefits)
+            .where(
+               and(
+                  eq(serviceBenefits.serviceId, service.id),
+                  eq(serviceBenefits.benefitId, benefit.id),
+               ),
+            );
+         expect(linksAfterDetach).toHaveLength(0);
+      });
+
+      it("attachBenefit throws NOT_FOUND for cross-team service", async () => {
+         const { teamId: otherTeamId } = await seedTeam(testDb.db);
+         const otherService = await makeService(testDb.db, {
+            teamId: otherTeamId,
+         });
+         const { teamId } = await seedTeam(testDb.db);
+         const benefit = await makeBenefit(testDb.db, { teamId });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         await expect(
+            call(
+               servicesRouter.attachBenefit,
+               { serviceId: otherService.id, benefitId: benefit.id },
+               { context: ctx },
+            ),
+         ).rejects.toSatisfy(
+            (e: Error & { code?: string }) => e.code === "NOT_FOUND",
+         );
+      });
+
+      it("attachBenefit throws NOT_FOUND for cross-team benefit", async () => {
+         const { teamId: otherTeamId } = await seedTeam(testDb.db);
+         const otherBenefit = await makeBenefit(testDb.db, {
+            teamId: otherTeamId,
+         });
+         const { teamId } = await seedTeam(testDb.db);
+         const service = await makeService(testDb.db, { teamId });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         await expect(
+            call(
+               servicesRouter.attachBenefit,
+               { serviceId: service.id, benefitId: otherBenefit.id },
+               { context: ctx },
+            ),
+         ).rejects.toSatisfy(
+            (e: Error & { code?: string }) => e.code === "NOT_FOUND",
+         );
+      });
+
+      it("getServiceBenefits returns benefit rows for a service", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const service = await makeService(testDb.db, { teamId });
+         const benefitA = await makeBenefit(testDb.db, {
+            teamId,
+            name: "Alpha",
+         });
+         const benefitB = await makeBenefit(testDb.db, {
+            teamId,
+            name: "Beta",
+         });
+         await attachBenefit(testDb.db, {
+            serviceId: service.id,
+            benefitId: benefitA.id,
+         });
+         await attachBenefit(testDb.db, {
+            serviceId: service.id,
+            benefitId: benefitB.id,
+         });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            servicesRouter.getServiceBenefits,
+            { serviceId: service.id },
+            { context: ctx },
+         );
+         expect(result).toHaveLength(2);
+         const ids = result.map((b) => b.id).sort();
+         expect(ids).toEqual([benefitA.id, benefitB.id].sort());
+         // Returns benefit rows, not link rows — rows must have name
+         expect(result[0]?.name).toBeTruthy();
+      });
+   });
+
+   describe("usage", () => {
+      it("ingestUsage inserts a usage event row on happy path", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const meter = await makeMeter(testDb.db, { teamId });
+         const idempotencyKey = crypto.randomUUID();
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            servicesRouter.ingestUsage,
+            {
+               teamId,
+               meterId: meter.id,
+               quantity: "5",
+               idempotencyKey,
+            },
+            { context: ctx },
+         );
+         expect(result).toEqual({ success: true });
+
+         const rows = await testDb.db
+            .select()
+            .from(usageEvents)
+            .where(
+               and(
+                  eq(usageEvents.teamId, teamId),
+                  eq(usageEvents.idempotencyKey, idempotencyKey),
+               ),
+            );
+         expect(rows).toHaveLength(1);
+         expect(rows[0]?.meterId).toBe(meter.id);
+         expect(Number(rows[0]?.quantity)).toBe(5);
+      });
+
+      it("ingestUsage rejects with FORBIDDEN when input.teamId !== context.teamId", async () => {
+         const { teamId: otherTeamId } = await seedTeam(testDb.db);
+         const otherMeter = await makeMeter(testDb.db, {
+            teamId: otherTeamId,
+         });
+         const { teamId } = await seedTeam(testDb.db);
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         await expect(
+            call(
+               servicesRouter.ingestUsage,
+               {
+                  teamId: otherTeamId,
+                  meterId: otherMeter.id,
+                  quantity: "1",
+                  idempotencyKey: crypto.randomUUID(),
+               },
+               { context: ctx },
+            ),
+         ).rejects.toSatisfy(
+            (e: Error & { code?: string }) => e.code === "FORBIDDEN",
+         );
+      });
+
+      it("ingestUsage is idempotent — same idempotencyKey twice yields a single row", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const meter = await makeMeter(testDb.db, { teamId });
+         const idempotencyKey = crypto.randomUUID();
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const first = await call(
+            servicesRouter.ingestUsage,
+            {
+               teamId,
+               meterId: meter.id,
+               quantity: "1",
+               idempotencyKey,
+            },
+            { context: ctx },
+         );
+         expect(first).toEqual({ success: true });
+
+         const second = await call(
+            servicesRouter.ingestUsage,
+            {
+               teamId,
+               meterId: meter.id,
+               quantity: "9",
+               idempotencyKey,
+            },
+            { context: ctx },
+         );
+         expect(second).toEqual({ success: true });
+
+         const [row] = await testDb.db
+            .select({ count: count() })
+            .from(usageEvents)
+            .where(
+               and(
+                  eq(usageEvents.teamId, teamId),
+                  eq(usageEvents.idempotencyKey, idempotencyKey),
+               ),
+            );
+         expect(row?.count).toBe(1);
       });
    });
 });
