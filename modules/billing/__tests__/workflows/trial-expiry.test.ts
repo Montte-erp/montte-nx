@@ -56,8 +56,7 @@ beforeEach(async () => {
 });
 
 describe("trialExpiryWorkflow", () => {
-   it("warning + expiry happy path with contactEmail sends both emails and publishes warning + completed", async () => {
-      const mocks = await dbosMocks;
+   it("warning phase + expiry phase happy path with contactEmail sends both emails and publishes warning + completed", async () => {
       const { teamId } = await seedTeam(testDb.db);
       const contact = await makeContact(testDb.db, { teamId });
       const trialEndsAt = dayjs().add(5, "day").toISOString();
@@ -72,13 +71,19 @@ describe("trialExpiryWorkflow", () => {
          teamId,
          subscriptionId: sub.id,
          trialEndsAt,
+         phase: "warning",
          contactEmail: "cliente@example.com",
          contactName: "Cliente Teste",
       });
 
-      expect(mocks.sleepSpy).toHaveBeenCalledTimes(2);
-      const sleepArgs = mocks.sleepSpy.mock.calls.map((c) => c[0] as number);
-      expect(sleepArgs.every((ms) => ms > 0)).toBe(true);
+      await trialExpiryWorkflow({
+         teamId,
+         subscriptionId: sub.id,
+         trialEndsAt,
+         phase: "expiry",
+         contactEmail: "cliente@example.com",
+         contactName: "Cliente Teste",
+      });
 
       const publishCalls = billingPublisherSpy.mock.calls;
       const types = publishCalls.map(
@@ -120,6 +125,7 @@ describe("trialExpiryWorkflow", () => {
          teamId,
          subscriptionId: sub.id,
          trialEndsAt,
+         phase: "warning",
       });
 
       const startedCalls = billingPublisherSpy.mock.calls.filter(
@@ -135,7 +141,7 @@ describe("trialExpiryWorkflow", () => {
       expect(billingResendSpies.sendBillingTrialExpired).not.toHaveBeenCalled();
    });
 
-   it("flips trialing subscription to active at expiry", async () => {
+   it("flips trialing subscription to active at expiry phase", async () => {
       const { teamId } = await seedTeam(testDb.db);
       const contact = await makeContact(testDb.db, { teamId });
       const trialEndsAt = dayjs().add(5, "day").toISOString();
@@ -150,6 +156,7 @@ describe("trialExpiryWorkflow", () => {
          teamId,
          subscriptionId: sub.id,
          trialEndsAt,
+         phase: "expiry",
          contactEmail: "cliente@example.com",
       });
 
@@ -160,7 +167,7 @@ describe("trialExpiryWorkflow", () => {
       expect(row?.status).toBe("active");
    });
 
-   it("early-returns when subscription is already cancelled — no activation, no completed publish, no expired email", async () => {
+   it("expiry phase early-returns when subscription is already cancelled — no activation, no completed publish, no expired email", async () => {
       const { teamId } = await seedTeam(testDb.db);
       const contact = await makeContact(testDb.db, { teamId });
       const trialEndsAt = dayjs().add(5, "day").toISOString();
@@ -175,6 +182,7 @@ describe("trialExpiryWorkflow", () => {
          teamId,
          subscriptionId: sub.id,
          trialEndsAt,
+         phase: "expiry",
          contactEmail: "cliente@example.com",
       });
 
@@ -194,7 +202,7 @@ describe("trialExpiryWorkflow", () => {
       expect(billingResendSpies.sendBillingTrialExpired).not.toHaveBeenCalled();
    });
 
-   it("early-returns when subscription is already completed — no activation, no completed publish, no expired email", async () => {
+   it("expiry phase early-returns when subscription is already completed — no activation, no completed publish, no expired email", async () => {
       const { teamId } = await seedTeam(testDb.db);
       const contact = await makeContact(testDb.db, { teamId });
       const trialEndsAt = dayjs().add(5, "day").toISOString();
@@ -209,6 +217,7 @@ describe("trialExpiryWorkflow", () => {
          teamId,
          subscriptionId: sub.id,
          trialEndsAt,
+         phase: "expiry",
          contactEmail: "cliente@example.com",
       });
 
@@ -228,7 +237,7 @@ describe("trialExpiryWorkflow", () => {
       expect(billingResendSpies.sendBillingTrialExpired).not.toHaveBeenCalled();
    });
 
-   it("does not throw when subscription is missing — logs and early-returns", async () => {
+   it("expiry phase does not throw when subscription is missing — logs and early-returns", async () => {
       const { teamId } = await seedTeam(testDb.db);
       const trialEndsAt = dayjs().add(5, "day").toISOString();
       const missingId = crypto.randomUUID();
@@ -238,6 +247,7 @@ describe("trialExpiryWorkflow", () => {
             teamId,
             subscriptionId: missingId,
             trialEndsAt,
+            phase: "expiry",
             contactEmail: "cliente@example.com",
          }),
       ).resolves.toBeUndefined();
@@ -252,7 +262,7 @@ describe("trialExpiryWorkflow", () => {
       expect(billingResendSpies.sendBillingTrialExpired).not.toHaveBeenCalled();
    });
 
-   it("does not call sleepms with negative values when trialEndsAt is in the past", async () => {
+   it("warning phase still hands off to expiry phase when trialEndsAt is in the past — no DBOS.sleepms calls remain", async () => {
       const mocks = await dbosMocks;
       const { teamId } = await seedTeam(testDb.db);
       const contact = await makeContact(testDb.db, { teamId });
@@ -264,28 +274,65 @@ describe("trialExpiryWorkflow", () => {
          trialEndsAt: dayjs(trialEndsAt).toDate(),
       });
 
+      mocks.startWorkflowSpy.mockClear();
+
       await trialExpiryWorkflow({
          teamId,
          subscriptionId: sub.id,
          trialEndsAt,
+         phase: "warning",
          contactEmail: "cliente@example.com",
       });
 
-      const sleepArgs = mocks.sleepSpy.mock.calls.map((c) => c[0] as number);
-      expect(sleepArgs.every((ms) => ms > 0)).toBe(true);
+      expect(mocks.sleepSpy).not.toHaveBeenCalled();
+      expect(mocks.startWorkflowSpy).toHaveBeenCalledTimes(1);
+      const [params] = mocks.startWorkflowSpy.mock.calls[0] ?? [];
+      const enqueueOptions = (
+         params as { enqueueOptions: { delaySeconds: number } }
+      ).enqueueOptions;
+      expect(enqueueOptions.delaySeconds).toBe(0);
+   });
 
-      const [row] = await testDb.db
-         .select()
-         .from(contactSubscriptions)
-         .where(eq(contactSubscriptions.id, sub.id));
-      expect(row?.status).toBe("active");
+   it("warning phase enqueues expiry phase with delaySeconds≈4d", async () => {
+      const T0 = dayjs("2026-05-01T00:00:00Z");
+      vi.useFakeTimers();
+      vi.setSystemTime(T0.toDate());
+      const trialEndsAt = T0.add(7, "day").toISOString();
 
-      const completedCalls = billingPublisherSpy.mock.calls.filter(
-         (c) =>
-            (c[1] as { type: string; status: string }).type ===
-               NOTIFICATION_TYPES.BILLING_TRIAL_EXPIRING &&
-            (c[1] as { type: string; status: string }).status === "completed",
-      );
-      expect(completedCalls).toHaveLength(1);
+      const { teamId } = await seedTeam(testDb.db);
+      const contact = await makeContact(testDb.db, { teamId });
+      const sub = await makeSubscription(testDb.db, {
+         teamId,
+         contactId: contact.id,
+         status: "trialing",
+      });
+
+      const mocks = await dbosMocks;
+      mocks.startWorkflowSpy.mockClear();
+
+      await trialExpiryWorkflow({
+         teamId,
+         subscriptionId: sub.id,
+         trialEndsAt,
+         phase: "warning",
+      });
+
+      expect(mocks.startWorkflowSpy).toHaveBeenCalledTimes(1);
+      const [params, nextInput] = mocks.startWorkflowSpy.mock.calls[0] ?? [];
+      expect(params).toMatchObject({
+         workflowID: `trial-expiry-${sub.id}-expiry`,
+         queueName: "workflow:trial-expiry",
+         enqueueOptions: expect.objectContaining({
+            delaySeconds: expect.any(Number),
+         }),
+      });
+      expect(nextInput).toMatchObject({ phase: "expiry" });
+      const delay = (params as { enqueueOptions: { delaySeconds: number } })
+         .enqueueOptions.delaySeconds;
+      const expected = 7 * 86400;
+      expect(delay).toBeGreaterThanOrEqual(expected - 5);
+      expect(delay).toBeLessThanOrEqual(expected);
+
+      vi.useRealTimers();
    });
 });

@@ -1,4 +1,5 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
+import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
 import { eq } from "drizzle-orm";
 import dayjs from "dayjs";
@@ -26,6 +27,7 @@ export type TrialExpiryInput = {
    teamId: string;
    subscriptionId: string;
    trialEndsAt: string;
+   phase: "warning" | "expiry";
    contactEmail?: string;
    contactName?: string;
    emailFrom?: string;
@@ -33,51 +35,59 @@ export type TrialExpiryInput = {
 
 async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
    const publisher = getBillingPublisher();
-   const ctx = `[trial-expiry] sub=${input.subscriptionId} team=${input.teamId}`;
-   DBOS.logger.info(`${ctx} started trialEndsAt=${input.trialEndsAt}`);
+   const ctx = `[trial-expiry:${input.phase}] sub=${input.subscriptionId} team=${input.teamId}`;
+   DBOS.logger.info(`${ctx} running trialEndsAt=${input.trialEndsAt}`);
 
-   const msUntilWarning = dayjs(input.trialEndsAt)
-      .subtract(3, "day")
-      .diff(dayjs());
-   if (msUntilWarning > 0) await DBOS.sleepms(msUntilWarning);
+   if (input.phase === "warning") {
+      const warningResult = await fromPromise(
+         DBOS.runStep(
+            async () => {
+               const resendClient = getBillingResendClient();
+               const { contactEmail, contactName } = input;
 
-   const warningResult = await fromPromise(
-      DBOS.runStep(
-         async () => {
-            const resendClient = getBillingResendClient();
-            const { contactEmail, contactName } = input;
+               await publisher.publish("job.notification", {
+                  jobId: crypto.randomUUID(),
+                  timestamp: dayjs().toISOString(),
+                  type: NOTIFICATION_TYPES.BILLING_TRIAL_EXPIRING,
+                  status: "started",
+                  message: `Período de teste expira em 3 dias para assinatura ${input.subscriptionId}.`,
+                  teamId: input.teamId,
+                  payload: {
+                     subscriptionId: input.subscriptionId,
+                     daysLeft: 3,
+                  },
+               } satisfies JobNotification);
 
-            await publisher.publish("job.notification", {
-               jobId: crypto.randomUUID(),
-               timestamp: dayjs().toISOString(),
-               type: NOTIFICATION_TYPES.BILLING_TRIAL_EXPIRING,
-               status: "started",
-               message: `Período de teste expira em 3 dias para assinatura ${input.subscriptionId}.`,
-               teamId: input.teamId,
-               payload: { subscriptionId: input.subscriptionId, daysLeft: 3 },
-            } satisfies JobNotification);
-
-            if (contactEmail) {
-               await sendBillingTrialExpiryWarning(resendClient, {
-                  contactEmail,
-                  contactName,
-                  trialEndsAt: dayjs(input.trialEndsAt).format("DD/MM/YYYY"),
-                  from: input.emailFrom,
-               });
-            }
-         },
-         { name: "sendPreExpiryWarning" },
-      ),
-      (e) =>
-         WorkflowError.internal(
-            "Falha ao enviar aviso de expiração de trial.",
-            { cause: e },
+               if (contactEmail) {
+                  await sendBillingTrialExpiryWarning(resendClient, {
+                     contactEmail,
+                     contactName,
+                     trialEndsAt: dayjs(input.trialEndsAt).format("DD/MM/YYYY"),
+                     from: input.emailFrom,
+                  });
+               }
+            },
+            { name: "sendPreExpiryWarning" },
          ),
-   );
-   if (warningResult.isErr()) throw warningResult.error;
+         (e) =>
+            WorkflowError.internal(
+               "Falha ao enviar aviso de expiração de trial.",
+               { cause: e },
+            ),
+      );
+      if (warningResult.isErr()) throw warningResult.error;
 
-   const msUntilExpiry = dayjs(input.trialEndsAt).diff(dayjs());
-   if (msUntilExpiry > 0) await DBOS.sleepms(msUntilExpiry);
+      const delaySeconds = Math.max(
+         0,
+         Math.floor(dayjs(input.trialEndsAt).diff(dayjs()) / 1000),
+      );
+      await DBOS.startWorkflow(trialExpiryWorkflow, {
+         workflowID: `trial-expiry-${input.subscriptionId}-expiry`,
+         queueName: `workflow:${BILLING_QUEUES.trialExpiry}`,
+         enqueueOptions: { delaySeconds },
+      })({ ...input, phase: "expiry" });
+      return;
+   }
 
    const subscriptionResult = await fromPromise(
       billingDataSource.runTransaction(
@@ -232,8 +242,23 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
 
 export const trialExpiryWorkflow = DBOS.registerWorkflow(trialExpiryWorkflowFn);
 
-export const enqueueTrialExpiryWorkflow = createEnqueuer<TrialExpiryInput>(
+const enqueueTrialExpiryRaw = createEnqueuer<TrialExpiryInput>(
    trialExpiryWorkflowFn.name,
    BILLING_QUEUES.trialExpiry,
-   (i) => `trial-expiry-${i.subscriptionId}`,
+   (i) => `trial-expiry-${i.subscriptionId}-${i.phase}`,
 );
+
+export function enqueueTrialExpiryWorkflow(
+   client: DBOSClient,
+   input: Omit<TrialExpiryInput, "phase">,
+) {
+   const msUntilWarning = dayjs(input.trialEndsAt)
+      .subtract(3, "day")
+      .diff(dayjs());
+   const delaySeconds = Math.max(0, Math.floor(msUntilWarning / 1000));
+   return enqueueTrialExpiryRaw(
+      client,
+      { ...input, phase: "warning" },
+      { delaySeconds },
+   );
+}
