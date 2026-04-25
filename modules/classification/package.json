@@ -32,6 +32,7 @@
       "@core/stripe": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers",
       "@dbos-inc/drizzle-datasource": "catalog:workers",
+      "@f-o-t/condition-evaluator": "catalog:fot",
       "@orpc/server": "catalog:orpc",
       "@packages/events": "workspace:*",
       "@packages/notifications": "workspace:*",
