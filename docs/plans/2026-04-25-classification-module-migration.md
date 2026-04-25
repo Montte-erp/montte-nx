@@ -901,7 +901,16 @@ git commit -m "feat(classification/ai): deriveKeywords (entity-discriminated, pr
 
 ---
 
-## Task 9 — Add `notifications` types and helpers for new workflow shape
+## Task 9 — Define classification SSE events on the new `@core/sse` package
+
+**Status:** ✅ Done (commits `a85f6b97` + `b190ed6b`). Plan deviation: instead of extending `packages/notifications` with two more `NOTIFICATION_TYPES`, the SSE layer was redesigned. New `@core/sse` package owns scope-routed Redis pub/sub (channels `sse:user:<id>` / `sse:team:<id>` / `sse:org:<id>`). `defineSseEvents(defs)` factory lets each module declare its own typed event union; payload is Zod-validated at publish time. `packages/notifications` is now slated for full deletion in Task 17 — workflows publish through `classificationSseEvents.publish` directly (not `createJobPublisher`).
+
+**Classification events** (`modules/classification/src/sse/events.ts`):
+- `classification.transaction_classified` → `{ transactionId, categoryId, tagId | null }`
+- `classification.keywords_derived` → `{ entity: "category"|"tag", entityId, entityName, count }`
+- `classification.keywords_backfilled` → `{ entity: "category"|"tag", processed }`
+
+Default scope is **team** (`{ kind: "team", id: teamId }`) — change per-event if a more specific scope makes sense.
 
 **Files:**
 - Modify: `packages/notifications/src/types.ts` (add `AI_TRANSACTION_CLASSIFIED`, `AI_KEYWORDS_DERIVED`; keep `CRON_KEYWORDS_BACKFILL`)
