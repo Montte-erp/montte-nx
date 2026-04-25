@@ -40,7 +40,7 @@
       },
       "typecheck": {
          "cache": true,
-         "dependsOn": ["^typecheck"],
+         "dependsOn": ["^typecheck", "^build"],
          "inputs": ["default", "^default"],
          "outputs": ["{projectRoot}/.cache/tsbuildinfo.json"]
       },

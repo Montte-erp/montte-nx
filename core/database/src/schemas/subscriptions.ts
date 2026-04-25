@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { boolean, index, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { contacts, serviceSourceEnum } from "@core/database/schemas/contacts";
+import { contacts } from "@core/database/schemas/contacts";
 import { coupons } from "@core/database/schemas/coupons";
 import { crmSchema } from "@core/database/schemas/schemas";
 
@@ -39,7 +39,6 @@ export const contactSubscriptions = crmSchema.table(
       endDate: text("end_date"),
       notes: text("notes"),
       status: subscriptionStatusEnum("status").notNull().default("active"),
-      source: serviceSourceEnum("source").notNull().default("manual"),
       externalId: text("external_id"),
       couponId: uuid("coupon_id").references(() => coupons.id, {
          onDelete: "set null",
@@ -84,7 +83,6 @@ const baseSubscriptionSchema = createInsertSchema(contactSubscriptions).pick({
    endDate: true,
    notes: true,
    status: true,
-   source: true,
    externalId: true,
    couponId: true,
    cancelAtPeriodEnd: true,

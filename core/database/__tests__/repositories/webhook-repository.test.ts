@@ -1,5 +1,5 @@
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
-import { setupTestDb } from "../helpers/setup-test-db";
+import { setupTestDb } from "../../src/testing/setup-test-db";
 import { organization, team } from "@core/database/schemas/auth";
 import { events } from "@core/database/schemas/events";
 import {

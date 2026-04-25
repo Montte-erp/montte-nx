@@ -63,7 +63,7 @@ CI checks → `monitor-ci` skill (prefer over `gh`/`glab`). Linear tickets (MON-
 montte-nx/
 ├── core/
 │   ├── agents/          # AI agents
-│   ├── database/        # Drizzle ORM schemas & repositories
+│   ├── database/        # Drizzle ORM schemas (no repository layer)
 │   ├── authentication/  # Better Auth setup
 │   ├── environment/     # Zod-validated env vars
 │   ├── redis/           # Redis singleton
@@ -110,37 +110,60 @@ export const getAll = protectedProcedure
 **Router errors** — `WebAppError` only (NOT `ORPCError`, `Error`, `AppError`):
 `notFound` · `forbidden` · `unauthorized` · `badRequest` · `conflict` · `internal` · `tooManyRequests` · `fromAppError(appError)`
 
-**Repository errors** (`core/database/src/repositories/`) — `neverthrow` + `AppError`. Return `ResultAsync<T, AppError>` via `fromPromise`.
+**No repository layer.** Routers query DB direto via `context.db` / `context.db.transaction(tx => ...)`. Workflows via `billingDataSource.runTransaction` (ver seção Workflows). A camada de repositório foi removida — Zod schema já valida, repetir validação era bloat.
 
-**Mensagens de erro sempre em pt-BR** — o texto de `AppError` e `WebAppError` é exibido diretamente no toast do frontend, sem redefinição no front. Nunca use inglês em mensagens de erro de repositório ou router.
+**Mensagens de erro sempre em pt-BR** — o texto de `WebAppError` é exibido diretamente no toast do frontend. Nunca inglês.
 
-```typescript
-import { fromPromise } from "neverthrow";
-
-export function createItem(db: DatabaseInstance, data: CreateItemInput) {
-   return fromPromise(
-      (async () => {
-         const [row] = await db.insert(...).values(data).returning();
-         if (!row) throw AppError.database("Falha ao criar item.");
-         return row;
-      })(),
-      (e) => AppError.database("Falha ao criar item.", { cause: e }),
-   );
-}
-```
-
-**Router consumption** — `.match()` or `safeTry`, convert to `WebAppError`:
+**Router handler pattern** — só `WebAppError` (nunca `Error`, `throw "string"`, `as`, `instanceof`). Business-rule checks (conflict, notFound) **fora** da transação. Transação só faz DB ops; `mapErr` sempre `WebAppError.internal`. `returning()` sem linha → retorna `undefined` do transaction e checa fora com `WebAppError.internal` específico.
 
 ```typescript
-return (await createItem(context.db, input)).match(
-   (item) => item,
-   (e) => { throw WebAppError.fromAppError(e); },
-);
+export const create = protectedProcedure
+   .input(createItemSchema)
+   .handler(async ({ context, input }) => {
+      const existing = await fromPromise(
+         context.db.query.items.findFirst({ where: (f, { and, eq }) =>
+            and(eq(f.teamId, context.teamId), eq(f.code, input.code)),
+         }),
+         () => WebAppError.internal("Falha ao verificar item existente."),
+      );
+      if (existing.isErr()) throw existing.error;
+      if (existing.value) throw WebAppError.conflict("Já existe um item com esse código.");
+
+      const result = await fromPromise(
+         context.db.transaction(async (tx) => {
+            const [row] = await tx.insert(items).values({ ...input, teamId: context.teamId }).returning();
+            return row;
+         }),
+         () => WebAppError.internal("Falha ao criar item."),
+      );
+      if (result.isErr()) throw result.error;
+      if (!result.value) throw WebAppError.internal("Falha ao criar item: insert retornou vazio.");
+      return result.value;
+   });
 ```
 
-`AppError` factories: `database`, `validation`, `notFound`, `unauthorized`, `forbidden`, `conflict`, `tooManyRequests`, `internal`
+**Ownership via middleware** — buscar entidade, validar `teamId`, passar via `next({ context: { entity } })`. Handler **nunca** refaz a query.
 
-**Auto-conversion** — the oRPC server middleware (`apps/web/src/integrations/orpc/server.ts:227`) automatically converts any thrown `AppError` into `WebAppError.fromAppError(error)`. Repository functions that throw `AppError` directly (e.g. `enforceCostCenterPolicy`) do **not** need manual conversion in router handlers — the server catches and converts them.
+```typescript
+const itemByIdProcedure = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .use(async ({ context, input, next }) => {
+      const result = await fromPromise(
+         context.db.query.items.findFirst({ where: (f, { eq }) => eq(f.id, input.id) }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).andThen((item) =>
+         !item || item.teamId !== context.teamId
+            ? err(WebAppError.notFound("Item não encontrado."))
+            : ok(item),
+      );
+      if (result.isErr()) throw result.error;
+      return next({ context: { item: result.value } });
+   });
+
+export const get = itemByIdProcedure.handler(({ context }) => context.item);
+```
+
+**`WebAppError` factories:** `database`, `validation`, `notFound`, `unauthorized`, `forbidden`, `conflict`, `tooManyRequests`, `internal`
 
 **Bulk operations** — dedicated procedure + `Promise.allSettled`, never loop `mutateAsync` on client.
 
@@ -375,10 +398,37 @@ await enqueueCategorizationWorkflow(context.workflowClient, input);
 **WorkflowQueues** (declared alongside each workflow):
 - `workflow:categorize` (workerConcurrency: 10) — `categorization-workflow.ts`
 - `workflow:derive-keywords` (workerConcurrency: 5) — `derive-keywords-workflow.ts`
+- `workflow:benefit-lifecycle`, `workflow:period-end-invoice`, `workflow:trial-expiry` — `modules/billing/src/workflows/`
 
 **DBOS logging:** `initOtel()` BEFORE `launchDBOS()`. Never replace `DBOS.logger` with `getWorkerLogger` in workflows — loses DBOS context (workflowID, step, etc.).
 
-**DBOS workflows** — always use repositories (`@core/database/repositories/*`). Never raw `db` in workflow steps.
+**DrizzleDataSource — typed instance, no casts.** Each module exposes `<module>DataSource = new DrizzleDataSource<DatabaseInstance>("name", { connectionString }, schema)`. Inside workflow steps use `dataSource.runTransaction(async () => { const tx = <module>DataSource.client; ... }, { name })`. The instance generic gives `client` typed as `DatabaseInstance` — never `DrizzleDataSource.client as DatabaseInstance`. Never use plain `db` in workflow steps, never use repositories.
+
+**DBOS schema init** — call `DrizzleDataSource.initializeDBOSSchema({ connectionString })` once at worker startup BEFORE `launchDBOS()`. Creates the `transaction_completion` table — without it `runTransaction` throws. Do this inside `setup<Module>Workflows` (which is async).
+
+**Module workflow setup** — each module exposes `async setup<Module>Workflows(deps)` that: (1) calls `DrizzleDataSource.initializeDBOSSchema`, (2) initializes the context store, (3) creates queues, (4) side-effect imports workflow files to register them. The worker `await`s every `setup*` before `launchDBOS()`.
+
+```typescript
+// modules/billing/src/workflows/setup.ts
+export async function setupBillingWorkflows(deps: { redis, resendClient, workerConcurrency }) {
+   await DrizzleDataSource.initializeDBOSSchema({ connectionString: env.DATABASE_URL });
+   initBillingWorkflowContext(deps.redis, deps.resendClient);
+   return createBillingQueues({ workerConcurrency: deps.workerConcurrency });
+}
+```
+
+**Scheduling — `enqueueOptions.delaySeconds`, NOT `DBOS.sleepms`.** Per the DBOS docs, `delaySeconds` puts the workflow in `DELAYED` status — it does NOT execute and does NOT hold a `workerConcurrency` slot until the delay expires. `DBOS.sleepms` inside a workflow is durable but the docs are silent on whether the slot is released; assume it is held. For long per-instance waits (per-subscription billing periods, trial expiry), always use `enqueueOptions.delaySeconds` on the initial enqueue and on self-rescheduling. Reserve `@DBOS.scheduled`/cron for fixed recurring schedules ("every Friday 9pm"), not per-row dynamic timing.
+
+**Self-rescheduling pattern** (used by `period-end-invoice-workflow`):
+1. Workflow body runs at period end (DBOS fires when `DELAYED` expires).
+2. Re-check entity status in a transaction (skip if cancelled).
+3. Do work (generate invoice).
+4. Compute next wake time **inside a `DBOS.runStep`** (deterministic, not inline).
+5. `DBOS.startWorkflow(self, { workflowID, queueName, enqueueOptions: { delaySeconds } })` for next iteration. Use a deterministic `workflowID` per period (e.g. `period-invoice-${subId}-${YYYY-MM-DD}`) so retries are idempotent.
+
+**Workflow testing — mock `@dbos-inc/dbos-sdk`** (DBOS's official unit-test pattern). Use `vi.hoisted` + `dbosSdkMockFactory` / `drizzleDataSourceMockFactory` from `@core/dbos/testing/mock-dbos`. Critical: `registerWorkflow` must return the function directly (not the durable wrapper). pglite-backed `setupTestDb()` runs the real schema in-memory for assertions. For time-mocked end-to-end runs, `vi.useFakeTimers()` + `vi.setSystemTime(T0)` and invoke the workflow function directly — `DBOS.startWorkflow` mock captures the next-period enqueue with `delaySeconds`, no real wait. See `__tests__/workflows/period-end-invoice.test.ts` for an example.
+
+**Workflow integration smoke** — `__tests__/integration/dbos-smoke.test.ts` boots a real DBOS runtime against an in-memory pglite Postgres exposed via `@electric-sql/pglite-socket` (TCP server). Validates that `enqueueOptions.delaySeconds` actually fires under the real durable runtime — no docker, no external Postgres. Run via `bunx nx run @modules/billing:test` like any other test.
 
 Single agent `rubiAgent`:
 
@@ -509,18 +559,18 @@ import {
 
 **Local Postgres image** — `paradedb/paradedb` (not plain postgres). Do not swap locally.
 
-Repositories: `core/database/src/repositories/` — always `validateInput()`, `AppError`, `propagateError()`.
+**No repository layer.** Routers consultam `context.db` direto; workflows via `<module>DataSource.runTransaction`. Schema Zod cobre validação — repetir em repo era bloat.
 
-**Transactions** — wrap almost every repository write in `db.transaction(async (tx) => { ... })`. Use `tx` instead of `db` inside. Single-statement reads are the only exception. Pattern:
+**Transactions** — todo write passa por `db.transaction(async (tx) => { ... })` (ou `dataSource.runTransaction` em workflows). Use `tx` dentro. Single-statement reads são a única exceção. Pattern em router:
 
 ```typescript
 return fromPromise(
-   db.transaction(async (tx) => {
+   context.db.transaction(async (tx) => {
       const [row] = await tx.update(table).set({ ...data }).where(eq(table.id, id)).returning();
-      if (!row) throw AppError.notFound("Registro não encontrado.");
+      if (!row) throw WebAppError.notFound("Registro não encontrado.");
       return row;
    }),
-   (e) => (e instanceof AppError ? e : AppError.database("Falha ao atualizar.", { cause: e })),
+   (e) => (e instanceof WebAppError ? e : WebAppError.internal("Falha ao atualizar.", { cause: e })),
 );
 ```
 

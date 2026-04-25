@@ -27,6 +27,7 @@
    "dependencies": {
       "@core/agents": "workspace:*",
       "@core/database": "workspace:*",
+      "@core/dbos": "workspace:*",
       "@core/logging": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",

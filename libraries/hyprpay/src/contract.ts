@@ -211,7 +211,7 @@ const couponsContract = {
 const customerPortalContract = {
    createSession: oc
       .input(z.object({ customerId: z.string() }))
-      .output(z.object({ url: z.string(), expiresAt: z.string() })),
+      .output(z.object({ url: z.string() })),
 };
 
 export const hyprpayContract = {

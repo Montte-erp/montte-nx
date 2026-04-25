@@ -11,6 +11,18 @@
       "./client": {
          "types": "./dist/client.d.ts",
          "default": "./dist/client.js"
+      },
+      "./factory": {
+         "types": "./dist/factory.d.ts",
+         "default": "./dist/factory.js"
+      },
+      "./errors": {
+         "types": "./dist/errors.d.ts",
+         "default": "./dist/errors.js"
+      },
+      "./testing/*": {
+         "types": "./dist/testing/*.d.ts",
+         "default": "./dist/testing/*.js"
       }
    },
    "scripts": {
@@ -22,10 +34,20 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
+      "@core/database": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
-      "typescript": "catalog:development"
+      "typescript": "catalog:development",
+      "vitest": "catalog:testing"
+   },
+   "peerDependencies": {
+      "vitest": "catalog:testing"
+   },
+   "peerDependenciesMeta": {
+      "vitest": {
+         "optional": true
+      }
    }
 }

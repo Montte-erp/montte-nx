@@ -10,7 +10,7 @@ export type WorkflowDeps = {
    db: DatabaseInstance;
    redis: Redis;
    posthog: PostHog;
-   stripeClient: StripeClient;
+   stripeClient?: StripeClient;
    resendClient: ResendClient;
 };
 

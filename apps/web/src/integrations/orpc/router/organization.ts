@@ -7,7 +7,6 @@ import {
 import { generatePresignedPutUrl } from "@core/files/client";
 import { minioClient } from "@/integrations/singletons";
 import { WebAppError } from "@core/logging/errors";
-import { fromPromise } from "neverthrow";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { authenticatedProcedure, protectedProcedure } from "../server";
@@ -33,7 +32,7 @@ export const getOrganizations = authenticatedProcedure.handler(
 
 export const getActiveOrganization = protectedProcedure.handler(
    async ({ context }) => {
-      const { auth, headers, session, db, stripeClient, userId } = context;
+      const { auth, headers, session } = context;
 
       try {
          const organizationId = session.session.activeOrganizationId;
@@ -51,55 +50,16 @@ export const getActiveOrganization = protectedProcedure.handler(
             return null;
          }
 
-         const subsResult = await fromPromise(
-            auth.api.listActiveSubscriptions({
-               headers,
-               query: { referenceId: org.id },
-            }),
-            () => null,
-         );
-         const subscriptions = subsResult.unwrapOr([]);
-
-         const activeSubscription =
-            subscriptions.find(
-               (subscription) =>
-                  subscription.status === "active" ||
-                  subscription.status === "trialing",
-            ) ?? null;
-
          const teams = await auth.api.listOrganizationTeams({
             headers,
             query: { organizationId: org.id },
          });
          const projectCount = teams.length;
 
-         let projectLimit = 1;
-         try {
-            if (stripeClient) {
-               const userRecord = await db.query.user.findFirst({
-                  where: (fields, { eq }) => eq(fields.id, userId),
-               });
-               if (userRecord?.stripeCustomerId) {
-                  const paymentMethods = await stripeClient.paymentMethods.list(
-                     {
-                        customer: userRecord.stripeCustomerId,
-                        type: "card",
-                        limit: 1,
-                     },
-                  );
-                  if (paymentMethods.data.length > 0) {
-                     projectLimit = 6;
-                  }
-               }
-            }
-         } catch {
-            projectLimit = 1;
-         }
-
          return {
             ...org,
-            activeSubscription,
-            projectLimit,
+            activeSubscription: null,
+            projectLimit: 1,
             projectCount,
          };
       } catch (error) {

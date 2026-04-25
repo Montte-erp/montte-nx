@@ -1,11 +1,12 @@
 import { implementerInternal } from "@orpc/server";
 import { fromPromise } from "neverthrow";
+import { db } from "@/integrations/singletons";
 import { WebAppError } from "@core/logging/errors";
+import { usageEvents } from "@core/database/schemas/usage-events";
 import { hyprpayContract } from "@montte/hyprpay/contract";
 import { sdkProcedure } from "../../server";
 import { getContactByExternalId } from "@core/database/repositories/contacts-repository";
 import { listUsageEventsByContact } from "@core/database/repositories/usage-events-repository";
-import { enqueueUsageIngestionWorkflow } from "@packages/workflows/workflows/billing/usage-ingestion-workflow";
 import { requireTeamId } from "./utils";
 
 const impl = implementerInternal(
@@ -20,14 +21,15 @@ export const ingest = impl.ingest.handler(async ({ context, input }) => {
    const teamId = teamIdResult.value;
 
    const contactResult = await getContactByExternalId(
-      context.db,
+      db,
       input.customerId,
       teamId,
       "cliente",
    );
    if (contactResult.isErr())
       throw WebAppError.fromAppError(contactResult.error);
-   if (!contactResult.value)
+   const contact = contactResult.value;
+   if (!contact)
       throw new WebAppError("NOT_FOUND", {
          message: "Cliente não encontrado.",
          source: "hyprpay",
@@ -35,23 +37,30 @@ export const ingest = impl.ingest.handler(async ({ context, input }) => {
 
    const idempotencyKey = input.idempotencyKey ?? crypto.randomUUID();
 
-   const enqueueResult = await fromPromise(
-      enqueueUsageIngestionWorkflow(context.workflowClient, {
-         teamId,
-         meterId: input.meterId,
-         quantity: String(input.quantity),
-         idempotencyKey,
-         contactId: contactResult.value.id,
-         properties: input.properties ?? {},
+   const result = await fromPromise(
+      db.transaction(async (tx) => {
+         await tx
+            .insert(usageEvents)
+            .values({
+               teamId,
+               meterId: input.meterId,
+               quantity: String(input.quantity),
+               idempotencyKey,
+               contactId: contact.id,
+               properties: input.properties ?? {},
+            })
+            .onConflictDoNothing({
+               target: [usageEvents.teamId, usageEvents.idempotencyKey],
+            });
       }),
       (e) =>
          new WebAppError("INTERNAL_SERVER_ERROR", {
-            message: "Falha ao enfileirar evento de uso.",
+            message: "Falha ao registrar evento de uso.",
             source: "hyprpay",
             cause: e,
          }),
    );
-   if (enqueueResult.isErr()) throw enqueueResult.error;
+   if (result.isErr()) throw result.error;
 
    return { queued: true, idempotencyKey };
 });
@@ -62,23 +71,24 @@ export const list = impl.list.handler(async ({ context, input }) => {
    const teamId = teamIdResult.value;
 
    const contactResult = await getContactByExternalId(
-      context.db,
+      db,
       input.customerId,
       teamId,
       "cliente",
    );
    if (contactResult.isErr())
       throw WebAppError.fromAppError(contactResult.error);
-   if (!contactResult.value)
+   const contact = contactResult.value;
+   if (!contact)
       throw new WebAppError("NOT_FOUND", {
          message: "Cliente não encontrado.",
          source: "hyprpay",
       });
 
    const eventsResult = await listUsageEventsByContact(
-      context.db,
+      db,
       teamId,
-      contactResult.value.id,
+      contact.id,
       input.meterId,
    );
    if (eventsResult.isErr()) throw WebAppError.fromAppError(eventsResult.error);

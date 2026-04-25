@@ -1,0 +1,163 @@
+import dayjs from "dayjs";
+import { eq } from "drizzle-orm";
+import { err, fromPromise, ok } from "neverthrow";
+import { coupons } from "@core/database/schemas/coupons";
+import { WebAppError } from "@core/logging/errors";
+import { protectedProcedure } from "@core/orpc/server";
+import {
+   createCouponSchema,
+   getCouponInputSchema,
+   updateCouponInputSchema,
+   validateCouponInputSchema,
+} from "../contracts/coupons";
+
+const couponByIdProcedure = protectedProcedure
+   .input(getCouponInputSchema)
+   .use(async ({ context, next }, input) => {
+      const result = await fromPromise(
+         context.db.query.coupons.findFirst({
+            where: (f, { eq: eqFn }) => eqFn(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).andThen((coupon) =>
+         !coupon || coupon.teamId !== context.teamId
+            ? err(WebAppError.notFound("Cupom não encontrado."))
+            : ok(coupon),
+      );
+      if (result.isErr()) throw result.error;
+      return next({ context: { coupon: result.value } });
+   });
+
+const couponByUpdateInputProcedure = protectedProcedure
+   .input(updateCouponInputSchema)
+   .use(async ({ context, next }, input) => {
+      const result = await fromPromise(
+         context.db.query.coupons.findFirst({
+            where: (f, { eq: eqFn }) => eqFn(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).andThen((coupon) =>
+         !coupon || coupon.teamId !== context.teamId
+            ? err(WebAppError.notFound("Cupom não encontrado."))
+            : ok(coupon),
+      );
+      if (result.isErr()) throw result.error;
+      return next({ context: { coupon: result.value } });
+   });
+
+export const list = protectedProcedure.handler(async ({ context }) => {
+   const result = await fromPromise(
+      context.db.query.coupons.findMany({
+         where: (f, { eq: eqFn }) => eqFn(f.teamId, context.teamId),
+         orderBy: (f, { asc }) => [asc(f.createdAt)],
+      }),
+      () => WebAppError.internal("Falha ao listar cupons."),
+   );
+   if (result.isErr()) throw result.error;
+   return result.value;
+});
+
+export const get = couponByIdProcedure.handler(({ context }) => context.coupon);
+
+export const create = protectedProcedure
+   .input(createCouponSchema)
+   .handler(async ({ context, input }) => {
+      const existing = await fromPromise(
+         context.db.query.coupons.findFirst({
+            where: (f, { and, eq: eqFn, sql }) =>
+               and(
+                  eqFn(f.teamId, context.teamId),
+                  sql`lower(${f.code}) = lower(${input.code})`,
+               ),
+         }),
+         () => WebAppError.internal("Falha ao verificar cupom existente."),
+      );
+      if (existing.isErr()) throw existing.error;
+      if (existing.value)
+         throw WebAppError.conflict("Já existe um cupom com esse código.");
+
+      const result = await fromPromise(
+         context.db.transaction(async (tx) => {
+            const [row] = await tx
+               .insert(coupons)
+               .values({
+                  ...input,
+                  teamId: context.teamId,
+                  redeemBy: input.redeemBy
+                     ? dayjs(input.redeemBy).toDate()
+                     : undefined,
+               })
+               .returning();
+            return row;
+         }),
+         () => WebAppError.internal("Falha ao criar cupom."),
+      );
+      if (result.isErr()) throw result.error;
+      if (!result.value)
+         throw WebAppError.internal(
+            "Falha ao criar cupom: insert retornou vazio.",
+         );
+      return result.value;
+   });
+
+export const update = couponByUpdateInputProcedure.handler(
+   async ({ context, input }) => {
+      const { id, ...data } = input;
+      const result = await fromPromise(
+         context.db.transaction(async (tx) => {
+            const [row] = await tx
+               .update(coupons)
+               .set({
+                  ...data,
+                  redeemBy:
+                     data.redeemBy != null
+                        ? dayjs(data.redeemBy).toDate()
+                        : data.redeemBy,
+               })
+               .where(eq(coupons.id, id))
+               .returning();
+            return row;
+         }),
+         () => WebAppError.internal("Falha ao atualizar cupom."),
+      );
+      if (result.isErr()) throw result.error;
+      if (!result.value)
+         throw WebAppError.internal(
+            "Falha ao atualizar cupom: update retornou vazio.",
+         );
+      return result.value;
+   },
+);
+
+export const deactivate = couponByIdProcedure.handler(
+   async ({ context, input }) => {
+      const result = await fromPromise(
+         context.db.transaction(async (tx) => {
+            const [row] = await tx
+               .update(coupons)
+               .set({ isActive: false })
+               .where(eq(coupons.id, input.id))
+               .returning();
+            return row;
+         }),
+         () => WebAppError.internal("Falha ao desativar cupom."),
+      );
+      if (result.isErr()) throw result.error;
+      if (!result.value)
+         throw WebAppError.internal(
+            "Falha ao desativar cupom: update retornou vazio.",
+         );
+      return result.value;
+   },
+);
+
+export const validate = protectedProcedure
+   .input(validateCouponInputSchema)
+   .handler(async ({ context, input }) => {
+      const result = await context.hyprpayClient.coupons.validate({
+         code: input.code,
+         priceId: input.priceId,
+      });
+      if (result.isErr()) throw WebAppError.internal("Falha ao validar cupom.");
+      return result.value;
+   });

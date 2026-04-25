@@ -1,9 +1,9 @@
 {
    "extends": "@tooling/typescript/core.json",
    "compilerOptions": {
+      "composite": false,
       "declaration": true,
       "declarationMap": true,
-      "composite": false,
       "jsx": "react-jsx",
       "paths": {
          "@core/authentication/*": ["./src/*"],
@@ -18,7 +18,9 @@
          "@core/stripe": ["../../core/stripe/src/index.ts"],
          "@core/stripe/*": ["../../core/stripe/src/*"],
          "@core/transactional/*": ["../../core/transactional/src/*"],
-         "@core/utils/*": ["../../core/utils/src/*"]
+         "@core/utils/*": ["../../core/utils/src/*"],
+         "@montte/hyprpay": ["../../libraries/hyprpay/dist/esm/index.d.ts"],
+         "@montte/hyprpay/*": ["../../libraries/hyprpay/dist/esm/*"]
       }
    },
    "include": ["src"],

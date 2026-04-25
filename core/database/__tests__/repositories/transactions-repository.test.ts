@@ -1,5 +1,5 @@
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
-import { setupTestDb } from "../helpers/setup-test-db";
+import { setupTestDb } from "../../src/testing/setup-test-db";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { tags } from "@core/database/schemas/tags";
 import { creditCards } from "@core/database/schemas/credit-cards";

@@ -1,6 +1,6 @@
 import { apiKey } from "@better-auth/api-key";
-import { stripe as stripePlugin } from "@better-auth/stripe";
 import { hyprpay } from "@montte/hyprpay/better-auth";
+import type { HyprPayClient } from "@montte/hyprpay";
 import { findMemberByUserId } from "@core/database/repositories/auth-repository";
 import * as schema from "@core/database/schema";
 import { getDomain, isProduction } from "@core/environment/helpers";
@@ -20,7 +20,6 @@ import {
    twoFactor,
 } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
-import type Stripe from "stripe";
 import { z } from "zod";
 import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog } from "@core/posthog/server";
@@ -64,25 +63,21 @@ export interface CreateAuthDeps {
    db: DatabaseInstance;
    redis: Redis;
    posthog: PostHog;
-   stripeClient: Stripe;
    resendClient: ResendClient;
+   hyprpayClient: HyprPayClient;
    env: {
       BETTER_AUTH_URL?: string;
       BETTER_AUTH_SECRET: string;
       BETTER_AUTH_TRUSTED_ORIGINS: string;
       BETTER_AUTH_GOOGLE_CLIENT_ID: string;
       BETTER_AUTH_GOOGLE_CLIENT_SECRET: string;
-      STRIPE_WEBHOOK_SECRET: string;
-      STRIPE_BOOST_PRICE_ID?: string;
-      STRIPE_SCALE_PRICE_ID?: string;
-      STRIPE_ENTERPRISE_PRICE_ID?: string;
    };
 }
 
 export function createAuth(deps: CreateAuthDeps) {
-   const { db, redis, posthog, stripeClient, resendClient, env } = deps;
+   const { db, redis, resendClient, hyprpayClient, env } = deps;
 
-   return betterAuth({
+   const auth = betterAuth({
       baseURL: env.BETTER_AUTH_URL,
       secret: env.BETTER_AUTH_SECRET,
       trustedOrigins: env.BETTER_AUTH_TRUSTED_ORIGINS.split(","),
@@ -358,106 +353,12 @@ export function createAuth(deps: CreateAuthDeps) {
             apiKeyHeaders: ["sdk-api-key", "x-api-key"],
          }),
 
-         stripePlugin({
-            createCustomerOnSignUp: true,
-            stripeClient,
-            stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET,
-            subscription: {
-               authorizeReference: async ({ user, referenceId }) => {
-                  const membership = await db.query.member.findFirst({
-                     where: (fields, { and, eq }) =>
-                        and(
-                           eq(fields.organizationId, referenceId),
-                           eq(fields.userId, user.id),
-                        ),
-                  });
-                  if (!membership) return false;
-                  return (
-                     membership.role === "owner" || membership.role === "admin"
-                  );
-               },
-               enabled: true,
-               getCheckoutSessionParams: async () => ({
-                  params: {
-                     allow_promotion_codes: true,
-                  },
-               }),
-               plans: [
-                  {
-                     name: "boost",
-                     priceId: env.STRIPE_BOOST_PRICE_ID,
-                  },
-                  {
-                     name: "scale",
-                     priceId: env.STRIPE_SCALE_PRICE_ID,
-                  },
-                  {
-                     name: "enterprise",
-                     priceId: env.STRIPE_ENTERPRISE_PRICE_ID,
-                  },
-               ],
-            },
-            onSubscriptionComplete: async ({
-               subscription,
-               stripeSubscription,
-            }: {
-               subscription: { id: string; plan: string; referenceId: string };
-               stripeSubscription: Stripe.Subscription;
-            }) => {
-               try {
-                  const invoice = await stripeClient.invoices.retrieve(
-                     stripeSubscription.latest_invoice as string,
-                  );
-                  posthog.capture({
-                     distinctId: subscription.referenceId,
-                     event: "subscription_started",
-                     groups: { organization: subscription.referenceId },
-                     properties: {
-                        $currency: invoice.currency.toUpperCase(),
-                        $revenue: invoice.amount_paid / 100,
-                        interval:
-                           stripeSubscription.items.data[0]?.plan.interval,
-                        organization_id: subscription.referenceId,
-                        plan_name: subscription.plan,
-                        subscription_id: subscription.id,
-                     },
-                  });
-               } catch (error) {
-                  logger.error(
-                     { err: error },
-                     "Failed to capture subscription_started event",
-                  );
-               }
-            },
-            onSubscriptionCancel: async ({
-               subscription,
-            }: {
-               subscription: { id: string; plan: string; referenceId: string };
-            }) => {
-               try {
-                  posthog.capture({
-                     distinctId: subscription.referenceId,
-                     event: "subscription_canceled",
-                     groups: { organization: subscription.referenceId },
-                     properties: {
-                        organization_id: subscription.referenceId,
-                        plan_name: subscription.plan,
-                        subscription_id: subscription.id,
-                     },
-                  });
-               } catch (error) {
-                  logger.error(
-                     { err: error },
-                     "Failed to capture subscription_canceled event",
-                  );
-               }
-            },
-         }),
-
-         hyprpay(),
+         hyprpay({ client: hyprpayClient }),
          tanstackStartCookies(),
       ],
    });
+
+   return auth;
 }
 
 export type AuthInstance = ReturnType<typeof createAuth>;

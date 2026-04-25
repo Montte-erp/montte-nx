@@ -16,10 +16,35 @@
          "@core/redis/*": ["../../core/redis/src/*"],
          "@core/stripe": ["../../core/stripe/src/index.ts"],
          "@core/stripe/*": ["../../core/stripe/src/*"],
+         "@core/transactional/*": ["../../core/transactional/dist/*"],
+         "@modules/billing/*": ["../../modules/billing/src/*"],
          "@packages/workflows/*": ["../../packages/workflows/src/*"],
          "@packages/events/*": ["../../packages/events/src/*"],
          "@packages/notifications/*": ["../../packages/notifications/src/*"]
       }
    },
-   "include": ["src"]
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../../packages/workflows"
+      },
+      {
+         "path": "../../core/stripe"
+      },
+      {
+         "path": "../../core/redis"
+      },
+      {
+         "path": "../../core/posthog"
+      },
+      {
+         "path": "../../core/logging"
+      },
+      {
+         "path": "../../core/environment"
+      },
+      {
+         "path": "../../core/database"
+      }
+   ]
 }

@@ -8,14 +8,6 @@
    ],
    "type": "module",
    "exports": {
-      "./context": {
-         "types": "./dist/context.d.ts",
-         "default": "./dist/context.js"
-      },
-      "./procedures": {
-         "types": "./dist/procedures.d.ts",
-         "default": "./dist/procedures.js"
-      },
       "./sdk-context": {
          "types": "./dist/sdk-context.d.ts",
          "default": "./dist/sdk-context.js"
@@ -23,6 +15,14 @@
       "./sdk-procedure": {
          "types": "./dist/sdk-procedure.d.ts",
          "default": "./dist/sdk-procedure.js"
+      },
+      "./server": {
+         "types": "./dist/server.d.ts",
+         "default": "./dist/server.js"
+      },
+      "./testing/*": {
+         "types": "./dist/testing/*.d.ts",
+         "default": "./dist/testing/*.js"
       }
    },
    "scripts": {
@@ -36,13 +36,17 @@
    "dependencies": {
       "@core/authentication": "workspace:*",
       "@core/database": "workspace:*",
+      "@core/dbos": "workspace:*",
+      "@core/environment": "workspace:*",
       "@core/logging": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",
-      "@core/stripe": "workspace:*",
+      "@core/transactional": "workspace:*",
       "@core/utils": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers",
+      "@montte/hyprpay": "workspace:*",
       "@opentelemetry/api-logs": "catalog:telemetry",
+      "@orpc/contract": "catalog:orpc",
       "@orpc/server": "catalog:orpc",
       "@packages/notifications": "workspace:*",
       "dayjs": "catalog:ui",
@@ -50,6 +54,15 @@
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
-      "typescript": "catalog:development"
+      "typescript": "catalog:development",
+      "vitest": "catalog:testing"
+   },
+   "peerDependencies": {
+      "vitest": "catalog:testing"
+   },
+   "peerDependenciesMeta": {
+      "vitest": {
+         "optional": true
+      }
    }
 }

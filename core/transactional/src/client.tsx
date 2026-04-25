@@ -1,5 +1,8 @@
 import { Resend } from "resend";
 import BudgetAlertEmail from "@core/transactional/emails/budget-alert";
+import BillingInvoiceGeneratedEmail from "@core/transactional/emails/billing-invoice-generated";
+import BillingTrialExpiredEmail from "@core/transactional/emails/billing-trial-expired";
+import BillingTrialExpiryWarningEmail from "@core/transactional/emails/billing-trial-expiry-warning";
 import MagicLinkEmail from "@core/transactional/emails/magic-link";
 import OrganizationInvitationEmail from "@core/transactional/emails/organization-invitation";
 import OTPEmail from "@core/transactional/emails/otp";
@@ -92,6 +95,91 @@ export const sendMagicLinkEmail = async (
       react: <MagicLinkEmail magicLinkUrl={magicLinkUrl} />,
       subject,
       to: email,
+   });
+};
+
+export interface SendBillingTrialExpiryWarningOptions {
+   contactEmail: string;
+   contactName?: string;
+   trialEndsAt: string;
+   from?: string;
+}
+
+export const sendBillingTrialExpiryWarning = async (
+   client: Resend,
+   {
+      contactEmail,
+      contactName,
+      trialEndsAt,
+      from,
+   }: SendBillingTrialExpiryWarningOptions,
+) => {
+   await client.emails.send({
+      from: from ?? `${name} <suporte@mail.montte.co>`,
+      to: contactEmail,
+      subject: "Seu período de teste expira em 3 dias",
+      react: (
+         <BillingTrialExpiryWarningEmail
+            contactName={contactName}
+            trialEndsAt={trialEndsAt}
+         />
+      ),
+   });
+};
+
+export interface SendBillingTrialExpiredOptions {
+   contactEmail: string;
+   contactName?: string;
+   from?: string;
+}
+
+export const sendBillingTrialExpired = async (
+   client: Resend,
+   { contactEmail, contactName, from }: SendBillingTrialExpiredOptions,
+) => {
+   await client.emails.send({
+      from: from ?? `${name} <suporte@mail.montte.co>`,
+      to: contactEmail,
+      subject: "Seu período de teste encerrou — assinatura ativa",
+      react: <BillingTrialExpiredEmail contactName={contactName} />,
+   });
+};
+
+export interface SendBillingInvoiceGeneratedOptions {
+   contactEmail: string;
+   contactName?: string;
+   invoiceId: string;
+   periodStart: string;
+   periodEnd: string;
+   total: string;
+   from?: string;
+}
+
+export const sendBillingInvoiceGenerated = async (
+   client: Resend,
+   {
+      contactEmail,
+      contactName,
+      invoiceId,
+      periodStart,
+      periodEnd,
+      total,
+      from,
+   }: SendBillingInvoiceGeneratedOptions,
+) => {
+   await client.emails.send({
+      from: from ?? `${name} <suporte@mail.montte.co>`,
+      to: contactEmail,
+      subject: `Sua fatura — ${periodEnd}`,
+      react: (
+         <BillingInvoiceGeneratedEmail
+            contactName={contactName}
+            invoiceId={invoiceId}
+            periodStart={periodStart}
+            periodEnd={periodEnd}
+            total={total}
+         />
+      ),
    });
 };
 

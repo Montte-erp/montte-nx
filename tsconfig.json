@@ -46,10 +46,13 @@
          "path": "./core/agents"
       },
       {
-         "path": "./core/orpc"
+         "path": "./core/dbos"
       },
       {
-         "path": "./core/dbos"
+         "path": "./packages/notifications"
+      },
+      {
+         "path": "./packages/workflows"
       }
    ]
 }
