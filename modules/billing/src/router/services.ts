@@ -361,24 +361,25 @@ export const createSubscription = billableProcedure
             ),
          );
       } else if (input.items && input.items.length > 0) {
-         const [firstItem] = input.items;
-         if (firstItem) {
-            const price = await context.db.query.servicePrices.findFirst({
-               where: (f, { eq }) => eq(f.id, firstItem.priceId),
-            });
-            if (price) {
-               enqueueBenefitLifecycleWorkflow(context.workflowClient, {
-                  teamId: sub.teamId,
-                  subscriptionId: sub.id,
-                  serviceId: price.serviceId,
-                  newStatus: sub.status,
-               }).catch((e) =>
-                  logger.error(
-                     { err: e, subscriptionId: sub.id },
-                     "Falha ao enfileirar workflow de benefícios",
-                  ),
-               );
-            }
+         const priceIds = input.items.map((i) => i.priceId);
+         const prices = await context.db.query.servicePrices.findMany({
+            where: (f, { inArray }) => inArray(f.id, priceIds),
+         });
+         const uniqueServiceIds = Array.from(
+            new Set(prices.map((p) => p.serviceId)),
+         );
+         for (const serviceId of uniqueServiceIds) {
+            enqueueBenefitLifecycleWorkflow(context.workflowClient, {
+               teamId: sub.teamId,
+               subscriptionId: sub.id,
+               serviceId,
+               newStatus: sub.status,
+            }).catch((e) =>
+               logger.error(
+                  { err: e, subscriptionId: sub.id, serviceId },
+                  "Falha ao enfileirar workflow de benefícios",
+               ),
+            );
          }
       }
 
