@@ -370,7 +370,7 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
                   contactName,
                   invoiceId: invoice.id,
                   periodStart: dayjs(input.periodStart).format("DD/MM/YYYY"),
-                  periodEnd: dayjs(input.periodEnd).format("MM/YYYY"),
+                  periodEnd: dayjs(input.periodEnd).format("DD/MM/YYYY"),
                   total: computation.total,
                   from: input.emailFrom,
                });
