@@ -4,4 +4,5 @@ export const CLASSIFICATION_QUEUES = {
    backfillKeywords: "backfill-keywords",
 } as const;
 
-export type ClassificationQueueName = keyof typeof CLASSIFICATION_QUEUES;
+export type ClassificationQueueName =
+   (typeof CLASSIFICATION_QUEUES)[keyof typeof CLASSIFICATION_QUEUES];
