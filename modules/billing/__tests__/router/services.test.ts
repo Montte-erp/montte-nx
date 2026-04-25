@@ -12,9 +12,13 @@ import { eq } from "drizzle-orm";
 import { setupTestDb } from "@core/database/testing/setup-test-db";
 import { seedTeam } from "@core/database/testing/factories";
 import { createTestContext } from "@core/orpc/testing/create-test-context";
-import { services } from "@core/database/schemas/services";
+import { servicePrices, services } from "@core/database/schemas/services";
 import { categories } from "@core/database/schemas/categories";
-import { makeService } from "../helpers/billing-factories";
+import {
+   makeMeter,
+   makePrice,
+   makeService,
+} from "../helpers/billing-factories";
 import { createHyprpayMock } from "../helpers/hyprpay-mock";
 
 vi.mock("@core/orpc/server", async () =>
@@ -320,6 +324,293 @@ describe("services router", () => {
          expect(row?.name).toBe("Exp");
          expect(row?.category?.id).toBe(category.id);
          expect(row?.category?.name).toBe("Cat Export");
+      });
+   });
+
+   describe("prices", () => {
+      it("getVariants returns service's prices ordered by name asc", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const service = await makeService(testDb.db, { teamId });
+         await makePrice(testDb.db, {
+            teamId,
+            serviceId: service.id,
+            name: "Beta",
+         });
+         await makePrice(testDb.db, {
+            teamId,
+            serviceId: service.id,
+            name: "Alpha",
+         });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            servicesRouter.getVariants,
+            { serviceId: service.id },
+            { context: ctx },
+         );
+         expect(result).toHaveLength(2);
+         expect(result.map((p) => p.name)).toEqual(["Alpha", "Beta"]);
+      });
+
+      it("getVariants throws NOT_FOUND when service belongs to another team", async () => {
+         const { teamId: otherTeamId } = await seedTeam(testDb.db);
+         const service = await makeService(testDb.db, { teamId: otherTeamId });
+         const { teamId } = await seedTeam(testDb.db);
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         await expect(
+            call(
+               servicesRouter.getVariants,
+               { serviceId: service.id },
+               { context: ctx },
+            ),
+         ).rejects.toSatisfy(
+            (e: Error & { code?: string }) => e.code === "NOT_FOUND",
+         );
+      });
+
+      it("createVariant inserts a flat price row", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const service = await makeService(testDb.db, { teamId });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            servicesRouter.createVariant,
+            {
+               serviceId: service.id,
+               name: "Plano Flat",
+               type: "flat",
+               basePrice: "100.00",
+               interval: "monthly",
+            },
+            { context: ctx },
+         );
+         expect(result.teamId).toBe(teamId);
+         expect(result.serviceId).toBe(service.id);
+         expect(result.name).toBe("Plano Flat");
+         expect(result.type).toBe("flat");
+         expect(result.basePrice).toBe("100.00");
+         expect(result.interval).toBe("monthly");
+      });
+
+      it("createVariant rejects metered type without meterId", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const service = await makeService(testDb.db, { teamId });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         await expect(
+            call(
+               servicesRouter.createVariant,
+               {
+                  serviceId: service.id,
+                  name: "Metered",
+                  type: "metered",
+                  basePrice: "0",
+                  interval: "monthly",
+               },
+               { context: ctx },
+            ),
+         ).rejects.toSatisfy(
+            (e: Error & { code?: string }) => e.code === "BAD_REQUEST",
+         );
+      });
+
+      it("createVariant rejects metered type with non-zero basePrice", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const service = await makeService(testDb.db, { teamId });
+         const meter = await makeMeter(testDb.db, { teamId });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         await expect(
+            call(
+               servicesRouter.createVariant,
+               {
+                  serviceId: service.id,
+                  name: "Metered",
+                  type: "metered",
+                  basePrice: "50.00",
+                  interval: "monthly",
+                  meterId: meter.id,
+               },
+               { context: ctx },
+            ),
+         ).rejects.toSatisfy(
+            (e: Error & { code?: string }) => e.code === "BAD_REQUEST",
+         );
+      });
+
+      it("createVariant inserts a metered price with meterId and basePrice 0", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const service = await makeService(testDb.db, { teamId });
+         const meter = await makeMeter(testDb.db, { teamId });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            servicesRouter.createVariant,
+            {
+               serviceId: service.id,
+               name: "Plano Medido",
+               type: "metered",
+               basePrice: "0",
+               interval: "monthly",
+               meterId: meter.id,
+            },
+            { context: ctx },
+         );
+         expect(result.type).toBe("metered");
+         expect(result.meterId).toBe(meter.id);
+         expect(Number(result.basePrice)).toBe(0);
+      });
+
+      it("updateVariant changes name and returns updated row", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const service = await makeService(testDb.db, { teamId });
+         const price = await makePrice(testDb.db, {
+            teamId,
+            serviceId: service.id,
+            name: "Antigo",
+         });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            servicesRouter.updateVariant,
+            { id: price.id, name: "Novo Nome" },
+            { context: ctx },
+         );
+         expect(result.id).toBe(price.id);
+         expect(result.name).toBe("Novo Nome");
+
+         const [persisted] = await testDb.db
+            .select()
+            .from(servicePrices)
+            .where(eq(servicePrices.id, price.id));
+         expect(persisted?.name).toBe("Novo Nome");
+      });
+
+      it("updateVariant rejects metered type with meterId set to null", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const service = await makeService(testDb.db, { teamId });
+         const meter = await makeMeter(testDb.db, { teamId });
+         const price = await makePrice(testDb.db, {
+            teamId,
+            serviceId: service.id,
+            type: "metered",
+            basePrice: "0",
+            meterId: meter.id,
+         });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         await expect(
+            call(
+               servicesRouter.updateVariant,
+               { id: price.id, type: "metered", meterId: null },
+               { context: ctx },
+            ),
+         ).rejects.toSatisfy(
+            (e: Error & { code?: string }) => e.code === "BAD_REQUEST",
+         );
+      });
+
+      it("updateVariant throws NOT_FOUND for cross-team price", async () => {
+         const { teamId: otherTeamId } = await seedTeam(testDb.db);
+         const otherService = await makeService(testDb.db, {
+            teamId: otherTeamId,
+         });
+         const price = await makePrice(testDb.db, {
+            teamId: otherTeamId,
+            serviceId: otherService.id,
+         });
+         const { teamId } = await seedTeam(testDb.db);
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         await expect(
+            call(
+               servicesRouter.updateVariant,
+               { id: price.id, name: "Hack" },
+               { context: ctx },
+            ),
+         ).rejects.toSatisfy(
+            (e: Error & { code?: string }) => e.code === "NOT_FOUND",
+         );
+      });
+
+      it("removeVariant deletes the price row", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const service = await makeService(testDb.db, { teamId });
+         const price = await makePrice(testDb.db, {
+            teamId,
+            serviceId: service.id,
+         });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            servicesRouter.removeVariant,
+            { id: price.id },
+            { context: ctx },
+         );
+         expect(result).toEqual({ success: true });
+
+         const rows = await testDb.db
+            .select()
+            .from(servicePrices)
+            .where(eq(servicePrices.id, price.id));
+         expect(rows).toHaveLength(0);
+      });
+
+      it("removeVariant throws NOT_FOUND for cross-team price", async () => {
+         const { teamId: otherTeamId } = await seedTeam(testDb.db);
+         const otherService = await makeService(testDb.db, {
+            teamId: otherTeamId,
+         });
+         const price = await makePrice(testDb.db, {
+            teamId: otherTeamId,
+            serviceId: otherService.id,
+         });
+         const { teamId } = await seedTeam(testDb.db);
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         await expect(
+            call(
+               servicesRouter.removeVariant,
+               { id: price.id },
+               { context: ctx },
+            ),
+         ).rejects.toSatisfy(
+            (e: Error & { code?: string }) => e.code === "NOT_FOUND",
+         );
       });
    });
 });
