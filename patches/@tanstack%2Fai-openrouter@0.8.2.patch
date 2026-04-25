@@ -1,8 +1,82 @@
+diff --git a/node_modules/@tanstack/ai-openrouter/.bun-tag-91cbb420c502e0e2 b/.bun-tag-91cbb420c502e0e2
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/dist/esm/model-meta.d.ts b/dist/esm/model-meta.d.ts
-index ac0d417af252e887220636135383aa98efab69cc..1b57005fe4bc467514903ba9293113bd04cb4cd2 100644
+index ac0d417af252e887220636135383aa98efab69cc..082e50fd997122136919606543864135fa8c8495 100644
 --- a/dist/esm/model-meta.d.ts
 +++ b/dist/esm/model-meta.d.ts
-@@ -8487,7 +8487,7 @@ export type OpenRouterModelInputModalitiesByName = {
+@@ -1463,6 +1463,52 @@ declare const DEEPSEEK_DEEPSEEK_V3_2_SPECIALE: {
+         readonly image: 0;
+     };
+ };
++declare const DEEPSEEK_DEEPSEEK_V4_FLASH: {
++    readonly id: "deepseek/deepseek-v4-flash";
++    readonly name: "DeepSeek: DeepSeek V4 Flash";
++    readonly supports: {
++        readonly input: readonly ["text"];
++        readonly output: readonly ["text"];
++        readonly supports: readonly ["frequencyPenalty", "logitBias", "logprobs", "maxCompletionTokens", "parallelToolCalls", "presencePenalty", "reasoning", "responseFormat", "seed", "stop", "temperature", "toolChoice", "topLogprobs", "topP"];
++    };
++    readonly context_window: 1048576;
++    readonly max_output_tokens: 65536;
++    readonly pricing: {
++        readonly text: {
++            readonly input: {
++                readonly normal: 0.14;
++                readonly cached: 0;
++            };
++            readonly output: {
++                readonly normal: 0.28;
++            };
++        };
++        readonly image: 0;
++    };
++};
++declare const DEEPSEEK_DEEPSEEK_V4_PRO: {
++    readonly id: "deepseek/deepseek-v4-pro";
++    readonly name: "DeepSeek: DeepSeek V4 Pro";
++    readonly supports: {
++        readonly input: readonly ["text"];
++        readonly output: readonly ["text"];
++        readonly supports: readonly ["frequencyPenalty", "logitBias", "logprobs", "maxCompletionTokens", "parallelToolCalls", "presencePenalty", "reasoning", "responseFormat", "seed", "stop", "temperature", "toolChoice", "topLogprobs", "topP"];
++    };
++    readonly context_window: 1048576;
++    readonly max_output_tokens: 65536;
++    readonly pricing: {
++        readonly text: {
++            readonly input: {
++                readonly normal: 0.435;
++                readonly cached: 0;
++            };
++            readonly output: {
++                readonly normal: 0.87;
++            };
++        };
++        readonly image: 0;
++    };
++};
+ declare const ESSENTIALAI_RNJ_1_INSTRUCT: {
+     readonly id: "essentialai/rnj-1-instruct";
+     readonly name: "EssentialAI: Rnj 1 Instruct";
+@@ -7862,6 +7908,8 @@ export type OpenRouterModelOptionsByName = {
+     [DEEPSEEK_DEEPSEEK_V3_2.id]: OpenRouterCommonOptions & Pick<OpenRouterBaseOptions, 'frequencyPenalty' | 'logitBias' | 'logprobs' | 'maxCompletionTokens' | 'parallelToolCalls' | 'presencePenalty' | 'reasoning' | 'responseFormat' | 'seed' | 'stop' | 'temperature' | 'toolChoice' | 'topLogprobs' | 'topP'>;
+     [DEEPSEEK_DEEPSEEK_V3_2_EXP.id]: OpenRouterCommonOptions & Pick<OpenRouterBaseOptions, 'frequencyPenalty' | 'logitBias' | 'maxCompletionTokens' | 'presencePenalty' | 'reasoning' | 'responseFormat' | 'seed' | 'stop' | 'temperature' | 'toolChoice' | 'topP'>;
+     [DEEPSEEK_DEEPSEEK_V3_2_SPECIALE.id]: OpenRouterCommonOptions & Pick<OpenRouterBaseOptions, 'frequencyPenalty' | 'logitBias' | 'maxCompletionTokens' | 'presencePenalty' | 'reasoning' | 'responseFormat' | 'seed' | 'stop' | 'temperature' | 'topP'>;
++    [DEEPSEEK_DEEPSEEK_V4_FLASH.id]: OpenRouterCommonOptions & Pick<OpenRouterBaseOptions, 'frequencyPenalty' | 'logitBias' | 'logprobs' | 'maxCompletionTokens' | 'parallelToolCalls' | 'presencePenalty' | 'reasoning' | 'responseFormat' | 'seed' | 'stop' | 'temperature' | 'toolChoice' | 'topLogprobs' | 'topP'>;
++    [DEEPSEEK_DEEPSEEK_V4_PRO.id]: OpenRouterCommonOptions & Pick<OpenRouterBaseOptions, 'frequencyPenalty' | 'logitBias' | 'logprobs' | 'maxCompletionTokens' | 'parallelToolCalls' | 'presencePenalty' | 'reasoning' | 'responseFormat' | 'seed' | 'stop' | 'temperature' | 'toolChoice' | 'topLogprobs' | 'topP'>;
+     [ESSENTIALAI_RNJ_1_INSTRUCT.id]: OpenRouterCommonOptions & Pick<OpenRouterBaseOptions, 'frequencyPenalty' | 'logitBias' | 'maxCompletionTokens' | 'presencePenalty' | 'responseFormat' | 'stop' | 'temperature' | 'toolChoice' | 'topP'>;
+     [GOOGLE_GEMINI_2_0_FLASH_001.id]: OpenRouterCommonOptions & Pick<OpenRouterBaseOptions, 'maxCompletionTokens' | 'responseFormat' | 'seed' | 'stop' | 'temperature' | 'toolChoice' | 'topP'>;
+     [GOOGLE_GEMINI_2_0_FLASH_LITE_001.id]: OpenRouterCommonOptions & Pick<OpenRouterBaseOptions, 'maxCompletionTokens' | 'responseFormat' | 'seed' | 'stop' | 'temperature' | 'toolChoice' | 'topP'>;
+@@ -8207,6 +8255,8 @@ export type OpenRouterModelInputModalitiesByName = {
+     [DEEPSEEK_DEEPSEEK_V3_2.id]: ReadonlyArray<'text'>;
+     [DEEPSEEK_DEEPSEEK_V3_2_EXP.id]: ReadonlyArray<'text'>;
+     [DEEPSEEK_DEEPSEEK_V3_2_SPECIALE.id]: ReadonlyArray<'text'>;
++    [DEEPSEEK_DEEPSEEK_V4_FLASH.id]: ReadonlyArray<'text'>;
++    [DEEPSEEK_DEEPSEEK_V4_PRO.id]: ReadonlyArray<'text'>;
+     [ESSENTIALAI_RNJ_1_INSTRUCT.id]: ReadonlyArray<'text'>;
+     [GOOGLE_GEMINI_2_0_FLASH_001.id]: ReadonlyArray<'text' | 'image' | 'document' | 'audio' | 'video'>;
+     [GOOGLE_GEMINI_2_0_FLASH_LITE_001.id]: ReadonlyArray<'text' | 'image' | 'document' | 'audio' | 'video'>;
+@@ -8487,7 +8537,7 @@ export type OpenRouterModelInputModalitiesByName = {
      [Z_AI_GLM_5_1.id]: ReadonlyArray<'text'>;
      [Z_AI_GLM_5V_TURBO.id]: ReadonlyArray<'image' | 'text' | 'video'>;
  };
