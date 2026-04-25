@@ -398,20 +398,35 @@ await enqueueCategorizationWorkflow(context.workflowClient, input);
 **WorkflowQueues** (declared alongside each workflow):
 - `workflow:categorize` (workerConcurrency: 10) — `categorization-workflow.ts`
 - `workflow:derive-keywords` (workerConcurrency: 5) — `derive-keywords-workflow.ts`
+- `workflow:benefit-lifecycle`, `workflow:period-end-invoice`, `workflow:trial-expiry` — `modules/billing/src/workflows/`
 
 **DBOS logging:** `initOtel()` BEFORE `launchDBOS()`. Never replace `DBOS.logger` with `getWorkerLogger` in workflows — loses DBOS context (workflowID, step, etc.).
 
-**DBOS workflows — always use DrizzleDataSource.** Cada módulo expõe um `<module>DataSource = new DrizzleDataSource(...)` e envolve acessos em `dataSource.runTransaction(async () => { const tx = DrizzleDataSource.client as DatabaseInstance; ... }, { name })`. Nunca use `db` simples em steps de workflow, nunca use repositórios.
+**DrizzleDataSource — typed instance, no casts.** Each module exposes `<module>DataSource = new DrizzleDataSource<DatabaseInstance>("name", { connectionString }, schema)`. Inside workflow steps use `dataSource.runTransaction(async () => { const tx = <module>DataSource.client; ... }, { name })`. The instance generic gives `client` typed as `DatabaseInstance` — never `DrizzleDataSource.client as DatabaseInstance`. Never use plain `db` in workflow steps, never use repositories.
 
-**Module workflow setup** — cada módulo expõe `setup<Module>Workflows(deps)` que (1) inicializa o context store, (2) cria as queues, (3) side-effect-importa os arquivos de workflow pra registrar em DBOS. O worker chama todos os `setup*` antes de `launchDBOS()`.
+**DBOS schema init** — call `DrizzleDataSource.initializeDBOSSchema({ connectionString })` once at worker startup BEFORE `launchDBOS()`. Creates the `transaction_completion` table — without it `runTransaction` throws. Do this inside `setup<Module>Workflows` (which is async).
+
+**Module workflow setup** — each module exposes `async setup<Module>Workflows(deps)` that: (1) calls `DrizzleDataSource.initializeDBOSSchema`, (2) initializes the context store, (3) creates queues, (4) side-effect imports workflow files to register them. The worker `await`s every `setup*` before `launchDBOS()`.
 
 ```typescript
 // modules/billing/src/workflows/setup.ts
-export function setupBillingWorkflows(deps: { redis, resendClient, workerConcurrency }) {
+export async function setupBillingWorkflows(deps: { redis, resendClient, workerConcurrency }) {
+   await DrizzleDataSource.initializeDBOSSchema({ connectionString: env.DATABASE_URL });
    initBillingWorkflowContext(deps.redis, deps.resendClient);
    return createBillingQueues({ workerConcurrency: deps.workerConcurrency });
 }
 ```
+
+**Scheduling — `enqueueOptions.delaySeconds`, NOT `DBOS.sleepms`.** Per the DBOS docs, `delaySeconds` puts the workflow in `DELAYED` status — it does NOT execute and does NOT hold a `workerConcurrency` slot until the delay expires. `DBOS.sleepms` inside a workflow is durable but the docs are silent on whether the slot is released; assume it is held. For long per-instance waits (per-subscription billing periods, trial expiry), always use `enqueueOptions.delaySeconds` on the initial enqueue and on self-rescheduling. Reserve `@DBOS.scheduled`/cron for fixed recurring schedules ("every Friday 9pm"), not per-row dynamic timing.
+
+**Self-rescheduling pattern** (used by `period-end-invoice-workflow`):
+1. Workflow body runs at period end (DBOS fires when `DELAYED` expires).
+2. Re-check entity status in a transaction (skip if cancelled).
+3. Do work (generate invoice).
+4. Compute next wake time **inside a `DBOS.runStep`** (deterministic, not inline).
+5. `DBOS.startWorkflow(self, { workflowID, queueName, enqueueOptions: { delaySeconds } })` for next iteration. Use a deterministic `workflowID` per period (e.g. `period-invoice-${subId}-${YYYY-MM-DD}`) so retries are idempotent.
+
+**Workflow testing — mock `@dbos-inc/dbos-sdk`** (DBOS's official unit-test pattern). Use `vi.hoisted` + `dbosSdkMockFactory` / `drizzleDataSourceMockFactory` from `@core/dbos/testing/mock-dbos`. Critical: `registerWorkflow` must return the function directly (not the durable wrapper). pglite-backed `setupTestDb()` runs the real schema in-memory for assertions. For time-mocked end-to-end runs, `vi.useFakeTimers()` + `vi.setSystemTime(T0)` and invoke the workflow function directly — `DBOS.startWorkflow` mock captures the next-period enqueue with `delaySeconds`, no real wait. See `__tests__/workflows/period-end-invoice.test.ts` for an example.
 
 Single agent `rubiAgent`:
 

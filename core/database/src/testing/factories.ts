@@ -1,6 +1,6 @@
 import { seed } from "drizzle-seed";
-import type { DatabaseInstance } from "../client";
-import * as schema from "../schema";
+import type { DatabaseInstance } from "@core/database/client";
+import * as schema from "@core/database/schema";
 
 function rand() {
    return Math.floor(Math.random() * 1_000_000);

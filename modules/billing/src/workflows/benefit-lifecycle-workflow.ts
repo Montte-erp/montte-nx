@@ -1,9 +1,7 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
-import { DrizzleDataSource } from "@dbos-inc/drizzle-datasource";
 import { fromPromise } from "neverthrow";
 import { and, eq } from "drizzle-orm";
 import dayjs from "dayjs";
-import type { DatabaseInstance } from "@core/database/client";
 import { WorkflowError } from "@core/dbos/errors";
 import { benefitGrants } from "@core/database/schemas/benefit-grants";
 import type { SubscriptionStatus } from "@core/database/schemas/subscriptions";
@@ -32,10 +30,10 @@ async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
    const ctx = `[benefit-lifecycle] sub=${input.subscriptionId} team=${input.teamId}`;
    DBOS.logger.info(`${ctx} started newStatus=${input.newStatus}`);
 
-   const benefits = await fromPromise(
+   const benefitsResult = await fromPromise(
       billingDataSource.runTransaction(
          async () => {
-            const tx = DrizzleDataSource.client as DatabaseInstance;
+            const tx = billingDataSource.client;
             const rows = await tx.query.serviceBenefits.findMany({
                where: (f, { eq: eqFn }) => eqFn(f.serviceId, input.serviceId),
                with: { benefit: true },
@@ -48,12 +46,9 @@ async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
          WorkflowError.database("Falha ao buscar benefícios do serviço.", {
             cause: e,
          }),
-   ).match(
-      (rows) => rows,
-      (e) => {
-         throw e;
-      },
    );
+   if (benefitsResult.isErr()) throw benefitsResult.error;
+   const benefits = benefitsResult.value;
 
    if (benefits.length === 0) {
       DBOS.logger.info(`${ctx} no benefits found — skipping`);
@@ -71,10 +66,10 @@ async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
    const shouldGrant = GRANT_STATUSES.includes(input.newStatus);
 
    if (shouldRevoke) {
-      await fromPromise(
+      const revokeResult = await fromPromise(
          billingDataSource.runTransaction(
             async () => {
-               const tx = DrizzleDataSource.client as DatabaseInstance;
+               const tx = billingDataSource.client;
                await tx
                   .update(benefitGrants)
                   .set({ status: "revoked", revokedAt: dayjs().toDate() })
@@ -91,14 +86,10 @@ async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
             WorkflowError.database("Falha ao revogar benefícios.", {
                cause: e,
             }),
-      ).match(
-         () => {},
-         (e) => {
-            throw e;
-         },
       );
+      if (revokeResult.isErr()) throw revokeResult.error;
 
-      await fromPromise(
+      const publishResult = await fromPromise(
          DBOS.runStep(
             () =>
                publisher.publish("job.notification", {
@@ -117,21 +108,17 @@ async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
                "Falha ao publicar notificação de revogação.",
                { cause: e },
             ),
-      ).match(
-         () => {},
-         (e) => {
-            throw e;
-         },
       );
+      if (publishResult.isErr()) throw publishResult.error;
 
       DBOS.logger.info(`${ctx} benefits revoked`);
    }
 
    if (shouldGrant) {
-      await fromPromise(
+      const grantResult = await fromPromise(
          billingDataSource.runTransaction(
             async () => {
-               const tx = DrizzleDataSource.client as DatabaseInstance;
+               const tx = billingDataSource.client;
                await tx
                   .insert(benefitGrants)
                   .values(
@@ -156,14 +143,10 @@ async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
             WorkflowError.database("Falha ao conceder benefícios.", {
                cause: e,
             }),
-      ).match(
-         () => {},
-         (e) => {
-            throw e;
-         },
       );
+      if (grantResult.isErr()) throw grantResult.error;
 
-      await fromPromise(
+      const publishResult = await fromPromise(
          DBOS.runStep(
             () =>
                publisher.publish("job.notification", {
@@ -182,12 +165,8 @@ async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
                "Falha ao publicar notificação de concessão.",
                { cause: e },
             ),
-      ).match(
-         () => {},
-         (e) => {
-            throw e;
-         },
       );
+      if (publishResult.isErr()) throw publishResult.error;
 
       DBOS.logger.info(`${ctx} benefits granted`);
    }

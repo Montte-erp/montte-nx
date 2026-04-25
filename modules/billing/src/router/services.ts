@@ -11,6 +11,7 @@ import { WebAppError } from "@core/logging/errors";
 import { getLogger } from "@core/logging/root";
 import { protectedProcedure, billableProcedure } from "@core/orpc/server";
 import { enqueueBenefitLifecycleWorkflow } from "../workflows/benefit-lifecycle-workflow";
+import { enqueuePeriodEndInvoiceWorkflow } from "../workflows/period-end-invoice-workflow";
 import { enqueueTrialExpiryWorkflow } from "../workflows/trial-expiry-workflow";
 import {
    createServiceSchema,
@@ -377,6 +378,45 @@ export const createSubscription = billableProcedure
                   "Falha ao enfileirar workflow de benefícios",
                ),
             );
+         }
+
+         const firstPrice = prices[0];
+         if (firstPrice && firstPrice.interval !== "one_time") {
+            const now = dayjs();
+            const periodEnd =
+               firstPrice.interval === "hourly"
+                  ? now.add(1, "hour")
+                  : firstPrice.interval === "monthly"
+                    ? now.add(1, "month")
+                    : firstPrice.interval === "annual"
+                      ? now.add(1, "year")
+                      : null;
+            if (periodEnd) {
+               const delaySeconds = Math.max(
+                  0,
+                  Math.floor(periodEnd.diff(now) / 1000),
+               );
+               const contact = await context.db.query.contacts.findFirst({
+                  where: (f, { eq }) => eq(f.id, sub.contactId),
+               });
+               enqueuePeriodEndInvoiceWorkflow(
+                  context.workflowClient,
+                  {
+                     teamId: sub.teamId,
+                     subscriptionId: sub.id,
+                     periodStart: now.toISOString(),
+                     periodEnd: periodEnd.toISOString(),
+                     contactEmail: contact?.email ?? undefined,
+                     contactName: contact?.name ?? undefined,
+                  },
+                  { delaySeconds },
+               ).catch((e) =>
+                  logger.error(
+                     { err: e, subscriptionId: sub.id },
+                     "Falha ao enfileirar workflow de fatura",
+                  ),
+               );
+            }
          }
       }
 

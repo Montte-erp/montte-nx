@@ -1,5 +1,4 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
-import { DrizzleDataSource } from "@dbos-inc/drizzle-datasource";
 import { fromPromise } from "neverthrow";
 import { and, count, eq, gte, lte, sum } from "drizzle-orm";
 import dayjs from "dayjs";
@@ -13,7 +12,6 @@ import {
    greaterThan,
    toMajorUnitsString,
 } from "@f-o-t/money";
-import type { DatabaseInstance } from "@core/database/client";
 import { WorkflowError } from "@core/dbos/errors";
 import { sendBillingInvoiceGenerated } from "@core/transactional/client";
 import { couponRedemptions } from "@core/database/schemas/coupons";
@@ -46,13 +44,43 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
    const ctx = `[period-end-invoice] sub=${input.subscriptionId} team=${input.teamId}`;
 
    DBOS.logger.info(
-      `${ctx} started period=${input.periodStart}/${input.periodEnd}`,
+      `${ctx} running period=${input.periodStart}/${input.periodEnd}`,
    );
 
-   const invoiceData = await fromPromise(
+   const statusResult = await fromPromise(
       billingDataSource.runTransaction(
          async () => {
-            const tx = DrizzleDataSource.client as DatabaseInstance;
+            const tx = billingDataSource.client;
+            return (
+               (await tx.query.contactSubscriptions.findFirst({
+                  where: (f, { eq: eqFn }) => eqFn(f.id, input.subscriptionId),
+               })) ?? null
+            );
+         },
+         { name: "checkSubscriptionStatus" },
+      ),
+      (e) =>
+         WorkflowError.database("Falha ao verificar status da assinatura.", {
+            cause: e,
+         }),
+   );
+   if (statusResult.isErr()) throw statusResult.error;
+   const subStatus = statusResult.value;
+   if (!subStatus)
+      throw WorkflowError.notFound(
+         `Assinatura ${input.subscriptionId} não encontrada.`,
+      );
+   if (subStatus.status === "cancelled" || subStatus.status === "completed") {
+      DBOS.logger.info(
+         `${ctx} subscription not billable — status=${subStatus.status} — skipping invoice`,
+      );
+      return;
+   }
+
+   const invoiceDataResult = await fromPromise(
+      billingDataSource.runTransaction(
+         async () => {
+            const tx = billingDataSource.client;
 
             const sub = await tx.query.contactSubscriptions.findFirst({
                where: (f, { eq: eqFn }) => eqFn(f.id, input.subscriptionId),
@@ -160,14 +188,11 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
             : WorkflowError.database("Falha ao buscar dados da fatura.", {
                  cause: e,
               }),
-   ).match(
-      (data) => data,
-      (e) => {
-         throw e;
-      },
    );
+   if (invoiceDataResult.isErr()) throw invoiceDataResult.error;
+   const invoiceData = invoiceDataResult.value;
 
-   const computation = await fromPromise(
+   const computationResult = await fromPromise(
       DBOS.runStep(
          async () => {
             const {
@@ -283,17 +308,14 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
          WorkflowError.internal("Falha ao computar itens da fatura.", {
             cause: e,
          }),
-   ).match(
-      (result) => result,
-      (e) => {
-         throw e;
-      },
    );
+   if (computationResult.isErr()) throw computationResult.error;
+   const computation = computationResult.value;
 
-   const invoice = await fromPromise(
+   const invoiceResult = await fromPromise(
       billingDataSource.runTransaction(
          async () => {
-            const tx = DrizzleDataSource.client as DatabaseInstance;
+            const tx = billingDataSource.client;
             const [row] = await tx
                .insert(invoices)
                .values({
@@ -321,14 +343,11 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
             : WorkflowError.database("Falha ao persistir fatura.", {
                  cause: e,
               }),
-   ).match(
-      (row) => row,
-      (e) => {
-         throw e;
-      },
    );
+   if (invoiceResult.isErr()) throw invoiceResult.error;
+   const invoice = invoiceResult.value;
 
-   await fromPromise(
+   const publishResult = await fromPromise(
       DBOS.runStep(
          () =>
             publisher.publish("job.notification", {
@@ -351,14 +370,10 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
          WorkflowError.internal("Falha ao publicar notificação de fatura.", {
             cause: e,
          }),
-   ).match(
-      () => {},
-      (e) => {
-         throw e;
-      },
    );
+   if (publishResult.isErr()) throw publishResult.error;
 
-   await fromPromise(
+   const emailResult = await fromPromise(
       DBOS.runStep(
          async () => {
             const resendClient = getBillingResendClient();
@@ -382,12 +397,61 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
          WorkflowError.internal("Falha ao enviar e-mails de fatura.", {
             cause: e,
          }),
-   ).match(
-      () => {},
-      (e) => {
-         throw e;
-      },
    );
+   if (emailResult.isErr()) throw emailResult.error;
+
+   const nextPeriodResult = await fromPromise(
+      DBOS.runStep(
+         async () => {
+            const firstPrice = invoiceData.prices[0];
+            if (!firstPrice) return null;
+
+            const nextPeriodStart = dayjs(input.periodEnd);
+            const nextPeriodEnd = (() => {
+               if (firstPrice.interval === "hourly")
+                  return nextPeriodStart.add(1, "hour");
+               if (firstPrice.interval === "monthly")
+                  return nextPeriodStart.add(1, "month");
+               if (firstPrice.interval === "annual")
+                  return nextPeriodStart.add(1, "year");
+               return null;
+            })();
+            if (!nextPeriodEnd) return null;
+
+            return {
+               periodStart: nextPeriodStart.toISOString(),
+               periodEnd: nextPeriodEnd.toISOString(),
+            };
+         },
+         { name: "computeNextPeriod" },
+      ),
+      (e) =>
+         WorkflowError.internal("Falha ao computar próximo período.", {
+            cause: e,
+         }),
+   );
+   if (nextPeriodResult.isErr()) throw nextPeriodResult.error;
+   const nextPeriod = nextPeriodResult.value;
+
+   if (nextPeriod) {
+      const nextInput: PeriodEndInvoiceInput = {
+         ...input,
+         periodStart: nextPeriod.periodStart,
+         periodEnd: nextPeriod.periodEnd,
+      };
+      const delaySeconds = Math.max(
+         0,
+         Math.floor(dayjs(nextPeriod.periodEnd).diff(dayjs()) / 1000),
+      );
+      await DBOS.startWorkflow(periodEndInvoiceWorkflow, {
+         workflowID: `period-invoice-${input.subscriptionId}-${dayjs(nextPeriod.periodEnd).format("YYYY-MM-DD")}`,
+         queueName: `workflow:${BILLING_QUEUES.periodEndInvoice}`,
+         enqueueOptions: { delaySeconds },
+      })(nextInput);
+      DBOS.logger.info(
+         `${ctx} next period scheduled — periodEnd=${nextPeriod.periodEnd} delaySeconds=${delaySeconds}`,
+      );
+   }
 
    DBOS.logger.info(
       `${ctx} completed — invoiceId=${invoice.id} total=${computation.total}`,

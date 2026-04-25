@@ -26,7 +26,7 @@ const resendClient = createResendClient(env.RESEND_API_KEY);
 
 logger.info("Starting worker");
 
-setupBillingWorkflows({ redis, resendClient, workerConcurrency: 10 });
+await setupBillingWorkflows({ redis, resendClient, workerConcurrency: 10 });
 
 launchDBOS({
    db,

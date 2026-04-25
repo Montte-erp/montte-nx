@@ -872,4 +872,74 @@ describe("periodEndInvoiceWorkflow", () => {
          billingResendSpies.sendBillingInvoiceGenerated,
       ).not.toHaveBeenCalled();
    });
+
+   it("re-enqueues next period workflow with delaySeconds≈30d after running at period end", async () => {
+      const T0 = dayjs("2026-04-25T00:00:00.000Z");
+      vi.useFakeTimers();
+      vi.setSystemTime(T0.toDate());
+
+      const { teamId } = await seedTeam(testDb.db);
+      const contact = await makeContact(testDb.db, { teamId });
+      const service = await makeService(testDb.db, { teamId });
+      const price = await makePrice(testDb.db, {
+         teamId,
+         serviceId: service.id,
+         basePrice: "20.00",
+         type: "flat",
+         interval: "monthly",
+      });
+      const sub = await makeSubscription(testDb.db, {
+         teamId,
+         contactId: contact.id,
+         status: "active",
+      });
+      await makeSubscriptionItem(testDb.db, {
+         teamId,
+         subscriptionId: sub.id,
+         priceId: price.id,
+         quantity: 1,
+      });
+
+      const thisPeriodStart = T0.subtract(1, "month").toISOString();
+      const thisPeriodEnd = T0.toISOString();
+
+      const mocks = await dbosMocks;
+      mocks.startWorkflowSpy.mockClear();
+
+      await periodEndInvoiceWorkflow({
+         teamId,
+         subscriptionId: sub.id,
+         periodStart: thisPeriodStart,
+         periodEnd: thisPeriodEnd,
+      });
+
+      const invoice = await getInvoiceForSub(sub.id);
+      expect(invoice).toBeDefined();
+      expect(invoice?.total).toBe("20.00");
+
+      expect(mocks.startWorkflowSpy).toHaveBeenCalledTimes(1);
+      const [params, nextInput] = mocks.startWorkflowSpy.mock.calls[0] ?? [];
+      const expectedNextEnd = T0.add(1, "month");
+      expect(params).toMatchObject({
+         workflowID: `period-invoice-${sub.id}-${expectedNextEnd.format("YYYY-MM-DD")}`,
+         queueName: "workflow:period-end-invoice",
+         enqueueOptions: expect.objectContaining({
+            delaySeconds: expect.any(Number),
+         }),
+      });
+      const delay = (params as { enqueueOptions: { delaySeconds: number } })
+         .enqueueOptions.delaySeconds;
+      const expectedDelaySec = Math.floor(expectedNextEnd.diff(T0) / 1000);
+      expect(delay).toBeGreaterThan(expectedDelaySec - 5);
+      expect(delay).toBeLessThanOrEqual(expectedDelaySec);
+
+      expect(nextInput).toMatchObject({
+         teamId,
+         subscriptionId: sub.id,
+         periodStart: thisPeriodEnd,
+         periodEnd: expectedNextEnd.toISOString(),
+      });
+
+      vi.useRealTimers();
+   });
 });

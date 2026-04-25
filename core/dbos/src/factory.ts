@@ -20,12 +20,15 @@ export function createEnqueuer<T>(
    queueName: string,
    getWorkflowId?: (input: T) => string,
 ) {
-   return (client: DBOSClient, input: T) =>
+   return (client: DBOSClient, input: T, options?: { delaySeconds?: number }) =>
       client.enqueue(
          {
             workflowName,
             queueName: `workflow:${queueName}`,
             ...(getWorkflowId && { workflowID: getWorkflowId(input) }),
+            ...(options?.delaySeconds !== undefined && {
+               enqueueOptions: { delaySeconds: options.delaySeconds },
+            }),
          },
          input,
       );

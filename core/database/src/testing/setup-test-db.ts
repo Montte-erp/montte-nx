@@ -2,8 +2,8 @@ import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { pushSchema } from "drizzle-kit/api";
 import { fromPromise } from "neverthrow";
-import * as schema from "../schema";
-import type { DatabaseInstance } from "../client";
+import * as schema from "@core/database/schema";
+import type { DatabaseInstance } from "@core/database/client";
 
 const ROLLBACK_MARKER = "__test_rollback__";
 

@@ -24,6 +24,7 @@ import { vi } from "vitest";
 export type DbosMocks = {
    runStepSpy: ReturnType<typeof vi.fn>;
    sleepSpy: ReturnType<typeof vi.fn>;
+   startWorkflowSpy: ReturnType<typeof vi.fn<(...args: unknown[]) => void>>;
    infoSpy: ReturnType<typeof vi.fn>;
    warnSpy: ReturnType<typeof vi.fn>;
    errorSpy: ReturnType<typeof vi.fn>;
@@ -36,6 +37,7 @@ export function createDbosMocks(): DbosMocks {
    return {
       runStepSpy: vi.fn(async (fn: () => unknown) => fn()),
       sleepSpy: vi.fn(async () => undefined),
+      startWorkflowSpy: vi.fn<(...args: unknown[]) => void>(),
       infoSpy: vi.fn(),
       warnSpy: vi.fn(),
       errorSpy: vi.fn(),
@@ -61,6 +63,15 @@ export function dbosSdkMockFactory(mocks: DbosMocks) {
          runStep: mocks.runStepSpy,
          sleepms: mocks.sleepSpy,
          registerWorkflow: <F extends (...args: any[]) => any>(fn: F) => fn,
+         startWorkflow: <Args extends unknown[], R>(
+            _target: (...args: Args) => Promise<R>,
+            params?: unknown,
+         ) => {
+            return (...args: Args) => {
+               mocks.startWorkflowSpy(params, ...args);
+               return Promise.resolve(undefined);
+            };
+         },
       },
       WorkflowQueue: class WorkflowQueue {
          constructor(
@@ -81,8 +92,14 @@ export function drizzleDataSourceMockFactory(mocks: DbosMocks) {
       runTransaction<T>(fn: () => Promise<T>): Promise<T> {
          return fn();
       }
+      get client() {
+         return mocks.getActiveDb();
+      }
       static get client() {
          return mocks.getActiveDb();
+      }
+      static initializeDBOSSchema() {
+         return Promise.resolve();
       }
    }
    return { DrizzleDataSource };

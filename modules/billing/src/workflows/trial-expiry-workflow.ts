@@ -1,9 +1,7 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
-import { DrizzleDataSource } from "@dbos-inc/drizzle-datasource";
 import { fromPromise } from "neverthrow";
 import { eq } from "drizzle-orm";
 import dayjs from "dayjs";
-import type { DatabaseInstance } from "@core/database/client";
 import { WorkflowError } from "@core/dbos/errors";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 import {
@@ -19,6 +17,10 @@ import {
    getBillingResendClient,
    createEnqueuer,
 } from "./context";
+import {
+   periodEndInvoiceWorkflow,
+   type PeriodEndInvoiceInput,
+} from "./period-end-invoice-workflow";
 
 export type TrialExpiryInput = {
    teamId: string;
@@ -39,7 +41,7 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
       .diff(dayjs());
    if (msUntilWarning > 0) await DBOS.sleepms(msUntilWarning);
 
-   await fromPromise(
+   const warningResult = await fromPromise(
       DBOS.runStep(
          async () => {
             const resendClient = getBillingResendClient();
@@ -71,20 +73,16 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
             "Falha ao enviar aviso de expiração de trial.",
             { cause: e },
          ),
-   ).match(
-      () => {},
-      (e) => {
-         throw e;
-      },
    );
+   if (warningResult.isErr()) throw warningResult.error;
 
    const msUntilExpiry = dayjs(input.trialEndsAt).diff(dayjs());
    if (msUntilExpiry > 0) await DBOS.sleepms(msUntilExpiry);
 
-   const subscription = await fromPromise(
+   const subscriptionResult = await fromPromise(
       billingDataSource.runTransaction(
          async () => {
-            const tx = DrizzleDataSource.client as DatabaseInstance;
+            const tx = billingDataSource.client;
             return (
                (await tx.query.contactSubscriptions.findFirst({
                   where: (f, { eq: eqFn }) => eqFn(f.id, input.subscriptionId),
@@ -95,12 +93,9 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
       ),
       (e) =>
          WorkflowError.database("Falha ao buscar assinatura.", { cause: e }),
-   ).match(
-      (sub) => sub,
-      (e) => {
-         throw e;
-      },
    );
+   if (subscriptionResult.isErr()) throw subscriptionResult.error;
+   const subscription = subscriptionResult.value;
 
    if (
       !subscription ||
@@ -113,10 +108,10 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
       return;
    }
 
-   await fromPromise(
+   const activateResult = await fromPromise(
       billingDataSource.runTransaction(
          async () => {
-            const tx = DrizzleDataSource.client as DatabaseInstance;
+            const tx = billingDataSource.client;
             await tx
                .update(contactSubscriptions)
                .set({ status: "active" })
@@ -126,14 +121,10 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
       ),
       (e) =>
          WorkflowError.database("Falha ao ativar assinatura.", { cause: e }),
-   ).match(
-      () => {},
-      (e) => {
-         throw e;
-      },
    );
+   if (activateResult.isErr()) throw activateResult.error;
 
-   await fromPromise(
+   const publishResult = await fromPromise(
       DBOS.runStep(
          () =>
             publisher.publish("job.notification", {
@@ -151,14 +142,10 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
          WorkflowError.internal("Falha ao publicar notificação de expiração.", {
             cause: e,
          }),
-   ).match(
-      () => {},
-      (e) => {
-         throw e;
-      },
    );
+   if (publishResult.isErr()) throw publishResult.error;
 
-   await fromPromise(
+   const emailResult = await fromPromise(
       DBOS.runStep(
          async () => {
             const resendClient = getBillingResendClient();
@@ -178,12 +165,67 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
          WorkflowError.internal("Falha ao enviar e-mails de expiração.", {
             cause: e,
          }),
-   ).match(
-      () => {},
-      (e) => {
-         throw e;
-      },
    );
+   if (emailResult.isErr()) throw emailResult.error;
+
+   const nextPeriodResult = await fromPromise(
+      DBOS.runStep(
+         async () => {
+            const tx = billingDataSource.client;
+            const items = await tx.query.subscriptionItems.findMany({
+               where: (f, { eq: eqFn }) =>
+                  eqFn(f.subscriptionId, input.subscriptionId),
+               with: { price: true },
+            });
+            const firstPrice = items[0]?.price;
+            if (!firstPrice || firstPrice.interval === "one_time") return null;
+
+            const now = dayjs();
+            const periodEnd =
+               firstPrice.interval === "hourly"
+                  ? now.add(1, "hour")
+                  : firstPrice.interval === "monthly"
+                    ? now.add(1, "month")
+                    : firstPrice.interval === "annual"
+                      ? now.add(1, "year")
+                      : null;
+            if (!periodEnd) return null;
+
+            return {
+               periodStart: now.toISOString(),
+               periodEnd: periodEnd.toISOString(),
+            };
+         },
+         { name: "computeFirstPeriod" },
+      ),
+      (e) =>
+         WorkflowError.internal("Falha ao computar primeiro período.", {
+            cause: e,
+         }),
+   );
+   if (nextPeriodResult.isErr()) throw nextPeriodResult.error;
+   const nextPeriod = nextPeriodResult.value;
+
+   if (nextPeriod) {
+      const invoiceInput: PeriodEndInvoiceInput = {
+         teamId: input.teamId,
+         subscriptionId: input.subscriptionId,
+         periodStart: nextPeriod.periodStart,
+         periodEnd: nextPeriod.periodEnd,
+         contactEmail: input.contactEmail,
+         contactName: input.contactName,
+         emailFrom: input.emailFrom,
+      };
+      const delaySeconds = Math.max(
+         0,
+         Math.floor(dayjs(nextPeriod.periodEnd).diff(dayjs()) / 1000),
+      );
+      await DBOS.startWorkflow(periodEndInvoiceWorkflow, {
+         workflowID: `period-invoice-${input.subscriptionId}-${dayjs(nextPeriod.periodEnd).format("YYYY-MM-DD")}`,
+         queueName: `workflow:${BILLING_QUEUES.periodEndInvoice}`,
+         enqueueOptions: { delaySeconds },
+      })(invoiceInput);
+   }
 
    DBOS.logger.info(`${ctx} completed — subscription activated`);
 }

@@ -819,14 +819,15 @@ describe("services router", () => {
          await new Promise((r) => setImmediate(r));
 
          expect(result.status).toBe("active");
-         expect(ctx.workflowClient.enqueue).toHaveBeenCalledTimes(1);
-         const call0 = ctx.workflowClient.enqueue.mock.calls[0];
-         expect(call0?.[1]).toMatchObject({
-            teamId,
-            subscriptionId: result.id,
-            serviceId: service.id,
-            newStatus: "active",
-         });
+         expect(ctx.workflowClient.enqueue).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({
+               teamId,
+               subscriptionId: result.id,
+               serviceId: service.id,
+               newStatus: "active",
+            }),
+         );
       });
 
       it("createSubscription enqueues benefit-lifecycle for each unique item service", async () => {
@@ -862,7 +863,6 @@ describe("services router", () => {
          );
          await new Promise((r) => setImmediate(r));
 
-         expect(ctx.workflowClient.enqueue).toHaveBeenCalledTimes(2);
          expect(ctx.workflowClient.enqueue).toHaveBeenCalledWith(
             expect.anything(),
             expect.objectContaining({

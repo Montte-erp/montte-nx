@@ -1,6 +1,7 @@
 import { DrizzleDataSource } from "@dbos-inc/drizzle-datasource";
 import { WorkflowQueue } from "@dbos-inc/dbos-sdk";
 import { createStore } from "@tanstack/store";
+import type { DatabaseInstance } from "@core/database/client";
 import * as schema from "@core/database/schema";
 import { env } from "@core/environment/worker";
 import type { Redis } from "@core/redis/connection";
@@ -10,7 +11,7 @@ import { BILLING_QUEUES } from "../constants";
 
 export { createEnqueuer } from "@core/dbos/factory";
 
-export const billingDataSource = new DrizzleDataSource(
+export const billingDataSource = new DrizzleDataSource<DatabaseInstance>(
    "billing",
    { connectionString: env.DATABASE_URL },
    schema,
