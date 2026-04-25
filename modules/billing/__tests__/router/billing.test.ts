@@ -111,13 +111,12 @@ describe("billing router", () => {
             okAsync([{ id: "evt_1" }]),
          );
          const ctx = createTestContext(testDb.db, {
+            organizationId: "cus_123",
             extras: { hyprpayClient },
          });
-         const result = await call(
-            billing.getUsageSummary,
-            { customerId: "cus_123" },
-            { context: ctx },
-         );
+         const result = await call(billing.getUsageSummary, undefined, {
+            context: ctx,
+         });
          expect(result).toEqual([{ id: "evt_1" }]);
          expect(hyprpayClient.usage.list).toHaveBeenCalledWith({
             customerId: "cus_123",
@@ -133,11 +132,7 @@ describe("billing router", () => {
             extras: { hyprpayClient },
          });
          await expect(
-            call(
-               billing.getUsageSummary,
-               { customerId: "cus_123" },
-               { context: ctx },
-            ),
+            call(billing.getUsageSummary, undefined, { context: ctx }),
          ).rejects.toSatisfy(
             (e: Error & { code?: string }) =>
                e.code === "INTERNAL_SERVER_ERROR",
@@ -152,11 +147,12 @@ describe("billing router", () => {
             okAsync({ url: "https://billing.hyprpay.dev/session/abc" }),
          );
          const ctx = createTestContext(testDb.db, {
+            organizationId: "cus_123",
             extras: { hyprpayClient },
          });
          const result = await call(
             billing.getCustomerPortalSession,
-            { customerId: "cus_123" },
+            undefined,
             { context: ctx },
          );
          expect(result).toEqual({
@@ -176,11 +172,9 @@ describe("billing router", () => {
             extras: { hyprpayClient },
          });
          await expect(
-            call(
-               billing.getCustomerPortalSession,
-               { customerId: "cus_123" },
-               { context: ctx },
-            ),
+            call(billing.getCustomerPortalSession, undefined, {
+               context: ctx,
+            }),
          ).rejects.toSatisfy(
             (e: Error & { code?: string }) =>
                e.code === "INTERNAL_SERVER_ERROR",

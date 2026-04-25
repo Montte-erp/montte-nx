@@ -19,6 +19,7 @@ export default defineConfig({
          POSTHOG_PROJECT_ID: "test-project-id",
          POSTHOG_PERSONAL_API_KEY: "phx_test_personal_key",
          RESEND_API_KEY: "re_test_dummy",
+         HYPRPAY_API_KEY: "hyprpay_test",
          MINIO_ENDPOINT: "localhost:9000",
       },
    },

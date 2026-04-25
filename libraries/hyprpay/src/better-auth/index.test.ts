@@ -4,11 +4,13 @@ import { HyprPayError } from "../errors";
 
 const mockCreate = vi.fn();
 
-vi.mock("../client", () => ({
-   createHyprPayClient: vi.fn(() => ({
+function makeClient() {
+   return {
       customers: { create: mockCreate },
-   })),
-}));
+   } as unknown as Parameters<
+      (typeof import("./index"))["hyprpay"]
+   >[0]["client"];
+}
 
 async function importPlugin() {
    const mod = await import("./index");
@@ -50,14 +52,14 @@ describe("hyprpay better-auth plugin", () => {
 
    it("returns plugin with id 'hyprpay'", async () => {
       const { hyprpay } = await importPlugin();
-      const plugin = hyprpay({ apiKey: "key" });
+      const plugin = hyprpay({ client: makeClient() });
       expect(plugin.id).toBe("hyprpay");
    });
 
    describe("databaseHooks.user.create.after", () => {
       it("does nothing when createCustomerOnSignUp is false", async () => {
          const after = await getAfterHook({
-            apiKey: "key",
+            client: makeClient(),
             createCustomerOnSignUp: false,
          });
          await after(mockUser, null);
@@ -67,7 +69,7 @@ describe("hyprpay better-auth plugin", () => {
       it("calls sdkClient.customers.create with default mapper", async () => {
          mockCreate.mockResolvedValueOnce(ok({ id: "c1" }));
          const after = await getAfterHook({
-            apiKey: "key",
+            client: makeClient(),
             createCustomerOnSignUp: true,
          });
          await after(mockUser, null);
@@ -81,7 +83,7 @@ describe("hyprpay better-auth plugin", () => {
       it("uses custom customerData mapper when provided", async () => {
          mockCreate.mockResolvedValueOnce(ok({ id: "c1" }));
          const after = await getAfterHook({
-            apiKey: "key",
+            client: makeClient(),
             createCustomerOnSignUp: true,
             customerData: (u) => ({
                name: `CUSTOM-${u.name}`,
@@ -100,7 +102,7 @@ describe("hyprpay better-auth plugin", () => {
          mockCreate.mockResolvedValueOnce(ok(customer));
          const onCustomerCreate = vi.fn().mockResolvedValue(undefined);
          const after = await getAfterHook({
-            apiKey: "key",
+            client: makeClient(),
             createCustomerOnSignUp: true,
             onCustomerCreate,
          });
@@ -114,7 +116,7 @@ describe("hyprpay better-auth plugin", () => {
             .mockImplementation(() => {});
          mockCreate.mockResolvedValueOnce(err(HyprPayError.internal("fail")));
          const after = await getAfterHook({
-            apiKey: "key",
+            client: makeClient(),
             createCustomerOnSignUp: true,
          });
          await expect(after(mockUser, null)).resolves.toBeUndefined();
@@ -135,7 +137,7 @@ describe("hyprpay better-auth plugin", () => {
             .fn()
             .mockRejectedValue(new Error("callback boom"));
          const after = await getAfterHook({
-            apiKey: "key",
+            client: makeClient(),
             createCustomerOnSignUp: true,
             onCustomerCreate,
          });

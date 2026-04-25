@@ -1,10 +1,6 @@
 import { fromPromise } from "neverthrow";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
-import {
-   getUsageSummaryInputSchema,
-   getCustomerPortalSessionInputSchema,
-} from "../contracts/billing";
 
 export const getEventCatalog = protectedProcedure.handler(
    async ({ context }) => {
@@ -19,24 +15,24 @@ export const getEventCatalog = protectedProcedure.handler(
    },
 );
 
-export const getUsageSummary = protectedProcedure
-   .input(getUsageSummaryInputSchema)
-   .handler(async ({ context, input }) => {
+export const getUsageSummary = protectedProcedure.handler(
+   async ({ context }) => {
       const result = await context.hyprpayClient.usage
-         .list({ customerId: input.customerId })
+         .list({ customerId: context.organizationId })
          .mapErr(() => WebAppError.internal("Falha ao buscar uso."));
       if (result.isErr()) throw result.error;
       return result.value;
-   });
+   },
+);
 
-export const getCustomerPortalSession = protectedProcedure
-   .input(getCustomerPortalSessionInputSchema)
-   .handler(async ({ context, input }) => {
+export const getCustomerPortalSession = protectedProcedure.handler(
+   async ({ context }) => {
       const result = await context.hyprpayClient.customerPortal
-         .createSession(input.customerId)
+         .createSession(context.organizationId)
          .mapErr(() =>
             WebAppError.internal("Falha ao criar sessão do portal."),
          );
       if (result.isErr()) throw result.error;
       return result.value;
-   });
+   },
+);

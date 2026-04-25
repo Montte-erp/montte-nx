@@ -323,7 +323,7 @@ export const createSubscription = billableProcedure
             if (!row) return undefined;
 
             if (items && items.length > 0) {
-               const results = await Promise.allSettled(
+               await Promise.all(
                   items.map((item) =>
                      tx
                         .insert(subscriptionItems)
@@ -335,7 +335,6 @@ export const createSubscription = billableProcedure
                         .returning(),
                   ),
                );
-               if (results.some((r) => r.status === "rejected")) return null;
             }
 
             return row;
@@ -343,8 +342,6 @@ export const createSubscription = billableProcedure
          () => WebAppError.internal("Falha ao criar assinatura."),
       );
       if (result.isErr()) throw result.error;
-      if (result.value === null)
-         throw WebAppError.internal("Falha ao adicionar itens à assinatura.");
       if (!result.value)
          throw WebAppError.internal("Falha ao criar assinatura: insert vazio.");
       const sub = result.value;
@@ -415,21 +412,29 @@ export const cancelSubscription = protectedProcedure
          );
       const cancelled = result.value;
 
-      const firstItem = await context.db.query.subscriptionItems.findFirst({
+      const items = await context.db.query.subscriptionItems.findMany({
          where: (f, { eq }) => eq(f.subscriptionId, cancelled.id),
          with: { price: true },
       });
 
-      if (firstItem?.price) {
+      const uniqueServiceIds = Array.from(
+         new Set(
+            items
+               .map((i) => i.price?.serviceId)
+               .filter((s): s is string => Boolean(s)),
+         ),
+      );
+
+      for (const serviceId of uniqueServiceIds) {
          enqueueBenefitLifecycleWorkflow(context.workflowClient, {
             teamId: cancelled.teamId,
             subscriptionId: cancelled.id,
-            serviceId: firstItem.price.serviceId,
+            serviceId,
             newStatus: "cancelled",
             previousStatus: subscription.status,
          }).catch((e) =>
             logger.error(
-               { err: e, subscriptionId: cancelled.id },
+               { err: e, subscriptionId: cancelled.id, serviceId },
                "Falha ao enfileirar workflow de benefícios",
             ),
          );
