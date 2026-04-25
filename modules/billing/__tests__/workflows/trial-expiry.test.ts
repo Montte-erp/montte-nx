@@ -35,7 +35,10 @@ import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import { makeContact, makeSubscription } from "../helpers/billing-factories";
 
-import { trialExpiryWorkflow } from "../../src/workflows/trial-expiry-workflow";
+import {
+   trialExpiryWorkflow,
+   enqueueTrialExpiryWorkflow,
+} from "../../src/workflows/trial-expiry-workflow";
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -262,7 +265,7 @@ describe("trialExpiryWorkflow", () => {
       expect(billingResendSpies.sendBillingTrialExpired).not.toHaveBeenCalled();
    });
 
-   it("warning phase still hands off to expiry phase when trialEndsAt is in the past — no DBOS.sleepms calls remain", async () => {
+   it("past trialEndsAt: warning fires immediately and expiry activates the sub", async () => {
       const mocks = await dbosMocks;
       const { teamId } = await seedTeam(testDb.db);
       const contact = await makeContact(testDb.db, { teamId });
@@ -286,14 +289,28 @@ describe("trialExpiryWorkflow", () => {
 
       expect(mocks.sleepSpy).not.toHaveBeenCalled();
       expect(mocks.startWorkflowSpy).toHaveBeenCalledTimes(1);
-      const [params] = mocks.startWorkflowSpy.mock.calls[0] ?? [];
-      const enqueueOptions = (
-         params as { enqueueOptions: { delaySeconds: number } }
-      ).enqueueOptions;
-      expect(enqueueOptions.delaySeconds).toBe(0);
+      const [warningParams] = mocks.startWorkflowSpy.mock.calls[0] ?? [];
+      expect(
+         (warningParams as { enqueueOptions: { delaySeconds: number } })
+            .enqueueOptions.delaySeconds,
+      ).toBe(0);
+
+      await trialExpiryWorkflow({
+         teamId,
+         subscriptionId: sub.id,
+         trialEndsAt,
+         phase: "expiry",
+         contactEmail: "cliente@example.com",
+      });
+
+      const [persisted] = await testDb.db
+         .select()
+         .from(contactSubscriptions)
+         .where(eq(contactSubscriptions.id, sub.id));
+      expect(persisted?.status).toBe("active");
    });
 
-   it("warning phase enqueues expiry phase with delaySeconds≈4d", async () => {
+   it("warning phase enqueues expiry phase with delaySeconds≈7d (full trial at T0)", async () => {
       const T0 = dayjs("2026-05-01T00:00:00Z");
       vi.useFakeTimers();
       vi.setSystemTime(T0.toDate());
@@ -332,6 +349,61 @@ describe("trialExpiryWorkflow", () => {
       const expected = 7 * 86400;
       expect(delay).toBeGreaterThanOrEqual(expected - 5);
       expect(delay).toBeLessThanOrEqual(expected);
+
+      vi.useRealTimers();
+   });
+
+   it("enqueueTrialExpiryWorkflow computes delaySeconds = trialEndsAt - 3d - now (≈4d at T0)", async () => {
+      const T0 = dayjs("2026-05-01T00:00:00Z");
+      vi.useFakeTimers();
+      vi.setSystemTime(T0.toDate());
+      const trialEndsAt = T0.add(7, "day").toISOString();
+
+      const client = { enqueue: vi.fn().mockResolvedValue(undefined) };
+
+      await enqueueTrialExpiryWorkflow(client as never, {
+         teamId: crypto.randomUUID(),
+         subscriptionId: crypto.randomUUID(),
+         trialEndsAt,
+      });
+
+      expect(client.enqueue).toHaveBeenCalledTimes(1);
+      const [params, payload] = client.enqueue.mock.calls[0] ?? [];
+      expect(params).toMatchObject({
+         workflowName: expect.any(String),
+         queueName: "workflow:trial-expiry",
+         enqueueOptions: expect.objectContaining({
+            delaySeconds: expect.any(Number),
+         }),
+      });
+      const delay = (params as { enqueueOptions: { delaySeconds: number } })
+         .enqueueOptions.delaySeconds;
+      const expected = 4 * 86400;
+      expect(delay).toBeGreaterThanOrEqual(expected - 5);
+      expect(delay).toBeLessThanOrEqual(expected);
+      expect(payload).toMatchObject({ phase: "warning" });
+
+      vi.useRealTimers();
+   });
+
+   it("enqueueTrialExpiryWorkflow clamps delaySeconds to 0 when trial already within 3 days", async () => {
+      const T0 = dayjs("2026-05-01T00:00:00Z");
+      vi.useFakeTimers();
+      vi.setSystemTime(T0.toDate());
+      const trialEndsAt = T0.subtract(1, "hour").toISOString();
+
+      const client = { enqueue: vi.fn().mockResolvedValue(undefined) };
+
+      await enqueueTrialExpiryWorkflow(client as never, {
+         teamId: crypto.randomUUID(),
+         subscriptionId: crypto.randomUUID(),
+         trialEndsAt,
+      });
+
+      const [params] = client.enqueue.mock.calls[0] ?? [];
+      const delay = (params as { enqueueOptions: { delaySeconds: number } })
+         .enqueueOptions.delaySeconds;
+      expect(delay).toBe(0);
 
       vi.useRealTimers();
    });
