@@ -799,6 +799,46 @@ describe("periodEndInvoiceWorkflow", () => {
       ).toHaveBeenCalledTimes(1);
    });
 
+   it("formats both periodStart and periodEnd as DD/MM/YYYY in the email", async () => {
+      const { teamId } = await seedTeam(testDb.db);
+      const contact = await makeContact(testDb.db, { teamId });
+      const service = await makeService(testDb.db, { teamId });
+      const price = await makePrice(testDb.db, {
+         teamId,
+         serviceId: service.id,
+         basePrice: "10.00",
+         type: "flat",
+      });
+      const sub = await makeSubscription(testDb.db, {
+         teamId,
+         contactId: contact.id,
+      });
+      await makeSubscriptionItem(testDb.db, {
+         teamId,
+         subscriptionId: sub.id,
+         priceId: price.id,
+         quantity: 1,
+      });
+
+      await periodEndInvoiceWorkflow({
+         teamId,
+         subscriptionId: sub.id,
+         periodStart,
+         periodEnd,
+         contactEmail: "cliente@example.com",
+      });
+
+      expect(
+         billingResendSpies.sendBillingInvoiceGenerated,
+      ).toHaveBeenCalledWith(
+         expect.anything(),
+         expect.objectContaining({
+            periodStart: dayjs(periodStart).format("DD/MM/YYYY"),
+            periodEnd: dayjs(periodEnd).format("DD/MM/YYYY"),
+         }),
+      );
+   });
+
    it("does not send email when contactEmail is absent (publish still fires)", async () => {
       const { teamId } = await seedTeam(testDb.db);
       const contact = await makeContact(testDb.db, { teamId });
