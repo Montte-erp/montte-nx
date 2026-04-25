@@ -491,6 +491,43 @@
         "vitest": "catalog:testing",
       },
     },
+    "modules/classification": {
+      "name": "@modules/classification",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/ai": "workspace:*",
+        "@core/database": "workspace:*",
+        "@core/dbos": "workspace:*",
+        "@core/environment": "workspace:*",
+        "@core/logging": "workspace:*",
+        "@core/orpc": "workspace:*",
+        "@core/posthog": "workspace:*",
+        "@core/redis": "workspace:*",
+        "@core/stripe": "workspace:*",
+        "@dbos-inc/dbos-sdk": "catalog:workers",
+        "@dbos-inc/drizzle-datasource": "catalog:workers",
+        "@orpc/server": "catalog:orpc",
+        "@packages/events": "workspace:*",
+        "@packages/notifications": "workspace:*",
+        "@tanstack/ai": "catalog:tanstack-ai",
+        "@tanstack/ai-openrouter": "catalog:tanstack-ai",
+        "@tanstack/store": "catalog:tanstack",
+        "dayjs": "catalog:ui",
+        "drizzle-orm": "catalog:database",
+        "drizzle-zod": "catalog:database",
+        "neverthrow": "catalog:validation",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@electric-sql/pglite": "^0.3.15",
+        "@electric-sql/pglite-socket": "^0.0.20",
+        "@tooling/typescript": "workspace:*",
+        "drizzle-kit": "catalog:database",
+        "drizzle-seed": "catalog:database",
+        "typescript": "catalog:development",
+        "vitest": "catalog:testing",
+      },
+    },
     "packages/analytics": {
       "name": "@packages/analytics",
       "version": "0.1.0",
@@ -1326,6 +1363,8 @@
     "@microsoft/tsdoc-config": ["@microsoft/tsdoc-config@0.17.1", "", { "dependencies": { "@microsoft/tsdoc": "0.15.1", "ajv": "~8.12.0", "jju": "~1.4.0", "resolve": "~1.22.2" } }, "sha512-UtjIFe0C6oYgTnad4q1QP4qXwLhe6tIpNTRStJ2RZEPIkqQPREAwE5spzVxsdn9UaEMUqhh0AqSx3X4nWAKXWw=="],
 
     "@modules/billing": ["@modules/billing@workspace:modules/billing"],
+
+    "@modules/classification": ["@modules/classification@workspace:modules/classification"],
 
     "@mongodb-js/saslprep": ["@mongodb-js/saslprep@1.4.6", "", { "dependencies": { "sparse-bitfield": "^3.0.3" } }, "sha512-y+x3H1xBZd38n10NZF/rEBlvDOOMQ6LKUTHqr8R9VkJ+mmQOYtJFxIlkkK8fZrtOiL6VixbOBWMbZGBdal3Z1g=="],
 

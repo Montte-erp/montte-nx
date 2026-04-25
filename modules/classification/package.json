@@ -1,0 +1,54 @@
+{
+   "name": "@modules/classification",
+   "version": "0.1.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "type": "module",
+   "exports": {
+      "./router/*": "./src/router/*.ts",
+      "./contracts/*": "./src/contracts/*.ts",
+      "./workflows/*": "./src/workflows/*.ts",
+      "./ai/*": "./src/ai/*.ts",
+      "./*": "./src/*.ts"
+   },
+   "scripts": {
+      "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "test": "vitest run --passWithNoTests",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@core/ai": "workspace:*",
+      "@core/database": "workspace:*",
+      "@core/dbos": "workspace:*",
+      "@core/environment": "workspace:*",
+      "@core/logging": "workspace:*",
+      "@core/orpc": "workspace:*",
+      "@core/posthog": "workspace:*",
+      "@core/redis": "workspace:*",
+      "@core/stripe": "workspace:*",
+      "@dbos-inc/dbos-sdk": "catalog:workers",
+      "@dbos-inc/drizzle-datasource": "catalog:workers",
+      "@orpc/server": "catalog:orpc",
+      "@packages/events": "workspace:*",
+      "@packages/notifications": "workspace:*",
+      "@tanstack/ai": "catalog:tanstack-ai",
+      "@tanstack/ai-openrouter": "catalog:tanstack-ai",
+      "@tanstack/store": "catalog:tanstack",
+      "dayjs": "catalog:ui",
+      "drizzle-orm": "catalog:database",
+      "drizzle-zod": "catalog:database",
+      "neverthrow": "catalog:validation",
+      "zod": "catalog:validation"
+   },
+   "devDependencies": {
+      "@electric-sql/pglite": "^0.3.15",
+      "@electric-sql/pglite-socket": "^0.0.20",
+      "@tooling/typescript": "workspace:*",
+      "drizzle-kit": "catalog:database",
+      "drizzle-seed": "catalog:database",
+      "typescript": "catalog:development",
+      "vitest": "catalog:testing"
+   }
+}
