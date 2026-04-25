@@ -951,13 +951,29 @@ git commit -m "feat(notifications): add AI_TRANSACTION_CLASSIFIED + AI_KEYWORDS_
 
 ---
 
-## Task 10 — Implement `classification-workflow.ts` (TDD)
+## Task 10 — Batch classification stack (keyword-match + classify-batch + batch workflow)
+
+**Architecture decision (vs original per-transaction plan):** Per-transaction workflows are wasteful. The redesign:
+
+1. **Caller-driven batch trigger.** CSV/OFX import + bulk-create endpoints enqueue ONE batch workflow with up to N transaction IDs. Single manual-create paths skip auto-classification entirely (the form already requires category).
+2. **Keyword auto-match first.** Pure-JS step using `@f-o-t/condition-evaluator` (already in catalog:fot). Each category's `keywords[]` becomes a `ConditionGroup` with weighted `OR` over `string contains` conditions on `transactionName` (case-insensitive). Score = number of matching keywords.
+3. **Strict match threshold.** Auto-assign category only when (a) top score ≥ 2 AND (b) top beats runner-up by 50% margin. False negatives go to AI; false positives don't (the latter are worse — silent miscategorization).
+4. **AI fallback batched at 20.** Unmatched transactions go to a single `classifyBatch(transactions, categories, tags)` LLM call. Workflow chunks internally if unmatched count > 20. One LLM call per chunk, not per transaction.
+5. **Tags only via AI path.** Auto-matched transactions get `tagId: null` (user assigns later if needed). Tags travel with the AI fallback only — no separate tag keyword matcher. Reduces double-evaluation cost; tag false-match risk is higher (10 tags vs 100 categories, more keyword overlap).
+6. **Idempotency.** Workflow ID = `classify-batch-${teamId}-${stableHashOf(sortedIds)}`. Inside the workflow, filter transactions to `classification_status = pending` so partial-commit retries skip already-classified rows.
+7. **Workflow input is `{ teamId, transactionIds: string[] }`.** Workflow re-reads transactions from DB at execution time (handles edits between enqueue and run).
 
 **Files:**
-- Create: `modules/classification/src/workflows/classification-workflow.ts`
+- Create: `modules/classification/src/keyword-match.ts` — pure function, condition-evaluator-driven
+- Create: `modules/classification/__tests__/keyword-match.test.ts`
+- Create: `modules/classification/src/ai/classify-batch.ts` — sibling to `ai/classify.ts`, batched LLM action
+- Create: `modules/classification/__tests__/ai/classify-batch.test.ts` — aimock-driven
+- Create: `modules/classification/src/workflows/classification-workflow.ts` — orchestrates load → match → AI → write
 - Create: `modules/classification/__tests__/workflows/classification.test.ts`
 - Create: `modules/classification/__tests__/helpers/classification-factories.ts`
 - Create: `modules/classification/__tests__/helpers/mock-classification-context.ts`
+
+**Note on Task 7:** `ai/classify.ts` (single-transaction) stays — useful for one-off retry / manual reclassify endpoints. The workflow uses `ai/classify-batch.ts` exclusively.
 
 Reference: `modules/billing/__tests__/helpers/mock-billing-context.ts` and `modules/billing/__tests__/workflows/period-end-invoice.test.ts`.
 
