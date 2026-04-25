@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { createHyprPayClient } from "./client";
-import { HyprPayError } from "./errors";
+import { createHyprPayClient } from "../src/client";
+import { HyprPayError } from "../src/errors";
 
 const mockCustomer = {
    id: "c1",

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { err, ok } from "neverthrow";
-import { HyprPayError } from "../errors";
+import { HyprPayError } from "../../src/errors";
 
 const mockCreate = vi.fn();
 
@@ -8,12 +8,12 @@ function makeClient() {
    return {
       customers: { create: mockCreate },
    } as unknown as Parameters<
-      (typeof import("./index"))["hyprpay"]
+      (typeof import("../../src/better-auth/index"))["hyprpay"]
    >[0]["client"];
 }
 
 async function importPlugin() {
-   const mod = await import("./index");
+   const mod = await import("../../src/better-auth/index");
    return mod;
 }
 
@@ -28,7 +28,9 @@ const mockUser = {
 };
 
 function getAfterHook(
-   options: Parameters<(typeof import("./index"))["hyprpay"]>[0],
+   options: Parameters<
+      (typeof import("../../src/better-auth/index"))["hyprpay"]
+   >[0],
 ) {
    return importPlugin().then(({ hyprpay }) => {
       const plugin = hyprpay(options);

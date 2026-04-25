@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HyprPayError } from "./errors";
+import { HyprPayError } from "../src/errors";
 
 describe("HyprPayError", () => {
    describe("factory methods", () => {
