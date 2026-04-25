@@ -40,6 +40,9 @@
          "path": "./core/redis"
       },
       {
+         "path": "./core/sse"
+      },
+      {
          "path": "./core/utils"
       },
       {

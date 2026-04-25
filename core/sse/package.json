@@ -1,0 +1,44 @@
+{
+   "name": "@core/sse",
+   "version": "0.1.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      "./types": {
+         "types": "./dist/types.d.ts",
+         "default": "./dist/types.js"
+      },
+      "./channels": {
+         "types": "./dist/channels.d.ts",
+         "default": "./dist/channels.js"
+      },
+      "./publisher": {
+         "types": "./dist/publisher.d.ts",
+         "default": "./dist/publisher.js"
+      },
+      "./subscriber": {
+         "types": "./dist/subscriber.d.ts",
+         "default": "./dist/subscriber.js"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@core/redis": "workspace:*",
+      "neverthrow": "catalog:validation",
+      "zod": "catalog:validation"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development"
+   }
+}

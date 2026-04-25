@@ -367,6 +367,19 @@
         "typescript": "catalog:development",
       },
     },
+    "core/sse": {
+      "name": "@core/sse",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/redis": "workspace:*",
+        "neverthrow": "catalog:validation",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
+        "typescript": "catalog:development",
+      },
+    },
     "core/stripe": {
       "name": "@core/stripe",
       "version": "0.3.0",
@@ -1176,6 +1189,8 @@
     "@core/posthog": ["@core/posthog@workspace:core/posthog"],
 
     "@core/redis": ["@core/redis@workspace:core/redis"],
+
+    "@core/sse": ["@core/sse@workspace:core/sse"],
 
     "@core/stripe": ["@core/stripe@workspace:core/stripe"],
 

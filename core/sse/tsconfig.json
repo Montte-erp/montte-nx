@@ -1,0 +1,15 @@
+{
+   "extends": "@tooling/typescript/tsconfig.package.json",
+   "compilerOptions": {
+      "paths": {
+         "@core/sse/*": ["./src/*"],
+         "@core/redis/*": ["../redis/src/*"]
+      }
+   },
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../redis"
+      }
+   ]
+}
