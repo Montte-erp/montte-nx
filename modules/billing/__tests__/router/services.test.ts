@@ -760,13 +760,36 @@ describe("services router", () => {
          expect(ctx.workflowClient.enqueue).not.toHaveBeenCalled();
       });
 
-      it.skip("createSubscription with status=trialing enqueues trialExpiryWorkflow", async () => {
-         // TODO(bug-hunt): createSubscriptionWithItemsInputSchema only picks
-         // { contactId, startDate, endDate, notes } — `status` and
-         // `trialEndsAt` cannot be set via the router input. The branch
-         // `if (sub.status === "trialing" && sub.trialEndsAt)` is
-         // unreachable from the public API. Either expand the contract to
-         // allow trialing subscriptions, or remove the dead enqueue branch.
+      it("createSubscription with status=trialing enqueues trialExpiryWorkflow", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const contact = await makeContact(testDb.db, { teamId });
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const trialEndsAt = dayjs().add(7, "day").toISOString();
+         const result = await call(
+            servicesRouter.createSubscription,
+            {
+               contactId: contact.id,
+               startDate: dayjs().format("YYYY-MM-DD"),
+               status: "trialing",
+               trialEndsAt,
+            },
+            { context: ctx },
+         );
+
+         await new Promise((r) => setImmediate(r));
+
+         expect(result.status).toBe("trialing");
+         expect(ctx.workflowClient.enqueue).toHaveBeenCalledTimes(1);
+         const call0 = ctx.workflowClient.enqueue.mock.calls[0];
+         expect(call0?.[1]).toMatchObject({
+            teamId,
+            subscriptionId: result.id,
+            trialEndsAt: dayjs(trialEndsAt).toISOString(),
+         });
       });
 
       it("createSubscription with single item enqueues benefitLifecycleWorkflow", async () => {
@@ -941,31 +964,6 @@ describe("services router", () => {
             teamId,
             contactId: contact.id,
             status: "completed",
-         });
-
-         const ctx = createTestContext(testDb.db, {
-            teamId,
-            extras: { hyprpayClient: createHyprpayMock() },
-         });
-         await expect(
-            call(
-               servicesRouter.cancelSubscription,
-               { id: sub.id },
-               { context: ctx },
-            ),
-         ).rejects.toSatisfy(
-            (e: Error & { code?: string }) => e.code === "BAD_REQUEST",
-         );
-      });
-
-      it("cancelSubscription rejects asaas-sourced subscription with BAD_REQUEST", async () => {
-         const { teamId } = await seedTeam(testDb.db);
-         const contact = await makeContact(testDb.db, { teamId });
-         const sub = await makeSubscription(testDb.db, {
-            teamId,
-            contactId: contact.id,
-            status: "active",
-            source: "asaas",
          });
 
          const ctx = createTestContext(testDb.db, {

@@ -123,7 +123,6 @@ export const create = impl.create.handler(async ({ context, input }) => {
          contactId: contact.id,
          startDate: dayjs().format("YYYY-MM-DD"),
          status: "active",
-         source: "manual",
          couponId,
          cancelAtPeriodEnd: false,
       },

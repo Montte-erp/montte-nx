@@ -385,20 +385,25 @@ export function drizzleDataSourceMockFactory(mocks: DbosMocks) {
 }
 ```
 
-**Note:** `vi.mock(path, factory)` only hoists above imports when it appears LITERALLY at module scope in the test file. Wrapping it in a helper hides it from vitest's AST transform. Consumers therefore keep the `vi.mock` calls at their own call-site and pass the exported factories:
+**Note:** `vi.mock(path, factory)` only hoists above imports when it appears LITERALLY at module scope in the test file. The factory and `vi.hoisted` callbacks ALSO run before any `import` resolves — so they cannot close over any imported binding (TDZ). Use async dynamic imports inside both `vi.hoisted` and each `vi.mock` factory:
 ```ts
 import { vi } from "vitest";
-import {
-   createDbosMocks,
-   dbosSdkMockFactory,
-   drizzleDataSourceMockFactory,
-} from "@core/dbos/testing/mock-dbos";
 
-const mocks = vi.hoisted(() => createDbosMocks());
-vi.mock("@dbos-inc/dbos-sdk", () => dbosSdkMockFactory(mocks));
-vi.mock("@dbos-inc/drizzle-datasource", () => drizzleDataSourceMockFactory(mocks));
+const dbosMocks = vi.hoisted(async () => {
+   const mod = await import("@core/dbos/testing/mock-dbos");
+   return mod.createDbosMocks();
+});
+vi.mock("@dbos-inc/dbos-sdk", async () => {
+   const mod = await import("@core/dbos/testing/mock-dbos");
+   return mod.dbosSdkMockFactory(await dbosMocks);
+});
+vi.mock("@dbos-inc/drizzle-datasource", async () => {
+   const mod = await import("@core/dbos/testing/mock-dbos");
+   return mod.drizzleDataSourceMockFactory(await dbosMocks);
+});
 
-// then import the workflow under test
+// then import the workflow under test.
+// In beforeAll/beforeEach: `(await dbosMocks).setActiveDb(testDb.db)`.
 ```
 
 **Step 2: Update `core/dbos/package.json`**
@@ -792,24 +797,28 @@ vi.mock("@core/transactional/client", () => ({
 }));
 ```
 
-Workflow test files wire all `vi.mock` calls at literal module scope BEFORE importing the workflow-under-test so vitest hoists them above imports:
+Workflow test files use the async `vi.hoisted` + dynamic-import pattern (sync form fails with TDZ on the imported helper):
 ```ts
 import { vi } from "vitest";
-import {
-   createDbosMocks,
-   dbosSdkMockFactory,
-   drizzleDataSourceMockFactory,
-} from "@core/dbos/testing/mock-dbos";
 
-const mocks = vi.hoisted(() => createDbosMocks());
-vi.mock("@dbos-inc/dbos-sdk", () => dbosSdkMockFactory(mocks));
-vi.mock("@dbos-inc/drizzle-datasource", () =>
-   drizzleDataSourceMockFactory(mocks),
-);
+const dbosMocks = vi.hoisted(async () => {
+   const mod = await import("@core/dbos/testing/mock-dbos");
+   return mod.createDbosMocks();
+});
+vi.mock("@dbos-inc/dbos-sdk", async () => {
+   const mod = await import("@core/dbos/testing/mock-dbos");
+   return mod.dbosSdkMockFactory(await dbosMocks);
+});
+vi.mock("@dbos-inc/drizzle-datasource", async () => {
+   const mod = await import("@core/dbos/testing/mock-dbos");
+   return mod.drizzleDataSourceMockFactory(await dbosMocks);
+});
 import "../helpers/mock-billing-context";
 
 // now safe to import workflows
 import { benefitLifecycleWorkflow } from "../../src/workflows/benefit-lifecycle-workflow";
+
+// In beforeAll/beforeEach hooks: (await dbosMocks).setActiveDb(testDb.db);
 ```
 
 **Step 2: Commit**
@@ -1085,17 +1094,19 @@ Every workflow test file:
 ```ts
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
-import {
-   createDbosMocks,
-   dbosSdkMockFactory,
-   drizzleDataSourceMockFactory,
-} from "@core/dbos/testing/mock-dbos";
 
-const dbosMocks = vi.hoisted(() => createDbosMocks());
-vi.mock("@dbos-inc/dbos-sdk", () => dbosSdkMockFactory(dbosMocks));
-vi.mock("@dbos-inc/drizzle-datasource", () =>
-   drizzleDataSourceMockFactory(dbosMocks),
-);
+const dbosMocks = vi.hoisted(async () => {
+   const mod = await import("@core/dbos/testing/mock-dbos");
+   return mod.createDbosMocks();
+});
+vi.mock("@dbos-inc/dbos-sdk", async () => {
+   const mod = await import("@core/dbos/testing/mock-dbos");
+   return mod.dbosSdkMockFactory(await dbosMocks);
+});
+vi.mock("@dbos-inc/drizzle-datasource", async () => {
+   const mod = await import("@core/dbos/testing/mock-dbos");
+   return mod.drizzleDataSourceMockFactory(await dbosMocks);
+});
 import { billingPublisherSpy, billingResendSpies } from "../helpers/mock-billing-context";
 
 import { setupTestDb } from "@core/database/testing/setup-test-db";
@@ -1274,6 +1285,12 @@ Commit: `chore(nx): include modules/billing tests in workspace runs`.
 
 ---
 
-## Open bugs (filled in during Phase 4)
+## Bugs found and fixed
 
-_(Populated as Phase 4 runs. One line per bug, with file:line reference.)_
+- **Multi-item benefit-lifecycle enqueue gap** — `createSubscription` in `modules/billing/src/router/services.ts` only enqueued `benefitLifecycleWorkflow` for `input.items[0]`. Fixed in commit `312c160c` to loop over all items, dedupe by `serviceId`, and enqueue once per unique service. Regression test in commit `c030372d`.
+- **Invoice email date-format mismatch** — `period-end-invoice-workflow.ts:373` formatted `periodEnd` as `"MM/YYYY"` while `periodStart` used `"DD/MM/YYYY"`. Fixed in commit `c7320a1f` (both now `DD/MM/YYYY`). Regression test in commit `1c45e230`.
+
+## Open bugs (deferred — out of scope)
+
+- ~~**`createSubscription` trialing branch unreachable**~~ — Resolved: contract now accepts `status` + `trialEndsAt` (with `superRefine` guard), handler wires `trialEndsAt` through to the insert. Skipped trial-expiry-enqueue test un-skipped and passing.
+- ~~**`subscriptions.source` field unused**~~ — Resolved: `source` column dropped from `contactSubscriptions` schema entirely (no external gateways yet). Dead `cancelSubscription` asaas-rejection branch and matching test removed.

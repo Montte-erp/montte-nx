@@ -266,9 +266,20 @@ export const listSubscriptionsInputSchema = z
 export const createSubscriptionWithItemsInputSchema = createSubscriptionSchema
    .pick({ contactId: true, startDate: true, endDate: true, notes: true })
    .extend({
+      status: z.enum(["active", "trialing"]).default("active"),
+      trialEndsAt: z.string().datetime().nullable().optional(),
       items: z
          .array(createSubscriptionItemSchema.omit({ subscriptionId: true }))
          .optional(),
+   })
+   .superRefine((data, ctx) => {
+      if (data.status === "trialing" && !data.trialEndsAt) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "trialEndsAt obrigatório para status 'trialing'.",
+            path: ["trialEndsAt"],
+         });
+      }
    });
 
 export const listExpiringSoonInputSchema = z

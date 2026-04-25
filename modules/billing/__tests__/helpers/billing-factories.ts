@@ -133,7 +133,6 @@ export async function makeSubscription(
       trialEndsAt?: Date | null;
       startDate?: string;
       endDate?: string | null;
-      source?: "manual" | "asaas";
    },
 ) {
    const [row] = await db
@@ -146,7 +145,6 @@ export async function makeSubscription(
          trialEndsAt: opts.trialEndsAt ?? null,
          startDate: opts.startDate ?? dayjs().format("YYYY-MM-DD"),
          endDate: opts.endDate ?? null,
-         source: opts.source ?? "manual",
          cancelAtPeriodEnd: false,
       })
       .returning();

@@ -310,13 +310,13 @@ export const createSubscription = billableProcedure
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
          context.db.transaction(async (tx) => {
-            const { items, ...subscriptionData } = input;
+            const { items, trialEndsAt, ...subscriptionData } = input;
             const [row] = await tx
                .insert(contactSubscriptions)
                .values({
                   ...subscriptionData,
+                  trialEndsAt: trialEndsAt ? dayjs(trialEndsAt).toDate() : null,
                   teamId: context.teamId,
-                  source: "manual",
                   cancelAtPeriodEnd: false,
                })
                .returning();
@@ -395,10 +395,6 @@ export const cancelSubscription = protectedProcedure
       if (!["active", "trialing", "incomplete"].includes(subscription.status))
          throw WebAppError.badRequest(
             "Apenas assinaturas ativas, em trial ou incompletas podem ser canceladas.",
-         );
-      if (subscription.source === "asaas")
-         throw WebAppError.badRequest(
-            "Assinaturas do Asaas não podem ser canceladas aqui.",
          );
 
       const result = await fromPromise(
