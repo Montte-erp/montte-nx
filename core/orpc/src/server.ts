@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { err, fromPromise, fromThrowable, ok } from "neverthrow";
+import { z } from "zod";
 import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, onSuccess, os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
@@ -46,17 +47,79 @@ export type BillableMeta = { billableEvent?: string };
 
 const base = os.$context<ORPCContext>().$meta<BillableMeta>({});
 
+const apiKeyMetadataSchema = z.object({
+   organizationId: z.string().min(1),
+   teamId: z.string().min(1).nullish(),
+});
+
 const withDeps = base.use(async ({ context, next }) => {
-   const sessionResult = await fromPromise(
-      (async () => auth.api.getSession({ headers: context.headers }))(),
-      () => null,
+   const apiKeyValue =
+      context.headers.get("x-api-key") ?? context.headers.get("sdk-api-key");
+
+   if (apiKeyValue) {
+      const result = await fromPromise(
+         auth.api.verifyApiKey({ body: { key: apiKeyValue } }),
+         () => WebAppError.unauthorized("API key inválida."),
+      )
+         .andThen((v) =>
+            v?.valid && v.key
+               ? ok(v.key)
+               : err(WebAppError.unauthorized("API key inválida.")),
+         )
+         .andThen((key) => {
+            const parsed = apiKeyMetadataSchema.safeParse(key.metadata);
+            return parsed.success
+               ? ok(parsed.data)
+               : err(WebAppError.badRequest("Metadata da API key inválida."));
+         })
+         .andThen((meta) =>
+            fromPromise(auth.api.getSession({ headers: context.headers }), () =>
+               WebAppError.unauthorized("Falha ao resolver sessão da API key."),
+            ).andThen((s) =>
+               s?.user
+                  ? ok({
+                       ...s,
+                       session: {
+                          ...s.session,
+                          activeOrganizationId: meta.organizationId,
+                          activeTeamId: meta.teamId ?? s.session.activeTeamId,
+                       },
+                    })
+                  : err(
+                       WebAppError.unauthorized(
+                          "API key sem sessão associada.",
+                       ),
+                    ),
+            ),
+         );
+      if (result.isErr()) throw result.error;
+
+      return next({
+         context: {
+            ...context,
+            auth,
+            db,
+            session: result.value,
+            posthog,
+            redis,
+            workflowClient: await workflowClient,
+            hyprpayClient,
+         },
+      });
+   }
+
+   const cookieSession = await fromPromise(
+      auth.api.getSession({ headers: context.headers }),
+      () => WebAppError.internal("Falha ao resolver sessão."),
    );
+   if (cookieSession.isErr()) throw cookieSession.error;
+
    return next({
       context: {
          ...context,
          auth,
          db,
-         session: sessionResult.isOk() ? sessionResult.value : null,
+         session: cookieSession.value,
          posthog,
          redis,
          workflowClient: await workflowClient,
