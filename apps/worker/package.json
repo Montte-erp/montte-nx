@@ -18,6 +18,7 @@
       "@core/transactional": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers",
       "@modules/billing": "workspace:*",
+      "@modules/classification": "workspace:*",
       "@packages/workflows": "workspace:*"
    },
    "devDependencies": {

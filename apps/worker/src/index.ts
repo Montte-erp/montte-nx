@@ -7,6 +7,7 @@ import { createPostHog } from "@core/posthog/server";
 import { createResendClient } from "@core/transactional/utils";
 import { launchDBOS } from "@packages/workflows/setup";
 import { setupBillingWorkflows } from "@modules/billing/workflows/setup";
+import { setupClassificationWorkflows } from "@modules/classification/workflows/setup";
 
 initOtel({
    serviceName: "montte-worker",
@@ -25,6 +26,12 @@ const resendClient = createResendClient(env.RESEND_API_KEY);
 logger.info("Starting worker");
 
 await setupBillingWorkflows({ redis, resendClient, workerConcurrency: 10 });
+const classification = await setupClassificationWorkflows({
+   redis,
+   posthog,
+   stripeClient: null,
+   workerConcurrency: 10,
+});
 
 launchDBOS({
    db,
@@ -33,6 +40,7 @@ launchDBOS({
    resendClient,
    systemDatabaseUrl: env.DATABASE_URL,
    logLevel: env.LOG_LEVEL,
+   onLaunch: classification.applySchedules,
    onShutdown: async () => {
       await posthog.shutdown();
       redis.disconnect();

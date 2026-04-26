@@ -14,12 +14,14 @@ createAllQueues({ workerConcurrency: 10 });
 type LaunchConfig = WorkflowDeps & {
    systemDatabaseUrl: string;
    logLevel?: string;
+   onLaunch?: () => Promise<void>;
    onShutdown?: () => Promise<void>;
 };
 
 export function launchDBOS({
    systemDatabaseUrl,
    logLevel,
+   onLaunch,
    onShutdown,
    ...deps
 }: LaunchConfig) {
@@ -44,6 +46,7 @@ export function launchDBOS({
                schedule: "0 3 * * *",
             },
          ]);
+         await onLaunch?.();
       })
       .catch((err: unknown) => {
          logger.error({ err }, "DBOS launch failed");
