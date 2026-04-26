@@ -5,8 +5,7 @@ import type { HyprPayClient } from "@montte/hyprpay";
 export type IngestUsageEventInput = {
    hyprpayClient: HyprPayClient;
    db: DatabaseInstance;
-   teamId: string;
-   organizationId: string;
+   externalId: string;
    eventName: string;
    quantity?: number;
    idempotencyKey?: string;
@@ -30,11 +29,7 @@ export function ingestUsageEvent(
    return fromPromise(
       input.db.query.meters.findFirst({
          where: (f, { and, eq }) =>
-            and(
-               eq(f.teamId, input.teamId),
-               eq(f.eventName, input.eventName),
-               eq(f.isActive, true),
-            ),
+            and(eq(f.eventName, input.eventName), eq(f.isActive, true)),
          columns: { id: true },
       }),
       (cause) =>
@@ -48,7 +43,7 @@ export function ingestUsageEvent(
       }
       return input.hyprpayClient.usage
          .ingest({
-            customerId: input.organizationId,
+            externalId: input.externalId,
             meterId: meter.id,
             quantity: input.quantity ?? 1,
             idempotencyKey: input.idempotencyKey,

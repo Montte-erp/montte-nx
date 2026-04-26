@@ -5,18 +5,42 @@ import { eq } from "drizzle-orm";
 import dayjs from "dayjs";
 import { WorkflowError } from "@core/dbos/errors";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
+import { ingestUsageEvent } from "@core/hyprpay/usage";
 import {
    sendBillingTrialExpired,
    sendBillingTrialExpiryWarning,
 } from "@core/transactional/client";
-import { billingSseEvents } from "../sse/events";
+import { TRANSACTIONAL_USAGE_EVENTS } from "@core/transactional/usage-events";
+import { billingSseEvents } from "../sse";
 import { BILLING_QUEUES } from "../constants";
 import {
    billingDataSource,
+   getBillingHyprpay,
    getBillingRedis,
    getBillingResendClient,
    createEnqueuer,
 } from "./context";
+
+async function ingestEmailSent(
+   organizationId: string,
+   idempotencyKey: string,
+   properties: Record<string, unknown>,
+) {
+   const result = await ingestUsageEvent({
+      hyprpayClient: getBillingHyprpay(),
+      db: billingDataSource.client,
+      externalId: organizationId,
+      eventName: TRANSACTIONAL_USAGE_EVENTS.emailSent,
+      quantity: 1,
+      idempotencyKey,
+      properties,
+   });
+   if (result.isErr()) {
+      DBOS.logger.warn(
+         `usage ingestion failed for email.sent — org=${organizationId} err=${result.error.message}`,
+      );
+   }
+}
 import {
    periodEndInvoiceWorkflow,
    type PeriodEndInvoiceInput,
@@ -24,6 +48,7 @@ import {
 
 export type TrialExpiryInput = {
    teamId: string;
+   organizationId: string;
    subscriptionId: string;
    trialEndsAt: string;
    phase: "warning" | "expiry";
@@ -64,6 +89,14 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
                      trialEndsAt: dayjs(input.trialEndsAt).format("DD/MM/YYYY"),
                      from: input.emailFrom,
                   });
+                  await ingestEmailSent(
+                     input.organizationId,
+                     `email-trial-warning-${input.subscriptionId}`,
+                     {
+                        kind: "billing.trial_expiry_warning",
+                        subscriptionId: input.subscriptionId,
+                     },
+                  );
                }
             },
             { name: "sendPreExpiryWarning" },
@@ -167,6 +200,14 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
                   contactName,
                   from: input.emailFrom,
                });
+               await ingestEmailSent(
+                  input.organizationId,
+                  `email-trial-expired-${input.subscriptionId}`,
+                  {
+                     kind: "billing.trial_expired",
+                     subscriptionId: input.subscriptionId,
+                  },
+               );
             }
          },
          { name: "sendExpiryEmails" },
@@ -219,6 +260,7 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
    if (nextPeriod) {
       const invoiceInput: PeriodEndInvoiceInput = {
          teamId: input.teamId,
+         organizationId: input.organizationId,
          subscriptionId: input.subscriptionId,
          periodStart: nextPeriod.periodStart,
          periodEnd: nextPeriod.periodEnd,

@@ -18,7 +18,7 @@ export const getEventCatalog = protectedProcedure.handler(
 export const getUsageSummary = protectedProcedure.handler(
    async ({ context }) => {
       const result = await context.hyprpayClient.usage
-         .list({ customerId: context.organizationId })
+         .list({ externalId: context.organizationId })
          .mapErr(() => WebAppError.internal("Falha ao buscar uso."));
       if (result.isErr()) throw result.error;
       return result.value;

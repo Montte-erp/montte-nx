@@ -9,7 +9,7 @@ import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 import { usageEvents } from "@core/database/schemas/usage-events";
 import { WebAppError } from "@core/logging/errors";
 import { getLogger } from "@core/logging/root";
-import { protectedProcedure, billableProcedure } from "@core/orpc/server";
+import { protectedProcedure } from "@core/orpc/server";
 import { enqueueBenefitLifecycleWorkflow } from "../workflows/benefit-lifecycle-workflow";
 import { enqueuePeriodEndInvoiceWorkflow } from "../workflows/period-end-invoice-workflow";
 import { enqueueTrialExpiryWorkflow } from "../workflows/trial-expiry-workflow";
@@ -305,7 +305,7 @@ export const getContactSubscriptions = protectedProcedure
       return result.value;
    });
 
-export const createSubscription = billableProcedure
+export const createSubscription = protectedProcedure
    .input(createSubscriptionWithItemsInputSchema)
    .use(requireContact, (input) => input.contactId)
    .handler(async ({ context, input }) => {
@@ -350,6 +350,7 @@ export const createSubscription = billableProcedure
       if (sub.status === "trialing" && sub.trialEndsAt) {
          enqueueTrialExpiryWorkflow(context.workflowClient, {
             teamId: sub.teamId,
+            organizationId: context.organizationId,
             subscriptionId: sub.id,
             trialEndsAt: sub.trialEndsAt.toISOString(),
          }).catch((e) =>
@@ -369,6 +370,7 @@ export const createSubscription = billableProcedure
          for (const serviceId of uniqueServiceIds) {
             enqueueBenefitLifecycleWorkflow(context.workflowClient, {
                teamId: sub.teamId,
+               organizationId: context.organizationId,
                subscriptionId: sub.id,
                serviceId,
                newStatus: sub.status,
@@ -403,6 +405,7 @@ export const createSubscription = billableProcedure
                   context.workflowClient,
                   {
                      teamId: sub.teamId,
+                     organizationId: context.organizationId,
                      subscriptionId: sub.id,
                      periodStart: now.toISOString(),
                      periodEnd: periodEnd.toISOString(),
@@ -468,6 +471,7 @@ export const cancelSubscription = protectedProcedure
       for (const serviceId of uniqueServiceIds) {
          enqueueBenefitLifecycleWorkflow(context.workflowClient, {
             teamId: cancelled.teamId,
+            organizationId: context.organizationId,
             subscriptionId: cancelled.id,
             serviceId,
             newStatus: "cancelled",
@@ -506,7 +510,7 @@ export const getExpiringSoon = protectedProcedure
 
 // --- Meters ---
 
-export const createMeter = billableProcedure
+export const createMeter = protectedProcedure
    .input(createMeterSchema)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
@@ -582,7 +586,7 @@ export const removeMeter = protectedProcedure
 
 // --- Benefits ---
 
-export const createBenefit = billableProcedure
+export const createBenefit = protectedProcedure
    .input(createBenefitSchema)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
@@ -726,7 +730,7 @@ export const getServiceBenefits = protectedProcedure
 
 // --- Usage / metrics ---
 
-export const ingestUsage = billableProcedure
+export const ingestUsage = protectedProcedure
    .input(upsertUsageEventSchema)
    .handler(async ({ context, input }) => {
       if (input.teamId !== context.teamId)

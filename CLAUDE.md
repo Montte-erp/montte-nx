@@ -693,29 +693,60 @@ All localStorage keys prefixed `montte:`. Prefer `createClientOnlyFn`/`createIso
 
 ---
 
-## Events & Credits
+## Usage-Based Billing (HyprPay)
 
-Files in `packages/events/`: `finance.ts`, `ai.ts`, `contact.ts`, `inventory.ts`, `service.ts`, `nfe.ts`, `document.ts`, `webhook.ts`, `emit.ts`, `credits.ts`
+**Bill only what costs us.** Mirror PostHog's pricing model: meter operations that hit our infra or paid third-party APIs (AI calls via OpenRouter, email via Resend, storage, webhook egress). Never bill on UI/CRUD/listings — those are free.
 
-- `emitEvent()` — non-throwing.
-- `enforceCreditBudget()` — throws; wrap as `WebAppError.forbidden(...)` in routers.
-- In generators: emit/track BEFORE final yield.
+**Where to ingest:** at the cost-incurring callsite, NOT the procedure boundary. AI calls bill inside the workflow step that calls OpenRouter; emails bill inside the workflow step right after `sendBillingX`. Routers stay `protectedProcedure`. The exception: `billableProcedure` exists in `@core/orpc/server` for future router-level billing, paired with `.meta({ billableEvent: "..." })` (oRPC `onSuccess` middleware reads the meta after handler success). Currently unused — only wire it when a router itself triggers a real cost (e.g. synchronous third-party API call).
 
-**Billable procedures** — `createBillableProcedure(eventName)` instead of base procedure:
+**Customer model — externalId only.** All HyprPay SDK methods accept `externalId` (the SaaS owner's ID for the entity). Internal HyprPay `cus_xxx` is never exposed in the SDK. In Montte, `externalId = organization.id`. The Better Auth hyprpay plugin auto-syncs orgs/users to HyprPay customers on creation.
+
+**Module catalog of event names** lives in each module's `constants.ts`:
 
 ```typescript
-export const create = createBillableProcedure("finance.transaction_created")
-   .input(CreateTransactionSchema)
-   .handler(async ({ context, input }) => {
-      const tx = await createTransaction(...);
-      context.scheduleEmit(() => emitFinanceTransactionCreated(context.emit, context.emitCtx, { ... }));
-      return mapTransaction(tx);
-   });
+// modules/classification/src/constants.ts
+export const CLASSIFICATION_USAGE_EVENTS = {
+   aiKeywordDerived: "ai.keyword_derived",
+   aiTransactionClassified: "ai.transaction_classified",
+} as const;
+
+// core/transactional/src/usage-events.ts (cross-module: any module sending email)
+export const TRANSACTIONAL_USAGE_EVENTS = {
+   emailSent: "email.sent",
+} as const;
 ```
 
-Pre-handler enforces budget. Post-handler (success only) runs `scheduleEmit`.
+**Workflow ingestion** — call `ingestUsageEvent` inside `DBOS.runStep` after the cost-incurring action succeeds:
 
-**Free-tier limits** (from `@core/stripe/constants`): `finance.transaction_created` (500), `webhook.delivered` (500), `contact.created` (50), `inventory.item_created` (50), `service.created` (20), `finance.statement_imported` (10).
+```typescript
+import { ingestUsageEvent } from "@core/hyprpay/usage";
+
+await DBOS.runStep(
+   async () => {
+      const result = await ingestUsageEvent({
+         hyprpayClient: getBillingHyprpay(),
+         db: billingDataSource.client,
+         externalId: input.organizationId,
+         eventName: TRANSACTIONAL_USAGE_EVENTS.emailSent,
+         quantity: 1,
+         idempotencyKey: `email-invoice-${invoice.id}`,
+         properties: { kind: "billing.invoice_generated", invoiceId: invoice.id },
+      });
+      if (result.isErr()) {
+         DBOS.logger.warn(
+            `usage ingestion failed for email.sent — org=${input.organizationId} err=${result.error.message}`,
+         );
+      }
+   },
+   { name: "ingestUsage" },
+);
+```
+
+`ingestUsageEvent` is no-op when no meter is configured (dev/local default). Failed ingestion logs but never throws — usage tracking must not roll back the actual work.
+
+**Workflow inputs always carry `organizationId`** alongside `teamId`. Don't look up `organization.ownerId` or `team.organizationId` from inside workflows — the enqueue site (router) already has both via `context.organizationId`/`context.teamId` and passes them through.
+
+**Workflow logging — `DBOS.logger`, never `getLogger`.** Plain string interpolation, not structured `{ field: value }` objects.
 
 ---
 
@@ -760,7 +791,9 @@ Procedures: `apps/web/src/integrations/orpc/router/onboarding.ts`
 
 ## Billing Model
 
-100% usage-based via Stripe meter events. Free tier per event (Redis counters, monthly TTL). Above free tier → Stripe meter events. Optional addons (Boost, Scale, Enterprise). Redis tracks real-time; materialized views reconcile hourly (DBOS workflow).
+100% usage-based via **HyprPay** (`@montte/hyprpay`). Customer = Better Auth organization (externalId = `organization.id`). Subscriptions support seat purchase via `quantity` on subscription items. Optional addons. Meters defined per-merchant in `@core/database/schemas/meters`; ingest happens at the cost-incurring callsite (workflows, not routers).
+
+Stripe is no longer used directly for metering — `@core/stripe` is retained only for legacy single-payment flows and will be removed.
 
 ---
 

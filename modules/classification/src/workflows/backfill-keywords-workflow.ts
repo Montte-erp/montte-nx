@@ -6,7 +6,7 @@ import { categories } from "@core/database/schemas/categories";
 import { team } from "@core/database/schemas/auth";
 import { WorkflowError } from "@core/dbos/errors";
 import { getLogger } from "@core/logging/root";
-import { classificationSseEvents } from "../sse/events";
+import { classificationSseEvents } from "../sse";
 import { CLASSIFICATION_QUEUES } from "../constants";
 import { classificationDataSource, getClassificationRedis } from "./context";
 import { deriveKeywordsWorkflow } from "./derive-keywords-workflow";

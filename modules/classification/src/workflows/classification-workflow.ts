@@ -4,7 +4,6 @@ import { DBOS } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
 import { and, eq, isNull } from "drizzle-orm";
 import { WorkflowError } from "@core/dbos/errors";
-import { getLogger } from "@core/logging/root";
 import { categories } from "@core/database/schemas/categories";
 import { tags } from "@core/database/schemas/tags";
 import { transactions } from "@core/database/schemas/transactions";
@@ -15,9 +14,11 @@ import {
    type ClassifyBatchInput,
    type ClassifyBatchResult,
 } from "../ai/classify-batch";
-import { classificationSseEvents } from "../sse/events";
-import { CLASSIFICATION_QUEUES } from "../constants";
-import { CLASSIFICATION_USAGE_EVENTS } from "../usage-events";
+import { classificationSseEvents } from "../sse";
+import {
+   CLASSIFICATION_QUEUES,
+   CLASSIFICATION_USAGE_EVENTS,
+} from "../constants";
 import {
    classificationDataSource,
    getClassificationHyprpay,
@@ -296,7 +297,6 @@ async function classifyTransactionsBatchWorkflowFn(
       DBOS.runStep(
          async () => {
             const redis = getClassificationRedis();
-            const logger = getLogger();
             const scope: { kind: "team"; id: string } = {
                kind: "team",
                id: input.teamId,
@@ -316,13 +316,8 @@ async function classifyTransactionsBatchWorkflowFn(
                      },
                   );
                   if (publish.isErr()) {
-                     logger.warn(
-                        {
-                           err: publish.error,
-                           transactionId: write.transactionId,
-                           teamId: input.teamId,
-                        },
-                        "Failed to publish classification SSE event",
+                     DBOS.logger.warn(
+                        `Failed to publish classification SSE event — tx=${write.transactionId} team=${input.teamId} err=${publish.error.message}`,
                      );
                   }
                }),
@@ -338,14 +333,11 @@ async function classifyTransactionsBatchWorkflowFn(
    if (aiResults.length > 0) {
       await DBOS.runStep(
          async () => {
-            const logger = getLogger();
             const result = await ingestUsageEvent({
                hyprpayClient: getClassificationHyprpay(),
                db: classificationDataSource.client,
-               teamId: input.teamId,
-               organizationId: await resolveOrganizationId(input.teamId),
-               eventName:
-                  CLASSIFICATION_USAGE_EVENTS.aiTransactionClassified.eventName,
+               externalId: await resolveOrganizationId(input.teamId),
+               eventName: CLASSIFICATION_USAGE_EVENTS.aiTransactionClassified,
                quantity: aiResults.length,
                idempotencyKey: `classify-${DBOS.workflowID ?? buildWorkflowId(input)}`,
                properties: {
@@ -354,9 +346,8 @@ async function classifyTransactionsBatchWorkflowFn(
                },
             });
             if (result.isErr()) {
-               logger.warn(
-                  { err: result.error, teamId: input.teamId },
-                  "usage ingestion failed for ai.transaction_classified",
+               DBOS.logger.warn(
+                  `usage ingestion failed for ai.transaction_classified — team=${input.teamId} err=${result.error.message}`,
                );
             }
          },

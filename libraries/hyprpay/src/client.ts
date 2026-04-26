@@ -103,9 +103,9 @@ export function createHyprPayClient(config: HyprPayClientConfig) {
                mapToHyprPayError,
             );
          },
-         list(customerId: string) {
+         list(externalId: string) {
             return ResultAsync.fromPromise(
-               orpc.subscriptions.list({ customerId }),
+               orpc.subscriptions.list({ externalId }),
                mapToHyprPayError,
             );
          },
@@ -151,9 +151,9 @@ export function createHyprPayClient(config: HyprPayClientConfig) {
                mapToHyprPayError,
             );
          },
-         list(customerId: string) {
+         list(externalId: string) {
             return ResultAsync.fromPromise(
-               orpc.benefits.list({ customerId }),
+               orpc.benefits.list({ externalId }),
                mapToHyprPayError,
             );
          },
@@ -169,9 +169,9 @@ export function createHyprPayClient(config: HyprPayClientConfig) {
       },
 
       customerPortal: {
-         createSession(customerId: string) {
+         createSession(externalId: string) {
             return ResultAsync.fromPromise(
-               orpc.customerPortal.createSession({ customerId }),
+               orpc.customerPortal.createSession({ externalId }),
                mapToHyprPayError,
             );
          },

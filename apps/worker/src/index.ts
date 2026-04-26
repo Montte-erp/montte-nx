@@ -27,7 +27,12 @@ const hyprpayClient = createHyprpay(env.HYPRPAY_API_KEY);
 
 logger.info("Starting worker");
 
-await setupBillingWorkflows({ redis, resendClient, workerConcurrency: 10 });
+await setupBillingWorkflows({
+   redis,
+   resendClient,
+   hyprpayClient,
+   workerConcurrency: 10,
+});
 const classification = await setupClassificationWorkflows({
    redis,
    posthog,

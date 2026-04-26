@@ -36,7 +36,7 @@ const hyprpayClientStub = {
    usage: { ingest: hyprpayUsageIngestSpy },
 };
 
-vi.mock("../../src/sse/events", async () => {
+vi.mock("../../src/sse", async () => {
    return {
       classificationSseEvents: {
          publish: ssePublishSpy,

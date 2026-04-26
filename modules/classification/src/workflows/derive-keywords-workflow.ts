@@ -3,12 +3,13 @@ import { fromPromise } from "neverthrow";
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { categories } from "@core/database/schemas/categories";
 import { WorkflowError } from "@core/dbos/errors";
-import { getLogger } from "@core/logging/root";
 import { ingestUsageEvent } from "@core/hyprpay/usage";
 import { deriveKeywords } from "../ai/derive-keywords";
-import { classificationSseEvents } from "../sse/events";
-import { CLASSIFICATION_QUEUES } from "../constants";
-import { CLASSIFICATION_USAGE_EVENTS } from "../usage-events";
+import { classificationSseEvents } from "../sse";
+import {
+   CLASSIFICATION_QUEUES,
+   CLASSIFICATION_USAGE_EVENTS,
+} from "../constants";
 import {
    classificationDataSource,
    createEnqueuer,
@@ -124,7 +125,6 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsWorkflowInput) {
 
    await DBOS.runStep(
       async () => {
-         const logger = getLogger();
          const publish = await classificationSseEvents.publish(
             getClassificationRedis(),
             { kind: "team", id: input.teamId },
@@ -138,13 +138,8 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsWorkflowInput) {
             },
          );
          if (publish.isErr()) {
-            logger.warn(
-               {
-                  err: publish.error,
-                  categoryId: input.categoryId,
-                  teamId: input.teamId,
-               },
-               "Failed to publish keywords_derived SSE event",
+            DBOS.logger.warn(
+               `Failed to publish keywords_derived SSE event — category=${input.categoryId} team=${input.teamId} err=${publish.error.message}`,
             );
          }
       },
@@ -153,15 +148,12 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsWorkflowInput) {
 
    await DBOS.runStep(
       async () => {
-         const logger = getLogger();
          const result = await ingestUsageEvent({
             hyprpayClient: getClassificationHyprpay(),
             db: classificationDataSource.client,
-            teamId: input.teamId,
-            organizationId: input.organizationId,
-            eventName: CLASSIFICATION_USAGE_EVENTS.aiKeywordDerived.eventName,
-            quantity:
-               CLASSIFICATION_USAGE_EVENTS.aiKeywordDerived.defaultQuantity,
+            externalId: input.organizationId,
+            eventName: CLASSIFICATION_USAGE_EVENTS.aiKeywordDerived,
+            quantity: 1,
             idempotencyKey: `derive-${input.categoryId}-${DBOS.workflowID ?? "no-wf"}`,
             properties: {
                categoryId: input.categoryId,
@@ -169,9 +161,8 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsWorkflowInput) {
             },
          });
          if (result.isErr()) {
-            logger.warn(
-               { err: result.error, teamId: input.teamId },
-               "usage ingestion failed for ai.keyword_derived",
+            DBOS.logger.warn(
+               `usage ingestion failed for ai.keyword_derived — team=${input.teamId} err=${result.error.message}`,
             );
          }
       },

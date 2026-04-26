@@ -34,7 +34,7 @@ const { ssePublishSpy, hyprpayUsageIngestSpy } = vi.hoisted(() => ({
    hyprpayUsageIngestSpy: vi.fn(),
 }));
 
-vi.mock("../../src/sse/events", () => ({
+vi.mock("../../src/sse", () => ({
    classificationSseEvents: {
       publish: ssePublishSpy,
       eventTypes: [

@@ -1,0 +1,9 @@
+{
+   "$schema": "../../node_modules/nx/schemas/project-schema.json",
+   "name": "@core/hyprpay",
+   "targets": {
+      "typecheck": {
+         "dependsOn": ["^typecheck", "@montte/hyprpay:build"]
+      }
+   }
+}

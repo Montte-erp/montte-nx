@@ -5,12 +5,13 @@ import dayjs from "dayjs";
 import { WorkflowError } from "@core/dbos/errors";
 import { benefitGrants } from "@core/database/schemas/benefit-grants";
 import type { SubscriptionStatus } from "@core/database/schemas/subscriptions";
-import { billingSseEvents } from "../sse/events";
+import { billingSseEvents } from "../sse";
 import { BILLING_QUEUES } from "../constants";
 import { billingDataSource, getBillingRedis, createEnqueuer } from "./context";
 
 export type BenefitLifecycleInput = {
    teamId: string;
+   organizationId: string;
    subscriptionId: string;
    serviceId: string;
    newStatus: SubscriptionStatus;

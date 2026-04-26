@@ -22,7 +22,21 @@ export const billingResendSpies = {
    sendBillingTrialExpiryWarning: vi.fn().mockResolvedValue(undefined),
 };
 
-vi.mock("../../src/sse/events", async () => {
+export const billingHyprpayUsageIngestSpy = vi.fn(
+   (input: {
+      customerId: string;
+      meterId: string;
+      quantity: number;
+      idempotencyKey?: string;
+      properties?: Record<string, unknown>;
+   }) =>
+      okAsync({
+         queued: true,
+         idempotencyKey: input.idempotencyKey ?? crypto.randomUUID(),
+      }),
+);
+
+vi.mock("../../src/sse", async () => {
    return {
       billingSseEvents: {
          publish: ssePublishSpy,
@@ -45,6 +59,9 @@ vi.mock("../../src/workflows/context", async (importOriginal) => {
       ...actual,
       getBillingRedis: () => ({}),
       getBillingResendClient: () => ({}),
+      getBillingHyprpay: () => ({
+         usage: { ingest: billingHyprpayUsageIngestSpy },
+      }),
    };
 });
 
