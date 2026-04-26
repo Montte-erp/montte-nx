@@ -3,7 +3,7 @@ import { chat } from "@tanstack/ai";
 import { z } from "zod";
 import { AppError } from "@core/logging/errors";
 import { promptsClient } from "@core/posthog/server";
-import { POSTHOG_PROMPTS } from "@core/posthog/config";
+import { CLASSIFICATION_PROMPTS } from "../prompts";
 import { proModel } from "@core/ai/models";
 import { createPosthogAiMiddleware } from "@core/ai/middleware";
 import type { AiObservabilityContext } from "@core/ai/observability";
@@ -45,7 +45,9 @@ export function deriveKeywords(
    observability: AiObservabilityContext,
 ) {
    return fromPromise(
-      promptsClient.get(POSTHOG_PROMPTS.deriveKeywords, { withMetadata: true }),
+      promptsClient.get(CLASSIFICATION_PROMPTS.deriveKeywords, {
+         withMetadata: true,
+      }),
       aiError,
    )
       .andThen(({ prompt, name, version }) =>

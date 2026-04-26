@@ -1,8 +1,3 @@
-export const POSTHOG_PROMPTS = {
-   classifyTransaction: "montte-classify-transaction",
-   deriveKeywords: "montte-derive-keywords",
-} as const;
-
 export const FEATURE_FLAG_KEYS = [
    "contatos",
    "produtos-estoque",
