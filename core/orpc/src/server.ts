@@ -5,6 +5,7 @@ import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, onSuccess, os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
 import { createHyprpay } from "@core/hyprpay/client";
+import { ingestUsageEvent } from "@core/hyprpay/usage";
 import { createDb } from "@core/database/client";
 import { env } from "@core/environment/web";
 import {
@@ -276,29 +277,51 @@ const withTelemetry = withOrganization.use(
 );
 
 const withBilling = withTelemetry.use(
-   onSuccess((_result, { context, path, procedure }) => {
+   onSuccess(async (_result, { context, path, procedure }) => {
       const eventName = procedure["~orpc"].meta.billableEvent;
       if (!eventName) return;
-      context.hyprpayClient.services
-         .ingestUsage({
-            externalId: context.organizationId,
-            meterId: eventName,
-            quantity: 1,
-            idempotencyKey: crypto.randomUUID(),
-         })
-         .catch((cause: unknown) =>
-            otelLogger.emit({
-               severityText: "error",
-               body: "billing ingest failed",
-               attributes: {
-                  "error.message":
-                     cause instanceof Error ? cause.message : String(cause),
-                  path: path.join("."),
-                  eventName,
-                  organizationId: context.organizationId,
-               },
-            }),
-         );
+
+      // Each successful procedure call is a distinct billable event; the
+      // usage_events unique index on (teamId, idempotencyKey) prevents
+      // double-counting on TanStack Query retries (failed calls never reach
+      // onSuccess).
+      const result = await ingestUsageEvent({
+         db: context.db,
+         teamId: context.teamId,
+         externalId: context.organizationId,
+         eventName,
+         quantity: 1,
+         idempotencyKey: crypto.randomUUID(),
+         properties: { path: path.join(".") },
+      });
+
+      if (result.isErr()) {
+         otelLogger.emit({
+            severityText: "warn",
+            body: "billable event ingest failed",
+            attributes: {
+               "error.message": result.error.message,
+               path: path.join("."),
+               eventName,
+               organizationId: context.organizationId,
+               teamId: context.teamId,
+            },
+         });
+         return;
+      }
+
+      if (!result.value.ingested) {
+         otelLogger.emit({
+            severityText: "debug",
+            body: "billable event skipped — no meter configured",
+            attributes: {
+               path: path.join("."),
+               eventName,
+               organizationId: context.organizationId,
+               teamId: context.teamId,
+            },
+         });
+      }
    }),
 );
 
