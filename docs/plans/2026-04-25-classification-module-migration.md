@@ -1519,12 +1519,14 @@ git commit -m "feat(classification): deriveKeywordsWorkflow (entity-discriminate
 - Create: `modules/classification/src/workflows/backfill-keywords-workflow.ts`
 - Create: `modules/classification/__tests__/workflows/backfill-keywords.test.ts`
 
+**SSE redesign:** drop the old "notify cron summary" job notification. After enqueueing per-entity derive workflows for a team, emit one `classification.keywords_backfilled` SSE per `{entity, team}` pair via `classificationSseEvents.publish` with team scope. Payload `{ entity, processed }` reports how many derive workflows were enqueued. Skip the SSE if `processed === 0`.
+
 **Step 12.1 — Failing test**
 
 Cases:
-1. No teams with stale categories/tags → no-op, no enqueues.
-2. Two teams, each with 3 stale categories + 2 stale tags → 10 `DBOS.startWorkflow` calls of `deriveKeywordsWorkflow`.
-3. Budget exceeded mid-loop → halts that team, continues to next.
+1. No teams with stale categories/tags → no-op, no derive-workflow enqueues, no SSE publishes.
+2. Two teams, each with 3 stale categories + 2 stale tags → 10 `DBOS.startWorkflow` calls of `deriveKeywordsWorkflow`. 4 SSE publishes (2 teams × 2 entities = 4 `classification.keywords_backfilled` events). Each SSE has matching `processed` counts.
+3. Budget exceeded mid-loop → halts that team, continues to next. Team that ran fully gets its SSE; the halted team gets 0 or 1 partial SSE depending on which entity exceeded.
 
 Mock `DBOS.startWorkflow` to capture invocations.
 
@@ -1533,11 +1535,11 @@ Mock `DBOS.startWorkflow` to capture invocations.
 Logic:
 1. Query `categories` where `keywords IS NULL OR keywords_updated_at < now() - 30 days`. Same for `tags`. Group by teamId.
 2. For each team, fetch organizationId from `team` table.
-3. For each entity, `enforceCreditBudget` (skip team if exceeded).
+3. For each entity (category, tag), `enforceCreditBudget` (skip that entity for the team if exceeded).
 4. `DBOS.startWorkflow(deriveKeywordsWorkflow, { workflowID: "derive-${entity}-${id}-${YYYY-MM-DD}", queueName: "workflow:derive-keywords" })({ entity, ...input })`.
-5. Notify cron summary per team.
+5. After enqueueing all derives for one entity in one team, emit `classification.keywords_backfilled` SSE: `{ kind: "team", id: teamId }`, `{ type: "classification.keywords_backfilled", payload: { entity, processed: N } }` (skip if N === 0).
 
-Register via `DBOS.registerWorkflow` with `(scheduledTime: Date, _ctx: unknown)` signature. Export `backfillKeywordsWorkflow` (no enqueuer — scheduled only).
+Register via `DBOS.registerWorkflow` with `(scheduledTime: Date, _ctx: unknown)` signature. Export `backfillKeywordsWorkflow` (no enqueuer — scheduled only via cron in setup.ts).
 
 **Step 12.3 — Run + commit**
 
