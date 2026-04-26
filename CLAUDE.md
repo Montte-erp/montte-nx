@@ -697,7 +697,10 @@ All localStorage keys prefixed `montte:`. Prefer `createClientOnlyFn`/`createIso
 
 **Bill only what costs us.** Mirror PostHog's pricing model: meter operations that hit our infra or paid third-party APIs (AI calls via OpenRouter, email via Resend, storage, webhook egress). Never bill on UI/CRUD/listings — those are free.
 
-**Where to ingest:** at the cost-incurring callsite, NOT the procedure boundary. AI calls bill inside the workflow step that calls OpenRouter; emails bill inside the workflow step right after `sendBillingX`. Routers stay `protectedProcedure`. The exception: `billableProcedure` exists in `@core/orpc/server` for future router-level billing, paired with `.meta({ billableEvent: "..." })` (oRPC `onSuccess` middleware reads the meta after handler success). Currently unused — only wire it when a router itself triggers a real cost (e.g. synchronous third-party API call).
+**Where to ingest:** at the cost-incurring callsite. Two paths converge on the same `ingestUsageEvent` helper — both resolve the meter UUID from `(teamId, eventName)` and write `usage_events` directly:
+
+- **Workflow steps** call `ingestUsageEvent` inside `DBOS.runStep` after the cost-incurring action succeeds (emails, AI calls outside a router).
+- **Router-triggered costs** use `billableProcedure` from `@core/orpc/server` paired with `.meta({ billableEvent: "<eventName>" })`. The `onSuccess` middleware ingests one usage event per successful handler call. Use this for procedures whose handler itself triggers a real cost (synchronous third-party API call, AI inference, etc.). Pure CRUD/listings stay on `protectedProcedure`.
 
 **Customer model — externalId only.** All HyprPay SDK methods accept `externalId` (the SaaS owner's ID for the entity). Internal HyprPay `cus_xxx` is never exposed in the SDK. In Montte, `externalId = organization.id`. The Better Auth hyprpay plugin auto-syncs orgs/users to HyprPay customers on creation.
 
@@ -724,8 +727,8 @@ import { ingestUsageEvent } from "@core/hyprpay/usage";
 await DBOS.runStep(
    async () => {
       const result = await ingestUsageEvent({
-         hyprpayClient: getBillingHyprpay(),
          db: billingDataSource.client,
+         teamId: input.teamId,
          externalId: input.organizationId,
          eventName: TRANSACTIONAL_USAGE_EVENTS.emailSent,
          quantity: 1,

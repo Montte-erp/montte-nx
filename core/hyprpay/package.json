@@ -22,7 +22,7 @@
       "check": "oxlint ./src",
       "format": "oxfmt --write ./src",
       "format:check": "oxfmt --check ./src",
-      "test": "vitest run --passWithNoTests",
+      "test": "vitest run",
       "typecheck": "tsgo"
    },
    "dependencies": {
@@ -32,6 +32,7 @@
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
-      "typescript": "catalog:development"
+      "typescript": "catalog:development",
+      "vitest": "catalog:testing"
    }
 }
