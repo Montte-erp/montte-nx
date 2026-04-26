@@ -26,6 +26,7 @@ import { Route as AuthSignInIndexRouteImport } from "./routes/auth/sign-in/index
 import { Route as AuthSignInEmailRouteImport } from "./routes/auth/sign-in/email";
 import { Route as ApiSdkSplatRouteImport } from "./routes/api/sdk/$";
 import { Route as ApiRpcSplatRouteImport } from "./routes/api/rpc/$";
+import { Route as ApiOpenapiSplatRouteImport } from "./routes/api/openapi/$";
 import { Route as ApiFilesSplatRouteImport } from "./routes/api/files/$";
 import { Route as ApiAuthSplatRouteImport } from "./routes/api/auth/$";
 import { Route as AuthenticatedSlugTeamSlugRouteImport } from "./routes/_authenticated/$slug/$teamSlug";
@@ -153,6 +154,11 @@ const ApiSdkSplatRoute = ApiSdkSplatRouteImport.update({
 const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
    id: "/api/rpc/$",
    path: "/api/rpc/$",
+   getParentRoute: () => rootRouteImport,
+} as any);
+const ApiOpenapiSplatRoute = ApiOpenapiSplatRouteImport.update({
+   id: "/api/openapi/$",
+   path: "/api/openapi/$",
    getParentRoute: () => rootRouteImport,
 } as any);
 const ApiFilesSplatRoute = ApiFilesSplatRouteImport.update({
@@ -466,6 +472,7 @@ export interface FileRoutesByFullPath {
    "/$slug/$teamSlug": typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren;
    "/api/auth/$": typeof ApiAuthSplatRoute;
    "/api/files/$": typeof ApiFilesSplatRoute;
+   "/api/openapi/$": typeof ApiOpenapiSplatRoute;
    "/api/rpc/$": typeof ApiRpcSplatRoute;
    "/api/sdk/$": typeof ApiSdkSplatRoute;
    "/auth/sign-in/email": typeof AuthSignInEmailRoute;
@@ -526,6 +533,7 @@ export interface FileRoutesByTo {
    "/$slug/$teamSlug": typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren;
    "/api/auth/$": typeof ApiAuthSplatRoute;
    "/api/files/$": typeof ApiFilesSplatRoute;
+   "/api/openapi/$": typeof ApiOpenapiSplatRoute;
    "/api/rpc/$": typeof ApiRpcSplatRoute;
    "/api/sdk/$": typeof ApiSdkSplatRoute;
    "/auth/sign-in/email": typeof AuthSignInEmailRoute;
@@ -586,6 +594,7 @@ export interface FileRoutesById {
    "/_authenticated/$slug/$teamSlug": typeof AuthenticatedSlugTeamSlugRouteWithChildren;
    "/api/auth/$": typeof ApiAuthSplatRoute;
    "/api/files/$": typeof ApiFilesSplatRoute;
+   "/api/openapi/$": typeof ApiOpenapiSplatRoute;
    "/api/rpc/$": typeof ApiRpcSplatRoute;
    "/api/sdk/$": typeof ApiSdkSplatRoute;
    "/auth/sign-in/email": typeof AuthSignInEmailRoute;
@@ -650,6 +659,7 @@ export interface FileRouteTypes {
       | "/$slug/$teamSlug"
       | "/api/auth/$"
       | "/api/files/$"
+      | "/api/openapi/$"
       | "/api/rpc/$"
       | "/api/sdk/$"
       | "/auth/sign-in/email"
@@ -710,6 +720,7 @@ export interface FileRouteTypes {
       | "/$slug/$teamSlug"
       | "/api/auth/$"
       | "/api/files/$"
+      | "/api/openapi/$"
       | "/api/rpc/$"
       | "/api/sdk/$"
       | "/auth/sign-in/email"
@@ -769,6 +780,7 @@ export interface FileRouteTypes {
       | "/_authenticated/$slug/$teamSlug"
       | "/api/auth/$"
       | "/api/files/$"
+      | "/api/openapi/$"
       | "/api/rpc/$"
       | "/api/sdk/$"
       | "/auth/sign-in/email"
@@ -824,6 +836,7 @@ export interface RootRouteChildren {
    ApiPingRoute: typeof ApiPingRoute;
    ApiAuthSplatRoute: typeof ApiAuthSplatRoute;
    ApiFilesSplatRoute: typeof ApiFilesSplatRoute;
+   ApiOpenapiSplatRoute: typeof ApiOpenapiSplatRoute;
    ApiRpcSplatRoute: typeof ApiRpcSplatRoute;
    ApiSdkSplatRoute: typeof ApiSdkSplatRoute;
    CallbackOrganizationInvitationInvitationIdRoute: typeof CallbackOrganizationInvitationInvitationIdRoute;
@@ -948,6 +961,13 @@ declare module "@tanstack/react-router" {
          path: "/api/rpc/$";
          fullPath: "/api/rpc/$";
          preLoaderRoute: typeof ApiRpcSplatRouteImport;
+         parentRoute: typeof rootRouteImport;
+      };
+      "/api/openapi/$": {
+         id: "/api/openapi/$";
+         path: "/api/openapi/$";
+         fullPath: "/api/openapi/$";
+         preLoaderRoute: typeof ApiOpenapiSplatRouteImport;
          parentRoute: typeof rootRouteImport;
       };
       "/api/files/$": {
@@ -1508,6 +1528,7 @@ const rootRouteChildren: RootRouteChildren = {
    ApiPingRoute: ApiPingRoute,
    ApiAuthSplatRoute: ApiAuthSplatRoute,
    ApiFilesSplatRoute: ApiFilesSplatRoute,
+   ApiOpenapiSplatRoute: ApiOpenapiSplatRoute,
    ApiRpcSplatRoute: ApiRpcSplatRoute,
    ApiSdkSplatRoute: ApiSdkSplatRoute,
    CallbackOrganizationInvitationInvitationIdRoute:

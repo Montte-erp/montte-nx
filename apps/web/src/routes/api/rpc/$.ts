@@ -1,10 +1,7 @@
 import "@/polyfill";
 
-import { OpenAPIHandler } from "@orpc/openapi/fetch";
-import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
+import { RPCHandler } from "@orpc/server/fetch";
 import { BatchHandlerPlugin } from "@orpc/server/plugins";
-import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import { env } from "@core/environment/web";
 import { FetchLoggingPlugin } from "@core/logging/orpc-plugin";
 import { createFileRoute } from "@tanstack/react-router";
 import pino from "pino";
@@ -13,7 +10,7 @@ import type { ORPCContext } from "@/integrations/orpc/server";
 
 const logger = pino({ name: "montte-web-rpc" });
 
-const handler = new OpenAPIHandler(router, {
+const handler = new RPCHandler(router, {
    plugins: [
       new BatchHandlerPlugin(),
       new FetchLoggingPlugin<ORPCContext>({
@@ -21,26 +18,6 @@ const handler = new OpenAPIHandler(router, {
          generateId: () => crypto.randomUUID(),
          logRequestResponse: true,
          logRequestAbort: true,
-      }),
-      new OpenAPIReferencePlugin({
-         schemaConverters: [new ZodToJsonSchemaConverter()],
-         docsProvider: "scalar",
-         docsPath: "/docs",
-         specPath: "/spec.json",
-         specGenerateOptions: {
-            info: { title: "Montte API", version: "1.0.0" },
-            servers: [{ url: env.APP_URL ?? env.BETTER_AUTH_URL }],
-            components: {
-               securitySchemes: {
-                  apiKey: { type: "apiKey", in: "header", name: "x-api-key" },
-                  cookie: {
-                     type: "apiKey",
-                     in: "cookie",
-                     name: "better-auth.session_token",
-                  },
-               },
-            },
-         },
       }),
    ],
 });
