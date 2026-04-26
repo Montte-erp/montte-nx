@@ -96,103 +96,97 @@ export const contactFkRef = z.union([
 export type ContactByIdRef = z.infer<typeof contactByIdRef>;
 export type ContactFkRef = z.infer<typeof contactFkRef>;
 
-const ingestUsageInput = z.union([
-   z.object({
-      contactId: z.string().uuid(),
-      meterId: z.string().uuid(),
-      quantity: z.number().positive(),
-      idempotencyKey: z.string().optional(),
-      properties: z.record(z.string(), z.unknown()).optional(),
-   }),
-   z.object({
-      externalId: z.string().min(1),
-      meterId: z.string().uuid(),
-      quantity: z.number().positive(),
-      idempotencyKey: z.string().optional(),
-      properties: z.record(z.string(), z.unknown()).optional(),
-   }),
-]);
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const isoDateString = z
+   .string()
+   .regex(ISO_DATE_REGEX, "Data deve estar no formato YYYY-MM-DD.");
 
-const createSubscriptionInput = z.union([
-   z.object({
+const createSubscriptionInput = z
+   .object({
       contactId: z.string().uuid(),
+      startDate: isoDateString,
+      endDate: isoDateString.nullable().optional(),
+      notes: z.string().nullable().optional(),
+      status: z.enum(["active", "trialing"]).default("active"),
+      trialEndsAt: z.string().datetime().nullable().optional(),
       items: z
          .array(
             z.object({
                priceId: z.string().uuid(),
-               quantity: z.number().int().min(1).optional(),
+               quantity: z.number().int().min(1).default(1),
+               negotiatedPrice: z
+                  .string()
+                  .regex(/^\d+(\.\d+)?$/)
+                  .nullable()
+                  .optional(),
             }),
          )
-         .min(1),
-      couponCode: z.string().optional(),
-      status: z.enum(["active", "trialing"]).optional(),
-      trialEndsAt: z.string().datetime().nullable().optional(),
-      startDate: z.string().optional(),
-      endDate: z.string().nullable().optional(),
-      notes: z.string().nullable().optional(),
-   }),
-   z.object({
-      externalId: z.string().min(1),
-      items: z
-         .array(
-            z.object({
-               priceId: z.string().uuid(),
-               quantity: z.number().int().min(1).optional(),
-            }),
-         )
-         .min(1),
-      couponCode: z.string().optional(),
-      status: z.enum(["active", "trialing"]).optional(),
-      trialEndsAt: z.string().datetime().nullable().optional(),
-      startDate: z.string().optional(),
-      endDate: z.string().nullable().optional(),
-      notes: z.string().nullable().optional(),
-   }),
-]);
+         .optional(),
+   })
+   .superRefine((data, ctx) => {
+      if (data.status === "trialing" && !data.trialEndsAt) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "trialEndsAt obrigatório para status 'trialing'.",
+            path: ["trialEndsAt"],
+         });
+      }
+   });
 
-const subscriptionWithItems = subscriptionRow.extend({
-   items: z.array(subscriptionItemRow),
+const ingestUsageEventInput = z.object({
+   teamId: z.string().uuid(),
+   meterId: z.string().uuid(),
+   contactId: z.string().uuid().nullable().optional(),
+   quantity: z
+      .string()
+      .regex(/^\d+(\.\d+)?$/, "Quantidade deve ser um número positivo."),
+   idempotencyKey: z.string().min(1),
+   properties: z.record(z.string(), z.unknown()).optional(),
 });
 
 const servicesContract = {
    ingestUsage: oc
-      .input(ingestUsageInput)
+      .input(ingestUsageEventInput)
       .output(z.object({ success: z.literal(true) })),
    createSubscription: oc
       .input(createSubscriptionInput)
-      .output(subscriptionWithItems),
+      .output(subscriptionRow),
    cancelSubscription: oc
-      .input(
-         z.object({
-            subscriptionId: z.string().uuid(),
-            cancelAtPeriodEnd: z.boolean().default(false),
-         }),
-      )
+      .input(z.object({ id: z.string().uuid() }))
       .output(subscriptionRow),
    getContactSubscriptions: oc
-      .input(contactFkRef)
-      .output(z.array(subscriptionWithItems)),
+      .input(z.object({ contactId: z.string().uuid() }))
+      .output(z.array(subscriptionRow)),
    addItem: oc
       .input(
          z.object({
             subscriptionId: z.string().uuid(),
             priceId: z.string().uuid(),
-            quantity: z.number().int().min(1).optional(),
+            quantity: z.number().int().min(1).default(1),
+            negotiatedPrice: z
+               .string()
+               .regex(/^\d+(\.\d+)?$/)
+               .nullable()
+               .optional(),
          }),
       )
       .output(subscriptionItemRow),
    updateItem: oc
       .input(
          z.object({
-            itemId: z.string().uuid(),
+            id: z.string().uuid(),
             quantity: z.number().int().min(1).optional(),
-            negotiatedPrice: z.string().nullable().optional(),
+            negotiatedPrice: z
+               .string()
+               .regex(/^\d+(\.\d+)?$/)
+               .nullable()
+               .optional(),
          }),
       )
       .output(subscriptionItemRow),
    removeItem: oc
-      .input(z.object({ itemId: z.string().uuid() }))
-      .output(z.object({ success: z.boolean() })),
+      .input(z.object({ id: z.string().uuid() }))
+      .output(z.object({ success: z.literal(true) })),
 };
 
 const contactsContract = {

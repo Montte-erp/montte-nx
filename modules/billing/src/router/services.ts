@@ -10,24 +10,21 @@ import { usageEvents } from "@core/database/schemas/usage-events";
 import { WebAppError } from "@core/logging/errors";
 import { getLogger } from "@core/logging/root";
 import { protectedProcedure } from "@core/orpc/server";
+import { billingImpl } from "./_implementer";
 import { enqueueBenefitLifecycleWorkflow } from "../workflows/benefit-lifecycle-workflow";
 import { enqueuePeriodEndInvoiceWorkflow } from "../workflows/period-end-invoice-workflow";
 import { enqueueTrialExpiryWorkflow } from "../workflows/trial-expiry-workflow";
 import {
    createServiceSchema,
-   createSubscriptionItemSchema,
    createMeterSchema,
    createBenefitSchema,
-   upsertUsageEventSchema,
    listServicesInputSchema,
    listSubscriptionsInputSchema,
-   createSubscriptionWithItemsInputSchema,
    listExpiringSoonInputSchema,
    serviceBenefitLinkSchema,
    idInputSchema,
    serviceIdInputSchema,
    priceIdInputSchema,
-   contactIdInputSchema,
    subscriptionIdInputSchema,
    bulkCreateServicesInputSchema,
    createPriceForServiceInputSchema,
@@ -35,7 +32,6 @@ import {
    updatePriceInputSchema,
    updateMeterInputSchema,
    updateBenefitInputSchema,
-   updateSubscriptionItemInputSchema,
 } from "../contracts/services";
 import {
    requireBenefit,
@@ -290,23 +286,23 @@ export const getAllSubscriptions = protectedProcedure
       return result.value;
    });
 
-export const getContactSubscriptions = protectedProcedure
-   .input(contactIdInputSchema)
-   .use(requireContact, (input) => ({ contactId: input.contactId }))
-   .handler(async ({ context, input }) => {
-      const result = await fromPromise(
-         context.db.query.contactSubscriptions.findMany({
-            where: (f, { eq }) => eq(f.contactId, input.contactId),
-            orderBy: (f, { desc }) => [desc(f.createdAt)],
-         }),
-         () => WebAppError.internal("Falha ao listar assinaturas do contato."),
-      );
-      if (result.isErr()) throw result.error;
-      return result.value;
-   });
+export const getContactSubscriptions =
+   billingImpl.services.getContactSubscriptions
+      .use(requireContact, (input) => ({ contactId: input.contactId }))
+      .handler(async ({ context, input }) => {
+         const result = await fromPromise(
+            context.db.query.contactSubscriptions.findMany({
+               where: (f, { eq }) => eq(f.contactId, input.contactId),
+               orderBy: (f, { desc }) => [desc(f.createdAt)],
+            }),
+            () =>
+               WebAppError.internal("Falha ao listar assinaturas do contato."),
+         );
+         if (result.isErr()) throw result.error;
+         return result.value;
+      });
 
-export const createSubscription = protectedProcedure
-   .input(createSubscriptionWithItemsInputSchema)
+export const createSubscription = billingImpl.services.createSubscription
    .use(requireContact, (input) => ({ contactId: input.contactId }))
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
@@ -426,8 +422,7 @@ export const createSubscription = protectedProcedure
       return sub;
    });
 
-export const cancelSubscription = protectedProcedure
-   .input(idInputSchema)
+export const cancelSubscription = billingImpl.services.cancelSubscription
    .use(requireSubscription, (input) => input.id)
    .handler(async ({ context, input }) => {
       const { subscription } = context;
@@ -730,9 +725,8 @@ export const getServiceBenefits = protectedProcedure
 
 // --- Usage / metrics ---
 
-export const ingestUsage = protectedProcedure
-   .input(upsertUsageEventSchema)
-   .handler(async ({ context, input }) => {
+export const ingestUsage = billingImpl.services.ingestUsage.handler(
+   async ({ context, input }) => {
       if (input.teamId !== context.teamId)
          throw WebAppError.forbidden(
             "Você não tem permissão para registrar uso neste time.",
@@ -758,7 +752,8 @@ export const ingestUsage = protectedProcedure
       );
       if (result.isErr()) throw result.error;
       return { success: true as const };
-   });
+   },
+);
 
 export const getMrr = protectedProcedure.handler(async ({ context }) => {
    const rows = await context.db
@@ -810,8 +805,7 @@ export const getActiveCountByPrice = protectedProcedure
 
 // --- Subscription items ---
 
-export const addItem = protectedProcedure
-   .input(createSubscriptionItemSchema)
+export const addItem = billingImpl.services.addItem
    .use(requireSubscription, (input) => input.subscriptionId)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
@@ -850,8 +844,7 @@ export const addItem = protectedProcedure
       return result.value;
    });
 
-export const updateItem = protectedProcedure
-   .input(updateSubscriptionItemInputSchema)
+export const updateItem = billingImpl.services.updateItem
    .use(requireSubscriptionItem, (input) => input.id)
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
@@ -872,8 +865,7 @@ export const updateItem = protectedProcedure
       return result.value;
    });
 
-export const removeItem = protectedProcedure
-   .input(idInputSchema)
+export const removeItem = billingImpl.services.removeItem
    .use(requireSubscriptionItem, (input) => input.id)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
