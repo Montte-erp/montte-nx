@@ -37,7 +37,6 @@ const auth = createAuth({
    redis,
    posthog,
    resendClient,
-   hyprpayClient,
    env,
 });
 const workflowClient = createWorkflowClient(env.DATABASE_URL);

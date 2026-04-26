@@ -1,5 +1,5 @@
 import { apiKey } from "@better-auth/api-key";
-import type { HyprPayClient } from "@core/hyprpay/client";
+import { hyprpay } from "@montte/hyprpay/better-auth";
 import { findMemberByUserId } from "@core/database/repositories/auth-repository";
 import * as schema from "@core/database/schema";
 import { getDomain, isProduction } from "@core/environment/helpers";
@@ -63,20 +63,18 @@ export interface CreateAuthDeps {
    redis: Redis;
    posthog: PostHog;
    resendClient: ResendClient;
-   hyprpayClient: HyprPayClient;
    env: {
       BETTER_AUTH_URL?: string;
       BETTER_AUTH_SECRET: string;
       BETTER_AUTH_TRUSTED_ORIGINS: string;
       BETTER_AUTH_GOOGLE_CLIENT_ID: string;
       BETTER_AUTH_GOOGLE_CLIENT_SECRET: string;
+      HYPRPAY_API_KEY: string;
    };
 }
 
 export function createAuth(deps: CreateAuthDeps) {
    const { db, redis, resendClient, env } = deps;
-   // hyprpayClient is reserved for the better-auth hyprpay plugin (disabled in v0.4.0)
-   void deps.hyprpayClient;
 
    const auth = betterAuth({
       baseURL: env.BETTER_AUTH_URL,
@@ -354,10 +352,12 @@ export function createAuth(deps: CreateAuthDeps) {
             apiKeyHeaders: ["sdk-api-key", "x-api-key"],
          }),
 
-         // TODO(@montte/hyprpay v0.4.0): re-enable hyprpay() better-auth
-         // plugin once it is rewired against the new client shape
-         // (client.contacts.create / client.contacts.update). The previous
-         // plugin called client.customers.* which no longer exists.
+         hyprpay({
+            apiKey: env.HYPRPAY_API_KEY,
+            createCustomerOnSignUp: true,
+            syncCustomerOnUpdate: true,
+         }),
+
          tanstackStartCookies(),
       ],
    });

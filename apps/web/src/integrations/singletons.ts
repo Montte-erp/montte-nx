@@ -29,6 +29,5 @@ export const auth = createAuth({
    redis,
    posthog,
    resendClient,
-   hyprpayClient,
    env,
 });
