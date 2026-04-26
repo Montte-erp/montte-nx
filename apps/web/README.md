@@ -7,8 +7,8 @@ Aplicação principal do Montte — ERP com dashboard, rotas SSR via TanStack St
 Esta aplicação **não executa workflows DBOS**. Enfileira jobs via `DBOSClient` (durável, PostgreSQL-backed):
 
 ```ts
-import { enqueueCategorizationWorkflow } from "@packages/workflows/workflows/categorization-workflow";
-await enqueueCategorizationWorkflow(context.workflowClient, input);
+import { enqueueClassifyTransactionsBatchWorkflow } from "@modules/classification/workflows/classification-workflow";
+await enqueueClassifyTransactionsBatchWorkflow(context.workflowClient, input);
 ```
 
 `workflowClient` é um `DBOSClient` resolvido no middleware oRPC (`singletons.ts`). O processamento em background é feito pelo serviço `apps/worker`.

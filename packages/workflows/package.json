@@ -11,10 +11,6 @@
       "./setup": {
          "types": "./dist/setup.d.ts",
          "default": "./dist/setup.js"
-      },
-      "./workflows/*": {
-         "types": "./dist/workflows/*.d.ts",
-         "default": "./dist/workflows/*.js"
       }
    },
    "scripts": {

@@ -1,15 +1,6 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { getLogger } from "@core/logging/root";
-import { initContext } from "./context";
 import type { WorkflowDeps } from "./context";
-import { backfillKeywordsWorkflow } from "./workflows/backfill-keywords-workflow";
-import "./workflows/categorization-workflow";
-import "./workflows/derive-keywords-workflow";
-import "./workflows/derive-tag-keywords-workflow";
-import "./workflows/suggest-tag-workflow";
-import { createAllQueues } from "./workflow-factory";
-
-createAllQueues({ workerConcurrency: 10 });
 
 type LaunchConfig = WorkflowDeps & {
    systemDatabaseUrl: string;
@@ -23,11 +14,8 @@ export function launchDBOS({
    logLevel,
    onLaunch,
    onShutdown,
-   ...deps
 }: LaunchConfig) {
    const logger = getLogger();
-
-   initContext(deps);
 
    DBOS.setConfig({
       name: "montte-web",
@@ -39,13 +27,6 @@ export function launchDBOS({
    DBOS.launch()
       .then(async () => {
          logger.info("DBOS runtime started");
-         await DBOS.applySchedules([
-            {
-               scheduleName: "backfill-keywords-daily",
-               workflowFn: backfillKeywordsWorkflow,
-               schedule: "0 3 * * *",
-            },
-         ]);
          await onLaunch?.();
       })
       .catch((err: unknown) => {

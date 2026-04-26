@@ -19,10 +19,6 @@
       "./utils": {
          "types": "./dist/utils.d.ts",
          "default": "./dist/utils.js"
-      },
-      "./actions/*": {
-         "types": "./dist/actions/*.d.ts",
-         "default": "./dist/actions/*.js"
       }
    },
    "scripts": {
