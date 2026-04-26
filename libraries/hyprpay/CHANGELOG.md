@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0 — 2026-04-26
+
+### Breaking
+- **Better-auth `hyprpay` plugin re-enabled** at `@montte/hyprpay/better-auth`. Signup now creates a HyprPay contact (`type: "cliente"`) via the SDK's `client.contacts.create({ ..., externalId: user.id })`; user updates sync the `name` via `client.contacts.update({ externalId, name })`. Consumers who upgraded between 0.4.0 and 0.5.0 may have been relying on the absence of this side-effect — re-evaluate before upgrading.
+- **`createAuth` deps no longer accepts `hyprpayClient`.** The plugin instantiates its own SDK client from `env.HYPRPAY_API_KEY`. Callers should remove the field from their `createAuth({ ... })` invocation; the env interface gains `HYPRPAY_API_KEY`.
+
 ## 0.4.1 — 2026-04-26
 
 ### Changed
