@@ -8,6 +8,7 @@ import { getLogger } from "@core/logging/root";
 import { categories } from "@core/database/schemas/categories";
 import { tags } from "@core/database/schemas/tags";
 import { transactions } from "@core/database/schemas/transactions";
+import { ingestUsageEvent } from "@core/hyprpay/usage";
 import { matchByKeywords, type KeywordMatchResult } from "../utils";
 import {
    classifyTransactionsBatch,
@@ -16,8 +17,10 @@ import {
 } from "../ai/classify-batch";
 import { classificationSseEvents } from "../sse/events";
 import { CLASSIFICATION_QUEUES } from "../constants";
+import { CLASSIFICATION_USAGE_EVENTS } from "../usage-events";
 import {
    classificationDataSource,
+   getClassificationHyprpay,
    getClassificationPosthog,
    getClassificationRedis,
 } from "./context";
@@ -29,6 +32,13 @@ export type ClassifyTransactionsBatchInput = {
    transactionIds: string[];
 };
 
+type CategoryRow = {
+   id: string;
+   name: string;
+   keywords: string[] | null;
+   dreGroupId: string | null;
+};
+
 type LoadedInputs = {
    transactions: {
       id: string;
@@ -37,8 +47,8 @@ type LoadedInputs = {
       type: "income" | "expense" | "transfer";
       contactName: string | null;
    }[];
-   categories: { id: string; name: string; keywords: string[] | null }[];
-   tags: { id: string; name: string; keywords: string[] | null }[];
+   categories: CategoryRow[];
+   tagByName: Map<string, string>;
 };
 
 type ClassificationWrite = {
@@ -53,6 +63,16 @@ function chunk<T>(items: T[], size: number): T[][] {
       chunks.push(items.slice(i, i + size));
    }
    return chunks;
+}
+
+function resolveTagId(
+   categoryId: string,
+   categoryById: Map<string, CategoryRow>,
+   tagByName: Map<string, string>,
+): string | null {
+   const category = categoryById.get(categoryId);
+   if (!category?.dreGroupId) return null;
+   return tagByName.get(category.dreGroupId) ?? null;
 }
 
 async function classifyTransactionsBatchWorkflowFn(
@@ -97,6 +117,7 @@ async function classifyTransactionsBatchWorkflowFn(
                         id: categories.id,
                         name: categories.name,
                         keywords: categories.keywords,
+                        dreGroupId: categories.dreGroupId,
                      })
                      .from(categories)
                      .where(
@@ -107,11 +128,7 @@ async function classifyTransactionsBatchWorkflowFn(
                      );
 
                   const tagRows = await tx
-                     .select({
-                        id: tags.id,
-                        name: tags.name,
-                        keywords: tags.keywords,
-                     })
+                     .select({ id: tags.id, name: tags.name })
                      .from(tags)
                      .where(
                         and(
@@ -129,7 +146,7 @@ async function classifyTransactionsBatchWorkflowFn(
                         contactName: row.contact?.name ?? null,
                      })),
                      categories: catRows,
-                     tags: tagRows,
+                     tagByName: new Map(tagRows.map((t) => [t.name, t.id])),
                   };
                },
                { name: "load-classification-inputs" },
@@ -150,6 +167,8 @@ async function classifyTransactionsBatchWorkflowFn(
       );
       return;
    }
+
+   const categoryById = new Map(loaded.categories.map((c) => [c.id, c]));
 
    const namedTransactions = loaded.transactions.filter(
       (t): t is typeof t & { name: string } => t.name !== null,
@@ -182,7 +201,6 @@ async function classifyTransactionsBatchWorkflowFn(
       for (let i = 0; i < chunks.length; i += 1) {
          const chunkItems = chunks[i];
          if (!chunkItems) continue;
-         const stepIndex = i + 1;
          const chunkResult = await fromPromise(
             DBOS.runStep(
                async () => {
@@ -198,13 +216,12 @@ async function classifyTransactionsBatchWorkflowFn(
                   const ai = await classifyTransactionsBatch(
                      aiInput,
                      loaded.categories,
-                     loaded.tags,
                      observability,
                   );
                   if (ai.isErr()) throw ai.error;
                   return ai.value;
                },
-               { name: `ai-classify-chunk-${stepIndex}` },
+               { name: `ai-classify-chunk-${i + 1}` },
             ),
             (e) =>
                WorkflowError.internal(
@@ -221,12 +238,16 @@ async function classifyTransactionsBatchWorkflowFn(
       ...keywordMatched.map((r) => ({
          transactionId: r.transactionId,
          categoryId: r.matchedCategoryId,
-         tagId: null,
+         tagId: resolveTagId(
+            r.matchedCategoryId,
+            categoryById,
+            loaded.tagByName,
+         ),
       })),
       ...aiResults.map((r) => ({
          transactionId: r.transactionId,
          categoryId: r.categoryId,
-         tagId: r.tagId,
+         tagId: resolveTagId(r.categoryId, categoryById, loaded.tagByName),
       })),
    ];
 
@@ -314,9 +335,49 @@ async function classifyTransactionsBatchWorkflowFn(
    );
    if (emitResult.isErr()) throw emitResult.error;
 
+   if (aiResults.length > 0) {
+      await DBOS.runStep(
+         async () => {
+            const logger = getLogger();
+            const result = await ingestUsageEvent({
+               hyprpayClient: getClassificationHyprpay(),
+               db: classificationDataSource.client,
+               teamId: input.teamId,
+               organizationId: await resolveOrganizationId(input.teamId),
+               eventName:
+                  CLASSIFICATION_USAGE_EVENTS.aiTransactionClassified.eventName,
+               quantity: aiResults.length,
+               idempotencyKey: `classify-${DBOS.workflowID ?? buildWorkflowId(input)}`,
+               properties: {
+                  transactionCount: aiResults.length,
+                  keywordMatched: keywordMatched.length,
+               },
+            });
+            if (result.isErr()) {
+               logger.warn(
+                  { err: result.error, teamId: input.teamId },
+                  "usage ingestion failed for ai.transaction_classified",
+               );
+            }
+         },
+         { name: "ingestUsage" },
+      );
+   }
+
    DBOS.logger.info(
       `${ctx} completed — keyword=${keywordMatched.length} ai=${aiResults.length} written=${writes.length}`,
    );
+}
+
+async function resolveOrganizationId(teamId: string): Promise<string> {
+   const tx = classificationDataSource.client;
+   const row = await tx.query.team.findFirst({
+      where: (f, { eq }) => eq(f.id, teamId),
+      columns: { organizationId: true },
+   });
+   if (!row?.organizationId)
+      throw WorkflowError.database(`Team ${teamId} has no organization.`);
+   return row.organizationId;
 }
 
 export const classifyTransactionsBatchWorkflow = DBOS.registerWorkflow(

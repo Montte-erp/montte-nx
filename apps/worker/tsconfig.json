@@ -7,6 +7,7 @@
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],
          "@core/environment/worker": ["../../core/environment/src/worker.ts"],
+         "@core/hyprpay/*": ["../../core/hyprpay/src/*"],
          "@core/environment/*": ["../../core/environment/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
@@ -16,8 +17,7 @@
          "@core/stripe/*": ["../../core/stripe/src/*"],
          "@core/transactional/*": ["../../core/transactional/dist/*"],
          "@modules/billing/*": ["../../modules/billing/src/*"],
-         "@modules/classification/*": ["../../modules/classification/src/*"],
-         "@packages/events/*": ["../../packages/events/src/*"]
+         "@modules/classification/*": ["../../modules/classification/src/*"]
       }
    },
    "include": ["src"],

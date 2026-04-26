@@ -18,6 +18,7 @@
       "@core/database": "workspace:*",
       "@core/environment": "workspace:*",
       "@core/files": "workspace:*",
+      "@core/hyprpay": "workspace:*",
       "@core/logging": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",

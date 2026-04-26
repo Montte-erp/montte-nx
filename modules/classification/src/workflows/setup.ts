@@ -6,7 +6,7 @@ import { DrizzleDataSource } from "@dbos-inc/drizzle-datasource";
 import { env } from "@core/environment/worker";
 import type { Redis } from "@core/redis/connection";
 import type { PostHog } from "@core/posthog/server";
-import type { StripeClient } from "@core/stripe";
+import type { HyprPayClient } from "@core/hyprpay/client";
 import {
    createClassificationQueues,
    initClassificationWorkflowContext,
@@ -16,7 +16,7 @@ import { backfillKeywordsWorkflow } from "./backfill-keywords-workflow";
 export async function setupClassificationWorkflows(deps: {
    redis: Redis;
    posthog: PostHog;
-   stripeClient: StripeClient | null;
+   hyprpayClient: HyprPayClient;
    workerConcurrency: number;
 }) {
    await DrizzleDataSource.initializeDBOSSchema({
@@ -25,7 +25,7 @@ export async function setupClassificationWorkflows(deps: {
    initClassificationWorkflowContext({
       redis: deps.redis,
       posthog: deps.posthog,
-      stripeClient: deps.stripeClient,
+      hyprpayClient: deps.hyprpayClient,
    });
    const queues = createClassificationQueues({
       workerConcurrency: deps.workerConcurrency,

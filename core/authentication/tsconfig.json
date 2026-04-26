@@ -11,6 +11,7 @@
          "@core/database/*": ["../../core/database/src/*"],
          "@core/environment/*": ["../../core/environment/src/*"],
          "@core/files/*": ["../../core/files/src/*"],
+         "@core/hyprpay/*": ["../../core/hyprpay/dist/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
@@ -25,6 +26,9 @@
    },
    "include": ["src"],
    "references": [
+      {
+         "path": "../hyprpay"
+      },
       {
          "path": "../transactional"
       },

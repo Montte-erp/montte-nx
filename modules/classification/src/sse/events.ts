@@ -8,13 +8,11 @@ const classificationEventDefinitions = {
       tagId: z.string().nullable(),
    }),
    "classification.keywords_derived": z.object({
-      entity: z.enum(["category", "tag"]),
-      entityId: z.string(),
-      entityName: z.string(),
+      categoryId: z.string(),
+      categoryName: z.string(),
       count: z.number().int().nonnegative(),
    }),
    "classification.keywords_backfilled": z.object({
-      entity: z.enum(["category", "tag"]),
       processed: z.number().int().nonnegative(),
    }),
 } as const;

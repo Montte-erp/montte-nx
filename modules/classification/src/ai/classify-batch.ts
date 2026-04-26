@@ -1,4 +1,4 @@
-import { err, fromPromise, ok, safeTry } from "neverthrow";
+import { errAsync, fromPromise } from "neverthrow";
 import { chat } from "@tanstack/ai";
 import { z } from "zod";
 import { AppError } from "@core/logging/errors";
@@ -26,7 +26,6 @@ export const classifyBatchOptionSchema = z.object({
 export const classifyBatchResultSchema = z.object({
    transactionId: z.string(),
    categoryId: z.string(),
-   tagId: z.string().nullable(),
 });
 
 export type ClassifyBatchInput = z.infer<typeof classifyBatchInputSchema>;
@@ -38,116 +37,99 @@ const outputSchema = z.object({
       z.object({
          id: z.string(),
          categoryName: z.string().nullable(),
-         tagName: z.string().nullable(),
       }),
    ),
 });
 
-function formatList(items: ClassifyBatchOption[]) {
-   return items
-      .map(
-         (i) =>
-            `- ${i.name}${i.keywords?.length ? ` (palavras: ${i.keywords.join(", ")})` : ""}`,
-      )
-      .join("\n");
+const aiError = (cause: unknown) =>
+   AppError.internal("Falha na classificação por IA em lote.", { cause });
+
+function formatCategory(c: ClassifyBatchOption) {
+   const keywords = c.keywords?.length
+      ? ` (palavras: ${c.keywords.join(", ")})`
+      : "";
+   return `- ${c.name}${keywords}`;
 }
 
 function formatTransaction(tx: ClassifyBatchInput) {
-   return [
+   const parts = [
       `[id=${tx.id}]`,
       `Nome: ${tx.name}`,
       `Tipo: ${tx.type === "income" ? "Receita" : "Despesa"}`,
-      ...(tx.contactName ? [`Contato: ${tx.contactName}`] : []),
-   ].join("\n");
+   ];
+   if (tx.contactName) parts.push(`Contato: ${tx.contactName}`);
+   return parts.join("\n");
+}
+
+function resolveResults(
+   raw: { id: string; categoryName: string | null }[],
+   transactions: ClassifyBatchInput[],
+   categories: ClassifyBatchOption[],
+): ClassifyBatchResult[] {
+   const inputIds = new Set(transactions.map((tx) => tx.id));
+   const categoryByName = new Map(categories.map((c) => [c.name, c.id]));
+
+   return raw.flatMap((entry) => {
+      if (!inputIds.has(entry.id) || !entry.categoryName) return [];
+      const categoryId = categoryByName.get(entry.categoryName);
+      if (!categoryId) return [];
+      return [{ transactionId: entry.id, categoryId }];
+   });
 }
 
 export function classifyTransactionsBatch(
    transactions: ClassifyBatchInput[],
    categories: ClassifyBatchOption[],
-   tags: ClassifyBatchOption[],
    observability: AiObservabilityContext,
 ) {
-   return safeTry(async function* () {
-      if (transactions.length > MAX_BATCH_SIZE) {
-         return err(
-            AppError.internal("Batch maior que 20 — chunk antes de chamar."),
-         );
-      }
-
-      const { prompt, name, version } = yield* fromPromise(
-         promptsClient.get(POSTHOG_PROMPTS.classifyTransaction, {
-            withMetadata: true,
-         }),
-         (e) =>
-            AppError.internal("Falha na classificação por IA em lote.", {
-               cause: e,
-            }),
+   if (transactions.length > MAX_BATCH_SIZE) {
+      return errAsync(
+         AppError.internal("Batch maior que 20 — chunk antes de chamar."),
       );
+   }
 
-      const userContent = transactions.map(formatTransaction).join("\n\n");
-
-      const result = yield* fromPromise(
-         chat({
-            adapter: flashModel,
-            systemPrompts: [
-               promptsClient.compile(prompt, {
-                  category_list: formatList(categories),
-                  tag_list: formatList(tags),
-                  transactions: JSON.stringify(
-                     transactions.map((tx) => ({
-                        id: tx.id,
-                        name: tx.name,
-                        type: tx.type,
-                        contactName: tx.contactName ?? null,
-                     })),
-                  ),
-               }),
-            ],
-            messages: [
-               {
-                  role: "user",
-                  content: [{ type: "text", content: userContent }],
-               },
-            ],
-            outputSchema,
-            stream: false,
-            middleware: [
-               createPosthogAiMiddleware({
-                  ...observability,
-                  promptName: name,
-                  promptVersion: version,
-               }),
-            ],
-         }),
-         (e) =>
-            AppError.internal("Falha na classificação por IA em lote.", {
-               cause: e,
+   return fromPromise(
+      promptsClient.get(POSTHOG_PROMPTS.classifyTransaction, {
+         withMetadata: true,
+      }),
+      aiError,
+   )
+      .andThen(({ prompt, name, version }) =>
+         fromPromise(
+            chat({
+               adapter: flashModel,
+               systemPrompts: [
+                  promptsClient.compile(prompt, {
+                     category_list: categories.map(formatCategory).join("\n"),
+                  }),
+               ],
+               messages: [
+                  {
+                     role: "user",
+                     content: [
+                        {
+                           type: "text",
+                           content: transactions
+                              .map(formatTransaction)
+                              .join("\n\n"),
+                        },
+                     ],
+                  },
+               ],
+               outputSchema,
+               stream: false,
+               middleware: [
+                  createPosthogAiMiddleware({
+                     ...observability,
+                     promptName: name,
+                     promptVersion: version,
+                  }),
+               ],
             }),
+            aiError,
+         ),
+      )
+      .map((response) =>
+         resolveResults(response.results, transactions, categories),
       );
-
-      const inputIds = new Set(transactions.map((tx) => tx.id));
-      const resolved: ClassifyBatchResult[] = [];
-
-      for (const entry of result.results) {
-         if (!inputIds.has(entry.id)) continue;
-         if (!entry.categoryName) continue;
-
-         const categoryMatch = categories.find(
-            (c) => c.name === entry.categoryName,
-         );
-         if (!categoryMatch) continue;
-
-         const tagMatch = entry.tagName
-            ? (tags.find((t) => t.name === entry.tagName) ?? null)
-            : null;
-
-         resolved.push({
-            transactionId: entry.id,
-            categoryId: categoryMatch.id,
-            tagId: tagMatch?.id ?? null,
-         });
-      }
-
-      return ok(resolved);
-   });
 }

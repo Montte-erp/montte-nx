@@ -134,12 +134,6 @@ function TagsList() {
             id: `__import_${i}`,
             name: row.name ?? "",
             description: row.description?.trim() || null,
-            keywords: row.keywords
-               ? row.keywords
-                    .split(",")
-                    .map((k) => k.trim())
-                    .filter(Boolean)
-               : [],
             isArchived: false,
             isDefault: false,
          }),
@@ -147,14 +141,6 @@ function TagsList() {
             const items = rows.map((r) => ({
                name: String(r.name ?? ""),
                description: r.description ? String(r.description).trim() : null,
-               keywords: Array.isArray(r.keywords)
-                  ? (r.keywords as string[]).filter(Boolean)
-                  : typeof r.keywords === "string" && r.keywords
-                    ? r.keywords
-                         .split(",")
-                         .map((k) => k.trim())
-                         .filter(Boolean)
-                    : undefined,
             }));
             await bulkCreateMutation.mutateAsync({ items });
          },
@@ -251,14 +237,7 @@ function TagsList() {
       async (data: Record<string, string | string[]>) => {
          const name = String(data.name ?? "");
          const description = String(data.description ?? "").trim() || null;
-         const keywords = Array.isArray(data.keywords)
-            ? (data.keywords as string[])
-            : [];
-         await createMutation.mutateAsync({
-            name,
-            description,
-            keywords: keywords.length > 0 ? keywords : undefined,
-         });
+         await createMutation.mutateAsync({ name, description });
          setIsDraftActive(false);
       },
       [createMutation],

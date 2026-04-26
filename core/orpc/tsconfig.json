@@ -11,18 +11,18 @@
          "@core/database/*": ["../../core/database/src/*"],
          "@core/dbos/*": ["../../core/dbos/src/*"],
          "@core/environment/*": ["../../core/environment/src/*"],
+         "@core/hyprpay/*": ["../../core/hyprpay/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
          "@core/transactional/*": ["../../core/transactional/src/*"],
-         "@core/utils/*": ["../../core/utils/src/*"],
-         "@montte/hyprpay": ["../../libraries/hyprpay/dist/esm/index.d.ts"],
-         "@montte/hyprpay/*": ["../../libraries/hyprpay/dist/esm/*"]
+         "@core/utils/*": ["../../core/utils/src/*"]
       }
    },
    "references": [
       { "path": "../database" },
+      { "path": "../hyprpay" },
       { "path": "../dbos" },
       { "path": "../environment" },
       { "path": "../logging" },

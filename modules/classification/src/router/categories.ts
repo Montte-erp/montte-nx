@@ -5,7 +5,6 @@ import type { SQL } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import type { DatabaseInstance } from "@core/database/client";
-import { user as userTable } from "@core/database/schemas/auth";
 import { categories } from "@core/database/schemas/categories";
 import { transactions } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
@@ -126,10 +125,6 @@ export const create = protectedProcedure
    )
    .handler(async ({ context, input }) => {
       const { subcategories, ...catData } = input;
-      const userRecord = await context.db.query.user.findFirst({
-         where: eq(userTable.id, context.userId),
-         columns: { stripeCustomerId: true },
-      });
 
       const result = await fromPromise(
          context.db.transaction(async (tx) => {
@@ -161,14 +156,12 @@ export const create = protectedProcedure
       const category = result.value;
 
       await enqueueDeriveKeywordsWorkflow(context.workflowClient, {
-         entity: "category",
          categoryId: category.id,
          teamId: context.teamId,
          organizationId: context.organizationId,
          userId: context.userId,
          name: category.name,
          description: category.description,
-         stripeCustomerId: userRecord?.stripeCustomerId ?? null,
       });
 
       return category;
@@ -335,19 +328,13 @@ export const update = protectedProcedure
 
       const keywordsProvided = data.keywords !== undefined;
       if (!keywordsProvided) {
-         const userRecord = await context.db.query.user.findFirst({
-            where: eq(userTable.id, context.userId),
-            columns: { stripeCustomerId: true },
-         });
          await enqueueDeriveKeywordsWorkflow(context.workflowClient, {
-            entity: "category",
             categoryId: updated.id,
             teamId: context.teamId,
             organizationId: context.organizationId,
             userId: context.userId,
             name: updated.name,
             description: updated.description,
-            stripeCustomerId: userRecord?.stripeCustomerId ?? null,
          });
       }
 
@@ -359,19 +346,13 @@ export const regenerateKeywords = protectedProcedure
    .use(requireCategory, (input) => input.id)
    .handler(async ({ context }) => {
       const { category } = context;
-      const userRecord = await context.db.query.user.findFirst({
-         where: eq(userTable.id, context.userId),
-         columns: { stripeCustomerId: true },
-      });
       await enqueueDeriveKeywordsWorkflow(context.workflowClient, {
-         entity: "category",
          categoryId: category.id,
          teamId: context.teamId,
          organizationId: context.organizationId,
          userId: context.userId,
          name: category.name,
          description: category.description,
-         stripeCustomerId: userRecord?.stripeCustomerId ?? null,
       });
       return { success: true };
    });
@@ -429,11 +410,6 @@ export const importBatch = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const userRecord = await context.db.query.user.findFirst({
-         where: eq(userTable.id, context.userId),
-         columns: { stripeCustomerId: true },
-      });
-
       type CategoryRow = typeof categories.$inferSelect;
 
       const result = await fromPromise(
@@ -480,14 +456,12 @@ export const importBatch = protectedProcedure
       const { all, parents } = result.value;
       for (const created of parents) {
          await enqueueDeriveKeywordsWorkflow(context.workflowClient, {
-            entity: "category",
             categoryId: created.id,
             teamId: context.teamId,
             organizationId: context.organizationId,
             userId: context.userId,
             name: created.name,
             description: created.description,
-            stripeCustomerId: userRecord?.stripeCustomerId ?? null,
          });
       }
       return all;

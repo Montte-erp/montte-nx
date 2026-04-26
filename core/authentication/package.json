@@ -32,6 +32,7 @@
       "@better-auth/stripe": "catalog:auth",
       "@core/database": "workspace:*",
       "@core/environment": "workspace:*",
+      "@core/hyprpay": "workspace:*",
       "@core/logging": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",

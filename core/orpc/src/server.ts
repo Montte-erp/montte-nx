@@ -3,7 +3,7 @@ import { err, fromPromise, fromThrowable, ok } from "neverthrow";
 import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
-import { createHyprPayClient } from "@montte/hyprpay";
+import { createHyprpay } from "@core/hyprpay/client";
 import { createDb } from "@core/database/client";
 import { env } from "@core/environment/web";
 import {
@@ -29,7 +29,7 @@ const db = createDb({ databaseUrl: env.DATABASE_URL });
 const redis = createRedis(env.REDIS_URL);
 const posthog = createPostHog(env.POSTHOG_KEY, env.POSTHOG_HOST);
 const resendClient = createResendClient(env.RESEND_API_KEY);
-const hyprpayClient = createHyprPayClient({ apiKey: env.HYPRPAY_API_KEY });
+const hyprpayClient = createHyprpay(env.HYPRPAY_API_KEY);
 const auth = createAuth({
    db,
    redis,

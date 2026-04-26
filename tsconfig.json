@@ -40,6 +40,9 @@
          "path": "./core/redis"
       },
       {
+         "path": "./core/hyprpay"
+      },
+      {
          "path": "./core/sse"
       },
       {

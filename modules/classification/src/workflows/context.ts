@@ -6,7 +6,7 @@ import * as schema from "@core/database/schema";
 import { env } from "@core/environment/worker";
 import type { Redis } from "@core/redis/connection";
 import type { PostHog } from "@core/posthog/server";
-import type { StripeClient } from "@core/stripe";
+import type { HyprPayClient } from "@core/hyprpay/client";
 import { CLASSIFICATION_QUEUES } from "../constants";
 
 export { createEnqueuer } from "@core/dbos/factory";
@@ -20,24 +20,24 @@ export const classificationDataSource = new DrizzleDataSource<DatabaseInstance>(
 type ClassificationWorkflowContext = {
    posthog: PostHog | null;
    redis: Redis | null;
-   stripeClient: StripeClient | null;
+   hyprpayClient: HyprPayClient | null;
 };
 
 const store = createStore<ClassificationWorkflowContext>({
    posthog: null,
    redis: null,
-   stripeClient: null,
+   hyprpayClient: null,
 });
 
 export function initClassificationWorkflowContext(deps: {
    redis: Redis;
    posthog: PostHog;
-   stripeClient: StripeClient | null;
+   hyprpayClient: HyprPayClient;
 }) {
    store.setState(() => ({
       posthog: deps.posthog,
       redis: deps.redis,
-      stripeClient: deps.stripeClient,
+      hyprpayClient: deps.hyprpayClient,
    }));
 }
 
@@ -55,8 +55,11 @@ export function getClassificationRedis(): Redis {
    return redis;
 }
 
-export function getClassificationStripe(): StripeClient | null {
-   return store.state.stripeClient;
+export function getClassificationHyprpay(): HyprPayClient {
+   const { hyprpayClient } = store.state;
+   if (!hyprpayClient)
+      throw new Error("Classification workflow context not initialized");
+   return hyprpayClient;
 }
 
 export function createClassificationQueues(options: {

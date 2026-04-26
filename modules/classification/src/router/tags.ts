@@ -2,12 +2,10 @@ import dayjs from "dayjs";
 import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
-import { user as userTable } from "@core/database/schemas/auth";
 import { tags } from "@core/database/schemas/tags";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import { createTagSchema, updateTagSchema } from "../contracts/tags";
-import { enqueueDeriveKeywordsWorkflow } from "../workflows/derive-keywords-workflow";
 import { requireTag } from "./middlewares";
 
 const idSchema = z.object({ id: z.string().uuid() });
@@ -15,11 +13,6 @@ const idSchema = z.object({ id: z.string().uuid() });
 export const create = protectedProcedure
    .input(createTagSchema)
    .handler(async ({ context, input }) => {
-      const userRecord = await context.db.query.user.findFirst({
-         where: eq(userTable.id, context.userId),
-         columns: { stripeCustomerId: true },
-      });
-
       const result = await fromPromise(
          context.db.transaction(async (tx) => {
             const [row] = await tx
@@ -35,20 +28,7 @@ export const create = protectedProcedure
          throw WebAppError.internal(
             "Falha ao criar centro de custo: insert vazio.",
          );
-      const tag = result.value;
-
-      await enqueueDeriveKeywordsWorkflow(context.workflowClient, {
-         entity: "tag",
-         tagId: tag.id,
-         teamId: context.teamId,
-         organizationId: context.organizationId,
-         userId: context.userId,
-         name: tag.name,
-         description: tag.description ?? null,
-         stripeCustomerId: userRecord?.stripeCustomerId ?? null,
-      });
-
-      return tag;
+      return result.value;
    });
 
 export const getAll = protectedProcedure
@@ -84,7 +64,7 @@ export const getAll = protectedProcedure
                .select()
                .from(tags)
                .where(whereClause)
-               .orderBy(asc(tags.name))
+               .orderBy(asc(tags.dreOrder), asc(tags.name))
                .limit(input.pageSize)
                .offset((input.page - 1) * input.pageSize);
             return { data, total: countResult?.total ?? 0 };
@@ -117,30 +97,7 @@ export const update = protectedProcedure
          throw WebAppError.internal(
             "Falha ao atualizar centro de custo: update vazio.",
          );
-      const tag = result.value;
-
-      const keywordsProvided = data.keywords !== undefined;
-      if (
-         !keywordsProvided &&
-         (data.name !== undefined || data.description !== undefined)
-      ) {
-         const userRecord = await context.db.query.user.findFirst({
-            where: eq(userTable.id, context.userId),
-            columns: { stripeCustomerId: true },
-         });
-         await enqueueDeriveKeywordsWorkflow(context.workflowClient, {
-            entity: "tag",
-            tagId: tag.id,
-            teamId: context.teamId,
-            organizationId: context.organizationId,
-            userId: context.userId,
-            name: tag.name,
-            description: tag.description ?? null,
-            stripeCustomerId: userRecord?.stripeCustomerId ?? null,
-         });
-      }
-
-      return tag;
+      return result.value;
    });
 
 export const remove = protectedProcedure
@@ -257,14 +214,12 @@ export const getStats = protectedProcedure.handler(async ({ context }) => {
          .select({
             active: sql<number>`count(*) filter (where not ${tags.isArchived})`,
             archived: sql<number>`count(*) filter (where ${tags.isArchived})`,
-            totalKeywords: sql<number>`coalesce(sum(array_length(${tags.keywords}, 1)), 0)`,
          })
          .from(tags)
          .where(eq(tags.teamId, context.teamId))
          .then(([row]) => ({
             active: Number(row?.active ?? 0),
             archived: Number(row?.archived ?? 0),
-            totalKeywords: Number(row?.totalKeywords ?? 0),
          })),
       () =>
          WebAppError.internal(
@@ -278,11 +233,6 @@ export const getStats = protectedProcedure.handler(async ({ context }) => {
 export const bulkCreate = protectedProcedure
    .input(z.object({ items: z.array(createTagSchema).min(1) }))
    .handler(async ({ context, input }) => {
-      const userRecord = await context.db.query.user.findFirst({
-         where: eq(userTable.id, context.userId),
-         columns: { stripeCustomerId: true },
-      });
-
       const result = await fromPromise(
          context.db.transaction(async (tx) =>
             tx
@@ -295,24 +245,7 @@ export const bulkCreate = protectedProcedure
          () => WebAppError.internal("Falha ao importar centros de custo."),
       );
       if (result.isErr()) throw result.error;
-      const created = result.value;
-
-      await Promise.all(
-         created.map((tag) =>
-            enqueueDeriveKeywordsWorkflow(context.workflowClient, {
-               entity: "tag",
-               tagId: tag.id,
-               teamId: context.teamId,
-               organizationId: context.organizationId,
-               userId: context.userId,
-               name: tag.name,
-               description: tag.description ?? null,
-               stripeCustomerId: userRecord?.stripeCustomerId ?? null,
-            }),
-         ),
-      );
-
-      return created;
+      return result.value;
    });
 
 export const bulkRemove = protectedProcedure

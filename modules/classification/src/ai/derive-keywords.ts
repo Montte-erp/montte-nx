@@ -1,4 +1,4 @@
-import { fromPromise, ok, safeTry } from "neverthrow";
+import { fromPromise } from "neverthrow";
 import { chat } from "@tanstack/ai";
 import { z } from "zod";
 import { AppError } from "@core/logging/errors";
@@ -12,9 +12,9 @@ const KEYWORDS_MIN = 5;
 const KEYWORDS_MAX = 15;
 
 export const deriveKeywordsInputSchema = z.object({
-   entity: z.enum(["category", "tag"]),
    name: z.string(),
    description: z.string().nullish(),
+   siblingKeywords: z.array(z.string()).optional(),
 });
 
 export type DeriveKeywordsInput = z.infer<typeof deriveKeywordsInputSchema>;
@@ -26,63 +26,58 @@ const outputSchema = z.object({
       .max(KEYWORDS_MAX),
 });
 
-const ENTITY_LABEL: Record<DeriveKeywordsInput["entity"], string> = {
-   category: "categoria financeira",
-   tag: "centro de custo",
-};
+const aiError = (cause: unknown) =>
+   AppError.internal("Falha na derivação de palavras-chave por IA.", { cause });
+
+function buildUserMessage(input: DeriveKeywordsInput): string {
+   const lines = [`Categoria: ${input.name}`];
+   if (input.description) lines.push(`Descrição: ${input.description}`);
+   if (input.siblingKeywords?.length) {
+      lines.push(
+         `Palavras-chave já usadas por outras categorias do time (NÃO repetir): ${input.siblingKeywords.join(", ")}`,
+      );
+   }
+   return lines.join("\n");
+}
 
 export function deriveKeywords(
    input: DeriveKeywordsInput,
    observability: AiObservabilityContext,
 ) {
-   const userContent = [
-      `${ENTITY_LABEL[input.entity]}: ${input.name}`,
-      ...(input.description ? [`Descrição: ${input.description}`] : []),
-   ].join("\n");
-
-   return safeTry(async function* () {
-      const { prompt, name, version } = yield* fromPromise(
-         promptsClient.get(POSTHOG_PROMPTS.deriveKeywords, {
-            withMetadata: true,
-         }),
-         (e) =>
-            AppError.internal("Falha na derivação de palavras-chave por IA.", {
-               cause: e,
+   return fromPromise(
+      promptsClient.get(POSTHOG_PROMPTS.deriveKeywords, { withMetadata: true }),
+      aiError,
+   )
+      .andThen(({ prompt, name, version }) =>
+         fromPromise(
+            chat({
+               adapter: proModel,
+               systemPrompts: [
+                  promptsClient.compile(prompt, {
+                     min_keywords: KEYWORDS_MIN,
+                     max_keywords: KEYWORDS_MAX,
+                  }),
+               ],
+               messages: [
+                  {
+                     role: "user",
+                     content: [
+                        { type: "text", content: buildUserMessage(input) },
+                     ],
+                  },
+               ],
+               outputSchema,
+               stream: false,
+               middleware: [
+                  createPosthogAiMiddleware({
+                     ...observability,
+                     promptName: name,
+                     promptVersion: version,
+                  }),
+               ],
             }),
-      );
-
-      const result = yield* fromPromise(
-         chat({
-            adapter: proModel,
-            systemPrompts: [
-               promptsClient.compile(prompt, {
-                  entity_label: ENTITY_LABEL[input.entity],
-                  min_keywords: KEYWORDS_MIN,
-                  max_keywords: KEYWORDS_MAX,
-               }),
-            ],
-            messages: [
-               {
-                  role: "user",
-                  content: [{ type: "text", content: userContent }],
-               },
-            ],
-            outputSchema,
-            stream: false,
-            middleware: [
-               createPosthogAiMiddleware({
-                  ...observability,
-                  promptName: name,
-                  promptVersion: version,
-               }),
-            ],
-         }),
-         (e) =>
-            AppError.internal("Falha na derivação de palavras-chave por IA.", {
-               cause: e,
-            }),
-      );
-
-      return ok(result.keywords);
-   });
+            aiError,
+         ),
+      )
+      .map((result) => result.keywords);
 }

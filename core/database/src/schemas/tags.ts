@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
    boolean,
    index,
+   integer,
    text,
    timestamp,
    uniqueIndex,
@@ -10,6 +11,8 @@ import {
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 import { crmSchema } from "@core/database/schemas/schemas";
+
+export const dreTypeEnum = crmSchema.enum("dre_type", ["receita", "despesa"]);
 
 export const tags = crmSchema.table(
    "tags",
@@ -23,7 +26,8 @@ export const tags = crmSchema.table(
       description: text("description"),
       isDefault: boolean("is_default").notNull().default(false),
       isArchived: boolean("is_archived").notNull().default(false),
-      keywords: text("keywords").array(),
+      dreType: dreTypeEnum("dre_type"),
+      dreOrder: integer("dre_order"),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),
@@ -40,6 +44,7 @@ export const tags = crmSchema.table(
 
 export const tagSchema = createSelectSchema(tags);
 export type Tag = z.infer<typeof tagSchema>;
+export type DreType = (typeof dreTypeEnum.enumValues)[number];
 
 const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{6}$/;
 
@@ -53,19 +58,12 @@ const colorSchema = z
    .regex(HEX_COLOR_REGEX, "Cor inválida. Use formato hex (#RRGGBB).")
    .optional();
 
-const keywordsSchema = z
-   .array(z.string().min(1).max(60))
-   .max(20)
-   .nullable()
-   .optional();
-
 export const createTagSchema = createInsertSchema(tags)
    .pick({ name: true, color: true, description: true })
    .extend({
       name: nameSchema,
       color: colorSchema,
       description: z.string().max(255).nullable().optional(),
-      keywords: keywordsSchema,
    });
 
 export const updateTagSchema = createTagSchema.partial();

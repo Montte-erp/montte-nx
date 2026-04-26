@@ -6,6 +6,7 @@ import { createDb } from "@core/database/client";
 import { createRedis } from "@core/redis/connection";
 import { createPostHog } from "@core/posthog/server";
 import { createResendClient } from "@core/transactional/utils";
+import { createHyprpay } from "@core/hyprpay/client";
 import { setupBillingWorkflows } from "@modules/billing/workflows/setup";
 import { setupClassificationWorkflows } from "@modules/classification/workflows/setup";
 
@@ -22,6 +23,7 @@ const db = createDb({ databaseUrl: env.DATABASE_URL });
 const redis = createRedis(env.REDIS_URL);
 const posthog = createPostHog(env.POSTHOG_KEY, env.POSTHOG_HOST);
 const resendClient = createResendClient(env.RESEND_API_KEY);
+const hyprpayClient = createHyprpay(env.HYPRPAY_API_KEY);
 
 logger.info("Starting worker");
 
@@ -29,7 +31,7 @@ await setupBillingWorkflows({ redis, resendClient, workerConcurrency: 10 });
 const classification = await setupClassificationWorkflows({
    redis,
    posthog,
-   stripeClient: null,
+   hyprpayClient,
    workerConcurrency: 10,
 });
 
@@ -62,5 +64,4 @@ async function gracefulShutdown(signal: string) {
 process.on("SIGTERM", () => void gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => void gracefulShutdown("SIGINT"));
 
-// db is required for module setups via singletons
 void db;

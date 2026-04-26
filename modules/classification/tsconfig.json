@@ -17,9 +17,8 @@
          "@core/orpc/*": ["../../core/orpc/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
-         "@core/sse": ["../../core/sse/src/sse.ts"],
-         "@core/stripe/*": ["../../core/stripe/src/*"],
-         "@packages/events/*": ["../../packages/events/src/*"]
+         "@core/hyprpay/*": ["../../core/hyprpay/src/*"],
+         "@core/sse": ["../../core/sse/src/sse.ts"]
       }
    },
    "include": ["src"]
