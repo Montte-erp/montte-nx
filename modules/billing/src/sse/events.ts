@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { defineSseEvents, type SseEventOf } from "@core/sse/define";
+import { defineSseEvents, type SseEventOf } from "@core/sse";
 
 const billingEventDefinitions = {
    "billing.trial_expiring": z.object({

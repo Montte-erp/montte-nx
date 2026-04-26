@@ -8,25 +8,9 @@
    ],
    "type": "module",
    "exports": {
-      "./types": {
-         "types": "./dist/types.d.ts",
-         "default": "./dist/types.js"
-      },
-      "./channels": {
-         "types": "./dist/channels.d.ts",
-         "default": "./dist/channels.js"
-      },
-      "./publisher": {
-         "types": "./dist/publisher.d.ts",
-         "default": "./dist/publisher.js"
-      },
-      "./subscriber": {
-         "types": "./dist/subscriber.d.ts",
-         "default": "./dist/subscriber.js"
-      },
-      "./define": {
-         "types": "./dist/define.d.ts",
-         "default": "./dist/define.js"
+      ".": {
+         "types": "./dist/sse.d.ts",
+         "default": "./dist/sse.js"
       }
    },
    "scripts": {

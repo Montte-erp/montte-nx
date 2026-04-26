@@ -15,7 +15,7 @@
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
-         "@core/sse/*": ["../../core/sse/src/*"],
+         "@core/sse": ["../../core/sse/src/sse.ts"],
          "@core/transactional/*": ["../../core/transactional/src/*"],
          "@packages/events/*": ["../../packages/events/src/*"]
       }

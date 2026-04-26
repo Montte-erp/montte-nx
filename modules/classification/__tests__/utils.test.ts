@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matchByKeywords } from "../src/keyword-match";
+import { matchByKeywords } from "../src/utils";
 
 describe("matchByKeywords", () => {
    it("matches when single category has 2+ keyword hits", () => {

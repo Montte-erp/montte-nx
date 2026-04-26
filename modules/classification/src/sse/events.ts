@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { defineSseEvents, type SseEventOf } from "@core/sse/define";
+import { defineSseEvents, type SseEventOf } from "@core/sse";
 
 const classificationEventDefinitions = {
    "classification.transaction_classified": z.object({

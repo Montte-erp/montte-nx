@@ -46,16 +46,10 @@
          "path": "./core/utils"
       },
       {
-         "path": "./core/agents"
-      },
-      {
          "path": "./core/ai"
       },
       {
          "path": "./core/dbos"
-      },
-      {
-         "path": "./packages/workflows"
       },
       {
          "path": "./modules/classification"

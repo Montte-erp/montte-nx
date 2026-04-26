@@ -1,6 +1,5 @@
 import { eventIterator } from "@orpc/server";
-import { sseEnvelopeSchema, type SseScope } from "@core/sse/types";
-import { subscribeSse } from "@core/sse/subscriber";
+import { sseEnvelopeSchema, type SseScope, subscribeSse } from "@core/sse";
 import { getLogger } from "@core/logging/root";
 import { protectedProcedure } from "../server";
 

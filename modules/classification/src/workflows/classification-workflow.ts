@@ -8,7 +8,7 @@ import { getLogger } from "@core/logging/root";
 import { categories } from "@core/database/schemas/categories";
 import { tags } from "@core/database/schemas/tags";
 import { transactions } from "@core/database/schemas/transactions";
-import { matchByKeywords, type KeywordMatchResult } from "../keyword-match";
+import { matchByKeywords, type KeywordMatchResult } from "../utils";
 import {
    classifyTransactionsBatch,
    type ClassifyBatchInput,
