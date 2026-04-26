@@ -292,7 +292,7 @@ export const getAllSubscriptions = protectedProcedure
 
 export const getContactSubscriptions = protectedProcedure
    .input(contactIdInputSchema)
-   .use(requireContact, (input) => input.contactId)
+   .use(requireContact, (input) => ({ contactId: input.contactId }))
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
          context.db.query.contactSubscriptions.findMany({
@@ -307,7 +307,7 @@ export const getContactSubscriptions = protectedProcedure
 
 export const createSubscription = protectedProcedure
    .input(createSubscriptionWithItemsInputSchema)
-   .use(requireContact, (input) => input.contactId)
+   .use(requireContact, (input) => ({ contactId: input.contactId }))
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
          context.db.transaction(async (tx) => {

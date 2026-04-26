@@ -9,6 +9,7 @@ import * as contactSettingsRouter from "./contact-settings";
 import * as contactsRouter from "@modules/billing/router/contacts";
 import * as couponsRouter from "@modules/billing/router/coupons";
 import * as creditCardsRouter from "./credit-cards";
+import * as customerPortalRouter from "@modules/billing/router/customer-portal";
 import * as dashboardsRouter from "./dashboards";
 import * as financialSettingsRouter from "./financial-settings";
 import * as insightsRouter from "./insights";
@@ -34,6 +35,7 @@ export default {
    contactSettings: contactSettingsRouter,
    contacts: contactsRouter,
    coupons: couponsRouter,
+   customerPortal: customerPortalRouter,
    dashboards: dashboardsRouter,
    financialSettings: financialSettingsRouter,
    insights: insightsRouter,
