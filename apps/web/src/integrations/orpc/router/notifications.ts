@@ -1,32 +1,49 @@
 import { eventIterator } from "@orpc/server";
-import { jobNotificationSchema } from "@packages/notifications/schema";
+import { sseEnvelopeSchema, type SseScope } from "@core/sse/types";
+import { subscribeSse } from "@core/sse/subscriber";
 import { getLogger } from "@core/logging/root";
 import { protectedProcedure } from "../server";
 
 const logger = getLogger().child({ module: "notifications.subscribe" });
 
 export const subscribe = protectedProcedure
-   .output(eventIterator(jobNotificationSchema))
+   .output(eventIterator(sseEnvelopeSchema))
    .handler(async function* ({ context, signal }) {
-      logger.info({ teamId: context.teamId }, "SSE subscribe started");
-      const iterator = context.jobPublisher.subscribe("job.notification", {
-         signal,
-      });
+      logger.info(
+         {
+            userId: context.userId,
+            teamId: context.teamId,
+            organizationId: context.organizationId,
+         },
+         "SSE subscribe started",
+      );
+      const scopes: SseScope[] = [
+         { kind: "user", id: context.userId },
+         { kind: "team", id: context.teamId },
+         { kind: "org", id: context.organizationId },
+      ];
       try {
-         for await (const event of iterator) {
+         for await (const envelope of subscribeSse(
+            context.redis,
+            scopes,
+            signal,
+         )) {
             logger.info(
                {
-                  eventTeamId: event.teamId,
-                  contextTeamId: context.teamId,
-                  type: event.type,
+                  type: envelope.type,
+                  scope: envelope.scope,
                },
                "SSE event received",
             );
-            if (event.teamId !== context.teamId) continue;
-            yield event;
+            yield envelope;
          }
       } finally {
-         logger.info({ teamId: context.teamId }, "SSE subscribe ended");
-         await iterator.return?.();
+         logger.info(
+            {
+               userId: context.userId,
+               teamId: context.teamId,
+            },
+            "SSE subscribe ended",
+         );
       }
    });

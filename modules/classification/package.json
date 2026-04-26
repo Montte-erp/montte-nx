@@ -35,7 +35,6 @@
       "@f-o-t/condition-evaluator": "catalog:fot",
       "@orpc/server": "catalog:orpc",
       "@packages/events": "workspace:*",
-      "@packages/notifications": "workspace:*",
       "@tanstack/ai": "catalog:tanstack-ai",
       "@tanstack/ai-openrouter": "catalog:tanstack-ai",
       "@tanstack/store": "catalog:tanstack",

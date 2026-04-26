@@ -8,6 +8,7 @@
       "./router/*": "./src/router/*.ts",
       "./contracts/*": "./src/contracts/*.ts",
       "./workflows/*": "./src/workflows/*.ts",
+      "./sse/*": "./src/sse/*.ts",
       "./*": "./src/*.ts"
    },
    "scripts": {
@@ -24,13 +25,13 @@
       "@core/logging": "workspace:*",
       "@core/orpc": "workspace:*",
       "@core/redis": "workspace:*",
+      "@core/sse": "workspace:*",
       "@core/transactional": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers",
       "@dbos-inc/drizzle-datasource": "catalog:workers",
       "@f-o-t/money": "catalog:fot",
       "@montte/hyprpay": "workspace:*",
       "@orpc/server": "catalog:orpc",
-      "@packages/notifications": "workspace:*",
       "@tanstack/store": "catalog:tanstack",
       "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",

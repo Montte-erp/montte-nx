@@ -6,7 +6,6 @@ import * as schema from "@core/database/schema";
 import { env } from "@core/environment/worker";
 import type { Redis } from "@core/redis/connection";
 import type { ResendClient } from "@core/transactional/utils";
-import { createJobPublisher } from "@packages/notifications/publisher";
 import { BILLING_QUEUES } from "../constants";
 
 export { createEnqueuer } from "@core/dbos/factory";
@@ -18,12 +17,12 @@ export const billingDataSource = new DrizzleDataSource<DatabaseInstance>(
 );
 
 type BillingWorkflowContext = {
-   publisher: ReturnType<typeof createJobPublisher> | null;
+   redis: Redis | null;
    resendClient: ResendClient | null;
 };
 
 const store = createStore<BillingWorkflowContext>({
-   publisher: null,
+   redis: null,
    resendClient: null,
 });
 
@@ -32,15 +31,15 @@ export function initBillingWorkflowContext(
    resendClient: ResendClient,
 ) {
    store.setState(() => ({
-      publisher: createJobPublisher(redis),
+      redis,
       resendClient,
    }));
 }
 
-export function getBillingPublisher() {
-   const { publisher } = store.state;
-   if (!publisher) throw new Error("Billing workflow context not initialized");
-   return publisher;
+export function getBillingRedis(): Redis {
+   const { redis } = store.state;
+   if (!redis) throw new Error("Billing workflow context not initialized");
+   return redis;
 }
 
 export function getBillingResendClient(): ResendClient {

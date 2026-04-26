@@ -39,8 +39,5 @@ vi.mock("../../src/workflows/context", async (importOriginal) => {
       getClassificationRedis: () => ({}),
       getClassificationPosthog: () => ({ capture: posthogCaptureSpy }),
       getClassificationStripe: () => null,
-      getClassificationPublisher: () => ({
-         publish: vi.fn().mockResolvedValue(undefined),
-      }),
    };
 });

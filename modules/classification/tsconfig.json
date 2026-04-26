@@ -19,8 +19,7 @@
          "@core/redis/*": ["../../core/redis/src/*"],
          "@core/sse/*": ["../../core/sse/src/*"],
          "@core/stripe/*": ["../../core/stripe/src/*"],
-         "@packages/events/*": ["../../packages/events/src/*"],
-         "@packages/notifications/*": ["../../packages/notifications/src/*"]
+         "@packages/events/*": ["../../packages/events/src/*"]
       }
    },
    "include": ["src"]

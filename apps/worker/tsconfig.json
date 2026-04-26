@@ -20,8 +20,7 @@
          "@modules/billing/*": ["../../modules/billing/src/*"],
          "@modules/classification/*": ["../../modules/classification/src/*"],
          "@packages/workflows/*": ["../../packages/workflows/src/*"],
-         "@packages/events/*": ["../../packages/events/src/*"],
-         "@packages/notifications/*": ["../../packages/notifications/src/*"]
+         "@packages/events/*": ["../../packages/events/src/*"]
       }
    },
    "include": ["src"],

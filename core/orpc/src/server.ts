@@ -18,7 +18,6 @@ import { AppError, WebAppError } from "@core/logging/errors";
 import { createResendClient } from "@core/transactional/utils";
 import { createWorkflowClient } from "@core/dbos/client";
 import { sanitizeData } from "@core/utils/sanitization";
-import { createJobPublisher } from "@packages/notifications/publisher";
 import type {
    ORPCContext,
    ORPCContextAuthenticated,
@@ -40,7 +39,6 @@ const auth = createAuth({
    env,
 });
 const workflowClient = createWorkflowClient(env.DATABASE_URL);
-const jobPublisher = createJobPublisher(redis);
 
 const otelLogger = logs.getLogger("montte-web-orpc");
 
@@ -60,7 +58,6 @@ const withDeps = base.use(async ({ context, next }) => {
          posthog,
          redis,
          workflowClient: await workflowClient,
-         jobPublisher,
          hyprpayClient,
       },
    });

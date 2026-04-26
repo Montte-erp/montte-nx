@@ -14,7 +14,6 @@
          "@core/stripe": ["../../core/stripe/src/index.ts"],
          "@core/stripe/*": ["../../core/stripe/src/*"],
          "@packages/events/*": ["../../packages/events/src/*"],
-         "@packages/notifications/*": ["../../packages/notifications/src/*"],
          "@packages/workflows/*": ["./src/*"]
       }
    },
@@ -25,9 +24,6 @@
       },
       {
          "path": "../../core/dbos"
-      },
-      {
-         "path": "../notifications"
       },
       {
          "path": "../events"

@@ -18,8 +18,7 @@
          "@core/transactional/*": ["../../core/transactional/src/*"],
          "@core/utils/*": ["../../core/utils/src/*"],
          "@montte/hyprpay": ["../../libraries/hyprpay/dist/esm/index.d.ts"],
-         "@montte/hyprpay/*": ["../../libraries/hyprpay/dist/esm/*"],
-         "@packages/notifications/*": ["../../packages/notifications/src/*"]
+         "@montte/hyprpay/*": ["../../libraries/hyprpay/dist/esm/*"]
       }
    },
    "references": [
@@ -30,8 +29,7 @@
       { "path": "../posthog" },
       { "path": "../redis" },
       { "path": "../transactional" },
-      { "path": "../utils" },
-      { "path": "../../packages/notifications" }
+      { "path": "../utils" }
    ],
    "include": ["src"]
 }

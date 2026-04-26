@@ -27,7 +27,6 @@
          "@core/agents/*": ["../../core/agents/src/*"],
          "@packages/analytics/*": ["../../packages/analytics/src/*"],
          "@packages/events/*": ["../../packages/events/src/*"],
-         "@packages/notifications/*": ["../../packages/notifications/src/*"],
          "@packages/workflows/*": ["../../packages/workflows/src/*"],
          "@packages/ui/*": ["../../packages/ui/src/*"],
          "@modules/billing/*": ["../../modules/billing/src/*"],
@@ -48,9 +47,6 @@
       },
       {
          "path": "../../packages/ui"
-      },
-      {
-         "path": "../../packages/notifications"
       },
       {
          "path": "../../packages/events"

@@ -55,9 +55,6 @@
          "path": "./core/dbos"
       },
       {
-         "path": "./packages/notifications"
-      },
-      {
          "path": "./packages/workflows"
       },
       {

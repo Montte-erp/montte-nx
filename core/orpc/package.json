@@ -48,7 +48,6 @@
       "@opentelemetry/api-logs": "catalog:telemetry",
       "@orpc/contract": "catalog:orpc",
       "@orpc/server": "catalog:orpc",
-      "@packages/notifications": "workspace:*",
       "dayjs": "catalog:ui",
       "neverthrow": "catalog:validation"
    },

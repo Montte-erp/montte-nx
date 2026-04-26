@@ -50,7 +50,6 @@
       "@orpc/zod": "catalog:orpc",
       "@packages/analytics": "workspace:*",
       "@packages/events": "workspace:*",
-      "@packages/notifications": "workspace:*",
       "@packages/ui": "workspace:*",
       "@packages/workflows": "workspace:*",
       "@tailwindcss/vite": "catalog:vite",

@@ -9,12 +9,11 @@ import {
    sendBillingTrialExpired,
    sendBillingTrialExpiryWarning,
 } from "@core/transactional/client";
-import { NOTIFICATION_TYPES } from "@packages/notifications/types";
-import type { JobNotification } from "@packages/notifications/schema";
+import { billingSseEvents } from "../sse/events";
 import { BILLING_QUEUES } from "../constants";
 import {
    billingDataSource,
-   getBillingPublisher,
+   getBillingRedis,
    getBillingResendClient,
    createEnqueuer,
 } from "./context";
@@ -34,7 +33,6 @@ export type TrialExpiryInput = {
 };
 
 async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
-   const publisher = getBillingPublisher();
    const ctx = `[trial-expiry:${input.phase}] sub=${input.subscriptionId} team=${input.teamId}`;
    DBOS.logger.info(`${ctx} running trialEndsAt=${input.trialEndsAt}`);
 
@@ -45,18 +43,19 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
                const resendClient = getBillingResendClient();
                const { contactEmail, contactName } = input;
 
-               await publisher.publish("job.notification", {
-                  jobId: crypto.randomUUID(),
-                  timestamp: dayjs().toISOString(),
-                  type: NOTIFICATION_TYPES.BILLING_TRIAL_EXPIRING,
-                  status: "started",
-                  message: `Período de teste expira em 3 dias para assinatura ${input.subscriptionId}.`,
-                  teamId: input.teamId,
-                  payload: {
-                     subscriptionId: input.subscriptionId,
-                     daysLeft: 3,
+               const publish = await billingSseEvents.publish(
+                  getBillingRedis(),
+                  { kind: "team", id: input.teamId },
+                  {
+                     type: "billing.trial_expiring",
+                     payload: {
+                        subscriptionId: input.subscriptionId,
+                        trialEndsAt: input.trialEndsAt,
+                        daysLeft: 3,
+                     },
                   },
-               } satisfies JobNotification);
+               );
+               if (publish.isErr()) throw publish.error;
 
                if (contactEmail) {
                   await sendBillingTrialExpiryWarning(resendClient, {
@@ -136,17 +135,18 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
 
    const publishResult = await fromPromise(
       DBOS.runStep(
-         () =>
-            publisher.publish("job.notification", {
-               jobId: crypto.randomUUID(),
-               timestamp: dayjs().toISOString(),
-               type: NOTIFICATION_TYPES.BILLING_TRIAL_EXPIRING,
-               status: "completed",
-               message: `Período de teste encerrado — assinatura ${input.subscriptionId} ativada.`,
-               teamId: input.teamId,
-               payload: { subscriptionId: input.subscriptionId, daysLeft: 0 },
-            } satisfies JobNotification),
-         { name: "publishExpired" },
+         async () => {
+            const publish = await billingSseEvents.publish(
+               getBillingRedis(),
+               { kind: "team", id: input.teamId },
+               {
+                  type: "billing.trial_completed",
+                  payload: { subscriptionId: input.subscriptionId },
+               },
+            );
+            if (publish.isErr()) throw publish.error;
+         },
+         { name: "publishTrialCompleted" },
       ),
       (e) =>
          WorkflowError.internal("Falha ao publicar notificação de expiração.", {

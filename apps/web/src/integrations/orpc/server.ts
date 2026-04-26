@@ -16,7 +16,6 @@ import type { Redis } from "@core/redis/connection";
 import type { StripeClient } from "@core/stripe";
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { sanitizeData } from "@core/utils/sanitization";
-import { createJobPublisher } from "@packages/notifications/publisher";
 import {
    auth,
    db,
@@ -25,8 +24,6 @@ import {
    stripeClient,
    workflowClient,
 } from "@/integrations/singletons";
-
-const jobPublisher = createJobPublisher(redis);
 
 export interface ORPCContext {
    headers: Headers;
@@ -41,7 +38,6 @@ export interface ORPCContextWithAuth extends ORPCContext {
    stripeClient: StripeClient;
    redis: Redis;
    workflowClient: DBOSClient;
-   jobPublisher: ReturnType<typeof createJobPublisher>;
 }
 
 export interface ORPCContextAuthenticated extends ORPCContextWithAuth {
@@ -72,7 +68,6 @@ const withDeps = base.use(async ({ context, next }) => {
          stripeClient,
          redis,
          workflowClient: await workflowClient,
-         jobPublisher,
       },
    });
 });

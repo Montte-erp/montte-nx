@@ -3,7 +3,6 @@ import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog } from "@core/posthog/server";
 import type { Redis } from "@core/redis/connection";
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
-import type { createJobPublisher } from "@packages/notifications/publisher";
 import type { HyprPayClient } from "@montte/hyprpay";
 
 export interface ORPCContext {
@@ -18,7 +17,6 @@ export interface ORPCContextWithAuth extends ORPCContext {
    posthog: PostHog;
    redis: Redis;
    workflowClient: DBOSClient;
-   jobPublisher: ReturnType<typeof createJobPublisher>;
    hyprpayClient: HyprPayClient;
 }
 
