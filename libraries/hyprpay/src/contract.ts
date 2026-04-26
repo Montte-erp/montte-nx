@@ -173,11 +173,55 @@ const contactsContract = {
    reactivate: oc.input(contactByIdRef).output(z.unknown()),
 };
 
+const couponScope = z.enum(["team", "price"]);
+const couponType = z.enum(["percent", "fixed"]);
+const couponDuration = z.enum(["once", "repeating", "forever"]);
+const amountString = z
+   .string()
+   .regex(/^\d+(\.\d+)?$/, "Valor deve ser um número positivo.");
+
+const createCouponInput = z
+   .object({
+      code: z.string().min(1).max(50),
+      scope: couponScope.default("team"),
+      priceId: z.string().uuid().nullable().optional(),
+      type: couponType,
+      amount: amountString,
+      duration: couponDuration,
+      durationMonths: z.number().int().min(1).nullable().optional(),
+      maxUses: z.number().int().min(1).nullable().optional(),
+      redeemBy: z.string().datetime().nullable().optional(),
+   })
+   .superRefine((data, ctx) => {
+      if (data.scope === "price" && !data.priceId) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "priceId é obrigatório quando escopo é 'price'.",
+            path: ["priceId"],
+         });
+      }
+      if (data.duration === "repeating" && !data.durationMonths) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message:
+               "durationMonths é obrigatório quando duração é 'repeating'.",
+            path: ["durationMonths"],
+         });
+      }
+   });
+
+const updateCouponInput = z.object({
+   id: z.string().uuid(),
+   isActive: z.boolean().optional(),
+   maxUses: z.number().int().min(1).nullable().optional(),
+   redeemBy: z.string().datetime().nullable().optional(),
+});
+
 const couponsContract = {
    list: oc.input(z.void().optional()).output(z.array(z.unknown())),
    get: oc.input(z.object({ id: z.string().uuid() })).output(z.unknown()),
-   create: oc.input(z.unknown()).output(z.unknown()),
-   update: oc.input(z.unknown()).output(z.unknown()),
+   create: oc.input(createCouponInput).output(z.unknown()),
+   update: oc.input(updateCouponInput).output(z.unknown()),
    deactivate: oc
       .input(z.object({ id: z.string().uuid() }))
       .output(z.unknown()),

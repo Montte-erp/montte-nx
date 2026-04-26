@@ -1,12 +1,10 @@
 import { fromPromise } from "neverthrow";
-import { z } from "zod";
 import { getDomain } from "@core/environment/helpers";
 import { WebAppError } from "@core/logging/errors";
-import { protectedProcedure } from "@core/orpc/server";
+import { billingImpl } from "./_implementer";
 
-export const createSession = protectedProcedure
-   .input(z.object({ externalId: z.string().min(1) }))
-   .handler(async ({ context, input }) => {
+export const createSession = billingImpl.customerPortal.createSession.handler(
+   async ({ context, input }) => {
       const contactResult = await fromPromise(
          context.db.query.contacts.findFirst({
             where: (f, { and, eq }) =>
@@ -23,4 +21,5 @@ export const createSession = protectedProcedure
          throw WebAppError.notFound("Cliente não encontrado.");
 
       return { url: `${getDomain()}/portal/${context.teamId}` };
-   });
+   },
+);
