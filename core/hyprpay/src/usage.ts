@@ -41,24 +41,22 @@ export function ingestUsageEvent(
             reason: "no-meter-configured",
          });
       }
-      return input.hyprpayClient.usage
-         .ingest({
+      return fromPromise(
+         input.hyprpayClient.services.ingestUsage({
             externalId: input.externalId,
             meterId: meter.id,
             quantity: input.quantity ?? 1,
             idempotencyKey: input.idempotencyKey,
             properties: input.properties,
-         })
-         .map((response) => ({
-            ingested: true as const,
-            meterId: meter.id,
-            idempotencyKey: response.idempotencyKey,
-         }))
-         .mapErr(
-            (cause) =>
-               new IngestUsageEventError("Falha ao ingerir uso no HyprPay.", {
-                  cause,
-               }),
-         );
+         }),
+         (cause) =>
+            new IngestUsageEventError("Falha ao ingerir uso no HyprPay.", {
+               cause,
+            }),
+      ).map((response) => ({
+         ingested: true as const,
+         meterId: meter.id,
+         idempotencyKey: response.idempotencyKey,
+      }));
    });
 }

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.4.0 — 2026-04-26
+
+### Breaking
+- **Contract restructure** — `hyprpayContract` removed. `billingContract` exported instead, with namespaces `services`, `contacts`, `coupons`, `customerPortal`. Procedures previously at the contract root (`create`, `get`, `list`, `update`) and under `subscriptions`/`usage`/`benefits` are gone. The new shape mirrors `modules/billing/router/*` 1:1 and binds via `implementer`.
+- **Contact references are discriminated unions** — every contact-keyed input accepts either `{ id }`/`{ contactId }` (internal UUID) or `{ externalId }`. The middleware `requireContact` resolves either form. SaaS callers continue to use `externalId`; the dashboard calls the same procedures with internal `id`.
+- **Thin client** — `createHyprPayClient` now returns `ContractRouterClient<typeof billingContract>` directly. The `ResultAsync` wrappers, `HyprPayError`, and the `customers`/`subscriptions`/`usage`/`benefits` namespaces are gone. Call shape is `client.services.ingestUsage(input)`, `client.contacts.create(input)`, etc., and returns native promises.
+- **Subpath `./better-auth` removed** — the better-auth plugin is temporarily disabled while it gets rewired against the new contract. The directory remains but is unexported and the plugin is not registered in `@core/authentication`. Follow-up task: re-author against `client.contacts.create`/`client.contacts.update`.
+- **`./types` and `./errors` removed** — types are inferred from the contract via `z.infer`. Errors flow through native oRPC error handling (`ORPCError`).
+
+### Migration
+- `client.customers.get(externalId)` → `client.contacts.getById({ externalId })`
+- `client.customers.create({ name, ... })` → `client.contacts.create({ name, ... })`
+- `client.subscriptions.create({ externalId, items })` → `client.services.createSubscription({ externalId, items })`
+- `client.subscriptions.cancel({ subscriptionId })` → `client.services.cancelSubscription({ subscriptionId })`
+- `client.subscriptions.list(externalId)` → `client.services.getContactSubscriptions({ externalId })`
+- `client.usage.ingest({ externalId, meterId, quantity })` → `client.services.ingestUsage({ externalId, meterId, quantity })`
+- `client.coupons.validate({ code, priceId })` → `client.coupons.validate({ code, priceId })` (unchanged)
+- `client.customerPortal.createSession(externalId)` → `client.customerPortal.createSession({ externalId })`
+- Result handling: drop `.match`/`.isErr` — wrap `await client.X.Y(input)` with `fromPromise` if neverthrow is desired upstream.
+
 ## 0.3.0 — 2026-04-26
 
 ### Breaking

@@ -279,26 +279,26 @@ const withBilling = withTelemetry.use(
    onSuccess((_result, { context, path, procedure }) => {
       const eventName = procedure["~orpc"].meta.billableEvent;
       if (!eventName) return;
-      context.hyprpayClient.usage
-         .ingest({
+      context.hyprpayClient.services
+         .ingestUsage({
             externalId: context.organizationId,
             meterId: eventName,
             quantity: 1,
             idempotencyKey: crypto.randomUUID(),
          })
-         .then((r) => {
-            if (r.isErr())
-               otelLogger.emit({
-                  severityText: "error",
-                  body: "billing ingest failed",
-                  attributes: {
-                     "error.message": r.error.message,
-                     path: path.join("."),
-                     eventName,
-                     organizationId: context.organizationId,
-                  },
-               });
-         });
+         .catch((cause: unknown) =>
+            otelLogger.emit({
+               severityText: "error",
+               body: "billing ingest failed",
+               attributes: {
+                  "error.message":
+                     cause instanceof Error ? cause.message : String(cause),
+                  path: path.join("."),
+                  eventName,
+                  organizationId: context.organizationId,
+               },
+            }),
+         );
    }),
 );
 

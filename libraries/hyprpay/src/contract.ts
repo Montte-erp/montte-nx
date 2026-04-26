@@ -1,199 +1,196 @@
 import { oc } from "@orpc/contract";
 import { z } from "zod";
 
-const customerSchema = z.object({
-   id: z.string(),
-   teamId: z.string(),
-   name: z.string(),
-   email: z.string().nullable(),
-   phone: z.string().nullable(),
-   document: z.string().nullable(),
-   externalId: z.string().nullable(),
-   createdAt: z.string(),
-   updatedAt: z.string(),
-});
+export const contactByIdRef = z.union([
+   z.object({ id: z.string().uuid() }),
+   z.object({ externalId: z.string().min(1) }),
+]);
 
-const listResultSchema = z.object({
-   items: z.array(customerSchema),
-   total: z.number(),
-   page: z.number(),
-   limit: z.number(),
-   pages: z.number(),
-});
+export const contactFkRef = z.union([
+   z.object({ contactId: z.string().uuid() }),
+   z.object({ externalId: z.string().min(1) }),
+]);
 
-const subscriptionItemSchema = z.object({
-   id: z.string(),
-   subscriptionId: z.string(),
-   priceId: z.string(),
-   quantity: z.number(),
-   negotiatedPrice: z.string().nullable(),
-   createdAt: z.string(),
-   updatedAt: z.string(),
-});
+export type ContactByIdRef = z.infer<typeof contactByIdRef>;
+export type ContactFkRef = z.infer<typeof contactFkRef>;
 
-const subscriptionSchema = z.object({
-   id: z.string(),
-   contactId: z.string(),
-   teamId: z.string(),
-   status: z.enum([
-      "active",
-      "trialing",
-      "incomplete",
-      "completed",
-      "cancelled",
-   ]),
-   startDate: z.string(),
-   endDate: z.string().nullable(),
-   couponId: z.string().nullable(),
-   cancelAtPeriodEnd: z.boolean(),
-   checkoutUrl: z.string().nullable(),
-   createdAt: z.string(),
-   updatedAt: z.string(),
-});
+const ingestUsageInput = z.union([
+   z.object({
+      contactId: z.string().uuid(),
+      meterId: z.string().uuid(),
+      quantity: z.number().positive(),
+      idempotencyKey: z.string().optional(),
+      properties: z.record(z.string(), z.unknown()).optional(),
+   }),
+   z.object({
+      externalId: z.string().min(1),
+      meterId: z.string().uuid(),
+      quantity: z.number().positive(),
+      idempotencyKey: z.string().optional(),
+      properties: z.record(z.string(), z.unknown()).optional(),
+   }),
+]);
 
-const subscriptionsContract = {
-   create: oc
+const createSubscriptionInput = z.union([
+   z.object({
+      contactId: z.string().uuid(),
+      items: z
+         .array(
+            z.object({
+               priceId: z.string().uuid(),
+               quantity: z.number().int().min(1).optional(),
+            }),
+         )
+         .min(1),
+      couponCode: z.string().optional(),
+      status: z.enum(["active", "trialing"]).optional(),
+      trialEndsAt: z.string().datetime().nullable().optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().nullable().optional(),
+      notes: z.string().nullable().optional(),
+   }),
+   z.object({
+      externalId: z.string().min(1),
+      items: z
+         .array(
+            z.object({
+               priceId: z.string().uuid(),
+               quantity: z.number().int().min(1).optional(),
+            }),
+         )
+         .min(1),
+      couponCode: z.string().optional(),
+      status: z.enum(["active", "trialing"]).optional(),
+      trialEndsAt: z.string().datetime().nullable().optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().nullable().optional(),
+      notes: z.string().nullable().optional(),
+   }),
+]);
+
+const servicesContract = {
+   ingestUsage: oc
+      .input(ingestUsageInput)
+      .output(z.object({ queued: z.boolean(), idempotencyKey: z.string() })),
+   createSubscription: oc.input(createSubscriptionInput).output(z.unknown()),
+   cancelSubscription: oc
       .input(
          z.object({
-            externalId: z.string(),
-            items: z
-               .array(
-                  z.object({
-                     priceId: z.string(),
-                     quantity: z.number().int().min(1).optional(),
-                  }),
-               )
-               .min(1),
-            couponCode: z.string().optional(),
-         }),
-      )
-      .output(
-         z.object({
-            subscription: subscriptionSchema,
-            checkoutUrl: z.string().nullable(),
-         }),
-      ),
-
-   cancel: oc
-      .input(
-         z.object({
-            subscriptionId: z.string(),
+            subscriptionId: z.string().uuid(),
             cancelAtPeriodEnd: z.boolean().default(false),
          }),
       )
-      .output(subscriptionSchema),
-
-   list: oc
-      .input(z.object({ externalId: z.string() }))
-      .output(z.array(subscriptionSchema)),
-
+      .output(z.unknown()),
+   getContactSubscriptions: oc.input(contactFkRef).output(z.array(z.unknown())),
    addItem: oc
       .input(
          z.object({
-            subscriptionId: z.string(),
-            priceId: z.string(),
+            subscriptionId: z.string().uuid(),
+            priceId: z.string().uuid(),
             quantity: z.number().int().min(1).optional(),
          }),
       )
-      .output(subscriptionItemSchema),
-
+      .output(z.unknown()),
    updateItem: oc
       .input(
          z.object({
-            itemId: z.string(),
+            itemId: z.string().uuid(),
             quantity: z.number().int().min(1).optional(),
             negotiatedPrice: z.string().nullable().optional(),
          }),
       )
-      .output(subscriptionItemSchema),
-
+      .output(z.unknown()),
    removeItem: oc
-      .input(z.object({ itemId: z.string() }))
+      .input(z.object({ itemId: z.string().uuid() }))
       .output(z.object({ success: z.boolean() })),
 };
 
-const usageEventSchema = z.object({
-   teamId: z.string(),
-   meterId: z.string(),
-   quantity: z.number(),
-   idempotencyKey: z.string(),
-   contactId: z.string().nullable(),
-   properties: z.record(z.string(), z.unknown()),
-   timestamp: z.string(),
-});
-
-const benefitGrantSchema = z.object({
-   id: z.string(),
-   benefitId: z.string(),
-   subscriptionId: z.string(),
-   status: z.enum(["active", "revoked"]),
-   grantedAt: z.string(),
-   revokedAt: z.string().nullable(),
-   benefit: z.object({
-      id: z.string(),
-      name: z.string(),
-      type: z.enum(["credits", "feature_access", "custom"]),
-      description: z.string().nullable(),
-   }),
-});
-
-const benefitsContract = {
-   check: oc
-      .input(z.object({ externalId: z.string(), benefitId: z.string() }))
-      .output(
-         z.object({
-            status: z.enum(["granted", "revoked", "not_found"]),
-            grantedAt: z.string().nullable(),
-            revokedAt: z.string().nullable(),
-            subscriptionId: z.string().nullable(),
-         }),
-      ),
-
-   list: oc
-      .input(z.object({ externalId: z.string() }))
-      .output(z.array(benefitGrantSchema)),
-};
-
-const usageContract = {
-   ingest: oc
+const contactsContract = {
+   create: oc
       .input(
          z.object({
-            externalId: z.string(),
-            meterId: z.string(),
-            quantity: z.number().positive(),
-            properties: z.record(z.string(), z.unknown()).optional(),
-            idempotencyKey: z.string().optional(),
+            name: z.string().min(1),
+            type: z.enum(["cliente", "fornecedor", "ambos"]).optional(),
+            email: z.string().email().nullable().optional(),
+            phone: z.string().nullable().optional(),
+            document: z.string().nullable().optional(),
+            externalId: z.string().nullable().optional(),
          }),
       )
-      .output(z.object({ queued: z.boolean(), idempotencyKey: z.string() })),
-
-   list: oc
+      .output(z.unknown()),
+   getAll: oc
       .input(
-         z.object({ externalId: z.string(), meterId: z.string().optional() }),
+         z
+            .object({
+               type: z.enum(["cliente", "fornecedor", "ambos"]).optional(),
+            })
+            .optional(),
       )
-      .output(z.array(usageEventSchema)),
+      .output(z.array(z.unknown())),
+   getById: oc.input(contactByIdRef).output(z.unknown()),
+   getStats: oc.input(contactByIdRef).output(z.unknown()),
+   getTransactions: oc
+      .input(
+         z.union([
+            z.object({
+               id: z.string().uuid(),
+               page: z.number().int().min(1).optional(),
+               pageSize: z.number().int().min(1).max(100).optional(),
+            }),
+            z.object({
+               externalId: z.string().min(1),
+               page: z.number().int().min(1).optional(),
+               pageSize: z.number().int().min(1).max(100).optional(),
+            }),
+         ]),
+      )
+      .output(z.unknown()),
+   update: oc
+      .input(
+         z.union([
+            z.object({
+               id: z.string().uuid(),
+               name: z.string().min(1).optional(),
+               email: z.string().email().nullable().optional(),
+               phone: z.string().nullable().optional(),
+               document: z.string().nullable().optional(),
+            }),
+            z.object({
+               externalId: z.string().min(1),
+               name: z.string().min(1).optional(),
+               email: z.string().email().nullable().optional(),
+               phone: z.string().nullable().optional(),
+               document: z.string().nullable().optional(),
+            }),
+         ]),
+      )
+      .output(z.unknown()),
+   remove: oc.input(contactByIdRef).output(z.object({ success: z.boolean() })),
+   bulkRemove: oc
+      .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
+      .output(z.object({ deleted: z.number() })),
+   archive: oc.input(contactByIdRef).output(z.unknown()),
+   reactivate: oc.input(contactByIdRef).output(z.unknown()),
 };
-
-const couponDetailSchema = z.object({
-   id: z.string(),
-   code: z.string(),
-   type: z.enum(["percent", "fixed"]),
-   amount: z.string(),
-   duration: z.enum(["once", "repeating", "forever"]),
-   durationMonths: z.number().nullable(),
-   scope: z.enum(["team", "price"]),
-   priceId: z.string().nullable(),
-   maxUses: z.number().nullable(),
-   usedCount: z.number(),
-   redeemBy: z.string().nullable(),
-});
 
 const couponsContract = {
+   list: oc.input(z.void().optional()).output(z.array(z.unknown())),
+   get: oc.input(z.object({ id: z.string().uuid() })).output(z.unknown()),
+   create: oc.input(z.unknown()).output(z.unknown()),
+   update: oc.input(z.unknown()).output(z.unknown()),
+   deactivate: oc
+      .input(z.object({ id: z.string().uuid() }))
+      .output(z.unknown()),
    validate: oc
-      .input(z.object({ code: z.string(), priceId: z.string().optional() }))
+      .input(
+         z.object({
+            code: z.string().min(1),
+            priceId: z.string().uuid().optional(),
+         }),
+      )
       .output(
          z.discriminatedUnion("valid", [
-            z.object({ valid: z.literal(true), coupon: couponDetailSchema }),
+            z.object({ valid: z.literal(true), coupon: z.unknown() }),
             z.object({
                valid: z.literal(false),
                reason: z.enum([
@@ -210,61 +207,15 @@ const couponsContract = {
 
 const customerPortalContract = {
    createSession: oc
-      .input(z.object({ externalId: z.string() }))
+      .input(z.object({ externalId: z.string().min(1) }))
       .output(z.object({ url: z.string() })),
 };
 
-export const hyprpayContract = {
-   create: oc
-      .input(
-         z.object({
-            name: z.string().min(1),
-            email: z.string().email().optional(),
-            phone: z.string().optional(),
-            document: z.string().optional(),
-            externalId: z.string().optional(),
-         }),
-      )
-      .output(customerSchema),
-
-   get: oc.input(z.object({ externalId: z.string() })).output(customerSchema),
-
-   list: oc
-      .input(
-         z.object({
-            page: z.number().int().min(1).default(1),
-            limit: z.number().int().min(1).max(100).default(20),
-         }),
-      )
-      .output(listResultSchema),
-
-   update: oc
-      .input(
-         z.object({
-            externalId: z.string(),
-            name: z.string().min(1).optional(),
-            email: z.string().email().nullable().optional(),
-            phone: z.string().nullable().optional(),
-         }),
-      )
-      .output(customerSchema),
-
-   subscriptions: subscriptionsContract,
-   usage: usageContract,
-   benefits: benefitsContract,
+export const billingContract = {
+   services: servicesContract,
+   contacts: contactsContract,
    coupons: couponsContract,
    customerPortal: customerPortalContract,
 };
 
-export type HyprPayUsageEventFromContract = z.infer<typeof usageEventSchema>;
-export type HyprPayCustomerFromContract = z.infer<typeof customerSchema>;
-export type HyprPaySubscriptionFromContract = z.infer<
-   typeof subscriptionSchema
->;
-export type HyprPaySubscriptionItemFromContract = z.infer<
-   typeof subscriptionItemSchema
->;
-export type HyprPayBenefitGrantFromContract = z.infer<
-   typeof benefitGrantSchema
->;
-export type HyprPayCouponFromContract = z.infer<typeof couponDetailSchema>;
+export type BillingContract = typeof billingContract;
