@@ -1,9 +1,9 @@
 import dayjs from "dayjs";
 import { err, fromPromise, fromThrowable, ok } from "neverthrow";
 import { logs } from "@opentelemetry/api-logs";
-import { ORPCError, os } from "@orpc/server";
+import { ORPCError, onSuccess, os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
-import { createHyprPayClient } from "@montte/hyprpay";
+import { createHyprpay } from "@core/hyprpay/client";
 import { createDb } from "@core/database/client";
 import { env } from "@core/environment/web";
 import {
@@ -18,7 +18,6 @@ import { AppError, WebAppError } from "@core/logging/errors";
 import { createResendClient } from "@core/transactional/utils";
 import { createWorkflowClient } from "@core/dbos/client";
 import { sanitizeData } from "@core/utils/sanitization";
-import { createJobPublisher } from "@packages/notifications/publisher";
 import type {
    ORPCContext,
    ORPCContextAuthenticated,
@@ -30,7 +29,7 @@ const db = createDb({ databaseUrl: env.DATABASE_URL });
 const redis = createRedis(env.REDIS_URL);
 const posthog = createPostHog(env.POSTHOG_KEY, env.POSTHOG_HOST);
 const resendClient = createResendClient(env.RESEND_API_KEY);
-const hyprpayClient = createHyprPayClient({ apiKey: env.HYPRPAY_API_KEY });
+const hyprpayClient = createHyprpay(env.HYPRPAY_API_KEY);
 const auth = createAuth({
    db,
    redis,
@@ -40,11 +39,12 @@ const auth = createAuth({
    env,
 });
 const workflowClient = createWorkflowClient(env.DATABASE_URL);
-const jobPublisher = createJobPublisher(redis);
 
 const otelLogger = logs.getLogger("montte-web-orpc");
 
-const base = os.$context<ORPCContext>();
+export type BillableMeta = { billableEvent?: string };
+
+const base = os.$context<ORPCContext>().$meta<BillableMeta>({});
 
 const withDeps = base.use(async ({ context, next }) => {
    const sessionResult = await fromPromise(
@@ -60,7 +60,6 @@ const withDeps = base.use(async ({ context, next }) => {
          posthog,
          redis,
          workflowClient: await workflowClient,
-         jobPublisher,
          hyprpayClient,
       },
    });
@@ -213,29 +212,32 @@ const withTelemetry = withOrganization.use(
    },
 );
 
-const withBilling = withTelemetry.use(async ({ context, path, next }) => {
-   const result = await next({});
-   context.hyprpayClient.usage
-      .ingest({
-         customerId: context.organizationId,
-         meterId: path.join("."),
-         quantity: 1,
-         idempotencyKey: crypto.randomUUID(),
-      })
-      .then((r) => {
-         if (r.isErr())
-            otelLogger.emit({
-               severityText: "error",
-               body: "billing ingest failed",
-               attributes: {
-                  "error.message": r.error.message,
-                  path: path.join("."),
-                  organizationId: context.organizationId,
-               },
-            });
-      });
-   return result;
-});
+const withBilling = withTelemetry.use(
+   onSuccess((_result, { context, path, procedure }) => {
+      const eventName = procedure["~orpc"].meta.billableEvent;
+      if (!eventName) return;
+      context.hyprpayClient.usage
+         .ingest({
+            externalId: context.organizationId,
+            meterId: eventName,
+            quantity: 1,
+            idempotencyKey: crypto.randomUUID(),
+         })
+         .then((r) => {
+            if (r.isErr())
+               otelLogger.emit({
+                  severityText: "error",
+                  body: "billing ingest failed",
+                  attributes: {
+                     "error.message": r.error.message,
+                     path: path.join("."),
+                     eventName,
+                     organizationId: context.organizationId,
+                  },
+               });
+         });
+   }),
+);
 
 export type {
    ORPCContext,

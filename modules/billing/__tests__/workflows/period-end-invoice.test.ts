@@ -23,7 +23,7 @@ vi.mock("@dbos-inc/drizzle-datasource", async () => {
 });
 
 import {
-   billingPublisherSpy,
+   ssePublishSpy,
    billingResendSpies,
 } from "../helpers/mock-billing-context";
 
@@ -35,7 +35,6 @@ import { benefitGrants } from "@core/database/schemas/benefit-grants";
 import { couponRedemptions } from "@core/database/schemas/coupons";
 import { invoices } from "@core/database/schemas/invoices";
 import { servicePrices } from "@core/database/schemas/services";
-import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import { WorkflowError } from "@core/dbos/errors";
 import {
    attachBenefit,
@@ -778,13 +777,12 @@ describe("periodEndInvoiceWorkflow", () => {
       const invoice = await getInvoiceForSub(sub.id);
       expect(invoice).toBeDefined();
 
-      expect(billingPublisherSpy).toHaveBeenCalledTimes(1);
-      expect(billingPublisherSpy).toHaveBeenCalledWith(
-         "job.notification",
+      expect(ssePublishSpy).toHaveBeenCalledTimes(1);
+      expect(ssePublishSpy).toHaveBeenCalledWith(
+         expect.anything(),
+         { kind: "team", id: teamId },
          expect.objectContaining({
-            type: NOTIFICATION_TYPES.BILLING_INVOICE_GENERATED,
-            status: "completed",
-            teamId,
+            type: "billing.invoice_generated",
             payload: {
                invoiceId: invoice?.id,
                subscriptionId: sub.id,
@@ -867,7 +865,7 @@ describe("periodEndInvoiceWorkflow", () => {
          periodEnd,
       });
 
-      expect(billingPublisherSpy).toHaveBeenCalledTimes(1);
+      expect(ssePublishSpy).toHaveBeenCalledTimes(1);
       expect(
          billingResendSpies.sendBillingInvoiceGenerated,
       ).not.toHaveBeenCalled();

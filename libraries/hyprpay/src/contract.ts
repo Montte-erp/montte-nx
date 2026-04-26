@@ -55,7 +55,7 @@ const subscriptionsContract = {
    create: oc
       .input(
          z.object({
-            customerId: z.string(),
+            externalId: z.string(),
             items: z
                .array(
                   z.object({
@@ -84,7 +84,7 @@ const subscriptionsContract = {
       .output(subscriptionSchema),
 
    list: oc
-      .input(z.object({ customerId: z.string() }))
+      .input(z.object({ externalId: z.string() }))
       .output(z.array(subscriptionSchema)),
 
    addItem: oc
@@ -139,7 +139,7 @@ const benefitGrantSchema = z.object({
 
 const benefitsContract = {
    check: oc
-      .input(z.object({ customerId: z.string(), benefitId: z.string() }))
+      .input(z.object({ externalId: z.string(), benefitId: z.string() }))
       .output(
          z.object({
             status: z.enum(["granted", "revoked", "not_found"]),
@@ -150,7 +150,7 @@ const benefitsContract = {
       ),
 
    list: oc
-      .input(z.object({ customerId: z.string() }))
+      .input(z.object({ externalId: z.string() }))
       .output(z.array(benefitGrantSchema)),
 };
 
@@ -158,7 +158,7 @@ const usageContract = {
    ingest: oc
       .input(
          z.object({
-            customerId: z.string(),
+            externalId: z.string(),
             meterId: z.string(),
             quantity: z.number().positive(),
             properties: z.record(z.string(), z.unknown()).optional(),
@@ -169,7 +169,7 @@ const usageContract = {
 
    list: oc
       .input(
-         z.object({ customerId: z.string(), meterId: z.string().optional() }),
+         z.object({ externalId: z.string(), meterId: z.string().optional() }),
       )
       .output(z.array(usageEventSchema)),
 };
@@ -210,7 +210,7 @@ const couponsContract = {
 
 const customerPortalContract = {
    createSession: oc
-      .input(z.object({ customerId: z.string() }))
+      .input(z.object({ externalId: z.string() }))
       .output(z.object({ url: z.string() })),
 };
 

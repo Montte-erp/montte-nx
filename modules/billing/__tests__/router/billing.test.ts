@@ -119,7 +119,7 @@ describe("billing router", () => {
          });
          expect(result).toEqual([{ id: "evt_1" }]);
          expect(hyprpayClient.usage.list).toHaveBeenCalledWith({
-            customerId: "cus_123",
+            externalId: "cus_123",
          });
       });
 

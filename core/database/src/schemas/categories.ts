@@ -66,10 +66,6 @@ export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
 export type CategoryType = (typeof categoryTypeEnum.enumValues)[number];
 
-// =============================================================================
-// Validators
-// =============================================================================
-
 const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{6}$/;
 
 const nameSchema = z

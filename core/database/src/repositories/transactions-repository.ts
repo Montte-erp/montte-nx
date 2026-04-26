@@ -36,9 +36,7 @@ import {
    getBankAccount,
    ensureBankAccountOwnership,
 } from "@core/database/repositories/bank-accounts-repository";
-import { getCategory } from "@core/database/repositories/categories-repository";
 import { getContact } from "@core/database/repositories/contacts-repository";
-import { getTag } from "@core/database/repositories/tags-repository";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { tags } from "@core/database/schemas/tags";
 import { categories } from "@core/database/schemas/categories";
@@ -178,18 +176,19 @@ export async function validateTransactionReferences(
    }
 
    if (refs.categoryId) {
-      const catResult = await getCategory(db, refs.categoryId);
-      if (catResult.isErr()) throw catResult.error;
-      const cat = catResult.value;
+      const cat = await db.query.categories.findFirst({
+         where: (fields, { eq }) => eq(fields.id, refs.categoryId!),
+      });
       if (!cat || cat.teamId !== teamId) {
          throw AppError.validation("Categoria inválida.");
       }
    }
 
    if (refs.tagId) {
-      const tagResult = await getTag(db, refs.tagId);
-      if (tagResult.isErr()) throw tagResult.error;
-      if (!tagResult.value || tagResult.value.teamId !== teamId) {
+      const tag = await db.query.tags.findFirst({
+         where: (fields, { eq }) => eq(fields.id, refs.tagId!),
+      });
+      if (!tag || tag.teamId !== teamId) {
          throw AppError.validation("Tag inválida.");
       }
    }

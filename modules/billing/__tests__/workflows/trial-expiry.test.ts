@@ -23,7 +23,7 @@ vi.mock("@dbos-inc/drizzle-datasource", async () => {
 });
 
 import {
-   billingPublisherSpy,
+   ssePublishSpy,
    billingResendSpies,
 } from "../helpers/mock-billing-context";
 
@@ -32,7 +32,6 @@ import { eq } from "drizzle-orm";
 import { setupTestDb } from "@core/database/testing/setup-test-db";
 import { seedTeam } from "@core/database/testing/factories";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
-import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import { makeContact, makeSubscription } from "../helpers/billing-factories";
 
 import {
@@ -88,22 +87,9 @@ describe("trialExpiryWorkflow", () => {
          contactName: "Cliente Teste",
       });
 
-      const publishCalls = billingPublisherSpy.mock.calls;
-      const types = publishCalls.map(
-         (c) => c[1] as { type: string; status: string },
-      );
-      expect(types).toContainEqual(
-         expect.objectContaining({
-            type: NOTIFICATION_TYPES.BILLING_TRIAL_EXPIRING,
-            status: "started",
-         }),
-      );
-      expect(types).toContainEqual(
-         expect.objectContaining({
-            type: NOTIFICATION_TYPES.BILLING_TRIAL_EXPIRING,
-            status: "completed",
-         }),
-      );
+      const publishedTypes = ssePublishSpy.mock.calls.map((c) => c[2].type);
+      expect(publishedTypes).toContain("billing.trial_expiring");
+      expect(publishedTypes).toContain("billing.trial_completed");
 
       expect(
          billingResendSpies.sendBillingTrialExpiryWarning,
@@ -131,13 +117,10 @@ describe("trialExpiryWorkflow", () => {
          phase: "warning",
       });
 
-      const startedCalls = billingPublisherSpy.mock.calls.filter(
-         (c) =>
-            (c[1] as { type: string; status: string }).type ===
-               NOTIFICATION_TYPES.BILLING_TRIAL_EXPIRING &&
-            (c[1] as { type: string; status: string }).status === "started",
+      const expiringCalls = ssePublishSpy.mock.calls.filter(
+         (c) => c[2].type === "billing.trial_expiring",
       );
-      expect(startedCalls).toHaveLength(1);
+      expect(expiringCalls).toHaveLength(1);
       expect(
          billingResendSpies.sendBillingTrialExpiryWarning,
       ).not.toHaveBeenCalled();
@@ -195,11 +178,8 @@ describe("trialExpiryWorkflow", () => {
          .where(eq(contactSubscriptions.id, sub.id));
       expect(row?.status).toBe("cancelled");
 
-      const completedCalls = billingPublisherSpy.mock.calls.filter(
-         (c) =>
-            (c[1] as { type: string; status: string }).type ===
-               NOTIFICATION_TYPES.BILLING_TRIAL_EXPIRING &&
-            (c[1] as { type: string; status: string }).status === "completed",
+      const completedCalls = ssePublishSpy.mock.calls.filter(
+         (c) => c[2].type === "billing.trial_completed",
       );
       expect(completedCalls).toHaveLength(0);
       expect(billingResendSpies.sendBillingTrialExpired).not.toHaveBeenCalled();
@@ -230,11 +210,8 @@ describe("trialExpiryWorkflow", () => {
          .where(eq(contactSubscriptions.id, sub.id));
       expect(row?.status).toBe("completed");
 
-      const completedCalls = billingPublisherSpy.mock.calls.filter(
-         (c) =>
-            (c[1] as { type: string; status: string }).type ===
-               NOTIFICATION_TYPES.BILLING_TRIAL_EXPIRING &&
-            (c[1] as { type: string; status: string }).status === "completed",
+      const completedCalls = ssePublishSpy.mock.calls.filter(
+         (c) => c[2].type === "billing.trial_completed",
       );
       expect(completedCalls).toHaveLength(0);
       expect(billingResendSpies.sendBillingTrialExpired).not.toHaveBeenCalled();
@@ -255,11 +232,8 @@ describe("trialExpiryWorkflow", () => {
          }),
       ).resolves.toBeUndefined();
 
-      const completedCalls = billingPublisherSpy.mock.calls.filter(
-         (c) =>
-            (c[1] as { type: string; status: string }).type ===
-               NOTIFICATION_TYPES.BILLING_TRIAL_EXPIRING &&
-            (c[1] as { type: string; status: string }).status === "completed",
+      const completedCalls = ssePublishSpy.mock.calls.filter(
+         (c) => c[2].type === "billing.trial_completed",
       );
       expect(completedCalls).toHaveLength(0);
       expect(billingResendSpies.sendBillingTrialExpired).not.toHaveBeenCalled();

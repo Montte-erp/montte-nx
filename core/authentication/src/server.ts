@@ -1,6 +1,6 @@
 import { apiKey } from "@better-auth/api-key";
 import { hyprpay } from "@montte/hyprpay/better-auth";
-import type { HyprPayClient } from "@montte/hyprpay";
+import type { HyprPayClient } from "@core/hyprpay/client";
 import { findMemberByUserId } from "@core/database/repositories/auth-repository";
 import * as schema from "@core/database/schema";
 import { getDomain, isProduction } from "@core/environment/helpers";

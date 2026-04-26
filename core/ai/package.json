@@ -1,0 +1,40 @@
+{
+   "name": "@core/ai",
+   "version": "0.1.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      "./models": {
+         "types": "./dist/models.d.ts",
+         "default": "./dist/models.js"
+      },
+      "./middleware": {
+         "types": "./dist/middleware.d.ts",
+         "default": "./dist/middleware.js"
+      },
+      "./observability": {
+         "types": "./dist/observability.d.ts",
+         "default": "./dist/observability.js"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@core/posthog": "workspace:*",
+      "@tanstack/ai": "catalog:tanstack-ai",
+      "@tanstack/ai-openrouter": "catalog:tanstack-ai"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development"
+   }
+}

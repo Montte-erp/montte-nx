@@ -5,19 +5,42 @@ import { eq } from "drizzle-orm";
 import dayjs from "dayjs";
 import { WorkflowError } from "@core/dbos/errors";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
+import { ingestUsageEvent } from "@core/hyprpay/usage";
 import {
    sendBillingTrialExpired,
    sendBillingTrialExpiryWarning,
 } from "@core/transactional/client";
-import { NOTIFICATION_TYPES } from "@packages/notifications/types";
-import type { JobNotification } from "@packages/notifications/schema";
+import { TRANSACTIONAL_USAGE_EVENTS } from "@core/transactional/usage-events";
+import { billingSseEvents } from "../sse";
 import { BILLING_QUEUES } from "../constants";
 import {
    billingDataSource,
-   getBillingPublisher,
+   getBillingHyprpay,
+   getBillingRedis,
    getBillingResendClient,
    createEnqueuer,
 } from "./context";
+
+async function ingestEmailSent(
+   organizationId: string,
+   idempotencyKey: string,
+   properties: Record<string, unknown>,
+) {
+   const result = await ingestUsageEvent({
+      hyprpayClient: getBillingHyprpay(),
+      db: billingDataSource.client,
+      externalId: organizationId,
+      eventName: TRANSACTIONAL_USAGE_EVENTS.emailSent,
+      quantity: 1,
+      idempotencyKey,
+      properties,
+   });
+   if (result.isErr()) {
+      DBOS.logger.warn(
+         `usage ingestion failed for email.sent — org=${organizationId} err=${result.error.message}`,
+      );
+   }
+}
 import {
    periodEndInvoiceWorkflow,
    type PeriodEndInvoiceInput,
@@ -25,6 +48,7 @@ import {
 
 export type TrialExpiryInput = {
    teamId: string;
+   organizationId: string;
    subscriptionId: string;
    trialEndsAt: string;
    phase: "warning" | "expiry";
@@ -34,7 +58,6 @@ export type TrialExpiryInput = {
 };
 
 async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
-   const publisher = getBillingPublisher();
    const ctx = `[trial-expiry:${input.phase}] sub=${input.subscriptionId} team=${input.teamId}`;
    DBOS.logger.info(`${ctx} running trialEndsAt=${input.trialEndsAt}`);
 
@@ -45,18 +68,19 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
                const resendClient = getBillingResendClient();
                const { contactEmail, contactName } = input;
 
-               await publisher.publish("job.notification", {
-                  jobId: crypto.randomUUID(),
-                  timestamp: dayjs().toISOString(),
-                  type: NOTIFICATION_TYPES.BILLING_TRIAL_EXPIRING,
-                  status: "started",
-                  message: `Período de teste expira em 3 dias para assinatura ${input.subscriptionId}.`,
-                  teamId: input.teamId,
-                  payload: {
-                     subscriptionId: input.subscriptionId,
-                     daysLeft: 3,
+               const publish = await billingSseEvents.publish(
+                  getBillingRedis(),
+                  { kind: "team", id: input.teamId },
+                  {
+                     type: "billing.trial_expiring",
+                     payload: {
+                        subscriptionId: input.subscriptionId,
+                        trialEndsAt: input.trialEndsAt,
+                        daysLeft: 3,
+                     },
                   },
-               } satisfies JobNotification);
+               );
+               if (publish.isErr()) throw publish.error;
 
                if (contactEmail) {
                   await sendBillingTrialExpiryWarning(resendClient, {
@@ -65,6 +89,14 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
                      trialEndsAt: dayjs(input.trialEndsAt).format("DD/MM/YYYY"),
                      from: input.emailFrom,
                   });
+                  await ingestEmailSent(
+                     input.organizationId,
+                     `email-trial-warning-${input.subscriptionId}`,
+                     {
+                        kind: "billing.trial_expiry_warning",
+                        subscriptionId: input.subscriptionId,
+                     },
+                  );
                }
             },
             { name: "sendPreExpiryWarning" },
@@ -136,17 +168,18 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
 
    const publishResult = await fromPromise(
       DBOS.runStep(
-         () =>
-            publisher.publish("job.notification", {
-               jobId: crypto.randomUUID(),
-               timestamp: dayjs().toISOString(),
-               type: NOTIFICATION_TYPES.BILLING_TRIAL_EXPIRING,
-               status: "completed",
-               message: `Período de teste encerrado — assinatura ${input.subscriptionId} ativada.`,
-               teamId: input.teamId,
-               payload: { subscriptionId: input.subscriptionId, daysLeft: 0 },
-            } satisfies JobNotification),
-         { name: "publishExpired" },
+         async () => {
+            const publish = await billingSseEvents.publish(
+               getBillingRedis(),
+               { kind: "team", id: input.teamId },
+               {
+                  type: "billing.trial_completed",
+                  payload: { subscriptionId: input.subscriptionId },
+               },
+            );
+            if (publish.isErr()) throw publish.error;
+         },
+         { name: "publishTrialCompleted" },
       ),
       (e) =>
          WorkflowError.internal("Falha ao publicar notificação de expiração.", {
@@ -167,6 +200,14 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
                   contactName,
                   from: input.emailFrom,
                });
+               await ingestEmailSent(
+                  input.organizationId,
+                  `email-trial-expired-${input.subscriptionId}`,
+                  {
+                     kind: "billing.trial_expired",
+                     subscriptionId: input.subscriptionId,
+                  },
+               );
             }
          },
          { name: "sendExpiryEmails" },
@@ -219,6 +260,7 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
    if (nextPeriod) {
       const invoiceInput: PeriodEndInvoiceInput = {
          teamId: input.teamId,
+         organizationId: input.organizationId,
          subscriptionId: input.subscriptionId,
          periodStart: nextPeriod.periodStart,
          periodEnd: nextPeriod.periodEnd,

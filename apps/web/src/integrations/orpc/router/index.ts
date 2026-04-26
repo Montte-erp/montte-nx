@@ -4,7 +4,7 @@ import * as analyticsRouter from "./analytics";
 import * as apiKeysRouter from "./api-keys";
 import * as bankAccountsRouter from "./bank-accounts";
 import * as billingRouter from "@modules/billing/router/billing";
-import * as categoriesRouter from "./categories";
+import * as categoriesRouter from "@modules/classification/router/categories";
 import * as contactSettingsRouter from "./contact-settings";
 import * as contactsRouter from "./contacts";
 import * as couponsRouter from "@modules/billing/router/coupons";
@@ -18,7 +18,7 @@ import * as onboardingRouter from "./onboarding";
 import * as organizationRouter from "./organization";
 import * as servicesRouter from "@modules/billing/router/services";
 import * as sessionRouter from "./session";
-import * as tagsRouter from "./tags";
+import * as tagsRouter from "@modules/classification/router/tags";
 import * as teamRouter from "./team";
 import * as transactionsRouter from "./transactions";
 

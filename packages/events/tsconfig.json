@@ -15,8 +15,6 @@
          "@core/stripe/*": ["../../core/stripe/src/*"],
          "@core/transactional/*": ["../../core/transactional/src/*"],
          "@core/utils/*": ["../../core/utils/src/*"],
-         "@core/agents": ["../../core/agents/src/mastra/index.ts"],
-         "@core/agents/*": ["../../core/agents/src/*"],
          "@packages/analytics/*": ["../../packages/analytics/src/*"],
          "@packages/events/*": ["./src/*"],
          "@packages/ui/*": ["../../packages/ui/src/*"]

@@ -5,17 +5,13 @@ import dayjs from "dayjs";
 import { WorkflowError } from "@core/dbos/errors";
 import { benefitGrants } from "@core/database/schemas/benefit-grants";
 import type { SubscriptionStatus } from "@core/database/schemas/subscriptions";
-import { NOTIFICATION_TYPES } from "@packages/notifications/types";
-import type { JobNotification } from "@packages/notifications/schema";
+import { billingSseEvents } from "../sse";
 import { BILLING_QUEUES } from "../constants";
-import {
-   billingDataSource,
-   getBillingPublisher,
-   createEnqueuer,
-} from "./context";
+import { billingDataSource, getBillingRedis, createEnqueuer } from "./context";
 
 export type BenefitLifecycleInput = {
    teamId: string;
+   organizationId: string;
    subscriptionId: string;
    serviceId: string;
    newStatus: SubscriptionStatus;
@@ -26,7 +22,6 @@ const GRANT_STATUSES: SubscriptionStatus[] = ["active", "trialing"];
 const REVOKE_STATUSES: SubscriptionStatus[] = ["cancelled", "completed"];
 
 async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
-   const publisher = getBillingPublisher();
    const ctx = `[benefit-lifecycle] sub=${input.subscriptionId} team=${input.teamId}`;
    DBOS.logger.info(`${ctx} started newStatus=${input.newStatus}`);
 
@@ -91,17 +86,21 @@ async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
 
       const publishResult = await fromPromise(
          DBOS.runStep(
-            () =>
-               publisher.publish("job.notification", {
-                  jobId: crypto.randomUUID(),
-                  timestamp: dayjs().toISOString(),
-                  type: NOTIFICATION_TYPES.BILLING_BENEFIT_REVOKED,
-                  status: "completed",
-                  message: `Benefícios revogados para assinatura ${input.subscriptionId}.`,
-                  teamId: input.teamId,
-                  payload: { subscriptionId: input.subscriptionId, benefitIds },
-               } satisfies JobNotification),
-            { name: "publishRevoked" },
+            async () => {
+               const publish = await billingSseEvents.publish(
+                  getBillingRedis(),
+                  { kind: "team", id: input.teamId },
+                  {
+                     type: "billing.benefit_revoked",
+                     payload: {
+                        subscriptionId: input.subscriptionId,
+                        benefitIds,
+                     },
+                  },
+               );
+               if (publish.isErr()) throw publish.error;
+            },
+            { name: "publishBenefitRevoked" },
          ),
          (e) =>
             WorkflowError.internal(
@@ -148,17 +147,21 @@ async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
 
       const publishResult = await fromPromise(
          DBOS.runStep(
-            () =>
-               publisher.publish("job.notification", {
-                  jobId: crypto.randomUUID(),
-                  timestamp: dayjs().toISOString(),
-                  type: NOTIFICATION_TYPES.BILLING_BENEFIT_GRANTED,
-                  status: "completed",
-                  message: `Benefícios concedidos para assinatura ${input.subscriptionId}.`,
-                  teamId: input.teamId,
-                  payload: { subscriptionId: input.subscriptionId, benefitIds },
-               } satisfies JobNotification),
-            { name: "publishGranted" },
+            async () => {
+               const publish = await billingSseEvents.publish(
+                  getBillingRedis(),
+                  { kind: "team", id: input.teamId },
+                  {
+                     type: "billing.benefit_granted",
+                     payload: {
+                        subscriptionId: input.subscriptionId,
+                        benefitIds,
+                     },
+                  },
+               );
+               if (publish.isErr()) throw publish.error;
+            },
+            { name: "publishBenefitGranted" },
          ),
          (e) =>
             WorkflowError.internal(

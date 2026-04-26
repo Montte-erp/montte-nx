@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.0 — 2026-04-26
+
+### Breaking
+- All customer-scoped endpoints now accept `externalId` instead of `customerId`. The internal HyprPay customer UUID is no longer exposed in the SDK — SaaS callers reference customers exclusively by the `externalId` they set at creation. Affected:
+  - `subscriptions.create({ externalId, items, couponCode? })`
+  - `subscriptions.list(externalId)`
+  - `usage.ingest({ externalId, meterId, quantity, ... })`
+  - `usage.list({ externalId, meterId? })`
+  - `benefits.check({ externalId, benefitId })`
+  - `benefits.list(externalId)`
+  - `customerPortal.createSession(externalId)`
+- Server handlers resolve `externalId → customer.id` internally. Returns 404 when `externalId` does not match a known customer.
+
+### Migration
+- Replace every `customerId: cus_xxx` with `externalId: yourId` in SDK calls.
+- Customers must be created with an `externalId` before they can be referenced (`customers.create({ externalId, name, email, ... })`).
+- Better Auth plugin: opt into org-level customers via `customerType: "organization"` and sync seat count from members via `seats.autoSyncFromMembers: true` (see SKILL.md).
+
 ## 0.2.0 — 2026-04-23
 
 ### Added

@@ -21,7 +21,7 @@ export const check = impl.check.handler(async ({ context, input }) => {
 
    const contactResult = await getContactByExternalId(
       context.db,
-      input.customerId,
+      input.externalId,
       teamId,
       "cliente",
    );
@@ -69,7 +69,7 @@ export const list = impl.list.handler(async ({ context, input }) => {
 
    const contactResult = await getContactByExternalId(
       context.db,
-      input.customerId,
+      input.externalId,
       teamId,
       "cliente",
    );

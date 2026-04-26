@@ -20,7 +20,7 @@ export const createSession = impl.createSession.handler(
 
       const contactResult = await getContactByExternalId(
          context.db,
-         input.customerId,
+         input.externalId,
          teamId,
          "cliente",
       );

@@ -3,7 +3,7 @@ import {
    createDefaultDashboard,
    createDefaultInsights,
 } from "@packages/analytics/seed-defaults";
-import { seedEmpresarialCategories } from "@core/database/repositories/categories-repository";
+import { seedClassificationDefaults } from "@modules/classification/seeds";
 import { getInsightById } from "@core/database/repositories/insight-repository";
 import {
    getOnboardingCounts,
@@ -84,11 +84,11 @@ async function runOnboardingCompletion({
    logger.info("Inserting teamMember");
    await insertTeamMember(db, teamId, userId);
 
-   logger.info("Seeding empresarial categories");
-   await seedEmpresarialCategories(db, teamId).match(
+   logger.info("Seeding classification defaults");
+   await seedClassificationDefaults(db, teamId).match(
       () => null,
       (e) => {
-         throw WebAppError.fromAppError(e);
+         throw e;
       },
    );
 
