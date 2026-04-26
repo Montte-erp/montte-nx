@@ -13,7 +13,6 @@ import {
 import {
    classificationDataSource,
    createEnqueuer,
-   getClassificationHyprpay,
    getClassificationPosthog,
    getClassificationRedis,
 } from "./context";
@@ -149,8 +148,8 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsWorkflowInput) {
    await DBOS.runStep(
       async () => {
          const result = await ingestUsageEvent({
-            hyprpayClient: getClassificationHyprpay(),
             db: classificationDataSource.client,
+            teamId: input.teamId,
             externalId: input.organizationId,
             eventName: CLASSIFICATION_USAGE_EVENTS.aiKeywordDerived,
             quantity: 1,

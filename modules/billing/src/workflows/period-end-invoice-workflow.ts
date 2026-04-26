@@ -25,7 +25,6 @@ import { billingSseEvents } from "../sse";
 import { BILLING_QUEUES } from "../constants";
 import {
    billingDataSource,
-   getBillingHyprpay,
    getBillingRedis,
    getBillingResendClient,
    createEnqueuer,
@@ -394,8 +393,8 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
                });
 
                const ingest = await ingestUsageEvent({
-                  hyprpayClient: getBillingHyprpay(),
                   db: billingDataSource.client,
+                  teamId: input.teamId,
                   externalId: input.organizationId,
                   eventName: TRANSACTIONAL_USAGE_EVENTS.emailSent,
                   quantity: 1,

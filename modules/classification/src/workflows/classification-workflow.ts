@@ -21,7 +21,6 @@ import {
 } from "../constants";
 import {
    classificationDataSource,
-   getClassificationHyprpay,
    getClassificationPosthog,
    getClassificationRedis,
 } from "./context";
@@ -334,8 +333,8 @@ async function classifyTransactionsBatchWorkflowFn(
       await DBOS.runStep(
          async () => {
             const result = await ingestUsageEvent({
-               hyprpayClient: getClassificationHyprpay(),
                db: classificationDataSource.client,
+               teamId: input.teamId,
                externalId: await resolveOrganizationId(input.teamId),
                eventName: CLASSIFICATION_USAGE_EVENTS.aiTransactionClassified,
                quantity: aiResults.length,

@@ -15,20 +15,20 @@ import { billingSseEvents } from "../sse";
 import { BILLING_QUEUES } from "../constants";
 import {
    billingDataSource,
-   getBillingHyprpay,
    getBillingRedis,
    getBillingResendClient,
    createEnqueuer,
 } from "./context";
 
 async function ingestEmailSent(
+   teamId: string,
    organizationId: string,
    idempotencyKey: string,
    properties: Record<string, unknown>,
 ) {
    const result = await ingestUsageEvent({
-      hyprpayClient: getBillingHyprpay(),
       db: billingDataSource.client,
+      teamId,
       externalId: organizationId,
       eventName: TRANSACTIONAL_USAGE_EVENTS.emailSent,
       quantity: 1,
@@ -90,6 +90,7 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
                      from: input.emailFrom,
                   });
                   await ingestEmailSent(
+                     input.teamId,
                      input.organizationId,
                      `email-trial-warning-${input.subscriptionId}`,
                      {
@@ -201,6 +202,7 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
                   from: input.emailFrom,
                });
                await ingestEmailSent(
+                  input.teamId,
                   input.organizationId,
                   `email-trial-expired-${input.subscriptionId}`,
                   {
