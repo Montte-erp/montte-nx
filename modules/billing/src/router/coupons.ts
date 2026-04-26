@@ -154,10 +154,49 @@ export const deactivate = couponByIdProcedure.handler(
 export const validate = protectedProcedure
    .input(validateCouponInputSchema)
    .handler(async ({ context, input }) => {
-      const result = await context.hyprpayClient.coupons.validate({
-         code: input.code,
-         priceId: input.priceId,
-      });
-      if (result.isErr()) throw WebAppError.internal("Falha ao validar cupom.");
-      return result.value;
+      const result = await fromPromise(
+         context.db.query.coupons.findFirst({
+            where: (f, { and: andFn, eq: eqFn, sql }) =>
+               andFn(
+                  eqFn(f.teamId, context.teamId),
+                  sql`lower(${f.code}) = lower(${input.code})`,
+               ),
+         }),
+         () => WebAppError.internal("Falha ao validar cupom."),
+      );
+      if (result.isErr()) throw result.error;
+      const coupon = result.value;
+      if (!coupon)
+         return { valid: false as const, reason: "not_found" as const };
+      if (!coupon.isActive)
+         return { valid: false as const, reason: "inactive" as const };
+      if (coupon.redeemBy && dayjs().isAfter(coupon.redeemBy))
+         return { valid: false as const, reason: "expired" as const };
+      if (coupon.maxUses != null && coupon.usedCount >= coupon.maxUses)
+         return { valid: false as const, reason: "max_uses_reached" as const };
+      if (
+         coupon.scope === "price" &&
+         input.priceId &&
+         coupon.priceId !== input.priceId
+      )
+         return {
+            valid: false as const,
+            reason: "price_scope_mismatch" as const,
+         };
+      return {
+         valid: true as const,
+         coupon: {
+            id: coupon.id,
+            code: coupon.code,
+            type: coupon.type,
+            amount: coupon.amount,
+            duration: coupon.duration,
+            durationMonths: coupon.durationMonths,
+            scope: coupon.scope,
+            priceId: coupon.priceId,
+            maxUses: coupon.maxUses,
+            usedCount: coupon.usedCount,
+            redeemBy: coupon.redeemBy ? coupon.redeemBy.toISOString() : null,
+         },
+      };
    });
