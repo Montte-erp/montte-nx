@@ -1,6 +1,88 @@
 import { oc } from "@orpc/contract";
 import { z } from "zod";
 
+const contactRow = z.object({
+   id: z.string().uuid(),
+   teamId: z.string().uuid(),
+   name: z.string(),
+   type: z.enum(["cliente", "fornecedor", "ambos"]),
+   email: z.string().nullable(),
+   phone: z.string().nullable(),
+   document: z.string().nullable(),
+   documentType: z.enum(["cpf", "cnpj"]).nullable(),
+   notes: z.string().nullable(),
+   source: z.enum(["manual", "asaas"]),
+   externalId: z.string().nullable(),
+   isArchived: z.boolean(),
+   createdAt: z.date(),
+   updatedAt: z.date(),
+});
+
+const contactStatsOutput = z.object({
+   totalIncome: z.string(),
+   totalExpense: z.string(),
+   firstTransactionDate: z.string().nullable(),
+});
+
+const contactTransactionsOutput = z.object({
+   items: z.array(z.unknown()),
+   total: z.number(),
+});
+
+const subscriptionRow = z.object({
+   id: z.string().uuid(),
+   teamId: z.string().uuid(),
+   contactId: z.string().uuid(),
+   startDate: z.string(),
+   endDate: z.string().nullable(),
+   notes: z.string().nullable(),
+   status: z.enum([
+      "active",
+      "trialing",
+      "incomplete",
+      "completed",
+      "cancelled",
+   ]),
+   externalId: z.string().nullable(),
+   couponId: z.string().uuid().nullable(),
+   trialEndsAt: z.date().nullable(),
+   currentPeriodStart: z.date().nullable(),
+   currentPeriodEnd: z.date().nullable(),
+   cancelAtPeriodEnd: z.boolean(),
+   canceledAt: z.date().nullable(),
+   createdAt: z.date(),
+   updatedAt: z.date(),
+});
+
+const subscriptionItemRow = z.object({
+   id: z.string().uuid(),
+   subscriptionId: z.string().uuid(),
+   priceId: z.string().uuid(),
+   teamId: z.string().uuid(),
+   quantity: z.number().int(),
+   negotiatedPrice: z.string().nullable(),
+   createdAt: z.date(),
+   updatedAt: z.date(),
+});
+
+const couponRow = z.object({
+   id: z.string().uuid(),
+   teamId: z.string().uuid(),
+   code: z.string(),
+   scope: z.enum(["team", "price"]),
+   priceId: z.string().uuid().nullable(),
+   type: z.enum(["percent", "fixed"]),
+   amount: z.string(),
+   duration: z.enum(["once", "repeating", "forever"]),
+   durationMonths: z.number().int().nullable(),
+   maxUses: z.number().int().nullable(),
+   usedCount: z.number().int(),
+   redeemBy: z.date().nullable(),
+   isActive: z.boolean(),
+   createdAt: z.date(),
+   updatedAt: z.date(),
+});
+
 export const contactByIdRef = z.union([
    z.object({ id: z.string().uuid() }),
    z.object({ externalId: z.string().min(1) }),
@@ -68,11 +150,17 @@ const createSubscriptionInput = z.union([
    }),
 ]);
 
+const subscriptionWithItems = subscriptionRow.extend({
+   items: z.array(subscriptionItemRow),
+});
+
 const servicesContract = {
    ingestUsage: oc
       .input(ingestUsageInput)
-      .output(z.object({ queued: z.boolean(), idempotencyKey: z.string() })),
-   createSubscription: oc.input(createSubscriptionInput).output(z.unknown()),
+      .output(z.object({ success: z.literal(true) })),
+   createSubscription: oc
+      .input(createSubscriptionInput)
+      .output(subscriptionWithItems),
    cancelSubscription: oc
       .input(
          z.object({
@@ -80,8 +168,10 @@ const servicesContract = {
             cancelAtPeriodEnd: z.boolean().default(false),
          }),
       )
-      .output(z.unknown()),
-   getContactSubscriptions: oc.input(contactFkRef).output(z.array(z.unknown())),
+      .output(subscriptionRow),
+   getContactSubscriptions: oc
+      .input(contactFkRef)
+      .output(z.array(subscriptionWithItems)),
    addItem: oc
       .input(
          z.object({
@@ -90,7 +180,7 @@ const servicesContract = {
             quantity: z.number().int().min(1).optional(),
          }),
       )
-      .output(z.unknown()),
+      .output(subscriptionItemRow),
    updateItem: oc
       .input(
          z.object({
@@ -99,7 +189,7 @@ const servicesContract = {
             negotiatedPrice: z.string().nullable().optional(),
          }),
       )
-      .output(z.unknown()),
+      .output(subscriptionItemRow),
    removeItem: oc
       .input(z.object({ itemId: z.string().uuid() }))
       .output(z.object({ success: z.boolean() })),
@@ -117,7 +207,7 @@ const contactsContract = {
             externalId: z.string().nullable().optional(),
          }),
       )
-      .output(z.unknown()),
+      .output(contactRow),
    getAll: oc
       .input(
          z
@@ -126,9 +216,9 @@ const contactsContract = {
             })
             .optional(),
       )
-      .output(z.array(z.unknown())),
-   getById: oc.input(contactByIdRef).output(z.unknown()),
-   getStats: oc.input(contactByIdRef).output(z.unknown()),
+      .output(z.array(contactRow)),
+   getById: oc.input(contactByIdRef).output(contactRow),
+   getStats: oc.input(contactByIdRef).output(contactStatsOutput),
    getTransactions: oc
       .input(
          z.union([
@@ -144,7 +234,7 @@ const contactsContract = {
             }),
          ]),
       )
-      .output(z.unknown()),
+      .output(contactTransactionsOutput),
    update: oc
       .input(
          z.union([
@@ -164,13 +254,13 @@ const contactsContract = {
             }),
          ]),
       )
-      .output(z.unknown()),
+      .output(contactRow),
    remove: oc.input(contactByIdRef).output(z.object({ success: z.boolean() })),
    bulkRemove: oc
       .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
       .output(z.object({ deleted: z.number() })),
-   archive: oc.input(contactByIdRef).output(z.unknown()),
-   reactivate: oc.input(contactByIdRef).output(z.unknown()),
+   archive: oc.input(contactByIdRef).output(contactRow),
+   reactivate: oc.input(contactByIdRef).output(contactRow),
 };
 
 const couponScope = z.enum(["team", "price"]);
@@ -218,13 +308,11 @@ const updateCouponInput = z.object({
 });
 
 const couponsContract = {
-   list: oc.input(z.void().optional()).output(z.array(z.unknown())),
-   get: oc.input(z.object({ id: z.string().uuid() })).output(z.unknown()),
-   create: oc.input(createCouponInput).output(z.unknown()),
-   update: oc.input(updateCouponInput).output(z.unknown()),
-   deactivate: oc
-      .input(z.object({ id: z.string().uuid() }))
-      .output(z.unknown()),
+   list: oc.input(z.void().optional()).output(z.array(couponRow)),
+   get: oc.input(z.object({ id: z.string().uuid() })).output(couponRow),
+   create: oc.input(createCouponInput).output(couponRow),
+   update: oc.input(updateCouponInput).output(couponRow),
+   deactivate: oc.input(z.object({ id: z.string().uuid() })).output(couponRow),
    validate: oc
       .input(
          z.object({
@@ -234,7 +322,22 @@ const couponsContract = {
       )
       .output(
          z.discriminatedUnion("valid", [
-            z.object({ valid: z.literal(true), coupon: z.unknown() }),
+            z.object({
+               valid: z.literal(true),
+               coupon: z.object({
+                  id: z.string().uuid(),
+                  code: z.string(),
+                  type: z.enum(["percent", "fixed"]),
+                  amount: z.string(),
+                  duration: z.enum(["once", "repeating", "forever"]),
+                  durationMonths: z.number().int().nullable(),
+                  scope: z.enum(["team", "price"]),
+                  priceId: z.string().uuid().nullable(),
+                  maxUses: z.number().int().nullable(),
+                  usedCount: z.number().int(),
+                  redeemBy: z.string().nullable(),
+               }),
+            }),
             z.object({
                valid: z.literal(false),
                reason: z.enum([
