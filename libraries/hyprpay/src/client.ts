@@ -52,8 +52,8 @@ export function createHyprPayClient(config: HyprPayClientConfig) {
    const { apiKey, baseUrl = DEFAULT_BASE_URL } = config;
 
    const link = new RPCLink({
-      url: `${baseUrl}/api/sdk/hyprpay`,
-      headers: { "sdk-api-key": apiKey },
+      url: `${baseUrl}/api/rpc/hyprpay`,
+      headers: { "x-api-key": apiKey },
    });
 
    const orpc: ContractRouterClient<typeof hyprpayContract> =
