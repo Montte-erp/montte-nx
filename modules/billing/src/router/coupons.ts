@@ -3,49 +3,9 @@ import { eq } from "drizzle-orm";
 import { err, fromPromise, ok } from "neverthrow";
 import { coupons } from "@core/database/schemas/coupons";
 import { WebAppError } from "@core/logging/errors";
-import { protectedProcedure } from "@core/orpc/server";
-import {
-   createCouponSchema,
-   getCouponInputSchema,
-   updateCouponInputSchema,
-   validateCouponInputSchema,
-} from "../contracts/coupons";
+import { billingImpl } from "./_implementer";
 
-const couponByIdProcedure = protectedProcedure
-   .input(getCouponInputSchema)
-   .use(async ({ context, next }, input) => {
-      const result = await fromPromise(
-         context.db.query.coupons.findFirst({
-            where: (f, { eq: eqFn }) => eqFn(f.id, input.id),
-         }),
-         () => WebAppError.internal("Falha ao verificar permissão."),
-      ).andThen((coupon) =>
-         !coupon || coupon.teamId !== context.teamId
-            ? err(WebAppError.notFound("Cupom não encontrado."))
-            : ok(coupon),
-      );
-      if (result.isErr()) throw result.error;
-      return next({ context: { coupon: result.value } });
-   });
-
-const couponByUpdateInputProcedure = protectedProcedure
-   .input(updateCouponInputSchema)
-   .use(async ({ context, next }, input) => {
-      const result = await fromPromise(
-         context.db.query.coupons.findFirst({
-            where: (f, { eq: eqFn }) => eqFn(f.id, input.id),
-         }),
-         () => WebAppError.internal("Falha ao verificar permissão."),
-      ).andThen((coupon) =>
-         !coupon || coupon.teamId !== context.teamId
-            ? err(WebAppError.notFound("Cupom não encontrado."))
-            : ok(coupon),
-      );
-      if (result.isErr()) throw result.error;
-      return next({ context: { coupon: result.value } });
-   });
-
-export const list = protectedProcedure.handler(async ({ context }) => {
+export const list = billingImpl.coupons.list.handler(async ({ context }) => {
    const result = await fromPromise(
       context.db.query.coupons.findMany({
          where: (f, { eq: eqFn }) => eqFn(f.teamId, context.teamId),
@@ -57,11 +17,25 @@ export const list = protectedProcedure.handler(async ({ context }) => {
    return result.value;
 });
 
-export const get = couponByIdProcedure.handler(({ context }) => context.coupon);
+export const get = billingImpl.coupons.get
+   .use(async ({ context, next }, input) => {
+      const result = await fromPromise(
+         context.db.query.coupons.findFirst({
+            where: (f, { eq: eqFn }) => eqFn(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).andThen((coupon) =>
+         !coupon || coupon.teamId !== context.teamId
+            ? err(WebAppError.notFound("Cupom não encontrado."))
+            : ok(coupon),
+      );
+      if (result.isErr()) throw result.error;
+      return next({ context: { coupon: result.value } });
+   })
+   .handler(({ context }) => context.coupon);
 
-export const create = protectedProcedure
-   .input(createCouponSchema)
-   .handler(async ({ context, input }) => {
+export const create = billingImpl.coupons.create.handler(
+   async ({ context, input }) => {
       const existing = await fromPromise(
          context.db.query.coupons.findFirst({
             where: (f, { and, eq: eqFn, sql }) =>
@@ -98,10 +72,25 @@ export const create = protectedProcedure
             "Falha ao criar cupom: insert retornou vazio.",
          );
       return result.value;
-   });
+   },
+);
 
-export const update = couponByUpdateInputProcedure.handler(
-   async ({ context, input }) => {
+export const update = billingImpl.coupons.update
+   .use(async ({ context, next }, input) => {
+      const result = await fromPromise(
+         context.db.query.coupons.findFirst({
+            where: (f, { eq: eqFn }) => eqFn(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).andThen((coupon) =>
+         !coupon || coupon.teamId !== context.teamId
+            ? err(WebAppError.notFound("Cupom não encontrado."))
+            : ok(coupon),
+      );
+      if (result.isErr()) throw result.error;
+      return next({ context: { coupon: result.value } });
+   })
+   .handler(async ({ context, input }) => {
       const { id, ...data } = input;
       const result = await fromPromise(
          context.db.transaction(async (tx) => {
@@ -126,11 +115,24 @@ export const update = couponByUpdateInputProcedure.handler(
             "Falha ao atualizar cupom: update retornou vazio.",
          );
       return result.value;
-   },
-);
+   });
 
-export const deactivate = couponByIdProcedure.handler(
-   async ({ context, input }) => {
+export const deactivate = billingImpl.coupons.deactivate
+   .use(async ({ context, next }, input) => {
+      const result = await fromPromise(
+         context.db.query.coupons.findFirst({
+            where: (f, { eq: eqFn }) => eqFn(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).andThen((coupon) =>
+         !coupon || coupon.teamId !== context.teamId
+            ? err(WebAppError.notFound("Cupom não encontrado."))
+            : ok(coupon),
+      );
+      if (result.isErr()) throw result.error;
+      return next({ context: { coupon: result.value } });
+   })
+   .handler(async ({ context, input }) => {
       const result = await fromPromise(
          context.db.transaction(async (tx) => {
             const [row] = await tx
@@ -148,12 +150,10 @@ export const deactivate = couponByIdProcedure.handler(
             "Falha ao desativar cupom: update retornou vazio.",
          );
       return result.value;
-   },
-);
+   });
 
-export const validate = protectedProcedure
-   .input(validateCouponInputSchema)
-   .handler(async ({ context, input }) => {
+export const validate = billingImpl.coupons.validate.handler(
+   async ({ context, input }) => {
       const result = await fromPromise(
          context.db.query.coupons.findFirst({
             where: (f, { and: andFn, eq: eqFn, sql }) =>
@@ -199,4 +199,5 @@ export const validate = protectedProcedure
             redeemBy: coupon.redeemBy ? coupon.redeemBy.toISOString() : null,
          },
       };
-   });
+   },
+);
