@@ -54,9 +54,9 @@ describe("classifyTransactionsBatch", () => {
       mock.onMessage(/tx-1/, {
          content: JSON.stringify({
             results: [
-               { id: "tx-1", categoryName: "Food", tagName: "Operations" },
-               { id: "tx-2", categoryName: "Fuel", tagName: null },
-               { id: "tx-3", categoryName: "Food", tagName: "Marketing" },
+               { id: "tx-1", categoryName: "Food" },
+               { id: "tx-2", categoryName: "Fuel" },
+               { id: "tx-3", categoryName: "Food" },
             ],
          }),
          systemFingerprint: "fp_test",
@@ -72,19 +72,15 @@ describe("classifyTransactionsBatch", () => {
             { id: "cat-food", name: "Food", keywords: null },
             { id: "cat-fuel", name: "Fuel", keywords: null },
          ],
-         [
-            { id: "tag-ops", name: "Operations", keywords: null },
-            { id: "tag-mkt", name: "Marketing", keywords: null },
-         ],
          makeObservability(),
       );
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
          expect(result.value).toEqual([
-            { transactionId: "tx-1", categoryId: "cat-food", tagId: "tag-ops" },
-            { transactionId: "tx-2", categoryId: "cat-fuel", tagId: null },
-            { transactionId: "tx-3", categoryId: "cat-food", tagId: "tag-mkt" },
+            { transactionId: "tx-1", categoryId: "cat-food" },
+            { transactionId: "tx-2", categoryId: "cat-fuel" },
+            { transactionId: "tx-3", categoryId: "cat-food" },
          ]);
       }
    });
@@ -93,8 +89,8 @@ describe("classifyTransactionsBatch", () => {
       mock.onMessage(/tx-1/, {
          content: JSON.stringify({
             results: [
-               { id: "tx-1", categoryName: "Food", tagName: null },
-               { id: "tx-3", categoryName: "Food", tagName: null },
+               { id: "tx-1", categoryName: "Food" },
+               { id: "tx-3", categoryName: "Food" },
             ],
          }),
          systemFingerprint: "fp_test",
@@ -107,7 +103,6 @@ describe("classifyTransactionsBatch", () => {
             { id: "tx-3", name: "C", type: "expense" },
          ],
          [{ id: "cat-food", name: "Food", keywords: null }],
-         [],
          makeObservability(),
       );
 
@@ -125,9 +120,9 @@ describe("classifyTransactionsBatch", () => {
       mock.onMessage(/tx-1/, {
          content: JSON.stringify({
             results: [
-               { id: "tx-1", categoryName: "Food", tagName: null },
-               { id: "tx-2", categoryName: "Unknown", tagName: null },
-               { id: "tx-3", categoryName: "Food", tagName: null },
+               { id: "tx-1", categoryName: "Food" },
+               { id: "tx-2", categoryName: "Unknown" },
+               { id: "tx-3", categoryName: "Food" },
             ],
          }),
          systemFingerprint: "fp_test",
@@ -140,7 +135,6 @@ describe("classifyTransactionsBatch", () => {
             { id: "tx-3", name: "C", type: "expense" },
          ],
          [{ id: "cat-food", name: "Food", keywords: null }],
-         [],
          makeObservability(),
       );
 
@@ -164,7 +158,6 @@ describe("classifyTransactionsBatch", () => {
       const result = await classifyTransactionsBatch(
          transactions,
          [{ id: "cat-food", name: "Food", keywords: null }],
-         [],
          makeObservability(),
       );
 
@@ -174,12 +167,12 @@ describe("classifyTransactionsBatch", () => {
       }
    });
 
-   it("resolves null tagId when LLM returns null tagName for some entries", async () => {
+   it("drops null categoryName entries silently", async () => {
       mock.onMessage(/tx-1/, {
          content: JSON.stringify({
             results: [
-               { id: "tx-1", categoryName: "Food", tagName: "Operations" },
-               { id: "tx-2", categoryName: "Food", tagName: null },
+               { id: "tx-1", categoryName: "Food" },
+               { id: "tx-2", categoryName: null },
             ],
          }),
          systemFingerprint: "fp_test",
@@ -191,15 +184,13 @@ describe("classifyTransactionsBatch", () => {
             { id: "tx-2", name: "B", type: "expense" },
          ],
          [{ id: "cat-food", name: "Food", keywords: null }],
-         [{ id: "tag-ops", name: "Operations", keywords: null }],
          makeObservability(),
       );
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
          expect(result.value).toEqual([
-            { transactionId: "tx-1", categoryId: "cat-food", tagId: "tag-ops" },
-            { transactionId: "tx-2", categoryId: "cat-food", tagId: null },
+            { transactionId: "tx-1", categoryId: "cat-food" },
          ]);
       }
    });

@@ -18,6 +18,24 @@ export const ssePublishSpy = vi.fn(
 
 export const posthogCaptureSpy = vi.fn();
 
+export const hyprpayUsageIngestSpy = vi.fn(
+   (input: {
+      customerId: string;
+      meterId: string;
+      quantity: number;
+      idempotencyKey?: string;
+      properties?: Record<string, unknown>;
+   }) =>
+      okAsync({
+         queued: true,
+         idempotencyKey: input.idempotencyKey ?? crypto.randomUUID(),
+      }),
+);
+
+const hyprpayClientStub = {
+   usage: { ingest: hyprpayUsageIngestSpy },
+};
+
 vi.mock("../../src/sse/events", async () => {
    return {
       classificationSseEvents: {
@@ -38,6 +56,6 @@ vi.mock("../../src/workflows/context", async (importOriginal) => {
       ...actual,
       getClassificationRedis: () => ({}),
       getClassificationPosthog: () => ({ capture: posthogCaptureSpy }),
-      getClassificationStripe: () => null,
+      getClassificationHyprpay: () => hyprpayClientStub,
    };
 });

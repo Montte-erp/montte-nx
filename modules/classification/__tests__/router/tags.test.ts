@@ -15,14 +15,6 @@ import { createTestContext } from "@core/orpc/testing/create-test-context";
 import { tags } from "@core/database/schemas/tags";
 import { makeTag } from "../helpers/classification-factories";
 
-const { enqueueDeriveKeywordsSpy } = vi.hoisted(() => ({
-   enqueueDeriveKeywordsSpy: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("../../src/workflows/derive-keywords-workflow", () => ({
-   enqueueDeriveKeywordsWorkflow: enqueueDeriveKeywordsSpy,
-}));
-
 vi.mock("@core/orpc/server", async () =>
    (await import("@core/orpc/testing/mock-server")).createMockServerModule(),
 );
@@ -44,7 +36,7 @@ beforeEach(() => {
 });
 
 describe("tags router", () => {
-   it("create inserts a tag and enqueues derive-keywords workflow", async () => {
+   it("create inserts a tag scoped to team", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const ctx = createTestContext(testDb.db, { teamId, organizationId });
 
@@ -62,16 +54,6 @@ describe("tags router", () => {
          .from(tags)
          .where(eq(tags.id, result.id));
       expect(persisted?.name).toBe("Operações");
-
-      expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(1);
-      const [, payload] = enqueueDeriveKeywordsSpy.mock.calls[0] ?? [];
-      expect(payload).toMatchObject({
-         entity: "tag",
-         tagId: result.id,
-         teamId,
-         organizationId,
-         name: "Operações",
-      });
    });
 
    it("update on cross-team tag throws NOT_FOUND", async () => {
@@ -91,36 +73,18 @@ describe("tags router", () => {
       );
    });
 
-   it("update enqueues derive-keywords when name changes and keywords not provided", async () => {
+   it("update changes name", async () => {
       const { teamId } = await seedTeam(testDb.db);
       const tag = await makeTag(testDb.db, teamId);
 
       const ctx = createTestContext(testDb.db, { teamId });
-      await call(
+      const result = await call(
          tagsRouter.update,
          { id: tag.id, name: "Novo Nome" },
          { context: ctx },
       );
 
-      expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(1);
-   });
-
-   it("update does NOT enqueue derive-keywords when keywords are provided", async () => {
-      const { teamId } = await seedTeam(testDb.db);
-      const tag = await makeTag(testDb.db, teamId);
-
-      const ctx = createTestContext(testDb.db, { teamId });
-      await call(
-         tagsRouter.update,
-         {
-            id: tag.id,
-            name: "Manual",
-            keywords: ["palavra1", "palavra2"],
-         },
-         { context: ctx },
-      );
-
-      expect(enqueueDeriveKeywordsSpy).not.toHaveBeenCalled();
+      expect(result.name).toBe("Novo Nome");
    });
 
    it("archive sets isArchived to true", async () => {
@@ -222,13 +186,10 @@ describe("tags router", () => {
       );
    });
 
-   it("getStats returns counts of active, archived, and total keywords", async () => {
+   it("getStats returns counts of active and archived", async () => {
       const { teamId } = await seedTeam(testDb.db);
-      await makeTag(testDb.db, teamId, {
-         name: "Active1",
-         keywords: ["a", "b"],
-      });
-      await makeTag(testDb.db, teamId, { name: "Active2", keywords: ["c"] });
+      await makeTag(testDb.db, teamId, { name: "Active1" });
+      await makeTag(testDb.db, teamId, { name: "Active2" });
       await makeTag(testDb.db, teamId, {
          name: "Archived1",
          isArchived: true,
@@ -240,10 +201,9 @@ describe("tags router", () => {
       });
       expect(result.active).toBe(2);
       expect(result.archived).toBe(1);
-      expect(result.totalKeywords).toBe(3);
    });
 
-   it("bulkCreate inserts all items and enqueues derive-keywords for each", async () => {
+   it("bulkCreate inserts all items", async () => {
       const { teamId } = await seedTeam(testDb.db);
       const ctx = createTestContext(testDb.db, { teamId });
 
@@ -255,7 +215,6 @@ describe("tags router", () => {
          { context: ctx },
       );
       expect(result).toHaveLength(3);
-      expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(3);
    });
 
    it("getAll returns paginated team tags", async () => {

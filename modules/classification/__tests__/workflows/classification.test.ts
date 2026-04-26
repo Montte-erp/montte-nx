@@ -97,11 +97,13 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(ssePublishSpy).not.toHaveBeenCalled();
    });
 
-   it("classifies all by keyword match — no LLM call, suggestedCategoryId set, SSE emitted", async () => {
+   it("classifies all by keyword match — no LLM call, suggestedCategoryId set, tag auto-resolved via category.dreGroupId", async () => {
       const { teamId } = await seedTeam(testDb.db);
+      const ops = await makeTag(testDb.db, teamId, { name: "Operacional" });
       const food = await makeCategory(testDb.db, teamId, {
          name: "Alimentação",
          keywords: ["uber eats", "burger", "ifood"],
+         dreGroupId: "Operacional",
       });
 
       const tx1 = await makeTransaction(testDb.db, teamId, {
@@ -125,9 +127,9 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(t1?.suggestedCategoryId).toBe(food.id);
       expect(t2?.suggestedCategoryId).toBe(food.id);
       expect(t3?.suggestedCategoryId).toBe(food.id);
-      expect(t1?.suggestedTagId).toBeNull();
-      expect(t2?.suggestedTagId).toBeNull();
-      expect(t3?.suggestedTagId).toBeNull();
+      expect(t1?.suggestedTagId).toBe(ops.id);
+      expect(t2?.suggestedTagId).toBe(ops.id);
+      expect(t3?.suggestedTagId).toBe(ops.id);
 
       expect(ssePublishSpy).toHaveBeenCalledTimes(3);
       expect(ssePublishSpy).toHaveBeenCalledWith(
@@ -137,18 +139,23 @@ describe("classifyTransactionsBatchWorkflow", () => {
             type: "classification.transaction_classified",
             payload: expect.objectContaining({
                categoryId: food.id,
-               tagId: null,
+               tagId: ops.id,
             }),
          }),
       );
    });
 
-   it("classifies all by AI when no keyword match — suggestedCategoryId + suggestedTagId set", async () => {
+   it("classifies by AI when no keyword match — tag resolved from category.dreGroupId, null when category has no group", async () => {
       const { teamId } = await seedTeam(testDb.db);
+      const ops = await makeTag(testDb.db, teamId, { name: "Operacional" });
       const food = await makeCategory(testDb.db, teamId, {
          name: "Alimentação",
+         dreGroupId: "Operacional",
       });
-      const ops = await makeTag(testDb.db, teamId, { name: "Operacional" });
+      const misc = await makeCategory(testDb.db, teamId, {
+         name: "Diversos",
+         dreGroupId: null,
+      });
 
       const tx1 = await makeTransaction(testDb.db, teamId, {
          name: "Loja Random A",
@@ -156,28 +163,12 @@ describe("classifyTransactionsBatchWorkflow", () => {
       const tx2 = await makeTransaction(testDb.db, teamId, {
          name: "Loja Random B",
       });
-      const tx3 = await makeTransaction(testDb.db, teamId, {
-         name: "Loja Random C",
-      });
 
       llmMock.onMessage(/Loja Random A/, {
          content: JSON.stringify({
             results: [
-               {
-                  id: tx1.id,
-                  categoryName: "Alimentação",
-                  tagName: "Operacional",
-               },
-               {
-                  id: tx2.id,
-                  categoryName: "Alimentação",
-                  tagName: "Operacional",
-               },
-               {
-                  id: tx3.id,
-                  categoryName: "Alimentação",
-                  tagName: null,
-               },
+               { id: tx1.id, categoryName: "Alimentação" },
+               { id: tx2.id, categoryName: "Diversos" },
             ],
          }),
          systemFingerprint: "fp_test",
@@ -185,32 +176,31 @@ describe("classifyTransactionsBatchWorkflow", () => {
 
       await classifyTransactionsBatchWorkflow({
          teamId,
-         transactionIds: [tx1.id, tx2.id, tx3.id],
+         transactionIds: [tx1.id, tx2.id],
       });
 
       const t1 = await getTransaction(tx1.id);
       const t2 = await getTransaction(tx2.id);
-      const t3 = await getTransaction(tx3.id);
       expect(t1?.suggestedCategoryId).toBe(food.id);
       expect(t1?.suggestedTagId).toBe(ops.id);
-      expect(t2?.suggestedCategoryId).toBe(food.id);
-      expect(t2?.suggestedTagId).toBe(ops.id);
-      expect(t3?.suggestedCategoryId).toBe(food.id);
-      expect(t3?.suggestedTagId).toBeNull();
+      expect(t2?.suggestedCategoryId).toBe(misc.id);
+      expect(t2?.suggestedTagId).toBeNull();
 
-      expect(ssePublishSpy).toHaveBeenCalledTimes(3);
+      expect(ssePublishSpy).toHaveBeenCalledTimes(2);
    });
 
-   it("mixes keyword + AI — 2 keyword-matched, 3 unmatched go to AI, 5 writes total", async () => {
+   it("mixes keyword + AI — keyword writes 2, AI writes 3, all 5 go through", async () => {
       const { teamId } = await seedTeam(testDb.db);
+      const ops = await makeTag(testDb.db, teamId, { name: "Operacional" });
       const food = await makeCategory(testDb.db, teamId, {
          name: "Alimentação",
          keywords: ["uber eats", "burger", "ifood"],
+         dreGroupId: "Operacional",
       });
       const fuel = await makeCategory(testDb.db, teamId, {
          name: "Combustível",
+         dreGroupId: "Operacional",
       });
-      const ops = await makeTag(testDb.db, teamId, { name: "Operacional" });
 
       const txKw1 = await makeTransaction(testDb.db, teamId, {
          name: "Uber Eats Burger",
@@ -231,21 +221,9 @@ describe("classifyTransactionsBatchWorkflow", () => {
       llmMock.onMessage(/Posto Shell Centro/, {
          content: JSON.stringify({
             results: [
-               {
-                  id: txAi1.id,
-                  categoryName: "Combustível",
-                  tagName: "Operacional",
-               },
-               {
-                  id: txAi2.id,
-                  categoryName: "Combustível",
-                  tagName: null,
-               },
-               {
-                  id: txAi3.id,
-                  categoryName: "Combustível",
-                  tagName: "Operacional",
-               },
+               { id: txAi1.id, categoryName: "Combustível" },
+               { id: txAi2.id, categoryName: "Combustível" },
+               { id: txAi3.id, categoryName: "Combustível" },
             ],
          }),
          systemFingerprint: "fp_test",
@@ -257,20 +235,11 @@ describe("classifyTransactionsBatchWorkflow", () => {
       });
 
       const k1 = await getTransaction(txKw1.id);
-      const k2 = await getTransaction(txKw2.id);
       const a1 = await getTransaction(txAi1.id);
-      const a2 = await getTransaction(txAi2.id);
-      const a3 = await getTransaction(txAi3.id);
       expect(k1?.suggestedCategoryId).toBe(food.id);
-      expect(k1?.suggestedTagId).toBeNull();
-      expect(k2?.suggestedCategoryId).toBe(food.id);
-      expect(k2?.suggestedTagId).toBeNull();
+      expect(k1?.suggestedTagId).toBe(ops.id);
       expect(a1?.suggestedCategoryId).toBe(fuel.id);
       expect(a1?.suggestedTagId).toBe(ops.id);
-      expect(a2?.suggestedCategoryId).toBe(fuel.id);
-      expect(a2?.suggestedTagId).toBeNull();
-      expect(a3?.suggestedCategoryId).toBe(fuel.id);
-      expect(a3?.suggestedTagId).toBe(ops.id);
 
       expect(ssePublishSpy).toHaveBeenCalledTimes(5);
    });
@@ -307,7 +276,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(ssePublishSpy).toHaveBeenCalledTimes(1);
    });
 
-   it("chunks AI calls when unmatched > 20 — makes 2 LLM calls for 25 unmatched", async () => {
+   it("chunks AI calls when unmatched > 20 — makes 2 distinct LLM calls for 25 unmatched", async () => {
       const { teamId } = await seedTeam(testDb.db);
       const food = await makeCategory(testDb.db, teamId, {
          name: "Alimentação",
@@ -343,7 +312,6 @@ describe("classifyTransactionsBatchWorkflow", () => {
                results: allIds.slice(0, 20).map((id) => ({
                   id,
                   categoryName: "Alimentação",
-                  tagName: null,
                })),
             }),
             systemFingerprint: "fp_test",
@@ -369,7 +337,6 @@ describe("classifyTransactionsBatchWorkflow", () => {
                results: allIds.slice(20).map((id) => ({
                   id,
                   categoryName: "Alimentação",
-                  tagName: null,
                })),
             }),
             systemFingerprint: "fp_test",
@@ -386,9 +353,6 @@ describe("classifyTransactionsBatchWorkflow", () => {
          (t) => t?.suggestedCategoryId === food.id,
       ).length;
       expect(setCount).toBe(25);
-      // tanstack-ai with outputSchema makes 2 HTTP calls per chat() — one to
-      // generate text, one for structured output. So 2 chunks = 4 requests.
-      // We assert at least 2 distinct user-message bodies (one per chunk).
       const reqs = llmMock.getRequests();
       const distinctUserMessages = new Set(
          reqs
@@ -427,8 +391,8 @@ describe("classifyTransactionsBatchWorkflow", () => {
       llmMock.onMessage(/Random A/, {
          content: JSON.stringify({
             results: [
-               { id: tx1.id, categoryName: "Alimentação", tagName: null },
-               { id: tx2.id, categoryName: "Alimentação", tagName: null },
+               { id: tx1.id, categoryName: "Alimentação" },
+               { id: tx2.id, categoryName: "Alimentação" },
             ],
          }),
          systemFingerprint: "fp_test",

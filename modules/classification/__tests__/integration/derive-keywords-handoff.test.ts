@@ -29,20 +29,10 @@ vi.mock("../../src/ai/derive-keywords", () => ({
    deriveKeywords: vi.fn(),
 }));
 
-vi.mock("@packages/events/credits", () => ({
-   enforceCreditBudget: vi.fn().mockResolvedValue(undefined),
+const { ssePublishSpy, hyprpayUsageIngestSpy } = vi.hoisted(() => ({
+   ssePublishSpy: vi.fn(),
+   hyprpayUsageIngestSpy: vi.fn(),
 }));
-
-vi.mock("@packages/events/ai", () => ({
-   emitAiKeywordDerived: vi.fn().mockResolvedValue(undefined),
-   emitAiTagKeywordDerived: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("@packages/events/emit", () => ({
-   createEmitFn: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
-}));
-
-const { ssePublishSpy } = vi.hoisted(() => ({ ssePublishSpy: vi.fn() }));
 
 vi.mock("../../src/sse/events", () => ({
    classificationSseEvents: {
@@ -62,9 +52,8 @@ vi.mock("../../src/workflows/context", async (importOriginal) => {
       ...actual,
       getClassificationRedis: () => ({}),
       getClassificationPosthog: () => ({ capture: vi.fn() }),
-      getClassificationStripe: () => null,
-      getClassificationPublisher: () => ({
-         publish: vi.fn().mockResolvedValue(undefined),
+      getClassificationHyprpay: () => ({
+         usage: { ingest: hyprpayUsageIngestSpy },
       }),
    };
 });
@@ -73,8 +62,7 @@ import { deriveKeywords } from "../../src/ai/derive-keywords";
 import { setupTestDb } from "@core/database/testing/setup-test-db";
 import { seedTeam } from "@core/database/testing/factories";
 import { categories } from "@core/database/schemas/categories";
-import { tags } from "@core/database/schemas/tags";
-import { makeCategory, makeTag } from "../helpers/classification-factories";
+import { makeCategory } from "../helpers/classification-factories";
 import {
    deriveKeywordsWorkflow,
    enqueueDeriveKeywordsWorkflow,
@@ -111,12 +99,15 @@ beforeEach(async () => {
             timestamp: new Date().toISOString(),
          }),
    );
+   hyprpayUsageIngestSpy.mockImplementation(() =>
+      okAsync({ queued: true, idempotencyKey: crypto.randomUUID() }),
+   );
 });
 
 const KEYWORDS = ["fast food", "restaurant", "burger", "delivery", "cafe"];
 
 describe("deriveKeywords handoff (pglite-backed integration)", () => {
-   it("category enqueue → workflow executes → DB write + SSE + billing emit", async () => {
+   it("category enqueue → workflow executes → DB write + SSE published", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const category = await makeCategory(testDb.db, teamId, {
          name: "Alimentação",
@@ -139,7 +130,6 @@ describe("deriveKeywords handoff (pglite-backed integration)", () => {
       };
 
       const input = {
-         entity: "category" as const,
          categoryId: category.id,
          teamId,
          organizationId,
@@ -180,52 +170,11 @@ describe("deriveKeywords handoff (pglite-backed integration)", () => {
          expect.objectContaining({
             type: "classification.keywords_derived",
             payload: expect.objectContaining({
-               entity: "category",
-               entityId: category.id,
-               entityName: "Alimentação",
+               categoryId: category.id,
+               categoryName: "Alimentação",
                count: KEYWORDS.length,
             }),
          }),
       );
-
-      const { emitAiKeywordDerived } = await import("@packages/events/ai");
-      expect(emitAiKeywordDerived).toHaveBeenCalledTimes(1);
-   }, 30_000);
-
-   it("tag enqueue → workflow executes → DB write + SSE + tag billing emit", async () => {
-      const { teamId, organizationId } = await seedTeam(testDb.db);
-      const tag = await makeTag(testDb.db, teamId, { name: "Marketing" });
-
-      vi.mocked(deriveKeywords).mockReturnValue(
-         Promise.resolve(ok(KEYWORDS)) as unknown as ReturnType<
-            typeof deriveKeywords
-         >,
-      );
-
-      const fakeClient = { enqueue: vi.fn(async () => undefined) };
-      const input = {
-         entity: "tag" as const,
-         tagId: tag.id,
-         teamId,
-         organizationId,
-         name: "Marketing",
-         description: "Centro de custo",
-      };
-
-      // oxlint-ignore no-explicit-any
-      await enqueueDeriveKeywordsWorkflow(fakeClient as any, input);
-      expect(fakeClient.enqueue).toHaveBeenCalledTimes(1);
-
-      await deriveKeywordsWorkflow(input);
-
-      const [updated] = await testDb.db
-         .select()
-         .from(tags)
-         .where(eq(tags.id, tag.id));
-      expect(updated?.keywords).toEqual(KEYWORDS);
-
-      expect(ssePublishSpy).toHaveBeenCalledTimes(1);
-      const { emitAiTagKeywordDerived } = await import("@packages/events/ai");
-      expect(emitAiTagKeywordDerived).toHaveBeenCalledTimes(1);
    }, 30_000);
 });

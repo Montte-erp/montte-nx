@@ -71,7 +71,6 @@ describe("categories router", () => {
       expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(1);
       const [, payload] = enqueueDeriveKeywordsSpy.mock.calls[0] ?? [];
       expect(payload).toMatchObject({
-         entity: "category",
          categoryId: result.id,
          teamId,
          organizationId,
@@ -324,7 +323,6 @@ describe("categories router", () => {
       expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(1);
       const [, payload] = enqueueDeriveKeywordsSpy.mock.calls[0] ?? [];
       expect(payload).toMatchObject({
-         entity: "category",
          categoryId: cat.id,
       });
    });

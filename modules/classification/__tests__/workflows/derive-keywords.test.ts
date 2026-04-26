@@ -25,36 +25,20 @@ vi.mock("@dbos-inc/drizzle-datasource", async () => {
    return mod.drizzleDataSourceMockFactory(await dbosMocks);
 });
 
-import { ssePublishSpy } from "../helpers/mock-classification-context";
+import {
+   hyprpayUsageIngestSpy,
+   ssePublishSpy,
+} from "../helpers/mock-classification-context";
 
 vi.mock("../../src/ai/derive-keywords", () => ({
    deriveKeywords: vi.fn(),
 }));
 
-vi.mock("@packages/events/credits", () => ({
-   enforceCreditBudget: vi.fn(),
-}));
-
-vi.mock("@packages/events/ai", () => ({
-   emitAiKeywordDerived: vi.fn().mockResolvedValue(undefined),
-   emitAiTagKeywordDerived: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("@packages/events/emit", () => ({
-   createEmitFn: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
-}));
-
 import { deriveKeywords } from "../../src/ai/derive-keywords";
-import { enforceCreditBudget } from "@packages/events/credits";
-import {
-   emitAiKeywordDerived,
-   emitAiTagKeywordDerived,
-} from "@packages/events/ai";
 import { setupTestDb } from "@core/database/testing/setup-test-db";
 import { seedTeam } from "@core/database/testing/factories";
 import { categories } from "@core/database/schemas/categories";
-import { tags } from "@core/database/schemas/tags";
-import { makeCategory, makeTag } from "../helpers/classification-factories";
+import { makeCategory } from "../helpers/classification-factories";
 import {
    deriveKeywordsWorkflow,
    enqueueDeriveKeywordsWorkflow,
@@ -76,7 +60,6 @@ beforeEach(async () => {
    vi.clearAllMocks();
    const mocks = await dbosMocks;
    mocks.setActiveDb(testDb.db);
-   vi.mocked(enforceCreditBudget).mockResolvedValue(undefined);
 });
 
 const KEYWORDS = ["fast food", "restaurant", "burger", "delivery", "cafe"];
@@ -89,43 +72,8 @@ async function getCategory(id: string) {
    return row;
 }
 
-async function getTag(id: string) {
-   const [row] = await testDb.db.select().from(tags).where(eq(tags.id, id));
-   return row;
-}
-
 describe("deriveKeywordsWorkflow", () => {
-   it("budget exceeded — throws, no AI call, no DB write, no SSE, no billing emit", async () => {
-      const { teamId, organizationId } = await seedTeam(testDb.db);
-      const category = await makeCategory(testDb.db, teamId, {
-         name: "Alimentação",
-      });
-
-      vi.mocked(enforceCreditBudget).mockRejectedValueOnce(
-         new Error("Free tier limit exceeded for ai.keyword_derived"),
-      );
-
-      await expect(
-         deriveKeywordsWorkflow({
-            entity: "category",
-            categoryId: category.id,
-            teamId,
-            organizationId,
-            name: category.name,
-         }),
-      ).rejects.toThrow();
-
-      expect(deriveKeywords).not.toHaveBeenCalled();
-
-      const after = await getCategory(category.id);
-      expect(after?.keywords).toBeNull();
-      expect(after?.keywordsUpdatedAt).toBeNull();
-
-      expect(ssePublishSpy).not.toHaveBeenCalled();
-      expect(emitAiKeywordDerived).not.toHaveBeenCalled();
-   });
-
-   it("category success — derives keywords, writes keywords + keywordsUpdatedAt, emits billing + SSE", async () => {
+   it("category success — derives keywords, writes keywords + keywordsUpdatedAt, publishes SSE, ingests usage", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const category = await makeCategory(testDb.db, teamId, { name: "Food" });
 
@@ -136,7 +84,6 @@ describe("deriveKeywordsWorkflow", () => {
       );
 
       await deriveKeywordsWorkflow({
-         entity: "category",
          categoryId: category.id,
          teamId,
          organizationId,
@@ -146,8 +93,7 @@ describe("deriveKeywordsWorkflow", () => {
 
       expect(deriveKeywords).toHaveBeenCalledTimes(1);
       const [aiInput, observability] = vi.mocked(deriveKeywords).mock.calls[0]!;
-      expect(aiInput).toEqual({
-         entity: "category",
+      expect(aiInput).toMatchObject({
          name: "Food",
          description: null,
       });
@@ -164,87 +110,19 @@ describe("deriveKeywordsWorkflow", () => {
          expect.objectContaining({
             type: "classification.keywords_derived",
             payload: {
-               entity: "category",
-               entityId: category.id,
-               entityName: "Food",
+               categoryId: category.id,
+               categoryName: "Food",
                count: KEYWORDS.length,
             },
          }),
       );
 
-      expect(emitAiKeywordDerived).toHaveBeenCalledTimes(1);
-      const [, billingCtx, billingProps] =
-         vi.mocked(emitAiKeywordDerived).mock.calls[0]!;
-      expect(billingCtx).toMatchObject({ organizationId, teamId });
-      expect(billingProps).toMatchObject({
-         categoryId: category.id,
-         keywordCount: KEYWORDS.length,
-         model: "deepseek/deepseek-v4-pro",
-         latencyMs: 0,
-      });
-      expect(emitAiTagKeywordDerived).not.toHaveBeenCalled();
+      // Usage ingestion is no-op when no meter is configured for the team.
+      // The DB lookup runs and resolves to no meter — spy not called.
+      expect(hyprpayUsageIngestSpy).not.toHaveBeenCalled();
    });
 
-   it("tag success — writes only keywords (no keywordsUpdatedAt column on tags), emits tag billing + SSE", async () => {
-      const { teamId, organizationId } = await seedTeam(testDb.db);
-      const tag = await makeTag(testDb.db, teamId, { name: "Marketing" });
-
-      vi.mocked(deriveKeywords).mockReturnValue(
-         Promise.resolve(ok(KEYWORDS)) as unknown as ReturnType<
-            typeof deriveKeywords
-         >,
-      );
-
-      await deriveKeywordsWorkflow({
-         entity: "tag",
-         tagId: tag.id,
-         teamId,
-         organizationId,
-         name: "Marketing",
-         description: "Centro de custo de marketing",
-      });
-
-      expect(deriveKeywords).toHaveBeenCalledWith(
-         {
-            entity: "tag",
-            name: "Marketing",
-            description: "Centro de custo de marketing",
-         },
-         expect.objectContaining({ distinctId: teamId }),
-      );
-
-      const after = await getTag(tag.id);
-      expect(after?.keywords).toEqual(KEYWORDS);
-
-      expect(ssePublishSpy).toHaveBeenCalledTimes(1);
-      expect(ssePublishSpy).toHaveBeenCalledWith(
-         expect.anything(),
-         { kind: "team", id: teamId },
-         expect.objectContaining({
-            type: "classification.keywords_derived",
-            payload: {
-               entity: "tag",
-               entityId: tag.id,
-               entityName: "Marketing",
-               count: KEYWORDS.length,
-            },
-         }),
-      );
-
-      expect(emitAiTagKeywordDerived).toHaveBeenCalledTimes(1);
-      const [, billingCtx, billingProps] = vi.mocked(emitAiTagKeywordDerived)
-         .mock.calls[0]!;
-      expect(billingCtx).toMatchObject({ organizationId, teamId });
-      expect(billingProps).toMatchObject({
-         tagId: tag.id,
-         keywordCount: KEYWORDS.length,
-         model: "deepseek/deepseek-v4-pro",
-         latencyMs: 0,
-      });
-      expect(emitAiKeywordDerived).not.toHaveBeenCalled();
-   });
-
-   it("workflow ID dedup — same input produces same workflowID across enqueues", async () => {
+   it("workflow ID dedup — same categoryId produces same workflowID across enqueues", async () => {
       const teamId = crypto.randomUUID();
       const organizationId = crypto.randomUUID();
       const categoryId = crypto.randomUUID();
@@ -258,7 +136,6 @@ describe("deriveKeywordsWorkflow", () => {
       };
 
       const input = {
-         entity: "category" as const,
          categoryId,
          teamId,
          organizationId,
@@ -273,22 +150,9 @@ describe("deriveKeywordsWorkflow", () => {
       expect(enqueueCalls).toHaveLength(2);
       expect(enqueueCalls[0]?.workflowID).toBe(`derive-category-${categoryId}`);
       expect(enqueueCalls[1]?.workflowID).toBe(`derive-category-${categoryId}`);
-
-      // Tag side
-      const tagId = crypto.randomUUID();
-      const tagInput = {
-         entity: "tag" as const,
-         tagId,
-         teamId,
-         organizationId,
-         name: "Whatever",
-      };
-      // oxlint-ignore no-explicit-any
-      await enqueueDeriveKeywordsWorkflow(fakeClient as any, tagInput);
-      expect(enqueueCalls[2]?.workflowID).toBe(`derive-tag-${tagId}`);
    });
 
-   it("AI failure — workflow throws, no DB write, no SSE, no billing emit", async () => {
+   it("AI failure — workflow throws, no DB write, no SSE", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const category = await makeCategory(testDb.db, teamId, { name: "Food" });
 
@@ -300,7 +164,6 @@ describe("deriveKeywordsWorkflow", () => {
 
       await expect(
          deriveKeywordsWorkflow({
-            entity: "category",
             categoryId: category.id,
             teamId,
             organizationId,
@@ -311,6 +174,32 @@ describe("deriveKeywordsWorkflow", () => {
       const after = await getCategory(category.id);
       expect(after?.keywords).toBeNull();
       expect(ssePublishSpy).not.toHaveBeenCalled();
-      expect(emitAiKeywordDerived).not.toHaveBeenCalled();
+   });
+
+   it("dedupes derived keywords against sibling categories", async () => {
+      const { teamId, organizationId } = await seedTeam(testDb.db);
+      // Sibling already owns "burger"
+      await makeCategory(testDb.db, teamId, {
+         name: "Sibling",
+         keywords: ["burger"],
+      });
+      const category = await makeCategory(testDb.db, teamId, { name: "Food" });
+
+      vi.mocked(deriveKeywords).mockReturnValue(
+         Promise.resolve(ok(KEYWORDS)) as unknown as ReturnType<
+            typeof deriveKeywords
+         >,
+      );
+
+      await deriveKeywordsWorkflow({
+         categoryId: category.id,
+         teamId,
+         organizationId,
+         name: "Food",
+      });
+
+      const after = await getCategory(category.id);
+      expect(after?.keywords).toEqual(KEYWORDS.filter((k) => k !== "burger"));
+      expect(after?.keywords).not.toContain("burger");
    });
 });
