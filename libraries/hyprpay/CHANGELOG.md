@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1 — 2026-04-26
+
+### Changed
+- **Contract output schemas tightened** — `z.unknown()` outputs replaced with hand-rolled row schemas across `services`, `contacts`, and `coupons` namespaces. SDK consumers now receive typed responses (full contact / subscription / subscription-item / coupon rows). Schemas live inline in `libraries/hyprpay/src/contract.ts`; libraries cannot import `@core/database`, so the row literals shadow the Drizzle row types.
+- **Contract input schemas aligned with handler reality** — `services.cancelSubscription`, `services.updateItem`, `services.removeItem` now key on `{ id }` (matches handler), not `{ subscriptionId }` / `{ itemId }`. `services.createSubscription` drops the unused `externalId` branch and `couponCode` field. `services.ingestUsage` exposes the real meter event shape (`{ teamId, meterId, contactId, quantity, idempotencyKey, properties }`). `coupons.create` and `coupons.update` move from `z.unknown()` to real Zod inputs.
+
 ## 0.4.0 — 2026-04-26
 
 ### Breaking
