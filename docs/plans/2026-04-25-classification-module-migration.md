@@ -1457,14 +1457,16 @@ git commit -m "feat(classification): classificationWorkflow consolidating catego
 - Create: `modules/classification/src/workflows/derive-keywords-workflow.ts`
 - Create: `modules/classification/__tests__/workflows/derive-keywords.test.ts`
 
+**SSE / notifications redesign (post Task 9):** replace the old `getClassificationPublisher`/`notify("started"/"completed"/"failed")` job notifications with `classificationSseEvents.publish` from `@modules/classification/sse/events`. Single SSE event on success: `{ type: "classification.keywords_derived", payload: { entity, entityId, entityName, count } }`. Failure events skipped (the workflow throws — DBOS already handles retry surfacing). Budget-exceeded failures don't publish either (no point — UI doesn't need to surface budget gates per workflow). The billing event emit (`emitAiKeywordDerived` / `emitAiTagKeywordDerived` via `@packages/events`) stays — that's credit-tracking, distinct from realtime UI.
+
 **Step 11.1 — Write failing test**
 
-Mirrors Task 10's harness. Cases:
-1. Budget exceeded → publishes failed notification, no AI call.
-2. Category entity → calls `deriveKeywords({ entity: "category" })` + writes `categories.keywords` + emits `ai.keyword_derived`.
-3. Tag entity → calls `deriveKeywords({ entity: "tag" })` + writes `tags.keywords` + emits `ai.tag_keyword_derived`.
+Mirrors Task 10's harness — uses `mock-classification-context.ts` (already created with `ssePublishSpy`). Cases:
+1. Budget exceeded → workflow throws, no AI call, no SSE publish, no DB write.
+2. Category entity → calls `deriveKeywords({ entity: "category" })` + writes `categories.keywords` + emits one `classification.keywords_derived` SSE event with `entity: "category"`, billing event also fired.
+3. Tag entity → calls `deriveKeywords({ entity: "tag" })` + writes `tags.keywords` + emits one `classification.keywords_derived` SSE event with `entity: "tag"`, billing event also fired.
 
-Use `vi.mock("../../src/ai/derive-keywords", () => ({ deriveKeywords: vi.fn() }))`. Mock `enforceCreditBudget` from `@packages/events/credits`.
+Use `vi.mock("../../src/ai/derive-keywords", () => ({ deriveKeywords: vi.fn() }))`. Mock `enforceCreditBudget` from `@packages/events/credits`. Mock the billing emit functions if they hit Stripe/PostHog at runtime.
 
 **Step 11.2 — Run (must fail)**
 
@@ -1486,12 +1488,11 @@ export type DeriveKeywordsWorkflowInput =
 ```
 
 Body:
-1. notify started.
-2. `enforceCreditBudget` → event `"ai.keyword_derived"` for category, `"ai.tag_keyword_derived"` for tag.
-3. `DBOS.runStep("deriveKeywords", () => deriveKeywords({ entity, name, description }, observability))`.
-4. `classificationDataSource.runTransaction` updates `categories.keywords` or `tags.keywords` + `keywordsUpdatedAt = now()`.
-5. `DBOS.runStep("emitBilling")` calling `emitAiKeywordDerived` or `emitAiTagKeywordDerived` with createEmitFn.
-6. notify completed with `payload: { entity, count, [entity]Id }`.
+1. `enforceCreditBudget` → event `"ai.keyword_derived"` for category, `"ai.tag_keyword_derived"` for tag. (Names from `@packages/events`; SSE event names are the new `classification.*` namespace and live separately in `@core/sse`.)
+2. `DBOS.runStep("deriveKeywords", () => deriveKeywords({ entity, name, description }, observability))`.
+3. `classificationDataSource.runTransaction` updates `categories.keywords` or `tags.keywords` + `keywordsUpdatedAt = now()` (only categories has the timestamp column today; tags may need a similar field added — check schema before assuming).
+4. `DBOS.runStep("emitBilling")` calling `emitAiKeywordDerived` or `emitAiTagKeywordDerived` with createEmitFn.
+5. `DBOS.runStep("emitSse")` calling `classificationSseEvents.publish(getClassificationRedis(), { kind: "team", id: teamId }, { type: "classification.keywords_derived", payload: { entity, entityId, entityName: name, count: keywords.length } })`. SSE publish errors logged but don't fail the workflow.
 
 Emit factory pulls posthog/redis/stripeClient from context store getters.
 
