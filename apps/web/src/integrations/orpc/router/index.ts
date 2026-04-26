@@ -6,7 +6,7 @@ import * as bankAccountsRouter from "./bank-accounts";
 import * as billingRouter from "@modules/billing/router/billing";
 import * as categoriesRouter from "@modules/classification/router/categories";
 import * as contactSettingsRouter from "./contact-settings";
-import * as contactsRouter from "./contacts";
+import * as contactsRouter from "@modules/billing/router/contacts";
 import * as couponsRouter from "@modules/billing/router/coupons";
 import * as creditCardsRouter from "./credit-cards";
 import * as dashboardsRouter from "./dashboards";
