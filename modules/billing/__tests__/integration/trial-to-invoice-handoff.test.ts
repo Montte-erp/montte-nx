@@ -44,7 +44,7 @@ import {
 } from "../helpers/billing-factories";
 import { createHyprpayMock } from "../helpers/hyprpay-mock";
 
-import * as servicesRouter from "../../src/router/services";
+import * as subscriptionsRouter from "../../src/router/subscriptions";
 import { trialExpiryWorkflow } from "../../src/workflows/trial-expiry-workflow";
 import { periodEndInvoiceWorkflow } from "../../src/workflows/period-end-invoice-workflow";
 
@@ -98,7 +98,7 @@ describe("trial → invoice handoff (E2E time-mocked)", () => {
       const trialEndsAt = T0.add(7, "day").toISOString();
 
       const sub = await call(
-         servicesRouter.createSubscription,
+         subscriptionsRouter.createSubscription,
          {
             contactId: contact.id,
             startDate: T0.format("YYYY-MM-DD"),

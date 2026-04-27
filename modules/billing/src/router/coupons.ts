@@ -1,11 +1,24 @@
 import dayjs from "dayjs";
 import { eq } from "drizzle-orm";
 import { err, fromPromise, ok } from "neverthrow";
+import { billingContract } from "@montte/hyprpay/contract";
+import { implementerInternal } from "@orpc/server";
 import { coupons } from "@core/database/schemas/coupons";
 import { WebAppError } from "@core/logging/errors";
-import { billingImpl } from "./_implementer";
+import { protectedProcedure } from "@core/orpc/server";
+import type {
+   ORPCContext,
+   ORPCContextWithOrganization,
+} from "@core/orpc/server";
 
-export const list = billingImpl.coupons.list.handler(async ({ context }) => {
+const def = protectedProcedure["~orpc"];
+const impl = implementerInternal<
+   typeof billingContract.coupons,
+   ORPCContext,
+   ORPCContextWithOrganization
+>(billingContract.coupons, def.config, [...def.middlewares]);
+
+export const list = impl.list.handler(async ({ context }) => {
    const result = await fromPromise(
       context.db.query.coupons.findMany({
          where: (f, { eq: eqFn }) => eqFn(f.teamId, context.teamId),
@@ -17,7 +30,7 @@ export const list = billingImpl.coupons.list.handler(async ({ context }) => {
    return result.value;
 });
 
-export const get = billingImpl.coupons.get
+export const get = impl.get
    .use(async ({ context, next }, input) => {
       const result = await fromPromise(
          context.db.query.coupons.findFirst({
@@ -34,48 +47,46 @@ export const get = billingImpl.coupons.get
    })
    .handler(({ context }) => context.coupon);
 
-export const create = billingImpl.coupons.create.handler(
-   async ({ context, input }) => {
-      const existing = await fromPromise(
-         context.db.query.coupons.findFirst({
-            where: (f, { and, eq: eqFn, sql }) =>
-               and(
-                  eqFn(f.teamId, context.teamId),
-                  sql`lower(${f.code}) = lower(${input.code})`,
-               ),
-         }),
-         () => WebAppError.internal("Falha ao verificar cupom existente."),
-      );
-      if (existing.isErr()) throw existing.error;
-      if (existing.value)
-         throw WebAppError.conflict("Já existe um cupom com esse código.");
+export const create = impl.create.handler(async ({ context, input }) => {
+   const existing = await fromPromise(
+      context.db.query.coupons.findFirst({
+         where: (f, { and, eq: eqFn, sql }) =>
+            and(
+               eqFn(f.teamId, context.teamId),
+               sql`lower(${f.code}) = lower(${input.code})`,
+            ),
+      }),
+      () => WebAppError.internal("Falha ao verificar cupom existente."),
+   );
+   if (existing.isErr()) throw existing.error;
+   if (existing.value)
+      throw WebAppError.conflict("Já existe um cupom com esse código.");
 
-      const result = await fromPromise(
-         context.db.transaction(async (tx) => {
-            const [row] = await tx
-               .insert(coupons)
-               .values({
-                  ...input,
-                  teamId: context.teamId,
-                  redeemBy: input.redeemBy
-                     ? dayjs(input.redeemBy).toDate()
-                     : undefined,
-               })
-               .returning();
-            return row;
-         }),
-         () => WebAppError.internal("Falha ao criar cupom."),
+   const result = await fromPromise(
+      context.db.transaction(async (tx) => {
+         const [row] = await tx
+            .insert(coupons)
+            .values({
+               ...input,
+               teamId: context.teamId,
+               redeemBy: input.redeemBy
+                  ? dayjs(input.redeemBy).toDate()
+                  : undefined,
+            })
+            .returning();
+         return row;
+      }),
+      () => WebAppError.internal("Falha ao criar cupom."),
+   );
+   if (result.isErr()) throw result.error;
+   if (!result.value)
+      throw WebAppError.internal(
+         "Falha ao criar cupom: insert retornou vazio.",
       );
-      if (result.isErr()) throw result.error;
-      if (!result.value)
-         throw WebAppError.internal(
-            "Falha ao criar cupom: insert retornou vazio.",
-         );
-      return result.value;
-   },
-);
+   return result.value;
+});
 
-export const update = billingImpl.coupons.update
+export const update = impl.update
    .use(async ({ context, next }, input) => {
       const result = await fromPromise(
          context.db.query.coupons.findFirst({
@@ -117,7 +128,7 @@ export const update = billingImpl.coupons.update
       return result.value;
    });
 
-export const deactivate = billingImpl.coupons.deactivate
+export const deactivate = impl.deactivate
    .use(async ({ context, next }, input) => {
       const result = await fromPromise(
          context.db.query.coupons.findFirst({
@@ -152,52 +163,49 @@ export const deactivate = billingImpl.coupons.deactivate
       return result.value;
    });
 
-export const validate = billingImpl.coupons.validate.handler(
-   async ({ context, input }) => {
-      const result = await fromPromise(
-         context.db.query.coupons.findFirst({
-            where: (f, { and: andFn, eq: eqFn, sql }) =>
-               andFn(
-                  eqFn(f.teamId, context.teamId),
-                  sql`lower(${f.code}) = lower(${input.code})`,
-               ),
-         }),
-         () => WebAppError.internal("Falha ao validar cupom."),
-      );
-      if (result.isErr()) throw result.error;
-      const coupon = result.value;
-      if (!coupon)
-         return { valid: false as const, reason: "not_found" as const };
-      if (!coupon.isActive)
-         return { valid: false as const, reason: "inactive" as const };
-      if (coupon.redeemBy && dayjs().isAfter(coupon.redeemBy))
-         return { valid: false as const, reason: "expired" as const };
-      if (coupon.maxUses != null && coupon.usedCount >= coupon.maxUses)
-         return { valid: false as const, reason: "max_uses_reached" as const };
-      if (
-         coupon.scope === "price" &&
-         input.priceId &&
-         coupon.priceId !== input.priceId
-      )
-         return {
-            valid: false as const,
-            reason: "price_scope_mismatch" as const,
-         };
+export const validate = impl.validate.handler(async ({ context, input }) => {
+   const result = await fromPromise(
+      context.db.query.coupons.findFirst({
+         where: (f, { and: andFn, eq: eqFn, sql }) =>
+            andFn(
+               eqFn(f.teamId, context.teamId),
+               sql`lower(${f.code}) = lower(${input.code})`,
+            ),
+      }),
+      () => WebAppError.internal("Falha ao validar cupom."),
+   );
+   if (result.isErr()) throw result.error;
+   const coupon = result.value;
+   if (!coupon) return { valid: false as const, reason: "not_found" as const };
+   if (!coupon.isActive)
+      return { valid: false as const, reason: "inactive" as const };
+   if (coupon.redeemBy && dayjs().isAfter(coupon.redeemBy))
+      return { valid: false as const, reason: "expired" as const };
+   if (coupon.maxUses != null && coupon.usedCount >= coupon.maxUses)
+      return { valid: false as const, reason: "max_uses_reached" as const };
+   if (
+      coupon.scope === "price" &&
+      input.priceId &&
+      coupon.priceId !== input.priceId
+   )
       return {
-         valid: true as const,
-         coupon: {
-            id: coupon.id,
-            code: coupon.code,
-            type: coupon.type,
-            amount: coupon.amount,
-            duration: coupon.duration,
-            durationMonths: coupon.durationMonths,
-            scope: coupon.scope,
-            priceId: coupon.priceId,
-            maxUses: coupon.maxUses,
-            usedCount: coupon.usedCount,
-            redeemBy: coupon.redeemBy ? coupon.redeemBy.toISOString() : null,
-         },
+         valid: false as const,
+         reason: "price_scope_mismatch" as const,
       };
-   },
-);
+   return {
+      valid: true as const,
+      coupon: {
+         id: coupon.id,
+         code: coupon.code,
+         type: coupon.type,
+         amount: coupon.amount,
+         duration: coupon.duration,
+         durationMonths: coupon.durationMonths,
+         scope: coupon.scope,
+         priceId: coupon.priceId,
+         maxUses: coupon.maxUses,
+         usedCount: coupon.usedCount,
+         redeemBy: coupon.redeemBy ? coupon.redeemBy.toISOString() : null,
+      },
+   };
+});

@@ -18,7 +18,7 @@ import { RefreshCw } from "lucide-react";
 import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
 
-type Subscription = Outputs["services"]["getContactSubscriptions"][number];
+type Subscription = Outputs["subscriptions"]["getContactSubscriptions"][number];
 
 const STATUS_LABELS: Record<Subscription["status"], string> = {
    active: "Ativa",
@@ -82,7 +82,7 @@ function SubscriptionCard({ sub }: { sub: Subscription }) {
 
 export function ContactAssinaturasTab({ contactId }: { contactId: string }) {
    const { data: subscriptions } = useSuspenseQuery(
-      orpc.services.getContactSubscriptions.queryOptions({
+      orpc.subscriptions.getContactSubscriptions.queryOptions({
          input: { contactId },
       }),
    );

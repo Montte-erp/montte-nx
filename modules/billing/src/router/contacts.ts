@@ -1,11 +1,24 @@
 import dayjs from "dayjs";
 import { and, count, desc, eq, inArray, min, sum } from "drizzle-orm";
 import { err, fromPromise, ok } from "neverthrow";
+import { billingContract } from "@montte/hyprpay/contract";
+import { implementerInternal } from "@orpc/server";
 import type { DatabaseInstance } from "@core/database/client";
 import { contacts } from "@core/database/schemas/contacts";
 import { transactions } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
-import { billingImpl } from "./_implementer";
+import { protectedProcedure } from "@core/orpc/server";
+import type {
+   ORPCContext,
+   ORPCContextWithOrganization,
+} from "@core/orpc/server";
+
+const def = protectedProcedure["~orpc"];
+const impl = implementerInternal<
+   typeof billingContract.contacts,
+   ORPCContext,
+   ORPCContextWithOrganization
+>(billingContract.contacts, def.config, [...def.middlewares]);
 
 const findContactByRef = (
    db: DatabaseInstance,
@@ -25,53 +38,49 @@ const findContactByRef = (
       () => WebAppError.internal("Falha ao verificar permissão."),
    );
 
-export const create = billingImpl.contacts.create.handler(
-   async ({ context, input }) => {
-      const result = await fromPromise(
-         context.db.transaction(async (tx) => {
-            const [row] = await tx
-               .insert(contacts)
-               .values({
-                  ...input,
-                  type: input.type ?? "cliente",
-                  teamId: context.teamId,
-               })
-               .returning();
-            return row;
-         }),
-         () => WebAppError.internal("Falha ao criar contato."),
+export const create = impl.create.handler(async ({ context, input }) => {
+   const result = await fromPromise(
+      context.db.transaction(async (tx) => {
+         const [row] = await tx
+            .insert(contacts)
+            .values({
+               ...input,
+               type: input.type ?? "cliente",
+               teamId: context.teamId,
+            })
+            .returning();
+         return row;
+      }),
+      () => WebAppError.internal("Falha ao criar contato."),
+   );
+   if (result.isErr()) throw result.error;
+   if (!result.value)
+      throw WebAppError.internal(
+         "Falha ao criar contato: insert retornou vazio.",
       );
-      if (result.isErr()) throw result.error;
-      if (!result.value)
-         throw WebAppError.internal(
-            "Falha ao criar contato: insert retornou vazio.",
-         );
-      return result.value;
-   },
-);
+   return result.value;
+});
 
-export const getAll = billingImpl.contacts.getAll.handler(
-   async ({ context, input }) => {
-      const result = await fromPromise(
-         context.db.query.contacts.findMany({
-            where: (f, { and: andFn, eq: eqFn }) => {
-               const conditions = [
-                  eqFn(f.teamId, context.teamId),
-                  eqFn(f.isArchived, false),
-               ];
-               if (input?.type) conditions.push(eqFn(f.type, input.type));
-               return andFn(...conditions);
-            },
-            orderBy: (f, { asc: ascFn }) => [ascFn(f.name)],
-         }),
-         () => WebAppError.internal("Falha ao listar contatos."),
-      );
-      if (result.isErr()) throw result.error;
-      return result.value;
-   },
-);
+export const getAll = impl.getAll.handler(async ({ context, input }) => {
+   const result = await fromPromise(
+      context.db.query.contacts.findMany({
+         where: (f, { and: andFn, eq: eqFn }) => {
+            const conditions = [
+               eqFn(f.teamId, context.teamId),
+               eqFn(f.isArchived, false),
+            ];
+            if (input?.type) conditions.push(eqFn(f.type, input.type));
+            return andFn(...conditions);
+         },
+         orderBy: (f, { asc: ascFn }) => [ascFn(f.name)],
+      }),
+      () => WebAppError.internal("Falha ao listar contatos."),
+   );
+   if (result.isErr()) throw result.error;
+   return result.value;
+});
 
-export const getById = billingImpl.contacts.getById
+export const getById = impl.getById
    .use(async ({ context, next }, input) => {
       const result = (
          await findContactByRef(context.db, context.teamId, input)
@@ -85,7 +94,7 @@ export const getById = billingImpl.contacts.getById
    })
    .handler(({ context }) => context.contact);
 
-export const archive = billingImpl.contacts.archive
+export const archive = impl.archive
    .use(async ({ context, next }, input) => {
       const result = (
          await findContactByRef(context.db, context.teamId, input)
@@ -117,7 +126,7 @@ export const archive = billingImpl.contacts.archive
       return result.value;
    });
 
-export const reactivate = billingImpl.contacts.reactivate
+export const reactivate = impl.reactivate
    .use(async ({ context, next }, input) => {
       const result = (
          await findContactByRef(context.db, context.teamId, input)
@@ -149,7 +158,7 @@ export const reactivate = billingImpl.contacts.reactivate
       return result.value;
    });
 
-export const remove = billingImpl.contacts.remove
+export const remove = impl.remove
    .use(async ({ context, next }, input) => {
       const result = (
          await findContactByRef(context.db, context.teamId, input)
@@ -188,7 +197,7 @@ export const remove = billingImpl.contacts.remove
       return { success: true };
    });
 
-export const bulkRemove = billingImpl.contacts.bulkRemove.handler(
+export const bulkRemove = impl.bulkRemove.handler(
    async ({ context, input }) => {
       const existing = await fromPromise(
          context.db
@@ -232,47 +241,45 @@ export const bulkRemove = billingImpl.contacts.bulkRemove.handler(
    },
 );
 
-export const update = billingImpl.contacts.update.handler(
-   async ({ context, input }) => {
-      const ref =
-         "id" in input ? { id: input.id } : { externalId: input.externalId };
-      const ownership = (
-         await findContactByRef(context.db, context.teamId, ref)
-      ).andThen((contact) =>
-         !contact
-            ? err(WebAppError.notFound("Contato não encontrado."))
-            : ok(contact),
+export const update = impl.update.handler(async ({ context, input }) => {
+   const ref =
+      "id" in input ? { id: input.id } : { externalId: input.externalId };
+   const ownership = (
+      await findContactByRef(context.db, context.teamId, ref)
+   ).andThen((contact) =>
+      !contact
+         ? err(WebAppError.notFound("Contato não encontrado."))
+         : ok(contact),
+   );
+   if (ownership.isErr()) throw ownership.error;
+
+   const { name, email, phone, document } = input;
+   const data: Record<string, unknown> = {};
+   if (name !== undefined) data.name = name;
+   if (email !== undefined) data.email = email;
+   if (phone !== undefined) data.phone = phone;
+   if (document !== undefined) data.document = document;
+
+   const result = await fromPromise(
+      context.db.transaction(async (tx) => {
+         const [row] = await tx
+            .update(contacts)
+            .set({ ...data, updatedAt: dayjs().toDate() })
+            .where(eq(contacts.id, ownership.value.id))
+            .returning();
+         return row;
+      }),
+      () => WebAppError.internal("Falha ao atualizar contato."),
+   );
+   if (result.isErr()) throw result.error;
+   if (!result.value)
+      throw WebAppError.internal(
+         "Falha ao atualizar contato: update retornou vazio.",
       );
-      if (ownership.isErr()) throw ownership.error;
+   return result.value;
+});
 
-      const { name, email, phone, document } = input;
-      const data: Record<string, unknown> = {};
-      if (name !== undefined) data.name = name;
-      if (email !== undefined) data.email = email;
-      if (phone !== undefined) data.phone = phone;
-      if (document !== undefined) data.document = document;
-
-      const result = await fromPromise(
-         context.db.transaction(async (tx) => {
-            const [row] = await tx
-               .update(contacts)
-               .set({ ...data, updatedAt: dayjs().toDate() })
-               .where(eq(contacts.id, ownership.value.id))
-               .returning();
-            return row;
-         }),
-         () => WebAppError.internal("Falha ao atualizar contato."),
-      );
-      if (result.isErr()) throw result.error;
-      if (!result.value)
-         throw WebAppError.internal(
-            "Falha ao atualizar contato: update retornou vazio.",
-         );
-      return result.value;
-   },
-);
-
-export const getStats = billingImpl.contacts.getStats
+export const getStats = impl.getStats
    .use(async ({ context, next }, input) => {
       const result = (
          await findContactByRef(context.db, context.teamId, input)
@@ -316,7 +323,7 @@ export const getStats = billingImpl.contacts.getStats
       return result.value;
    });
 
-export const getTransactions = billingImpl.contacts.getTransactions.handler(
+export const getTransactions = impl.getTransactions.handler(
    async ({ context, input }) => {
       const ref =
          "id" in input ? { id: input.id } : { externalId: input.externalId };

@@ -9,7 +9,7 @@ import {
 } from "vitest";
 import { LLMock } from "@copilotkit/aimock";
 import { PostHog } from "posthog-node";
-import type { AiObservabilityContext } from "@core/ai/observability";
+import type { AiObservabilityContext } from "@core/ai/middleware";
 
 vi.mock("@core/posthog/server", () => ({
    promptsClient: {

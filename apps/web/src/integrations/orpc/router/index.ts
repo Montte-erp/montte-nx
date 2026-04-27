@@ -17,7 +17,11 @@ import * as inventoryRouter from "./inventory";
 import * as notificationsRouter from "./notifications";
 import * as onboardingRouter from "./onboarding";
 import * as organizationRouter from "./organization";
+import * as benefitsRouter from "@modules/billing/router/benefits";
+import * as metersRouter from "@modules/billing/router/meters";
 import * as servicesRouter from "@modules/billing/router/services";
+import * as subscriptionsRouter from "@modules/billing/router/subscriptions";
+import * as usageRouter from "@modules/billing/router/usage";
 import * as sessionRouter from "./session";
 import * as tagsRouter from "@modules/classification/router/tags";
 import * as teamRouter from "./team";
@@ -43,6 +47,10 @@ export default {
    notifications: notificationsRouter,
    onboarding: onboardingRouter,
    services: servicesRouter,
+   subscriptions: subscriptionsRouter,
+   meters: metersRouter,
+   benefits: benefitsRouter,
+   usage: usageRouter,
    session: sessionRouter,
    tags: tagsRouter,
    team: teamRouter,

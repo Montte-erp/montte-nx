@@ -5,14 +5,9 @@ import {
    servicePrices,
    pricingTypeEnum,
 } from "@core/database/schemas/services";
-import {
-   contactSubscriptions,
-   billingCycleEnum,
-} from "@core/database/schemas/subscriptions";
-import { subscriptionItems } from "@core/database/schemas/subscription-items";
+import { billingCycleEnum } from "@core/database/schemas/subscriptions";
 import { meters, meterAggregationEnum } from "@core/database/schemas/meters";
 import { benefits, benefitTypeEnum } from "@core/database/schemas/benefits";
-import { usageEvents } from "@core/database/schemas/usage-events";
 
 const nameSchema = z
    .string()
@@ -24,10 +19,6 @@ const priceSchema = z
    .refine((v) => !Number.isNaN(Number(v)) && Number(v) >= 0, {
       message: "Preço deve ser um número válido maior ou igual a zero.",
    });
-
-const dateStringSchema = z
-   .string()
-   .refine((v) => !Number.isNaN(Date.parse(v)), { message: "Data inválida." });
 
 // --- Services ---
 
@@ -104,73 +95,6 @@ export const updatePriceSchema = createInsertSchema(servicePrices)
    })
    .partial();
 
-// --- Subscriptions ---
-
-export const createSubscriptionSchema = createInsertSchema(contactSubscriptions)
-   .pick({
-      contactId: true,
-      startDate: true,
-      endDate: true,
-      notes: true,
-      externalId: true,
-      couponId: true,
-      cancelAtPeriodEnd: true,
-   })
-   .extend({
-      contactId: z.string().uuid("ID do contato inválido."),
-      startDate: dateStringSchema,
-      endDate: dateStringSchema.nullable().optional(),
-      notes: z.string().max(500).nullable().optional(),
-      externalId: z.string().nullable().optional(),
-      couponId: z.string().uuid().nullable().optional(),
-      cancelAtPeriodEnd: z.boolean().default(false),
-   });
-
-export const updateSubscriptionSchema = createInsertSchema(contactSubscriptions)
-   .pick({
-      startDate: true,
-      endDate: true,
-      notes: true,
-      externalId: true,
-      couponId: true,
-      cancelAtPeriodEnd: true,
-   })
-   .extend({
-      startDate: dateStringSchema.optional(),
-      endDate: dateStringSchema.nullable().optional(),
-      notes: z.string().max(500).nullable().optional(),
-      externalId: z.string().nullable().optional(),
-      couponId: z.string().uuid().nullable().optional(),
-      cancelAtPeriodEnd: z.boolean().optional(),
-      trialEndsAt: z.string().datetime().nullable().optional(),
-      currentPeriodStart: z.string().datetime().nullable().optional(),
-      currentPeriodEnd: z.string().datetime().nullable().optional(),
-   })
-   .partial();
-
-// --- Subscription items ---
-
-export const createSubscriptionItemSchema = createInsertSchema(
-   subscriptionItems,
-)
-   .pick({
-      subscriptionId: true,
-      priceId: true,
-      quantity: true,
-      negotiatedPrice: true,
-   })
-   .extend({
-      subscriptionId: z.string().uuid("ID da assinatura inválido."),
-      priceId: z.string().uuid("ID do preço inválido."),
-      quantity: z.number().int().min(1).default(1),
-      negotiatedPrice: priceSchema.nullable().optional(),
-   });
-
-export const updateSubscriptionItemSchema = z.object({
-   quantity: z.number().int().min(1).optional(),
-   negotiatedPrice: priceSchema.nullable().optional(),
-});
-
 // --- Meters ---
 
 export const createMeterSchema = createInsertSchema(meters)
@@ -218,36 +142,6 @@ export const updateBenefitSchema = z.object({
    isActive: z.boolean().optional(),
 });
 
-// --- Usage events ---
-
-export const upsertUsageEventSchema = createInsertSchema(usageEvents)
-   .pick({
-      teamId: true,
-      contactId: true,
-      meterId: true,
-      quantity: true,
-      properties: true,
-      idempotencyKey: true,
-   })
-   .extend({
-      teamId: z.string().uuid("ID do time inválido."),
-      contactId: z
-         .string()
-         .uuid("ID do contato inválido.")
-         .nullable()
-         .optional(),
-      meterId: z.string().uuid("ID do medidor inválido."),
-      quantity: z
-         .string()
-         .min(1, "Quantidade é obrigatória.")
-         .refine((v) => {
-            const n = Number(v);
-            return !Number.isNaN(n) && Number.isFinite(n) && n >= 0;
-         }, "Quantidade deve ser um número positivo finito."),
-      properties: z.record(z.string(), z.unknown()).optional().default({}),
-      idempotencyKey: z.string().min(1, "Chave de idempotência é obrigatória."),
-   });
-
 // --- Composite input schemas ---
 
 export const listServicesInputSchema = z
@@ -262,25 +156,6 @@ export const listSubscriptionsInputSchema = z
       status: z.enum(["active", "completed", "cancelled"]).optional(),
    })
    .optional();
-
-export const createSubscriptionWithItemsInputSchema = createSubscriptionSchema
-   .pick({ contactId: true, startDate: true, endDate: true, notes: true })
-   .extend({
-      status: z.enum(["active", "trialing"]).default("active"),
-      trialEndsAt: z.string().datetime().nullable().optional(),
-      items: z
-         .array(createSubscriptionItemSchema.omit({ subscriptionId: true }))
-         .optional(),
-   })
-   .superRefine((data, ctx) => {
-      if (data.status === "trialing" && !data.trialEndsAt) {
-         ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "trialEndsAt obrigatório para status 'trialing'.",
-            path: ["trialEndsAt"],
-         });
-      }
-   });
 
 export const listExpiringSoonInputSchema = z
    .object({
@@ -310,9 +185,6 @@ export const updatePriceInputSchema = idInputSchema.merge(updatePriceSchema);
 export const updateMeterInputSchema = idInputSchema.merge(updateMeterSchema);
 export const updateBenefitInputSchema =
    idInputSchema.merge(updateBenefitSchema);
-export const updateSubscriptionItemInputSchema = idInputSchema.merge(
-   updateSubscriptionItemSchema,
-);
 
 // --- Types ---
 
@@ -320,25 +192,13 @@ export type CreateServiceInput = z.infer<typeof createServiceSchema>;
 export type UpdateServiceInput = z.infer<typeof updateServiceSchema>;
 export type CreatePriceInput = z.infer<typeof createPriceSchema>;
 export type UpdatePriceInput = z.infer<typeof updatePriceSchema>;
-export type CreateSubscriptionInput = z.infer<typeof createSubscriptionSchema>;
-export type UpdateSubscriptionInput = z.infer<typeof updateSubscriptionSchema>;
-export type CreateSubscriptionItemInput = z.infer<
-   typeof createSubscriptionItemSchema
->;
-export type UpdateSubscriptionItemInput = z.infer<
-   typeof updateSubscriptionItemSchema
->;
 export type CreateMeterInput = z.infer<typeof createMeterSchema>;
 export type UpdateMeterInput = z.infer<typeof updateMeterSchema>;
 export type CreateBenefitInput = z.infer<typeof createBenefitSchema>;
 export type UpdateBenefitInput = z.infer<typeof updateBenefitSchema>;
-export type UpsertUsageEventInput = z.infer<typeof upsertUsageEventSchema>;
 export type ListServicesInput = z.infer<typeof listServicesInputSchema>;
 export type ListSubscriptionsInput = z.infer<
    typeof listSubscriptionsInputSchema
->;
-export type CreateSubscriptionWithItemsInput = z.infer<
-   typeof createSubscriptionWithItemsInputSchema
 >;
 export type ListExpiringSoonInput = z.infer<typeof listExpiringSoonInputSchema>;
 export type ServiceBenefitLinkInput = z.infer<typeof serviceBenefitLinkSchema>;

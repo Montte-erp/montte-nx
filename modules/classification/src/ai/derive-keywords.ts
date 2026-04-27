@@ -5,8 +5,10 @@ import { AppError } from "@core/logging/errors";
 import { promptsClient } from "@core/posthog/server";
 import { CLASSIFICATION_PROMPTS } from "../constants";
 import { proModel } from "@core/ai/models";
-import { createPosthogAiMiddleware } from "@core/ai/middleware";
-import type { AiObservabilityContext } from "@core/ai/observability";
+import {
+   type AiObservabilityContext,
+   createPosthogAiMiddleware,
+} from "@core/ai/middleware";
 
 const KEYWORDS_MIN = 5;
 const KEYWORDS_MAX = 15;

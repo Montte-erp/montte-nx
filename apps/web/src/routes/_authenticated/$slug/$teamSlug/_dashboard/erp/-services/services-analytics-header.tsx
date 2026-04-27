@@ -45,11 +45,11 @@ function AnalyticsContent() {
       { data: mrrData },
    ] = useSuspenseQueries({
       queries: [
-         orpc.services.getAllSubscriptions.queryOptions({
+         orpc.subscriptions.getAllSubscriptions.queryOptions({
             input: { status: "active" },
          }),
-         orpc.services.getExpiringSoon.queryOptions({}),
-         orpc.services.getMrr.queryOptions({}),
+         orpc.subscriptions.getExpiringSoon.queryOptions({}),
+         orpc.subscriptions.getMrr.queryOptions({}),
       ],
    });
 

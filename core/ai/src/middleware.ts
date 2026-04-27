@@ -1,5 +1,12 @@
+import type { PostHog } from "@core/posthog/server";
 import type { ChatMiddleware } from "@tanstack/ai";
-import type { AiObservabilityContext } from "./observability";
+
+export type AiObservabilityContext = {
+   posthog: PostHog;
+   distinctId: string;
+   promptName?: string;
+   promptVersion?: number;
+};
 
 export function createPosthogAiMiddleware(
    obs: AiObservabilityContext,

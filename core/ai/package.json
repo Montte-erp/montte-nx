@@ -15,10 +15,6 @@
       "./middleware": {
          "types": "./dist/middleware.d.ts",
          "default": "./dist/middleware.js"
-      },
-      "./observability": {
-         "types": "./dist/observability.d.ts",
-         "default": "./dist/observability.js"
       }
    },
    "scripts": {
