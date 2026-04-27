@@ -18,7 +18,7 @@ import {
 } from "@packages/ui/components/tooltip";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { Link } from "@tanstack/react-router";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import {
    BotMessageSquare,
    Command,
@@ -90,26 +90,23 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             <Separator />
          </SidebarHeader>
 
-         <SidebarContent className="relative overflow-x-hidden">
-            <AnimatePresence initial={false} mode="wait">
-               <motion.div
-                  key={sidebarTab}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex flex-col gap-2"
-                  exit={{ opacity: 0, x: sidebarTab === "navegar" ? 6 : -6 }}
-                  initial={{ opacity: 0, x: sidebarTab === "navegar" ? -6 : 6 }}
-                  transition={{ duration: 0.1, ease: "easeOut" }}
-               >
-                  {sidebarTab === "navegar" ? (
-                     <>
-                        <SidebarDefaultItems />
-                        <SidebarNav />
-                     </>
-                  ) : (
-                     <SidebarChatPanel />
-                  )}
-               </motion.div>
-            </AnimatePresence>
+         <SidebarContent>
+            <motion.div
+               key={sidebarTab}
+               animate={{ opacity: 1 }}
+               className="flex flex-col gap-2"
+               initial={{ opacity: 0 }}
+               transition={{ duration: 0.12, ease: "easeOut" }}
+            >
+               {sidebarTab === "navegar" ? (
+                  <>
+                     <SidebarDefaultItems />
+                     <SidebarNav />
+                  </>
+               ) : (
+                  <SidebarChatPanel />
+               )}
+            </motion.div>
          </SidebarContent>
 
          <SidebarFooter>
