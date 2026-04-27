@@ -24,12 +24,14 @@ async function ingestEmailSent(
    organizationId: string,
    idempotencyKey: string,
    properties: Record<string, unknown>,
+   externalId?: string | null,
 ) {
    const result = await fromPromise(
       getBillingHyprpay().services.ingestUsage({
          eventName: TRANSACTIONAL_USAGE_EVENTS.emailSent,
          quantity: "1",
          idempotencyKey,
+         externalId: externalId ?? undefined,
          properties,
       }),
       (e) => (e instanceof Error ? e : new Error(String(e))),
@@ -53,6 +55,7 @@ export type TrialExpiryInput = {
    phase: "warning" | "expiry";
    contactEmail?: string;
    contactName?: string;
+   contactExternalId?: string | null;
    emailFrom?: string;
 };
 
@@ -95,6 +98,7 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
                         kind: "billing.trial_expiry_warning",
                         subscriptionId: input.subscriptionId,
                      },
+                     input.contactExternalId,
                   );
                }
             },
@@ -206,6 +210,7 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
                      kind: "billing.trial_expired",
                      subscriptionId: input.subscriptionId,
                   },
+                  input.contactExternalId,
                );
             }
          },

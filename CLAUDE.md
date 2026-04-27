@@ -15,7 +15,7 @@ bun run check            # oxlint
 bun run format           # oxfmt
 bun run test             # parallel
 bun run db:push
-bun run db:studio:local | db:studio:prod
+bun run db:studio:local       # or db:studio:prod
 bun run check-boundaries # enforce import layer rules
 bun run clean[:cache]
 bun run auth:generate    # regen Better Auth schema
@@ -176,7 +176,7 @@ Config: `core/authentication/src/server.ts`. Plugins: Google OAuth, Magic Link, 
 - `member.id ≠ user.id` — `member.id` for Better Auth APIs, `member.userId` for DB.
 - Loading state: `useTransition`, not `useState<boolean>`.
 
-TODO: configure Google OAuth provider in `packages/authentication/src/server.ts`.
+TODO: configure Google OAuth provider in `core/authentication/src/server.ts`.
 
 ---
 

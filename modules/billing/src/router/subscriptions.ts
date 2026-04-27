@@ -118,6 +118,9 @@ export const createSubscription = impl.createSubscription
             organizationId: context.organizationId,
             subscriptionId: sub.id,
             trialEndsAt: sub.trialEndsAt.toISOString(),
+            contactEmail: context.contact.email ?? undefined,
+            contactName: context.contact.name,
+            contactExternalId: context.contact.externalId,
          }).catch((e) =>
             logger.error(
                { err: e, subscriptionId: sub.id },

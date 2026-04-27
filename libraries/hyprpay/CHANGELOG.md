@@ -32,8 +32,8 @@
 ### Migration
 - `client.customers.get(externalId)` → `client.contacts.getById({ externalId })`
 - `client.customers.create({ name, ... })` → `client.contacts.create({ name, ... })`
-- `client.subscriptions.create({ externalId, items })` → `client.services.createSubscription({ externalId, items })`
-- `client.subscriptions.cancel({ subscriptionId })` → `client.services.cancelSubscription({ subscriptionId })`
+- `client.subscriptions.create({ externalId, items })` → `client.services.createSubscription({ contactId, startDate, items })`
+- `client.subscriptions.cancel({ subscriptionId })` → `client.services.cancelSubscription({ id })`
 - `client.subscriptions.list(externalId)` → `client.services.getContactSubscriptions({ externalId })`
 - `client.usage.ingest({ externalId, meterId, quantity })` → `client.services.ingestUsage({ externalId, meterId, quantity })`
 - `client.coupons.validate({ code, priceId })` → `client.coupons.validate({ code, priceId })` (unchanged)

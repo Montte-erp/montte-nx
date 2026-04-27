@@ -217,24 +217,25 @@ export const bulkRemove = impl.bulkRemove.handler(
             "Um ou mais contatos não foram encontrados.",
          );
 
+      const linked = await fromPromise(
+         context.db
+            .select({ contactId: transactions.contactId })
+            .from(transactions)
+            .where(inArray(transactions.contactId, input.ids))
+            .groupBy(transactions.contactId),
+         () => WebAppError.internal("Falha ao excluir contatos."),
+      );
+      if (linked.isErr()) throw linked.error;
+      if (linked.value.length > 0)
+         throw WebAppError.conflict(
+            "Contato possui lançamentos vinculados. Arquive em vez de excluir.",
+         );
+
       const result = await fromPromise(
          context.db.transaction(async (tx) => {
-            for (const id of input.ids) {
-               const [row] = await tx
-                  .select({ total: count() })
-                  .from(transactions)
-                  .where(eq(transactions.contactId, id));
-               if ((row?.total ?? 0) > 0)
-                  throw WebAppError.conflict(
-                     "Contato possui lançamentos vinculados. Arquive em vez de excluir.",
-                  );
-               await tx.delete(contacts).where(eq(contacts.id, id));
-            }
+            await tx.delete(contacts).where(inArray(contacts.id, input.ids));
          }),
-         (e) =>
-            e instanceof WebAppError
-               ? e
-               : WebAppError.internal("Falha ao excluir contatos."),
+         () => WebAppError.internal("Falha ao excluir contatos."),
       );
       if (result.isErr()) throw result.error;
       return { deleted: input.ids.length };

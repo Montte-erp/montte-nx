@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import dayjs from "dayjs";
 import { err, fromPromise, fromThrowable, ok } from "neverthrow";
 import { z } from "zod";
@@ -275,15 +276,27 @@ const withTelemetry = withOrganization.use(
 );
 
 const withBilling = withTelemetry.use(
-   onSuccess(async (_result, { context, path, procedure }) => {
+   onSuccess(async (_result, { context, path, procedure }, input) => {
       const eventName = procedure["~orpc"].meta.billableEvent;
       if (!eventName) return;
+
+      const headerKey =
+         context.headers.get("idempotency-key") ??
+         context.headers.get("x-idempotency-key") ??
+         context.headers.get("x-request-id");
+      const idempotencyKey =
+         headerKey ??
+         createHash("sha256")
+            .update(
+               `${context.organizationId}|${path.join(".")}|${JSON.stringify(input ?? null)}`,
+            )
+            .digest("hex");
 
       const result = await fromPromise(
          context.hyprpayClient.services.ingestUsage({
             eventName,
             quantity: "1",
-            idempotencyKey: crypto.randomUUID(),
+            idempotencyKey,
             properties: { path: path.join(".") },
          }),
          (e) => (e instanceof Error ? e : new Error(String(e))),
