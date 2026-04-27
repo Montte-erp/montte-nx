@@ -11,6 +11,7 @@
    "dependencies": {
       "@core/database": "workspace:*",
       "@core/environment": "workspace:*",
+      "@core/hyprpay": "workspace:*",
       "@core/logging": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",
@@ -18,7 +19,7 @@
       "@core/transactional": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers",
       "@modules/billing": "workspace:*",
-      "@packages/workflows": "workspace:*"
+      "@modules/classification": "workspace:*"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",

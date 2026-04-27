@@ -1,6 +1,5 @@
 import { apiKey } from "@better-auth/api-key";
 import { hyprpay } from "@montte/hyprpay/better-auth";
-import type { HyprPayClient } from "@montte/hyprpay";
 import { findMemberByUserId } from "@core/database/repositories/auth-repository";
 import * as schema from "@core/database/schema";
 import { getDomain, isProduction } from "@core/environment/helpers";
@@ -64,18 +63,18 @@ export interface CreateAuthDeps {
    redis: Redis;
    posthog: PostHog;
    resendClient: ResendClient;
-   hyprpayClient: HyprPayClient;
    env: {
       BETTER_AUTH_URL?: string;
       BETTER_AUTH_SECRET: string;
       BETTER_AUTH_TRUSTED_ORIGINS: string;
       BETTER_AUTH_GOOGLE_CLIENT_ID: string;
       BETTER_AUTH_GOOGLE_CLIENT_SECRET: string;
+      HYPRPAY_API_KEY: string;
    };
 }
 
 export function createAuth(deps: CreateAuthDeps) {
-   const { db, redis, resendClient, hyprpayClient, env } = deps;
+   const { db, redis, resendClient, env } = deps;
 
    const auth = betterAuth({
       baseURL: env.BETTER_AUTH_URL,
@@ -353,7 +352,12 @@ export function createAuth(deps: CreateAuthDeps) {
             apiKeyHeaders: ["sdk-api-key", "x-api-key"],
          }),
 
-         hyprpay({ client: hyprpayClient }),
+         hyprpay({
+            apiKey: env.HYPRPAY_API_KEY,
+            createCustomerOnSignUp: true,
+            syncCustomerOnUpdate: true,
+         }),
+
          tanstackStartCookies(),
       ],
    });

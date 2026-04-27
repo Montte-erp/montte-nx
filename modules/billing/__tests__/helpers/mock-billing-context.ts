@@ -1,6 +1,20 @@
+import { okAsync } from "neverthrow";
 import { vi } from "vitest";
 
-export const billingPublisherSpy = vi.fn().mockResolvedValue(undefined);
+export const ssePublishSpy = vi.fn(
+   (
+      _redis: unknown,
+      scope: { kind: string; id: string },
+      event: { type: string; payload: unknown },
+   ) =>
+      okAsync({
+         id: crypto.randomUUID(),
+         type: event.type,
+         scope,
+         payload: event.payload,
+         timestamp: new Date().toISOString(),
+      }),
+);
 
 export const billingResendSpies = {
    sendBillingInvoiceGenerated: vi.fn().mockResolvedValue(undefined),
@@ -8,14 +22,43 @@ export const billingResendSpies = {
    sendBillingTrialExpiryWarning: vi.fn().mockResolvedValue(undefined),
 };
 
-vi.mock("../../src/workflows/context", async () => {
-   const actual = await vi.importActual<
-      typeof import("../../src/workflows/context")
-   >("../../src/workflows/context");
+export const billingHyprpayUsageIngestSpy = vi.fn(
+   async (_input: {
+      meterId?: string;
+      eventName?: string;
+      quantity: string;
+      idempotencyKey: string;
+      externalId?: string | null;
+      properties?: Record<string, unknown>;
+   }) => ({ success: true as const }),
+);
+
+vi.mock("../../src/sse", async () => {
+   return {
+      billingSseEvents: {
+         publish: ssePublishSpy,
+         eventTypes: [
+            "billing.trial_expiring",
+            "billing.trial_completed",
+            "billing.invoice_generated",
+            "billing.benefit_granted",
+            "billing.benefit_revoked",
+            "billing.usage_ingested",
+         ],
+      },
+   };
+});
+
+vi.mock("../../src/workflows/context", async (importOriginal) => {
+   const actual =
+      await importOriginal<typeof import("../../src/workflows/context")>();
    return {
       ...actual,
-      getBillingPublisher: () => ({ publish: billingPublisherSpy }),
-      getBillingResendClient: () => ({}) as never,
+      getBillingRedis: () => ({}),
+      getBillingResendClient: () => ({}),
+      getBillingHyprpay: () => ({
+         services: { ingestUsage: billingHyprpayUsageIngestSpy },
+      }),
    };
 });
 

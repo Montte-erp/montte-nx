@@ -16,6 +16,8 @@ export const env = createEnv({
 
       OPENROUTER_API_KEY: z.string().optional(),
 
+      HYPRPAY_API_KEY: z.string().min(1),
+
       LOG_LEVEL: z
          .enum(["trace", "debug", "info", "warn", "error", "fatal"])
          .optional()

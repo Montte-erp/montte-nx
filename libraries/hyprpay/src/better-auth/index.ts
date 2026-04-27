@@ -2,34 +2,53 @@ import type { BetterAuthPlugin } from "better-auth";
 import type { BetterAuthClientPlugin } from "better-auth/client";
 import { fromPromise } from "neverthrow";
 import { createHyprPayClient } from "../client";
-import type { HyprPayCustomerFromContract as HyprPayCustomer } from "../contract";
+import type { ContractRouterClient } from "@orpc/contract";
+import type { billingContract } from "../contract";
+
+type HyprPayContact = Awaited<
+   ReturnType<
+      ContractRouterClient<typeof billingContract>["contacts"]["create"]
+   >
+>;
+
+type CustomerInput = {
+   name: string;
+   type?: "cliente" | "fornecedor" | "ambos";
+   email?: string | null;
+   phone?: string | null;
+   document?: string | null;
+   externalId?: string | null;
+};
 
 interface HyprPayPluginOptions {
-   client: ReturnType<typeof createHyprPayClient>;
+   apiKey: string;
+   baseUrl?: string;
    createCustomerOnSignUp?: boolean;
    syncCustomerOnUpdate?: boolean;
-   customerData?: (user: { id: string; name: string; email: string }) => {
+   customerData?: (user: {
+      id: string;
       name: string;
-      email?: string;
-      externalId?: string;
-      phone?: string;
-      document?: string;
-   };
+      email: string;
+   }) => CustomerInput;
    onCustomerCreate?: (
-      customer: HyprPayCustomer,
+      contact: HyprPayContact,
       user: { id: string; name: string; email: string },
    ) => Promise<void>;
 }
 
 export function hyprpay(options: HyprPayPluginOptions): BetterAuthPlugin {
-   const { client } = options;
+   const sdkClient = createHyprPayClient({
+      apiKey: options.apiKey,
+      baseUrl: options.baseUrl,
+   });
 
-   const defaultMapper = (user: {
+   const defaultMapper: (user: {
       id: string;
       name: string;
       email: string;
-   }) => ({
+   }) => CustomerInput = (user) => ({
       name: user.name || user.email,
+      type: "cliente",
       email: user.email,
       externalId: user.id,
    });
@@ -48,11 +67,21 @@ export function hyprpay(options: HyprPayPluginOptions): BetterAuthPlugin {
                            if (!options.createCustomerOnSignUp) return;
 
                            const input = mapper(user);
-                           const result = await client.customers.create(input);
+                           const result = await fromPromise(
+                              sdkClient.contacts.create({
+                                 name: input.name,
+                                 type: input.type ?? "cliente",
+                                 email: input.email ?? null,
+                                 phone: input.phone ?? null,
+                                 document: input.document ?? null,
+                                 externalId: input.externalId ?? user.id,
+                              }),
+                              (e) => e,
+                           );
 
                            if (result.isErr()) {
                               console.error(
-                                 "[hyprpay] customer creation failed",
+                                 "[hyprpay] contact creation failed",
                                  result.error,
                               );
                               return;
@@ -77,13 +106,16 @@ export function hyprpay(options: HyprPayPluginOptions): BetterAuthPlugin {
                            if (!options.syncCustomerOnUpdate) return;
                            if (!user.name) return;
 
-                           const result = await client.customers.update(
-                              user.id,
-                              { name: user.name },
+                           const result = await fromPromise(
+                              sdkClient.contacts.update({
+                                 externalId: user.id,
+                                 name: user.name,
+                              }),
+                              (e) => e,
                            );
                            if (result.isErr()) {
                               console.error(
-                                 "[hyprpay] customer name sync failed",
+                                 "[hyprpay] contact name sync failed",
                                  result.error,
                               );
                            }

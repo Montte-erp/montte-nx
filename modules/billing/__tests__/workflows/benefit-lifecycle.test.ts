@@ -22,13 +22,12 @@ vi.mock("@dbos-inc/drizzle-datasource", async () => {
    return mod.drizzleDataSourceMockFactory(await dbosMocks);
 });
 
-import { billingPublisherSpy } from "../helpers/mock-billing-context";
+import { ssePublishSpy } from "../helpers/mock-billing-context";
 
 import { eq } from "drizzle-orm";
 import { setupTestDb } from "@core/database/testing/setup-test-db";
 import { seedTeam } from "@core/database/testing/factories";
 import { benefitGrants } from "@core/database/schemas/benefit-grants";
-import { NOTIFICATION_TYPES } from "@packages/notifications/types";
 import { WorkflowError } from "@core/dbos/errors";
 import {
    attachBenefit,
@@ -80,7 +79,7 @@ describe("benefitLifecycleWorkflow", () => {
          .from(benefitGrants)
          .where(eq(benefitGrants.subscriptionId, sub.id));
       expect(grants).toHaveLength(0);
-      expect(billingPublisherSpy).not.toHaveBeenCalled();
+      expect(ssePublishSpy).not.toHaveBeenCalled();
    });
 
    it("grants benefits when newStatus is active and no previous status", async () => {
@@ -118,13 +117,12 @@ describe("benefitLifecycleWorkflow", () => {
       const benefitIds = grants.map((g) => g.benefitId).sort();
       expect(benefitIds).toEqual([benefitA.id, benefitB.id].sort());
 
-      expect(billingPublisherSpy).toHaveBeenCalledTimes(1);
-      expect(billingPublisherSpy).toHaveBeenCalledWith(
-         "job.notification",
+      expect(ssePublishSpy).toHaveBeenCalledTimes(1);
+      expect(ssePublishSpy).toHaveBeenCalledWith(
+         expect.anything(),
+         { kind: "team", id: teamId },
          expect.objectContaining({
-            type: NOTIFICATION_TYPES.BILLING_BENEFIT_GRANTED,
-            status: "completed",
-            teamId,
+            type: "billing.benefit_granted",
             payload: {
                subscriptionId: sub.id,
                benefitIds: expect.arrayContaining([benefitA.id, benefitB.id]),
@@ -167,11 +165,12 @@ describe("benefitLifecycleWorkflow", () => {
       expect(grants).toHaveLength(2);
       expect(grants.every((g) => g.status === "active")).toBe(true);
 
-      expect(billingPublisherSpy).toHaveBeenCalledTimes(1);
-      expect(billingPublisherSpy).toHaveBeenCalledWith(
-         "job.notification",
+      expect(ssePublishSpy).toHaveBeenCalledTimes(1);
+      expect(ssePublishSpy).toHaveBeenCalledWith(
+         expect.anything(),
+         { kind: "team", id: teamId },
          expect.objectContaining({
-            type: NOTIFICATION_TYPES.BILLING_BENEFIT_GRANTED,
+            type: "billing.benefit_granted",
          }),
       );
    });
@@ -224,11 +223,12 @@ describe("benefitLifecycleWorkflow", () => {
       expect(grants.every((g) => g.status === "revoked")).toBe(true);
       expect(grants.every((g) => g.revokedAt !== null)).toBe(true);
 
-      expect(billingPublisherSpy).toHaveBeenCalledTimes(1);
-      expect(billingPublisherSpy).toHaveBeenCalledWith(
-         "job.notification",
+      expect(ssePublishSpy).toHaveBeenCalledTimes(1);
+      expect(ssePublishSpy).toHaveBeenCalledWith(
+         expect.anything(),
+         { kind: "team", id: teamId },
          expect.objectContaining({
-            type: NOTIFICATION_TYPES.BILLING_BENEFIT_REVOKED,
+            type: "billing.benefit_revoked",
             payload: {
                subscriptionId: sub.id,
                benefitIds: expect.arrayContaining([benefitA.id, benefitB.id]),
@@ -274,11 +274,12 @@ describe("benefitLifecycleWorkflow", () => {
       expect(grants[0]?.status).toBe("revoked");
       expect(grants[0]?.revokedAt).not.toBeNull();
 
-      expect(billingPublisherSpy).toHaveBeenCalledTimes(1);
-      expect(billingPublisherSpy).toHaveBeenCalledWith(
-         "job.notification",
+      expect(ssePublishSpy).toHaveBeenCalledTimes(1);
+      expect(ssePublishSpy).toHaveBeenCalledWith(
+         expect.anything(),
+         { kind: "team", id: teamId },
          expect.objectContaining({
-            type: NOTIFICATION_TYPES.BILLING_BENEFIT_REVOKED,
+            type: "billing.benefit_revoked",
          }),
       );
    });
@@ -332,12 +333,10 @@ describe("benefitLifecycleWorkflow", () => {
       expect(grants.every((g) => g.status === "active")).toBe(true);
       expect(grants.every((g) => g.revokedAt === null)).toBe(true);
 
-      expect(billingPublisherSpy).toHaveBeenCalledTimes(2);
-      const callTypes = billingPublisherSpy.mock.calls.map(
-         (c) => (c[1] as { type: string }).type,
-      );
-      expect(callTypes).toContain(NOTIFICATION_TYPES.BILLING_BENEFIT_REVOKED);
-      expect(callTypes).toContain(NOTIFICATION_TYPES.BILLING_BENEFIT_GRANTED);
+      expect(ssePublishSpy).toHaveBeenCalledTimes(2);
+      const callTypes = ssePublishSpy.mock.calls.map((c) => c[2].type);
+      expect(callTypes).toContain("billing.benefit_revoked");
+      expect(callTypes).toContain("billing.benefit_granted");
    });
 
    it("is idempotent — running grant twice keeps row count = benefitIds.length", async () => {

@@ -1,9 +1,11 @@
+import { createHash } from "node:crypto";
 import dayjs from "dayjs";
 import { err, fromPromise, fromThrowable, ok } from "neverthrow";
+import { z } from "zod";
 import { logs } from "@opentelemetry/api-logs";
-import { ORPCError, os } from "@orpc/server";
+import { ORPCError, onSuccess, os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
-import { createHyprPayClient } from "@montte/hyprpay";
+import { createHyprpay } from "@core/hyprpay/client";
 import { createDb } from "@core/database/client";
 import { env } from "@core/environment/web";
 import {
@@ -18,7 +20,6 @@ import { AppError, WebAppError } from "@core/logging/errors";
 import { createResendClient } from "@core/transactional/utils";
 import { createWorkflowClient } from "@core/dbos/client";
 import { sanitizeData } from "@core/utils/sanitization";
-import { createJobPublisher } from "@packages/notifications/publisher";
 import type {
    ORPCContext,
    ORPCContextAuthenticated,
@@ -30,37 +31,98 @@ const db = createDb({ databaseUrl: env.DATABASE_URL });
 const redis = createRedis(env.REDIS_URL);
 const posthog = createPostHog(env.POSTHOG_KEY, env.POSTHOG_HOST);
 const resendClient = createResendClient(env.RESEND_API_KEY);
-const hyprpayClient = createHyprPayClient({ apiKey: env.HYPRPAY_API_KEY });
+const hyprpayClient = createHyprpay(env.HYPRPAY_API_KEY);
 const auth = createAuth({
    db,
    redis,
    posthog,
    resendClient,
-   hyprpayClient,
    env,
 });
 const workflowClient = createWorkflowClient(env.DATABASE_URL);
-const jobPublisher = createJobPublisher(redis);
 
 const otelLogger = logs.getLogger("montte-web-orpc");
 
-const base = os.$context<ORPCContext>();
+export type BillableMeta = { billableEvent?: string };
+
+const base = os.$context<ORPCContext>().$meta<BillableMeta>({});
+
+const apiKeyMetadataSchema = z.object({
+   organizationId: z.string().min(1),
+   teamId: z.string().min(1).nullish(),
+});
 
 const withDeps = base.use(async ({ context, next }) => {
-   const sessionResult = await fromPromise(
-      (async () => auth.api.getSession({ headers: context.headers }))(),
-      () => null,
+   const apiKeyValue =
+      context.headers.get("x-api-key") ?? context.headers.get("sdk-api-key");
+
+   if (apiKeyValue) {
+      const result = await fromPromise(
+         auth.api.verifyApiKey({ body: { key: apiKeyValue } }),
+         () => WebAppError.unauthorized("API key inválida."),
+      )
+         .andThen((v) =>
+            v?.valid && v.key
+               ? ok(v.key)
+               : err(WebAppError.unauthorized("API key inválida.")),
+         )
+         .andThen((key) => {
+            const parsed = apiKeyMetadataSchema.safeParse(key.metadata);
+            return parsed.success
+               ? ok(parsed.data)
+               : err(WebAppError.badRequest("Metadata da API key inválida."));
+         })
+         .andThen((meta) =>
+            fromPromise(auth.api.getSession({ headers: context.headers }), () =>
+               WebAppError.unauthorized("Falha ao resolver sessão da API key."),
+            ).andThen((s) =>
+               s?.user
+                  ? ok({
+                       ...s,
+                       session: {
+                          ...s.session,
+                          activeOrganizationId: meta.organizationId,
+                          activeTeamId: meta.teamId ?? s.session.activeTeamId,
+                       },
+                    })
+                  : err(
+                       WebAppError.unauthorized(
+                          "API key sem sessão associada.",
+                       ),
+                    ),
+            ),
+         );
+      if (result.isErr()) throw result.error;
+
+      return next({
+         context: {
+            ...context,
+            auth,
+            db,
+            session: result.value,
+            posthog,
+            redis,
+            workflowClient: await workflowClient,
+            hyprpayClient,
+         },
+      });
+   }
+
+   const cookieSession = await fromPromise(
+      auth.api.getSession({ headers: context.headers }),
+      () => WebAppError.internal("Falha ao resolver sessão."),
    );
+   if (cookieSession.isErr()) throw cookieSession.error;
+
    return next({
       context: {
          ...context,
          auth,
          db,
-         session: sessionResult.isOk() ? sessionResult.value : null,
+         session: cookieSession.value,
          posthog,
          redis,
          workflowClient: await workflowClient,
-         jobPublisher,
          hyprpayClient,
       },
    });
@@ -213,29 +275,48 @@ const withTelemetry = withOrganization.use(
    },
 );
 
-const withBilling = withTelemetry.use(async ({ context, path, next }) => {
-   const result = await next({});
-   context.hyprpayClient.usage
-      .ingest({
-         customerId: context.organizationId,
-         meterId: path.join("."),
-         quantity: 1,
-         idempotencyKey: crypto.randomUUID(),
-      })
-      .then((r) => {
-         if (r.isErr())
-            otelLogger.emit({
-               severityText: "error",
-               body: "billing ingest failed",
-               attributes: {
-                  "error.message": r.error.message,
-                  path: path.join("."),
-                  organizationId: context.organizationId,
-               },
-            });
-      });
-   return result;
-});
+const withBilling = withTelemetry.use(
+   onSuccess(async (_result, { context, path, procedure }, input) => {
+      const eventName = procedure["~orpc"].meta.billableEvent;
+      if (!eventName) return;
+
+      const headerKey =
+         context.headers.get("idempotency-key") ??
+         context.headers.get("x-idempotency-key") ??
+         context.headers.get("x-request-id");
+      const idempotencyKey =
+         headerKey ??
+         createHash("sha256")
+            .update(
+               `${context.organizationId}|${path.join(".")}|${JSON.stringify(input ?? null)}`,
+            )
+            .digest("hex");
+
+      const result = await fromPromise(
+         context.hyprpayClient.services.ingestUsage({
+            eventName,
+            quantity: "1",
+            idempotencyKey,
+            properties: { path: path.join(".") },
+         }),
+         (e) => (e instanceof Error ? e : new Error(String(e))),
+      );
+
+      if (result.isErr()) {
+         otelLogger.emit({
+            severityText: "warn",
+            body: "billable event ingest failed",
+            attributes: {
+               "error.message": result.error.message,
+               path: path.join("."),
+               eventName,
+               organizationId: context.organizationId,
+               teamId: context.teamId,
+            },
+         });
+      }
+   }),
+);
 
 export type {
    ORPCContext,

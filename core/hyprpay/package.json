@@ -1,0 +1,32 @@
+{
+   "name": "@core/hyprpay",
+   "version": "0.1.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      "./client": {
+         "types": "./dist/client.d.ts",
+         "default": "./dist/client.js"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "test": "vitest run --passWithNoTests",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@montte/hyprpay": "workspace:*"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development",
+      "vitest": "catalog:testing"
+   }
+}

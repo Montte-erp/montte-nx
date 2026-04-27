@@ -8,7 +8,6 @@ import {
    vi,
 } from "vitest";
 import { call } from "@orpc/server";
-import { errAsync, okAsync } from "neverthrow";
 import { eq } from "drizzle-orm";
 import { setupTestDb } from "@core/database/testing/setup-test-db";
 import { seedTeam } from "@core/database/testing/factories";
@@ -279,55 +278,56 @@ describe("coupons router", () => {
    });
 
    describe("validate", () => {
-      it("returns hyprpay value on ok result", async () => {
-         const hyprpayClient = createHyprpayMock();
-         const priceId = crypto.randomUUID();
-         const validation = {
-            valid: true,
-            couponId: crypto.randomUUID(),
-            discount: "10",
-         };
-         hyprpayClient.coupons.validate.mockReturnValueOnce(
-            okAsync(validation),
-         );
-
+      it("returns not_found when coupon does not exist", async () => {
          const { teamId } = await seedTeam(testDb.db);
          const ctx = createTestContext(testDb.db, {
             teamId,
-            extras: { hyprpayClient },
+            extras: { hyprpayClient: createHyprpayMock() },
          });
          const result = await call(
             couponsRouter.validate,
-            { code: "X", priceId },
+            { code: "DOES-NOT-EXIST" },
             { context: ctx },
          );
-         expect(result).toEqual(validation);
-         expect(hyprpayClient.coupons.validate).toHaveBeenCalledWith({
-            code: "X",
-            priceId,
-         });
+         expect(result).toEqual({ valid: false, reason: "not_found" });
       });
 
-      it("throws INTERNAL when hyprpay validate returns err", async () => {
-         const hyprpayClient = createHyprpayMock();
-         hyprpayClient.coupons.validate.mockReturnValueOnce(
-            errAsync(new Error("boom")),
-         );
+      it("returns inactive when coupon isActive=false", async () => {
          const { teamId } = await seedTeam(testDb.db);
+         const coupon = await makeCoupon(testDb.db, {
+            teamId,
+            code: "INACTIVE",
+         });
+         await testDb.db
+            .update(coupons)
+            .set({ isActive: false })
+            .where(eq(coupons.id, coupon.id));
          const ctx = createTestContext(testDb.db, {
             teamId,
-            extras: { hyprpayClient },
+            extras: { hyprpayClient: createHyprpayMock() },
          });
-         await expect(
-            call(
-               couponsRouter.validate,
-               { code: "X", priceId: crypto.randomUUID() },
-               { context: ctx },
-            ),
-         ).rejects.toSatisfy(
-            (e: Error & { code?: string }) =>
-               e.code === "INTERNAL_SERVER_ERROR",
+         const result = await call(
+            couponsRouter.validate,
+            { code: "INACTIVE" },
+            { context: ctx },
          );
+         expect(result).toEqual({ valid: false, reason: "inactive" });
+      });
+
+      it("returns valid: true with coupon detail when active", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         await makeCoupon(testDb.db, { teamId, code: "VALID" });
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            couponsRouter.validate,
+            { code: "VALID" },
+            { context: ctx },
+         );
+         expect(result.valid).toBe(true);
+         if (result.valid) expect(result.coupon.code).toBe("VALID");
       });
    });
 });

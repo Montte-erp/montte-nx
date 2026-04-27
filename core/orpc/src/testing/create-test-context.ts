@@ -16,10 +16,6 @@ export function createWorkflowClientMock() {
    return { enqueue: vi.fn().mockResolvedValue(undefined) };
 }
 
-export function createJobPublisherMock() {
-   return { publish: vi.fn().mockResolvedValue(undefined) };
-}
-
 export type TestContextOverrides = {
    teamId?: string;
    organizationId?: string;
@@ -59,7 +55,6 @@ export function createTestContext(
       posthog: createPosthogMock(),
       redis: {} as never,
       workflowClient: createWorkflowClientMock(),
-      jobPublisher: createJobPublisherMock(),
       ...overrides.extras,
    };
 }

@@ -2,8 +2,11 @@ import { os } from "@orpc/server";
 import { err, fromPromise, ok } from "neverthrow";
 import { WebAppError } from "@core/logging/errors";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
+import type { ContactByIdRef, ContactFkRef } from "@montte/hyprpay/contract";
 
 const base = os.$context<ORPCContextWithOrganization>();
+
+export type ContactRef = ContactByIdRef | ContactFkRef;
 
 export const requireService = base.middleware(
    async ({ context, next }, id: string) => {
@@ -40,14 +43,22 @@ export const requireServicePrice = base.middleware(
 );
 
 export const requireContact = base.middleware(
-   async ({ context, next }, id: string) => {
+   async ({ context, next }, ref: ContactRef) => {
       const result = await fromPromise(
          context.db.query.contacts.findFirst({
-            where: (f, { eq }) => eq(f.id, id),
+            where: (f, { and, eq }) =>
+               "id" in ref
+                  ? and(eq(f.teamId, context.teamId), eq(f.id, ref.id))
+                  : "contactId" in ref
+                    ? and(eq(f.teamId, context.teamId), eq(f.id, ref.contactId))
+                    : and(
+                         eq(f.teamId, context.teamId),
+                         eq(f.externalId, ref.externalId),
+                      ),
          }),
          () => WebAppError.internal("Falha ao verificar permissão."),
       ).andThen((contact) =>
-         !contact || contact.teamId !== context.teamId
+         !contact
             ? err(WebAppError.notFound("Contato não encontrado."))
             : ok(contact),
       );

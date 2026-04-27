@@ -1,0 +1,17 @@
+{
+   "extends": "@tooling/typescript/core.json",
+   "compilerOptions": {
+      "paths": {
+         "@core/database": ["../../core/database/src/index.ts"],
+         "@core/database/*": ["../../core/database/src/*"],
+         "@core/hyprpay/*": ["./src/*"],
+         "@montte/hyprpay": ["../../libraries/hyprpay/dist/esm/index.d.ts"]
+      }
+   },
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../database"
+      }
+   ]
+}

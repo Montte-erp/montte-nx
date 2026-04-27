@@ -4,7 +4,7 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Archive, Landmark, ShieldCheck, Tags } from "lucide-react";
+import { Archive, Landmark, ShieldCheck } from "lucide-react";
 import { z } from "zod";
 import {
    Announcement,
@@ -31,7 +31,6 @@ type OnUpdate = (
    patch: {
       name?: string;
       description?: string | null;
-      keywords?: string[] | null;
    },
 ) => Promise<void>;
 
@@ -137,55 +136,6 @@ export function buildTagColumns(options?: {
             ) : (
                <span className="text-sm text-muted-foreground/40">—</span>
             ),
-      },
-      {
-         id: "keywords",
-         accessorFn: (row) => row.keywords ?? [],
-         header: "Palavras-chave",
-         meta: {
-            label: "Palavras-chave",
-            exportable: true,
-            isEditable: true,
-            cellComponent: "tags",
-            isEditableForRow: (row: TagRow) => !row.isArchived,
-            onSave: options?.onUpdate
-               ? async (rowId, value) => {
-                    const kws = Array.isArray(value) ? (value as string[]) : [];
-                    await options.onUpdate!(rowId, {
-                       keywords: kws.length > 0 ? kws : null,
-                    });
-                 }
-               : undefined,
-         },
-         enableSorting: false,
-         cell: ({ row }) => {
-            const keywords = row.original.keywords;
-            const count = keywords?.length ?? 0;
-            if (count === 0)
-               return <span className="text-sm text-muted-foreground">—</span>;
-            return (
-               <Tooltip>
-                  <TooltipTrigger asChild>
-                     <Announcement className="cursor-default w-fit">
-                        <AnnouncementTag>
-                           <Tags className="size-4" />
-                        </AnnouncementTag>
-                        <AnnouncementTitle className="text-xs">
-                           {count} {count === 1 ? "palavra" : "palavras"}
-                        </AnnouncementTitle>
-                     </Announcement>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-72">
-                     <p className="font-semibold text-sm">Palavras-chave IA</p>
-                     <p className="text-xs text-muted-foreground">
-                        Geradas automaticamente com base no nome e descrição do
-                        centro de custo.
-                     </p>
-                     <p className="text-xs">{keywords!.join(", ")}</p>
-                  </TooltipContent>
-               </Tooltip>
-            );
-         },
       },
    ];
 }

@@ -34,8 +34,7 @@ import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceStatementImported } from "@packages/events/finance";
 import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
-import { enqueueCategorizationWorkflow } from "@packages/workflows/workflows/categorization-workflow";
-import { enqueueSuggestTagWorkflow } from "@packages/workflows/workflows/suggest-tag-workflow";
+import { enqueueClassifyTransactionsBatchWorkflow } from "@modules/classification/workflows/classification-workflow";
 import { withCreditEnforcement } from "../middlewares/credit-enforcement";
 import { protectedProcedure } from "../server";
 
@@ -158,20 +157,13 @@ export const create = protectedProcedure
          !input.categoryId &&
          (input.type === "income" || input.type === "expense")
       ) {
-         await enqueueCategorizationWorkflow(context.workflowClient, {
-            transactionId: transaction.id,
-            teamId: context.teamId,
-            name: input.name ?? "",
-            type: input.type,
-         });
-      }
-
-      if (transaction?.name && !tagId) {
-         enqueueSuggestTagWorkflow(context.workflowClient, {
-            transactionId: transaction.id,
-            teamId: context.teamId,
-            name: transaction.name,
-         }).catch(() => undefined);
+         await enqueueClassifyTransactionsBatchWorkflow(
+            context.workflowClient,
+            {
+               teamId: context.teamId,
+               transactionIds: [transaction.id],
+            },
+         );
       }
 
       return transaction;
@@ -364,28 +356,21 @@ export const importStatement = withCreditEnforcement(
       );
 
       if (input.autoCategorize) {
-         for (const tx of inserted) {
-            if (
-               !tx.categoryId &&
-               (tx.type === "income" || tx.type === "expense")
-            ) {
-               await enqueueCategorizationWorkflow(context.workflowClient, {
-                  transactionId: tx.id,
+         const idsToClassify = inserted
+            .filter(
+               (tx) =>
+                  !tx.categoryId &&
+                  (tx.type === "income" || tx.type === "expense"),
+            )
+            .map((tx) => tx.id);
+         if (idsToClassify.length > 0) {
+            await enqueueClassifyTransactionsBatchWorkflow(
+               context.workflowClient,
+               {
                   teamId: context.teamId,
-                  name: tx.name ?? "",
-                  type: tx.type,
-               });
-            }
-         }
-      }
-
-      for (const tx of inserted) {
-         if (tx.name) {
-            enqueueSuggestTagWorkflow(context.workflowClient, {
-               transactionId: tx.id,
-               teamId: context.teamId,
-               name: tx.name,
-            }).catch(() => undefined);
+                  transactionIds: idsToClassify,
+               },
+            );
          }
       }
 
@@ -527,6 +512,7 @@ export const importBulk = protectedProcedure
    )
    .handler(async ({ context, input }) => {
       let imported = 0;
+      const idsToClassify: string[] = [];
       for (const t of input.transactions) {
          const { tagId, items: _items, ...data } = t;
          await validateTransactionReferences(context.db, context.teamId, {
@@ -555,21 +541,18 @@ export const importBulk = protectedProcedure
             !data.categoryId &&
             (data.type === "income" || data.type === "expense")
          ) {
-            await enqueueCategorizationWorkflow(context.workflowClient, {
-               transactionId: transaction.id,
-               teamId: context.teamId,
-               name: data.name ?? "",
-               type: data.type,
-            });
-         }
-         if (transaction?.name && !tagId) {
-            enqueueSuggestTagWorkflow(context.workflowClient, {
-               transactionId: transaction.id,
-               teamId: context.teamId,
-               name: transaction.name,
-            }).catch(() => undefined);
+            idsToClassify.push(transaction.id);
          }
          imported++;
+      }
+      if (idsToClassify.length > 0) {
+         await enqueueClassifyTransactionsBatchWorkflow(
+            context.workflowClient,
+            {
+               teamId: context.teamId,
+               transactionIds: idsToClassify,
+            },
+         );
       }
       return { imported, skipped: 0 };
    });

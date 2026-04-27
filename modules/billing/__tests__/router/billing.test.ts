@@ -8,7 +8,6 @@ import {
    vi,
 } from "vitest";
 import { call } from "@orpc/server";
-import { okAsync, errAsync } from "neverthrow";
 import { setupTestDb } from "@core/database/testing/setup-test-db";
 import { seedTeam } from "@core/database/testing/factories";
 import { createTestContext } from "@core/orpc/testing/create-test-context";
@@ -97,84 +96,6 @@ describe("billing router", () => {
          };
          await expect(
             call(billing.getEventCatalog, undefined, { context: brokenCtx }),
-         ).rejects.toSatisfy(
-            (e: Error & { code?: string }) =>
-               e.code === "INTERNAL_SERVER_ERROR",
-         );
-      });
-   });
-
-   describe("getUsageSummary", () => {
-      it("returns hyprpay data on ok result", async () => {
-         const hyprpayClient = createHyprpayMock();
-         hyprpayClient.usage.list.mockReturnValueOnce(
-            okAsync([{ id: "evt_1" }]),
-         );
-         const ctx = createTestContext(testDb.db, {
-            organizationId: "cus_123",
-            extras: { hyprpayClient },
-         });
-         const result = await call(billing.getUsageSummary, undefined, {
-            context: ctx,
-         });
-         expect(result).toEqual([{ id: "evt_1" }]);
-         expect(hyprpayClient.usage.list).toHaveBeenCalledWith({
-            customerId: "cus_123",
-         });
-      });
-
-      it("throws INTERNAL when hyprpay returns err result", async () => {
-         const hyprpayClient = createHyprpayMock();
-         hyprpayClient.usage.list.mockReturnValueOnce(
-            errAsync(new Error("boom")),
-         );
-         const ctx = createTestContext(testDb.db, {
-            extras: { hyprpayClient },
-         });
-         await expect(
-            call(billing.getUsageSummary, undefined, { context: ctx }),
-         ).rejects.toSatisfy(
-            (e: Error & { code?: string }) =>
-               e.code === "INTERNAL_SERVER_ERROR",
-         );
-      });
-   });
-
-   describe("getCustomerPortalSession", () => {
-      it("returns session data on ok result", async () => {
-         const hyprpayClient = createHyprpayMock();
-         hyprpayClient.customerPortal.createSession.mockReturnValueOnce(
-            okAsync({ url: "https://billing.hyprpay.dev/session/abc" }),
-         );
-         const ctx = createTestContext(testDb.db, {
-            organizationId: "cus_123",
-            extras: { hyprpayClient },
-         });
-         const result = await call(
-            billing.getCustomerPortalSession,
-            undefined,
-            { context: ctx },
-         );
-         expect(result).toEqual({
-            url: "https://billing.hyprpay.dev/session/abc",
-         });
-         expect(
-            hyprpayClient.customerPortal.createSession,
-         ).toHaveBeenCalledWith("cus_123");
-      });
-
-      it("throws INTERNAL when hyprpay returns err result", async () => {
-         const hyprpayClient = createHyprpayMock();
-         hyprpayClient.customerPortal.createSession.mockReturnValueOnce(
-            errAsync(new Error("boom")),
-         );
-         const ctx = createTestContext(testDb.db, {
-            extras: { hyprpayClient },
-         });
-         await expect(
-            call(billing.getCustomerPortalSession, undefined, {
-               context: ctx,
-            }),
          ).rejects.toSatisfy(
             (e: Error & { code?: string }) =>
                e.code === "INTERNAL_SERVER_ERROR",

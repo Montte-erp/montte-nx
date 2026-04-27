@@ -1,6 +1,6 @@
 {
    "name": "@montte/hyprpay",
-   "version": "0.2.0",
+   "version": "0.6.0",
    "private": false,
    "description": "HyprPay SDK — sincronize o ciclo de vida de clientes com o Montte",
    "keywords": [
@@ -23,16 +23,6 @@
             "default": "./dist/cjs/index.cjs"
          }
       },
-      "./better-auth": {
-         "import": {
-            "types": "./dist/esm/better-auth/index.d.ts",
-            "default": "./dist/esm/better-auth/index.js"
-         },
-         "require": {
-            "types": "./dist/cjs/better-auth/index.d.cts",
-            "default": "./dist/cjs/better-auth/index.cjs"
-         }
-      },
       "./contract": {
          "import": {
             "types": "./dist/esm/contract.d.ts",
@@ -41,6 +31,16 @@
          "require": {
             "types": "./dist/cjs/contract.d.cts",
             "default": "./dist/cjs/contract.cjs"
+         }
+      },
+      "./better-auth": {
+         "import": {
+            "types": "./dist/esm/better-auth/index.d.ts",
+            "default": "./dist/esm/better-auth/index.js"
+         },
+         "require": {
+            "types": "./dist/cjs/better-auth/index.d.cts",
+            "default": "./dist/cjs/better-auth/index.cjs"
          }
       },
       "./package.json": "./package.json"

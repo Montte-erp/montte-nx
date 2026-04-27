@@ -40,19 +40,22 @@
          "path": "./core/redis"
       },
       {
+         "path": "./core/hyprpay"
+      },
+      {
+         "path": "./core/sse"
+      },
+      {
          "path": "./core/utils"
       },
       {
-         "path": "./core/agents"
+         "path": "./core/ai"
       },
       {
          "path": "./core/dbos"
       },
       {
-         "path": "./packages/notifications"
-      },
-      {
-         "path": "./packages/workflows"
+         "path": "./modules/classification"
       }
    ]
 }

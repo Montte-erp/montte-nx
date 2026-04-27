@@ -1,0 +1,15 @@
+{
+   "extends": "@tooling/typescript/tsconfig.package.json",
+   "compilerOptions": {
+      "paths": {
+         "@core/ai/*": ["./src/*"],
+         "@core/posthog/*": ["../posthog/src/*"]
+      }
+   },
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../posthog"
+      }
+   ]
+}

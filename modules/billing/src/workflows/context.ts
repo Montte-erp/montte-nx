@@ -4,9 +4,9 @@ import { createStore } from "@tanstack/store";
 import type { DatabaseInstance } from "@core/database/client";
 import * as schema from "@core/database/schema";
 import { env } from "@core/environment/worker";
+import type { HyprPayClient } from "@core/hyprpay/client";
 import type { Redis } from "@core/redis/connection";
 import type { ResendClient } from "@core/transactional/utils";
-import { createJobPublisher } from "@packages/notifications/publisher";
 import { BILLING_QUEUES } from "../constants";
 
 export { createEnqueuer } from "@core/dbos/factory";
@@ -18,29 +18,33 @@ export const billingDataSource = new DrizzleDataSource<DatabaseInstance>(
 );
 
 type BillingWorkflowContext = {
-   publisher: ReturnType<typeof createJobPublisher> | null;
+   redis: Redis | null;
    resendClient: ResendClient | null;
+   hyprpayClient: HyprPayClient | null;
 };
 
 const store = createStore<BillingWorkflowContext>({
-   publisher: null,
+   redis: null,
    resendClient: null,
+   hyprpayClient: null,
 });
 
 export function initBillingWorkflowContext(
    redis: Redis,
    resendClient: ResendClient,
+   hyprpayClient: HyprPayClient,
 ) {
    store.setState(() => ({
-      publisher: createJobPublisher(redis),
+      redis,
       resendClient,
+      hyprpayClient,
    }));
 }
 
-export function getBillingPublisher() {
-   const { publisher } = store.state;
-   if (!publisher) throw new Error("Billing workflow context not initialized");
-   return publisher;
+export function getBillingRedis(): Redis {
+   const { redis } = store.state;
+   if (!redis) throw new Error("Billing workflow context not initialized");
+   return redis;
 }
 
 export function getBillingResendClient(): ResendClient {
@@ -48,6 +52,13 @@ export function getBillingResendClient(): ResendClient {
    if (!resendClient)
       throw new Error("Billing workflow context not initialized");
    return resendClient;
+}
+
+export function getBillingHyprpay(): HyprPayClient {
+   const { hyprpayClient } = store.state;
+   if (!hyprpayClient)
+      throw new Error("Billing workflow context not initialized");
+   return hyprpayClient;
 }
 
 export function createBillingQueues(options: { workerConcurrency: number }) {

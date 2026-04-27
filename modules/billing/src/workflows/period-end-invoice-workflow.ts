@@ -14,23 +14,25 @@ import {
 } from "@f-o-t/money";
 import { WorkflowError } from "@core/dbos/errors";
 import { sendBillingInvoiceGenerated } from "@core/transactional/client";
+import { TRANSACTIONAL_USAGE_EVENTS } from "@core/transactional/usage-events";
 import { couponRedemptions } from "@core/database/schemas/coupons";
 import type { Coupon } from "@core/database/schemas/coupons";
 import { invoices } from "@core/database/schemas/invoices";
 import type { InvoiceLineItem } from "@core/database/schemas/invoices";
 import { usageEvents } from "@core/database/schemas/usage-events";
-import { NOTIFICATION_TYPES } from "@packages/notifications/types";
-import type { JobNotification } from "@packages/notifications/schema";
+import { billingSseEvents } from "../sse";
 import { BILLING_QUEUES } from "../constants";
 import {
    billingDataSource,
-   getBillingPublisher,
+   getBillingHyprpay,
+   getBillingRedis,
    getBillingResendClient,
    createEnqueuer,
 } from "./context";
 
 export type PeriodEndInvoiceInput = {
    teamId: string;
+   organizationId: string;
    subscriptionId: string;
    periodStart: string;
    periodEnd: string;
@@ -40,7 +42,6 @@ export type PeriodEndInvoiceInput = {
 };
 
 async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
-   const publisher = getBillingPublisher();
    const ctx = `[period-end-invoice] sub=${input.subscriptionId} team=${input.teamId}`;
 
    DBOS.logger.info(
@@ -349,22 +350,23 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
 
    const publishResult = await fromPromise(
       DBOS.runStep(
-         () =>
-            publisher.publish("job.notification", {
-               jobId: crypto.randomUUID(),
-               timestamp: dayjs().toISOString(),
-               type: NOTIFICATION_TYPES.BILLING_INVOICE_GENERATED,
-               status: "completed",
-               message: `Fatura gerada para assinatura ${input.subscriptionId}.`,
-               teamId: input.teamId,
-               payload: {
-                  invoiceId: invoice.id,
-                  subscriptionId: input.subscriptionId,
-                  total: computation.total,
-                  currency: "BRL",
+         async () => {
+            const publish = await billingSseEvents.publish(
+               getBillingRedis(),
+               { kind: "team", id: input.teamId },
+               {
+                  type: "billing.invoice_generated",
+                  payload: {
+                     invoiceId: invoice.id,
+                     subscriptionId: input.subscriptionId,
+                     total: computation.total,
+                     currency: "BRL",
+                  },
                },
-            } satisfies JobNotification),
-         { name: "publishNotification" },
+            );
+            if (publish.isErr()) throw publish.error;
+         },
+         { name: "publishInvoiceGenerated" },
       ),
       (e) =>
          WorkflowError.internal("Falha ao publicar notificação de fatura.", {
@@ -389,6 +391,25 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
                   total: computation.total,
                   from: input.emailFrom,
                });
+
+               const ingest = await fromPromise(
+                  getBillingHyprpay().services.ingestUsage({
+                     eventName: TRANSACTIONAL_USAGE_EVENTS.emailSent,
+                     quantity: "1",
+                     idempotencyKey: `email-invoice-${invoice.id}`,
+                     properties: {
+                        kind: "billing.invoice_generated",
+                        invoiceId: invoice.id,
+                        subscriptionId: input.subscriptionId,
+                     },
+                  }),
+                  (e) => (e instanceof Error ? e : new Error(String(e))),
+               );
+               if (ingest.isErr()) {
+                  DBOS.logger.warn(
+                     `usage ingestion failed for email.sent — org=${input.organizationId} err=${ingest.error.message}`,
+                  );
+               }
             }
          },
          { name: "sendEmails" },

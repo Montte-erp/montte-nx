@@ -74,7 +74,7 @@ export const Route = createFileRoute(
          orpc.creditCards.getAll.queryOptions({ input: { pageSize: 100 } }),
       );
       context.queryClient.prefetchQuery(
-         orpc.services.getContactSubscriptions.queryOptions({
+         orpc.subscriptions.getContactSubscriptions.queryOptions({
             input: { contactId: params.contactId },
          }),
       );

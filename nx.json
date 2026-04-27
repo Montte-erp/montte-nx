@@ -40,7 +40,7 @@
       },
       "typecheck": {
          "cache": true,
-         "dependsOn": ["^typecheck", "^build"],
+         "dependsOn": ["^typecheck"],
          "inputs": ["default", "^default"],
          "outputs": ["{projectRoot}/.cache/tsbuildinfo.json"]
       },
@@ -53,6 +53,7 @@
       },
       "test": {
          "cache": true,
+         "dependsOn": ["^build"],
          "inputs": ["default", "^production"],
          "outputs": ["{projectRoot}/coverage"]
       }

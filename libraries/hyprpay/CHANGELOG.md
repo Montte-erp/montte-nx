@@ -1,5 +1,63 @@
 # Changelog
 
+## 0.6.0 — 2026-04-27
+
+### Breaking
+- **`services.ingestUsage` input redesigned.** Removed `teamId` (implicit from API-key auth) and `meterId` as required. Now accepts either `meterId` or `eventName`; the server resolves `eventName` → meter for the authed team. `contactId` (UUID FK) replaced with `externalId` (string) to match the rest of the contracts. When no meter is configured for the event, the call returns `{ success: true }` (no-op).
+
+### Migration
+- `client.services.ingestUsage({ teamId, meterId, contactId, quantity, idempotencyKey })` → `client.services.ingestUsage({ eventName, externalId?, quantity, idempotencyKey })` (or pass `meterId` directly if already known).
+
+## 0.5.0 — 2026-04-26
+
+### Breaking
+- **Better-auth `hyprpay` plugin re-enabled** at `@montte/hyprpay/better-auth`. Signup now creates a HyprPay contact (`type: "cliente"`) via the SDK's `client.contacts.create({ ..., externalId: user.id })`; user updates sync the `name` via `client.contacts.update({ externalId, name })`. Consumers who upgraded between 0.4.0 and 0.5.0 may have been relying on the absence of this side-effect — re-evaluate before upgrading.
+- **`createAuth` deps no longer accepts `hyprpayClient`.** The plugin instantiates its own SDK client from `env.HYPRPAY_API_KEY`. Callers should remove the field from their `createAuth({ ... })` invocation; the env interface gains `HYPRPAY_API_KEY`.
+
+## 0.4.1 — 2026-04-26
+
+### Changed
+- **Contract output schemas tightened** — `z.unknown()` outputs replaced with hand-rolled row schemas across `services`, `contacts`, and `coupons` namespaces. SDK consumers now receive typed responses (full contact / subscription / subscription-item / coupon rows). Schemas live inline in `libraries/hyprpay/src/contract.ts`; libraries cannot import `@core/database`, so the row literals shadow the Drizzle row types.
+- **Contract input schemas aligned with handler reality** — `services.cancelSubscription`, `services.updateItem`, `services.removeItem` now key on `{ id }` (matches handler), not `{ subscriptionId }` / `{ itemId }`. `services.createSubscription` drops the unused `externalId` branch and `couponCode` field. `services.ingestUsage` exposes the real meter event shape (`{ teamId, meterId, contactId, quantity, idempotencyKey, properties }`). `coupons.create` and `coupons.update` move from `z.unknown()` to real Zod inputs.
+
+## 0.4.0 — 2026-04-26
+
+### Breaking
+- **Contract restructure** — `hyprpayContract` removed. `billingContract` exported instead, with namespaces `services`, `contacts`, `coupons`, `customerPortal`. Procedures previously at the contract root (`create`, `get`, `list`, `update`) and under `subscriptions`/`usage`/`benefits` are gone. The new shape mirrors `modules/billing/router/*` 1:1 and binds via `implementer`.
+- **Contact references are discriminated unions** — every contact-keyed input accepts either `{ id }`/`{ contactId }` (internal UUID) or `{ externalId }`. The middleware `requireContact` resolves either form. SaaS callers continue to use `externalId`; the dashboard calls the same procedures with internal `id`.
+- **Thin client** — `createHyprPayClient` now returns `ContractRouterClient<typeof billingContract>` directly. The `ResultAsync` wrappers, `HyprPayError`, and the `customers`/`subscriptions`/`usage`/`benefits` namespaces are gone. Call shape is `client.services.ingestUsage(input)`, `client.contacts.create(input)`, etc., and returns native promises.
+- **Subpath `./better-auth` removed** — the better-auth plugin is temporarily disabled while it gets rewired against the new contract. The directory remains but is unexported and the plugin is not registered in `@core/authentication`. Follow-up task: re-author against `client.contacts.create`/`client.contacts.update`.
+- **`./types` and `./errors` removed** — types are inferred from the contract via `z.infer`. Errors flow through native oRPC error handling (`ORPCError`).
+
+### Migration
+- `client.customers.get(externalId)` → `client.contacts.getById({ externalId })`
+- `client.customers.create({ name, ... })` → `client.contacts.create({ name, ... })`
+- `client.subscriptions.create({ externalId, items })` → `client.services.createSubscription({ contactId, startDate, items })`
+- `client.subscriptions.cancel({ subscriptionId })` → `client.services.cancelSubscription({ id })`
+- `client.subscriptions.list(externalId)` → `client.services.getContactSubscriptions({ externalId })`
+- `client.usage.ingest({ externalId, meterId, quantity })` → `client.services.ingestUsage({ externalId, meterId, quantity })`
+- `client.coupons.validate({ code, priceId })` → `client.coupons.validate({ code, priceId })` (unchanged)
+- `client.customerPortal.createSession(externalId)` → `client.customerPortal.createSession({ externalId })`
+- Result handling: drop `.match`/`.isErr` — wrap `await client.X.Y(input)` with `fromPromise` if neverthrow is desired upstream.
+
+## 0.3.0 — 2026-04-26
+
+### Breaking
+- All customer-scoped endpoints now accept `externalId` instead of `customerId`. The internal HyprPay customer UUID is no longer exposed in the SDK — SaaS callers reference customers exclusively by the `externalId` they set at creation. Affected:
+  - `subscriptions.create({ externalId, items, couponCode? })`
+  - `subscriptions.list(externalId)`
+  - `usage.ingest({ externalId, meterId, quantity, ... })`
+  - `usage.list({ externalId, meterId? })`
+  - `benefits.check({ externalId, benefitId })`
+  - `benefits.list(externalId)`
+  - `customerPortal.createSession(externalId)`
+- Server handlers resolve `externalId → customer.id` internally. Returns 404 when `externalId` does not match a known customer.
+
+### Migration
+- Replace every `customerId: cus_xxx` with `externalId: yourId` in SDK calls.
+- Customers must be created with an `externalId` before they can be referenced (`customers.create({ externalId, name, email, ... })`).
+- Better Auth plugin: opt into org-level customers via `customerType: "organization"` and sync seat count from members via `seats.autoSyncFromMembers: true` (see SKILL.md).
+
 ## 0.2.0 — 2026-04-23
 
 ### Added

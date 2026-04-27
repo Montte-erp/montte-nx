@@ -25,11 +25,11 @@ export function AddSubscriptionForm({
    const { openAlertDialog } = useAlertDialog();
 
    const createMutation = useMutation(
-      orpc.services.createSubscription.mutationOptions({
+      orpc.subscriptions.createSubscription.mutationOptions({
          onSuccess: () => {
             toast.success("Assinatura criada.");
             queryClient.invalidateQueries({
-               queryKey: orpc.services.getContactSubscriptions.queryKey({
+               queryKey: orpc.subscriptions.getContactSubscriptions.queryKey({
                   input: { contactId },
                }),
             });
