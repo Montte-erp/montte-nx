@@ -133,16 +133,26 @@ const createSubscriptionInput = z
       }
    });
 
-const ingestUsageEventInput = z.object({
-   teamId: z.string().uuid(),
-   meterId: z.string().uuid(),
-   contactId: z.string().uuid().nullable().optional(),
-   quantity: z
-      .string()
-      .regex(/^\d+(\.\d+)?$/, "Quantidade deve ser um número positivo."),
-   idempotencyKey: z.string().min(1),
-   properties: z.record(z.string(), z.unknown()).optional(),
-});
+const ingestUsageEventInput = z
+   .object({
+      meterId: z.string().uuid().optional(),
+      eventName: z.string().min(1).optional(),
+      externalId: z.string().min(1).nullable().optional(),
+      quantity: z
+         .string()
+         .regex(/^\d+(\.\d+)?$/, "Quantidade deve ser um número positivo."),
+      idempotencyKey: z.string().min(1),
+      properties: z.record(z.string(), z.unknown()).optional(),
+   })
+   .superRefine((data, ctx) => {
+      if (!data.meterId && !data.eventName) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Informe meterId ou eventName.",
+            path: ["meterId"],
+         });
+      }
+   });
 
 const servicesContract = {
    ingestUsage: oc

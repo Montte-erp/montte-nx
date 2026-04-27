@@ -7,7 +7,6 @@ import { WorkflowError } from "@core/dbos/errors";
 import { categories } from "@core/database/schemas/categories";
 import { tags } from "@core/database/schemas/tags";
 import { transactions } from "@core/database/schemas/transactions";
-import { ingestUsageEvent } from "@core/hyprpay/usage";
 import { matchByKeywords, type KeywordMatchResult } from "../utils";
 import {
    classifyTransactionsBatch,
@@ -21,6 +20,7 @@ import {
 } from "../constants";
 import {
    classificationDataSource,
+   getClassificationHyprpay,
    getClassificationPosthog,
    getClassificationRedis,
 } from "./context";
@@ -332,18 +332,19 @@ async function classifyTransactionsBatchWorkflowFn(
    if (aiResults.length > 0) {
       await DBOS.runStep(
          async () => {
-            const result = await ingestUsageEvent({
-               db: classificationDataSource.client,
-               teamId: input.teamId,
-               externalId: await resolveOrganizationId(input.teamId),
-               eventName: CLASSIFICATION_USAGE_EVENTS.aiTransactionClassified,
-               quantity: aiResults.length,
-               idempotencyKey: `classify-${DBOS.workflowID ?? buildWorkflowId(input)}`,
-               properties: {
-                  transactionCount: aiResults.length,
-                  keywordMatched: keywordMatched.length,
-               },
-            });
+            const result = await fromPromise(
+               getClassificationHyprpay().services.ingestUsage({
+                  eventName:
+                     CLASSIFICATION_USAGE_EVENTS.aiTransactionClassified,
+                  quantity: String(aiResults.length),
+                  idempotencyKey: `classify-${DBOS.workflowID ?? buildWorkflowId(input)}`,
+                  properties: {
+                     transactionCount: aiResults.length,
+                     keywordMatched: keywordMatched.length,
+                  },
+               }),
+               (e) => (e instanceof Error ? e : new Error(String(e))),
+            );
             if (result.isErr()) {
                DBOS.logger.warn(
                   `usage ingestion failed for ai.transaction_classified — team=${input.teamId} err=${result.error.message}`,
@@ -357,17 +358,6 @@ async function classifyTransactionsBatchWorkflowFn(
    DBOS.logger.info(
       `${ctx} completed — keyword=${keywordMatched.length} ai=${aiResults.length} written=${writes.length}`,
    );
-}
-
-async function resolveOrganizationId(teamId: string): Promise<string> {
-   const tx = classificationDataSource.client;
-   const row = await tx.query.team.findFirst({
-      where: (f, { eq }) => eq(f.id, teamId),
-      columns: { organizationId: true },
-   });
-   if (!row?.organizationId)
-      throw WorkflowError.database(`Team ${teamId} has no organization.`);
-   return row.organizationId;
 }
 
 export const classifyTransactionsBatchWorkflow = DBOS.registerWorkflow(

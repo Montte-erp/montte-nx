@@ -1513,7 +1513,7 @@ describe("services router", () => {
    });
 
    describe("usage", () => {
-      it("ingestUsage inserts a usage event row on happy path", async () => {
+      it("ingestUsage inserts a usage event row on happy path (by meterId)", async () => {
          const { teamId } = await seedTeam(testDb.db);
          const meter = await makeMeter(testDb.db, { teamId });
          const idempotencyKey = crypto.randomUUID();
@@ -1525,7 +1525,6 @@ describe("services router", () => {
          const result = await call(
             servicesRouter.ingestUsage,
             {
-               teamId,
                meterId: meter.id,
                quantity: "5",
                idempotencyKey,
@@ -1548,31 +1547,65 @@ describe("services router", () => {
          expect(Number(rows[0]?.quantity)).toBe(5);
       });
 
-      it("ingestUsage rejects with FORBIDDEN when input.teamId !== context.teamId", async () => {
-         const { teamId: otherTeamId } = await seedTeam(testDb.db);
-         const otherMeter = await makeMeter(testDb.db, {
-            teamId: otherTeamId,
+      it("ingestUsage resolves meter by eventName", async () => {
+         const { teamId } = await seedTeam(testDb.db);
+         const meter = await makeMeter(testDb.db, {
+            teamId,
+            eventName: "ai.classify",
          });
+         const idempotencyKey = crypto.randomUUID();
+
+         const ctx = createTestContext(testDb.db, {
+            teamId,
+            extras: { hyprpayClient: createHyprpayMock() },
+         });
+         const result = await call(
+            servicesRouter.ingestUsage,
+            {
+               eventName: "ai.classify",
+               quantity: "1",
+               idempotencyKey,
+            },
+            { context: ctx },
+         );
+         expect(result).toEqual({ success: true });
+
+         const rows = await testDb.db
+            .select()
+            .from(usageEvents)
+            .where(
+               and(
+                  eq(usageEvents.teamId, teamId),
+                  eq(usageEvents.idempotencyKey, idempotencyKey),
+               ),
+            );
+         expect(rows).toHaveLength(1);
+         expect(rows[0]?.meterId).toBe(meter.id);
+      });
+
+      it("ingestUsage no-ops when meter is not found", async () => {
          const { teamId } = await seedTeam(testDb.db);
 
          const ctx = createTestContext(testDb.db, {
             teamId,
             extras: { hyprpayClient: createHyprpayMock() },
          });
-         await expect(
-            call(
-               servicesRouter.ingestUsage,
-               {
-                  teamId: otherTeamId,
-                  meterId: otherMeter.id,
-                  quantity: "1",
-                  idempotencyKey: crypto.randomUUID(),
-               },
-               { context: ctx },
-            ),
-         ).rejects.toSatisfy(
-            (e: Error & { code?: string }) => e.code === "FORBIDDEN",
+         const result = await call(
+            servicesRouter.ingestUsage,
+            {
+               eventName: "no.meter.event",
+               quantity: "1",
+               idempotencyKey: crypto.randomUUID(),
+            },
+            { context: ctx },
          );
+         expect(result).toEqual({ success: true });
+
+         const rows = await testDb.db
+            .select()
+            .from(usageEvents)
+            .where(eq(usageEvents.teamId, teamId));
+         expect(rows).toHaveLength(0);
       });
 
       it("ingestUsage is idempotent — same idempotencyKey twice yields a single row", async () => {
@@ -1587,7 +1620,6 @@ describe("services router", () => {
          const first = await call(
             servicesRouter.ingestUsage,
             {
-               teamId,
                meterId: meter.id,
                quantity: "1",
                idempotencyKey,
@@ -1599,7 +1631,6 @@ describe("services router", () => {
          const second = await call(
             servicesRouter.ingestUsage,
             {
-               teamId,
                meterId: meter.id,
                quantity: "9",
                idempotencyKey,

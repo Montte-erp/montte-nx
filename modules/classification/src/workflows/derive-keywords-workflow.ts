@@ -3,7 +3,6 @@ import { fromPromise } from "neverthrow";
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { categories } from "@core/database/schemas/categories";
 import { WorkflowError } from "@core/dbos/errors";
-import { ingestUsageEvent } from "@core/hyprpay/usage";
 import { deriveKeywords } from "../ai/derive-keywords";
 import { classificationSseEvents } from "../sse";
 import {
@@ -13,6 +12,7 @@ import {
 import {
    classificationDataSource,
    createEnqueuer,
+   getClassificationHyprpay,
    getClassificationPosthog,
    getClassificationRedis,
 } from "./context";
@@ -147,18 +147,18 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsWorkflowInput) {
 
    await DBOS.runStep(
       async () => {
-         const result = await ingestUsageEvent({
-            db: classificationDataSource.client,
-            teamId: input.teamId,
-            externalId: input.organizationId,
-            eventName: CLASSIFICATION_USAGE_EVENTS.aiKeywordDerived,
-            quantity: 1,
-            idempotencyKey: `derive-${input.categoryId}-${DBOS.workflowID ?? "no-wf"}`,
-            properties: {
-               categoryId: input.categoryId,
-               keywordCount: keywords.length,
-            },
-         });
+         const result = await fromPromise(
+            getClassificationHyprpay().services.ingestUsage({
+               eventName: CLASSIFICATION_USAGE_EVENTS.aiKeywordDerived,
+               quantity: "1",
+               idempotencyKey: `derive-${input.categoryId}-${DBOS.workflowID ?? "no-wf"}`,
+               properties: {
+                  categoryId: input.categoryId,
+                  keywordCount: keywords.length,
+               },
+            }),
+            (e) => (e instanceof Error ? e : new Error(String(e))),
+         );
          if (result.isErr()) {
             DBOS.logger.warn(
                `usage ingestion failed for ai.keyword_derived — team=${input.teamId} err=${result.error.message}`,

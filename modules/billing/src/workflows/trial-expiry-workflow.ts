@@ -5,7 +5,6 @@ import { eq } from "drizzle-orm";
 import dayjs from "dayjs";
 import { WorkflowError } from "@core/dbos/errors";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
-import { ingestUsageEvent } from "@core/hyprpay/usage";
 import {
    sendBillingTrialExpired,
    sendBillingTrialExpiryWarning,
@@ -14,27 +13,27 @@ import { TRANSACTIONAL_USAGE_EVENTS } from "@core/transactional/usage-events";
 import { billingSseEvents } from "../sse";
 import { BILLING_QUEUES } from "../constants";
 import {
-   billingDataSource,
+   getBillingHyprpay,
    getBillingRedis,
    getBillingResendClient,
    createEnqueuer,
+   billingDataSource,
 } from "./context";
 
 async function ingestEmailSent(
-   teamId: string,
    organizationId: string,
    idempotencyKey: string,
    properties: Record<string, unknown>,
 ) {
-   const result = await ingestUsageEvent({
-      db: billingDataSource.client,
-      teamId,
-      externalId: organizationId,
-      eventName: TRANSACTIONAL_USAGE_EVENTS.emailSent,
-      quantity: 1,
-      idempotencyKey,
-      properties,
-   });
+   const result = await fromPromise(
+      getBillingHyprpay().services.ingestUsage({
+         eventName: TRANSACTIONAL_USAGE_EVENTS.emailSent,
+         quantity: "1",
+         idempotencyKey,
+         properties,
+      }),
+      (e) => (e instanceof Error ? e : new Error(String(e))),
+   );
    if (result.isErr()) {
       DBOS.logger.warn(
          `usage ingestion failed for email.sent — org=${organizationId} err=${result.error.message}`,
@@ -90,7 +89,6 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
                      from: input.emailFrom,
                   });
                   await ingestEmailSent(
-                     input.teamId,
                      input.organizationId,
                      `email-trial-warning-${input.subscriptionId}`,
                      {
@@ -202,7 +200,6 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
                   from: input.emailFrom,
                });
                await ingestEmailSent(
-                  input.teamId,
                   input.organizationId,
                   `email-trial-expired-${input.subscriptionId}`,
                   {

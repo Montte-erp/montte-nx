@@ -5,7 +5,6 @@ import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, onSuccess, os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
 import { createHyprpay } from "@core/hyprpay/client";
-import { ingestUsageEvent } from "@core/hyprpay/usage";
 import { createDb } from "@core/database/client";
 import { env } from "@core/environment/web";
 import {
@@ -280,19 +279,15 @@ const withBilling = withTelemetry.use(
       const eventName = procedure["~orpc"].meta.billableEvent;
       if (!eventName) return;
 
-      // Each successful procedure call is a distinct billable event; the
-      // usage_events unique index on (teamId, idempotencyKey) prevents
-      // double-counting on TanStack Query retries (failed calls never reach
-      // onSuccess).
-      const result = await ingestUsageEvent({
-         db: context.db,
-         teamId: context.teamId,
-         externalId: context.organizationId,
-         eventName,
-         quantity: 1,
-         idempotencyKey: crypto.randomUUID(),
-         properties: { path: path.join(".") },
-      });
+      const result = await fromPromise(
+         context.hyprpayClient.services.ingestUsage({
+            eventName,
+            quantity: "1",
+            idempotencyKey: crypto.randomUUID(),
+            properties: { path: path.join(".") },
+         }),
+         (e) => (e instanceof Error ? e : new Error(String(e))),
+      );
 
       if (result.isErr()) {
          otelLogger.emit({
@@ -300,20 +295,6 @@ const withBilling = withTelemetry.use(
             body: "billable event ingest failed",
             attributes: {
                "error.message": result.error.message,
-               path: path.join("."),
-               eventName,
-               organizationId: context.organizationId,
-               teamId: context.teamId,
-            },
-         });
-         return;
-      }
-
-      if (!result.value.ingested) {
-         otelLogger.emit({
-            severityText: "debug",
-            body: "billable event skipped — no meter configured",
-            attributes: {
                path: path.join("."),
                eventName,
                organizationId: context.organizationId,

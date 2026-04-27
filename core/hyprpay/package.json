@@ -11,10 +11,6 @@
       "./client": {
          "types": "./dist/client.d.ts",
          "default": "./dist/client.js"
-      },
-      "./usage": {
-         "types": "./dist/usage.d.ts",
-         "default": "./dist/usage.js"
       }
    },
    "scripts": {
@@ -22,13 +18,11 @@
       "check": "oxlint ./src",
       "format": "oxfmt --write ./src",
       "format:check": "oxfmt --check ./src",
-      "test": "vitest run",
+      "test": "vitest run --passWithNoTests",
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@core/database": "workspace:*",
-      "@montte/hyprpay": "workspace:*",
-      "neverthrow": "catalog:validation"
+      "@montte/hyprpay": "workspace:*"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",

@@ -19,21 +19,18 @@ export const ssePublishSpy = vi.fn(
 export const posthogCaptureSpy = vi.fn();
 
 export const hyprpayUsageIngestSpy = vi.fn(
-   (input: {
-      customerId: string;
-      meterId: string;
-      quantity: number;
-      idempotencyKey?: string;
+   async (_input: {
+      meterId?: string;
+      eventName?: string;
+      quantity: string;
+      idempotencyKey: string;
+      externalId?: string | null;
       properties?: Record<string, unknown>;
-   }) =>
-      okAsync({
-         queued: true,
-         idempotencyKey: input.idempotencyKey ?? crypto.randomUUID(),
-      }),
+   }) => ({ success: true as const }),
 );
 
 const hyprpayClientStub = {
-   usage: { ingest: hyprpayUsageIngestSpy },
+   services: { ingestUsage: hyprpayUsageIngestSpy },
 };
 
 vi.mock("../../src/sse", async () => {

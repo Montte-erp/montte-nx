@@ -23,17 +23,14 @@ export const billingResendSpies = {
 };
 
 export const billingHyprpayUsageIngestSpy = vi.fn(
-   (input: {
-      customerId: string;
-      meterId: string;
-      quantity: number;
-      idempotencyKey?: string;
+   async (_input: {
+      meterId?: string;
+      eventName?: string;
+      quantity: string;
+      idempotencyKey: string;
+      externalId?: string | null;
       properties?: Record<string, unknown>;
-   }) =>
-      okAsync({
-         queued: true,
-         idempotencyKey: input.idempotencyKey ?? crypto.randomUUID(),
-      }),
+   }) => ({ success: true as const }),
 );
 
 vi.mock("../../src/sse", async () => {
@@ -60,7 +57,7 @@ vi.mock("../../src/workflows/context", async (importOriginal) => {
       getBillingRedis: () => ({}),
       getBillingResendClient: () => ({}),
       getBillingHyprpay: () => ({
-         usage: { ingest: billingHyprpayUsageIngestSpy },
+         services: { ingestUsage: billingHyprpayUsageIngestSpy },
       }),
    };
 });

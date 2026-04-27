@@ -53,7 +53,7 @@ vi.mock("../../src/workflows/context", async (importOriginal) => {
       getClassificationRedis: () => ({}),
       getClassificationPosthog: () => ({ capture: vi.fn() }),
       getClassificationHyprpay: () => ({
-         usage: { ingest: hyprpayUsageIngestSpy },
+         services: { ingestUsage: hyprpayUsageIngestSpy },
       }),
    };
 });
@@ -99,9 +99,9 @@ beforeEach(async () => {
             timestamp: new Date().toISOString(),
          }),
    );
-   hyprpayUsageIngestSpy.mockImplementation(() =>
-      okAsync({ queued: true, idempotencyKey: crypto.randomUUID() }),
-   );
+   hyprpayUsageIngestSpy.mockImplementation(async () => ({
+      success: true as const,
+   }));
 });
 
 const KEYWORDS = ["fast food", "restaurant", "burger", "delivery", "cafe"];

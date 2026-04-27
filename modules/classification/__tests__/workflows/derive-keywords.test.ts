@@ -117,9 +117,13 @@ describe("deriveKeywordsWorkflow", () => {
          }),
       );
 
-      // Usage ingestion is no-op when no meter is configured for the team.
-      // The DB lookup runs and resolves to no meter — spy not called.
-      expect(hyprpayUsageIngestSpy).not.toHaveBeenCalled();
+      expect(hyprpayUsageIngestSpy).toHaveBeenCalledTimes(1);
+      expect(hyprpayUsageIngestSpy).toHaveBeenCalledWith(
+         expect.objectContaining({
+            eventName: "ai.keyword_derived",
+            quantity: "1",
+         }),
+      );
    });
 
    it("workflow ID dedup — same categoryId produces same workflowID across enqueues", async () => {

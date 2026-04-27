@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0 — 2026-04-27
+
+### Breaking
+- **`services.ingestUsage` input redesigned.** Removed `teamId` (implicit from API-key auth) and `meterId` as required. Now accepts either `meterId` or `eventName`; the server resolves `eventName` → meter for the authed team. `contactId` (UUID FK) replaced with `externalId` (string) to match the rest of the contracts. When no meter is configured for the event, the call returns `{ success: true }` (no-op).
+
+### Migration
+- `client.services.ingestUsage({ teamId, meterId, contactId, quantity, idempotencyKey })` → `client.services.ingestUsage({ eventName, externalId?, quantity, idempotencyKey })` (or pass `meterId` directly if already known).
+
 ## 0.5.0 — 2026-04-26
 
 ### Breaking

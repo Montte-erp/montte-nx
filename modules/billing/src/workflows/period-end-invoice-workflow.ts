@@ -13,7 +13,6 @@ import {
    toMajorUnitsString,
 } from "@f-o-t/money";
 import { WorkflowError } from "@core/dbos/errors";
-import { ingestUsageEvent } from "@core/hyprpay/usage";
 import { sendBillingInvoiceGenerated } from "@core/transactional/client";
 import { TRANSACTIONAL_USAGE_EVENTS } from "@core/transactional/usage-events";
 import { couponRedemptions } from "@core/database/schemas/coupons";
@@ -25,6 +24,7 @@ import { billingSseEvents } from "../sse";
 import { BILLING_QUEUES } from "../constants";
 import {
    billingDataSource,
+   getBillingHyprpay,
    getBillingRedis,
    getBillingResendClient,
    createEnqueuer,
@@ -392,19 +392,19 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
                   from: input.emailFrom,
                });
 
-               const ingest = await ingestUsageEvent({
-                  db: billingDataSource.client,
-                  teamId: input.teamId,
-                  externalId: input.organizationId,
-                  eventName: TRANSACTIONAL_USAGE_EVENTS.emailSent,
-                  quantity: 1,
-                  idempotencyKey: `email-invoice-${invoice.id}`,
-                  properties: {
-                     kind: "billing.invoice_generated",
-                     invoiceId: invoice.id,
-                     subscriptionId: input.subscriptionId,
-                  },
-               });
+               const ingest = await fromPromise(
+                  getBillingHyprpay().services.ingestUsage({
+                     eventName: TRANSACTIONAL_USAGE_EVENTS.emailSent,
+                     quantity: "1",
+                     idempotencyKey: `email-invoice-${invoice.id}`,
+                     properties: {
+                        kind: "billing.invoice_generated",
+                        invoiceId: invoice.id,
+                        subscriptionId: input.subscriptionId,
+                     },
+                  }),
+                  (e) => (e instanceof Error ? e : new Error(String(e))),
+               );
                if (ingest.isErr()) {
                   DBOS.logger.warn(
                      `usage ingestion failed for email.sent — org=${input.organizationId} err=${ingest.error.message}`,

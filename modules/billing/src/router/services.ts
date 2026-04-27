@@ -727,21 +727,54 @@ export const getServiceBenefits = protectedProcedure
 
 export const ingestUsage = billingImpl.services.ingestUsage.handler(
    async ({ context, input }) => {
-      if (input.teamId !== context.teamId)
-         throw WebAppError.forbidden(
-            "Você não tem permissão para registrar uso neste time.",
+      const teamId = context.teamId;
+
+      const meterResult = await fromPromise(
+         input.meterId
+            ? context.db.query.meters.findFirst({
+                 where: (f, { and: a, eq: e }) =>
+                    a(e(f.id, input.meterId!), e(f.teamId, teamId)),
+                 columns: { id: true },
+              })
+            : context.db.query.meters.findFirst({
+                 where: (f, { and: a, eq: e }) =>
+                    a(
+                       e(f.teamId, teamId),
+                       e(f.eventName, input.eventName!),
+                       e(f.isActive, true),
+                    ),
+                 columns: { id: true },
+              }),
+         () => WebAppError.internal("Falha ao buscar meter."),
+      );
+      if (meterResult.isErr()) throw meterResult.error;
+      const meter = meterResult.value;
+      if (!meter) return { success: true as const };
+
+      let contactId: string | null = null;
+      if (input.externalId) {
+         const contactResult = await fromPromise(
+            context.db.query.contacts.findFirst({
+               where: (f, { and: a, eq: e }) =>
+                  a(e(f.teamId, teamId), e(f.externalId, input.externalId!)),
+               columns: { id: true },
+            }),
+            () => WebAppError.internal("Falha ao buscar contato."),
          );
+         if (contactResult.isErr()) throw contactResult.error;
+         contactId = contactResult.value?.id ?? null;
+      }
 
       const result = await fromPromise(
          context.db.transaction(async (tx) => {
             await tx
                .insert(usageEvents)
                .values({
-                  teamId: input.teamId,
-                  meterId: input.meterId,
+                  teamId,
+                  meterId: meter.id,
                   quantity: input.quantity,
                   idempotencyKey: input.idempotencyKey,
-                  contactId: input.contactId,
+                  contactId,
                   properties: input.properties ?? {},
                })
                .onConflictDoNothing({
