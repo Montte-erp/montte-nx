@@ -83,6 +83,7 @@
       "drizzle-zod": "catalog:database",
       "foxact": "catalog:ui",
       "lucide-react": "catalog:ui",
+      "motion": "catalog:ui",
       "neverthrow": "^8.1.1",
       "posthog-js": "catalog:analytics-client",
       "qrcode.react": "catalog:ui",
