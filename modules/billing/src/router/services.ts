@@ -43,6 +43,22 @@ export const getAll = protectedProcedure
       return result.value;
    });
 
+export const getById = protectedProcedure
+   .input(idInputSchema)
+   .use(requireService, (input) => input.id)
+   .handler(async ({ context, input }) => {
+      const result = await fromPromise(
+         context.db.query.services.findFirst({
+            where: (f, { eq }) => eq(f.id, input.id),
+            with: { category: true, tag: true },
+         }),
+         () => WebAppError.internal("Falha ao buscar serviço."),
+      );
+      if (result.isErr()) throw result.error;
+      if (!result.value) throw WebAppError.notFound("Serviço não encontrado.");
+      return result.value;
+   });
+
 export const create = protectedProcedure
    .input(createServiceSchema)
    .handler(async ({ context, input }) => {
