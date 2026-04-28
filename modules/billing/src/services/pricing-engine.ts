@@ -1,9 +1,9 @@
 import {
    add,
+   divide,
    greaterThan,
    multiply,
    of,
-   percentage,
    subtract,
    toMajorUnitsString,
    zero,
@@ -35,6 +35,13 @@ const PricingBenefitSchema = z.object({
    creditAmount: z.number().int().nonnegative().nullable(),
 });
 
+const UsageQuantitySchema = z
+   .union([z.string(), z.number()])
+   .transform((v) => (typeof v === "number" ? v.toString() : v))
+   .refine((v) => /^\d+(\.\d+)?$/.test(v), {
+      message: "Quantidade de uso deve ser numérica não negativa.",
+   });
+
 const PricingLineSchema = z.object({
    priceId: z.string(),
    priceName: z.string(),
@@ -43,7 +50,7 @@ const PricingLineSchema = z.object({
    unitPrice: z.string(),
    priceCap: z.string().nullable(),
    quantity: z.number().nonnegative(),
-   usageByDayOfWeek: z.record(z.string(), z.number().nonnegative()).optional(),
+   usageByDayOfWeek: z.record(z.string(), UsageQuantitySchema).optional(),
 });
 
 const PricingContextSchema = z.object({
@@ -201,8 +208,12 @@ function isLineLevel(c: PricingCoupon): boolean {
    return !c.conditions.dayOfWeek?.length;
 }
 
+function percentOf(base: Money, percentStr: string): Money {
+   return divide(multiply(base, percentStr), "100");
+}
+
 function computeDelta(c: PricingCoupon, base: Money, quantity: number): Money {
-   if (c.type === "percent") return percentage(base, Number(c.amount));
+   if (c.type === "percent") return percentOf(base, c.amount);
    return multiply(of(c.amount, "BRL"), quantity);
 }
 
@@ -316,28 +327,39 @@ type MeteredFold = {
    chunks: ModifierApplied[][];
 };
 
+function consumeCredits(
+   used: string,
+   creditPool: number,
+): { remaining: string; consumed: number } {
+   if (creditPool <= 0) return { remaining: used, consumed: 0 };
+   const usedNum = Number(used);
+   const consumed = Math.min(creditPool, usedNum);
+   const remaining = (usedNum - consumed).toString();
+   return { remaining, consumed };
+}
+
 function stepMeteredDay(
    acc: MeteredFold,
    dow: number,
-   used: number,
+   used: string,
    unit: Money,
    surcharges: PricingCoupon[],
 ): MeteredFold {
-   if (used <= 0) return acc;
-   const consumed = Math.min(acc.creditPool, used);
-   const remaining = used - consumed;
+   if (used === "0" || used === "0.0") return acc;
+   const { remaining, consumed } = consumeCredits(used, acc.creditPool);
    const creditPool = acc.creditPool - consumed;
-   if (remaining <= 0) return { ...acc, creditPool };
+   if (remaining === "0" || remaining === "0.0") return { ...acc, creditPool };
+   const remainingNum = Number(remaining);
    const bucket = bucketWithSurcharges(
       multiply(unit, remaining),
       surcharges,
       dow,
-      remaining,
+      remainingNum,
    );
    return {
       creditPool,
       total: add(acc.total, bucket.value),
-      billable: acc.billable + remaining,
+      billable: acc.billable + remainingNum,
       chunks: [...acc.chunks, bucket.modifiers],
    };
 }
@@ -351,7 +373,7 @@ function findCreditAmount(benefits: PricingBenefit[], meterId: string): number {
    return credit.creditAmount;
 }
 
-function sortedDays(usage: Record<string, number>): number[] {
+function sortedDays(usage: Record<string, string>): number[] {
    return Object.keys(usage)
       .map(Number)
       .sort((a, b) => a - b);
@@ -359,7 +381,7 @@ function sortedDays(usage: Record<string, number>): number[] {
 
 function foldMeteredUsage(
    unit: Money,
-   usage: Record<string, number>,
+   usage: Record<string, string>,
    creditAmount: number,
    surcharges: PricingCoupon[],
 ): MeteredFold {
@@ -388,7 +410,7 @@ type LineStrategy = (args: StrategyArgs) => LineComputation;
 
 function isMeteredUsage(line: PricingLine): line is PricingLine & {
    meterId: string;
-   usageByDayOfWeek: Record<string, number>;
+   usageByDayOfWeek: Record<string, string>;
 } {
    if (line.priceType !== "metered") return false;
    if (line.meterId === null) return false;
@@ -477,8 +499,7 @@ function computeInvoiceCouponDiscount(
    coupon: InvoiceCoupon,
    subtotal: Money,
 ): Money {
-   if (coupon.type === "percent")
-      return percentage(subtotal, Number(coupon.amount));
+   if (coupon.type === "percent") return percentOf(subtotal, coupon.amount);
    return of(coupon.amount, "BRL");
 }
 

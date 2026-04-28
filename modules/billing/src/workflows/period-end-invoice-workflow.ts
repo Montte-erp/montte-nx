@@ -85,7 +85,10 @@ function fetchSubscription(subscriptionId: string) {
    );
 }
 
-function gatherInvoiceData(input: PeriodEndInvoiceInput) {
+function gatherInvoiceData(
+   input: PeriodEndInvoiceInput,
+   sub: { couponId: string | null },
+) {
    return txStep(
       "gatherInvoiceData",
       "Falha ao buscar dados da fatura.",
@@ -147,14 +150,6 @@ function gatherInvoiceData(input: PeriodEndInvoiceInput) {
                     where: (f, { inArray: inArrayFn }) =>
                        inArrayFn(f.id, benefitIds),
                  });
-
-         const sub = await tx.query.contactSubscriptions.findFirst({
-            where: (f, { eq: eqFn }) => eqFn(f.id, input.subscriptionId),
-         });
-         if (!sub)
-            throw WorkflowError.notFound(
-               `Assinatura ${input.subscriptionId} não encontrada.`,
-            );
 
          const { coupon, redemptionCount } = await loadCouponState(
             tx,
@@ -309,32 +304,32 @@ function scheduleNextPeriod(
    firstInterval: BillingInterval | null,
 ): WorkflowResult<void> {
    if (firstInterval === null) return okAsync(undefined);
-   const start = dayjs(input.periodEnd);
-   const end = advanceByBillingInterval(start, firstInterval);
-   if (!end) return okAsync(undefined);
+   return step(
+      "scheduleNextPeriod",
+      "Falha ao agendar próximo período.",
+      async () => {
+         const start = dayjs(input.periodEnd);
+         const end = advanceByBillingInterval(start, firstInterval);
+         if (!end) return;
 
-   const nextInput: PeriodEndInvoiceInput = {
-      ...input,
-      periodStart: start.toISOString(),
-      periodEnd: end.toISOString(),
-   };
-   const delaySeconds = Math.max(0, Math.floor(end.diff(dayjs()) / 1000));
+         const nextInput: PeriodEndInvoiceInput = {
+            ...input,
+            periodStart: start.toISOString(),
+            periodEnd: end.toISOString(),
+         };
+         const delaySeconds = Math.max(0, Math.floor(end.diff(dayjs()) / 1000));
 
-   return fromPromise(
-      DBOS.startWorkflow(periodEndInvoiceWorkflow, {
-         workflowID: `period-invoice-${input.subscriptionId}-${end.format("YYYY-MM-DD")}`,
-         queueName: `workflow:${BILLING_QUEUES.periodEndInvoice}`,
-         enqueueOptions: { delaySeconds },
-      })(nextInput),
-      (e) =>
-         WorkflowError.internal("Falha ao agendar próximo período.", {
-            cause: e,
-         }),
-   ).map(() => {
-      DBOS.logger.info(
-         `[period-end-invoice] sub=${input.subscriptionId} next period scheduled — periodEnd=${end.toISOString()} delaySeconds=${delaySeconds}`,
-      );
-   });
+         await DBOS.startWorkflow(periodEndInvoiceWorkflow, {
+            workflowID: `period-invoice-${input.subscriptionId}-${end.format("YYYY-MM-DD")}`,
+            queueName: `workflow:${BILLING_QUEUES.periodEndInvoice}`,
+            enqueueOptions: { delaySeconds },
+         })(nextInput);
+
+         DBOS.logger.info(
+            `[period-end-invoice] sub=${input.subscriptionId} next period scheduled — periodEnd=${end.toISOString()} delaySeconds=${delaySeconds}`,
+         );
+      },
+   );
 }
 
 function isBillable(status: string): boolean {
@@ -356,7 +351,7 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
          return okAsync(null);
       }
 
-      const data = yield* gatherInvoiceData(input).safeUnwrap();
+      const data = yield* gatherInvoiceData(input, sub).safeUnwrap();
       const computation = yield* computeStep(data).safeUnwrap();
       const invoice = yield* persistInvoice(input, computation).safeUnwrap();
       yield* publishInvoiceEvent(input, invoice, computation).safeUnwrap();

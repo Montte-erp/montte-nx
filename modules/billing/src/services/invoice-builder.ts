@@ -34,7 +34,7 @@ function meteredLine(
    item: SubscriptionItem,
    usageMap: Map<string, string>,
 ): PricingLine {
-   const total = Number(usageMap.get(price.meterId) ?? "0");
+   const total = usageMap.get(price.meterId) ?? "0";
    return {
       priceId: price.id,
       priceName: price.name,
