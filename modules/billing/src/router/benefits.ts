@@ -1,9 +1,10 @@
-import { and, asc, count, eq, ilike, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { benefits, serviceBenefits } from "@core/database/schemas/benefits";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import {
+   bulkSetActiveInputSchema,
    createAndAttachBenefitInputSchema,
    createBenefitSchema,
    idInputSchema,
@@ -107,6 +108,28 @@ export const updateBenefitById = protectedProcedure
             "Falha ao atualizar benefício: update vazio.",
          );
       return result.value;
+   });
+
+export const bulkSetActive = protectedProcedure
+   .input(bulkSetActiveInputSchema)
+   .handler(async ({ context, input }) => {
+      const result = await fromPromise(
+         context.db.transaction(async (tx) =>
+            tx
+               .update(benefits)
+               .set({ isActive: input.isActive })
+               .where(
+                  and(
+                     inArray(benefits.id, input.ids),
+                     eq(benefits.teamId, context.teamId),
+                  ),
+               )
+               .returning({ id: benefits.id }),
+         ),
+         () => WebAppError.internal("Falha ao atualizar benefícios."),
+      );
+      if (result.isErr()) throw result.error;
+      return { updated: result.value.length };
    });
 
 export const removeBenefit = protectedProcedure

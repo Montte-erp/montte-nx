@@ -1,4 +1,4 @@
-import { and, asc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, asc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { meters } from "@core/database/schemas/meters";
 import { servicePrices, services } from "@core/database/schemas/services";
@@ -7,6 +7,7 @@ import { coupons } from "@core/database/schemas/coupons";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import {
+   bulkSetActiveInputSchema,
    createMeterSchema,
    idInputSchema,
    listMetersInputSchema,
@@ -59,29 +60,33 @@ export const getMeters = protectedProcedure
          WHERE ${benefits.meterId} = ${meters.id}
       )`;
 
-      const rows = await context.db
-         .select({
-            id: meters.id,
-            teamId: meters.teamId,
-            name: meters.name,
-            eventName: meters.eventName,
-            aggregation: meters.aggregation,
-            aggregationProperty: meters.aggregationProperty,
-            filters: meters.filters,
-            unitCost: meters.unitCost,
-            isActive: meters.isActive,
-            createdAt: meters.createdAt,
-            updatedAt: meters.updatedAt,
-            usedInPrices,
-            usedInBenefits,
-         })
-         .from(meters)
-         .where(and(...conditions))
-         .orderBy(asc(meters.name));
+      const rowsResult = await fromPromise(
+         context.db
+            .select({
+               id: meters.id,
+               teamId: meters.teamId,
+               name: meters.name,
+               eventName: meters.eventName,
+               aggregation: meters.aggregation,
+               aggregationProperty: meters.aggregationProperty,
+               filters: meters.filters,
+               unitCost: meters.unitCost,
+               isActive: meters.isActive,
+               createdAt: meters.createdAt,
+               updatedAt: meters.updatedAt,
+               usedInPrices,
+               usedInBenefits,
+            })
+            .from(meters)
+            .where(and(...conditions))
+            .orderBy(asc(meters.name)),
+         () => WebAppError.internal("Falha ao listar medidores."),
+      );
+      if (rowsResult.isErr()) throw rowsResult.error;
 
       const filtered = input?.onlyInUse
-         ? rows.filter((r) => r.usedInPrices + r.usedInBenefits > 0)
-         : rows;
+         ? rowsResult.value.filter((r) => r.usedInPrices + r.usedInBenefits > 0)
+         : rowsResult.value;
       return filtered.map((r) => ({
          ...r,
          usedIn: r.usedInPrices + r.usedInBenefits,
@@ -189,6 +194,28 @@ export const updateMeterById = protectedProcedure
             "Falha ao atualizar medidor: update vazio.",
          );
       return result.value;
+   });
+
+export const bulkSetActive = protectedProcedure
+   .input(bulkSetActiveInputSchema)
+   .handler(async ({ context, input }) => {
+      const result = await fromPromise(
+         context.db.transaction(async (tx) =>
+            tx
+               .update(meters)
+               .set({ isActive: input.isActive })
+               .where(
+                  and(
+                     inArray(meters.id, input.ids),
+                     eq(meters.teamId, context.teamId),
+                  ),
+               )
+               .returning({ id: meters.id }),
+         ),
+         () => WebAppError.internal("Falha ao atualizar medidores."),
+      );
+      if (result.isErr()) throw result.error;
+      return { updated: result.value.length };
    });
 
 export const removeMeter = protectedProcedure

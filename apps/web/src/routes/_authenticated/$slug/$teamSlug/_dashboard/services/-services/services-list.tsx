@@ -130,7 +130,7 @@ export function ServicesList() {
    );
 
    const importMutation = useMutation(
-      orpc.services.create.mutationOptions({
+      orpc.services.bulkCreate.mutationOptions({
          meta: { skipGlobalInvalidation: true },
       }),
    );
@@ -139,6 +139,12 @@ export function ServicesList() {
       orpc.services.remove.mutationOptions({
          onSuccess: () => toast.success("Serviço excluído com sucesso."),
          onError: (e) => toast.error(e.message || "Erro ao excluir serviço."),
+      }),
+   );
+
+   const bulkDeleteMutation = useMutation(
+      orpc.services.bulkRemove.mutationOptions({
+         onError: (e) => toast.error(e.message || "Erro ao excluir serviços."),
       }),
    );
 
@@ -173,25 +179,29 @@ export function ServicesList() {
             description: String(row.description ?? "").trim() || null,
          }),
          onImport: async (rows) => {
-            const results = await Promise.allSettled(
-               rows.map((r) => {
-                  const name = String(r.name ?? "").trim();
-                  if (!name) return Promise.reject(new Error("skip"));
-                  return importMutation.mutateAsync({
-                     name,
-                     description:
-                        r.description != null
-                           ? String(r.description) || undefined
-                           : undefined,
-                  });
-               }),
-            );
-            const ok = results.filter((r) => r.status === "fulfilled").length;
-            const failed = results.filter(
-               (r) =>
-                  r.status === "rejected" &&
-                  (r.reason as Error)?.message !== "skip",
-            ).length;
+            const items: { name: string; description?: string }[] = [];
+            for (const r of rows) {
+               const name = String(r.name ?? "").trim();
+               if (!name) continue;
+               const description =
+                  r.description != null
+                     ? String(r.description) || undefined
+                     : undefined;
+               items.push({ name, description });
+            }
+            if (items.length === 0) {
+               toast.error("Nenhum serviço válido para importar.");
+               return;
+            }
+            const created = await importMutation
+               .mutateAsync({ items })
+               .catch(() => null);
+            if (!created) {
+               toast.error(`${items.length} serviço(s) com erro.`);
+               return;
+            }
+            const ok = created.length;
+            const failed = items.length - ok;
             if (ok > 0) toast.success(`${ok} serviço(s) importado(s).`);
             if (failed > 0) toast.error(`${failed} serviço(s) com erro.`);
             await queryClient.invalidateQueries({
@@ -337,11 +347,19 @@ export function ServicesList() {
                               cancelLabel: "Cancelar",
                               variant: "destructive",
                               onAction: async () => {
-                                 await Promise.allSettled(
-                                    ids.map((id) =>
-                                       deleteMutation.mutateAsync({ id }),
-                                    ),
-                                 );
+                                 const res = await bulkDeleteMutation
+                                    .mutateAsync({ ids })
+                                    .catch(() => null);
+                                 if (res) {
+                                    if (res.deleted > 0)
+                                       toast.success(
+                                          `${res.deleted} serviço(s) excluído(s).`,
+                                       );
+                                    if (res.failed > 0)
+                                       toast.error(
+                                          `${res.failed} serviço(s) com erro.`,
+                                       );
+                                 }
                                  clearSelection();
                               },
                            })

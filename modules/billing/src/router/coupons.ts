@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { err, fromPromise, ok } from "neverthrow";
+import { z } from "zod";
 import { billingContract } from "@montte/hyprpay/contract";
 import { implementerInternal } from "@orpc/server";
 import { coupons } from "@core/database/schemas/coupons";
@@ -180,6 +181,33 @@ export const deactivate = impl.deactivate
             "Falha ao desativar cupom: update retornou vazio.",
          );
       return result.value;
+   });
+
+export const bulkSetActive = protectedProcedure
+   .input(
+      z.object({
+         ids: z.array(z.string().uuid()).min(1),
+         isActive: z.boolean(),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      const result = await fromPromise(
+         context.db.transaction(async (tx) =>
+            tx
+               .update(coupons)
+               .set({ isActive: input.isActive })
+               .where(
+                  and(
+                     inArray(coupons.id, input.ids),
+                     eq(coupons.teamId, context.teamId),
+                  ),
+               )
+               .returning({ id: coupons.id }),
+         ),
+         () => WebAppError.internal("Falha ao atualizar cupons."),
+      );
+      if (result.isErr()) throw result.error;
+      return { updated: result.value.length };
    });
 
 export const validate = impl.validate.handler(async ({ context, input }) => {

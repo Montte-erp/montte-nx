@@ -202,6 +202,12 @@ function BenefitsList() {
       }),
    );
 
+   const bulkSetActiveMutation = useMutation(
+      orpc.benefits.bulkSetActive.mutationOptions({
+         onError: (e) => toast.error(e.message),
+      }),
+   );
+
    const removeMutation = useMutation(
       orpc.benefits.removeBenefit.mutationOptions({
          onSuccess: () => toast.success("Benefício excluído."),
@@ -582,17 +588,13 @@ function BenefitsList() {
                         <SelectionActionButton
                            icon={<CheckCircle2 />}
                            onClick={async () => {
-                              await Promise.allSettled(
-                                 ids.map((id) =>
-                                    updateMutation.mutateAsync({
-                                       id,
-                                       isActive: true,
-                                    }),
-                                 ),
-                              );
-                              toast.success(
-                                 `${ids.length} benefício(s) ativado(s).`,
-                              );
+                              const res = await bulkSetActiveMutation
+                                 .mutateAsync({ ids, isActive: true })
+                                 .catch(() => null);
+                              if (res)
+                                 toast.success(
+                                    `${res.updated} benefício(s) ativado(s).`,
+                                 );
                               clearSelection();
                            }}
                         >
@@ -601,17 +603,13 @@ function BenefitsList() {
                         <SelectionActionButton
                            icon={<XCircle />}
                            onClick={async () => {
-                              await Promise.allSettled(
-                                 ids.map((id) =>
-                                    updateMutation.mutateAsync({
-                                       id,
-                                       isActive: false,
-                                    }),
-                                 ),
-                              );
-                              toast.success(
-                                 `${ids.length} benefício(s) desativado(s).`,
-                              );
+                              const res = await bulkSetActiveMutation
+                                 .mutateAsync({ ids, isActive: false })
+                                 .catch(() => null);
+                              if (res)
+                                 toast.success(
+                                    `${res.updated} benefício(s) desativado(s).`,
+                                 );
                               clearSelection();
                            }}
                         >

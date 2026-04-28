@@ -44,9 +44,13 @@ function NotApplicable({ hint }: { hint: string }) {
    return (
       <Tooltip>
          <TooltipTrigger asChild>
-            <div className="-mx-4 -my-2 flex cursor-not-allowed select-none items-center bg-muted/40 px-4 py-2 text-muted-foreground/40">
+            <button
+               aria-label={hint}
+               className="-mx-4 -my-2 flex cursor-not-allowed select-none items-center bg-muted/40 px-4 py-2 text-muted-foreground/40"
+               type="button"
+            >
                <Lock className="size-3.5" />
-            </div>
+            </button>
          </TooltipTrigger>
          <TooltipContent>{hint}</TooltipContent>
       </Tooltip>

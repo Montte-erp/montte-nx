@@ -1,4 +1,13 @@
-import { and, count, countDistinct, desc, eq, sql, sum } from "drizzle-orm";
+import {
+   and,
+   count,
+   countDistinct,
+   desc,
+   eq,
+   inArray,
+   sql,
+   sum,
+} from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import type { DatabaseInstance } from "@core/database/client";
 import { benefits, serviceBenefits } from "@core/database/schemas/benefits";
@@ -14,6 +23,7 @@ import {
    idInputSchema,
    serviceIdInputSchema,
    bulkCreateServicesInputSchema,
+   bulkIdsInputSchema,
    createPriceForServiceInputSchema,
    updateServiceInputSchema,
    updatePriceInputSchema,
@@ -162,6 +172,9 @@ export const getAllStats = protectedProcedure.handler(async ({ context }) => {
     WHEN 'annual' THEN COALESCE(${subscriptionItems.negotiatedPrice}, ${servicePrices.basePrice})::numeric * ${subscriptionItems.quantity}::numeric / 12
     WHEN 'semestral' THEN COALESCE(${subscriptionItems.negotiatedPrice}, ${servicePrices.basePrice})::numeric * ${subscriptionItems.quantity}::numeric / 6
     WHEN 'weekly' THEN COALESCE(${subscriptionItems.negotiatedPrice}, ${servicePrices.basePrice})::numeric * ${subscriptionItems.quantity}::numeric * 52 / 12
+    WHEN 'daily' THEN COALESCE(${subscriptionItems.negotiatedPrice}, ${servicePrices.basePrice})::numeric * ${subscriptionItems.quantity}::numeric * 30
+    WHEN 'shift' THEN COALESCE(${subscriptionItems.negotiatedPrice}, ${servicePrices.basePrice})::numeric * ${subscriptionItems.quantity}::numeric * 90
+    WHEN 'hourly' THEN COALESCE(${subscriptionItems.negotiatedPrice}, ${servicePrices.basePrice})::numeric * ${subscriptionItems.quantity}::numeric * 730
     ELSE 0::numeric
   END
 `,
@@ -308,6 +321,38 @@ export const remove = protectedProcedure
       );
       if (result.isErr()) throw result.error;
       return { success: true as const };
+   });
+
+export const bulkRemove = protectedProcedure
+   .input(bulkIdsInputSchema)
+   .handler(async ({ context, input }) => {
+      const ownedResult = await fromPromise(
+         context.db
+            .select({ id: services.id })
+            .from(services)
+            .where(
+               and(
+                  inArray(services.id, input.ids),
+                  eq(services.teamId, context.teamId),
+               ),
+            ),
+         () => WebAppError.internal("Falha ao excluir serviços."),
+      );
+      if (ownedResult.isErr()) throw ownedResult.error;
+      const ownedIds = ownedResult.value.map((r) => r.id);
+      if (ownedIds.length === 0)
+         return { deleted: 0, failed: input.ids.length };
+
+      const settled = await Promise.allSettled(
+         ownedIds.map((id) =>
+            context.db.transaction(async (tx) => {
+               await tx.delete(services).where(eq(services.id, id));
+            }),
+         ),
+      );
+      const deleted = settled.filter((r) => r.status === "fulfilled").length;
+      const failed = input.ids.length - deleted;
+      return { deleted, failed };
    });
 
 export const exportAll = protectedProcedure.handler(async ({ context }) => {

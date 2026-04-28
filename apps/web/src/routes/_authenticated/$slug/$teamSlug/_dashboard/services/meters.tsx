@@ -205,6 +205,12 @@ function MetersList() {
       }),
    );
 
+   const bulkSetActiveMutation = useMutation(
+      orpc.meters.bulkSetActive.mutationOptions({
+         onError: (e) => toast.error(e.message),
+      }),
+   );
+
    const handleSaveCell = useCallback(
       async (
          rowId: string,
@@ -520,17 +526,13 @@ function MetersList() {
                         <SelectionActionButton
                            icon={<CheckCircle2 />}
                            onClick={async () => {
-                              await Promise.allSettled(
-                                 ids.map((id) =>
-                                    updateMutation.mutateAsync({
-                                       id,
-                                       isActive: true,
-                                    }),
-                                 ),
-                              );
-                              toast.success(
-                                 `${ids.length} medidor(es) ativado(s).`,
-                              );
+                              const res = await bulkSetActiveMutation
+                                 .mutateAsync({ ids, isActive: true })
+                                 .catch(() => null);
+                              if (res)
+                                 toast.success(
+                                    `${res.updated} medidor(es) ativado(s).`,
+                                 );
                               clearSelection();
                            }}
                         >
@@ -539,17 +541,13 @@ function MetersList() {
                         <SelectionActionButton
                            icon={<XCircle />}
                            onClick={async () => {
-                              await Promise.allSettled(
-                                 ids.map((id) =>
-                                    updateMutation.mutateAsync({
-                                       id,
-                                       isActive: false,
-                                    }),
-                                 ),
-                              );
-                              toast.success(
-                                 `${ids.length} medidor(es) desativado(s).`,
-                              );
+                              const res = await bulkSetActiveMutation
+                                 .mutateAsync({ ids, isActive: false })
+                                 .catch(() => null);
+                              if (res)
+                                 toast.success(
+                                    `${res.updated} medidor(es) desativado(s).`,
+                                 );
                               clearSelection();
                            }}
                         >

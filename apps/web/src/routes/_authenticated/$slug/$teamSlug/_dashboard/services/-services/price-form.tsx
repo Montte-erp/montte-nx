@@ -112,6 +112,7 @@ function modeToDbType(mode: Mode): PricingType {
 interface PriceFormProps {
    serviceId: string;
    existing?: ExistingPrice;
+   duplicate?: boolean;
 }
 
 function Section({
@@ -156,9 +157,9 @@ function formatCost(value: number) {
    });
 }
 
-export function PriceForm({ serviceId, existing }: PriceFormProps) {
+export function PriceForm({ serviceId, existing, duplicate }: PriceFormProps) {
    const { closeTopCredenza } = useCredenza();
-   const isEdit = !!existing;
+   const isEdit = !!existing && !duplicate;
    const [advancedOpen, setAdvancedOpen] = useState(false);
 
    const [{ data: meters }, { data: service }, { data: serviceBenefits }] =

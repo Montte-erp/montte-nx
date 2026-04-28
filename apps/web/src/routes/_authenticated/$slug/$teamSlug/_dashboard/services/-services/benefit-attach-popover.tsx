@@ -72,6 +72,7 @@ export function BenefitAttachPopover({
                <Search className="size-3.5" />
             </InputGroupAddon>
             <InputGroupInput
+               aria-label="Buscar benefícios"
                autoFocus
                placeholder="Buscar benefício..."
                value={query}
@@ -97,10 +98,19 @@ export function BenefitAttachPopover({
                            : "cursor-pointer hover:bg-muted/60"
                      }
                      key={b.id}
+                     role="button"
                      size="sm"
+                     tabIndex={disabled ? -1 : 0}
                      onClick={() => {
                         if (disabled) return;
                         handleAttach(b.id);
+                     }}
+                     onKeyDown={(e) => {
+                        if (disabled) return;
+                        if (e.key === "Enter" || e.key === " ") {
+                           e.preventDefault();
+                           handleAttach(b.id);
+                        }
                      }}
                   >
                      <ItemMedia variant="icon">

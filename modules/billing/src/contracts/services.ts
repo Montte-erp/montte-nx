@@ -14,18 +14,30 @@ const nameSchema = z
    .min(1, "Nome é obrigatório.")
    .max(120, "Nome deve ter no máximo 120 caracteres.");
 
+const NUMERIC_REGEX = /^\d+(\.\d+)?$/;
+
 const priceSchema = z
    .string()
-   .refine((v) => !Number.isNaN(Number(v)) && Number(v) >= 0, {
-      message: "Preço deve ser um número válido maior ou igual a zero.",
-   });
+   .trim()
+   .refine(
+      (v) =>
+         NUMERIC_REGEX.test(v) && Number.isFinite(Number(v)) && Number(v) >= 0,
+      {
+         message: "Preço deve ser um número válido maior ou igual a zero.",
+      },
+   );
 
 const unitCostSchema = z
    .string()
-   .refine((v) => !Number.isNaN(Number(v)) && Number(v) >= 0, {
-      message:
-         "Custo unitário deve ser um número válido maior ou igual a zero.",
-   });
+   .trim()
+   .refine(
+      (v) =>
+         NUMERIC_REGEX.test(v) && Number.isFinite(Number(v)) && Number(v) >= 0,
+      {
+         message:
+            "Custo unitário deve ser um número válido maior ou igual a zero.",
+      },
+   );
 
 // --- Services ---
 
@@ -211,6 +223,13 @@ export const serviceBenefitLinkSchema = z.object({
 });
 export const bulkCreateServicesInputSchema = z.object({
    items: z.array(createServiceSchema).min(1),
+});
+export const bulkIdsInputSchema = z.object({
+   ids: z.array(z.string().uuid()).min(1),
+});
+export const bulkSetActiveInputSchema = z.object({
+   ids: z.array(z.string().uuid()).min(1),
+   isActive: z.boolean(),
 });
 export const createPriceForServiceInputSchema =
    serviceIdInputSchema.merge(createPriceSchema);

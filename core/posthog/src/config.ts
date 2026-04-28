@@ -4,6 +4,7 @@ export const FEATURE_FLAG_KEYS = [
    "servicos-catalogo",
    "servicos-medidores",
    "servicos-beneficios",
+   "servicos-cupons",
    "analises-avancadas",
    "dados",
 ] as const;

@@ -36,7 +36,7 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import {
    AlignLeft,
@@ -305,12 +305,12 @@ export function ServicePropertiesPanel({ service }: { service: Service }) {
    const { openAlertDialog } = useAlertDialog();
    const [editingField, setEditingField] = useState<FieldKey | null>(null);
 
-   const { data: categories } = useSuspenseQuery(
-      orpc.categories.getAll.queryOptions({}),
-   );
-   const { data: tagsResult } = useSuspenseQuery(
-      orpc.tags.getAll.queryOptions({ input: {} }),
-   );
+   const [{ data: categories }, { data: tagsResult }] = useSuspenseQueries({
+      queries: [
+         orpc.categories.getAll.queryOptions({}),
+         orpc.tags.getAll.queryOptions({ input: {} }),
+      ],
+   });
    const tags = tagsResult.data;
 
    const updateMutation = useMutation(

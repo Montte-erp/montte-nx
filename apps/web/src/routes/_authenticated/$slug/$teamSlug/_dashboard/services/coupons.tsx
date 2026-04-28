@@ -184,6 +184,12 @@ function CouponsList() {
       }),
    );
 
+   const bulkSetActiveMutation = useMutation(
+      orpc.coupons.bulkSetActive.mutationOptions({
+         onError: (e) => toast.error(e.message),
+      }),
+   );
+
    const handleSaveCell = useCallback(
       async (
          rowId: string,
@@ -478,17 +484,13 @@ function CouponsList() {
                         <SelectionActionButton
                            icon={<CheckCircle2 />}
                            onClick={async () => {
-                              await Promise.allSettled(
-                                 ids.map((id) =>
-                                    updateMutation.mutateAsync({
-                                       id,
-                                       isActive: true,
-                                    }),
-                                 ),
-                              );
-                              toast.success(
-                                 `${ids.length} cupom(s) ativado(s).`,
-                              );
+                              const res = await bulkSetActiveMutation
+                                 .mutateAsync({ ids, isActive: true })
+                                 .catch(() => null);
+                              if (res)
+                                 toast.success(
+                                    `${res.updated} cupom(s) ativado(s).`,
+                                 );
                               clearSelection();
                            }}
                         >
@@ -497,14 +499,13 @@ function CouponsList() {
                         <SelectionActionButton
                            icon={<XCircle />}
                            onClick={async () => {
-                              await Promise.allSettled(
-                                 ids.map((id) =>
-                                    deactivateMutation.mutateAsync({ id }),
-                                 ),
-                              );
-                              toast.success(
-                                 `${ids.length} cupom(s) desativado(s).`,
-                              );
+                              const res = await bulkSetActiveMutation
+                                 .mutateAsync({ ids, isActive: false })
+                                 .catch(() => null);
+                              if (res)
+                                 toast.success(
+                                    `${res.updated} cupom(s) desativado(s).`,
+                                 );
                               clearSelection();
                            }}
                         >

@@ -86,7 +86,7 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
          openCredenza({
             className: "sm:max-w-lg",
             renderChildren: () => (
-               <PriceForm serviceId={serviceId} existing={copy} />
+               <PriceForm serviceId={serviceId} existing={copy} duplicate />
             ),
          });
       },

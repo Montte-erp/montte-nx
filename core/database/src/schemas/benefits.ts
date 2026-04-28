@@ -80,12 +80,19 @@ const nameSchema = z
    .min(2, "Nome deve ter no mínimo 2 caracteres.")
    .max(120, "Nome deve ter no máximo 120 caracteres.");
 
+const NUMERIC_REGEX = /^\d+(\.\d+)?$/;
+
 const unitCostSchema = z
    .string()
-   .refine((v) => !Number.isNaN(Number(v)) && Number(v) >= 0, {
-      message:
-         "Custo unitário deve ser um número válido maior ou igual a zero.",
-   });
+   .trim()
+   .refine(
+      (v) =>
+         NUMERIC_REGEX.test(v) && Number.isFinite(Number(v)) && Number(v) >= 0,
+      {
+         message:
+            "Custo unitário deve ser um número válido maior ou igual a zero.",
+      },
+   );
 
 export const createBenefitSchema = createInsertSchema(benefits)
    .pick({
