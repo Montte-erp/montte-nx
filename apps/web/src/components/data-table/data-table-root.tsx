@@ -84,7 +84,9 @@ declare module "@tanstack/react-table" {
          | "tags"
          | "money"
          | "date"
-         | "combobox";
+         | "combobox"
+         | "toggle"
+         | "numeric";
       editMode?: "inline" | "popover";
       editOptions?: Array<{ label: string; value: string }>;
       // oxlint-ignore no-explicit-any

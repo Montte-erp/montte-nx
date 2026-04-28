@@ -3,6 +3,7 @@ import {
    boolean,
    index,
    jsonb,
+   numeric,
    text,
    timestamp,
    uniqueIndex,
@@ -37,6 +38,9 @@ export const meters = crmSchema.table(
          .$type<Record<string, unknown>>()
          .notNull()
          .default(sql`'{}'::jsonb`),
+      unitCost: numeric("unit_cost", { precision: 12, scale: 4 })
+         .notNull()
+         .default("0"),
       isActive: boolean("is_active").notNull().default(true),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
@@ -63,12 +67,20 @@ const nameSchema = z
    .min(2, "Nome deve ter no mínimo 2 caracteres.")
    .max(120, "Nome deve ter no máximo 120 caracteres.");
 
+const unitCostSchema = z
+   .string()
+   .refine((v) => !Number.isNaN(Number(v)) && Number(v) >= 0, {
+      message:
+         "Custo unitário deve ser um número válido maior ou igual a zero.",
+   });
+
 const baseSchema = createInsertSchema(meters).pick({
    name: true,
    eventName: true,
    aggregation: true,
    aggregationProperty: true,
    filters: true,
+   unitCost: true,
 });
 
 export const createMeterSchema = baseSchema.extend({
@@ -77,10 +89,15 @@ export const createMeterSchema = baseSchema.extend({
    aggregation: z.enum(meterAggregationEnum.enumValues).default("sum"),
    aggregationProperty: z.string().nullable().optional(),
    filters: z.record(z.string(), z.unknown()).optional().default({}),
+   unitCost: unitCostSchema.optional().default("0"),
 });
 
 export const updateMeterSchema = z.object({
    name: nameSchema.optional(),
+   eventName: z.string().min(1).optional(),
+   aggregation: z.enum(meterAggregationEnum.enumValues).optional(),
+   aggregationProperty: z.string().nullable().optional(),
+   unitCost: unitCostSchema.optional(),
    isActive: z.boolean().optional(),
 });
 

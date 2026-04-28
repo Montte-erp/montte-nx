@@ -121,11 +121,13 @@ async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
                await tx
                   .insert(benefitGrants)
                   .values(
-                     benefitIds.map((benefitId) => ({
+                     benefits.map((b) => ({
                         teamId: input.teamId,
                         subscriptionId: input.subscriptionId,
-                        benefitId,
+                        benefitId: b.id,
                         status: "active" as const,
+                        unitCostAtGrant: b.unitCost,
+                        creditAmountAtGrant: b.creditAmount,
                      })),
                   )
                   .onConflictDoUpdate({

@@ -1,7 +1,9 @@
 export const FEATURE_FLAG_KEYS = [
    "contatos",
    "produtos-estoque",
-   "gestao-de-servicos",
+   "servicos-catalogo",
+   "servicos-medidores",
+   "servicos-beneficios",
    "analises-avancadas",
    "dados",
 ] as const;
@@ -33,10 +35,6 @@ export const POSTHOG_SURVEYS = {
    feedbackProdutosEstoque: {
       id: "019d3b2f-aa72-0000-9cd9-a118adcbafa5",
       flagKey: "produtos-estoque",
-   },
-   feedbackGestaoServicos: {
-      id: "019d3b2f-b0c5-0000-5ef1-a127bbc4b314",
-      flagKey: "gestao-de-servicos",
    },
    feedbackAnalisesAvancadas: {
       id: "019d3b2f-b5d7-0000-60aa-b7dd238e70d3",

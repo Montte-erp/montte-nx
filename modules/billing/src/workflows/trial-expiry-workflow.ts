@@ -3,6 +3,7 @@ import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
 import { eq } from "drizzle-orm";
 import dayjs from "dayjs";
+import { advanceByBillingInterval } from "@core/utils/date";
 import { WorkflowError } from "@core/dbos/errors";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 import {
@@ -236,14 +237,10 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
             if (!firstPrice || firstPrice.interval === "one_time") return null;
 
             const now = dayjs();
-            const periodEnd =
-               firstPrice.interval === "hourly"
-                  ? now.add(1, "hour")
-                  : firstPrice.interval === "monthly"
-                    ? now.add(1, "month")
-                    : firstPrice.interval === "annual"
-                      ? now.add(1, "year")
-                      : null;
+            const periodEnd = advanceByBillingInterval(
+               now,
+               firstPrice.interval,
+            );
             if (!periodEnd) return null;
 
             return {

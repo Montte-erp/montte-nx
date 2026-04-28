@@ -20,8 +20,6 @@ export default defineConfig({
          BETTER_AUTH_SECRET: "test-secret-at-least-32-characters-long",
          JWT_SECRET: "test-jwt-secret-at-least-32-characters",
          BETTER_AUTH_TRUSTED_ORIGINS: "http://localhost:3000",
-         BETTER_AUTH_GOOGLE_CLIENT_ID: "test-client-id",
-         BETTER_AUTH_GOOGLE_CLIENT_SECRET: "test-client-secret",
          HYPRPAY_API_KEY: "hyprpay_test",
          MINIO_ENDPOINT: "http://localhost:9000",
          NODE_ENV: "test",

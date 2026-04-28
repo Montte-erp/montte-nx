@@ -67,8 +67,6 @@ export interface CreateAuthDeps {
       BETTER_AUTH_URL?: string;
       BETTER_AUTH_SECRET: string;
       BETTER_AUTH_TRUSTED_ORIGINS: string;
-      BETTER_AUTH_GOOGLE_CLIENT_ID: string;
-      BETTER_AUTH_GOOGLE_CLIENT_SECRET: string;
       HYPRPAY_API_KEY: string;
    };
 }
@@ -84,13 +82,6 @@ export function createAuth(deps: CreateAuthDeps) {
       account: {
          accountLinking: {
             enabled: true,
-         },
-      },
-
-      socialProviders: {
-         google: {
-            clientId: env.BETTER_AUTH_GOOGLE_CLIENT_ID,
-            clientSecret: env.BETTER_AUTH_GOOGLE_CLIENT_SECRET,
          },
       },
 

@@ -2,6 +2,7 @@ import { DBOS } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
 import { and, count, eq, gte, lte, sum } from "drizzle-orm";
 import dayjs from "dayjs";
+import { advanceByBillingInterval } from "@core/utils/date";
 import {
    of,
    add,
@@ -428,15 +429,10 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
             if (!firstPrice) return null;
 
             const nextPeriodStart = dayjs(input.periodEnd);
-            const nextPeriodEnd = (() => {
-               if (firstPrice.interval === "hourly")
-                  return nextPeriodStart.add(1, "hour");
-               if (firstPrice.interval === "monthly")
-                  return nextPeriodStart.add(1, "month");
-               if (firstPrice.interval === "annual")
-                  return nextPeriodStart.add(1, "year");
-               return null;
-            })();
+            const nextPeriodEnd = advanceByBillingInterval(
+               nextPeriodStart,
+               firstPrice.interval,
+            );
             if (!nextPeriodEnd) return null;
 
             return {

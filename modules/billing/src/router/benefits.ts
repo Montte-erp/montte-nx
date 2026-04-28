@@ -1,11 +1,13 @@
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, ilike, or, sql } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { benefits, serviceBenefits } from "@core/database/schemas/benefits";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import {
+   createAndAttachBenefitInputSchema,
    createBenefitSchema,
    idInputSchema,
+   listBenefitsInputSchema,
    serviceBenefitLinkSchema,
    serviceIdInputSchema,
    updateBenefitInputSchema,
@@ -31,28 +33,48 @@ export const createBenefit = protectedProcedure
       return result.value;
    });
 
-export const getBenefits = protectedProcedure.handler(async ({ context }) => {
-   const rows = await context.db
-      .select({
-         id: benefits.id,
-         teamId: benefits.teamId,
-         name: benefits.name,
-         type: benefits.type,
-         meterId: benefits.meterId,
-         creditAmount: benefits.creditAmount,
-         description: benefits.description,
-         isActive: benefits.isActive,
-         createdAt: benefits.createdAt,
-         updatedAt: benefits.updatedAt,
-         usedInServices: count(serviceBenefits.serviceId),
-      })
-      .from(benefits)
-      .leftJoin(serviceBenefits, eq(benefits.id, serviceBenefits.benefitId))
-      .where(eq(benefits.teamId, context.teamId))
-      .groupBy(benefits.id)
-      .orderBy(asc(benefits.name));
-   return rows;
-});
+export const getBenefits = protectedProcedure
+   .input(listBenefitsInputSchema)
+   .handler(async ({ context, input }) => {
+      const conditions = [eq(benefits.teamId, context.teamId)];
+      if (input?.isActive !== undefined)
+         conditions.push(eq(benefits.isActive, input.isActive));
+      if (input?.type) conditions.push(eq(benefits.type, input.type));
+      if (input?.search) {
+         const q = `%${input.search}%`;
+         const searchCond = or(
+            ilike(benefits.name, q),
+            ilike(benefits.description, q),
+         );
+         if (searchCond) conditions.push(searchCond);
+      }
+      const usedFilter = input?.onlyInUse
+         ? sql`COUNT(${serviceBenefits.serviceId}) > 0`
+         : undefined;
+      const rows = await context.db
+         .select({
+            id: benefits.id,
+            teamId: benefits.teamId,
+            name: benefits.name,
+            type: benefits.type,
+            meterId: benefits.meterId,
+            creditAmount: benefits.creditAmount,
+            description: benefits.description,
+            unitCost: benefits.unitCost,
+            rollover: benefits.rollover,
+            isActive: benefits.isActive,
+            createdAt: benefits.createdAt,
+            updatedAt: benefits.updatedAt,
+            usedInServices: count(serviceBenefits.serviceId),
+         })
+         .from(benefits)
+         .leftJoin(serviceBenefits, eq(benefits.id, serviceBenefits.benefitId))
+         .where(and(...conditions))
+         .groupBy(benefits.id)
+         .having(usedFilter)
+         .orderBy(asc(benefits.name));
+      return rows;
+   });
 
 export const getBenefitById = protectedProcedure
    .input(idInputSchema)
@@ -64,11 +86,15 @@ export const updateBenefitById = protectedProcedure
    .use(requireBenefit, (input) => input.id)
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
+      const patch =
+         data.type && data.type !== "credits"
+            ? { ...data, creditAmount: null, meterId: null, rollover: false }
+            : data;
       const result = await fromPromise(
          context.db.transaction(async (tx) => {
             const [row] = await tx
                .update(benefits)
-               .set(data)
+               .set(patch)
                .where(eq(benefits.id, id))
                .returning();
             return row;
@@ -121,6 +147,7 @@ export const attachBenefit = protectedProcedure
 export const detachBenefit = protectedProcedure
    .input(serviceBenefitLinkSchema)
    .use(requireService, (input) => input.serviceId)
+   .use(requireBenefit, (input) => input.benefitId)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
          context.db.transaction(async (tx) => {
@@ -137,6 +164,34 @@ export const detachBenefit = protectedProcedure
       );
       if (result.isErr()) throw result.error;
       return { success: true as const };
+   });
+
+export const createAndAttachBenefit = protectedProcedure
+   .input(createAndAttachBenefitInputSchema)
+   .use(requireService, (input) => input.serviceId)
+   .handler(async ({ context, input }) => {
+      const { serviceId, ...benefitData } = input;
+      const result = await fromPromise(
+         context.db.transaction(async (tx) => {
+            const [row] = await tx
+               .insert(benefits)
+               .values({ ...benefitData, teamId: context.teamId })
+               .returning();
+            if (!row) return null;
+            await tx
+               .insert(serviceBenefits)
+               .values({ serviceId, benefitId: row.id })
+               .onConflictDoNothing();
+            return row;
+         }),
+         () => WebAppError.internal("Falha ao criar e vincular benefício."),
+      );
+      if (result.isErr()) throw result.error;
+      if (!result.value)
+         throw WebAppError.internal(
+            "Falha ao criar e vincular benefício: insert vazio.",
+         );
+      return result.value;
    });
 
 export const getServiceBenefits = protectedProcedure

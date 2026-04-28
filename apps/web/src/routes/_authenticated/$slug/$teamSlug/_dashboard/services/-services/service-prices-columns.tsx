@@ -22,7 +22,11 @@ export const PRICING_TYPE_LABEL: Record<ServicePrice["type"], string> = {
 
 export const INTERVAL_LABEL: Record<ServicePrice["interval"], string> = {
    hourly: "Por hora",
+   shift: "Por turno",
+   daily: "Diária",
+   weekly: "Semanal",
    monthly: "Mensal",
+   semestral: "Semestral",
    annual: "Anual",
    one_time: "Único",
 };

@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { advanceByBillingInterval } from "@core/utils/date";
 import { and, count, eq, sql, sum } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { billingContract } from "@montte/hyprpay/contract";
@@ -153,14 +154,10 @@ export const createSubscription = impl.createSubscription
          const firstPrice = prices[0];
          if (firstPrice && firstPrice.interval !== "one_time") {
             const now = dayjs();
-            const periodEnd =
-               firstPrice.interval === "hourly"
-                  ? now.add(1, "hour")
-                  : firstPrice.interval === "monthly"
-                    ? now.add(1, "month")
-                    : firstPrice.interval === "annual"
-                      ? now.add(1, "year")
-                      : null;
+            const periodEnd = advanceByBillingInterval(
+               now,
+               firstPrice.interval,
+            );
             if (periodEnd) {
                const delaySeconds = Math.max(
                   0,
@@ -373,6 +370,8 @@ export const getMrr = protectedProcedure.handler(async ({ context }) => {
   CASE ${servicePrices.interval}
     WHEN 'monthly' THEN COALESCE(${subscriptionItems.negotiatedPrice}, ${servicePrices.basePrice})::numeric * ${subscriptionItems.quantity}::numeric
     WHEN 'annual' THEN COALESCE(${subscriptionItems.negotiatedPrice}, ${servicePrices.basePrice})::numeric * ${subscriptionItems.quantity}::numeric / 12
+    WHEN 'semestral' THEN COALESCE(${subscriptionItems.negotiatedPrice}, ${servicePrices.basePrice})::numeric * ${subscriptionItems.quantity}::numeric / 6
+    WHEN 'weekly' THEN COALESCE(${subscriptionItems.negotiatedPrice}, ${servicePrices.basePrice})::numeric * ${subscriptionItems.quantity}::numeric * 52 / 12
     ELSE 0::numeric
   END
 `,

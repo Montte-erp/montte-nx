@@ -3,6 +3,7 @@ import {
    boolean,
    index,
    integer,
+   numeric,
    primaryKey,
    text,
    timestamp,
@@ -35,6 +36,10 @@ export const benefits = crmSchema.table(
       }),
       creditAmount: integer("credit_amount"),
       description: text("description"),
+      unitCost: numeric("unit_cost", { precision: 12, scale: 4 })
+         .notNull()
+         .default("0"),
+      rollover: boolean("rollover").notNull().default(false),
       isActive: boolean("is_active").notNull().default(true),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
@@ -75,6 +80,13 @@ const nameSchema = z
    .min(2, "Nome deve ter no mínimo 2 caracteres.")
    .max(120, "Nome deve ter no máximo 120 caracteres.");
 
+const unitCostSchema = z
+   .string()
+   .refine((v) => !Number.isNaN(Number(v)) && Number(v) >= 0, {
+      message:
+         "Custo unitário deve ser um número válido maior ou igual a zero.",
+   });
+
 export const createBenefitSchema = createInsertSchema(benefits)
    .pick({
       name: true,
@@ -82,6 +94,8 @@ export const createBenefitSchema = createInsertSchema(benefits)
       meterId: true,
       creditAmount: true,
       description: true,
+      unitCost: true,
+      rollover: true,
    })
    .extend({
       name: nameSchema,
@@ -89,11 +103,18 @@ export const createBenefitSchema = createInsertSchema(benefits)
       meterId: z.string().uuid().nullable().optional(),
       creditAmount: z.number().int().min(1).nullable().optional(),
       description: z.string().max(500).nullable().optional(),
+      unitCost: unitCostSchema.optional().default("0"),
+      rollover: z.boolean().optional().default(false),
    });
 
 export const updateBenefitSchema = z.object({
    name: nameSchema.optional(),
+   type: z.enum(benefitTypeEnum.enumValues).optional(),
+   meterId: z.string().uuid().nullable().optional(),
+   creditAmount: z.number().int().min(1).nullable().optional(),
    description: z.string().max(500).nullable().optional(),
+   unitCost: unitCostSchema.optional(),
+   rollover: z.boolean().optional(),
    isActive: z.boolean().optional(),
 });
 

@@ -1,3 +1,11 @@
+import { Button } from "@packages/ui/components/button";
+import {
+   DropdownMenu,
+   DropdownMenuContent,
+   DropdownMenuItem,
+   DropdownMenuSeparator,
+   DropdownMenuTrigger,
+} from "@packages/ui/components/dropdown-menu";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import {
    Tabs,
@@ -5,12 +13,21 @@ import {
    TabsList,
    TabsTrigger,
 } from "@packages/ui/components/tabs";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+   Archive,
+   ArchiveRestore,
+   Copy,
+   MoreVertical,
+   Trash2,
+} from "lucide-react";
 import { useEffect } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import {
    closeContextPanel,
    openContextPanel,
@@ -18,8 +35,11 @@ import {
 } from "@/features/context-panel/use-context-panel";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { orpc } from "@/integrations/orpc/client";
-import { ServicePricesTab } from "../-services/service-prices-tab";
-import { ServicePropertiesPanel } from "../-services/service-properties-panel";
+import { ServiceBenefitsTab } from "./-services/service-benefits-tab";
+import { ServiceOverviewTab } from "./-services/service-overview-tab";
+import { ServicePricesTab } from "./-services/service-prices-tab";
+import { ServicePropertiesPanel } from "./-services/service-properties-panel";
+import { ServiceSubscribersTab } from "./-services/service-subscribers-tab";
 
 const VALID_TABS = ["precos", "beneficios", "assinantes", "overview"] as const;
 
@@ -28,7 +48,7 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute(
-   "/_authenticated/$slug/$teamSlug/_dashboard/erp/services/$serviceId",
+   "/_authenticated/$slug/$teamSlug/_dashboard/services/$serviceId",
 )({
    validateSearch: searchSchema,
    loader: ({ context, params }) => {
@@ -89,9 +109,43 @@ function ServiceDetailContent() {
    const slug = useOrgSlug();
    const teamSlug = useTeamSlug();
    const { tab: activeTab } = Route.useSearch();
+   const { openAlertDialog } = useAlertDialog();
 
    const { data: service } = useSuspenseQuery(
       orpc.services.getById.queryOptions({ input: { id: serviceId } }),
+   );
+
+   const updateMutation = useMutation(
+      orpc.services.update.mutationOptions({
+         onSuccess: () => toast.success("Serviço atualizado."),
+         onError: (e) => toast.error(e.message),
+      }),
+   );
+
+   const createMutation = useMutation(
+      orpc.services.create.mutationOptions({
+         onSuccess: (created) => {
+            toast.success("Serviço duplicado.");
+            globalNavigate({
+               to: "/$slug/$teamSlug/services/$serviceId",
+               params: { slug, teamSlug, serviceId: created.id },
+            });
+         },
+         onError: (e) => toast.error(e.message),
+      }),
+   );
+
+   const deleteMutation = useMutation(
+      orpc.services.remove.mutationOptions({
+         onSuccess: () => {
+            toast.success("Serviço excluído.");
+            globalNavigate({
+               to: "/$slug/$teamSlug/services",
+               params: { slug, teamSlug },
+            });
+         },
+         onError: (e) => toast.error(e.message),
+      }),
    );
 
    useEffect(() => {
@@ -101,6 +155,35 @@ function ServiceDetailContent() {
 
    useContextPanelInfo(() => <ServicePropertiesPanel service={service} />);
 
+   function handleDuplicate() {
+      createMutation.mutate({
+         name: `${service.name} (cópia)`,
+         description: service.description,
+         categoryId: service.categoryId,
+         tagId: service.tagId,
+      });
+   }
+
+   function handleArchiveToggle() {
+      updateMutation.mutate({
+         id: service.id,
+         isActive: !service.isActive,
+      });
+   }
+
+   function handleDelete() {
+      openAlertDialog({
+         title: "Excluir serviço",
+         description: `Excluir "${service.name}"? Assinaturas vinculadas impedirão a exclusão.`,
+         actionLabel: "Excluir",
+         cancelLabel: "Cancelar",
+         variant: "destructive",
+         onAction: async () => {
+            await deleteMutation.mutateAsync({ id: service.id });
+         },
+      });
+   }
+
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
@@ -108,9 +191,37 @@ function ServiceDetailContent() {
             description={service.description ?? "Sem descrição"}
             onBack={() =>
                globalNavigate({
-                  to: "/$slug/$teamSlug/erp/services",
+                  to: "/$slug/$teamSlug/services",
                   params: { slug, teamSlug },
                })
+            }
+            actions={
+               <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                     <Button size="icon" tooltip="Ações" variant="ghost">
+                        <MoreVertical />
+                        <span className="sr-only">Ações</span>
+                     </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                     <DropdownMenuItem onClick={handleDuplicate}>
+                        <Copy />
+                        Duplicar serviço
+                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={handleArchiveToggle}>
+                        {service.isActive ? <Archive /> : <ArchiveRestore />}
+                        {service.isActive ? "Arquivar" : "Reativar"}
+                     </DropdownMenuItem>
+                     <DropdownMenuSeparator />
+                     <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={handleDelete}
+                     >
+                        <Trash2 />
+                        Excluir
+                     </DropdownMenuItem>
+                  </DropdownMenuContent>
+               </DropdownMenu>
             }
          />
 
@@ -141,28 +252,20 @@ function ServiceDetailContent() {
             </TabsContent>
             <TabsContent value="beneficios">
                <QueryBoundary fallback={null}>
-                  <PlaceholderTab label="Benefícios" />
+                  <ServiceBenefitsTab serviceId={serviceId} />
                </QueryBoundary>
             </TabsContent>
             <TabsContent value="assinantes">
                <QueryBoundary fallback={null}>
-                  <PlaceholderTab label="Assinantes" />
+                  <ServiceSubscribersTab serviceId={serviceId} />
                </QueryBoundary>
             </TabsContent>
             <TabsContent value="overview">
                <QueryBoundary fallback={null}>
-                  <PlaceholderTab label="Overview" />
+                  <ServiceOverviewTab serviceId={serviceId} />
                </QueryBoundary>
             </TabsContent>
          </Tabs>
       </main>
-   );
-}
-
-function PlaceholderTab({ label }: { label: string }) {
-   return (
-      <div className="rounded-lg border bg-card p-8 text-center text-sm text-muted-foreground">
-         {label} — em construção
-      </div>
    );
 }

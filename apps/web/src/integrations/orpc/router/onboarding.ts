@@ -36,7 +36,6 @@ const EARLY_ACCESS_FLAG_KEYS = [
    "inventory",
    "services",
    "advanced-analytics",
-   "data-management",
 ];
 
 async function enrollInAllFeatures(

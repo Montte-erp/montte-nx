@@ -20,15 +20,29 @@ const priceSchema = z
       message: "Preço deve ser um número válido maior ou igual a zero.",
    });
 
+const unitCostSchema = z
+   .string()
+   .refine((v) => !Number.isNaN(Number(v)) && Number(v) >= 0, {
+      message:
+         "Custo unitário deve ser um número válido maior ou igual a zero.",
+   });
+
 // --- Services ---
 
 export const createServiceSchema = createInsertSchema(services)
-   .pick({ name: true, description: true, categoryId: true, tagId: true })
+   .pick({
+      name: true,
+      description: true,
+      categoryId: true,
+      tagId: true,
+      costPrice: true,
+   })
    .extend({
       name: nameSchema,
       description: z.string().max(500).nullable().optional(),
       categoryId: z.string().uuid().nullable().optional(),
       tagId: z.string().uuid().nullable().optional(),
+      costPrice: unitCostSchema.optional().default("0"),
    });
 
 export const updateServiceSchema = createInsertSchema(services)
@@ -37,6 +51,7 @@ export const updateServiceSchema = createInsertSchema(services)
       description: true,
       categoryId: true,
       tagId: true,
+      costPrice: true,
       isActive: true,
    })
    .extend({
@@ -44,6 +59,7 @@ export const updateServiceSchema = createInsertSchema(services)
       description: z.string().max(500).nullable().optional(),
       categoryId: z.string().uuid().nullable().optional(),
       tagId: z.string().uuid().nullable().optional(),
+      costPrice: unitCostSchema.optional(),
       isActive: z.boolean().optional(),
    })
    .partial();
@@ -57,6 +73,7 @@ export const createPriceSchema = createInsertSchema(servicePrices)
       basePrice: true,
       interval: true,
       meterId: true,
+      minPrice: true,
       priceCap: true,
       trialDays: true,
       autoEnroll: true,
@@ -67,6 +84,7 @@ export const createPriceSchema = createInsertSchema(servicePrices)
       basePrice: priceSchema,
       interval: z.enum(billingCycleEnum.enumValues),
       meterId: z.string().uuid().nullable().optional(),
+      minPrice: priceSchema.nullable().optional(),
       priceCap: priceSchema.nullable().optional(),
       trialDays: z.number().int().min(0).nullable().optional(),
       autoEnroll: z.boolean().default(false),
@@ -80,6 +98,7 @@ export const updatePriceSchema = createInsertSchema(servicePrices)
       interval: true,
       meterId: true,
       isActive: true,
+      minPrice: true,
       priceCap: true,
       trialDays: true,
    })
@@ -90,6 +109,7 @@ export const updatePriceSchema = createInsertSchema(servicePrices)
       interval: z.enum(billingCycleEnum.enumValues).optional(),
       meterId: z.string().uuid().nullable().optional(),
       isActive: z.boolean().optional(),
+      minPrice: priceSchema.nullable().optional(),
       priceCap: priceSchema.nullable().optional(),
       trialDays: z.number().int().min(0).nullable().optional(),
    })
@@ -104,6 +124,7 @@ export const createMeterSchema = createInsertSchema(meters)
       aggregation: true,
       aggregationProperty: true,
       filters: true,
+      unitCost: true,
    })
    .extend({
       name: nameSchema,
@@ -111,10 +132,15 @@ export const createMeterSchema = createInsertSchema(meters)
       aggregation: z.enum(meterAggregationEnum.enumValues).default("sum"),
       aggregationProperty: z.string().nullable().optional(),
       filters: z.record(z.string(), z.unknown()).optional().default({}),
+      unitCost: unitCostSchema.optional().default("0"),
    });
 
 export const updateMeterSchema = z.object({
    name: nameSchema.optional(),
+   eventName: z.string().min(1).optional(),
+   aggregation: z.enum(meterAggregationEnum.enumValues).optional(),
+   aggregationProperty: z.string().nullable().optional(),
+   unitCost: unitCostSchema.optional(),
    isActive: z.boolean().optional(),
 });
 
@@ -127,6 +153,8 @@ export const createBenefitSchema = createInsertSchema(benefits)
       meterId: true,
       creditAmount: true,
       description: true,
+      unitCost: true,
+      rollover: true,
    })
    .extend({
       name: nameSchema,
@@ -134,11 +162,18 @@ export const createBenefitSchema = createInsertSchema(benefits)
       meterId: z.string().uuid().nullable().optional(),
       creditAmount: z.number().int().min(1).nullable().optional(),
       description: z.string().max(500).nullable().optional(),
+      unitCost: unitCostSchema.optional().default("0"),
+      rollover: z.boolean().optional().default(false),
    });
 
 export const updateBenefitSchema = z.object({
    name: nameSchema.optional(),
+   type: z.enum(benefitTypeEnum.enumValues).optional(),
+   meterId: z.string().uuid().nullable().optional(),
+   creditAmount: z.number().int().min(1).nullable().optional(),
    description: z.string().max(500).nullable().optional(),
+   unitCost: unitCostSchema.optional(),
+   rollover: z.boolean().optional(),
    isActive: z.boolean().optional(),
 });
 
@@ -185,6 +220,26 @@ export const updatePriceInputSchema = idInputSchema.merge(updatePriceSchema);
 export const updateMeterInputSchema = idInputSchema.merge(updateMeterSchema);
 export const updateBenefitInputSchema =
    idInputSchema.merge(updateBenefitSchema);
+export const createAndAttachBenefitInputSchema =
+   serviceIdInputSchema.merge(createBenefitSchema);
+
+export const listBenefitsInputSchema = z
+   .object({
+      search: z.string().optional(),
+      isActive: z.boolean().optional(),
+      onlyInUse: z.boolean().optional(),
+      type: z.enum(benefitTypeEnum.enumValues).optional(),
+   })
+   .optional();
+
+export const listMetersInputSchema = z
+   .object({
+      search: z.string().optional(),
+      isActive: z.boolean().optional(),
+      onlyInUse: z.boolean().optional(),
+      aggregation: z.enum(meterAggregationEnum.enumValues).optional(),
+   })
+   .optional();
 
 // --- Types ---
 

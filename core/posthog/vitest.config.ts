@@ -10,8 +10,6 @@ export default defineConfig({
          DATABASE_URL: "postgresql://localhost:5432/test",
          BETTER_AUTH_SECRET: "test-secret-min-32-characters-long-enough",
          BETTER_AUTH_TRUSTED_ORIGINS: "http://localhost:3000",
-         BETTER_AUTH_GOOGLE_CLIENT_ID: "test-google-client-id",
-         BETTER_AUTH_GOOGLE_CLIENT_SECRET: "test-google-client-secret",
          STRIPE_SECRET_KEY: "sk_test_dummy",
          STRIPE_WEBHOOK_SECRET: "whsec_test_dummy",
          POSTHOG_HOST: "https://app.posthog.com",

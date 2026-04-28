@@ -15,8 +15,6 @@ export default mergeConfig(
             BETTER_AUTH_SECRET: "test-secret-key-min-32-characters-long-xxx",
             BETTER_AUTH_URL: "http://localhost:3000",
             BETTER_AUTH_TRUSTED_ORIGINS: "http://localhost:3000",
-            BETTER_AUTH_GOOGLE_CLIENT_ID: "test-google-client-id",
-            BETTER_AUTH_GOOGLE_CLIENT_SECRET: "test-google-client-secret",
             STRIPE_SECRET_KEY: "sk_test_xxx",
             STRIPE_WEBHOOK_SECRET: "whsec_test_xxx",
             POSTHOG_HOST: "https://us.i.posthog.com",

@@ -56,6 +56,31 @@ export function formatDate(
       .replace(/ss/g, d.format("ss"));
 }
 
+export type BillingInterval =
+   | "hourly"
+   | "shift"
+   | "daily"
+   | "weekly"
+   | "monthly"
+   | "semestral"
+   | "annual"
+   | "one_time";
+
+export function advanceByBillingInterval(
+   from: dayjs.ConfigType,
+   interval: BillingInterval,
+): dayjs.Dayjs | null {
+   const start = dayjs(from);
+   if (interval === "hourly") return start.add(1, "hour");
+   if (interval === "shift") return start.add(8, "hour");
+   if (interval === "daily") return start.add(1, "day");
+   if (interval === "weekly") return start.add(1, "week");
+   if (interval === "monthly") return start.add(1, "month");
+   if (interval === "semestral") return start.add(6, "month");
+   if (interval === "annual") return start.add(1, "year");
+   return null;
+}
+
 export function formatRelativeTime(date: Date): string {
    const now = dayjs();
    const d = dayjs(date);

@@ -3,11 +3,10 @@ import { Button } from "@packages/ui/components/button";
 import { Separator } from "@packages/ui/components/separator";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { KeyRound, Sparkles } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
-import { GoogleIcon } from "../-auth/google-icon";
 import { TermsAndPrivacyText } from "../-auth/terms-and-privacy-text";
 
 const signInSearchSchema = z.object({
@@ -33,20 +32,10 @@ export const Route = createFileRoute("/auth/sign-in/")({
 
 export function SignInPage() {
    const [lastMethod, setLastMethod] = useState<string | null>(null);
-   const [isPending, startTransition] = useTransition();
 
    useEffect(() => {
       setLastMethod(authClient.getLastUsedLoginMethod());
    }, []);
-
-   const handleGoogleSignIn = () => {
-      startTransition(async () => {
-         await authClient.signIn.social({
-            provider: "google",
-            callbackURL: "/auth/callback",
-         });
-      });
-   };
 
    return (
       <section className="flex flex-col gap-4 w-full">
@@ -58,51 +47,24 @@ export function SignInPage() {
             </p>
          </div>
 
-         {/* Primary methods — 2-column grid */}
+         {/* Primary methods */}
          <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-3">
-               {/* Google */}
-               <div className="relative">
-                  {lastMethod === "google" && (
-                     <Badge
-                        className="absolute -top-2 -right-2 z-10"
-                        variant="default"
-                     >
-                        Ultimo usado
-                     </Badge>
-                  )}
-                  <Button
-                     className="w-full h-11 gap-2"
-                     disabled={isPending}
-                     onClick={handleGoogleSignIn}
-                     variant="outline"
+            {/* Magic Link */}
+            <div className="relative">
+               {lastMethod === "magicLink" && (
+                  <Badge
+                     className="absolute -top-2 -right-2 z-10"
+                     variant="default"
                   >
-                     <GoogleIcon />
-                     Google
-                  </Button>
-               </div>
-
-               {/* Magic Link */}
-               <div className="relative">
-                  {lastMethod === "magicLink" && (
-                     <Badge
-                        className="absolute -top-2 -right-2 z-10"
-                        variant="default"
-                     >
-                        Ultimo usado
-                     </Badge>
-                  )}
-                  <Button
-                     asChild
-                     className="w-full h-11 gap-2"
-                     variant="outline"
-                  >
-                     <Link to="/auth/magic-link">
-                        <Sparkles className="size-4" />
-                        Link Magico
-                     </Link>
-                  </Button>
-               </div>
+                     Ultimo usado
+                  </Badge>
+               )}
+               <Button asChild className="w-full h-11 gap-2" variant="outline">
+                  <Link to="/auth/magic-link">
+                     <Sparkles className="size-4" />
+                     Link Magico
+                  </Link>
+               </Button>
             </div>
 
             {/* Separator */}

@@ -19,7 +19,6 @@ import { SubSidebarNewMenu } from "./sub-sidebar-new-menu";
 const SECTION_TITLES: Record<string, string> = {
    dashboards: "Dashboards",
    insights: "Insights",
-   "data-management": "Dados",
 };
 
 export function SidebarSubPanel() {
@@ -87,12 +86,10 @@ function SubPanelSidebar({
                      {SECTION_TITLES[activeSection]}
                   </h2>
                   <div className="flex items-center gap-0.5">
-                     {activeSection !== "data-management" && (
-                        <SubSidebarNewMenu
-                           onAction={handleItemClick}
-                           section={activeSection}
-                        />
-                     )}
+                     <SubSidebarNewMenu
+                        onAction={handleItemClick}
+                        section={activeSection}
+                     />
                      <button
                         aria-label="Fechar painel"
                         className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"

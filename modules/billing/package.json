@@ -8,6 +8,7 @@
       "./router/*": "./src/router/*.ts",
       "./contracts/*": "./src/contracts/*.ts",
       "./workflows/*": "./src/workflows/*.ts",
+      "./services/*": "./src/services/*.ts",
       "./sse/*": "./src/sse/*.ts",
       "./*": "./src/*.ts"
    },

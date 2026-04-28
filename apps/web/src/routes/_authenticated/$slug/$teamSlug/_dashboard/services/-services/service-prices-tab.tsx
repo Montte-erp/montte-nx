@@ -60,6 +60,7 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
 
    const handleCreate = useCallback(() => {
       openCredenza({
+         className: "sm:max-w-lg",
          renderChildren: () => <PriceForm serviceId={serviceId} />,
       });
    }, [openCredenza, serviceId]);
@@ -67,6 +68,7 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
    const handleEdit = useCallback(
       (price: ServicePrice) => {
          openCredenza({
+            className: "sm:max-w-lg",
             renderChildren: () => (
                <PriceForm serviceId={serviceId} existing={price} />
             ),
@@ -82,6 +84,7 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
             name: `${price.name} (cópia)`,
          };
          openCredenza({
+            className: "sm:max-w-lg",
             renderChildren: () => (
                <PriceForm serviceId={serviceId} existing={copy} />
             ),

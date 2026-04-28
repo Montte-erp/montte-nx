@@ -43,6 +43,7 @@ import {
    Briefcase,
    Calendar,
    Check,
+   Coins,
    FolderTree,
    Info,
    Pencil,
@@ -58,7 +59,7 @@ import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
 
 type Service = Outputs["services"]["getById"];
-type FieldKey = "name" | "description" | "categoryId" | "tagId";
+type FieldKey = "name" | "description" | "categoryId" | "tagId" | "costPrice";
 
 const FIELD_WARNINGS: Record<FieldKey, string> = {
    name: "Alterar o nome será refletido em cobranças e assinaturas vinculadas.",
@@ -67,6 +68,8 @@ const FIELD_WARNINGS: Record<FieldKey, string> = {
    categoryId:
       "Alterar a categoria afeta filtros e relatórios vinculados a este serviço.",
    tagId: "Alterar a tag pode impactar segmentações e relatórios.",
+   costPrice:
+      "Alterar o custo recalcula a margem e pode mostrar assinaturas abaixo do custo.",
 };
 
 function SectionHeader({
@@ -339,6 +342,25 @@ export function ServicePropertiesPanel({ service }: { service: Service }) {
       });
    }
 
+   function commitCostEdit(value: string) {
+      const parsed = Number(value.replace(",", ".").replace(/[^\d.-]/g, ""));
+      const cost = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+      const doUpdate = () =>
+         updateMutation.mutate({
+            id: service.id,
+            costPrice: cost.toFixed(4),
+         });
+
+      setEditingField(null);
+      openAlertDialog({
+         title: "Confirmar alteração",
+         description: FIELD_WARNINGS.costPrice,
+         actionLabel: "Confirmar",
+         cancelLabel: "Cancelar",
+         onAction: doUpdate,
+      });
+   }
+
    function commitSelectEdit(
       field: "categoryId" | "tagId",
       value: string | null,
@@ -474,6 +496,37 @@ export function ServicePropertiesPanel({ service }: { service: Service }) {
                   ) : undefined
                }
                onEdit={() => setEditingField("tagId")}
+            />
+            <PropRow
+               icon={Coins}
+               label="Custo"
+               value={
+                  Number(service.costPrice) > 0 ? (
+                     <span className="tabular-nums">
+                        R${" "}
+                        {Number(service.costPrice).toLocaleString("pt-BR", {
+                           minimumFractionDigits: 2,
+                           maximumFractionDigits: 4,
+                        })}
+                     </span>
+                  ) : (
+                     <span className="text-muted-foreground">—</span>
+                  )
+               }
+               editNode={
+                  editingField === "costPrice" ? (
+                     <InlineTextField
+                        defaultValue={
+                           Number(service.costPrice) > 0
+                              ? Number(service.costPrice).toFixed(4)
+                              : ""
+                        }
+                        onCommit={commitCostEdit}
+                        onCancel={cancelEdit}
+                     />
+                  ) : undefined
+               }
+               onEdit={() => setEditingField("costPrice")}
             />
             <PropRow
                icon={Zap}

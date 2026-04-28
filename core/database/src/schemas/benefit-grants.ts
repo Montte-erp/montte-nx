@@ -1,5 +1,12 @@
 import { sql } from "drizzle-orm";
-import { index, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+   index,
+   integer,
+   numeric,
+   timestamp,
+   uniqueIndex,
+   uuid,
+} from "drizzle-orm/pg-core";
 import { crmSchema } from "@core/database/schemas/schemas";
 import { benefits } from "@core/database/schemas/benefits";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
@@ -26,6 +33,11 @@ export const benefitGrants = crmSchema.table(
          .notNull()
          .references(() => benefits.id, { onDelete: "restrict" }),
       status: benefitGrantStatusEnum("status").notNull().default("active"),
+      unitCostAtGrant: numeric("unit_cost_at_grant", {
+         precision: 12,
+         scale: 4,
+      }),
+      creditAmountAtGrant: integer("credit_amount_at_grant"),
       grantedAt: timestamp("granted_at", { withTimezone: true })
          .notNull()
          .defaultNow(),
