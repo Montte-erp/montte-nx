@@ -82,6 +82,8 @@ export type InvoiceCoupon = z.infer<typeof InvoiceCouponSchema>;
 export type ComputeLineInput = z.infer<typeof ComputeLineInputSchema>;
 export type ComputeInvoiceInput = z.infer<typeof ComputeInvoiceInputSchema>;
 
+type PriceType = PricingLine["priceType"];
+
 export type ModifierApplied = {
    couponId: string;
    code: string;
@@ -100,7 +102,6 @@ export type LineComputation = {
 };
 
 export type InvoiceLineItem = {
-   priceId: string;
    description: string;
    meterId: string | null;
    quantity: string;
@@ -124,6 +125,59 @@ export type InvoiceComputation = {
    modifiers: ModifierApplied[];
 };
 
+const ZERO = zero("BRL");
+
+type CouponIndex = {
+   team: PricingCoupon[];
+   byPrice: Map<string, PricingCoupon[]>;
+   byMeter: Map<string, PricingCoupon[]>;
+};
+
+function pushIntoMap<K, V>(map: Map<K, V[]>, key: K, value: V): void {
+   const bucket = map.get(key);
+   if (bucket === undefined) {
+      map.set(key, [value]);
+      return;
+   }
+   bucket.push(value);
+}
+
+function buildCouponIndex(coupons: PricingCoupon[]): CouponIndex {
+   const idx: CouponIndex = {
+      team: [],
+      byPrice: new Map(),
+      byMeter: new Map(),
+   };
+   for (const c of coupons) {
+      if (c.scope === "team") {
+         idx.team.push(c);
+         continue;
+      }
+      if (c.scope === "price" && c.priceId !== null) {
+         pushIntoMap(idx.byPrice, c.priceId, c);
+         continue;
+      }
+      if (c.scope === "meter" && c.meterId !== null) {
+         pushIntoMap(idx.byMeter, c.meterId, c);
+      }
+   }
+   return idx;
+}
+
+function lookupApplicable(
+   idx: CouponIndex,
+   line: PricingLine,
+): PricingCoupon[] {
+   const fromPrice = idx.byPrice.get(line.priceId);
+   const fromMeter =
+      line.meterId === null ? undefined : idx.byMeter.get(line.meterId);
+   if (fromPrice === undefined && fromMeter === undefined) return idx.team;
+   const out: PricingCoupon[] = idx.team.slice();
+   if (fromPrice !== undefined) out.push(...fromPrice);
+   if (fromMeter !== undefined) out.push(...fromMeter);
+   return out;
+}
+
 function matchesPlan(c: PricingCoupon, ctx: PricingContext): boolean {
    const ids = c.conditions.planServiceIds;
    if (!ids?.length) return true;
@@ -137,19 +191,13 @@ function matchesMeter(c: PricingCoupon, line: PricingLine): boolean {
    return meterIds.includes(line.meterId);
 }
 
-function appliesToLine(c: PricingCoupon, line: PricingLine): boolean {
-   if (c.scope === "team") return true;
-   if (c.scope === "price") return c.priceId === line.priceId;
-   return c.meterId === line.meterId;
-}
-
 function dayMatches(c: PricingCoupon, dow: number): boolean {
    const days = c.conditions.dayOfWeek;
    if (!days?.length) return true;
    return days.includes(dow);
 }
 
-function isLineLevelDiscount(c: PricingCoupon): boolean {
+function isLineLevel(c: PricingCoupon): boolean {
    return !c.conditions.dayOfWeek?.length;
 }
 
@@ -165,15 +213,12 @@ function applyModifier(base: Money, c: PricingCoupon, quantity: number): Money {
 }
 
 function clampPositive(m: Money): Money {
-   if (greaterThan(m, zero("BRL"))) return m;
-   return zero("BRL");
+   if (greaterThan(m, ZERO)) return m;
+   return ZERO;
 }
 
-function capMoney(m: Money, cap: string | null): Money {
-   if (cap === null) return m;
-   const capped = of(cap, "BRL");
-   if (greaterThan(m, capped)) return capped;
-   return m;
+function flattenChunks(chunks: ModifierApplied[][]): ModifierApplied[] {
+   return chunks.flat();
 }
 
 function toModifier(
@@ -192,58 +237,83 @@ function toModifier(
    return { ...base, dayOfWeek };
 }
 
-type Bucket = { value: Money; modifiers: ModifierApplied[] };
+type Pipe = { value: Money; chunks: ModifierApplied[][] };
+type Step = (p: Pipe) => Pipe;
 
-function applyBucketSurcharges(
+function startPipe(value: Money): Pipe {
+   return { value, chunks: [] };
+}
+
+function pipe(init: Pipe, ...steps: Step[]): Pipe {
+   return steps.reduce((p, step) => step(p), init);
+}
+
+function stepCap(cap: string | null): Step {
+   if (cap === null) return identity;
+   const capped = of(cap, "BRL");
+   return (p) => {
+      if (greaterThan(p.value, capped))
+         return { value: capped, chunks: p.chunks };
+      return p;
+   };
+}
+
+function identity(p: Pipe): Pipe {
+   return p;
+}
+
+function stepLineSurcharges(
+   surcharges: PricingCoupon[],
+   quantity: number,
+): Step {
+   const applicable = surcharges.filter(isLineLevel);
+   if (applicable.length === 0) return identity;
+   return (p) => {
+      const value = applicable.reduce(
+         (acc, s) => applyModifier(acc, s, quantity),
+         p.value,
+      );
+      const mods = applicable.map((s) => toModifier(s, "line"));
+      return { value, chunks: [...p.chunks, mods] };
+   };
+}
+
+function stepLineDiscounts(discounts: PricingCoupon[], quantity: number): Step {
+   const applicable = discounts.filter(isLineLevel);
+   if (applicable.length === 0) return identity;
+   return (p) => {
+      const value = applicable.reduce(
+         (acc, d) => clampPositive(applyModifier(acc, d, quantity)),
+         p.value,
+      );
+      const mods = applicable.map((d) => toModifier(d, "line"));
+      return { value, chunks: [...p.chunks, mods] };
+   };
+}
+
+type DayBucket = { value: Money; modifiers: ModifierApplied[] };
+
+function bucketWithSurcharges(
    base: Money,
    surcharges: PricingCoupon[],
    dow: number,
    quantity: number,
-): Bucket {
-   return surcharges
-      .filter((s) => dayMatches(s, dow))
-      .reduce<Bucket>(
-         (acc, s) => ({
-            value: applyModifier(acc.value, s, quantity),
-            modifiers: [...acc.modifiers, toModifier(s, "bucket", dow)],
-         }),
-         { value: base, modifiers: [] },
-      );
-}
-
-function applyLineSurcharges(
-   base: Money,
-   surcharges: PricingCoupon[],
-   quantity: number,
-): Bucket {
-   return surcharges.filter(isLineLevelDiscount).reduce<Bucket>(
-      (acc, s) => ({
-         value: applyModifier(acc.value, s, quantity),
-         modifiers: [...acc.modifiers, toModifier(s, "line")],
-      }),
-      { value: base, modifiers: [] },
+): DayBucket {
+   const applicable = surcharges.filter((s) => dayMatches(s, dow));
+   if (applicable.length === 0) return { value: base, modifiers: [] };
+   const value = applicable.reduce(
+      (acc, s) => applyModifier(acc, s, quantity),
+      base,
    );
-}
-
-function applyLineDiscounts(
-   base: Money,
-   discounts: PricingCoupon[],
-   quantity: number,
-): Bucket {
-   return discounts.filter(isLineLevelDiscount).reduce<Bucket>(
-      (acc, d) => ({
-         value: clampPositive(applyModifier(acc.value, d, quantity)),
-         modifiers: [...acc.modifiers, toModifier(d, "line")],
-      }),
-      { value: base, modifiers: [] },
-   );
+   const modifiers = applicable.map((s) => toModifier(s, "bucket", dow));
+   return { value, modifiers };
 }
 
 type MeteredFold = {
    creditPool: number;
-   lineTotal: Money;
+   total: Money;
    billable: number;
-   modifiers: ModifierApplied[];
+   chunks: ModifierApplied[][];
 };
 
 function stepMeteredDay(
@@ -256,105 +326,67 @@ function stepMeteredDay(
    if (used <= 0) return acc;
    const consumed = Math.min(acc.creditPool, used);
    const remaining = used - consumed;
-   if (remaining <= 0) {
-      return { ...acc, creditPool: acc.creditPool - consumed };
-   }
-   const bucket = applyBucketSurcharges(
+   const creditPool = acc.creditPool - consumed;
+   if (remaining <= 0) return { ...acc, creditPool };
+   const bucket = bucketWithSurcharges(
       multiply(unit, remaining),
       surcharges,
       dow,
       remaining,
    );
    return {
-      creditPool: acc.creditPool - consumed,
-      lineTotal: add(acc.lineTotal, bucket.value),
+      creditPool,
+      total: add(acc.total, bucket.value),
       billable: acc.billable + remaining,
-      modifiers: [...acc.modifiers, ...bucket.modifiers],
+      chunks: [...acc.chunks, bucket.modifiers],
    };
-}
-
-function foldMeteredUsage(
-   line: PricingLine,
-   usage: Record<string, number>,
-   creditAmount: number,
-   surcharges: PricingCoupon[],
-): MeteredFold {
-   const unit = of(line.unitPrice, "BRL");
-   const dows = Object.keys(usage)
-      .map(Number)
-      .sort((a, b) => a - b);
-
-   const seed: MeteredFold = {
-      creditPool: creditAmount,
-      lineTotal: zero("BRL"),
-      billable: 0,
-      modifiers: [],
-   };
-
-   return dows.reduce((acc, dow) => {
-      const used = usage[dow];
-      if (used === undefined) return acc;
-      return stepMeteredDay(acc, dow, used, unit, surcharges);
-   }, seed);
 }
 
 function findCreditAmount(benefits: PricingBenefit[], meterId: string): number {
    const credit = benefits.find(
       (b) => b.type === "credits" && b.meterId === meterId,
    );
-   if (!credit) return 0;
+   if (credit === undefined) return 0;
    if (credit.creditAmount === null) return 0;
    return credit.creditAmount;
 }
 
-function computeMeteredLine(
-   line: PricingLine & {
-      meterId: string;
-      usageByDayOfWeek: Record<string, number>;
-   },
-   benefits: PricingBenefit[],
-   surcharges: PricingCoupon[],
-   discounts: PricingCoupon[],
-): LineComputation {
-   const credit = findCreditAmount(benefits, line.meterId);
-   const fold = foldMeteredUsage(
-      line,
-      line.usageByDayOfWeek,
-      credit,
-      surcharges,
-   );
-   const capped = capMoney(fold.lineTotal, line.priceCap);
-   const discounted = applyLineDiscounts(capped, discounts, fold.billable);
-
-   return {
-      priceId: line.priceId,
-      meterId: line.meterId,
-      billableQuantity: fold.billable,
-      subtotal: discounted.value,
-      modifiers: [...fold.modifiers, ...discounted.modifiers],
-   };
+function sortedDays(usage: Record<string, number>): number[] {
+   return Object.keys(usage)
+      .map(Number)
+      .sort((a, b) => a - b);
 }
 
-function computeFlatLine(
-   line: PricingLine,
+function foldMeteredUsage(
+   unit: Money,
+   usage: Record<string, number>,
+   creditAmount: number,
    surcharges: PricingCoupon[],
-   discounts: PricingCoupon[],
-): LineComputation {
-   const base = multiply(of(line.unitPrice, "BRL"), line.quantity);
-   const surcharged = applyLineSurcharges(base, surcharges, line.quantity);
-   const capped = capMoney(surcharged.value, line.priceCap);
-   const discounted = applyLineDiscounts(capped, discounts, line.quantity);
-
-   return {
-      priceId: line.priceId,
-      meterId: line.meterId,
-      billableQuantity: line.quantity,
-      subtotal: discounted.value,
-      modifiers: [...surcharged.modifiers, ...discounted.modifiers],
+): MeteredFold {
+   const seed: MeteredFold = {
+      creditPool: creditAmount,
+      total: ZERO,
+      billable: 0,
+      chunks: [],
    };
+   return sortedDays(usage).reduce((acc, dow) => {
+      const used = usage[dow];
+      if (used === undefined) return acc;
+      return stepMeteredDay(acc, dow, used, unit, surcharges);
+   }, seed);
 }
 
-function isMeteredWithUsage(line: PricingLine): line is PricingLine & {
+type StrategyArgs = {
+   line: PricingLine;
+   unit: Money;
+   benefits: PricingBenefit[];
+   surcharges: PricingCoupon[];
+   discounts: PricingCoupon[];
+};
+
+type LineStrategy = (args: StrategyArgs) => LineComputation;
+
+function isMeteredUsage(line: PricingLine): line is PricingLine & {
    meterId: string;
    usageByDayOfWeek: Record<string, number>;
 } {
@@ -364,31 +396,71 @@ function isMeteredWithUsage(line: PricingLine): line is PricingLine & {
    return true;
 }
 
-function filterApplicable(
-   coupons: PricingCoupon[],
-   line: PricingLine,
-   ctx: PricingContext,
-): PricingCoupon[] {
-   return coupons.filter(
-      (c) =>
-         appliesToLine(c, line) && matchesPlan(c, ctx) && matchesMeter(c, line),
+const flatStrategy: LineStrategy = ({ line, unit, surcharges, discounts }) => {
+   const out = pipe(
+      startPipe(multiply(unit, line.quantity)),
+      stepLineSurcharges(surcharges, line.quantity),
+      stepCap(line.priceCap),
+      stepLineDiscounts(discounts, line.quantity),
    );
-}
+   return {
+      priceId: line.priceId,
+      meterId: line.meterId,
+      billableQuantity: line.quantity,
+      subtotal: out.value,
+      modifiers: flattenChunks(out.chunks),
+   };
+};
 
-function computeLineUnsafe(
+const meteredStrategy: LineStrategy = (args) => {
+   const { line, unit, benefits, surcharges, discounts } = args;
+   if (!isMeteredUsage(line)) return flatStrategy(args);
+   const credit = findCreditAmount(benefits, line.meterId);
+   const fold = foldMeteredUsage(
+      unit,
+      line.usageByDayOfWeek,
+      credit,
+      surcharges,
+   );
+   const out = pipe(
+      { value: fold.total, chunks: fold.chunks },
+      stepCap(line.priceCap),
+      stepLineDiscounts(discounts, fold.billable),
+   );
+   return {
+      priceId: line.priceId,
+      meterId: line.meterId,
+      billableQuantity: fold.billable,
+      subtotal: out.value,
+      modifiers: flattenChunks(out.chunks),
+   };
+};
+
+const strategies: Record<PriceType, LineStrategy> = {
+   metered: meteredStrategy,
+   flat: flatStrategy,
+   per_unit: flatStrategy,
+};
+
+function computeLineWithIndex(
    line: PricingLine,
    benefits: PricingBenefit[],
-   coupons: PricingCoupon[],
+   idx: CouponIndex,
    ctx: PricingContext,
 ): LineComputation {
-   const applicable = filterApplicable(coupons, line, ctx);
+   const applicable = lookupApplicable(idx, line).filter(
+      (c) => matchesPlan(c, ctx) && matchesMeter(c, line),
+   );
    const surcharges = applicable.filter((c) => c.direction === "surcharge");
    const discounts = applicable.filter((c) => c.direction === "discount");
-
-   if (isMeteredWithUsage(line)) {
-      return computeMeteredLine(line, benefits, surcharges, discounts);
-   }
-   return computeFlatLine(line, surcharges, discounts);
+   const unit = of(line.unitPrice, "BRL");
+   return strategies[line.priceType]({
+      line,
+      unit,
+      benefits,
+      surcharges,
+      discounts,
+   });
 }
 
 function isInvoiceCouponActive(
@@ -419,9 +491,28 @@ function toCouponSnapshot(coupon: InvoiceCoupon): InvoiceCouponSnapshot {
    };
 }
 
+type CouponResolution = {
+   discount: Money;
+   snapshot: InvoiceCouponSnapshot | null;
+};
+
+const NO_COUPON: CouponResolution = { discount: ZERO, snapshot: null };
+
+function resolveInvoiceCoupon(
+   coupon: InvoiceCoupon | null,
+   redemptionCount: number,
+   subtotal: Money,
+): CouponResolution {
+   if (coupon === null) return NO_COUPON;
+   if (!isInvoiceCouponActive(coupon, redemptionCount)) return NO_COUPON;
+   return {
+      discount: computeInvoiceCouponDiscount(coupon, subtotal),
+      snapshot: toCouponSnapshot(coupon),
+   };
+}
+
 function toLineItem(line: PricingLine, c: LineComputation): InvoiceLineItem {
    return {
-      priceId: line.priceId,
       description: line.priceName,
       meterId: line.meterId,
       quantity: c.billableQuantity.toFixed(2),
@@ -444,63 +535,30 @@ function parseInput<T>(
 }
 
 function buildLine(input: ComputeLineInput): LineComputation {
-   return computeLineUnsafe(
-      input.line,
-      input.benefits,
-      input.coupons,
-      input.context,
-   );
-}
-
-export function computeLine(
-   input: ComputeLineInput,
-): Result<LineComputation, WebAppError> {
-   return parseInput(ComputeLineInputSchema, input).map(buildLine);
-}
-
-type CouponResolution = {
-   discount: Money;
-   snapshot: InvoiceCouponSnapshot | null;
-};
-
-const NO_COUPON: CouponResolution = { discount: zero("BRL"), snapshot: null };
-
-function resolveInvoiceCoupon(
-   coupon: InvoiceCoupon | null,
-   redemptionCount: number,
-   subtotal: Money,
-): CouponResolution {
-   if (coupon === null) return NO_COUPON;
-   if (!isInvoiceCouponActive(coupon, redemptionCount)) return NO_COUPON;
-   return {
-      discount: computeInvoiceCouponDiscount(coupon, subtotal),
-      snapshot: toCouponSnapshot(coupon),
-   };
+   const idx = buildCouponIndex(input.coupons);
+   return computeLineWithIndex(input.line, input.benefits, idx, input.context);
 }
 
 function buildInvoice(input: ComputeInvoiceInput): InvoiceComputation {
-   const {
-      lines,
-      benefits,
-      lineCoupons,
-      invoiceCoupon,
-      redemptionCount,
-      context,
-   } = input;
-
-   const computations = lines.map((line) => ({
+   const idx = buildCouponIndex(input.lineCoupons);
+   const computations = input.lines.map((line) => ({
       line,
-      computation: computeLineUnsafe(line, benefits, lineCoupons, context),
+      computation: computeLineWithIndex(
+         line,
+         input.benefits,
+         idx,
+         input.context,
+      ),
    }));
 
    const subtotal = computations.reduce(
       (acc, { computation }) => add(acc, computation.subtotal),
-      zero("BRL"),
+      ZERO,
    );
 
    const { discount, snapshot } = resolveInvoiceCoupon(
-      invoiceCoupon,
-      redemptionCount,
+      input.invoiceCoupon,
+      input.redemptionCount,
       subtotal,
    );
 
@@ -516,6 +574,12 @@ function buildInvoice(input: ComputeInvoiceInput): InvoiceComputation {
          ({ computation }) => computation.modifiers,
       ),
    };
+}
+
+export function computeLine(
+   input: ComputeLineInput,
+): Result<LineComputation, WebAppError> {
+   return parseInput(ComputeLineInputSchema, input).map(buildLine);
 }
 
 export function computeInvoice(
