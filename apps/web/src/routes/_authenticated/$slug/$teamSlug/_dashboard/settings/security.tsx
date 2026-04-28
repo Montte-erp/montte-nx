@@ -97,8 +97,6 @@ function getLoginMethodDisplay(method: string | null | undefined): {
    switch (method) {
       case "email":
          return { label: "Email", Icon: Mail };
-      case "google":
-         return { label: "Google", Icon: Globe };
       case "otp":
          return { label: "OTP", Icon: Shield };
       case "magic-link":

@@ -3,7 +3,6 @@ import {
    AlertTriangle,
    Box,
    Contact2,
-   CreditCard,
    DollarSign,
    FlaskConical,
    KeyRound,
@@ -119,13 +118,6 @@ export const settingsNavSections: SettingsNavSection[] = [
             title: "Membros",
             href: "/$slug/$teamSlug/settings/organization/members",
             icon: Users,
-         },
-         {
-            id: "org-billing",
-            title: "Faturamento",
-            href: "/$slug/$teamSlug/billing",
-            icon: CreditCard,
-            external: true,
          },
          {
             id: "org-danger-zone",

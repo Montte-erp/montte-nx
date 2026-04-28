@@ -5,7 +5,6 @@ import {
    CollapsibleTrigger,
 } from "@packages/ui/components/collapsible";
 import {
-   type FeatureStage,
    FeatureStageBadge,
    FeatureStageChip,
 } from "@/components/blocks/feature-stage-badge";
@@ -24,18 +23,19 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
    Bell,
    BellOff,
-   Building2,
    ChevronDown,
    FileText,
    FlaskConical,
    Lightbulb,
-   Users,
-   Workflow,
 } from "lucide-react";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
-import { Fragment, useCallback, useState } from "react";
+import { Fragment, useCallback } from "react";
 import { usePostHog } from "posthog-js/react";
+import { z } from "zod";
 import { useEarlyAccess } from "@/hooks/use-early-access";
+
+const STAGE_FILTERS = ["concept", "alpha", "beta"] as const;
+type StageFilter = (typeof STAGE_FILTERS)[number];
 
 const [useComingSoonNotifications] = createLocalStorageState<string[]>(
    "montte:coming-soon-notifications",
@@ -45,6 +45,12 @@ const [useComingSoonNotifications] = createLocalStorageState<string[]>(
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews",
 )({
+   validateSearch: z.object({
+      stages: z
+         .array(z.enum(STAGE_FILTERS))
+         .catch([...STAGE_FILTERS])
+         .default([...STAGE_FILTERS]),
+   }),
    head: () => ({
       meta: [{ title: "Pré-visualizações — Montte" }],
    }),
@@ -71,47 +77,6 @@ type ComingSoonCategory = {
 
 const COMING_SOON_CATEGORIES: ComingSoonCategory[] = [
    {
-      id: "crm",
-      label: "CRM",
-      icon: Users,
-      features: [
-         {
-            flagKey: "pipeline-deals",
-            name: "Pipeline de Deals",
-            description:
-               "Kanban de oportunidades com probabilidade e valor estimado via Twenty CRM.",
-            icon: Workflow,
-         },
-      ],
-   },
-   {
-      id: "coworking",
-      label: "Coworking",
-      icon: Building2,
-      features: [
-         {
-            flagKey: "espacos-reservas",
-            name: "Espaços & Reservas",
-            description:
-               "Catálogo de espaços e sistema de reservas via Cal.com.",
-            icon: Building2,
-         },
-         {
-            flagKey: "check-in-checkout",
-            name: "Check-in / Check-out",
-            description: "Log de entrada e saída de membros.",
-            icon: Users,
-         },
-         {
-            flagKey: "portal-membro",
-            name: "Portal do Membro",
-            description:
-               "Self-service para reservas e visualização de faturas.",
-            icon: Users,
-         },
-      ],
-   },
-   {
       id: "fiscal",
       label: "Fiscal",
       icon: FileText,
@@ -129,22 +94,28 @@ const COMING_SOON_CATEGORIES: ComingSoonCategory[] = [
 
 function FeaturePreviewsPage() {
    const { features, isEnrolled, updateEnrollment } = useEarlyAccess();
+   const navigate = Route.useNavigate();
+   const { stages } = Route.useSearch();
 
-   const [selectedStages, setSelectedStages] = useState<Set<FeatureStage>>(
-      new Set(["concept", "alpha", "beta", "general-availability"]),
+   const selectedStages = new Set<StageFilter>(stages);
+
+   const setStages = useCallback(
+      (next: StageFilter[]) => {
+         navigate({
+            search: (prev) => ({ ...prev, stages: next }),
+            replace: true,
+         });
+      },
+      [navigate],
    );
 
-   const toggleStage = (stage: FeatureStage) => {
-      setSelectedStages((prev) => {
-         const next = new Set(prev);
-         if (next.has(stage)) {
-            if (next.size === 1) return prev;
-            next.delete(stage);
-         } else {
-            next.add(stage);
-         }
-         return next;
-      });
+   const toggleStage = (stage: StageFilter) => {
+      if (selectedStages.has(stage)) {
+         if (selectedStages.size === 1) return;
+         setStages(stages.filter((s) => s !== stage));
+         return;
+      }
+      setStages([...stages, stage]);
    };
 
    const childNames = new Set(Object.values(CONCEPT_CHILDREN).flat());
@@ -157,16 +128,28 @@ function FeaturePreviewsPage() {
    const conceptByName = new Map(conceptFeatures.map((f) => [f.name, f]));
 
    const filteredFeatures = parentFeatures.filter(
-      (f) => f.stage !== null && selectedStages.has(f.stage),
+      (f) =>
+         f.stage !== null &&
+         (STAGE_FILTERS as readonly string[]).includes(f.stage) &&
+         selectedStages.has(f.stage as StageFilter),
    );
 
    const stageCounts = {
       concept: features.filter((f) => f.stage === "concept").length,
       alpha: features.filter((f) => f.stage === "alpha").length,
       beta: features.filter((f) => f.stage === "beta").length,
-      "general-availability": features.filter(
-         (f) => f.stage === "general-availability",
-      ).length,
+   };
+
+   const allEnabled = parentFeatures.every(
+      (f) => f.flagKey && isEnrolled(f.flagKey),
+   );
+
+   const enableAllFeatures = () => {
+      for (const f of parentFeatures) {
+         if (f.flagKey && !isEnrolled(f.flagKey)) {
+            updateEnrollment(f.flagKey, true);
+         }
+      }
    };
 
    return (
@@ -182,23 +165,24 @@ function FeaturePreviewsPage() {
             </p>
 
             <div className="flex flex-col gap-2 mt-4">
-               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>Filtrar por estágio:</span>
+               <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                     <span>Filtrar por estágio:</span>
+                     <Button
+                        className="px-0"
+                        onClick={() => setStages([...STAGE_FILTERS])}
+                        variant="link"
+                     >
+                        Mostrar todos
+                     </Button>
+                  </div>
                   <Button
-                     className="px-0"
-                     onClick={() =>
-                        setSelectedStages(
-                           new Set([
-                              "concept",
-                              "alpha",
-                              "beta",
-                              "general-availability",
-                           ]),
-                        )
-                     }
-                     variant="link"
+                     disabled={allEnabled || parentFeatures.length === 0}
+                     onClick={enableAllFeatures}
+                     size="sm"
+                     variant="outline"
                   >
-                     Mostrar todos
+                     Habilitar todas
                   </Button>
                </div>
                <div className="flex flex-wrap gap-2">
@@ -219,12 +203,6 @@ function FeaturePreviewsPage() {
                      isActive={selectedStages.has("beta")}
                      onClick={() => toggleStage("beta")}
                      stage="beta"
-                  />
-                  <FeatureStageChip
-                     count={stageCounts["general-availability"]}
-                     isActive={selectedStages.has("general-availability")}
-                     onClick={() => toggleStage("general-availability")}
-                     stage="general-availability"
                   />
                </div>
             </div>

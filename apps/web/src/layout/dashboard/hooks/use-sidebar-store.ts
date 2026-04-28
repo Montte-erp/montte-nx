@@ -2,7 +2,7 @@ import { createStore, useStore } from "@tanstack/react-store";
 import { useCallback, useEffect } from "react";
 import { createPersistedStore, createStoreEffect } from "@/lib/store";
 
-export type SubSidebarSection = "dashboards" | "insights" | "data-management";
+export type SubSidebarSection = "dashboards" | "insights";
 
 interface SidebarPersistedState {
    isCollapsed: boolean;

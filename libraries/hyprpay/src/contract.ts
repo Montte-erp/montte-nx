@@ -65,12 +65,24 @@ const subscriptionItemRow = z.object({
    updatedAt: z.date(),
 });
 
+const couponConditionsSchema = z
+   .object({
+      dayOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
+      meterIds: z.array(z.string().uuid()).optional(),
+      planServiceIds: z.array(z.string().uuid()).optional(),
+   })
+   .strict();
+
 const couponRow = z.object({
    id: z.string().uuid(),
    teamId: z.string().uuid(),
    code: z.string(),
-   scope: z.enum(["team", "price"]),
+   scope: z.enum(["team", "price", "meter"]),
    priceId: z.string().uuid().nullable(),
+   meterId: z.string().uuid().nullable(),
+   direction: z.enum(["discount", "surcharge"]),
+   trigger: z.enum(["code", "auto"]),
+   conditions: couponConditionsSchema,
    type: z.enum(["percent", "fixed"]),
    amount: z.string(),
    duration: z.enum(["once", "repeating", "forever"]),
@@ -267,9 +279,11 @@ const contactsContract = {
    reactivate: oc.input(contactByIdRef).output(contactRow),
 };
 
-const couponScope = z.enum(["team", "price"]);
+const couponScope = z.enum(["team", "price", "meter"]);
 const couponType = z.enum(["percent", "fixed"]);
 const couponDuration = z.enum(["once", "repeating", "forever"]);
+const couponDirection = z.enum(["discount", "surcharge"]);
+const couponTrigger = z.enum(["code", "auto"]);
 const amountString = z
    .string()
    .regex(/^\d+(\.\d+)?$/, "Valor deve ser um número positivo.");
@@ -279,6 +293,10 @@ const createCouponInput = z
       code: z.string().min(1).max(50),
       scope: couponScope.default("team"),
       priceId: z.string().uuid().nullable().optional(),
+      meterId: z.string().uuid().nullable().optional(),
+      direction: couponDirection.default("discount"),
+      trigger: couponTrigger.default("code"),
+      conditions: couponConditionsSchema.optional().default({}),
       type: couponType,
       amount: amountString,
       duration: couponDuration,
@@ -294,6 +312,13 @@ const createCouponInput = z
             path: ["priceId"],
          });
       }
+      if (data.scope === "meter" && !data.meterId) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "meterId é obrigatório quando escopo é 'meter'.",
+            path: ["meterId"],
+         });
+      }
       if (data.duration === "repeating" && !data.durationMonths) {
          ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -306,9 +331,20 @@ const createCouponInput = z
 
 const updateCouponInput = z.object({
    id: z.string().uuid(),
+   code: z.string().min(1).max(50).optional(),
+   scope: couponScope.optional(),
+   priceId: z.string().uuid().nullable().optional(),
+   meterId: z.string().uuid().nullable().optional(),
+   direction: couponDirection.optional(),
+   trigger: couponTrigger.optional(),
+   type: couponType.optional(),
+   amount: amountString.optional(),
+   duration: couponDuration.optional(),
+   durationMonths: z.number().int().min(1).nullable().optional(),
    isActive: z.boolean().optional(),
    maxUses: z.number().int().min(1).nullable().optional(),
    redeemBy: z.string().datetime().nullable().optional(),
+   conditions: couponConditionsSchema.optional(),
 });
 
 const couponsContract = {
@@ -335,8 +371,10 @@ const couponsContract = {
                   amount: z.string(),
                   duration: z.enum(["once", "repeating", "forever"]),
                   durationMonths: z.number().int().nullable(),
-                  scope: z.enum(["team", "price"]),
+                  scope: z.enum(["team", "price", "meter"]),
                   priceId: z.string().uuid().nullable(),
+                  meterId: z.string().uuid().nullable(),
+                  direction: z.enum(["discount", "surcharge"]),
                   maxUses: z.number().int().nullable(),
                   usedCount: z.number().int(),
                   redeemBy: z.string().nullable(),

@@ -50,6 +50,7 @@ import {
    TableRow,
 } from "@packages/ui/components/table";
 import { Input } from "@packages/ui/components/input";
+import { Switch } from "@packages/ui/components/switch";
 import { Textarea } from "@packages/ui/components/textarea";
 import { cn } from "@packages/ui/lib/utils";
 import dayjs from "dayjs";
@@ -165,7 +166,9 @@ function CellInput({
       | "tags"
       | "money"
       | "date"
-      | "combobox";
+      | "combobox"
+      | "toggle"
+      | "numeric";
    field: CellFieldApi;
    options?: Array<{ label: string; value: string }>;
    label?: string;
@@ -353,6 +356,51 @@ function CellInput({
       );
    }
 
+   if (cellComponent === "toggle") {
+      return (
+         <Switch
+            aria-invalid={isInvalid}
+            aria-label={label}
+            checked={stringValue === "true"}
+            onCheckedChange={(v) => {
+               field.handleChange(String(v));
+               onCommit?.();
+            }}
+         />
+      );
+   }
+
+   if (cellComponent === "numeric") {
+      return (
+         <Input
+            ref={inputRef as React.RefObject<HTMLInputElement>}
+            aria-invalid={isInvalid}
+            aria-label={label}
+            autoFocus={autoFocus}
+            className="h-7 aria-invalid:border-destructive"
+            inputMode="numeric"
+            type="number"
+            value={stringValue}
+            onBlur={() => {
+               field.handleBlur();
+               if (autoCommitOnBlur) onCommit?.();
+            }}
+            onChange={(e) => field.handleChange(e.target.value)}
+            onKeyDown={(e) => {
+               if (e.key === "Escape") {
+                  e.preventDefault();
+                  onCancel?.();
+               }
+               if (e.key === "Enter") {
+                  e.preventDefault();
+                  field.handleChange((e.target as HTMLInputElement).value);
+                  onCommit?.();
+               }
+            }}
+         />
+      );
+   }
+
    return null;
 }
 
@@ -376,7 +424,9 @@ function EditableCell({
       | "tags"
       | "money"
       | "date"
-      | "combobox";
+      | "combobox"
+      | "toggle"
+      | "numeric";
    editMode?: "inline" | "popover";
    label?: string;
    options?: Array<{ label: string; value: string }>;
@@ -484,18 +534,24 @@ function EditableCell({
          >
             <form.Field name="value" validators={fieldValidators}>
                {(field) => (
-                  <CellInput
-                     autoCommitOnBlur
-                     autoFocus
-                     cellComponent={cellComponent}
-                     field={field as unknown as CellFieldApi}
-                     inputRef={inputRef}
-                     label={ariaLabel}
-                     options={options}
-                     onCancel={cancel}
-                     onCommit={commit}
-                     onCreateOption={onCreateOption}
-                  />
+                  <div className="flex flex-col gap-1">
+                     <CellInput
+                        autoCommitOnBlur
+                        autoFocus
+                        cellComponent={cellComponent}
+                        field={field as unknown as CellFieldApi}
+                        inputRef={inputRef}
+                        label={ariaLabel}
+                        options={options}
+                        onCancel={cancel}
+                        onCommit={commit}
+                        onCreateOption={onCreateOption}
+                     />
+                     <FieldError
+                        errors={field.state.meta.errors}
+                        isTouched={field.state.meta.isTouched}
+                     />
+                  </div>
                )}
             </form.Field>
          </form>
@@ -1529,9 +1585,13 @@ function DraftRow() {
          const fieldName = String(
             (col.columnDef as { accessorKey?: string }).accessorKey ?? col.id,
          );
-         values[fieldName] =
-            draftRowDefaults?.[fieldName] ??
-            (meta.cellComponent === "tags" ? [] : "");
+         const fallback =
+            meta.cellComponent === "tags"
+               ? []
+               : meta.cellComponent === "toggle"
+                 ? "false"
+                 : "";
+         values[fieldName] = draftRowDefaults?.[fieldName] ?? fallback;
       }
       return values;
    }, [visibleColumns, draftRowDefaults]);

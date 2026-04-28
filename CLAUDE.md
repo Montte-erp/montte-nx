@@ -170,13 +170,11 @@ Local DB image is `paradedb/paradedb` — don't swap.
 
 ## Auth (Better Auth)
 
-Config: `core/authentication/src/server.ts`. Plugins: Google OAuth, Magic Link, Email OTP, 2FA, Anonymous, HyprPay.
+Config: `core/authentication/src/server.ts`. Plugins: Magic Link, Email OTP, 2FA, Anonymous, HyprPay.
 - Auth schema is read-only; extend via `additionalFields`.
 - Queries → oRPC (`orpc.organization.*`). Mutations → `authClient` directly (never `useMutation`).
 - `member.id ≠ user.id` — `member.id` for Better Auth APIs, `member.userId` for DB.
 - Loading state: `useTransition`, not `useState<boolean>`.
-
-TODO: configure Google OAuth provider in `core/authentication/src/server.ts`.
 
 ---
 

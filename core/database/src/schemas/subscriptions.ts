@@ -8,7 +8,11 @@ import { crmSchema } from "@core/database/schemas/schemas";
 
 export const billingCycleEnum = crmSchema.enum("billing_cycle", [
    "hourly",
+   "shift",
+   "daily",
+   "weekly",
    "monthly",
+   "semestral",
    "annual",
    "one_time",
 ]);

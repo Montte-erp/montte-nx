@@ -37,6 +37,9 @@ export const services = crmSchema.table(
          onDelete: "set null",
       }),
       tagId: uuid("tag_id").references(() => tags.id, { onDelete: "set null" }),
+      costPrice: numeric("cost_price", { precision: 12, scale: 4 })
+         .notNull()
+         .default("0"),
       isActive: boolean("is_active").notNull().default(true),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
@@ -66,6 +69,7 @@ export const servicePrices = crmSchema.table(
       meterId: uuid("meter_id").references(() => meters.id, {
          onDelete: "set null",
       }),
+      minPrice: numeric("min_price", { precision: 12, scale: 2 }),
       priceCap: numeric("price_cap", { precision: 12, scale: 2 }),
       trialDays: integer("trial_days"),
       autoEnroll: boolean("auto_enroll").notNull().default(false),

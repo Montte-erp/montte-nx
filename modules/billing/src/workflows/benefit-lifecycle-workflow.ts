@@ -1,6 +1,6 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import dayjs from "dayjs";
 import { WorkflowError } from "@core/dbos/errors";
 import { benefitGrants } from "@core/database/schemas/benefit-grants";
@@ -121,11 +121,13 @@ async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
                await tx
                   .insert(benefitGrants)
                   .values(
-                     benefitIds.map((benefitId) => ({
+                     benefits.map((b) => ({
                         teamId: input.teamId,
                         subscriptionId: input.subscriptionId,
-                        benefitId,
+                        benefitId: b.id,
                         status: "active" as const,
+                        unitCostAtGrant: b.unitCost,
+                        creditAmountAtGrant: b.creditAmount,
                      })),
                   )
                   .onConflictDoUpdate({
@@ -133,7 +135,12 @@ async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
                         benefitGrants.subscriptionId,
                         benefitGrants.benefitId,
                      ],
-                     set: { status: "active", revokedAt: null },
+                     set: {
+                        status: "active",
+                        revokedAt: null,
+                        unitCostAtGrant: sql`excluded.unit_cost_at_grant`,
+                        creditAmountAtGrant: sql`excluded.credit_amount_at_grant`,
+                     },
                   });
             },
             { name: "grantBenefits" },
