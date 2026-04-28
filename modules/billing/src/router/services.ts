@@ -393,6 +393,10 @@ export const createVariant = protectedProcedure
          throw WebAppError.badRequest(
             "meterId é obrigatório para preços do tipo 'metered'.",
          );
+      if (input.type === "metered" && Number(input.basePrice) !== 0)
+         throw WebAppError.badRequest(
+            "basePrice deve ser 0 para preços do tipo 'metered'.",
+         );
       await assertFloor({
          db: context.db,
          teamId: context.teamId,
