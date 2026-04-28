@@ -13,6 +13,7 @@ import {
 import { of, toMinorUnitsString } from "@f-o-t/money";
 import { z } from "zod";
 import { contacts } from "@core/database/schemas/contacts";
+import { meters } from "@core/database/schemas/meters";
 import { crmSchema } from "@core/database/schemas/schemas";
 import { servicePrices } from "@core/database/schemas/services";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
@@ -20,6 +21,7 @@ import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 export const couponScopeEnum = crmSchema.enum("coupon_scope", [
    "team",
    "price",
+   "meter",
 ]);
 export const couponTypeEnum = crmSchema.enum("coupon_type", [
    "percent",
@@ -30,10 +32,26 @@ export const couponDurationEnum = crmSchema.enum("coupon_duration", [
    "repeating",
    "forever",
 ]);
+export const couponDirectionEnum = crmSchema.enum("coupon_direction", [
+   "discount",
+   "surcharge",
+]);
+export const couponTriggerEnum = crmSchema.enum("coupon_trigger", [
+   "code",
+   "auto",
+]);
 
 export type CouponScope = (typeof couponScopeEnum.enumValues)[number];
 export type CouponType = (typeof couponTypeEnum.enumValues)[number];
 export type CouponDuration = (typeof couponDurationEnum.enumValues)[number];
+export type CouponDirection = (typeof couponDirectionEnum.enumValues)[number];
+export type CouponTrigger = (typeof couponTriggerEnum.enumValues)[number];
+
+export type CouponConditions = {
+   dayOfWeek?: number[];
+   meterIds?: string[];
+   planServiceIds?: string[];
+};
 
 export const coupons = crmSchema.table(
    "coupons",
@@ -47,6 +65,15 @@ export const coupons = crmSchema.table(
       priceId: uuid("price_id").references(() => servicePrices.id, {
          onDelete: "set null",
       }),
+      meterId: uuid("meter_id").references(() => meters.id, {
+         onDelete: "set null",
+      }),
+      direction: couponDirectionEnum("direction").notNull().default("discount"),
+      trigger: couponTriggerEnum("trigger").notNull().default("code"),
+      conditions: jsonb("conditions")
+         .$type<CouponConditions>()
+         .notNull()
+         .default(sql`'{}'::jsonb`),
       type: couponTypeEnum("type").notNull(),
       amount: numeric("amount", { precision: 12, scale: 4 }).notNull(),
       duration: couponDurationEnum("duration").notNull(),
@@ -121,6 +148,14 @@ const amountSchema = z
       message: "Valor deve ser um número positivo.",
    });
 
+const conditionsSchema = z
+   .object({
+      dayOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
+      meterIds: z.array(z.string().uuid()).optional(),
+      planServiceIds: z.array(z.string().uuid()).optional(),
+   })
+   .strict();
+
 export const createCouponSchema = z
    .object({
       code: z
@@ -129,6 +164,10 @@ export const createCouponSchema = z
          .max(50, "Código deve ter no máximo 50 caracteres."),
       scope: z.enum(couponScopeEnum.enumValues).default("team"),
       priceId: z.string().uuid().nullable().optional(),
+      meterId: z.string().uuid().nullable().optional(),
+      direction: z.enum(couponDirectionEnum.enumValues).default("discount"),
+      trigger: z.enum(couponTriggerEnum.enumValues).default("code"),
+      conditions: conditionsSchema.optional().default({}),
       type: z.enum(couponTypeEnum.enumValues),
       amount: amountSchema,
       duration: z.enum(couponDurationEnum.enumValues),
@@ -144,6 +183,13 @@ export const createCouponSchema = z
             path: ["priceId"],
          });
       }
+      if (data.scope === "meter" && !data.meterId) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "meterId é obrigatório quando escopo é 'meter'.",
+            path: ["meterId"],
+         });
+      }
       if (data.duration === "repeating" && !data.durationMonths) {
          ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -155,9 +201,20 @@ export const createCouponSchema = z
    });
 
 export const updateCouponSchema = z.object({
+   code: z.string().min(1).max(50).optional(),
+   scope: z.enum(couponScopeEnum.enumValues).optional(),
+   priceId: z.string().uuid().nullable().optional(),
+   meterId: z.string().uuid().nullable().optional(),
+   direction: z.enum(couponDirectionEnum.enumValues).optional(),
+   trigger: z.enum(couponTriggerEnum.enumValues).optional(),
+   type: z.enum(couponTypeEnum.enumValues).optional(),
+   amount: amountSchema.optional(),
+   duration: z.enum(couponDurationEnum.enumValues).optional(),
+   durationMonths: z.number().int().min(1).nullable().optional(),
    isActive: z.boolean().optional(),
    maxUses: z.number().int().min(1).nullable().optional(),
    redeemBy: z.string().datetime().nullable().optional(),
+   conditions: conditionsSchema.optional(),
 });
 
 export type CreateCouponInput = z.infer<typeof createCouponSchema>;

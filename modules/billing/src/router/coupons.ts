@@ -103,6 +103,25 @@ export const update = impl.update
    })
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
+      if (
+         data.code &&
+         data.code.toLowerCase() !== context.coupon.code.toLowerCase()
+      ) {
+         const dup = await fromPromise(
+            context.db.query.coupons.findFirst({
+               where: (f, { and, eq: eqFn, sql, ne }) =>
+                  and(
+                     eqFn(f.teamId, context.teamId),
+                     ne(f.id, id),
+                     sql`lower(${f.code}) = lower(${data.code})`,
+                  ),
+            }),
+            () => WebAppError.internal("Falha ao verificar cupom existente."),
+         );
+         if (dup.isErr()) throw dup.error;
+         if (dup.value)
+            throw WebAppError.conflict("Já existe um cupom com esse código.");
+      }
       const result = await fromPromise(
          context.db.transaction(async (tx) => {
             const [row] = await tx
@@ -203,6 +222,8 @@ export const validate = impl.validate.handler(async ({ context, input }) => {
          durationMonths: coupon.durationMonths,
          scope: coupon.scope,
          priceId: coupon.priceId,
+         meterId: coupon.meterId,
+         direction: coupon.direction,
          maxUses: coupon.maxUses,
          usedCount: coupon.usedCount,
          redeemBy: coupon.redeemBy ? coupon.redeemBy.toISOString() : null,

@@ -40,11 +40,13 @@ import { DefaultHeader } from "@/components/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 import {
    buildMeterColumns,
    type MeterRow,
 } from "./-meters/build-meter-columns";
+import { MeterUsagePanel } from "./-meters/meter-usage-panel";
 import { MetersAnalytics } from "./-meters/meters-analytics";
 import {
    AGG_ICON,
@@ -130,6 +132,7 @@ function MetersList() {
    const search = Route.useSearch();
    const queryClient = useQueryClient();
    const { openAlertDialog } = useAlertDialog();
+   const { openCredenza } = useCredenza();
    const { parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
 
@@ -327,13 +330,25 @@ function MetersList() {
       [openAlertDialog, removeMutation],
    );
 
+   const handleOpenUsage = useCallback(
+      (meter: MeterRow) => {
+         openCredenza({
+            renderChildren: () => (
+               <MeterUsagePanel meterId={meter.id} meterName={meter.name} />
+            ),
+         });
+      },
+      [openCredenza],
+   );
+
    const columns = useMemo(
       () =>
          buildMeterColumns({
             onSaveCell: handleSaveCell,
+            onOpenUsage: handleOpenUsage,
             includeUsedIn: true,
          }),
-      [handleSaveCell],
+      [handleSaveCell, handleOpenUsage],
    );
 
    const renderActions = useCallback(

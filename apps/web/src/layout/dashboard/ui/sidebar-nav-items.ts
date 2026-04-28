@@ -178,6 +178,15 @@ export const navGroups: NavGroupDef[] = [
             configurable: true,
             earlyAccessFlag: "servicos-beneficios",
          },
+         {
+            id: "coupons",
+            label: "Cupons",
+            icon: Tag,
+            iconColor: "text-emerald-500",
+            route: "/$slug/$teamSlug/services/coupons",
+            configurable: true,
+            earlyAccessFlag: "servicos-cupons",
+         },
       ],
    },
 ];

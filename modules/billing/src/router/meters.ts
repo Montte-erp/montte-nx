@@ -1,8 +1,9 @@
 import { and, asc, eq, ilike, or, sql } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { meters } from "@core/database/schemas/meters";
-import { servicePrices } from "@core/database/schemas/services";
+import { servicePrices, services } from "@core/database/schemas/services";
 import { benefits } from "@core/database/schemas/benefits";
+import { coupons } from "@core/database/schemas/coupons";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import {
@@ -91,6 +92,76 @@ export const getMeterById = protectedProcedure
    .input(idInputSchema)
    .use(requireMeter, (input) => input.id)
    .handler(({ context }) => context.meter);
+
+export const getMeterUsage = protectedProcedure
+   .input(idInputSchema)
+   .use(requireMeter, (input) => input.id)
+   .handler(async ({ context, input }) => {
+      const pricesPromise = context.db
+         .select({
+            priceId: servicePrices.id,
+            priceName: servicePrices.name,
+            basePrice: servicePrices.basePrice,
+            interval: servicePrices.interval,
+            isActive: servicePrices.isActive,
+            serviceId: services.id,
+            serviceName: services.name,
+         })
+         .from(servicePrices)
+         .innerJoin(services, eq(services.id, servicePrices.serviceId))
+         .where(
+            and(
+               eq(servicePrices.teamId, context.teamId),
+               eq(servicePrices.meterId, input.id),
+            ),
+         )
+         .orderBy(asc(services.name), asc(servicePrices.name));
+
+      const benefitsPromise = context.db
+         .select({
+            id: benefits.id,
+            name: benefits.name,
+            type: benefits.type,
+            creditAmount: benefits.creditAmount,
+            isActive: benefits.isActive,
+         })
+         .from(benefits)
+         .where(
+            and(
+               eq(benefits.teamId, context.teamId),
+               eq(benefits.meterId, input.id),
+            ),
+         )
+         .orderBy(asc(benefits.name));
+
+      const couponsPromise = context.db
+         .select({
+            id: coupons.id,
+            code: coupons.code,
+            direction: coupons.direction,
+            trigger: coupons.trigger,
+            type: coupons.type,
+            amount: coupons.amount,
+            scope: coupons.scope,
+            isActive: coupons.isActive,
+         })
+         .from(coupons)
+         .where(
+            and(
+               eq(coupons.teamId, context.teamId),
+               eq(coupons.meterId, input.id),
+            ),
+         )
+         .orderBy(asc(coupons.code));
+
+      const result = await fromPromise(
+         Promise.all([pricesPromise, benefitsPromise, couponsPromise]),
+         () => WebAppError.internal("Falha ao carregar uso do medidor."),
+      );
+      if (result.isErr()) throw result.error;
+      const [prices, benefitsRows, couponsRows] = result.value;
+      return { prices, benefits: benefitsRows, coupons: couponsRows };
+   });
 
 export const updateMeterById = protectedProcedure
    .input(updateMeterInputSchema)

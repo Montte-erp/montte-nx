@@ -271,6 +271,10 @@ export const couponsRelations = relations(coupons, ({ one, many }) => ({
       fields: [coupons.priceId],
       references: [servicePrices.id],
    }),
+   meter: one(meters, {
+      fields: [coupons.meterId],
+      references: [meters.id],
+   }),
 }));
 
 export const couponRedemptionsRelations = relations(

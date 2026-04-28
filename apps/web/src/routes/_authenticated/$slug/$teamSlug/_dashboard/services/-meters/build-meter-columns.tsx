@@ -32,6 +32,7 @@ export interface BuildMeterColumnsArgs {
       value: unknown,
    ) => Promise<void>;
    onDelete?: (row: MeterRow) => void;
+   onOpenUsage?: (row: MeterRow) => void;
    includeUsedIn?: boolean;
 }
 
@@ -65,6 +66,7 @@ function NotApplicable({ hint }: { hint: string }) {
 export function buildMeterColumns({
    onSaveCell,
    onDelete,
+   onOpenUsage,
    includeUsedIn = true,
 }: BuildMeterColumnsArgs): ColumnDef<MeterRow>[] {
    const cols: ColumnDef<MeterRow>[] = [
@@ -190,11 +192,26 @@ export function buildMeterColumns({
          accessorKey: "usedIn",
          header: "Em uso",
          meta: { label: "Em uso" },
-         cell: ({ row }) => (
-            <span className="tabular-nums text-muted-foreground">
-               {row.original.usedIn} vínculos
-            </span>
-         ),
+         cell: ({ row }) => {
+            const count = row.original.usedIn;
+            if (!onOpenUsage || count === 0) {
+               return (
+                  <span className="tabular-nums text-muted-foreground">
+                     {count} vínculos
+                  </span>
+               );
+            }
+            return (
+               <Button
+                  className="h-7 px-2 text-xs tabular-nums"
+                  onClick={() => onOpenUsage(row.original)}
+                  size="sm"
+                  variant="ghost"
+               >
+                  {count} vínculos
+               </Button>
+            );
+         },
       });
    }
 
