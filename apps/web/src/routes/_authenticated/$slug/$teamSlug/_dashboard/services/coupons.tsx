@@ -1,6 +1,7 @@
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
+   EmptyContent,
    EmptyDescription,
    EmptyHeader,
    EmptyMedia,
@@ -11,15 +12,22 @@ import {
    useQueryClient,
    useSuspenseQueries,
 } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
    Activity,
+   CheckCircle2,
+   Copy,
    PauseCircle,
    Plus,
    Tag,
    TrendingDown,
    TrendingUp,
+   XCircle,
 } from "lucide-react";
+import {
+   DataTableBulkActions,
+   SelectionActionButton,
+} from "@/components/data-table/data-table-bulk-actions";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -33,6 +41,7 @@ import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { DefaultHeader } from "@/components/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
+import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 import {
@@ -98,6 +107,8 @@ function CouponsPage() {
 function CouponsList() {
    const navigate = useNavigate({ from: Route.fullPath });
    const search = Route.useSearch();
+   const slug = useOrgSlug();
+   const teamSlug = useTeamSlug();
    const queryClient = useQueryClient();
    const { openAlertDialog } = useAlertDialog();
 
@@ -245,6 +256,34 @@ function CouponsList() {
       [createMutation],
    );
 
+   const handleDuplicate = useCallback(
+      async (coupon: CouponRow) => {
+         const existing = new Set(coupons.map((c) => c.code.toLowerCase()));
+         let suffix = 1;
+         let code = `${coupon.code}-COPY`;
+         while (existing.has(code.toLowerCase())) {
+            suffix += 1;
+            code = `${coupon.code}-COPY-${suffix}`;
+         }
+         await createMutation.mutateAsync({
+            code,
+            direction: coupon.direction,
+            trigger: coupon.trigger,
+            scope: coupon.scope,
+            priceId: coupon.priceId,
+            meterId: coupon.meterId,
+            type: coupon.type,
+            amount: coupon.amount,
+            duration: coupon.duration,
+            durationMonths: coupon.durationMonths,
+            maxUses: coupon.maxUses,
+            redeemBy: coupon.redeemBy ? coupon.redeemBy.toISOString() : null,
+            conditions: coupon.conditions,
+         });
+      },
+      [coupons, createMutation],
+   );
+
    const handleDelete = useCallback(
       (coupon: CouponRow) => {
          openAlertDialog({
@@ -272,17 +311,28 @@ function CouponsList() {
 
    const renderActions = useCallback(
       ({ row }: { row: { original: CouponRow } }) => (
-         <Button
-            className="text-destructive hover:text-destructive"
-            onClick={() => handleDelete(row.original)}
-            size="icon-sm"
-            tooltip="Desativar"
-            variant="ghost"
-         >
-            <span className="sr-only">Desativar</span>×
-         </Button>
+         <div className="flex items-center gap-2">
+            <Button
+               onClick={() => handleDuplicate(row.original)}
+               size="icon-sm"
+               tooltip="Duplicar"
+               variant="ghost"
+            >
+               <Copy />
+               <span className="sr-only">Duplicar</span>
+            </Button>
+            <Button
+               className="text-destructive hover:text-destructive"
+               onClick={() => handleDelete(row.original)}
+               size="icon-sm"
+               tooltip="Desativar"
+               variant="ghost"
+            >
+               <span className="sr-only">Desativar</span>×
+            </Button>
+         </div>
       ),
-      [handleDelete],
+      [handleDuplicate, handleDelete],
    );
 
    const groupBy = useCallback(
@@ -420,6 +470,50 @@ function CouponsList() {
                </Button>
             </DataTableToolbar>
             <DataTableContent />
+            <DataTableBulkActions<CouponRow>>
+               {({ selectedRows, clearSelection }) => {
+                  const ids = selectedRows.map((r) => r.id);
+                  return (
+                     <>
+                        <SelectionActionButton
+                           icon={<CheckCircle2 />}
+                           onClick={async () => {
+                              await Promise.allSettled(
+                                 ids.map((id) =>
+                                    updateMutation.mutateAsync({
+                                       id,
+                                       isActive: true,
+                                    }),
+                                 ),
+                              );
+                              toast.success(
+                                 `${ids.length} cupom(s) ativado(s).`,
+                              );
+                              clearSelection();
+                           }}
+                        >
+                           Ativar
+                        </SelectionActionButton>
+                        <SelectionActionButton
+                           icon={<XCircle />}
+                           onClick={async () => {
+                              await Promise.allSettled(
+                                 ids.map((id) =>
+                                    deactivateMutation.mutateAsync({ id }),
+                                 ),
+                              );
+                              toast.success(
+                                 `${ids.length} cupom(s) desativado(s).`,
+                              );
+                              clearSelection();
+                           }}
+                        >
+                           Desativar
+                        </SelectionActionButton>
+                     </>
+                  );
+               }}
+            </DataTableBulkActions>
             <DataTableEmptyState>
                <Empty>
                   <EmptyHeader>
@@ -428,9 +522,31 @@ function CouponsList() {
                      </EmptyMedia>
                      <EmptyTitle>Nenhum cupom</EmptyTitle>
                      <EmptyDescription>
-                        Crie um cupom para aplicar desconto ou acréscimo.
+                        Cupons aplicam desconto ou acréscimo automático. Para
+                        escopo medidor, crie um{" "}
+                        <Link
+                           className="underline underline-offset-2"
+                           params={{ slug, teamSlug }}
+                           to="/$slug/$teamSlug/services/meters"
+                        >
+                           medidor
+                        </Link>{" "}
+                        antes.
                      </EmptyDescription>
                   </EmptyHeader>
+                  <EmptyContent>
+                     <Button
+                        onClick={() =>
+                           navigate({
+                              search: (s) => ({ ...s, add: true }),
+                              replace: true,
+                           })
+                        }
+                     >
+                        <Plus />
+                        Novo cupom
+                     </Button>
+                  </EmptyContent>
                </Empty>
             </DataTableEmptyState>
          </div>

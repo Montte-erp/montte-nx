@@ -1,6 +1,7 @@
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
+   EmptyContent,
    EmptyDescription,
    EmptyHeader,
    EmptyMedia,
@@ -18,7 +19,20 @@ import {
    totalUnitCost,
    type MeterForAggregate,
 } from "@modules/billing/services/meters-aggregates";
-import { Activity, Gauge, Link2, PauseCircle, Plus } from "lucide-react";
+import {
+   Activity,
+   CheckCircle2,
+   Gauge,
+   Link2,
+   PauseCircle,
+   Plus,
+   Trash2,
+   XCircle,
+} from "lucide-react";
+import {
+   DataTableBulkActions,
+   SelectionActionButton,
+} from "@/components/data-table/data-table-bulk-actions";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -498,6 +512,77 @@ function MetersList() {
                </Button>
             </DataTableToolbar>
             <DataTableContent />
+            <DataTableBulkActions<MeterRow>>
+               {({ selectedRows, clearSelection }) => {
+                  const ids = selectedRows.map((r) => r.id);
+                  return (
+                     <>
+                        <SelectionActionButton
+                           icon={<CheckCircle2 />}
+                           onClick={async () => {
+                              await Promise.allSettled(
+                                 ids.map((id) =>
+                                    updateMutation.mutateAsync({
+                                       id,
+                                       isActive: true,
+                                    }),
+                                 ),
+                              );
+                              toast.success(
+                                 `${ids.length} medidor(es) ativado(s).`,
+                              );
+                              clearSelection();
+                           }}
+                        >
+                           Ativar
+                        </SelectionActionButton>
+                        <SelectionActionButton
+                           icon={<XCircle />}
+                           onClick={async () => {
+                              await Promise.allSettled(
+                                 ids.map((id) =>
+                                    updateMutation.mutateAsync({
+                                       id,
+                                       isActive: false,
+                                    }),
+                                 ),
+                              );
+                              toast.success(
+                                 `${ids.length} medidor(es) desativado(s).`,
+                              );
+                              clearSelection();
+                           }}
+                        >
+                           Desativar
+                        </SelectionActionButton>
+                        <SelectionActionButton
+                           icon={<Trash2 />}
+                           variant="destructive"
+                           onClick={() =>
+                              openAlertDialog({
+                                 title: `Excluir ${ids.length} medidor(es)`,
+                                 description:
+                                    "Preços e benefícios vinculados perderão a referência. Não pode ser desfeito.",
+                                 actionLabel: "Excluir",
+                                 cancelLabel: "Cancelar",
+                                 variant: "destructive",
+                                 onAction: async () => {
+                                    await Promise.allSettled(
+                                       ids.map((id) =>
+                                          removeMutation.mutateAsync({ id }),
+                                       ),
+                                    );
+                                    clearSelection();
+                                 },
+                              })
+                           }
+                        >
+                           Excluir
+                        </SelectionActionButton>
+                     </>
+                  );
+               }}
+            </DataTableBulkActions>
             <DataTableEmptyState>
                <Empty>
                   <EmptyHeader>
@@ -506,9 +591,23 @@ function MetersList() {
                      </EmptyMedia>
                      <EmptyTitle>Nenhum medidor</EmptyTitle>
                      <EmptyDescription>
-                        Crie um medidor para começar a cobrar por uso.
+                        Medidores rastreiam consumo. Depois associe a preços,
+                        benefícios e cupons.
                      </EmptyDescription>
                   </EmptyHeader>
+                  <EmptyContent>
+                     <Button
+                        onClick={() =>
+                           navigate({
+                              search: (s) => ({ ...s, add: true }),
+                              replace: true,
+                           })
+                        }
+                     >
+                        <Plus />
+                        Novo medidor
+                     </Button>
+                  </EmptyContent>
                </Empty>
             </DataTableEmptyState>
          </div>

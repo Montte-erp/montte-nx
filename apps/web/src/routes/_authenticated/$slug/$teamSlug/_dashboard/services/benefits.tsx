@@ -1,6 +1,7 @@
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
+   EmptyContent,
    EmptyDescription,
    EmptyHeader,
    EmptyMedia,
@@ -11,14 +12,28 @@ import {
    useQueryClient,
    useSuspenseQueries,
 } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
    formatCostBRL,
    summarizeByType,
    totalCostPerCycle,
    type BenefitForAggregate,
 } from "@modules/billing/services/benefits-aggregates";
-import { Activity, Gift, PauseCircle, Plus, Sparkles } from "lucide-react";
+import {
+   Activity,
+   CheckCircle2,
+   Copy,
+   Gift,
+   PauseCircle,
+   Plus,
+   Sparkles,
+   Trash2,
+   XCircle,
+} from "lucide-react";
+import {
+   DataTableBulkActions,
+   SelectionActionButton,
+} from "@/components/data-table/data-table-bulk-actions";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -39,6 +54,7 @@ import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { DefaultHeader } from "@/components/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
+import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 import {
@@ -121,6 +137,8 @@ function BenefitsPage() {
 function BenefitsList() {
    const navigate = useNavigate({ from: Route.fullPath });
    const search = Route.useSearch();
+   const slug = useOrgSlug();
+   const teamSlug = useTeamSlug();
    const queryClient = useQueryClient();
    const { openAlertDialog } = useAlertDialog();
    const { parse: parseCsv } = useCsvFile();
@@ -347,6 +365,28 @@ function BenefitsList() {
       [parseCsv, parseXlsx, createMutation, queryClient],
    );
 
+   const handleDuplicate = useCallback(
+      async (benefit: BenefitRow) => {
+         const existing = new Set(benefits.map((b) => b.name.toLowerCase()));
+         let suffix = 1;
+         let name = `${benefit.name} (cópia)`;
+         while (existing.has(name.toLowerCase())) {
+            suffix += 1;
+            name = `${benefit.name} (cópia ${suffix})`;
+         }
+         await createMutation.mutateAsync({
+            name,
+            type: benefit.type,
+            meterId: benefit.meterId,
+            creditAmount: benefit.creditAmount,
+            description: benefit.description,
+            unitCost: benefit.unitCost,
+            rollover: benefit.rollover,
+         });
+      },
+      [benefits, createMutation],
+   );
+
    const handleDelete = useCallback(
       (benefit: BenefitRow) => {
          openAlertDialog({
@@ -376,17 +416,28 @@ function BenefitsList() {
 
    const renderActions = useCallback(
       ({ row }: { row: { original: BenefitRow } }) => (
-         <Button
-            className="text-destructive hover:text-destructive"
-            onClick={() => handleDelete(row.original)}
-            size="icon-sm"
-            tooltip="Excluir"
-            variant="ghost"
-         >
-            <span className="sr-only">Excluir</span>×
-         </Button>
+         <div className="flex items-center gap-2">
+            <Button
+               onClick={() => handleDuplicate(row.original)}
+               size="icon-sm"
+               tooltip="Duplicar"
+               variant="ghost"
+            >
+               <Copy />
+               <span className="sr-only">Duplicar</span>
+            </Button>
+            <Button
+               className="text-destructive hover:text-destructive"
+               onClick={() => handleDelete(row.original)}
+               size="icon-sm"
+               tooltip="Excluir"
+               variant="ghost"
+            >
+               <span className="sr-only">Excluir</span>×
+            </Button>
+         </div>
       ),
-      [handleDelete],
+      [handleDuplicate, handleDelete],
    );
 
    const groupBy = useCallback(
@@ -523,6 +574,77 @@ function BenefitsList() {
                </Button>
             </DataTableToolbar>
             <DataTableContent />
+            <DataTableBulkActions<BenefitRow>>
+               {({ selectedRows, clearSelection }) => {
+                  const ids = selectedRows.map((r) => r.id);
+                  return (
+                     <>
+                        <SelectionActionButton
+                           icon={<CheckCircle2 />}
+                           onClick={async () => {
+                              await Promise.allSettled(
+                                 ids.map((id) =>
+                                    updateMutation.mutateAsync({
+                                       id,
+                                       isActive: true,
+                                    }),
+                                 ),
+                              );
+                              toast.success(
+                                 `${ids.length} benefício(s) ativado(s).`,
+                              );
+                              clearSelection();
+                           }}
+                        >
+                           Ativar
+                        </SelectionActionButton>
+                        <SelectionActionButton
+                           icon={<XCircle />}
+                           onClick={async () => {
+                              await Promise.allSettled(
+                                 ids.map((id) =>
+                                    updateMutation.mutateAsync({
+                                       id,
+                                       isActive: false,
+                                    }),
+                                 ),
+                              );
+                              toast.success(
+                                 `${ids.length} benefício(s) desativado(s).`,
+                              );
+                              clearSelection();
+                           }}
+                        >
+                           Desativar
+                        </SelectionActionButton>
+                        <SelectionActionButton
+                           icon={<Trash2 />}
+                           variant="destructive"
+                           onClick={() =>
+                              openAlertDialog({
+                                 title: `Excluir ${ids.length} benefício(s)`,
+                                 description:
+                                    "Serão removidos de todos os serviços vinculados. Não pode ser desfeito.",
+                                 actionLabel: "Excluir",
+                                 cancelLabel: "Cancelar",
+                                 variant: "destructive",
+                                 onAction: async () => {
+                                    await Promise.allSettled(
+                                       ids.map((id) =>
+                                          removeMutation.mutateAsync({ id }),
+                                       ),
+                                    );
+                                    clearSelection();
+                                 },
+                              })
+                           }
+                        >
+                           Excluir
+                        </SelectionActionButton>
+                     </>
+                  );
+               }}
+            </DataTableBulkActions>
             <DataTableEmptyState>
                <Empty>
                   <EmptyHeader>
@@ -531,9 +653,31 @@ function BenefitsList() {
                      </EmptyMedia>
                      <EmptyTitle>Nenhum benefício</EmptyTitle>
                      <EmptyDescription>
-                        Crie um benefício para vincular a serviços.
+                        Benefícios reduzem o custo do serviço. Tipo créditos
+                        exige um{" "}
+                        <Link
+                           className="underline underline-offset-2"
+                           params={{ slug, teamSlug }}
+                           to="/$slug/$teamSlug/services/meters"
+                        >
+                           medidor
+                        </Link>
+                        .
                      </EmptyDescription>
                   </EmptyHeader>
+                  <EmptyContent>
+                     <Button
+                        onClick={() =>
+                           navigate({
+                              search: (s) => ({ ...s, add: true }),
+                              replace: true,
+                           })
+                        }
+                     >
+                        <Plus />
+                        Novo benefício
+                     </Button>
+                  </EmptyContent>
                </Empty>
             </DataTableEmptyState>
          </div>

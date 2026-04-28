@@ -1,6 +1,7 @@
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
+   EmptyContent,
    EmptyDescription,
    EmptyHeader,
    EmptyMedia,
@@ -11,7 +12,7 @@ import {
    useQueryClient,
    useSuspenseQueries,
 } from "@tanstack/react-query";
-import { getRouteApi, useNavigate } from "@tanstack/react-router";
+import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
 import { Briefcase, ExternalLink, Plus, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -293,11 +294,31 @@ export function ServicesList() {
                      </EmptyMedia>
                      <EmptyTitle>Nenhum serviço cadastrado</EmptyTitle>
                      <EmptyDescription>
-                        {search
-                           ? "Nenhum serviço encontrado para a busca."
-                           : "Adicione serviços para começar a gerenciar seu catálogo."}
+                        {search ? (
+                           "Nenhum serviço encontrado para a busca."
+                        ) : (
+                           <>
+                              Crie seu primeiro serviço. Antes, configure{" "}
+                              <Link
+                                 className="underline underline-offset-2"
+                                 params={{ slug, teamSlug }}
+                                 to="/$slug/$teamSlug/services/meters"
+                              >
+                                 medidores
+                              </Link>{" "}
+                              de consumo se cobra por uso.
+                           </>
+                        )}
                      </EmptyDescription>
                   </EmptyHeader>
+                  {!search && (
+                     <EmptyContent>
+                        <Button onClick={() => setIsDraftActive(true)}>
+                           <Plus />
+                           Novo serviço
+                        </Button>
+                     </EmptyContent>
+                  )}
                </Empty>
             </DataTableEmptyState>
             <DataTableBulkActions<ServiceRow>>
