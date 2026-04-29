@@ -34,6 +34,7 @@ import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 import { BenefitAttachPopover } from "./benefit-attach-popover";
 import { ServiceMarginPanel } from "./service-margin-panel";
+import { ServiceActionsMenu } from "./service-actions-menu";
 import {
    buildBenefitColumns,
    type BenefitRow,
@@ -300,7 +301,7 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
          onDiscardAddRow={() => setDraftActive(false)}
          storageKey="montte:datatable:service-benefits"
       >
-         <DataTableToolbar searchPlaceholder="Buscar benefício..." hideExport>
+         <DataTableToolbar searchPlaceholder="Buscar benefício...">
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                <PopoverTrigger asChild>
                   <Button
@@ -323,6 +324,7 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
                   </Suspense>
                </PopoverContent>
             </Popover>
+            <ServiceActionsMenu serviceId={serviceId} />
          </DataTableToolbar>
          <DataTableContent />
          <DataTableEmptyState>

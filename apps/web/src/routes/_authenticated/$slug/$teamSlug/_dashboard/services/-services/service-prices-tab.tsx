@@ -27,6 +27,7 @@ import {
    type PriceField,
    type ServicePrice,
 } from "./service-prices-columns";
+import { ServiceActionsMenu } from "./service-actions-menu";
 
 export function ServicePricesTab({ serviceId }: { serviceId: string }) {
    const { openAlertDialog } = useAlertDialog();
@@ -194,7 +195,7 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
          storageKey="montte:datatable:service-prices"
       >
          <div className="flex flex-col gap-4">
-            <DataTableToolbar searchPlaceholder="Buscar preço..." hideExport>
+            <DataTableToolbar searchPlaceholder="Buscar preço...">
                <Button
                   onClick={() => setIsDraftActive(true)}
                   size="icon-sm"
@@ -204,6 +205,7 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
                   <Plus />
                   <span className="sr-only">Novo preço</span>
                </Button>
+               <ServiceActionsMenu serviceId={serviceId} />
             </DataTableToolbar>
             <DataTableContent />
             <DataTableEmptyState>

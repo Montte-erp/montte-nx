@@ -20,6 +20,7 @@ import {
    SUBSCRIPTION_STATUS_LABEL,
    type SubscriberRow,
 } from "./service-subscribers-columns";
+import { ServiceActionsMenu } from "./service-actions-menu";
 
 export function ServiceSubscribersTab({ serviceId }: { serviceId: string }) {
    const navigate = useNavigate();
@@ -59,7 +60,9 @@ export function ServiceSubscribersTab({ serviceId }: { serviceId: string }) {
          groupBy={groupBy}
          storageKey="montte:datatable:service-subscribers"
       >
-         <DataTableToolbar searchPlaceholder="Buscar contato..." hideExport />
+         <DataTableToolbar searchPlaceholder="Buscar contato...">
+            <ServiceActionsMenu serviceId={serviceId} />
+         </DataTableToolbar>
          <DataTableContent />
          <DataTableEmptyState>
             <Empty>
