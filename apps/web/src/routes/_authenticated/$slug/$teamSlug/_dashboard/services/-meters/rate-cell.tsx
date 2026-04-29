@@ -4,6 +4,13 @@ import { Input } from "@packages/ui/components/input";
 import { MoneyInput } from "@packages/ui/components/money-input";
 import { NumberInput } from "@packages/ui/components/number-input";
 import {
+   Select,
+   SelectContent,
+   SelectItem,
+   SelectTrigger,
+   SelectValue,
+} from "@packages/ui/components/select";
+import {
    Popover,
    PopoverContent,
    PopoverTrigger,
@@ -141,31 +148,33 @@ export function RateCell({ unitCost, onSave }: Props) {
                      [s.values.quantity, s.values.unitLabel] as const
                   }
                >
-                  {([qty, unit]) => (
-                     <div className="flex flex-wrap gap-1">
-                        {PRESETS.map((p) => {
-                           const active =
-                              p.quantity === qty && p.unitLabel === unit;
-                           return (
-                              <Button
-                                 key={p.id}
-                                 onClick={() => {
-                                    form.setFieldValue("quantity", p.quantity);
-                                    form.setFieldValue(
-                                       "unitLabel",
-                                       p.unitLabel,
-                                    );
-                                 }}
-                                 size="sm"
-                                 type="button"
-                                 variant={active ? "default" : "outline"}
-                              >
-                                 {p.label}
-                              </Button>
-                           );
-                        })}
-                     </div>
-                  )}
+                  {([qty, unit]) => {
+                     const active = PRESETS.find(
+                        (p) => p.quantity === qty && p.unitLabel === unit,
+                     );
+                     return (
+                        <Select
+                           value={active?.id}
+                           onValueChange={(id) => {
+                              const preset = PRESETS.find((p) => p.id === id);
+                              if (!preset) return;
+                              form.setFieldValue("quantity", preset.quantity);
+                              form.setFieldValue("unitLabel", preset.unitLabel);
+                           }}
+                        >
+                           <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Escolha um preset" />
+                           </SelectTrigger>
+                           <SelectContent>
+                              {PRESETS.map((p) => (
+                                 <SelectItem key={p.id} value={p.id}>
+                                    {p.label}
+                                 </SelectItem>
+                              ))}
+                           </SelectContent>
+                        </Select>
+                     );
+                  }}
                </form.Subscribe>
 
                <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
