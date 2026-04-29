@@ -1,0 +1,22 @@
+{
+   "extends": "@tooling/typescript/core.json",
+   "compilerOptions": {
+      "composite": false,
+      "declaration": false,
+      "declarationMap": false,
+      "noEmit": true,
+      "jsx": "react-jsx",
+      "paths": {
+         "@core/ai/*": ["../../core/ai/src/*"],
+         "@core/database": ["../../core/database/src/index.ts"],
+         "@core/database/*": ["../../core/database/src/*"],
+         "@core/environment/*": ["../../core/environment/src/*"],
+         "@core/logging": ["../../core/logging/src/logger.ts"],
+         "@core/logging/*": ["../../core/logging/src/*"],
+         "@core/orpc/*": ["../../core/orpc/src/*"],
+         "@core/posthog/*": ["../../core/posthog/src/*"],
+         "@modules/billing/*": ["../billing/src/*"]
+      }
+   },
+   "include": ["src"]
+}

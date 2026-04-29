@@ -1,0 +1,40 @@
+{
+   "name": "@modules/agents",
+   "version": "0.1.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "type": "module",
+   "exports": {
+      "./router/*": "./src/router/*.ts",
+      "./contracts/*": "./src/contracts/*.ts",
+      "./agents/*": "./src/agents/*.ts",
+      "./*": "./src/*.ts"
+   },
+   "scripts": {
+      "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "test": "vitest run --passWithNoTests",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@core/ai": "workspace:*",
+      "@core/database": "workspace:*",
+      "@core/environment": "workspace:*",
+      "@core/logging": "workspace:*",
+      "@core/orpc": "workspace:*",
+      "@core/posthog": "workspace:*",
+      "@modules/billing": "workspace:*",
+      "@orpc/server": "catalog:orpc",
+      "@tanstack/ai": "catalog:tanstack-ai",
+      "@tanstack/ai-openrouter": "catalog:tanstack-ai",
+      "drizzle-orm": "catalog:database",
+      "neverthrow": "catalog:validation",
+      "zod": "catalog:validation"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development",
+      "vitest": "catalog:testing"
+   }
+}

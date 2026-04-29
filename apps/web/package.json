@@ -41,6 +41,7 @@
       "@maskito/core": "catalog:ui",
       "@maskito/kit": "catalog:ui",
       "@maskito/react": "catalog:ui",
+      "@modules/agents": "workspace:*",
       "@modules/billing": "workspace:*",
       "@modules/classification": "workspace:*",
       "@montte/cli": "workspace:*",

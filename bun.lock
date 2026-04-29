@@ -58,6 +58,7 @@
         "@maskito/core": "catalog:ui",
         "@maskito/kit": "catalog:ui",
         "@maskito/react": "catalog:ui",
+        "@modules/agents": "workspace:*",
         "@modules/billing": "workspace:*",
         "@modules/classification": "workspace:*",
         "@montte/cli": "workspace:*",
@@ -464,6 +465,30 @@
         "publint": "latest",
         "typescript": "catalog:development",
         "vite": "catalog:vite",
+        "vitest": "catalog:testing",
+      },
+    },
+    "modules/agents": {
+      "name": "@modules/agents",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/ai": "workspace:*",
+        "@core/database": "workspace:*",
+        "@core/environment": "workspace:*",
+        "@core/logging": "workspace:*",
+        "@core/orpc": "workspace:*",
+        "@core/posthog": "workspace:*",
+        "@modules/billing": "workspace:*",
+        "@orpc/server": "catalog:orpc",
+        "@tanstack/ai": "catalog:tanstack-ai",
+        "@tanstack/ai-openrouter": "catalog:tanstack-ai",
+        "drizzle-orm": "catalog:database",
+        "neverthrow": "catalog:validation",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
+        "typescript": "catalog:development",
         "vitest": "catalog:testing",
       },
     },
@@ -1340,6 +1365,8 @@
     "@microsoft/tsdoc": ["@microsoft/tsdoc@0.15.1", "", {}, "sha512-4aErSrCR/On/e5G2hDP0wjooqDdauzEbIq8hIkIe5pXV0rtWJZvdCEKL0ykZxex+IxIwBp0eGeV48hQN07dXtw=="],
 
     "@microsoft/tsdoc-config": ["@microsoft/tsdoc-config@0.17.1", "", { "dependencies": { "@microsoft/tsdoc": "0.15.1", "ajv": "~8.12.0", "jju": "~1.4.0", "resolve": "~1.22.2" } }, "sha512-UtjIFe0C6oYgTnad4q1QP4qXwLhe6tIpNTRStJ2RZEPIkqQPREAwE5spzVxsdn9UaEMUqhh0AqSx3X4nWAKXWw=="],
+
+    "@modules/agents": ["@modules/agents@workspace:modules/agents"],
 
     "@modules/billing": ["@modules/billing@workspace:modules/billing"],
 
