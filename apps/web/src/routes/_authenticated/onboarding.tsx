@@ -1,54 +1,56 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { fromPromise } from "neverthrow";
+import { z } from "zod";
 import { OnboardingWizard } from "./-onboarding/onboarding-wizard";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
-   beforeLoad: async ({ context }) => {
-      // biome-ignore lint/suspicious/noImplicitAnyLet: assigned inside try-catch
-      let session;
-
-      try {
-         session = await context.queryClient.fetchQuery(
+   validateSearch: z.object({
+      new: z.boolean().catch(false).default(false),
+   }),
+   beforeLoad: async ({ context, search }) => {
+      const sessionResult = await fromPromise(
+         context.queryClient.fetchQuery(
             context.orpc.session.getSession.queryOptions({}),
-         );
-      } catch {
+         ),
+         () => null,
+      );
+
+      if (sessionResult.isErr() || !sessionResult.value?.user?.id) {
          throw redirect({ to: "/auth/sign-in" });
       }
 
-      if (!session?.user?.id) {
-         throw redirect({ to: "/auth/sign-in" });
-      }
+      const session = sessionResult.value;
 
       const organizations = await context.queryClient.fetchQuery(
          context.orpc.organization.getOrganizations.queryOptions(),
       );
 
-      // Find active org or first org
+      if (search.new) {
+         return { session, organizations, activeOrg: null };
+      }
+
       const activeOrg =
          organizations.find(
             (org) => org.id === session.session.activeOrganizationId,
          ) ?? organizations[0];
 
-      // If the user already has an org, fix any stale onboarding flags so the
-      // dashboard guards won't loop them back here.
       if (activeOrg) {
-         let fixed: { orgSlug: string; teamSlug: string } | null = null;
-
-         try {
-            fixed = await context.queryClient.fetchQuery(
+         const fixedResult = await fromPromise(
+            context.queryClient.fetchQuery(
                context.orpc.onboarding.fixOnboarding.queryOptions({
                   input: { organizationId: activeOrg.id },
                }),
-            );
-         } catch {
-            // No team found or other error — fall through and let the wizard handle it.
-         }
+            ),
+            () => null,
+         );
 
-         // If onboarding state was fixed AND profile is already set, the wizard
-         // has nothing left to do — redirect straight to the dashboard.
-         if (fixed && session.user.name) {
+         if (fixedResult.isOk() && fixedResult.value && session.user.name) {
             throw redirect({
                to: "/$slug/$teamSlug/home",
-               params: { slug: fixed.orgSlug, teamSlug: fixed.teamSlug },
+               params: {
+                  slug: fixedResult.value.orgSlug,
+                  teamSlug: fixedResult.value.teamSlug,
+               },
             });
          }
       }
