@@ -22,6 +22,7 @@ import {
    classificationDataSource,
    getClassificationHyprpay,
    getClassificationPosthog,
+   getClassificationPrompts,
    getClassificationRedis,
 } from "./context";
 
@@ -214,6 +215,7 @@ async function classifyTransactionsBatchWorkflowFn(
                      }));
                   if (aiInput.length === 0) return [];
                   const ai = await classifyTransactionsBatch(
+                     getClassificationPrompts(),
                      aiInput,
                      loaded.categories,
                      observability,

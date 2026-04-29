@@ -4,7 +4,7 @@ import { initLogger, getLogger } from "@core/logging/root";
 import { initOtel, shutdownOtel } from "@core/logging/otel";
 import { createDb } from "@core/database/client";
 import { createRedis } from "@core/redis/connection";
-import { createPostHog } from "@core/posthog/server";
+import { createPostHog, createPromptsClient } from "@core/posthog/server";
 import { createResendClient } from "@core/transactional/utils";
 import { createHyprpay } from "@core/hyprpay/client";
 import { setupBillingWorkflows } from "@modules/billing/workflows/setup";
@@ -22,6 +22,11 @@ const logger = getLogger();
 const db = createDb({ databaseUrl: env.DATABASE_URL });
 const redis = createRedis(env.REDIS_URL);
 const posthog = createPostHog(env.POSTHOG_KEY, env.POSTHOG_HOST);
+const promptsClient = createPromptsClient({
+   personalApiKey: env.POSTHOG_PERSONAL_API_KEY,
+   projectApiKey: env.POSTHOG_KEY,
+   host: env.POSTHOG_HOST,
+});
 const resendClient = createResendClient(env.RESEND_API_KEY);
 const hyprpayClient = createHyprpay(env.HYPRPAY_API_KEY);
 
@@ -37,6 +42,7 @@ const classification = await setupClassificationWorkflows({
    redis,
    posthog,
    hyprpayClient,
+   prompts: promptsClient,
    workerConcurrency: 10,
 });
 

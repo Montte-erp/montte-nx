@@ -2,7 +2,7 @@ import { fromPromise } from "neverthrow";
 import { chat } from "@tanstack/ai";
 import { z } from "zod";
 import { AppError } from "@core/logging/errors";
-import { promptsClient } from "@core/posthog/server";
+import type { Prompts } from "@core/posthog/server";
 import { CLASSIFICATION_PROMPTS } from "../constants";
 import { proModel } from "@core/ai/models";
 import {
@@ -43,11 +43,12 @@ function buildUserMessage(input: DeriveKeywordsInput): string {
 }
 
 export function deriveKeywords(
+   prompts: Prompts,
    input: DeriveKeywordsInput,
    observability: AiObservabilityContext,
 ) {
    return fromPromise(
-      promptsClient.get(CLASSIFICATION_PROMPTS.deriveKeywords, {
+      prompts.get(CLASSIFICATION_PROMPTS.deriveKeywords, {
          withMetadata: true,
       }),
       aiError,
@@ -57,7 +58,7 @@ export function deriveKeywords(
             chat({
                adapter: proModel,
                systemPrompts: [
-                  promptsClient.compile(prompt, {
+                  prompts.compile(prompt, {
                      min_keywords: KEYWORDS_MIN,
                      max_keywords: KEYWORDS_MAX,
                   }),

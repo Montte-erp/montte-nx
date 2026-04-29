@@ -5,7 +5,7 @@ import type { DatabaseInstance } from "@core/database/client";
 import * as schema from "@core/database/schema";
 import { env } from "@core/environment/worker";
 import type { Redis } from "@core/redis/connection";
-import type { PostHog } from "@core/posthog/server";
+import type { PostHog, Prompts } from "@core/posthog/server";
 import type { HyprPayClient } from "@core/hyprpay/client";
 import { CLASSIFICATION_QUEUES } from "../constants";
 
@@ -21,24 +21,35 @@ type ClassificationWorkflowContext = {
    posthog: PostHog | null;
    redis: Redis | null;
    hyprpayClient: HyprPayClient | null;
+   prompts: Prompts | null;
 };
 
 const store = createStore<ClassificationWorkflowContext>({
    posthog: null,
    redis: null,
    hyprpayClient: null,
+   prompts: null,
 });
 
 export function initClassificationWorkflowContext(deps: {
    redis: Redis;
    posthog: PostHog;
    hyprpayClient: HyprPayClient;
+   prompts: Prompts;
 }) {
    store.setState(() => ({
       posthog: deps.posthog,
       redis: deps.redis,
       hyprpayClient: deps.hyprpayClient,
+      prompts: deps.prompts,
    }));
+}
+
+export function getClassificationPrompts(): Prompts {
+   const { prompts } = store.state;
+   if (!prompts)
+      throw new Error("Classification workflow context not initialized");
+   return prompts;
 }
 
 export function getClassificationPosthog(): PostHog {

@@ -14,6 +14,7 @@ import {
    createEnqueuer,
    getClassificationHyprpay,
    getClassificationPosthog,
+   getClassificationPrompts,
    getClassificationRedis,
 } from "./context";
 
@@ -66,6 +67,7 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsWorkflowInput) {
       DBOS.runStep(
          async () => {
             const result = await deriveKeywords(
+               getClassificationPrompts(),
                {
                   name: input.name,
                   description: input.description ?? null,

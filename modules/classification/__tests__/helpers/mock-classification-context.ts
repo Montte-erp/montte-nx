@@ -18,6 +18,16 @@ export const ssePublishSpy = vi.fn(
 
 export const posthogCaptureSpy = vi.fn();
 
+export const promptsClientStub = {
+   get: vi.fn().mockResolvedValue({
+      source: "active",
+      prompt: "Sistema: classifique as transações em lote.",
+      name: "montte-classify-transaction",
+      version: 1,
+   }),
+   compile: vi.fn((prompt: string) => prompt),
+};
+
 export const hyprpayUsageIngestSpy = vi.fn(
    async (_input: {
       meterId?: string;
@@ -54,5 +64,6 @@ vi.mock("../../src/workflows/context", async (importOriginal) => {
       getClassificationRedis: () => ({}),
       getClassificationPosthog: () => ({ capture: posthogCaptureSpy }),
       getClassificationHyprpay: () => hyprpayClientStub,
+      getClassificationPrompts: () => promptsClientStub,
    };
 });

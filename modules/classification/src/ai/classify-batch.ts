@@ -2,7 +2,7 @@ import { errAsync, fromPromise } from "neverthrow";
 import { chat } from "@tanstack/ai";
 import { z } from "zod";
 import { AppError } from "@core/logging/errors";
-import { promptsClient } from "@core/posthog/server";
+import type { Prompts } from "@core/posthog/server";
 import { CLASSIFICATION_PROMPTS } from "../constants";
 import { flashModel } from "@core/ai/models";
 import {
@@ -80,6 +80,7 @@ function resolveResults(
 }
 
 export function classifyTransactionsBatch(
+   prompts: Prompts,
    transactions: ClassifyBatchInput[],
    categories: ClassifyBatchOption[],
    observability: AiObservabilityContext,
@@ -91,7 +92,7 @@ export function classifyTransactionsBatch(
    }
 
    return fromPromise(
-      promptsClient.get(CLASSIFICATION_PROMPTS.classifyTransaction, {
+      prompts.get(CLASSIFICATION_PROMPTS.classifyTransaction, {
          withMetadata: true,
       }),
       aiError,
@@ -101,7 +102,7 @@ export function classifyTransactionsBatch(
             chat({
                adapter: flashModel,
                systemPrompts: [
-                  promptsClient.compile(prompt, {
+                  prompts.compile(prompt, {
                      category_list: categories.map(formatCategory).join("\n"),
                   }),
                ],
