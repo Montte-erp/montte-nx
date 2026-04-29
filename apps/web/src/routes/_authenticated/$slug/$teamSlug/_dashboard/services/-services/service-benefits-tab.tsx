@@ -28,13 +28,12 @@ import { toast } from "sonner";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
 import { DataTableRoot } from "@/components/data-table/data-table-root";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 import { BenefitAttachPopover } from "./benefit-attach-popover";
 import { ServiceMarginPanel } from "./service-margin-panel";
-import { ServiceActionsMenu } from "./service-actions-menu";
+import { ServiceTabToolbar } from "./service-tab-toolbar";
 import {
    buildBenefitColumns,
    type BenefitRow,
@@ -301,7 +300,10 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
          onDiscardAddRow={() => setDraftActive(false)}
          storageKey="montte:datatable:service-benefits"
       >
-         <DataTableToolbar searchPlaceholder="Buscar benefício...">
+         <ServiceTabToolbar
+            serviceId={serviceId}
+            searchPlaceholder="Buscar benefício..."
+         >
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                <PopoverTrigger asChild>
                   <Button
@@ -324,8 +326,7 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
                   </Suspense>
                </PopoverContent>
             </Popover>
-            <ServiceActionsMenu serviceId={serviceId} />
-         </DataTableToolbar>
+         </ServiceTabToolbar>
          <DataTableContent />
          <DataTableEmptyState>
             <Empty>

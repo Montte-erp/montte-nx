@@ -18,7 +18,6 @@ import { toast } from "sonner";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
 import { DataTableRoot } from "@/components/data-table/data-table-root";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 import {
@@ -27,7 +26,7 @@ import {
    type PriceField,
    type ServicePrice,
 } from "./service-prices-columns";
-import { ServiceActionsMenu } from "./service-actions-menu";
+import { ServiceTabToolbar } from "./service-tab-toolbar";
 
 export function ServicePricesTab({ serviceId }: { serviceId: string }) {
    const { openAlertDialog } = useAlertDialog();
@@ -195,7 +194,10 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
          storageKey="montte:datatable:service-prices"
       >
          <div className="flex flex-col gap-4">
-            <DataTableToolbar searchPlaceholder="Buscar preço...">
+            <ServiceTabToolbar
+               serviceId={serviceId}
+               searchPlaceholder="Buscar preço..."
+            >
                <Button
                   onClick={() => setIsDraftActive(true)}
                   size="icon-sm"
@@ -205,8 +207,7 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
                   <Plus />
                   <span className="sr-only">Novo preço</span>
                </Button>
-               <ServiceActionsMenu serviceId={serviceId} />
-            </DataTableToolbar>
+            </ServiceTabToolbar>
             <DataTableContent />
             <DataTableEmptyState>
                <Empty>
