@@ -7,18 +7,13 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import {
-   useMutation,
-   useQueryClient,
-   useSuspenseQueries,
-} from "@tanstack/react-query";
+import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import { CircleDollarSign, Copy, Plus, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/components/sonner";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
 import { DataTableRoot } from "@/components/data-table/data-table-root";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 import {
@@ -27,15 +22,11 @@ import {
    type PriceField,
    type ServicePrice,
 } from "./service-prices-columns";
+import { ServiceTabToolbar } from "./service-tab-toolbar";
 
 export function ServicePricesTab({ serviceId }: { serviceId: string }) {
    const { openAlertDialog } = useAlertDialog();
-   const queryClient = useQueryClient();
    const [isDraftActive, setIsDraftActive] = useState(false);
-
-   const variantsKey = orpc.services.getVariants.queryKey({
-      input: { serviceId },
-   });
 
    const [{ data: prices }, { data: meters }] = useSuspenseQueries({
       queries: [
@@ -46,24 +37,7 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
 
    const updateMutation = useMutation(
       orpc.services.updateVariant.mutationOptions({
-         meta: { skipGlobalInvalidation: true },
-         onMutate: async (vars) => {
-            await queryClient.cancelQueries({ queryKey: variantsKey });
-            const prev = queryClient.getQueryData<ServicePrice[]>(variantsKey);
-            if (prev) {
-               queryClient.setQueryData<ServicePrice[]>(
-                  variantsKey,
-                  prev.map((p) => (p.id === vars.id ? { ...p, ...vars } : p)),
-               );
-            }
-            return { prev };
-         },
-         onError: (e, _v, ctx) => {
-            if (ctx?.prev) queryClient.setQueryData(variantsKey, ctx.prev);
-            toast.error(e.message);
-         },
-         onSettled: () =>
-            queryClient.invalidateQueries({ queryKey: variantsKey }),
+         onError: (e) => toast.error(e.message),
       }),
    );
 
@@ -194,7 +168,10 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
          storageKey="montte:datatable:service-prices"
       >
          <div className="flex flex-col gap-4">
-            <DataTableToolbar searchPlaceholder="Buscar preço..." hideExport>
+            <ServiceTabToolbar
+               serviceId={serviceId}
+               searchPlaceholder="Buscar preço..."
+            >
                <Button
                   onClick={() => setIsDraftActive(true)}
                   size="icon-sm"
@@ -204,7 +181,7 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
                   <Plus />
                   <span className="sr-only">Novo preço</span>
                </Button>
-            </DataTableToolbar>
+            </ServiceTabToolbar>
             <DataTableContent />
             <DataTableEmptyState>
                <Empty>

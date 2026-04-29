@@ -53,7 +53,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import type React from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/components/sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";

@@ -2,6 +2,14 @@ import { Button } from "@packages/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { MoneyInput } from "@packages/ui/components/money-input";
+import { NumberInput } from "@packages/ui/components/number-input";
+import {
+   Select,
+   SelectContent,
+   SelectItem,
+   SelectTrigger,
+   SelectValue,
+} from "@packages/ui/components/select";
 import {
    Popover,
    PopoverContent,
@@ -10,7 +18,7 @@ import {
 import { useForm } from "@tanstack/react-form";
 import { fromPromise } from "neverthrow";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/components/sonner";
 import { z } from "zod";
 
 interface Props {
@@ -140,31 +148,33 @@ export function RateCell({ unitCost, onSave }: Props) {
                      [s.values.quantity, s.values.unitLabel] as const
                   }
                >
-                  {([qty, unit]) => (
-                     <div className="flex flex-wrap gap-1">
-                        {PRESETS.map((p) => {
-                           const active =
-                              p.quantity === qty && p.unitLabel === unit;
-                           return (
-                              <Button
-                                 key={p.id}
-                                 onClick={() => {
-                                    form.setFieldValue("quantity", p.quantity);
-                                    form.setFieldValue(
-                                       "unitLabel",
-                                       p.unitLabel,
-                                    );
-                                 }}
-                                 size="sm"
-                                 type="button"
-                                 variant={active ? "default" : "outline"}
-                              >
-                                 {p.label}
-                              </Button>
-                           );
-                        })}
-                     </div>
-                  )}
+                  {([qty, unit]) => {
+                     const active = PRESETS.find(
+                        (p) => p.quantity === qty && p.unitLabel === unit,
+                     );
+                     return (
+                        <Select
+                           value={active?.id}
+                           onValueChange={(id) => {
+                              const preset = PRESETS.find((p) => p.id === id);
+                              if (!preset) return;
+                              form.setFieldValue("quantity", preset.quantity);
+                              form.setFieldValue("unitLabel", preset.unitLabel);
+                           }}
+                        >
+                           <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Escolha um preset" />
+                           </SelectTrigger>
+                           <SelectContent>
+                              {PRESETS.map((p) => (
+                                 <SelectItem key={p.id} value={p.id}>
+                                    {p.label}
+                                 </SelectItem>
+                              ))}
+                           </SelectContent>
+                        </Select>
+                     );
+                  }}
                </form.Subscribe>
 
                <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
@@ -212,20 +222,15 @@ export function RateCell({ unitCost, onSave }: Props) {
                               <FieldLabel htmlFor={field.name}>
                                  Quantidade
                               </FieldLabel>
-                              <Input
+                              <NumberInput
                                  aria-invalid={isInvalid}
-                                 className="h-9"
                                  id={field.name}
-                                 inputMode="numeric"
                                  min={1}
                                  name={field.name}
                                  onBlur={field.handleBlur}
-                                 onChange={(e) =>
-                                    field.handleChange(
-                                       Math.max(1, Number(e.target.value) || 1),
-                                    )
+                                 onChange={(v) =>
+                                    field.handleChange(Math.max(1, v))
                                  }
-                                 type="number"
                                  value={field.state.value}
                               />
                               {isInvalid ? (

@@ -35,7 +35,7 @@ import {
    SelectionActionButton,
 } from "@/components/data-table/data-table-bulk-actions";
 import { useCallback, useMemo } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/components/sonner";
 import { z } from "zod";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
@@ -67,6 +67,7 @@ import {
    BENEFIT_TYPE_LABEL,
    type BenefitTypeKey,
 } from "./-benefits/labels";
+import { useCreateMeterFromName } from "./-services/use-create-meter";
 
 const searchSchema = z.object({
    search: z.string().catch("").default(""),
@@ -165,30 +166,9 @@ function BenefitsList() {
       [meters],
    );
 
-   const benefitsKey = orpc.benefits.getBenefits.queryKey({
-      input: queryInput,
-   });
-
    const updateMutation = useMutation(
       orpc.benefits.updateBenefitById.mutationOptions({
-         meta: { skipGlobalInvalidation: true },
-         onMutate: async (vars) => {
-            await queryClient.cancelQueries({ queryKey: benefitsKey });
-            const prev = queryClient.getQueryData<BenefitRow[]>(benefitsKey);
-            if (prev) {
-               queryClient.setQueryData<BenefitRow[]>(
-                  benefitsKey,
-                  prev.map((b) => (b.id === vars.id ? { ...b, ...vars } : b)),
-               );
-            }
-            return { prev };
-         },
-         onError: (e, _v, ctx) => {
-            if (ctx?.prev) queryClient.setQueryData(benefitsKey, ctx.prev);
-            toast.error(e.message);
-         },
-         onSettled: () =>
-            queryClient.invalidateQueries({ queryKey: benefitsKey }),
+         onError: (e) => toast.error(e.message),
       }),
    );
 
@@ -215,34 +195,7 @@ function BenefitsList() {
       }),
    );
 
-   const createMeterMutation = useMutation(
-      orpc.meters.createMeter.mutationOptions({
-         onError: (e) => toast.error(e.message),
-      }),
-   );
-
-   const handleCreateMeter = useCallback(
-      async (name: string) => {
-         const slug = name
-            .toLowerCase()
-            .normalize("NFD")
-            .replace(/[̀-ͯ]/g, "")
-            .replace(/[^a-z0-9]+/g, "_")
-            .replace(/^_|_$/g, "");
-         const created = await createMeterMutation.mutateAsync({
-            name,
-            eventName: slug || "custom_event",
-            aggregation: "sum",
-            filters: {},
-         });
-         await queryClient.invalidateQueries({
-            queryKey: orpc.meters.getMeters.queryKey({}),
-         });
-         toast.success(`Medidor "${name}" criado.`);
-         return created.id;
-      },
-      [createMeterMutation, queryClient],
-   );
+   const handleCreateMeter = useCreateMeterFromName();
 
    const handleSaveCell = useCallback(
       async (

@@ -12,7 +12,6 @@ import { useCallback, useMemo } from "react";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
 import { DataTableRoot } from "@/components/data-table/data-table-root";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { orpc } from "@/integrations/orpc/client";
 import {
@@ -20,6 +19,7 @@ import {
    SUBSCRIPTION_STATUS_LABEL,
    type SubscriberRow,
 } from "./service-subscribers-columns";
+import { ServiceTabToolbar } from "./service-tab-toolbar";
 
 export function ServiceSubscribersTab({ serviceId }: { serviceId: string }) {
    const navigate = useNavigate();
@@ -59,7 +59,10 @@ export function ServiceSubscribersTab({ serviceId }: { serviceId: string }) {
          groupBy={groupBy}
          storageKey="montte:datatable:service-subscribers"
       >
-         <DataTableToolbar searchPlaceholder="Buscar contato..." hideExport />
+         <ServiceTabToolbar
+            serviceId={serviceId}
+            searchPlaceholder="Buscar contato..."
+         />
          <DataTableContent />
          <DataTableEmptyState>
             <Empty>

@@ -11,11 +11,7 @@ import {
    PopoverContent,
    PopoverTrigger,
 } from "@packages/ui/components/popover";
-import {
-   useMutation,
-   useQueryClient,
-   useSuspenseQueries,
-} from "@tanstack/react-query";
+import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import {
    formatCostBRL,
    summarizeByType,
@@ -24,16 +20,17 @@ import {
 } from "@modules/billing/services/benefits-aggregates";
 import { PauseCircle, Plus, Sparkles } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/components/sonner";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
 import { DataTableRoot } from "@/components/data-table/data-table-root";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 import { BenefitAttachPopover } from "./benefit-attach-popover";
 import { ServiceMarginPanel } from "./service-margin-panel";
+import { ServiceTabToolbar } from "./service-tab-toolbar";
+import { useCreateMeterFromName } from "./use-create-meter";
 import {
    buildBenefitColumns,
    type BenefitRow,
@@ -46,7 +43,6 @@ import {
 
 export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
    const { openAlertDialog } = useAlertDialog();
-   const queryClient = useQueryClient();
    const [popoverOpen, setPopoverOpen] = useState(false);
    const [draftActive, setDraftActive] = useState(false);
 
@@ -66,14 +62,6 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
       [meters],
    );
 
-   const linkedKey = useMemo(
-      () =>
-         orpc.benefits.getServiceBenefits.queryKey({
-            input: { serviceId },
-         }),
-      [serviceId],
-   );
-
    const attachedIds = useMemo(
       () => new Set(linked.map((b) => b.id)),
       [linked],
@@ -88,24 +76,7 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
 
    const updateMutation = useMutation(
       orpc.benefits.updateBenefitById.mutationOptions({
-         meta: { skipGlobalInvalidation: true },
-         onMutate: async (vars) => {
-            await queryClient.cancelQueries({ queryKey: linkedKey });
-            const prev = queryClient.getQueryData<BenefitRow[]>(linkedKey);
-            if (prev) {
-               queryClient.setQueryData<BenefitRow[]>(
-                  linkedKey,
-                  prev.map((b) => (b.id === vars.id ? { ...b, ...vars } : b)),
-               );
-            }
-            return { prev };
-         },
-         onError: (e, _v, ctx) => {
-            if (ctx?.prev) queryClient.setQueryData(linkedKey, ctx.prev);
-            toast.error(e.message);
-         },
-         onSettled: () =>
-            queryClient.invalidateQueries({ queryKey: linkedKey }),
+         onError: (e) => toast.error(e.message),
       }),
    );
 
@@ -119,34 +90,7 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
       }),
    );
 
-   const createMeterMutation = useMutation(
-      orpc.meters.createMeter.mutationOptions({
-         onError: (e) => toast.error(e.message),
-      }),
-   );
-
-   const handleCreateMeter = useCallback(
-      async (name: string) => {
-         const slug = name
-            .toLowerCase()
-            .normalize("NFD")
-            .replace(/[̀-ͯ]/g, "")
-            .replace(/[^a-z0-9]+/g, "_")
-            .replace(/^_|_$/g, "");
-         const created = await createMeterMutation.mutateAsync({
-            name,
-            eventName: slug || "custom_event",
-            aggregation: "sum",
-            filters: {},
-         });
-         await queryClient.invalidateQueries({
-            queryKey: orpc.meters.getMeters.queryKey({}),
-         });
-         toast.success(`Medidor "${name}" criado.`);
-         return created.id;
-      },
-      [createMeterMutation, queryClient],
-   );
+   const handleCreateMeter = useCreateMeterFromName();
 
    const handleSaveCell = useCallback(
       async (
@@ -300,7 +244,10 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
          onDiscardAddRow={() => setDraftActive(false)}
          storageKey="montte:datatable:service-benefits"
       >
-         <DataTableToolbar searchPlaceholder="Buscar benefício..." hideExport>
+         <ServiceTabToolbar
+            serviceId={serviceId}
+            searchPlaceholder="Buscar benefício..."
+         >
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                <PopoverTrigger asChild>
                   <Button
@@ -323,7 +270,7 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
                   </Suspense>
                </PopoverContent>
             </Popover>
-         </DataTableToolbar>
+         </ServiceTabToolbar>
          <DataTableContent />
          <DataTableEmptyState>
             <Empty>

@@ -17,7 +17,7 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { Check, Plus, Search, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { fromPromise } from "neverthrow";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/components/sonner";
 import { orpc } from "@/integrations/orpc/client";
 
 interface Props {
