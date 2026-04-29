@@ -2,6 +2,7 @@ import { Button } from "@packages/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { MoneyInput } from "@packages/ui/components/money-input";
+import { NumberInput } from "@packages/ui/components/number-input";
 import {
    Popover,
    PopoverContent,
@@ -212,20 +213,15 @@ export function RateCell({ unitCost, onSave }: Props) {
                               <FieldLabel htmlFor={field.name}>
                                  Quantidade
                               </FieldLabel>
-                              <Input
+                              <NumberInput
                                  aria-invalid={isInvalid}
-                                 className="h-9"
                                  id={field.name}
-                                 inputMode="numeric"
                                  min={1}
                                  name={field.name}
                                  onBlur={field.handleBlur}
-                                 onChange={(e) =>
-                                    field.handleChange(
-                                       Math.max(1, Number(e.target.value) || 1),
-                                    )
+                                 onChange={(v) =>
+                                    field.handleChange(Math.max(1, v))
                                  }
-                                 type="number"
                                  value={field.state.value}
                               />
                               {isInvalid ? (
