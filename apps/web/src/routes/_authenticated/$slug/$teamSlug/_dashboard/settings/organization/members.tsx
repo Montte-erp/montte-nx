@@ -337,13 +337,11 @@ function MembersContent() {
             cancelLabel: "Voltar",
             variant: "destructive",
             onAction: async () => {
-               const result = await authClient.organization.cancelInvitation({
-                  invitationId: invite.id,
-               });
-               if (result.error) {
-                  toast.error(
-                     result.error.message ?? "Erro ao cancelar convite",
-                  );
+               const { error } = await authClient.organization.cancelInvitation(
+                  { invitationId: invite.id },
+               );
+               if (error) {
+                  toast.error(error.message);
                   return;
                }
                invalidateInvites();
@@ -367,17 +365,17 @@ function MembersContent() {
             actionLabel: "Enviar",
             cancelLabel: "Voltar",
             onAction: async () => {
-               const result = await authClient.organization.inviteMember({
+               const { error } = await authClient.organization.inviteMember({
                   email,
                   role,
                   organizationId,
                });
-               if (result.error) {
-                  toast.error(result.error.message ?? "Erro ao enviar convite");
+               if (error) {
+                  toast.error(error.message);
                   return;
                }
-               invalidateInvites();
                setIsDraftActive(false);
+               invalidateInvites();
                toast.success("Convite enviado com sucesso!");
             },
          });
