@@ -261,13 +261,11 @@ function SidebarScopeSwitcherContent() {
    );
 
    const handleNewOrganization = useCallback(
-      async (e?: React.MouseEvent) => {
+      (e?: React.MouseEvent) => {
          e?.stopPropagation();
-         await authClient.organization.setActive({ organizationId: null });
-         await queryClient.invalidateQueries();
          router.navigate({ to: "/onboarding", search: { new: true } });
       },
-      [queryClient, router],
+      [router],
    );
 
    return (

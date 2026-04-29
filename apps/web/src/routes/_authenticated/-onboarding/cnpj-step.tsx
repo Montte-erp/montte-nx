@@ -1,3 +1,4 @@
+import { Button } from "@packages/ui/components/button";
 import {
    Field,
    FieldError,
@@ -52,8 +53,12 @@ const cnpjMaskOptions: MaskitoOptions = {
    ],
 };
 
+type CnpjStepResult =
+   | { workspaceName: string; cnpjData: CnpjData }
+   | { workspaceName: string; cnpjData: null };
+
 interface CnpjStepProps {
-   onNext: (data: CnpjData) => Promise<void>;
+   onNext: (data: CnpjStepResult) => Promise<void>;
    onStateChange: (state: StepState) => void;
 }
 
@@ -69,15 +74,32 @@ export const CnpjStep = forwardRef<StepHandle, CnpjStepProps>(function CnpjStep(
       defaultValues: {
          cnpj: "",
          cnpjData: null as CnpjData | null,
+         skipped: false,
+         manualName: "",
       },
       onSubmit: async ({ value }) => {
-         if (value.cnpjData) await onNext(value.cnpjData);
+         if (value.skipped) {
+            const name = value.manualName.trim();
+            if (name.length < 2) return;
+            await onNext({ workspaceName: name, cnpjData: null });
+            return;
+         }
+         if (value.cnpjData) {
+            const name =
+               value.cnpjData.nome_fantasia || value.cnpjData.razao_social;
+            await onNext({ workspaceName: name, cnpjData: value.cnpjData });
+         }
       },
    });
 
    const cnpjInputRef = useMaskito({ options: cnpjMaskOptions });
 
-   const canContinue = useStore(form.store, (s) => s.values.cnpjData !== null);
+   const skipped = useStore(form.store, (s) => s.values.skipped);
+   const canContinue = useStore(form.store, (s) =>
+      s.values.skipped
+         ? s.values.manualName.trim().length >= 2
+         : s.values.cnpjData !== null,
+   );
    const isSubmitting = useStore(form.store, (s) => s.isSubmitting);
    const cnpjData = useStore(form.store, (s) => s.values.cnpjData);
    const isPending = fetchCnpjMutation.isPending || isSubmitting;
@@ -117,6 +139,48 @@ export const CnpjStep = forwardRef<StepHandle, CnpjStepProps>(function CnpjStep(
    const porte = cnpjData?.porte
       ? (PORTE_MAP[cnpjData.porte] ?? cnpjData.porte)
       : null;
+
+   if (skipped) {
+      return (
+         <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-2 text-center">
+               <h2 className="font-serif text-2xl font-semibold">
+                  Nome do espaço
+               </h2>
+               <p className="text-sm text-muted-foreground">
+                  Você poderá adicionar o CNPJ depois nas configurações.
+               </p>
+            </div>
+
+            <FieldGroup>
+               <form.Field
+                  name="manualName"
+                  children={(field) => (
+                     <Field>
+                        <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
+                        <Input
+                           id={field.name}
+                           name={field.name}
+                           autoFocus
+                           placeholder="Minha empresa"
+                           value={field.state.value}
+                           onChange={(e) => field.handleChange(e.target.value)}
+                        />
+                     </Field>
+                  )}
+               />
+            </FieldGroup>
+
+            <Button
+               type="button"
+               variant="ghost"
+               onClick={() => form.setFieldValue("skipped", false)}
+            >
+               Voltar para CNPJ
+            </Button>
+         </div>
+      );
+   }
 
    return (
       <div className="flex flex-col gap-6">
@@ -222,6 +286,14 @@ export const CnpjStep = forwardRef<StepHandle, CnpjStepProps>(function CnpjStep(
                </div>
             </div>
          )}
+
+         <Button
+            type="button"
+            variant="ghost"
+            onClick={() => form.setFieldValue("skipped", true)}
+         >
+            Pular CNPJ
+         </Button>
       </div>
    );
 });

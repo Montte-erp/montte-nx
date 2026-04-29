@@ -90,14 +90,19 @@ export function OnboardingWizard({
    );
 
    const handleCnpjComplete = useCallback(
-      async (data: CnpjData) => {
+      async ({
+         workspaceName,
+         cnpjData: data,
+      }: {
+         workspaceName: string;
+         cnpjData: CnpjData | null;
+      }) => {
          setCnpjData(data);
-         const workspaceName = data.nome_fantasia || data.razao_social;
 
          try {
             const result = await createWorkspace.mutateAsync({
                workspaceName,
-               cnpj: data.cnpj,
+               cnpj: data?.cnpj,
                cnpjData: data,
             });
 
