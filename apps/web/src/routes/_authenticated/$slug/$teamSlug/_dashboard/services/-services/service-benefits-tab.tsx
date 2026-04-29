@@ -244,10 +244,7 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
          onDiscardAddRow={() => setDraftActive(false)}
          storageKey="montte:datatable:service-benefits"
       >
-         <ServiceTabToolbar
-            serviceId={serviceId}
-            searchPlaceholder="Buscar benefício..."
-         >
+         <ServiceTabToolbar searchPlaceholder="Buscar benefício...">
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                <PopoverTrigger asChild>
                   <Button

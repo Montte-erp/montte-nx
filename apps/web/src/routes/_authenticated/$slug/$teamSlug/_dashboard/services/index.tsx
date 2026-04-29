@@ -8,6 +8,8 @@ import { QueryBoundary } from "@/components/query-boundary";
 import { orpc } from "@/integrations/orpc/client";
 import { buildServiceColumns } from "./-services/services-columns";
 import { ServicesList } from "./-services/services-list";
+import { requestTour } from "./-tour/store";
+import { TourHelpButton } from "./-tour/tour-help-button";
 
 type ViewFilter = "todos" | "ativos" | "arquivados";
 
@@ -33,6 +35,9 @@ export const Route = createFileRoute(
       context.queryClient.prefetchQuery(
          orpc.categories.getAll.queryOptions({}),
       );
+   },
+   onEnter: () => {
+      requestTour("services-overview");
    },
    pendingMs: 300,
    pendingComponent: () => (
@@ -67,16 +72,19 @@ function ServicesPage() {
    return (
       <main className="flex h-full flex-col gap-4">
          <DefaultHeader
+            actions={<TourHelpButton tourId="services-overview" />}
             description="Gerencie o catálogo de serviços"
             title="Serviços"
             secondaryActions={
-               <Tabs onValueChange={handleViewChange} value={view}>
-                  <TabsList>
-                     <TabsTrigger value="todos">Todos</TabsTrigger>
-                     <TabsTrigger value="ativos">Ativos</TabsTrigger>
-                     <TabsTrigger value="arquivados">Arquivados</TabsTrigger>
-                  </TabsList>
-               </Tabs>
+               <div id="tour-services-tabs">
+                  <Tabs onValueChange={handleViewChange} value={view}>
+                     <TabsList>
+                        <TabsTrigger value="todos">Todos</TabsTrigger>
+                        <TabsTrigger value="ativos">Ativos</TabsTrigger>
+                        <TabsTrigger value="arquivados">Arquivados</TabsTrigger>
+                     </TabsList>
+                  </Tabs>
+               </div>
             }
          />
          <div className="flex flex-1 flex-col min-h-0">

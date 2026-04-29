@@ -51,6 +51,8 @@ import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { DefaultHeader } from "@/components/default-header";
+import { requestTour } from "./-tour/store";
+import { TourHelpButton } from "./-tour/tour-help-button";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -104,6 +106,9 @@ export const Route = createFileRoute(
          }),
       );
    },
+   onEnter: () => {
+      requestTour("meters-intro");
+   },
    pendingMs: 300,
    pendingComponent: () => (
       <main className="flex h-full flex-col gap-4">
@@ -117,10 +122,13 @@ export const Route = createFileRoute(
 function MetersPage() {
    return (
       <main className="flex h-full flex-col gap-4">
-         <DefaultHeader
-            description="Medidores rastreiam eventos para cobrança e créditos de benefícios."
-            title="Medidores"
-         />
+         <div id="tour-meters-header">
+            <DefaultHeader
+               actions={<TourHelpButton tourId="meters-intro" />}
+               description="Medidores rastreiam eventos para cobrança e créditos de benefícios."
+               title="Medidores"
+            />
+         </div>
          <div className="flex flex-1 flex-col min-h-0">
             <QueryBoundary
                errorTitle="Erro ao carregar medidores"
@@ -478,6 +486,7 @@ function MetersList() {
             >
                <DataTableImportButton importConfig={importConfig} />
                <Button
+                  id="tour-meters-create"
                   onClick={() =>
                      navigate({
                         search: (s) => ({ ...s, add: true }),

@@ -52,6 +52,8 @@ import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { DefaultHeader } from "@/components/default-header";
+import { requestTour } from "./-tour/store";
+import { TourHelpButton } from "./-tour/tour-help-button";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
@@ -106,6 +108,9 @@ export const Route = createFileRoute(
       );
       context.queryClient.prefetchQuery(orpc.meters.getMeters.queryOptions({}));
    },
+   onEnter: () => {
+      requestTour("benefits-intro");
+   },
    pendingMs: 300,
    pendingComponent: () => (
       <main className="flex h-full flex-col gap-4">
@@ -119,10 +124,13 @@ export const Route = createFileRoute(
 function BenefitsPage() {
    return (
       <main className="flex h-full flex-col gap-4">
-         <DefaultHeader
-            description="Benefícios podem ser linkados a múltiplos serviços e impactam o custo efetivo."
-            title="Benefícios"
-         />
+         <div id="tour-benefits-header">
+            <DefaultHeader
+               actions={<TourHelpButton tourId="benefits-intro" />}
+               description="Benefícios podem ser linkados a múltiplos serviços e impactam o custo efetivo."
+               title="Benefícios"
+            />
+         </div>
          <div className="flex flex-1 flex-col min-h-0">
             <QueryBoundary
                errorTitle="Erro ao carregar benefícios"
@@ -518,6 +526,7 @@ function BenefitsList() {
             >
                <DataTableImportButton importConfig={importConfig} />
                <Button
+                  id="tour-benefits-create"
                   onClick={() =>
                      navigate({
                         search: (s) => ({ ...s, add: true }),

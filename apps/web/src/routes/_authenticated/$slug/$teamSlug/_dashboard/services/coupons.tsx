@@ -36,6 +36,8 @@ import {
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { DefaultHeader } from "@/components/default-header";
+import { requestTour } from "./-tour/store";
+import { TourHelpButton } from "./-tour/tour-help-button";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -71,6 +73,9 @@ export const Route = createFileRoute(
       context.queryClient.prefetchQuery(orpc.coupons.list.queryOptions());
       context.queryClient.prefetchQuery(orpc.meters.getMeters.queryOptions({}));
    },
+   onEnter: () => {
+      requestTour("coupons-intro");
+   },
    pendingMs: 300,
    pendingComponent: () => (
       <main className="flex h-full flex-col gap-4">
@@ -84,10 +89,13 @@ export const Route = createFileRoute(
 function CouponsPage() {
    return (
       <main className="flex h-full flex-col gap-4">
-         <DefaultHeader
-            description="Cupons aplicam descontos ou acréscimos automáticos sobre preços."
-            title="Cupons"
-         />
+         <div id="tour-coupons-header">
+            <DefaultHeader
+               actions={<TourHelpButton tourId="coupons-intro" />}
+               description="Cupons aplicam descontos ou acréscimos automáticos sobre preços."
+               title="Cupons"
+            />
+         </div>
          <div className="flex flex-1 flex-col min-h-0">
             <QueryBoundary
                errorTitle="Erro ao carregar cupons"
@@ -430,6 +438,7 @@ function CouponsList() {
                }
             >
                <Button
+                  id="tour-coupons-create"
                   onClick={() =>
                      navigate({
                         search: (s) => ({ ...s, add: true }),
