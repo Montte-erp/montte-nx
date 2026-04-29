@@ -34,7 +34,7 @@ import {
    SelectionActionButton,
 } from "@/components/data-table/data-table-bulk-actions";
 import { useCallback, useMemo } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/components/sonner";
 import { z } from "zod";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";

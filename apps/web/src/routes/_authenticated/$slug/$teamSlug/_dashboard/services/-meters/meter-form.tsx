@@ -19,7 +19,7 @@ import {
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { fromPromise } from "neverthrow";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/components/sonner";
 import { z } from "zod";
 import { useCredenza } from "@/hooks/use-credenza";
 import type { Outputs } from "@/integrations/orpc/client";

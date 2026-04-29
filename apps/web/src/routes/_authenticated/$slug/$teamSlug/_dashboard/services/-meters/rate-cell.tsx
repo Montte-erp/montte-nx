@@ -10,7 +10,7 @@ import {
 import { useForm } from "@tanstack/react-form";
 import { fromPromise } from "neverthrow";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/components/sonner";
 import { z } from "zod";
 
 interface Props {

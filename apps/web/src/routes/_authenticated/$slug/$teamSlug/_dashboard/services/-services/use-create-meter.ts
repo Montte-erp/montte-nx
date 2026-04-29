@@ -1,7 +1,7 @@
 import { createSlug } from "@core/utils/text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/components/sonner";
 import { orpc } from "@/integrations/orpc/client";
 
 export function useCreateMeterFromName() {

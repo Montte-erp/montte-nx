@@ -10,7 +10,7 @@ import {
 import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import { CircleDollarSign, Copy, Plus, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/components/sonner";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
 import { DataTableRoot } from "@/components/data-table/data-table-root";

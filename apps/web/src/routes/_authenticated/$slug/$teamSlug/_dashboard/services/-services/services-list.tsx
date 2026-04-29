@@ -15,7 +15,7 @@ import {
 import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
 import { Briefcase, ExternalLink, Plus, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/components/sonner";
 import {
    DataTableBulkActions,
    SelectionActionButton,
