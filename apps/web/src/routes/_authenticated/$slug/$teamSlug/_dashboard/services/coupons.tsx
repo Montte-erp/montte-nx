@@ -7,11 +7,7 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import {
-   useMutation,
-   useQueryClient,
-   useSuspenseQueries,
-} from "@tanstack/react-query";
+import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
    Activity,
@@ -109,7 +105,6 @@ function CouponsList() {
    const search = Route.useSearch();
    const slug = useOrgSlug();
    const teamSlug = useTeamSlug();
-   const queryClient = useQueryClient();
    const { openAlertDialog } = useAlertDialog();
 
    const [{ data: coupons }, { data: meters }] = useSuspenseQueries({
@@ -135,35 +130,9 @@ function CouponsList() {
       return rows;
    }, [coupons, search.search, search.isActive, search.direction]);
 
-   const couponsKey = orpc.coupons.list.queryKey();
-
    const updateMutation = useMutation(
       orpc.coupons.update.mutationOptions({
-         meta: { skipGlobalInvalidation: true },
-         onMutate: async (vars) => {
-            await queryClient.cancelQueries({ queryKey: couponsKey });
-            const prev = queryClient.getQueryData<CouponRow[]>(couponsKey);
-            if (prev) {
-               const { redeemBy, ...rest } = vars;
-               const patch: Partial<CouponRow> = {
-                  ...rest,
-                  ...(redeemBy !== undefined
-                     ? { redeemBy: redeemBy ? new Date(redeemBy) : null }
-                     : {}),
-               };
-               queryClient.setQueryData<CouponRow[]>(
-                  couponsKey,
-                  prev.map((c) => (c.id === vars.id ? { ...c, ...patch } : c)),
-               );
-            }
-            return { prev };
-         },
-         onError: (e, _v, ctx) => {
-            if (ctx?.prev) queryClient.setQueryData(couponsKey, ctx.prev);
-            toast.error(e.message);
-         },
-         onSettled: () =>
-            queryClient.invalidateQueries({ queryKey: couponsKey }),
+         onError: (e) => toast.error(e.message),
       }),
    );
 

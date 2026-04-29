@@ -55,6 +55,7 @@ import { QueryBoundary } from "@/components/query-boundary";
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
+import { createSlug } from "@core/utils/text";
 import { orpc } from "@/integrations/orpc/client";
 import {
    buildMeterColumns,
@@ -132,15 +133,6 @@ function MetersPage() {
    );
 }
 
-function slugifyEventName(name: string): string {
-   return name
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .replace(/[^a-z0-9_]+/g, "_")
-      .replace(/^_+|_+$/g, "");
-}
-
 function MetersList() {
    const navigate = useNavigate({ from: Route.fullPath });
    const search = Route.useSearch();
@@ -163,28 +155,9 @@ function MetersList() {
 
    useContextPanelInfo(() => <MetersAnalytics meters={meters} />);
 
-   const metersKey = orpc.meters.getMeters.queryKey({ input: queryInput });
-
    const updateMutation = useMutation(
       orpc.meters.updateMeterById.mutationOptions({
-         meta: { skipGlobalInvalidation: true },
-         onMutate: async (vars) => {
-            await queryClient.cancelQueries({ queryKey: metersKey });
-            const prev = queryClient.getQueryData<MeterRow[]>(metersKey);
-            if (prev) {
-               queryClient.setQueryData<MeterRow[]>(
-                  metersKey,
-                  prev.map((m) => (m.id === vars.id ? { ...m, ...vars } : m)),
-               );
-            }
-            return { prev };
-         },
-         onError: (e, _v, ctx) => {
-            if (ctx?.prev) queryClient.setQueryData(metersKey, ctx.prev);
-            toast.error(e.message);
-         },
-         onSettled: () =>
-            queryClient.invalidateQueries({ queryKey: metersKey }),
+         onError: (e) => toast.error(e.message),
       }),
    );
 
@@ -235,7 +208,7 @@ function MetersList() {
             toast.error("Nome é obrigatório.");
             return;
          }
-         const eventName = slugifyEventName(name) || "evento";
+         const eventName = createSlug(name).replace(/-/g, "_") || "evento";
          const unitCostStr = String(data.unitCost ?? "0");
          const unitCost = Number.isFinite(Number(unitCostStr))
             ? Number(unitCostStr).toFixed(4)
@@ -279,7 +252,9 @@ function MetersList() {
                .replace(",", ".");
             const name = String(row.name ?? "").trim();
             const eventName =
-               String(row.eventName ?? "").trim() || slugifyEventName(name);
+               String(row.eventName ?? "").trim() ||
+               createSlug(name).replace(/-/g, "_") ||
+               "evento";
             return {
                id: `__import_${i}`,
                name,
@@ -297,7 +272,7 @@ function MetersList() {
                   if (!name) return Promise.reject(new Error("skip"));
                   const eventName =
                      String(r.eventName ?? "").trim() ||
-                     slugifyEventName(name) ||
+                     createSlug(name).replace(/-/g, "_") ||
                      "evento";
                   const aggregation =
                      (r.aggregation as MeterAggregationKey) ?? "sum";
