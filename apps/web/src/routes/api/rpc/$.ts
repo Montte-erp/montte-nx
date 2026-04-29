@@ -8,7 +8,10 @@ import pino from "pino";
 import router from "@/integrations/orpc/router";
 import type { ORPCContext } from "@/integrations/orpc/server";
 
-const logger = pino({ name: "montte-web-rpc" });
+const logger = pino(
+   { name: "montte-web-rpc" },
+   pino.destination({ sync: true }),
+);
 
 const handler = new RPCHandler(router, {
    plugins: [

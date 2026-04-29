@@ -11,7 +11,10 @@ import pino from "pino";
 import router from "@/integrations/orpc/router";
 import type { ORPCContext } from "@/integrations/orpc/server";
 
-const logger = pino({ name: "montte-web-openapi" });
+const logger = pino(
+   { name: "montte-web-openapi" },
+   pino.destination({ sync: true }),
+);
 
 const handler = new OpenAPIHandler(router, {
    plugins: [
