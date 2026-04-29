@@ -42,7 +42,6 @@ import {
 import { useCallback, useTransition } from "react";
 import { QueryBoundary } from "@/components/query-boundary";
 import { CreateTeamForm } from "./-sidebar-scope-switcher/create-team-form";
-import { ManageOrganizationForm } from "./-sidebar-scope-switcher/manage-organization-form";
 import { useSetActiveOrganization } from "./-sidebar-scope-switcher/use-set-active-organization";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
@@ -262,11 +261,13 @@ function SidebarScopeSwitcherContent() {
    );
 
    const handleNewOrganization = useCallback(
-      (e?: React.MouseEvent) => {
+      async (e?: React.MouseEvent) => {
          e?.stopPropagation();
-         openCredenza({ renderChildren: () => <ManageOrganizationForm /> });
+         await authClient.organization.setActive({ organizationId: null });
+         await queryClient.invalidateQueries();
+         router.navigate({ to: "/onboarding", search: { new: true } });
       },
-      [openCredenza],
+      [queryClient, router],
    );
 
    return (
