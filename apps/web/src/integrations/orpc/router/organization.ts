@@ -156,6 +156,29 @@ export const getMembers = protectedProcedure.handler(async ({ context }) => {
    }));
 });
 
+export const getPendingInvitations = protectedProcedure.handler(
+   async ({ context }) => {
+      const { auth, headers, organizationId } = context;
+
+      const invitations = await auth.api.listInvitations({
+         headers,
+         query: { organizationId },
+      });
+
+      return invitations
+         .filter((inv) => inv.status === "pending")
+         .map((inv) => ({
+            id: inv.id,
+            email: inv.email,
+            role: inv.role ?? "member",
+            status: inv.status,
+            expiresAt: inv.expiresAt,
+            createdAt: inv.createdAt,
+         }))
+         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+   },
+);
+
 export const getMemberTeams = protectedProcedure
    .input(z.object({ userId: z.uuid() }))
    .handler(async ({ context, input }) => {
