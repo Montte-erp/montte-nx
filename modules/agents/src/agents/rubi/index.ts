@@ -1,12 +1,18 @@
 import type { ToolCall } from "@tanstack/ai";
 import type { DatabaseInstance } from "@core/database/client";
+import type { Prompts } from "@core/posthog/server";
 import { proModel } from "@core/ai/models";
-import { buildServiceTools } from "./tools/services";
-import { buildSystemPrompt } from "./system-prompt";
+import { RUBI_PROMPTS } from "../../constants";
+import {
+   buildAllSkillTools,
+   buildSkillCatalog,
+   buildSkillDiscoverTool,
+} from "./skills";
 import type { ChatMessage, PageContext } from "../../contracts/chat";
 
 export interface RubiChatOptions {
    db: DatabaseInstance;
+   prompts: Prompts;
    teamId: string;
    userId: string;
    organizationId: string;
@@ -15,9 +21,38 @@ export interface RubiChatOptions {
    abortSignal?: AbortSignal;
 }
 
-export function buildRubiChatArgs(options: RubiChatOptions) {
-   const tools = buildServiceTools({ db: options.db, teamId: options.teamId });
-   const systemPrompt = buildSystemPrompt(options.pageContext);
+function formatPageContext(pageContext: PageContext): string {
+   if (!pageContext) return "Nenhum contexto de página fornecido.";
+   const lines: string[] = [];
+   if (pageContext.skillHint)
+      lines.push(
+         `Skill sugerida pelo usuário: \`${pageContext.skillHint}\`. Chame skill_discover com esse skillId antes de responder, a menos que o pedido claramente esteja fora do domínio dela.`,
+      );
+   if (pageContext.route) lines.push(`Rota: ${pageContext.route}`);
+   if (pageContext.title) lines.push(`Título: ${pageContext.title}`);
+   if (pageContext.summary) lines.push(`Resumo: ${pageContext.summary}`);
+   return lines.length === 0
+      ? "Nenhum contexto de página fornecido."
+      : lines.join("\n");
+}
+
+export async function buildRubiChatArgs(options: RubiChatOptions) {
+   const skillTools = buildAllSkillTools({
+      db: options.db,
+      teamId: options.teamId,
+   });
+   const skillDiscoverTool = buildSkillDiscoverTool({
+      prompts: options.prompts,
+   });
+
+   const rootTemplate = await options.prompts.get(RUBI_PROMPTS.root, {
+      fallback:
+         "Você é Rubi, a assistente de IA do Montte. Responda em pt-BR de forma direta e amigável.",
+   });
+   const systemPrompt = options.prompts.compile(rootTemplate, {
+      skill_catalog: buildSkillCatalog(),
+      page_context: formatPageContext(options.pageContext),
+   });
 
    return {
       adapter: proModel,
@@ -32,7 +67,7 @@ export function buildRubiChatArgs(options: RubiChatOptions) {
          })),
          toolCallId: m.toolCallId,
       })),
-      tools,
+      tools: [skillDiscoverTool, ...skillTools],
       abortController: options.abortSignal
          ? abortControllerFromSignal(options.abortSignal)
          : undefined,

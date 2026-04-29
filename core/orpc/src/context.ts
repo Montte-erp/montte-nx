@@ -1,6 +1,6 @@
 import type { AuthInstance } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
-import type { PostHog } from "@core/posthog/server";
+import type { PostHog, Prompts } from "@core/posthog/server";
 import type { Redis } from "@core/redis/connection";
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import type { HyprPayClient } from "@core/hyprpay/client";
@@ -15,6 +15,7 @@ export interface ORPCContextWithAuth extends ORPCContext {
    db: DatabaseInstance;
    session: Awaited<ReturnType<AuthInstance["api"]["getSession"]>> | null;
    posthog: PostHog;
+   posthogPrompts: Prompts;
    redis: Redis;
    workflowClient: DBOSClient;
    hyprpayClient: HyprPayClient;

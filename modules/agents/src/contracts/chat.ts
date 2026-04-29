@@ -21,12 +21,13 @@ export const pageContextSchema = z
       route: z.string().optional(),
       title: z.string().optional(),
       summary: z.string().optional(),
+      skillHint: z.string().optional(),
    })
    .optional();
 
 export const chatInputSchema = z.object({
-   conversationId: z.string().uuid().optional(),
-   messages: z.array(chatMessageSchema).min(1),
+   threadId: z.string().uuid(),
+   turnId: z.string().optional(),
    pageContext: pageContextSchema,
 });
 

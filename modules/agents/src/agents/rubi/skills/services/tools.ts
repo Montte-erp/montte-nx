@@ -1,7 +1,6 @@
 import { toolDefinition } from "@tanstack/ai";
 import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { z } from "zod";
-import type { DatabaseInstance } from "@core/database/client";
 import { benefits, serviceBenefits } from "@core/database/schemas/benefits";
 import { meters } from "@core/database/schemas/meters";
 import { services, servicePrices } from "@core/database/schemas/services";
@@ -12,11 +11,7 @@ import {
    createMeterSchema,
    bulkCreateServicesInputSchema,
 } from "@modules/billing/contracts/services";
-
-export interface ServiceToolDeps {
-   db: DatabaseInstance;
-   teamId: string;
-}
+import type { SkillDeps } from "../types";
 
 const listServicesInput = z.object({
    search: z.string().optional(),
@@ -25,13 +20,8 @@ const listServicesInput = z.object({
 
 const idInput = z.object({ id: z.string().uuid() });
 
-const listMetersInput = z.object({
-   search: z.string().optional(),
-});
-
-const listBenefitsInput = z.object({
-   search: z.string().optional(),
-});
+const listMetersInput = z.object({ search: z.string().optional() });
+const listBenefitsInput = z.object({ search: z.string().optional() });
 
 const attachBenefitInput = z.object({
    serviceId: z.string().uuid(),
@@ -46,7 +36,7 @@ const updateServiceInput = z
    .object({ id: z.string().uuid() })
    .merge(updateServiceSchema);
 
-export function buildServiceTools(deps: ServiceToolDeps) {
+export function buildServiceTools(deps: SkillDeps) {
    const { db, teamId } = deps;
 
    const listServicesTool = toolDefinition({
@@ -54,6 +44,7 @@ export function buildServiceTools(deps: ServiceToolDeps) {
       description:
          "Lista os serviços do catálogo da equipe. Use para encontrar serviços existentes antes de criar duplicados.",
       inputSchema: listServicesInput,
+      lazy: true,
    }).server(async ({ search, isActive }) => {
       const rows = await db
          .select({
@@ -82,6 +73,7 @@ export function buildServiceTools(deps: ServiceToolDeps) {
       name: "services_get",
       description: "Retorna um serviço com preços e benefícios anexados.",
       inputSchema: idInput,
+      lazy: true,
    }).server(async ({ id }) => {
       const service = await db.query.services.findFirst({
          where: (f, { eq: e, and: a }) => a(e(f.id, id), e(f.teamId, teamId)),
@@ -106,6 +98,7 @@ export function buildServiceTools(deps: ServiceToolDeps) {
       name: "meters_list",
       description: "Lista medidores (meters) da equipe.",
       inputSchema: listMetersInput,
+      lazy: true,
    }).server(async ({ search }) => {
       const rows = await db
          .select({
@@ -135,6 +128,7 @@ export function buildServiceTools(deps: ServiceToolDeps) {
       name: "benefits_list",
       description: "Lista benefícios da equipe.",
       inputSchema: listBenefitsInput,
+      lazy: true,
    }).server(async ({ search }) => {
       const rows = await db
          .select({
@@ -161,6 +155,7 @@ export function buildServiceTools(deps: ServiceToolDeps) {
          "Cria um novo serviço no catálogo. Sempre confirme com o usuário antes de aplicar.",
       inputSchema: createServiceSchema,
       needsApproval: true,
+      lazy: true,
    });
 
    const updateServiceTool = toolDefinition({
@@ -169,6 +164,7 @@ export function buildServiceTools(deps: ServiceToolDeps) {
          "Atualiza um serviço existente. Requer aprovação do usuário.",
       inputSchema: updateServiceInput,
       needsApproval: true,
+      lazy: true,
    });
 
    const createPriceForServiceTool = toolDefinition({
@@ -176,6 +172,7 @@ export function buildServiceTools(deps: ServiceToolDeps) {
       description: "Cria um preço para um serviço existente. Requer aprovação.",
       inputSchema: createPriceForServiceInput,
       needsApproval: true,
+      lazy: true,
    });
 
    const attachBenefitTool = toolDefinition({
@@ -183,6 +180,7 @@ export function buildServiceTools(deps: ServiceToolDeps) {
       description: "Anexa um benefício a um serviço. Requer aprovação.",
       inputSchema: attachBenefitInput,
       needsApproval: true,
+      lazy: true,
    });
 
    const createMeterTool = toolDefinition({
@@ -190,6 +188,7 @@ export function buildServiceTools(deps: ServiceToolDeps) {
       description: "Cria um novo medidor (meter). Requer aprovação.",
       inputSchema: createMeterSchema,
       needsApproval: true,
+      lazy: true,
    });
 
    const bulkCreateServicesTool = toolDefinition({
@@ -198,6 +197,7 @@ export function buildServiceTools(deps: ServiceToolDeps) {
          "Cria múltiplos serviços de uma vez (catálogo inicial). Requer aprovação.",
       inputSchema: bulkCreateServicesInputSchema,
       needsApproval: true,
+      lazy: true,
    });
 
    return [

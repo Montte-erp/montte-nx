@@ -4,7 +4,7 @@ import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, os } from "@orpc/server";
 import type { AuthInstance } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
-import type { PostHog } from "@core/posthog/server";
+import type { PostHog, Prompts } from "@core/posthog/server";
 import {
    captureError,
    captureServerEvent,
@@ -20,6 +20,7 @@ import {
    auth,
    db,
    posthog,
+   posthogPrompts,
    redis,
    stripeClient,
    workflowClient,
@@ -35,6 +36,7 @@ export interface ORPCContextWithAuth extends ORPCContext {
    db: DatabaseInstance;
    session: Awaited<ReturnType<AuthInstance["api"]["getSession"]>> | null;
    posthog: PostHog;
+   posthogPrompts: Prompts;
    stripeClient: StripeClient;
    redis: Redis;
    workflowClient: DBOSClient;
@@ -65,6 +67,7 @@ const withDeps = base.use(async ({ context, next }) => {
          db,
          session: sessionResult.isOk() ? sessionResult.value : null,
          posthog,
+         posthogPrompts,
          stripeClient,
          redis,
          workflowClient: await workflowClient,
