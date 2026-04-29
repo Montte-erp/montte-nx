@@ -59,10 +59,7 @@ export function ServiceSubscribersTab({ serviceId }: { serviceId: string }) {
          groupBy={groupBy}
          storageKey="montte:datatable:service-subscribers"
       >
-         <ServiceTabToolbar
-            serviceId={serviceId}
-            searchPlaceholder="Buscar contato..."
-         />
+         <ServiceTabToolbar searchPlaceholder="Buscar contato..." />
          <DataTableContent />
          <DataTableEmptyState>
             <Empty>

@@ -82,7 +82,10 @@ function NavItem({
    );
 
    return (
-      <SidebarMenuItem className="group/menu-item">
+      <SidebarMenuItem
+         className="group/menu-item"
+         id={`tour-nav-item-${item.id}`}
+      >
          <SidebarMenuButton
             asChild={!item.subPanel}
             isActive={isActive}

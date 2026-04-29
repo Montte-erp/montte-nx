@@ -168,10 +168,7 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
          storageKey="montte:datatable:service-prices"
       >
          <div className="flex flex-col gap-4">
-            <ServiceTabToolbar
-               serviceId={serviceId}
-               searchPlaceholder="Buscar preço..."
-            >
+            <ServiceTabToolbar searchPlaceholder="Buscar preço...">
                <Button
                   onClick={() => setIsDraftActive(true)}
                   size="icon-sm"

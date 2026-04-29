@@ -286,6 +286,7 @@ export function ServicesList() {
             >
                <DataTableImportButton importConfig={importConfig} />
                <Button
+                  id="tour-services-create"
                   onClick={() => setIsDraftActive(true)}
                   size="icon-sm"
                   tooltip="Novo Serviço"

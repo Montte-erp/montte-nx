@@ -15,10 +15,13 @@ import {
 } from "@/features/context-panel/use-context-panel";
 import { orpc } from "@/integrations/orpc/client";
 import { ServiceBenefitsTab } from "./-services/service-benefits-tab";
+import { ServiceHeaderActions } from "./-services/service-header-actions";
 import { ServiceOverviewTab } from "./-services/service-overview-tab";
 import { ServicePricesTab } from "./-services/service-prices-tab";
 import { ServicePropertiesPanel } from "./-services/service-properties-panel";
 import { ServiceSubscribersTab } from "./-services/service-subscribers-tab";
+import { requestTour } from "./-tour/store";
+import { TourHelpButton } from "./-tour/tour-help-button";
 
 const VALID_TABS = ["precos", "beneficios", "assinantes", "overview"] as const;
 
@@ -53,6 +56,9 @@ export const Route = createFileRoute(
       context.queryClient.prefetchQuery(
          orpc.tags.getAll.queryOptions({ input: {} }),
       );
+   },
+   onEnter: () => {
+      requestTour("service-detail");
    },
    pendingMs: 300,
    pendingComponent: ServiceDetailSkeleton,
@@ -101,16 +107,19 @@ function ServiceDetailContent() {
 
    return (
       <main className="flex flex-col gap-4">
-         <DefaultHeader
-            title={service.name}
-            description={service.description ?? "Sem descrição"}
-            onBack={() =>
-               globalNavigate({
-                  to: "/$slug/$teamSlug/services",
-                  params: { slug, teamSlug },
-               })
-            }
-         />
+         <div id="tour-service-header">
+            <DefaultHeader
+               actions={<TourHelpButton tourId="service-detail" />}
+               title={service.name}
+               description={service.description ?? "Sem descrição"}
+               onBack={() =>
+                  globalNavigate({
+                     to: "/$slug/$teamSlug/services",
+                     params: { slug, teamSlug },
+                  })
+               }
+            />
+         </div>
          <Tabs
             value={activeTab}
             onValueChange={(v) => {
@@ -122,7 +131,12 @@ function ServiceDetailContent() {
                });
             }}
          >
-            <ServiceTabsList />
+            <div className="flex items-center gap-4" id="tour-service-tabs">
+               <ServiceTabsList />
+               <div className="ml-auto flex items-center gap-2">
+                  <ServiceHeaderActions serviceId={serviceId} />
+               </div>
+            </div>
             <TabsContent value="precos">
                <QueryBoundary fallback={null}>
                   <ServicePricesTab serviceId={serviceId} />
