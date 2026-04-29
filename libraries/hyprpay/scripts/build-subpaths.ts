@@ -1,69 +1,49 @@
+import { chmod } from "node:fs/promises";
+import { resolve } from "node:path";
 import { build } from "esbuild";
-import { glob } from "node:fs/promises";
 
-const betterAuthFiles = (
-   await Array.fromAsync(
-      glob("src/better-auth/**/*.ts", { cwd: process.cwd() }),
-   )
-).filter((f) => !f.endsWith(".test.ts"));
-
-const contractFiles = await Array.fromAsync(
-   glob("src/contract.ts", { cwd: process.cwd() }),
-);
-
-const builds: Parameters<typeof build>[0][] = [];
-
-const betterAuthExternals = [
-   "better-auth",
-   "better-auth/client",
-   "neverthrow",
+const externals = [
+   "drizzle-orm",
+   "@orpc/server",
    "@orpc/client",
-   "@orpc/client/fetch",
    "@orpc/contract",
+   "neverthrow",
    "zod",
+   "commander",
+   "jiti",
 ];
 
-if (betterAuthFiles.length > 0) {
-   builds.push(
-      {
-         entryPoints: betterAuthFiles,
-         outdir: "dist/esm/better-auth",
-         format: "esm",
-         sourcemap: true,
-         bundle: true,
-         external: betterAuthExternals,
-      },
-      {
-         entryPoints: betterAuthFiles,
-         outdir: "dist/cjs/better-auth",
-         format: "cjs",
-         outExtension: { ".js": ".cjs" },
-         sourcemap: true,
-         bundle: true,
-         external: betterAuthExternals,
-      },
-   );
-}
+await Promise.all([
+   build({
+      entryPoints: ["src/database/drizzle.ts"],
+      outdir: "dist/esm/database",
+      format: "esm",
+      sourcemap: true,
+      bundle: true,
+      external: externals,
+   }),
+   build({
+      entryPoints: ["src/database/drizzle.ts"],
+      outdir: "dist/cjs/database",
+      format: "cjs",
+      outExtension: { ".js": ".cjs" },
+      sourcemap: true,
+      bundle: true,
+      external: externals,
+   }),
+   build({
+      entryPoints: ["src/cli/index.ts"],
+      outdir: "dist/esm/cli",
+      format: "esm",
+      platform: "node",
+      target: "node20",
+      sourcemap: true,
+      bundle: true,
+      external: externals,
+      banner: { js: "#!/usr/bin/env node" },
+   }),
+]);
 
-if (contractFiles.length > 0) {
-   builds.push(
-      {
-         entryPoints: contractFiles,
-         outdir: "dist/esm",
-         format: "esm",
-         sourcemap: true,
-         bundle: false,
-      },
-      {
-         entryPoints: contractFiles,
-         outdir: "dist/cjs",
-         format: "cjs",
-         outExtension: { ".js": ".cjs" },
-         sourcemap: true,
-         bundle: false,
-      },
-   );
-}
+await chmod(resolve("dist/esm/cli/index.js"), 0o755);
 
-await Promise.all(builds.map((b) => build(b)));
 console.log("Subpaths built.");

@@ -6,6 +6,9 @@
    "keywords": [
       "tanstack-intent"
    ],
+   "bin": {
+      "hyprpay": "./dist/esm/cli/index.js"
+   },
    "files": [
       "dist",
       "skills",
@@ -23,24 +26,14 @@
             "default": "./dist/cjs/index.cjs"
          }
       },
-      "./contract": {
+      "./database/drizzle": {
          "import": {
-            "types": "./dist/esm/contract.d.ts",
-            "default": "./dist/esm/contract.js"
+            "types": "./dist/esm/database/drizzle.d.ts",
+            "default": "./dist/esm/database/drizzle.js"
          },
          "require": {
-            "types": "./dist/cjs/contract.d.cts",
-            "default": "./dist/cjs/contract.cjs"
-         }
-      },
-      "./better-auth": {
-         "import": {
-            "types": "./dist/esm/better-auth/index.d.ts",
-            "default": "./dist/esm/better-auth/index.js"
-         },
-         "require": {
-            "types": "./dist/cjs/better-auth/index.d.cts",
-            "default": "./dist/cjs/better-auth/index.cjs"
+            "types": "./dist/cjs/database/drizzle.d.cts",
+            "default": "./dist/cjs/database/drizzle.cjs"
          }
       },
       "./package.json": "./package.json"
@@ -56,18 +49,31 @@
    "dependencies": {
       "@orpc/client": "catalog:orpc",
       "@orpc/contract": "catalog:orpc",
+      "@orpc/server": "catalog:orpc",
+      "commander": "^12.0.0",
+      "jiti": "^2.6.1",
       "neverthrow": "^8.1.1",
       "zod": "4.3.6"
    },
    "devDependencies": {
+      "@electric-sql/pglite": "0.3.16",
       "@tanstack/vite-config": "0.5.2",
       "@types/bun": "latest",
-      "better-auth": "catalog:auth",
+      "@types/node": "^20.0.0",
+      "drizzle-orm": "catalog:database",
       "esbuild": "^0.25.4",
       "publint": "latest",
       "typescript": "catalog:development",
       "vite": "catalog:vite",
       "vitest": "catalog:testing"
+   },
+   "peerDependencies": {
+      "drizzle-orm": "catalog:database"
+   },
+   "peerDependenciesMeta": {
+      "drizzle-orm": {
+         "optional": true
+      }
    },
    "intent": {
       "skills": [

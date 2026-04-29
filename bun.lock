@@ -450,22 +450,36 @@
     "libraries/hyprpay": {
       "name": "@montte/hyprpay",
       "version": "0.6.0",
+      "bin": {
+        "hyprpay": "./dist/esm/cli/index.js",
+      },
       "dependencies": {
         "@orpc/client": "catalog:orpc",
         "@orpc/contract": "catalog:orpc",
+        "@orpc/server": "catalog:orpc",
+        "commander": "^12.0.0",
+        "jiti": "^2.6.1",
         "neverthrow": "^8.1.1",
         "zod": "4.3.6",
       },
       "devDependencies": {
+        "@electric-sql/pglite": "0.3.16",
         "@tanstack/vite-config": "0.5.2",
         "@types/bun": "latest",
-        "better-auth": "catalog:auth",
+        "@types/node": "^20.0.0",
+        "drizzle-orm": "catalog:database",
         "esbuild": "^0.25.4",
         "publint": "latest",
         "typescript": "catalog:development",
         "vite": "catalog:vite",
         "vitest": "catalog:testing",
       },
+      "peerDependencies": {
+        "drizzle-orm": "catalog:database",
+      },
+      "optionalPeers": [
+        "drizzle-orm",
+      ],
     },
     "modules/billing": {
       "name": "@modules/billing",
