@@ -1,10 +1,10 @@
-import { maxIterations } from "@tanstack/ai";
+import { maxIterations, type ConstrainedModelMessage } from "@tanstack/ai";
+import type { OpenRouterMessageMetadataByModality } from "@tanstack/ai-openrouter";
 import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog, Prompts } from "@core/posthog/server";
 import { flashModel } from "@core/ai/models";
 import { createPosthogAiMiddleware } from "@core/ai/middleware";
 import { RUBI_PROMPTS } from "@modules/agents/constants";
-import type { RubiModelMessage } from "@modules/agents/messages";
 import {
    buildSkillCatalog,
    buildSkillDiscoverTool,
@@ -27,7 +27,10 @@ export interface RubiChatOptions {
    userId: string;
    organizationId: string;
    threadId?: string;
-   messages: RubiModelMessage[];
+   messages: ConstrainedModelMessage<{
+      inputModalities: readonly ["text"];
+      messageMetadataByModality: OpenRouterMessageMetadataByModality;
+   }>[];
    pageContext: PageContext;
    abortSignal?: AbortSignal;
 }

@@ -1,17 +1,17 @@
+import { chat } from "@tanstack/ai";
 import dayjs from "dayjs";
 import { eq } from "drizzle-orm";
 import { err, fromPromise, ok, safeTry } from "neverthrow";
 import { z } from "zod";
 import {
-   insertThreadMessageSchema,
    insertThreadSchema,
-   threadMessages,
    threads,
    threadSchema,
 } from "@core/database/schemas/threads";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
-import { messagePartSchema } from "@modules/agents/messages";
+import { flashModel } from "@core/ai/models";
+import { uiMessageSchema } from "@modules/agents/messages";
 import { requireThread } from "@modules/agents/router/middlewares";
 
 const threadIdInputSchema = z.object({ threadId: threadSchema.shape.id });
@@ -30,13 +30,9 @@ const listThreadsInputSchema = z
    .object({ limit: z.number().int().min(1).max(100).default(50) })
    .default({ limit: 50 });
 
-const syncMessageSchema = insertThreadMessageSchema
-   .pick({ role: true })
-   .extend({ parts: z.array(messagePartSchema) });
-
 const syncMessagesInputSchema = z.object({
    threadId: threadSchema.shape.id,
-   messages: z.array(syncMessageSchema),
+   messages: z.array(uiMessageSchema),
 });
 
 export const list = protectedProcedure
@@ -67,17 +63,10 @@ export const list = protectedProcedure
 export const getById = protectedProcedure
    .input(threadIdInputSchema)
    .use(requireThread, (input) => input.threadId)
-   .handler(async ({ context, input }) => {
-      const result = await fromPromise(
-         context.db.query.threadMessages.findMany({
-            where: (fields, { eq }) => eq(fields.threadId, input.threadId),
-            orderBy: (fields, { asc }) => [asc(fields.sequence)],
-         }),
-         () => WebAppError.internal("Falha ao carregar conversa."),
-      );
-      if (result.isErr()) throw result.error;
-      return { thread: context.thread, messages: result.value };
-   });
+   .handler(async ({ context }) => ({
+      thread: context.thread,
+      messages: context.thread.messages,
+   }));
 
 export const create = protectedProcedure
    .input(createThreadInputSchema)
@@ -150,29 +139,82 @@ export const syncMessages = protectedProcedure
    .handler(async ({ context, input }) => {
       const result = await safeTry(async function* () {
          yield* fromPromise(
-            context.db.transaction(async (tx) => {
-               await tx
-                  .delete(threadMessages)
-                  .where(eq(threadMessages.threadId, input.threadId));
-               if (input.messages.length > 0) {
-                  await tx.insert(threadMessages).values(
-                     input.messages.map((message, index) => ({
-                        threadId: input.threadId,
-                        sequence: index,
-                        role: message.role,
-                        parts: message.parts,
-                     })),
-                  );
-               }
-               await tx
+            context.db.transaction((tx) =>
+               tx
                   .update(threads)
-                  .set({ lastMessageAt: dayjs().toDate() })
-                  .where(eq(threads.id, input.threadId));
-            }),
+                  .set({
+                     messages: input.messages,
+                     lastMessageAt: dayjs().toDate(),
+                  })
+                  .where(eq(threads.id, input.threadId)),
+            ),
             () => WebAppError.internal("Falha ao sincronizar mensagens."),
          );
          return ok({ ok: true });
       });
+      if (result.isErr()) throw result.error;
+      return result.value;
+   });
+
+export const updateTitle = protectedProcedure
+   .input(threadIdInputSchema)
+   .use(requireThread, (input) => input.threadId)
+   .handler(async ({ context, input }) => {
+      const result = await fromPromise(
+         chat({
+            adapter: flashModel,
+            messages: [
+               {
+                  role: "user",
+                  content: [
+                     {
+                        type: "text",
+                        content: `Gere um título curto em pt-BR para esta conversa da Rubi.
+
+Regras:
+- Máximo 6 palavras.
+- Sem aspas.
+- Sem pontuação final.
+- Foque no pedido principal do usuário.
+
+Mensagens:
+${JSON.stringify(context.thread.messages)}`,
+                     },
+                  ],
+               },
+            ],
+            stream: false,
+         }),
+         () => WebAppError.internal("Falha ao gerar título da conversa."),
+      )
+         .map((title) => title.trim().slice(0, 80))
+         .andThen((title) => {
+            if (title.length === 0) {
+               return err(
+                  WebAppError.internal("Falha ao gerar título da conversa."),
+               );
+            }
+            return ok(title);
+         })
+         .andThen((title) =>
+            fromPromise(
+               context.db.transaction((tx) =>
+                  tx
+                     .update(threads)
+                     .set({ title })
+                     .where(eq(threads.id, input.threadId))
+                     .returning(),
+               ),
+               () => WebAppError.internal("Falha ao atualizar título."),
+            ),
+         )
+         .andThen((rows) => {
+            const row = rows[0];
+            if (row === undefined) {
+               return err(WebAppError.internal("Falha ao atualizar título."));
+            }
+            return ok(row);
+         });
       if (result.isErr()) throw result.error;
       return result.value;
    });

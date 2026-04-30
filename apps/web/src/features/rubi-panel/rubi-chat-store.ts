@@ -18,13 +18,7 @@ import {
 } from "lucide-react";
 import { fromPromise } from "neverthrow";
 import { toast } from "sonner";
-import {
-   dbMessagesToUIMessages,
-   pendingApprovalIds,
-   textPartContent,
-   uiMessagesOnly,
-   uiMessagesToThreadMessages,
-} from "@modules/agents/messages";
+import { pendingApprovalIds, textPartContent } from "@modules/agents/messages";
 import {
    client,
    orpc,
@@ -116,7 +110,9 @@ const rubiConnection = aiStream(async function* (messages) {
    const input: RubiSendInput = {
       threadId: activeThreadId,
       pageContext,
-      messages: uiMessagesOnly(messages),
+      messages: messages.flatMap((message) =>
+         "parts" in message ? [message] : [],
+      ),
    };
    const response = await client.rubi.send(input);
    yield* response;
@@ -128,7 +124,7 @@ async function syncRubiMessages(messages: UIMessage[], errorMessage?: string) {
 
    const input: RubiSyncMessagesInput = {
       threadId: activeThreadId,
-      messages: uiMessagesToThreadMessages(messages),
+      messages,
    };
    const result = await fromPromise(
       client.threads.syncMessages(input),
@@ -136,6 +132,9 @@ async function syncRubiMessages(messages: UIMessage[], errorMessage?: string) {
    );
    if (result.isErr() && errorMessage !== undefined) {
       toast.error(errorMessage);
+   }
+   if (result.isOk()) {
+      void client.threads.updateTitle({ threadId: activeThreadId });
    }
 }
 
@@ -180,7 +179,7 @@ export function resetRubiChat() {
 }
 
 export function loadRubiThread(thread: RubiThreadDetails) {
-   const messages = dbMessagesToUIMessages(thread.messages);
+   const { messages } = thread;
    rubiChatStore.setState((state) => ({
       ...state,
       activeThreadId: thread.thread.id,

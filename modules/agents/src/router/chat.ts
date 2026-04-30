@@ -1,17 +1,17 @@
 import { eventIterator } from "@orpc/server";
-import { chat, type StreamChunk } from "@tanstack/ai";
+import {
+   chat,
+   type ConstrainedModelMessage,
+   type StreamChunk,
+   type UIMessage,
+} from "@tanstack/ai";
+import type { OpenRouterMessageMetadataByModality } from "@tanstack/ai-openrouter";
 import { z } from "zod";
 import { getLogger } from "@core/logging/root";
 import { protectedProcedure } from "@core/orpc/server";
-import {
-   uiMessageSchema,
-   uiMessagesToRubiModelMessages,
-} from "@modules/agents/messages";
+import { uiMessageSchema } from "@modules/agents/messages";
 import { buildRubiChatArgs, type RubiChatOptions } from "@modules/agents/rubi";
-import {
-   requireThread,
-   withThreadChatMessages,
-} from "@modules/agents/router/middlewares";
+import { requireThread } from "@modules/agents/router/middlewares";
 
 const logger = getLogger().child({ module: "agents.chat" });
 
@@ -39,11 +39,28 @@ const chatStreamEventSchema = z.custom<StreamChunk>(
 export type ChatInput = z.infer<typeof chatInputSchema>;
 export type ChatStreamEvent = z.infer<typeof chatStreamEventSchema>;
 export type PageContext = z.infer<typeof pageContextSchema>;
+type RubiModelMessage = ConstrainedModelMessage<{
+   inputModalities: readonly ["text"];
+   messageMetadataByModality: OpenRouterMessageMetadataByModality;
+}>;
+
+function messagesForModel(messages: UIMessage[]): RubiModelMessage[] {
+   return messages.flatMap((message) => {
+      if (message.role === "system") return [];
+      const content = message.parts
+         .flatMap((part) => {
+            if (part.type !== "text") return [];
+            return [part.content];
+         })
+         .join("");
+      if (content.length === 0) return [];
+      return [{ role: message.role, content }];
+   });
+}
 
 export const stream = protectedProcedure
    .input(chatInputSchema)
    .use(requireThread, (input) => input.threadId)
-   .use(withThreadChatMessages, (input) => input.threadId)
    .output(eventIterator(chatStreamEventSchema))
    .handler(async function* ({ context, input, signal }) {
       logger.info(
@@ -51,9 +68,11 @@ export const stream = protectedProcedure
          "rubi chat stream start",
       );
 
-      let messages: RubiChatOptions["messages"] = context.chatMessages;
+      let messages: RubiChatOptions["messages"] = messagesForModel(
+         context.thread.messages,
+      );
       if (input.messages !== undefined) {
-         messages = uiMessagesToRubiModelMessages(input.messages);
+         messages = messagesForModel(input.messages);
       }
 
       const args = await buildRubiChatArgs({
@@ -79,7 +98,6 @@ export const stream = protectedProcedure
 export const send = protectedProcedure
    .input(chatInputSchema)
    .use(requireThread, (input) => input.threadId)
-   .use(withThreadChatMessages, (input) => input.threadId)
    .output(eventIterator(chatStreamEventSchema))
    .handler(async function* ({ context, input, signal }) {
       logger.info(
@@ -87,9 +105,11 @@ export const send = protectedProcedure
          "rubi chat send start",
       );
 
-      let messages: RubiChatOptions["messages"] = context.chatMessages;
+      let messages: RubiChatOptions["messages"] = messagesForModel(
+         context.thread.messages,
+      );
       if (input.messages !== undefined) {
-         messages = uiMessagesToRubiModelMessages(input.messages);
+         messages = messagesForModel(input.messages);
       }
 
       const args = await buildRubiChatArgs({
