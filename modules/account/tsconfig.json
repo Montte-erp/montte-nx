@@ -7,18 +7,17 @@
       "noEmit": true,
       "jsx": "react-jsx",
       "paths": {
-         "@core/ai/*": ["../../core/ai/src/*"],
+         "@core/authentication": ["../../core/authentication/src/index.ts"],
+         "@core/authentication/*": ["../../core/authentication/src/*"],
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],
-         "@core/dbos/*": ["../../core/dbos/src/*"],
-         "@core/environment/*": ["../../core/environment/src/*"],
          "@core/files/*": ["../../core/files/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
-         "@core/posthog/*": ["../../core/posthog/src/*"],
-         "@core/redis/*": ["../../core/redis/src/*"],
-         "@core/sse": ["../../core/sse/src/sse.ts"]
+         "@core/utils/*": ["../../core/utils/src/*"],
+         "@modules/classification/*": ["../classification/src/*"],
+         "@packages/analytics/*": ["../../packages/analytics/src/*"]
       }
    },
    "include": ["src"]

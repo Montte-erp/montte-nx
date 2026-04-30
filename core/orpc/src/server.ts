@@ -6,6 +6,7 @@ import { ORPCError, os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
 import { createDb } from "@core/database/client";
 import { env } from "@core/environment/web";
+import { createMinioClient } from "@core/files/client";
 import {
    captureError,
    captureServerEvent,
@@ -43,6 +44,11 @@ const auth = createAuth({
    env,
 });
 const workflowClient = createWorkflowClient(env.DATABASE_URL);
+const minioClient = createMinioClient({
+   endpoint: env.MINIO_ENDPOINT,
+   accessKey: env.MINIO_ACCESS_KEY,
+   secretKey: env.MINIO_SECRET_KEY,
+});
 
 const otelLogger = logs.getLogger("montte-web-orpc");
 
@@ -107,6 +113,7 @@ const withDeps = base.use(async ({ context, next }) => {
             posthogPrompts,
             redis,
             workflowClient: await workflowClient,
+            minioClient,
          },
       });
    }
@@ -127,6 +134,7 @@ const withDeps = base.use(async ({ context, next }) => {
          posthogPrompts,
          redis,
          workflowClient: await workflowClient,
+         minioClient,
       },
    });
 });

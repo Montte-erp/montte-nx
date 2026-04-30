@@ -1,4 +1,4 @@
-import { protectedProcedure } from "../server";
+import { protectedProcedure } from "@core/orpc/server";
 
 export const list = protectedProcedure.handler(async ({ context }) => {
    const result = await context.auth.api.listApiKeys({

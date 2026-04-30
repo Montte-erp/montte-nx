@@ -1,5 +1,4 @@
 import { apiKey } from "@better-auth/api-key";
-import { findMemberByUserId } from "@core/database/repositories/auth-repository";
 import * as schema from "@core/database/schema";
 import { getDomain, isProduction } from "@core/environment/helpers";
 import { getLogger } from "@core/logging/root";
@@ -112,10 +111,9 @@ export function createAuth(deps: CreateAuthDeps) {
             create: {
                before: async (session) => {
                   try {
-                     const member = await findMemberByUserId(
-                        db,
-                        session.userId,
-                     );
+                     const member = await db.query.member.findFirst({
+                        where: (f, { eq }) => eq(f.userId, session.userId),
+                     });
 
                      if (member?.organizationId) {
                         const existingTeam = await db.query.team.findFirst({
