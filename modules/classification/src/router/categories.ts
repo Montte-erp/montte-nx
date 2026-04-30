@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import { and, asc, eq, ilike, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
-import { errAsync, fromPromise, safeTry } from "neverthrow";
+import { errAsync, okAsync, safeTry } from "neverthrow";
 import { z } from "zod";
 import {
    categories,
@@ -16,15 +16,14 @@ import { requireCategory } from "@modules/classification/router/middlewares";
 import {
    assertKeywordsUnique,
    categoryTreeHasTransactions,
+   createCategory,
    ensureRow,
    enqueueKeywords,
    getDescendantIds,
-   insertCategoryRow,
-   wrapTx,
+   tryDb,
 } from "@modules/classification/services/categories";
 
 const idSchema = z.object({ id: z.string().uuid() });
-
 const subcategoryInputSchema = categorySchema.pick({ name: true });
 
 export const create = protectedProcedure
@@ -35,28 +34,25 @@ export const create = protectedProcedure
    )
    .handler(async ({ context, input }) => {
       const { subcategories, ...catData } = input;
-      const result = await wrapTx(
-         context.db.transaction(async (tx) => {
-            const created = await insertCategoryRow(
-               tx,
-               context.teamId,
-               catData,
-            );
-            for (const sub of subcategories ?? []) {
-               await insertCategoryRow(tx, context.teamId, {
-                  name: sub.name,
-                  type: catData.type,
-                  parentId: created.id,
-                  participatesDre: false,
-               });
-            }
-            return created;
-         }),
-         "Falha ao criar categoria.",
-      );
-      if (result.isErr()) throw result.error;
-      await enqueueKeywords(context.workflowClient, result.value, context);
-      return result.value;
+      const flow = await safeTry(async function* () {
+         const created = yield* createCategory(
+            context.db,
+            context.teamId,
+            catData,
+         );
+         for (const sub of subcategories ?? []) {
+            yield* createCategory(context.db, context.teamId, {
+               name: sub.name,
+               type: catData.type,
+               parentId: created.id,
+               participatesDre: false,
+            });
+         }
+         return okAsync(created);
+      });
+      if (flow.isErr()) throw flow.error;
+      await enqueueKeywords(context.workflowClient, flow.value, context);
+      return flow.value;
    });
 
 const getAllInput = z
@@ -70,7 +66,7 @@ const getAllInput = z
 export const getAll = protectedProcedure
    .input(getAllInput)
    .handler(async ({ context, input }) => {
-      const result = await fromPromise(
+      const result = await tryDb(
          context.db.query.categories.findMany({
             where: (f, { and, eq }) => {
                const conds = [eq(f.teamId, context.teamId)];
@@ -80,18 +76,18 @@ export const getAll = protectedProcedure
             },
             orderBy: (f, { asc }) => [asc(f.name)],
          }),
-         () => WebAppError.internal("Falha ao listar categorias."),
+         "Falha ao listar categorias.",
       );
       if (result.isErr()) throw result.error;
       const all = result.value;
       const search = input?.search?.toLowerCase();
       if (!search) return all;
-      const matchingParentIds = new Set<string>();
+      const matchedRoots = new Set<string>();
       for (const c of all) {
-         if (!c.name.toLowerCase().includes(search)) continue;
-         matchingParentIds.add(c.parentId ?? c.id);
+         if (c.name.toLowerCase().includes(search))
+            matchedRoots.add(c.parentId ?? c.id);
       }
-      return all.filter((c) => matchingParentIds.has(c.parentId ?? c.id));
+      return all.filter((c) => matchedRoots.has(c.parentId ?? c.id));
    });
 
 const getPaginatedInput = z.object({
@@ -105,7 +101,7 @@ const getPaginatedInput = z.object({
 export const getPaginated = protectedProcedure
    .input(getPaginatedInput)
    .handler(async ({ context, input }) => {
-      const result = await fromPromise(
+      const result = await tryDb(
          (async () => {
             const parentCat = alias(categories, "parent_cat");
             const base: SQL[] = [eq(categories.teamId, context.teamId)];
@@ -113,18 +109,18 @@ export const getPaginated = protectedProcedure
             if (!input.includeArchived)
                base.push(eq(categories.isArchived, false));
 
-            const trimmedSearch = input.search?.trim();
-            const searchPattern = trimmedSearch
-               ? `%${trimmedSearch.replace(/[\\%_]/g, "\\$&")}%`
+            const trimmed = input.search?.trim();
+            const pattern = trimmed
+               ? `%${trimmed.replace(/[\\%_]/g, "\\$&")}%`
                : null;
 
-            if (searchPattern) {
+            if (pattern) {
                const matched = await context.db
                   .selectDistinct({
                      rootId: sql<string>`COALESCE(${categories.parentId}, ${categories.id})`,
                   })
                   .from(categories)
-                  .where(and(...base, ilike(categories.name, searchPattern)));
+                  .where(and(...base, ilike(categories.name, pattern)));
                const rootIds = matched.map((r) => r.rootId);
                if (rootIds.length === 0) return { data: [], total: 0 };
                base.push(
@@ -152,7 +148,7 @@ export const getPaginated = protectedProcedure
 
             return { data: rows.map((r) => r.c), total };
          })(),
-         () => WebAppError.internal("Falha ao listar categorias."),
+         "Falha ao listar categorias.",
       );
       if (result.isErr()) throw result.error;
       return result.value;
@@ -170,26 +166,21 @@ export const update = protectedProcedure
 
       const flow = await safeTry(async function* () {
          if (data.keywords?.length) {
-            yield* wrapTx(
-               assertKeywordsUnique(
-                  context.db,
-                  context.teamId,
-                  data.keywords,
-                  id,
-               ),
-               "Falha ao validar palavras-chave.",
+            yield* assertKeywordsUnique(
+               context.db,
+               context.teamId,
+               data.keywords,
+               id,
             );
          }
-         const updated = yield* fromPromise(
-            context.db.transaction(async (tx) => {
-               const [row] = await tx
-                  .update(categories)
-                  .set({ ...data, updatedAt: dayjs().toDate() })
-                  .where(eq(categories.id, id))
-                  .returning();
-               return row;
-            }),
-            () => WebAppError.internal("Falha ao atualizar categoria."),
+         const updated = yield* tryDb(
+            context.db
+               .update(categories)
+               .set({ ...data, updatedAt: dayjs().toDate() })
+               .where(eq(categories.id, id))
+               .returning()
+               .then((rows) => rows[0]),
+            "Falha ao atualizar categoria.",
          );
          return ensureRow(
             updated,
@@ -223,21 +214,19 @@ export const remove = protectedProcedure
          );
 
       const flow = await safeTry(async function* () {
-         const hasTx = yield* fromPromise(
-            categoryTreeHasTransactions(context.db, input.id),
-            () => WebAppError.internal("Falha ao verificar lançamentos."),
-         );
+         const hasTx = yield* categoryTreeHasTransactions(context.db, input.id);
          if (hasTx)
             yield* errAsync(
                WebAppError.conflict(
                   "Categoria com lançamentos não pode ser excluída. Use arquivamento.",
                ),
             );
-         return fromPromise(
-            context.db.transaction(async (tx) => {
-               await tx.delete(categories).where(eq(categories.id, input.id));
-            }),
-            () => WebAppError.internal("Falha ao excluir categoria."),
+         return tryDb(
+            context.db
+               .delete(categories)
+               .where(eq(categories.id, input.id))
+               .then(() => undefined),
+            "Falha ao excluir categoria.",
          );
       });
       if (flow.isErr()) throw flow.error;
@@ -253,40 +242,41 @@ export const archive = protectedProcedure
             "Categorias padrão não podem ser arquivadas.",
          );
 
-      const result = await fromPromise(
-         context.db.transaction(async (tx) => {
-            const descendantIds = await getDescendantIds(tx, input.id);
-            const allIds = [input.id, ...descendantIds];
-            await tx
+      const flow = await safeTry(async function* () {
+         const descendants = yield* getDescendantIds(context.db, input.id);
+         const allIds = [input.id, ...descendants];
+         yield* tryDb(
+            context.db
                .update(categories)
                .set({ isArchived: true, updatedAt: dayjs().toDate() })
-               .where(inArray(categories.id, allIds));
-            return tx.query.categories.findFirst({
+               .where(inArray(categories.id, allIds))
+               .then(() => undefined),
+            "Falha ao arquivar categoria.",
+         );
+         const row = yield* tryDb(
+            context.db.query.categories.findFirst({
                where: (f, { eq }) => eq(f.id, input.id),
-            });
-         }),
-         () => WebAppError.internal("Falha ao arquivar categoria."),
-      ).andThen((row) =>
-         ensureRow(row, "Falha ao arquivar categoria: update vazio."),
-      );
-      if (result.isErr()) throw result.error;
-      return result.value;
+            }),
+            "Falha ao arquivar categoria.",
+         );
+         return ensureRow(row, "Falha ao arquivar categoria: update vazio.");
+      });
+      if (flow.isErr()) throw flow.error;
+      return flow.value;
    });
 
 export const unarchive = protectedProcedure
    .input(idSchema)
    .use(requireCategory, (input) => input.id)
    .handler(async ({ context, input }) => {
-      const result = await fromPromise(
-         context.db.transaction(async (tx) => {
-            const [row] = await tx
-               .update(categories)
-               .set({ isArchived: false, updatedAt: dayjs().toDate() })
-               .where(eq(categories.id, input.id))
-               .returning();
-            return row;
-         }),
-         () => WebAppError.internal("Falha ao reativar categoria."),
+      const result = await tryDb(
+         context.db
+            .update(categories)
+            .set({ isArchived: false, updatedAt: dayjs().toDate() })
+            .where(eq(categories.id, input.id))
+            .returning()
+            .then((rows) => rows[0]),
+         "Falha ao reativar categoria.",
       ).andThen((row) =>
          ensureRow(row, "Falha ao reativar categoria: update vazio."),
       );

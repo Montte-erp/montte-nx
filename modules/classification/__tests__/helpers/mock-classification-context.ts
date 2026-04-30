@@ -35,7 +35,6 @@ vi.mock("../../src/sse", async () => {
          eventTypes: [
             "classification.transaction_classified",
             "classification.keywords_derived",
-            "classification.keywords_backfilled",
          ],
       },
    };

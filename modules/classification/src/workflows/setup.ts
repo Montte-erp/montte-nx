@@ -1,7 +1,5 @@
-import "./classification-workflow";
-import "./derive-keywords-workflow";
-import "./backfill-keywords-workflow";
-import { DBOS } from "@dbos-inc/dbos-sdk";
+import "@modules/classification/workflows/classification-workflow";
+import "@modules/classification/workflows/derive-keywords-workflow";
 import { DrizzleDataSource } from "@dbos-inc/drizzle-datasource";
 import { env } from "@core/environment/worker";
 import type { Redis } from "@core/redis/connection";
@@ -9,8 +7,7 @@ import type { PostHog, Prompts } from "@core/posthog/server";
 import {
    createClassificationQueues,
    initClassificationWorkflowContext,
-} from "./context";
-import { backfillKeywordsWorkflow } from "./backfill-keywords-workflow";
+} from "@modules/classification/workflows/context";
 
 export async function setupClassificationWorkflows(deps: {
    redis: Redis;
@@ -29,15 +26,5 @@ export async function setupClassificationWorkflows(deps: {
    const queues = createClassificationQueues({
       workerConcurrency: deps.workerConcurrency,
    });
-   return { queues, applySchedules: scheduleBackfill };
-}
-
-async function scheduleBackfill() {
-   await DBOS.applySchedules([
-      {
-         scheduleName: "classification-backfill-keywords",
-         workflowFn: backfillKeywordsWorkflow,
-         schedule: "0 3 * * *",
-      },
-   ]);
+   return { queues };
 }
