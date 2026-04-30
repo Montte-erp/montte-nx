@@ -8,7 +8,7 @@ import {
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 import { categories } from "@core/database/schemas/categories";
 import { billingCycleEnum } from "@core/database/schemas/subscriptions";
@@ -201,3 +201,6 @@ export type CreateServiceInput = z.infer<typeof createServiceSchema>;
 export type UpdateServiceInput = z.infer<typeof updateServiceSchema>;
 export type CreatePriceInput = z.infer<typeof createPriceSchema>;
 export type UpdatePriceInput = z.infer<typeof updatePriceSchema>;
+
+export const serviceSchema = createSelectSchema(services);
+export const servicePriceSchema = createSelectSchema(servicePrices);

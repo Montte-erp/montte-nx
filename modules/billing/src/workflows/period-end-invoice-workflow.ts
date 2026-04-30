@@ -16,7 +16,7 @@ import {
    buildInvoice,
    type InvoiceSourceData,
 } from "../services/invoice-builder";
-import type { InvoiceComputation } from "../services/pricing-engine";
+import type { InvoiceComputation } from "@modules/billing/services/pricing/engine";
 import { billingSseEvents } from "../sse";
 import { BILLING_QUEUES } from "../constants";
 import {
