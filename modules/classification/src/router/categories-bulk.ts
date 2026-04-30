@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { and, eq, inArray } from "drizzle-orm";
-import { errAsync, okAsync, safeTry } from "neverthrow";
+import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import {
    categories,
@@ -10,13 +10,12 @@ import {
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import {
-   anyTransactionsForCategoryIds,
-   createCategory,
-   enqueueKeywords,
-   expandWithDescendants,
-   loadCategoriesByIds,
-   tryDb,
-} from "@modules/classification/services/categories";
+   blockDefaultCategories,
+   requireNoTransactionsForExpandedIds,
+   requireOwnedCategoryIds,
+   withExpandedCategoryIds,
+} from "@modules/classification/router/middlewares";
+import { enqueueDeriveKeywordsWorkflow } from "@modules/classification/workflows/derive-keywords-workflow";
 
 const idsSchema = z.object({ ids: z.array(z.string().uuid()).min(1) });
 
@@ -25,12 +24,12 @@ const importSubcategoryInputSchema = categorySchema
    .extend({ keywords: z.array(z.string()).optional() });
 
 export const exportAll = protectedProcedure.handler(async ({ context }) => {
-   const result = await tryDb(
+   const result = await fromPromise(
       context.db.query.categories.findMany({
          where: (f, { eq }) => eq(f.teamId, context.teamId),
          orderBy: (f, { asc }) => [asc(f.name)],
       }),
-      "Falha ao exportar categorias.",
+      () => WebAppError.internal("Falha ao exportar categorias."),
    );
    if (result.isErr()) throw result.error;
    return result.value;
@@ -49,41 +48,58 @@ export const importBatch = protectedProcedure
    .handler(async ({ context, input }) => {
       type CategoryRow = typeof categories.$inferSelect;
 
-      const flow = await safeTry(async function* () {
-         const all: CategoryRow[] = [];
-         const parents: CategoryRow[] = [];
-         for (const item of input.categories) {
-            const { subcategories, ...catData } = item;
-            const created = yield* createCategory(
-               context.db,
-               context.teamId,
-               catData,
-            );
-            parents.push(created);
-            all.push(created);
-            for (const sub of subcategories ?? []) {
-               const subCreated = yield* createCategory(
-                  context.db,
-                  context.teamId,
-                  {
-                     name: sub.name,
-                     type: catData.type,
-                     parentId: created.id,
-                     participatesDre: false,
-                     keywords: sub.keywords ?? null,
-                  },
-               );
-               all.push(subCreated);
+      const result = await fromPromise(
+         context.db.transaction(async (tx) => {
+            const all: CategoryRow[] = [];
+            const parents: CategoryRow[] = [];
+            for (const item of input.categories) {
+               const { subcategories, ...data } = item;
+               const [parent] = await tx
+                  .insert(categories)
+                  .values({
+                     ...data,
+                     teamId: context.teamId,
+                     level: 1,
+                     type: data.type,
+                  })
+                  .returning();
+               if (!parent) throw new Error("empty insert");
+               parents.push(parent);
+               all.push(parent);
+               for (const sub of subcategories ?? []) {
+                  const [child] = await tx
+                     .insert(categories)
+                     .values({
+                        name: sub.name,
+                        type: parent.type,
+                        parentId: parent.id,
+                        level: 2,
+                        teamId: context.teamId,
+                        participatesDre: false,
+                        keywords: sub.keywords ?? null,
+                     })
+                     .returning();
+                  if (!child) throw new Error("empty insert");
+                  all.push(child);
+               }
             }
-         }
-         return okAsync({ all, parents });
-      });
-      if (flow.isErr()) throw flow.error;
+            return { all, parents };
+         }),
+         () => WebAppError.internal("Falha ao importar categorias."),
+      );
+      if (result.isErr()) throw result.error;
 
-      const { all, parents } = flow.value;
+      const { all, parents } = result.value;
       await Promise.all(
          parents.map((p) =>
-            enqueueKeywords(context.workflowClient, p, context),
+            enqueueDeriveKeywordsWorkflow(context.workflowClient, {
+               categoryId: p.id,
+               teamId: context.teamId,
+               organizationId: context.organizationId,
+               userId: context.userId,
+               name: p.name,
+               description: p.description,
+            }),
          ),
       );
       return all;
@@ -91,78 +107,47 @@ export const importBatch = protectedProcedure
 
 export const bulkRemove = protectedProcedure
    .input(idsSchema)
+   .use(requireOwnedCategoryIds, (input) => input.ids)
+   .use(
+      blockDefaultCategories,
+      () => "Categorias padrão não podem ser excluídas.",
+   )
+   .use(withExpandedCategoryIds, (input) => input.ids)
+   .use(requireNoTransactionsForExpandedIds)
    .handler(async ({ context, input }) => {
-      const flow = await safeTry(async function* () {
-         const existing = yield* loadCategoriesByIds(
-            context.db,
-            context.teamId,
-            input.ids,
-         );
-         if (existing.length !== input.ids.length)
-            yield* errAsync(
-               WebAppError.notFound(
-                  "Uma ou mais categorias não foram encontradas.",
-               ),
-            );
-         if (existing.some((c) => c.isDefault))
-            yield* errAsync(
-               WebAppError.conflict(
-                  "Categorias padrão não podem ser excluídas.",
-               ),
-            );
-
-         const allIds = yield* expandWithDescendants(context.db, input.ids);
-         const hasTx = yield* anyTransactionsForCategoryIds(context.db, allIds);
-         if (hasTx)
-            yield* errAsync(
-               WebAppError.conflict(
-                  "Categorias com lançamentos não podem ser excluídas. Use arquivamento.",
-               ),
-            );
-
-         return tryDb(
-            context.db
-               .delete(categories)
-               .where(inArray(categories.id, input.ids))
-               .then(() => undefined),
-            "Falha ao excluir categorias.",
-         );
-      });
-      if (flow.isErr()) throw flow.error;
+      const result = await fromPromise(
+         context.db
+            .delete(categories)
+            .where(inArray(categories.id, input.ids))
+            .then(() => undefined),
+         () => WebAppError.internal("Falha ao excluir categorias."),
+      );
+      if (result.isErr()) throw result.error;
       return { deleted: input.ids.length };
    });
 
 export const bulkArchive = protectedProcedure
    .input(idsSchema)
-   .handler(async ({ context, input }) => {
-      const flow = await safeTry(async function* () {
-         const existing = yield* loadCategoriesByIds(
-            context.db,
-            context.teamId,
-            input.ids,
-         );
-         if (existing.some((c) => c.isDefault))
-            yield* errAsync(
-               WebAppError.conflict(
-                  "Categorias padrão não podem ser arquivadas.",
+   .use(requireOwnedCategoryIds, (input) => input.ids)
+   .use(
+      blockDefaultCategories,
+      () => "Categorias padrão não podem ser arquivadas.",
+   )
+   .use(withExpandedCategoryIds, (input) => input.ids)
+   .handler(async ({ context }) => {
+      const result = await fromPromise(
+         context.db
+            .update(categories)
+            .set({ isArchived: true, updatedAt: dayjs().toDate() })
+            .where(
+               and(
+                  inArray(categories.id, context.expandedCategoryIds),
+                  eq(categories.teamId, context.teamId),
                ),
-            );
-
-         const allIds = yield* expandWithDescendants(context.db, input.ids);
-         return tryDb(
-            context.db
-               .update(categories)
-               .set({ isArchived: true, updatedAt: dayjs().toDate() })
-               .where(
-                  and(
-                     inArray(categories.id, allIds),
-                     eq(categories.teamId, context.teamId),
-                  ),
-               )
-               .then(() => undefined),
-            "Falha ao arquivar categorias.",
-         );
-      });
-      if (flow.isErr()) throw flow.error;
-      return { archived: input.ids.length };
+            )
+            .then(() => undefined),
+         () => WebAppError.internal("Falha ao arquivar categorias."),
+      );
+      if (result.isErr()) throw result.error;
+      return { archived: context.ownedCategories.length };
    });
