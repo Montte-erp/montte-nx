@@ -1,14 +1,23 @@
 import { PostHog } from "posthog-node";
 import { Prompts } from "@posthog/ai";
-import { env } from "@core/environment/web";
 
-export const promptsClient = new Prompts({
-   personalApiKey: env.POSTHOG_PERSONAL_API_KEY,
-   projectApiKey: env.POSTHOG_KEY,
-   host: env.POSTHOG_HOST,
-});
+export type CreatePromptsClientParams = {
+   personalApiKey: string;
+   projectApiKey: string;
+   host: string;
+};
 
-export type { PostHog };
+export function createPromptsClient(
+   params: CreatePromptsClientParams,
+): Prompts {
+   return new Prompts({
+      personalApiKey: params.personalApiKey,
+      projectApiKey: params.projectApiKey,
+      host: params.host,
+   });
+}
+
+export type { PostHog, Prompts };
 
 export function createPostHog(key: string, host: string): PostHog {
    return new PostHog(key, {

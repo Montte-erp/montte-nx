@@ -1,4 +1,6 @@
 import * as accountRouter from "./account";
+import * as rubiRouter from "@modules/agents/router/chat";
+import * as threadsRouter from "@modules/agents/router/threads";
 import * as agentSettingsRouter from "./agent-settings";
 import * as analyticsRouter from "./analytics";
 import * as apiKeysRouter from "./api-keys";
@@ -56,4 +58,6 @@ export default {
    team: teamRouter,
    transactions: transactionsRouter,
    organization: organizationRouter,
+   rubi: rubiRouter,
+   threads: threadsRouter,
 };

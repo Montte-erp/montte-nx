@@ -6,3 +6,4 @@ export const crmSchema = pgSchema("crm");
 export const inventorySchema = pgSchema("inventory");
 export const platformSchema = pgSchema("platform");
 export const settingsSchema = pgSchema("settings");
+export const agentsSchema = pgSchema("agents");

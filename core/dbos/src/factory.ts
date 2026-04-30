@@ -1,11 +1,30 @@
-import type { DBOSClient } from "@dbos-inc/dbos-sdk";
-import { WorkflowQueue } from "@dbos-inc/dbos-sdk";
+import { DBOS, type DBOSClient, WorkflowQueue } from "@dbos-inc/dbos-sdk";
 
 export function createQueue(
    name: string,
    options: { workerConcurrency: number },
 ) {
    return new WorkflowQueue(`workflow:${name}`, options);
+}
+
+/**
+ * Idempotent wrapper around DBOS.registerWorkflow. DBOS throws on duplicate
+ * registration, which Vite SSR HMR triggers every time a workflow file is
+ * re-imported in the web process. We cache the registered workflow on
+ * globalThis keyed by function name to survive HMR reloads.
+ */
+export function registerWorkflowOnce<
+   F extends (...args: never[]) => Promise<unknown>,
+>(fn: F, options?: { name?: string }): F {
+   const name = options?.name ?? fn.name;
+   const key = `__dbos_workflow_${name}`;
+   const g = globalThis as Record<string, unknown>;
+   if (g[key]) return g[key] as F;
+   const registered = (options
+      ? DBOS.registerWorkflow(fn, options)
+      : DBOS.registerWorkflow(fn)) as unknown as F;
+   g[key] = registered;
+   return registered;
 }
 
 export function createQueues(

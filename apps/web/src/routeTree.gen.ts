@@ -18,6 +18,7 @@ import { Route as AuthMagicLinkRouteImport } from './routes/auth/magic-link'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AuthEmailVerificationRouteImport } from './routes/auth/email-verification'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as ApiRubiChatRouteImport } from './routes/api/rubi-chat'
 import { Route as ApiPingRouteImport } from './routes/api/ping'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
@@ -115,6 +116,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/callback',
   path: '/callback',
   getParentRoute: () => AuthRoute,
+} as any)
+const ApiRubiChatRoute = ApiRubiChatRouteImport.update({
+  id: '/api/rubi-chat',
+  path: '/api/rubi-chat',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPingRoute = ApiPingRouteImport.update({
   id: '/api/ping',
@@ -453,6 +459,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/api/health': typeof ApiHealthRoute
   '/api/ping': typeof ApiPingRoute
+  '/api/rubi-chat': typeof ApiRubiChatRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/email-verification': typeof AuthEmailVerificationRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -515,6 +522,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/api/health': typeof ApiHealthRoute
   '/api/ping': typeof ApiPingRoute
+  '/api/rubi-chat': typeof ApiRubiChatRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/email-verification': typeof AuthEmailVerificationRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -575,6 +583,7 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/api/health': typeof ApiHealthRoute
   '/api/ping': typeof ApiPingRoute
+  '/api/rubi-chat': typeof ApiRubiChatRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/email-verification': typeof AuthEmailVerificationRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -640,6 +649,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/api/health'
     | '/api/ping'
+    | '/api/rubi-chat'
     | '/auth/callback'
     | '/auth/email-verification'
     | '/auth/forgot-password'
@@ -702,6 +712,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/api/health'
     | '/api/ping'
+    | '/api/rubi-chat'
     | '/auth/callback'
     | '/auth/email-verification'
     | '/auth/forgot-password'
@@ -761,6 +772,7 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/api/health'
     | '/api/ping'
+    | '/api/rubi-chat'
     | '/auth/callback'
     | '/auth/email-verification'
     | '/auth/forgot-password'
@@ -824,6 +836,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   ApiHealthRoute: typeof ApiHealthRoute
   ApiPingRoute: typeof ApiPingRoute
+  ApiRubiChatRoute: typeof ApiRubiChatRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiFilesSplatRoute: typeof ApiFilesSplatRoute
   ApiOpenapiSplatRoute: typeof ApiOpenapiSplatRoute
@@ -895,6 +908,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/api/rubi-chat': {
+      id: '/api/rubi-chat'
+      path: '/api/rubi-chat'
+      fullPath: '/api/rubi-chat'
+      preLoaderRoute: typeof ApiRubiChatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/ping': {
       id: '/api/ping'
@@ -1518,6 +1538,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   ApiHealthRoute: ApiHealthRoute,
   ApiPingRoute: ApiPingRoute,
+  ApiRubiChatRoute: ApiRubiChatRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiFilesSplatRoute: ApiFilesSplatRoute,
   ApiOpenapiSplatRoute: ApiOpenapiSplatRoute,

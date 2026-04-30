@@ -10,20 +10,19 @@ import {
 import { LLMock } from "@copilotkit/aimock";
 import { PostHog } from "posthog-node";
 import type { AiObservabilityContext } from "@core/ai/middleware";
-
-vi.mock("@core/posthog/server", () => ({
-   promptsClient: {
-      get: vi.fn().mockResolvedValue({
-         source: "active",
-         prompt: "Sistema: classifique as transações em lote.",
-         name: "montte-classify-transaction",
-         version: 1,
-      }),
-      compile: vi.fn((prompt: string) => prompt),
-   },
-}));
+import type { Prompts } from "@core/posthog/server";
 
 import { classifyTransactionsBatch } from "../../src/ai/classify-batch";
+
+const promptsMock = {
+   get: vi.fn().mockResolvedValue({
+      source: "active",
+      prompt: "Sistema: classifique as transações em lote.",
+      name: "montte-classify-transaction",
+      version: 1,
+   }),
+   compile: vi.fn((prompt: string) => prompt),
+} as unknown as Prompts;
 
 const mock = new LLMock({ port: 14010 });
 
@@ -63,6 +62,7 @@ describe("classifyTransactionsBatch", () => {
       });
 
       const result = await classifyTransactionsBatch(
+         promptsMock,
          [
             { id: "tx-1", name: "Burger", type: "expense" },
             { id: "tx-2", name: "Posto Shell", type: "expense" },
@@ -97,6 +97,7 @@ describe("classifyTransactionsBatch", () => {
       });
 
       const result = await classifyTransactionsBatch(
+         promptsMock,
          [
             { id: "tx-1", name: "A", type: "expense" },
             { id: "tx-2", name: "B", type: "expense" },
@@ -129,6 +130,7 @@ describe("classifyTransactionsBatch", () => {
       });
 
       const result = await classifyTransactionsBatch(
+         promptsMock,
          [
             { id: "tx-1", name: "A", type: "expense" },
             { id: "tx-2", name: "B", type: "expense" },
@@ -156,6 +158,7 @@ describe("classifyTransactionsBatch", () => {
       }));
 
       const result = await classifyTransactionsBatch(
+         promptsMock,
          transactions,
          [{ id: "cat-food", name: "Food", keywords: null }],
          makeObservability(),
@@ -179,6 +182,7 @@ describe("classifyTransactionsBatch", () => {
       });
 
       const result = await classifyTransactionsBatch(
+         promptsMock,
          [
             { id: "tx-1", name: "A", type: "expense" },
             { id: "tx-2", name: "B", type: "expense" },

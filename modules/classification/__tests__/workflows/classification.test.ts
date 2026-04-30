@@ -28,18 +28,6 @@ import {
    ssePublishSpy,
 } from "../helpers/mock-classification-context";
 
-vi.mock("@core/posthog/server", () => ({
-   promptsClient: {
-      get: vi.fn().mockResolvedValue({
-         source: "active",
-         prompt: "Sistema: classifique as transações em lote.",
-         name: "montte-classify-transaction",
-         version: 1,
-      }),
-      compile: vi.fn((prompt: string) => prompt),
-   },
-}));
-
 import { LLMock } from "@copilotkit/aimock";
 import { eq } from "drizzle-orm";
 import { setupTestDb } from "@core/database/testing/setup-test-db";

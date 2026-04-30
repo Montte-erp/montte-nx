@@ -11,6 +11,7 @@
       "@tailwindcss/typography": "catalog:ui",
       "tailwind-scrollbar-hide": "^4.0.0",
       "tailwindcss": "catalog:ui",
-      "tw-animate-css": "catalog:ui"
+      "tw-animate-css": "catalog:ui",
+      "tw-shimmer": "^0.4.11"
    }
 }

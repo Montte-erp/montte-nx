@@ -26,6 +26,7 @@ import {
    getBillingRedis,
    getBillingResendClient,
    createEnqueuer,
+   registerWorkflowOnce,
 } from "./context";
 
 export type PeriodEndInvoiceInput = {
@@ -367,7 +368,7 @@ async function periodEndInvoiceWorkflowFn(input: PeriodEndInvoiceInput) {
    if (result.isErr()) throw result.error;
 }
 
-export const periodEndInvoiceWorkflow = DBOS.registerWorkflow(
+export const periodEndInvoiceWorkflow = registerWorkflowOnce(
    periodEndInvoiceWorkflowFn,
 );
 

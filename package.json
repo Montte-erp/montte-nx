@@ -138,6 +138,9 @@
             "resend": "6.12.0"
          },
          "ui": {
+            "@json-render/core": "^0.18.0",
+            "@json-render/react": "^0.18.0",
+            "@json-render/shadcn": "^0.18.0",
             "@maskito/core": "^5.2.2",
             "@maskito/kit": "^5.2.2",
             "@maskito/react": "^5.2.2",

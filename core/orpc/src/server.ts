@@ -12,6 +12,7 @@ import {
    captureError,
    captureServerEvent,
    createPostHog,
+   createPromptsClient,
    identifyUser,
    setGroup,
 } from "@core/posthog/server";
@@ -30,6 +31,11 @@ import type {
 const db = createDb({ databaseUrl: env.DATABASE_URL });
 const redis = createRedis(env.REDIS_URL);
 const posthog = createPostHog(env.POSTHOG_KEY, env.POSTHOG_HOST);
+const posthogPrompts = createPromptsClient({
+   personalApiKey: env.POSTHOG_PERSONAL_API_KEY,
+   projectApiKey: env.POSTHOG_KEY,
+   host: env.POSTHOG_HOST,
+});
 const resendClient = createResendClient(env.RESEND_API_KEY);
 const hyprpayClient = createHyprpay(env.HYPRPAY_API_KEY);
 const auth = createAuth({
@@ -101,6 +107,7 @@ const withDeps = base.use(async ({ context, next }) => {
             db,
             session: result.value,
             posthog,
+            posthogPrompts,
             redis,
             workflowClient: await workflowClient,
             hyprpayClient,
@@ -121,6 +128,7 @@ const withDeps = base.use(async ({ context, next }) => {
          db,
          session: cookieSession.value,
          posthog,
+         posthogPrompts,
          redis,
          workflowClient: await workflowClient,
          hyprpayClient,

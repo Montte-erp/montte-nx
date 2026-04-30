@@ -12,5 +12,5 @@ export default {
    dbCredentials: { url: env.DATABASE_URL },
    dialect: "postgresql",
    schema: "./src/schema.ts",
-   schemaFilter: ["auth", "finance", "crm", "inventory", "platform"],
+   schemaFilter: ["auth", "finance", "crm", "inventory", "platform", "agents"],
 } satisfies Config;

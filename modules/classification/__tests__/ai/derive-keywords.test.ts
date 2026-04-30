@@ -10,20 +10,19 @@ import {
 import { LLMock } from "@copilotkit/aimock";
 import { PostHog } from "posthog-node";
 import type { AiObservabilityContext } from "@core/ai/middleware";
-
-vi.mock("@core/posthog/server", () => ({
-   promptsClient: {
-      get: vi.fn().mockResolvedValue({
-         source: "active",
-         prompt: "Sistema: derive palavras-chave para a entidade.",
-         name: "montte-derive-keywords",
-         version: 1,
-      }),
-      compile: vi.fn((prompt: string) => prompt),
-   },
-}));
+import type { Prompts } from "@core/posthog/server";
 
 import { deriveKeywords } from "../../src/ai/derive-keywords";
+
+const promptsMock = {
+   get: vi.fn().mockResolvedValue({
+      source: "active",
+      prompt: "Sistema: derive palavras-chave para a entidade.",
+      name: "montte-derive-keywords",
+      version: 1,
+   }),
+   compile: vi.fn((prompt: string) => prompt),
+} as unknown as Prompts;
 
 const mock = new LLMock({ port: 14010 });
 
@@ -64,6 +63,7 @@ describe("deriveKeywords", () => {
       });
 
       const result = await deriveKeywords(
+         promptsMock,
          { entity: "category", name: "Food", description: null },
          makeObservability(),
       );
@@ -89,6 +89,7 @@ describe("deriveKeywords", () => {
       });
 
       const result = await deriveKeywords(
+         promptsMock,
          {
             entity: "tag",
             name: "Marketing",

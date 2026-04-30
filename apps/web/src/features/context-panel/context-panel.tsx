@@ -21,6 +21,8 @@ import {
 import { useSelector } from "@tanstack/react-store";
 import { Check, ChevronDown, Info } from "lucide-react";
 import type React from "react";
+import { RubiMascotIcon } from "@/features/rubi-panel/rubi-mascot-icon";
+import { RubiPanel } from "@/features/rubi-panel/rubi-panel";
 import { ContextPanelAction } from "./context-panel-info";
 import {
    type ContextPanelTab,
@@ -128,14 +130,28 @@ const INFO_TAB: ContextPanelTab = {
    order: 0,
 };
 
+const RUBI_TAB: ContextPanelTab = {
+   id: "rubi",
+   icon: RubiMascotIcon,
+   label: "Montte AI",
+   renderContent: () => <RubiPanel />,
+   order: 1,
+};
+
+function resolveTab(
+   activeTabId: string | undefined,
+   dynamicTabs: ContextPanelTab[],
+): ContextPanelTab | undefined {
+   if (activeTabId === "info") return INFO_TAB;
+   if (activeTabId === "rubi") return RUBI_TAB;
+   return dynamicTabs.find((t) => t.id === activeTabId);
+}
+
 function ContextPanelInner() {
    const activeTabMeta = useSelector(activeTabMetaStore, (s) => s);
 
    const dynamicTabs = useSelector(contextPanelStore, (s) => s.dynamicTabs);
-   const activeTab: ContextPanelTab | undefined =
-      activeTabMeta?.id === "info"
-         ? INFO_TAB
-         : dynamicTabs.find((t) => t.id === activeTabMeta?.id);
+   const activeTab = resolveTab(activeTabMeta?.id, dynamicTabs);
 
    return (
       <Sidebar
@@ -171,10 +187,7 @@ export function GlobalContextPanel() {
 export function ContextPanelTabContent() {
    const activeTabMeta = useSelector(activeTabMetaStore, (s) => s);
    const dynamicTabs = useSelector(contextPanelStore, (s) => s.dynamicTabs);
-   const activeTab: ContextPanelTab | undefined =
-      activeTabMeta?.id === "info"
-         ? INFO_TAB
-         : dynamicTabs.find((t) => t.id === activeTabMeta?.id);
+   const activeTab = resolveTab(activeTabMeta?.id, dynamicTabs);
 
    return (
       <div className="h-full overflow-hidden rounded-xl bg-muted">

@@ -5,7 +5,7 @@ import { DBOS } from "@dbos-inc/dbos-sdk";
 import { DrizzleDataSource } from "@dbos-inc/drizzle-datasource";
 import { env } from "@core/environment/worker";
 import type { Redis } from "@core/redis/connection";
-import type { PostHog } from "@core/posthog/server";
+import type { PostHog, Prompts } from "@core/posthog/server";
 import type { HyprPayClient } from "@core/hyprpay/client";
 import {
    createClassificationQueues,
@@ -17,6 +17,7 @@ export async function setupClassificationWorkflows(deps: {
    redis: Redis;
    posthog: PostHog;
    hyprpayClient: HyprPayClient;
+   prompts: Prompts;
    workerConcurrency: number;
 }) {
    await DrizzleDataSource.initializeDBOSSchema({
@@ -26,6 +27,7 @@ export async function setupClassificationWorkflows(deps: {
       redis: deps.redis,
       posthog: deps.posthog,
       hyprpayClient: deps.hyprpayClient,
+      prompts: deps.prompts,
    });
    const queues = createClassificationQueues({
       workerConcurrency: deps.workerConcurrency,

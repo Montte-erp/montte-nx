@@ -22,7 +22,9 @@ import {
    classificationDataSource,
    getClassificationHyprpay,
    getClassificationPosthog,
+   getClassificationPrompts,
    getClassificationRedis,
+   registerWorkflowOnce,
 } from "./context";
 
 const AI_CHUNK_SIZE = 20;
@@ -214,6 +216,7 @@ async function classifyTransactionsBatchWorkflowFn(
                      }));
                   if (aiInput.length === 0) return [];
                   const ai = await classifyTransactionsBatch(
+                     getClassificationPrompts(),
                      aiInput,
                      loaded.categories,
                      observability,
@@ -360,7 +363,7 @@ async function classifyTransactionsBatchWorkflowFn(
    );
 }
 
-export const classifyTransactionsBatchWorkflow = DBOS.registerWorkflow(
+export const classifyTransactionsBatchWorkflow = registerWorkflowOnce(
    classifyTransactionsBatchWorkflowFn,
 );
 

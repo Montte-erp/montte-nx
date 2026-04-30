@@ -14,7 +14,9 @@ import {
    createEnqueuer,
    getClassificationHyprpay,
    getClassificationPosthog,
+   getClassificationPrompts,
    getClassificationRedis,
+   registerWorkflowOnce,
 } from "./context";
 
 export type DeriveKeywordsWorkflowInput = {
@@ -66,6 +68,7 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsWorkflowInput) {
       DBOS.runStep(
          async () => {
             const result = await deriveKeywords(
+               getClassificationPrompts(),
                {
                   name: input.name,
                   description: input.description ?? null,
@@ -171,7 +174,7 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsWorkflowInput) {
    DBOS.logger.info(`${ctx} completed — wrote ${keywords.length} keywords`);
 }
 
-export const deriveKeywordsWorkflow = DBOS.registerWorkflow(
+export const deriveKeywordsWorkflow = registerWorkflowOnce(
    deriveKeywordsWorkflowFn,
 );
 
