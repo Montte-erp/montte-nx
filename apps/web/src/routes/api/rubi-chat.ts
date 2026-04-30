@@ -2,7 +2,7 @@ import "@/polyfill";
 
 import { chat, toHttpResponse } from "@tanstack/ai";
 import { createFileRoute } from "@tanstack/react-router";
-import { buildRubiChatArgs } from "@modules/agents/agents/rubi";
+import { buildRubiChatArgs } from "@modules/agents/rubi";
 import { db, posthog, posthogPrompts } from "@/integrations/singletons";
 import { auth } from "@/integrations/singletons";
 

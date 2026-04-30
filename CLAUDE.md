@@ -357,3 +357,30 @@ Tests live in `core/*` and `packages/*` — non-trivial logic only (Zod transfor
 Auto-published on `master` push touching `libraries/**/CHANGELOG.md` or `libraries/**/package.json` when (1) `package.json` not `private`, (2) `CHANGELOG.md` exists, (3) latest version heading matches `package.json`. Always update the changelog before merging.
 
 `@montte/cli` skills (TanStack Intent) author live in `libraries/cli/skills/<domain>/SKILL.md`. Validate before publishing: `npx @tanstack/intent@latest validate`. After source changes: `npx @tanstack/intent@latest stale`. Never commit `skills/_artifacts/`.
+
+---
+
+## TanStack Intent Skill Mappings
+
+Load `use` with `npx @tanstack/intent@latest load <use>` when a task matches `when`. Sub-skills auto-load via parent.
+
+If no mapping fits, run `npx @tanstack/intent@latest list` for less common local skills.
+
+<!-- intent-skills:start -->
+# Skill mappings - load `use` with `npx @tanstack/intent@latest load <use>`.
+skills:
+  - when: "Working on the Rubi AI agent — chat endpoints, tools, middleware, structured outputs, adapter configuration, debug logging"
+    use: "@tanstack/ai#ai-core"
+  - when: "Writing or debugging fixtures for AI / OpenRouter HTTP responses in classification or agent tests"
+    use: "@copilotkit/aimock#write-fixtures"
+  - when: "TanStack Router routes, loaders, search params, navigation, code splitting, type safety, auth guards, SSR, errors"
+    use: "@tanstack/router-core#router-core"
+  - when: "TanStack Start setup — server functions, server routes, middleware, deployment, execution model, isomorphic boundaries"
+    use: "@tanstack/start-client-core#start-core"
+  - when: "React-specific TanStack Start — createStart, StartClient, StartServer, useServerFn, RSC"
+    use: "@tanstack/react-start#react-start"
+  - when: "TanStack Devtools setup, plugin panels, marketplace, production stripping"
+    use: "@tanstack/devtools#devtools-app-setup"
+  - when: "Working with .env files, dotenv config, encrypted env, variable expansion"
+    use: "dotenv#dotenv"
+<!-- intent-skills:end -->

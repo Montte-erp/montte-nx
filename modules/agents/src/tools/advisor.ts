@@ -4,7 +4,7 @@ import { fromPromise } from "neverthrow";
 import { proModel } from "@core/ai/models";
 import { createPosthogAiMiddleware } from "@core/ai/middleware";
 import type { PostHog, Prompts } from "@core/posthog/server";
-import { RUBI_PROMPTS } from "../../../constants";
+import { RUBI_PROMPTS } from "@modules/agents/constants";
 
 export interface AdvisorToolDeps {
    prompts: Prompts;
@@ -59,7 +59,7 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
             withMetadata: false,
             fallback: ADVISOR_FALLBACK_PROMPT,
          }),
-         (e) => (e instanceof Error ? e : new Error(String(e))),
+         () => "Falha ao carregar prompt do advisor.",
       );
       const systemPrompt = templateResult.isOk()
          ? deps.prompts.compile(templateResult.value, {})
@@ -103,7 +103,7 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
                }),
             ],
          }),
-         (e) => (e instanceof Error ? e : new Error(String(e))),
+         () => "Advisor falhou ao responder.",
       );
       clearTimeout(timeout);
 
@@ -112,7 +112,7 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
             guidance:
                "Advisor indisponível no momento. Prossiga com seu melhor julgamento, ou peça esclarecimento ao usuário se o ponto travado for de dado.",
             fallback: true,
-            error: result.error.message,
+            error: result.error,
          };
       }
       return {
