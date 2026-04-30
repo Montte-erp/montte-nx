@@ -15,7 +15,7 @@
 7. [Component Design Guidelines](#component-design-guidelines)
 8. [Responsive Design Patterns](#responsive-design-patterns)
 9. [Micro-Interactions](#micro-interactions)
-10. [Design Tokens & Systems](#design-tokens--systems)
+10.   [Design Tokens & Systems](#design-tokens--systems)
 
 ---
 
@@ -24,6 +24,7 @@
 ### 1.1 Primary Navigation
 
 **Top Navigation Bar**:
+
 ```
 Desktop Layout:
 ┌────────────────────────────────────────────┐
@@ -49,6 +50,7 @@ When hamburger is tapped:
 ```
 
 **Best Practices**:
+
 - Limit to 5-7 top-level items
 - Highlight current page
 - Make logo clickable (return to home)
@@ -56,6 +58,7 @@ When hamburger is tapped:
 - Sticky on scroll for easy access
 
 **Accessibility**:
+
 - Use `<nav>` element
 - Include skip link
 - Keyboard navigation support
@@ -66,6 +69,7 @@ When hamburger is tapped:
 ### 1.2 Sidebar Navigation
 
 **Application Sidebar**:
+
 ```
 ┌─────────────┬──────────────────────────┐
 │ Dashboard   │ Content Area             │
@@ -89,6 +93,7 @@ Saves horizontal space
 ```
 
 **Best Practices**:
+
 - Keep sidebar width 200-280px
 - Use icons + text for clarity
 - Allow collapse/expand
@@ -97,6 +102,7 @@ Saves horizontal space
 - Place important items at top
 
 **Accessibility**:
+
 - Logical tab order
 - Expandable sections use aria-expanded
 - Announce collapse/expand state
@@ -106,6 +112,7 @@ Saves horizontal space
 ### 1.3 Breadcrumb Navigation
 
 **Pattern**:
+
 ```
 Home > Products > Electronics > Laptops > MacBook Pro
 
@@ -114,18 +121,20 @@ Home > Products > Electronics > Laptops > MacBook Pro
 ```
 
 **Implementation**:
+
 ```html
 <nav aria-label="Breadcrumb">
-  <ol class="breadcrumb">
-    <li><a href="/">Home</a></li>
-    <li><a href="/products">Products</a></li>
-    <li><a href="/products/electronics">Electronics</a></li>
-    <li aria-current="page">Laptops</li>
-  </ol>
+   <ol class="breadcrumb">
+      <li><a href="/">Home</a></li>
+      <li><a href="/products">Products</a></li>
+      <li><a href="/products/electronics">Electronics</a></li>
+      <li aria-current="page">Laptops</li>
+   </ol>
 </nav>
 ```
 
 **Best Practices**:
+
 - Show hierarchy, not history
 - Last item is current page (not clickable)
 - Use chevron (>) or slash (/) separator
@@ -137,6 +146,7 @@ Home > Products > Electronics > Laptops > MacBook Pro
 ### 1.4 Tab Navigation
 
 **Horizontal Tabs**:
+
 ```
 ┌──────────────────────────────────────┐
 │ [Overview]  Details  Reviews  FAQ   │ ← Tabs
@@ -153,22 +163,24 @@ Active tab:
 ```
 
 **Implementation**:
+
 ```html
 <div role="tablist" aria-label="Product information">
-  <button role="tab" aria-selected="true" aria-controls="overview-panel">
-    Overview
-  </button>
-  <button role="tab" aria-selected="false" aria-controls="details-panel">
-    Details
-  </button>
+   <button role="tab" aria-selected="true" aria-controls="overview-panel">
+      Overview
+   </button>
+   <button role="tab" aria-selected="false" aria-controls="details-panel">
+      Details
+   </button>
 </div>
 
 <div role="tabpanel" id="overview-panel" aria-labelledby="overview-tab">
-  Overview content...
+   Overview content...
 </div>
 ```
 
 **Best Practices**:
+
 - Limit to 3-7 tabs
 - Use pills/buttons on mobile
 - Swipe gesture support on mobile
@@ -176,6 +188,7 @@ Active tab:
 - Maintain state in URL
 
 **Accessibility**:
+
 - Arrow keys to navigate tabs
 - Tab key to move focus to panel
 - ARIA roles: tablist, tab, tabpanel
@@ -185,6 +198,7 @@ Active tab:
 ### 1.5 Pagination
 
 **Patterns**:
+
 ```
 Standard Pagination:
 [← Previous]  1  [2]  3  4  5  [Next →]
@@ -201,6 +215,7 @@ Items...
 ```
 
 **Best Practices**:
+
 - Show total pages/items
 - Highlight current page
 - Disable Previous/Next when appropriate
@@ -208,6 +223,7 @@ Items...
 - Consider "Load More" for better control
 
 **Accessibility**:
+
 - Use `<nav>` with aria-label="Pagination"
 - Announce current page to screen readers
 - Keyboard navigation support
@@ -219,6 +235,7 @@ Items...
 ### 2.1 Text Input Fields
 
 **Standard Input**:
+
 ```
 Label Above Field:
 Email Address *
@@ -240,39 +257,39 @@ Email Address
 ```
 
 **Implementation**:
+
 ```html
 <!-- Standard Input -->
 <div class="form-field">
-  <label for="email">Email Address *</label>
-  <input
-    type="email"
-    id="email"
-    name="email"
-    required
-    aria-describedby="email-help"
-  >
-  <span id="email-help" class="help-text">
-    We'll never share your email
-  </span>
+   <label for="email">Email Address *</label>
+   <input
+      type="email"
+      id="email"
+      name="email"
+      required
+      aria-describedby="email-help"
+   />
+   <span id="email-help" class="help-text"> We'll never share your email </span>
 </div>
 
 <!-- With Error -->
 <div class="form-field form-field--error">
-  <label for="email">Email Address *</label>
-  <input
-    type="email"
-    id="email"
-    name="email"
-    aria-invalid="true"
-    aria-describedby="email-error"
-  >
-  <span id="email-error" class="error-message" role="alert">
-    Please enter a valid email address
-  </span>
+   <label for="email">Email Address *</label>
+   <input
+      type="email"
+      id="email"
+      name="email"
+      aria-invalid="true"
+      aria-describedby="email-error"
+   />
+   <span id="email-error" class="error-message" role="alert">
+      Please enter a valid email address
+   </span>
 </div>
 ```
 
 **Design Specifications**:
+
 - Input height: 40-48px (desktop), 44-56px (mobile)
 - Font size: 16px minimum (prevents zoom on mobile)
 - Border: 1px solid, increases to 2px on focus
@@ -286,6 +303,7 @@ Email Address
 ### 2.2 Form Layout Patterns
 
 **Single Column Layout** (Recommended):
+
 ```
 ┌──────────────────────────┐
 │ Full Name *              │
@@ -304,6 +322,7 @@ Completion rate: 15-25% higher than multi-column
 ```
 
 **Multi-Column Layout** (Use sparingly):
+
 ```
 ┌──────────────────────────────────────┐
 │ First Name *         Last Name *     │
@@ -323,6 +342,7 @@ Use only for:
 ```
 
 **Best Practices**:
+
 - Single column for most forms
 - Labels above inputs (left-aligned)
 - Group related fields with fieldsets
@@ -335,6 +355,7 @@ Use only for:
 ### 2.3 Selection Controls
 
 **Radio Buttons** (Select one):
+
 ```
 Shipping Method *
 
@@ -350,6 +371,7 @@ Design Rules:
 ```
 
 **Checkboxes** (Select multiple):
+
 ```
 Email Preferences
 
@@ -365,6 +387,7 @@ Design Rules:
 ```
 
 **Toggle Switch** (On/Off):
+
 ```
 Notifications
 
@@ -378,30 +401,31 @@ Use for:
 ```
 
 **Implementation**:
+
 ```html
 <!-- Radio Group -->
 <fieldset>
-  <legend>Shipping Method *</legend>
-  <label>
-    <input type="radio" name="shipping" value="standard" checked>
-    Standard Shipping (5-7 days) - Free
-  </label>
-  <label>
-    <input type="radio" name="shipping" value="express">
-    Express Shipping (2-3 days) - $9.99
-  </label>
+   <legend>Shipping Method *</legend>
+   <label>
+      <input type="radio" name="shipping" value="standard" checked />
+      Standard Shipping (5-7 days) - Free
+   </label>
+   <label>
+      <input type="radio" name="shipping" value="express" />
+      Express Shipping (2-3 days) - $9.99
+   </label>
 </fieldset>
 
 <!-- Checkbox -->
 <label>
-  <input type="checkbox" name="newsletter" checked>
-  Subscribe to newsletter
+   <input type="checkbox" name="newsletter" checked />
+   Subscribe to newsletter
 </label>
 
 <!-- Toggle (Custom) -->
 <label class="toggle">
-  <input type="checkbox" role="switch" aria-checked="true">
-  <span>Email notifications</span>
+   <input type="checkbox" role="switch" aria-checked="true" />
+   <span>Email notifications</span>
 </label>
 ```
 
@@ -410,6 +434,7 @@ Use for:
 ### 2.4 Dropdown & Select Menus
 
 **Standard Select**:
+
 ```
 Country *
 [United States        ▼]
@@ -424,6 +449,7 @@ When clicked:
 ```
 
 **Searchable Select** (for long lists):
+
 ```
 Country *
 [Type to search...     ▼]
@@ -436,6 +462,7 @@ User types "Uni":
 ```
 
 **Multi-Select**:
+
 ```
 Skills *
 [Select skills...      ▼]
@@ -445,6 +472,7 @@ Selected: JavaScript, React, TypeScript
 ```
 
 **Best Practices**:
+
 - Use native select for < 10 options
 - Searchable for 10+ options
 - Show selected count for multi-select
@@ -456,6 +484,7 @@ Selected: JavaScript, React, TypeScript
 ### 2.5 Date & Time Pickers
 
 **Date Picker**:
+
 ```
 Start Date *
 [MM/DD/YYYY]  [📅]
@@ -475,6 +504,7 @@ Calendar Popup:
 ```
 
 **Date Range Picker**:
+
 ```
 [Start Date] to [End Date]
 
@@ -487,6 +517,7 @@ Calendar shows both months side-by-side:
 ```
 
 **Best Practices**:
+
 - Allow manual typing + calendar picker
 - Validate format as user types
 - Show format hint (MM/DD/YYYY)
@@ -495,6 +526,7 @@ Calendar shows both months side-by-side:
 - Mobile: Use native date picker
 
 **Accessibility**:
+
 - Keyboard navigation (arrow keys)
 - Tab to navigate calendar
 - Enter to select date
@@ -505,6 +537,7 @@ Calendar shows both months side-by-side:
 ### 2.6 File Upload
 
 **Simple Upload**:
+
 ```
 Profile Picture
 ┌─────────────────────┐
@@ -519,6 +552,7 @@ Profile Picture
 ```
 
 **Multi-File Upload**:
+
 ```
 Documents (0/5 uploaded)
 ┌─────────────────────────────────┐
@@ -531,6 +565,7 @@ Documents (0/5 uploaded)
 ```
 
 **Best Practices**:
+
 - Support drag & drop
 - Show file requirements clearly
 - Display upload progress
@@ -546,6 +581,7 @@ Documents (0/5 uploaded)
 ### 3.1 Tables
 
 **Responsive Table**:
+
 ```
 Desktop:
 ┌────────────────────────────────────────────────────┐
@@ -571,6 +607,7 @@ Mobile (Stacked Cards):
 ```
 
 **Table Features**:
+
 - Sortable columns (click header)
 - Filterable data
 - Pagination or infinite scroll
@@ -579,27 +616,30 @@ Mobile (Stacked Cards):
 - Responsive layout
 
 **Implementation**:
+
 ```html
 <table>
-  <caption>User Management</caption>
-  <thead>
-    <tr>
-      <th scope="col">
-        <button aria-sort="ascending">Name</button>
-      </th>
-      <th scope="col">Email</th>
-      <th scope="col">Status</th>
-      <th scope="col">Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>John Doe</td>
-      <td>john@example.com</td>
-      <td><span class="badge badge-success">Active</span></td>
-      <td><button>Edit</button></td>
-    </tr>
-  </tbody>
+   <caption>
+      User Management
+   </caption>
+   <thead>
+      <tr>
+         <th scope="col">
+            <button aria-sort="ascending">Name</button>
+         </th>
+         <th scope="col">Email</th>
+         <th scope="col">Status</th>
+         <th scope="col">Actions</th>
+      </tr>
+   </thead>
+   <tbody>
+      <tr>
+         <td>John Doe</td>
+         <td>john@example.com</td>
+         <td><span class="badge badge-success">Active</span></td>
+         <td><button>Edit</button></td>
+      </tr>
+   </tbody>
 </table>
 ```
 
@@ -608,6 +648,7 @@ Mobile (Stacked Cards):
 ### 3.2 Cards
 
 **Content Card**:
+
 ```
 ┌──────────────────────────┐
 │ [Featured Image]         │
@@ -621,6 +662,7 @@ Mobile (Stacked Cards):
 ```
 
 **Card Grid**:
+
 ```
 ┌──────────┐ ┌──────────┐ ┌──────────┐
 │ [Image]  │ │ [Image]  │ │ [Image]  │
@@ -631,6 +673,7 @@ Mobile (Stacked Cards):
 ```
 
 **Best Practices**:
+
 - Consistent card heights in grid
 - Clear visual hierarchy
 - Limit to 1-2 actions per card
@@ -643,6 +686,7 @@ Mobile (Stacked Cards):
 ### 3.3 Lists
 
 **Simple List**:
+
 ```
 • Dashboard
 • Projects
@@ -651,6 +695,7 @@ Mobile (Stacked Cards):
 ```
 
 **Interactive List**:
+
 ```
 ┌────────────────────────────────┐
 │ ☐ Complete project proposal    │
@@ -665,6 +710,7 @@ Mobile (Stacked Cards):
 ```
 
 **Best Practices**:
+
 - Clear visual separation between items
 - Include metadata (date, status)
 - Provide actions (swipe, menu)
@@ -676,6 +722,7 @@ Mobile (Stacked Cards):
 ### 3.4 Empty States
 
 **No Data State**:
+
 ```
 ┌────────────────────────────────┐
 │                                │
@@ -691,6 +738,7 @@ Mobile (Stacked Cards):
 ```
 
 **Search No Results**:
+
 ```
 ┌────────────────────────────────┐
 │                                │
@@ -706,6 +754,7 @@ Mobile (Stacked Cards):
 ```
 
 **Best Practices**:
+
 - Friendly, helpful messaging
 - Explain why it's empty
 - Provide clear next action
@@ -719,6 +768,7 @@ Mobile (Stacked Cards):
 ### 4.1 Toast Notifications
 
 **Success Toast**:
+
 ```
 ┌──────────────────────────┐
 │ ✓ Changes saved          │ ← Auto-dismiss 3-5s
@@ -726,6 +776,7 @@ Mobile (Stacked Cards):
 ```
 
 **Error Toast**:
+
 ```
 ┌──────────────────────────┐
 │ ⚠ Failed to save changes │
@@ -734,16 +785,18 @@ Mobile (Stacked Cards):
 ```
 
 **Toast Positioning**:
+
 - Top-right (desktop)
 - Bottom (mobile - easier to reach)
 - Stack multiple toasts
 - Animate in/out smoothly
 
 **Implementation**:
+
 ```html
 <div role="status" aria-live="polite" class="toast toast-success">
-  <span>✓ Changes saved</span>
-  <button aria-label="Dismiss">×</button>
+   <span>✓ Changes saved</span>
+   <button aria-label="Dismiss">×</button>
 </div>
 ```
 
@@ -752,6 +805,7 @@ Mobile (Stacked Cards):
 ### 4.2 Alert Banners
 
 **Info Banner**:
+
 ```
 ┌───────────────────────────────────────────┐
 │ ℹ️ We've updated our privacy policy.      │
@@ -760,6 +814,7 @@ Mobile (Stacked Cards):
 ```
 
 **Warning Banner**:
+
 ```
 ┌───────────────────────────────────────────┐
 │ ⚠️ Your trial ends in 3 days.             │
@@ -768,6 +823,7 @@ Mobile (Stacked Cards):
 ```
 
 **Critical Alert**:
+
 ```
 ┌───────────────────────────────────────────┐
 │ 🚨 Action required: Verify your email     │
@@ -776,6 +832,7 @@ Mobile (Stacked Cards):
 ```
 
 **Best Practices**:
+
 - Position at top of page
 - Use appropriate severity (info, warning, error)
 - Allow dismissal (unless critical)
@@ -787,6 +844,7 @@ Mobile (Stacked Cards):
 ### 4.3 Modal Dialogs
 
 **Standard Modal**:
+
 ```
 [Backdrop - semi-transparent overlay]
 
@@ -804,6 +862,7 @@ Mobile (Stacked Cards):
 ```
 
 **Best Practices**:
+
 - Trap focus within modal
 - Close on Escape key
 - Close on backdrop click (optional)
@@ -813,19 +872,18 @@ Mobile (Stacked Cards):
 - Use sparingly - don't interrupt user
 
 **Accessibility**:
+
 ```html
 <div
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="modal-title"
-  aria-describedby="modal-description"
+   role="dialog"
+   aria-modal="true"
+   aria-labelledby="modal-title"
+   aria-describedby="modal-description"
 >
-  <h2 id="modal-title">Confirm Delete</h2>
-  <p id="modal-description">
-    Are you sure you want to delete this item?
-  </p>
-  <button>Cancel</button>
-  <button>Delete</button>
+   <h2 id="modal-title">Confirm Delete</h2>
+   <p id="modal-description">Are you sure you want to delete this item?</p>
+   <button>Cancel</button>
+   <button>Delete</button>
 </div>
 ```
 
@@ -834,11 +892,13 @@ Mobile (Stacked Cards):
 ### 4.4 Loading States
 
 **Spinner**:
+
 ```
 [○] Loading...
 ```
 
 **Skeleton Screen**:
+
 ```
 ┌────────────────────────┐
 │ ▓▓▓▓▓▓▓▓░░░░░░░░░░    │ ← Placeholder
@@ -848,12 +908,14 @@ Mobile (Stacked Cards):
 ```
 
 **Progress Bar**:
+
 ```
 Uploading... 67%
 [████████████░░░░░░]
 ```
 
 **Best Practices**:
+
 - Use skeleton screens for < 3s loads
 - Show progress for long operations
 - Indicate time remaining when possible
@@ -867,6 +929,7 @@ Uploading... 67%
 ### 5.1 Dashboard Layout
 
 **3-Column Dashboard**:
+
 ```
 ┌─────────────────────────────────────────────┐
 │ [Header with Logo, Search, User]           │
@@ -881,6 +944,7 @@ Uploading... 67%
 ```
 
 **Responsive Behavior**:
+
 - Desktop: 3 columns
 - Tablet: 2 columns (nav as hamburger)
 - Mobile: 1 column (stacked)
@@ -890,6 +954,7 @@ Uploading... 67%
 ### 5.2 Landing Page Layout
 
 **Hero Section**:
+
 ```
 ┌───────────────────────────────────────────┐
 │ [Navigation Bar]                          │
@@ -906,6 +971,7 @@ Uploading... 67%
 ```
 
 **Features Section**:
+
 ```
 ┌──────────┐ ┌──────────┐ ┌──────────┐
 │ [Icon]   │ │ [Icon]   │ │ [Icon]   │
@@ -921,6 +987,7 @@ Uploading... 67%
 ### 6.1 Bottom Navigation
 
 **Mobile Tab Bar**:
+
 ```
 ┌────────────────────────┐
 │                        │
@@ -933,6 +1000,7 @@ Uploading... 67%
 ```
 
 **Best Practices**:
+
 - 3-5 items maximum
 - Icons + labels
 - Highlight active tab
@@ -945,6 +1013,7 @@ Uploading... 67%
 ### 6.2 Swipe Gestures
 
 **Swipe to Delete**:
+
 ```
 Normal State:
 ┌────────────────────────┐
@@ -959,6 +1028,7 @@ Swipe Left:
 ```
 
 **Pull to Refresh**:
+
 ```
 Pull down:
 ↓
@@ -972,6 +1042,7 @@ Content refreshes
 ### 6.3 Touch Zones
 
 **Thumb Zone Map** (Right-handed):
+
 ```
 ┌────────────────────────┐
 │ [Hard to reach]        │ ← Top corners
@@ -984,6 +1055,7 @@ Content refreshes
 ```
 
 **Design Implications**:
+
 - Place primary actions in bottom third
 - Navigation at bottom (not top)
 - Important content in center
@@ -996,6 +1068,7 @@ Content refreshes
 ### 7.1 Buttons
 
 **Button Hierarchy**:
+
 ```
 [  Primary Button  ]  ← Filled, high contrast
 [  Secondary Button  ] ← Outlined
@@ -1008,6 +1081,7 @@ Size Variants:
 ```
 
 **Button States**:
+
 ```
 Default:   [  Button  ]
 Hover:     [  Button  ] (darker/lighter)
@@ -1017,6 +1091,7 @@ Loading:   [  ⏳ Button  ] (spinner + disabled)
 ```
 
 **Design Specifications**:
+
 - Border radius: 4-8px
 - Padding: 12-24px horizontal, 8-16px vertical
 - Font weight: 500-600
@@ -1029,6 +1104,7 @@ Loading:   [  ⏳ Button  ] (spinner + disabled)
 ### 7.2 Input Fields
 
 **Input States**:
+
 ```
 Default:  [________________________]
 Focus:    [________________________] (blue border)
@@ -1038,6 +1114,7 @@ Disabled: [________________________] (gray, non-editable)
 ```
 
 **Design Specifications**:
+
 - Height: 40-48px (desktop), 44-56px (mobile)
 - Border: 1px solid #CCCCCC
 - Focus border: 2px solid primary color
@@ -1050,12 +1127,14 @@ Disabled: [________________________] (gray, non-editable)
 ### 7.3 Icons
 
 **Icon Sizes**:
+
 - Small: 16px (inline with text)
 - Medium: 24px (default)
 - Large: 32px (prominent actions)
 - Extra Large: 48px+ (empty states)
 
 **Icon Usage**:
+
 - Use consistent icon library (Material, Feather, etc.)
 - Pair with text when possible
 - Ensure sufficient contrast
@@ -1068,6 +1147,7 @@ Disabled: [________________________] (gray, non-editable)
 ### 8.1 Breakpoints
 
 **Standard Breakpoints**:
+
 ```
 Mobile:     < 640px
 Tablet:     640px - 1024px
@@ -1076,22 +1156,23 @@ Large:      > 1440px
 ```
 
 **Media Queries**:
+
 ```css
 /* Mobile first approach */
 .container {
-  padding: 16px;
+   padding: 16px;
 }
 
 @media (min-width: 640px) {
-  .container {
-    padding: 24px;
-  }
+   .container {
+      padding: 24px;
+   }
 }
 
 @media (min-width: 1024px) {
-  .container {
-    padding: 32px;
-  }
+   .container {
+      padding: 32px;
+   }
 }
 ```
 
@@ -1100,6 +1181,7 @@ Large:      > 1440px
 ### 8.2 Responsive Grid
 
 **12-Column Grid**:
+
 ```
 Desktop (3 columns):
 ┌───┬───┬───┬───┐ ┌───┬───┬───┬───┐ ┌───┬───┬───┬───┐
@@ -1126,25 +1208,26 @@ Mobile (1 column):
 ### 8.3 Responsive Typography
 
 **Fluid Typography**:
+
 ```css
 /* Scales from 16px to 20px based on viewport */
 body {
-  font-size: clamp(16px, 4vw, 20px);
+   font-size: clamp(16px, 4vw, 20px);
 }
 
 h1 {
-  font-size: clamp(28px, 6vw, 48px);
+   font-size: clamp(28px, 6vw, 48px);
 }
 
 /* Responsive line height */
 p {
-  line-height: 1.6; /* Mobile */
+   line-height: 1.6; /* Mobile */
 }
 
 @media (min-width: 1024px) {
-  p {
-    line-height: 1.75; /* Desktop - more spacing */
-  }
+   p {
+      line-height: 1.75; /* Desktop - more spacing */
+   }
 }
 ```
 
@@ -1156,16 +1239,16 @@ p {
 
 ```css
 .button {
-  transition: all 0.2s ease-in-out;
+   transition: all 0.2s ease-in-out;
 }
 
 .button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+   transform: translateY(-2px);
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .button:active {
-  transform: translateY(0);
+   transform: translateY(0);
 }
 ```
 
@@ -1174,14 +1257,20 @@ p {
 ### 9.2 Loading Animations
 
 **Pulse Animation**:
+
 ```css
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+   0%,
+   100% {
+      opacity: 1;
+   }
+   50% {
+      opacity: 0.5;
+   }
 }
 
 .skeleton {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 ```
 
@@ -1190,6 +1279,7 @@ p {
 ### 9.3 Transition Timing
 
 **Recommended Durations**:
+
 - Instant: 0ms (state changes)
 - Fast: 100-200ms (hover, focus)
 - Standard: 200-300ms (most transitions)
@@ -1197,6 +1287,7 @@ p {
 - Very slow: 500ms+ (page transitions)
 
 **Easing Functions**:
+
 - ease-in-out: Default for most
 - ease-out: Entering elements
 - ease-in: Exiting elements
@@ -1209,6 +1300,7 @@ p {
 ### 10.1 Color System
 
 **Primary Colors**:
+
 ```
 primary-50:  #E3F2FD  (backgrounds)
 primary-100: #BBDEFB
@@ -1223,6 +1315,7 @@ primary-900: #0D47A1  (pressed)
 ```
 
 **Semantic Colors**:
+
 ```
 success:  #4CAF50
 warning:  #FF9800
@@ -1231,6 +1324,7 @@ info:     #2196F3
 ```
 
 **Neutral Colors**:
+
 ```
 gray-50:  #FAFAFA
 gray-100: #F5F5F5
@@ -1249,6 +1343,7 @@ gray-900: #212121
 ### 10.2 Spacing System
 
 **8px Grid**:
+
 ```
 space-1:  4px
 space-2:  8px
@@ -1263,6 +1358,7 @@ space-10: 128px
 ```
 
 **Usage**:
+
 - Component padding: 16px (space-4)
 - Section spacing: 48px (space-7)
 - Page margins: 24px (space-5)
@@ -1272,6 +1368,7 @@ space-10: 128px
 ### 10.3 Typography Scale
 
 **Font Sizes**:
+
 ```
 text-xs:   12px (0.75rem)   - Helper text
 text-sm:   14px (0.875rem)  - Secondary
@@ -1285,6 +1382,7 @@ text-5xl:  48px (3rem)      - Display
 ```
 
 **Font Weights**:
+
 ```
 light:    300
 regular:  400
@@ -1294,6 +1392,7 @@ bold:     700
 ```
 
 **Line Heights**:
+
 ```
 tight:   1.25 (headings)
 normal:  1.5  (body)
@@ -1305,15 +1404,17 @@ relaxed: 1.75 (long-form content)
 ### 10.4 Shadows
 
 **Elevation Levels**:
+
 ```css
-shadow-sm:  0 1px 2px rgba(0,0,0,0.05);
-shadow-md:  0 4px 6px rgba(0,0,0,0.1);
-shadow-lg:  0 10px 15px rgba(0,0,0,0.15);
-shadow-xl:  0 20px 25px rgba(0,0,0,0.2);
-shadow-2xl: 0 25px 50px rgba(0,0,0,0.25);
+shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.15);
+shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.2);
+shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.25);
 ```
 
 **Usage**:
+
 - Cards: shadow-md
 - Modals: shadow-xl
 - Dropdowns: shadow-lg
@@ -1324,6 +1425,7 @@ shadow-2xl: 0 25px 50px rgba(0,0,0,0.25);
 ### 10.5 Border Radius
 
 **Consistent Rounding**:
+
 ```
 rounded-none: 0px
 rounded-sm:   2px
@@ -1336,6 +1438,7 @@ rounded-full: 9999px (pills, circles)
 ```
 
 **Usage**:
+
 - Buttons: rounded-lg (8px)
 - Inputs: rounded (4px)
 - Cards: rounded-lg (8px)
@@ -1349,6 +1452,7 @@ rounded-full: 9999px (pills, circles)
 This reference guide provides comprehensive UI/UX patterns for building consistent, accessible, and user-friendly interfaces. Use these patterns as a foundation, but always validate with user testing and adapt to your specific context.
 
 **Key Principles**:
+
 - Consistency across all patterns
 - Accessibility baked into every component
 - Mobile-first responsive approach

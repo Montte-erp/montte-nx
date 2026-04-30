@@ -60,9 +60,9 @@ When `@nx/next:init` runs during a whole-repo import, it rewrites the project's 
 
 ```json
 {
-  "dev": "nx next:dev",
-  "build": "nx next:build",
-  "start": "nx next:start"
+   "dev": "nx next:dev",
+   "build": "nx next:build",
+   "start": "nx next:start"
 }
 ```
 
@@ -165,13 +165,13 @@ No naming conflicts between frameworks.
 - Dest: CNW ts preset (Nx 23)
 - Import: subdirectory-at-a-time (apps, libs separately)
 - Errors found & fixed:
-  1. pnpm-workspace.yaml: `apps`/`libs` → `apps/*`/`libs/*`
-  2. Root tsconfig: `nodenext` → `bundler`, add `dom`/`dom.iterable` to `lib`, add `jsx: react-jsx`
-  3. Missing `@nx/react` (for CSS module/image type defs in lib)
-  4. Missing `@types/react`, `@types/react-dom`, `@types/node`
-  5. Next.js trying `yarn add @types/react` — fixed by installing at root
-  6. Missing `@nx/eslint`, root `eslint.config.mjs`, ESLint plugins
-  7. Missing `@nx/jest`, `jest.preset.js`, `jest-environment-jsdom`, `ts-jest`
+   1. pnpm-workspace.yaml: `apps`/`libs` → `apps/*`/`libs/*`
+   2. Root tsconfig: `nodenext` → `bundler`, add `dom`/`dom.iterable` to `lib`, add `jsx: react-jsx`
+   3. Missing `@nx/react` (for CSS module/image type defs in lib)
+   4. Missing `@types/react`, `@types/react-dom`, `@types/node`
+   5. Next.js trying `yarn add @types/react` — fixed by installing at root
+   6. Missing `@nx/eslint`, root `eslint.config.mjs`, ESLint plugins
+   7. Missing `@nx/jest`, `jest.preset.js`, `jest-environment-jsdom`, `ts-jest`
 - All targets green: typecheck, build, test, lint
 
 ### Scenario 3: Non-Nx create-next-app (App Router + Tailwind) → TS preset (PASS)
@@ -180,9 +180,9 @@ No naming conflicts between frameworks.
 - Dest: CNW ts preset (Nx 23)
 - Import: whole-repo into `apps/web`
 - Errors found & fixed:
-  1. pnpm-workspace.yaml: `apps/web` → `apps/*`
-  2. Stale files: `node_modules/`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `.gitignore` — deleted
-  3. Nx-rewritten npm scripts (`"build": "nx next:build"`, etc.) — removed
+   1. pnpm-workspace.yaml: `apps/web` → `apps/*`
+   2. Stale files: `node_modules/`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `.gitignore` — deleted
+   3. Nx-rewritten npm scripts (`"build": "nx next:build"`, etc.) — removed
 - No tsconfig changes needed — self-contained config with `noEmit: true`
 - ESLint self-contained via `eslint-config-next` — no root config needed
 - No test setup (create-next-app doesn't include tests)
@@ -192,10 +192,10 @@ No naming conflicts between frameworks.
 
 - See VITE.md Scenario 6 for the full multi-import scenario
 - Next.js-specific findings:
-  1. `@nx/next:init` rewrote all scripts to `nx next:*` format — removed all rewritten scripts
-  2. Stale files: `node_modules/`, `package-lock.json`, `.gitignore` — deleted (npm workspace, no pnpm files)
-  3. ESLint self-contained via `eslint-config-next` — no root config needed
-  4. No tsconfig changes needed — `noEmit: true` stays; `next build` handles type checking
+   1. `@nx/next:init` rewrote all scripts to `nx next:*` format — removed all rewritten scripts
+   2. Stale files: `node_modules/`, `package-lock.json`, `.gitignore` — deleted (npm workspace, no pnpm files)
+   3. ESLint self-contained via `eslint-config-next` — no root config needed
+   4. No tsconfig changes needed — `noEmit: true` stays; `next build` handles type checking
 - Targets: `next:build`, `next:dev`, `next:start`, `eslint:lint`
 
 ### Scenario 5: Mixed Next.js (Nx) + Vite React (standalone) → TS preset (PASS)
@@ -204,11 +204,11 @@ No naming conflicts between frameworks.
 - Source B: CNW react-standalone preset (Vite 7, React 19) — whole-repo import into `apps/vite-app`
 - Dest: CNW ts preset (Nx 23)
 - Errors found & fixed:
-  1. All Scenario 1 fixes for the Next.js app
-  2. Stale files from Vite source: `node_modules/`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `.gitignore`, `nx.json`
-  3. Removed rewritten scripts from Vite app's `package.json`
-  4. ESLint 8 vs 9 conflict — `@nx/eslint` peer on ESLint 8 resolved wrong version. Fixed with `pnpm.overrides`
-  5. Vite tsconfigs missing `composite: true`, `declaration: true` — needed for `tsc --build --emitDeclarationOnly`
-  6. Vite `tsconfig.spec.json` `include` missing source files — specs import app code
-  7. Vite tsconfig `moduleResolution: "node"` → `"bundler"`, added `extends: "../../tsconfig.base.json"`
+   1. All Scenario 1 fixes for the Next.js app
+   2. Stale files from Vite source: `node_modules/`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `.gitignore`, `nx.json`
+   3. Removed rewritten scripts from Vite app's `package.json`
+   4. ESLint 8 vs 9 conflict — `@nx/eslint` peer on ESLint 8 resolved wrong version. Fixed with `pnpm.overrides`
+   5. Vite tsconfigs missing `composite: true`, `declaration: true` — needed for `tsc --build --emitDeclarationOnly`
+   6. Vite `tsconfig.spec.json` `include` missing source files — specs import app code
+   7. Vite tsconfig `moduleResolution: "node"` → `"bundler"`, added `extends: "../../tsconfig.base.json"`
 - All targets green: typecheck, build, test, lint for both projects

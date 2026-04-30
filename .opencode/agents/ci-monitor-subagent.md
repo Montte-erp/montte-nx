@@ -22,13 +22,13 @@ Call `ci_information` with heavy select fields. Summarize the heavy content and 
 
 ```json
 {
-  "shortLink": "...",
-  "failedTaskIds": ["..."],
-  "verifiedTaskIds": ["..."],
-  "suggestedFixDescription": "...",
-  "suggestedFixSummary": "...",
-  "selfHealingSkipMessage": "...",
-  "taskFailureSummaries": [{ "taskId": "...", "summary": "..." }]
+   "shortLink": "...",
+   "failedTaskIds": ["..."],
+   "verifiedTaskIds": ["..."],
+   "suggestedFixDescription": "...",
+   "suggestedFixSummary": "...",
+   "selfHealingSkipMessage": "...",
+   "taskFailureSummaries": [{ "taskId": "...", "summary": "..." }]
 }
 ```
 

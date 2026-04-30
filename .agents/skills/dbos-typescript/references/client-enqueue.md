@@ -22,16 +22,16 @@ await DBOS.startWorkflow(processTask, { queueName: "myQueue" })("data");
 import { DBOSClient } from "@dbos-inc/dbos-sdk";
 
 const client = await DBOSClient.create({
-  systemDatabaseUrl: process.env.DBOS_SYSTEM_DATABASE_URL,
+   systemDatabaseUrl: process.env.DBOS_SYSTEM_DATABASE_URL,
 });
 
 // Basic enqueue
 const handle = await client.enqueue(
-  {
-    workflowName: "processTask",
-    queueName: "task_queue",
-  },
-  "task-data"
+   {
+      workflowName: "processTask",
+      queueName: "task_queue",
+   },
+   "task-data",
 );
 
 // Wait for the result
@@ -43,16 +43,16 @@ const result = await handle.getResult();
 ```typescript
 // Import or declare the workflow type
 declare class Tasks {
-  static processTask(data: string): Promise<string>;
+   static processTask(data: string): Promise<string>;
 }
 
 const handle = await client.enqueue<typeof Tasks.processTask>(
-  {
-    workflowName: "processTask",
-    workflowClassName: "Tasks",
-    queueName: "task_queue",
-  },
-  "task-data"
+   {
+      workflowName: "processTask",
+      workflowClassName: "Tasks",
+      queueName: "task_queue",
+   },
+   "task-data",
 );
 
 // TypeScript infers the result type
@@ -60,6 +60,7 @@ const result = await handle.getResult(); // type: string
 ```
 
 **Enqueue options:**
+
 - `workflowName` (required): Name of the workflow function
 - `queueName` (required): Name of the queue
 - `workflowClassName`: Class name if the workflow is a class method

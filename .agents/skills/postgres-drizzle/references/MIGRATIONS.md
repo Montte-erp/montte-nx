@@ -9,28 +9,28 @@ Comprehensive reference for managing database migrations with drizzle-kit.
 ### drizzle.config.ts
 
 ```typescript
-import { defineConfig } from 'drizzle-kit';
+import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
-  // Schema location
-  schema: './src/db/schema.ts',
+   // Schema location
+   schema: "./src/db/schema.ts",
 
-  // Migration output directory
-  out: './drizzle',
+   // Migration output directory
+   out: "./drizzle",
 
-  // Database dialect
-  dialect: 'postgresql',
+   // Database dialect
+   dialect: "postgresql",
 
-  // Database credentials
-  dbCredentials: {
-    url: process.env.DATABASE_URL!,
-  },
+   // Database credentials
+   dbCredentials: {
+      url: process.env.DATABASE_URL!,
+   },
 
-  // Optional: verbose logging
-  verbose: true,
+   // Optional: verbose logging
+   verbose: true,
 
-  // Optional: strict mode
-  strict: true,
+   // Optional: strict mode
+   strict: true,
 });
 ```
 
@@ -38,32 +38,27 @@ export default defineConfig({
 
 ```typescript
 export default defineConfig({
-  schema: './src/db/schema/*.ts',  // Glob pattern
-  // or
-  schema: [
-    './src/db/schema/users.ts',
-    './src/db/schema/posts.ts',
-  ],
-  // ...
+   schema: "./src/db/schema/*.ts", // Glob pattern
+   // or
+   schema: ["./src/db/schema/users.ts", "./src/db/schema/posts.ts"],
+   // ...
 });
 ```
 
 ### Environment-Specific Config
 
 ```typescript
-import { defineConfig } from 'drizzle-kit';
+import { defineConfig } from "drizzle-kit";
 
-const isProd = process.env.NODE_ENV === 'production';
+const isProd = process.env.NODE_ENV === "production";
 
 export default defineConfig({
-  schema: './src/db/schema.ts',
-  out: './drizzle',
-  dialect: 'postgresql',
-  dbCredentials: {
-    url: isProd
-      ? process.env.DATABASE_URL!
-      : process.env.DEV_DATABASE_URL!,
-  },
+   schema: "./src/db/schema.ts",
+   out: "./drizzle",
+   dialect: "postgresql",
+   dbCredentials: {
+      url: isProd ? process.env.DATABASE_URL! : process.env.DEV_DATABASE_URL!,
+   },
 });
 ```
 
@@ -80,6 +75,7 @@ npx drizzle-kit generate
 ```
 
 Output:
+
 ```
 drizzle/
   0000_initial.sql
@@ -107,6 +103,7 @@ npx drizzle-kit push
 ```
 
 **Use cases:**
+
 - Rapid prototyping
 - Local development
 - Schema experimentation
@@ -120,6 +117,7 @@ npx drizzle-kit pull
 ```
 
 **Use cases:**
+
 - Adopting Drizzle on existing project
 - Syncing schema from production
 - Reverse engineering
@@ -166,19 +164,19 @@ npx drizzle-kit migrate
 
 ```typescript
 // src/db/migrate.ts
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
-import postgres from 'postgres';
+import { drizzle } from "drizzle-orm/postgres-js";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
+import postgres from "postgres";
 
 const runMigrations = async () => {
-  const connection = postgres(process.env.DATABASE_URL!, { max: 1 });
-  const db = drizzle(connection);
+   const connection = postgres(process.env.DATABASE_URL!, { max: 1 });
+   const db = drizzle(connection);
 
-  console.log('Running migrations...');
-  await migrate(db, { migrationsFolder: './drizzle' });
-  console.log('Migrations complete!');
+   console.log("Running migrations...");
+   await migrate(db, { migrationsFolder: "./drizzle" });
+   console.log("Migrations complete!");
 
-  await connection.end();
+   await connection.end();
 };
 
 runMigrations().catch(console.error);
@@ -196,22 +194,22 @@ node -r tsx src/db/migrate.ts
 - name: Run migrations
   run: npx drizzle-kit migrate
   env:
-    DATABASE_URL: ${{ secrets.DATABASE_URL }}
+     DATABASE_URL: ${{ secrets.DATABASE_URL }}
 ```
 
 #### Option 3: Application Startup
 
 ```typescript
 // src/index.ts
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
-import { db } from './db';
+import { migrate } from "drizzle-orm/postgres-js/migrator";
+import { db } from "./db";
 
 async function main() {
-  // Run migrations on startup
-  await migrate(db, { migrationsFolder: './drizzle' });
+   // Run migrations on startup
+   await migrate(db, { migrationsFolder: "./drizzle" });
 
-  // Start application
-  app.listen(3000);
+   // Start application
+   app.listen(3000);
 }
 ```
 
@@ -219,14 +217,14 @@ async function main() {
 
 ## Push vs Generate
 
-| Aspect | `push` | `generate` + `migrate` |
-|--------|--------|------------------------|
-| Migration files | No | Yes |
-| Version control | No | Yes |
-| Rollback support | No | Manual |
-| Team collaboration | Difficult | Easy |
-| Production use | Not recommended | Recommended |
-| Speed | Fast | Slower |
+| Aspect             | `push`          | `generate` + `migrate` |
+| ------------------ | --------------- | ---------------------- |
+| Migration files    | No              | Yes                    |
+| Version control    | No              | Yes                    |
+| Rollback support   | No              | Manual                 |
+| Team collaboration | Difficult       | Easy                   |
+| Production use     | Not recommended | Recommended            |
+| Speed              | Fast            | Slower                 |
 
 ### Transitioning from Push to Migrate
 
@@ -249,20 +247,21 @@ npx drizzle-kit generate
 
 ```typescript
 // Before
-export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  email: text('email').notNull(),
+export const users = pgTable("users", {
+   id: uuid("id").primaryKey().defaultRandom(),
+   email: text("email").notNull(),
 });
 
 // After
-export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  email: text('email').notNull(),
-  name: text('name'),  // New nullable column
+export const users = pgTable("users", {
+   id: uuid("id").primaryKey().defaultRandom(),
+   email: text("email").notNull(),
+   name: text("name"), // New nullable column
 });
 ```
 
 Generated SQL:
+
 ```sql
 ALTER TABLE "users" ADD COLUMN "name" text;
 ```
@@ -275,6 +274,7 @@ name: text('name').notNull().default('Unknown'),
 ```
 
 Generated SQL:
+
 ```sql
 ALTER TABLE "users" ADD COLUMN "name" text NOT NULL DEFAULT 'Unknown';
 ```
@@ -291,14 +291,19 @@ ALTER TABLE "users" RENAME COLUMN "name" TO "full_name";
 ### Adding an Index
 
 ```typescript
-export const users = pgTable('users', {
-  // ...
-}, (table) => [
-  index('users_email_idx').on(table.email),  // New index
-]);
+export const users = pgTable(
+   "users",
+   {
+      // ...
+   },
+   (table) => [
+      index("users_email_idx").on(table.email), // New index
+   ],
+);
 ```
 
 Generated SQL:
+
 ```sql
 CREATE INDEX "users_email_idx" ON "users" ("email");
 ```
@@ -306,15 +311,16 @@ CREATE INDEX "users_email_idx" ON "users" ("email");
 ### Adding a Foreign Key
 
 ```typescript
-export const posts = pgTable('posts', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  authorId: uuid('author_id')
-    .notNull()
-    .references(() => users.id),  // New FK
+export const posts = pgTable("posts", {
+   id: uuid("id").primaryKey().defaultRandom(),
+   authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id), // New FK
 });
 ```
 
 Generated SQL:
+
 ```sql
 ALTER TABLE "posts"
 ADD CONSTRAINT "posts_author_id_users_id_fk"
@@ -324,17 +330,20 @@ FOREIGN KEY ("author_id") REFERENCES "users"("id");
 ### Creating a New Table
 
 ```typescript
-export const comments = pgTable('comments', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  content: text('content').notNull(),
-  postId: uuid('post_id').notNull().references(() => posts.id),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
+export const comments = pgTable("comments", {
+   id: uuid("id").primaryKey().defaultRandom(),
+   content: text("content").notNull(),
+   postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id),
+   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 ```
 
 ### Dropping a Table
 
 Remove the table definition from schema. Generated SQL:
+
 ```sql
 DROP TABLE "old_table";
 ```
@@ -390,10 +399,10 @@ Drizzle tracks migrations in `__drizzle_migrations` table:
 SELECT * FROM __drizzle_migrations;
 ```
 
-| id | hash | created_at |
-|----|------|------------|
-| 1 | abc123 | 2024-01-15 |
-| 2 | def456 | 2024-01-20 |
+| id  | hash   | created_at |
+| --- | ------ | ---------- |
+| 1   | abc123 | 2024-01-15 |
+| 2   | def456 | 2024-01-20 |
 
 ---
 
@@ -487,8 +496,8 @@ CREATE INDEX CONCURRENTLY users_email_idx ON users(email);
 # Validate schema matches migrations
 - name: Check migrations
   run: |
-    npx drizzle-kit generate
-    git diff --exit-code drizzle/
+     npx drizzle-kit generate
+     git diff --exit-code drizzle/
 ```
 
 ---
@@ -531,6 +540,6 @@ Use advisory locks:
 
 ```typescript
 await db.execute(sql`SELECT pg_advisory_lock(12345)`);
-await migrate(db, { migrationsFolder: './drizzle' });
+await migrate(db, { migrationsFolder: "./drizzle" });
 await db.execute(sql`SELECT pg_advisory_unlock(12345)`);
 ```

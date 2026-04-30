@@ -13,11 +13,11 @@ Workflows can stream data to clients in real-time using `DBOS.writeStream`, `DBO
 
 ```typescript
 async function processWorkflowFn() {
-  const results: string[] = [];
-  for (const chunk of data) {
-    results.push(await processChunk(chunk));
-  }
-  return results; // Client must wait for entire workflow to complete
+   const results: string[] = [];
+   for (const chunk of data) {
+      results.push(await processChunk(chunk));
+   }
+   return results; // Client must wait for entire workflow to complete
 }
 ```
 
@@ -25,22 +25,28 @@ async function processWorkflowFn() {
 
 ```typescript
 async function processWorkflowFn() {
-  for (const chunk of data) {
-    const result = await DBOS.runStep(() => processChunk(chunk), { name: "process" });
-    await DBOS.writeStream("results", result);
-  }
-  await DBOS.closeStream("results"); // Signal completion
+   for (const chunk of data) {
+      const result = await DBOS.runStep(() => processChunk(chunk), {
+         name: "process",
+      });
+      await DBOS.writeStream("results", result);
+   }
+   await DBOS.closeStream("results"); // Signal completion
 }
 const processWorkflow = DBOS.registerWorkflow(processWorkflowFn);
 
 // Read the stream from outside
 const handle = await DBOS.startWorkflow(processWorkflow)();
-for await (const value of DBOS.readStream<string>(handle.workflowID, "results")) {
-  console.log(`Received: ${value}`);
+for await (const value of DBOS.readStream<string>(
+   handle.workflowID,
+   "results",
+)) {
+   console.log(`Received: ${value}`);
 }
 ```
 
 Key behaviors:
+
 - A workflow may have any number of streams, each identified by a unique key
 - Streams are immutable and append-only
 - Writes from workflows happen exactly-once

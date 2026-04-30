@@ -12,11 +12,11 @@ PostgreSQL 18 introduces AIO for concurrent read operations. Benchmarks show up 
 
 #### io_method Options
 
-| Method | Description | Best For |
-|--------|-------------|----------|
-| `sync` | PostgreSQL 17 behavior | Compatibility |
-| `worker` | Background workers (default) | Most workloads |
-| `io_uring` | Linux kernel 5.1+ | Cold cache workloads |
+| Method     | Description                  | Best For             |
+| ---------- | ---------------------------- | -------------------- |
+| `sync`     | PostgreSQL 17 behavior       | Compatibility        |
+| `worker`   | Background workers (default) | Most workloads       |
+| `io_uring` | Linux kernel 5.1+            | Cold cache workloads |
 
 #### Configuration
 
@@ -63,12 +63,14 @@ SELECT uuidv7();
 ```
 
 **Advantages over UUIDv4:**
+
 - Chronologically sortable
 - Better B-tree index performance
 - Reduced index fragmentation
 - Time-based partitioning friendly
 
 **In Drizzle:**
+
 ```typescript
 id: uuid('id').primaryKey().default(sql`uuidv7()`),
 ```
@@ -164,10 +166,10 @@ ALTER SYSTEM SET shared_buffers = '8GB';
 Memory for sort and hash operations per query.
 
 | Workload | Recommendation |
-|----------|----------------|
-| OLTP | 4-16 MB |
-| OLAP | 64-256 MB |
-| Mixed | 16-64 MB |
+| -------- | -------------- |
+| OLTP     | 4-16 MB        |
+| OLAP     | 64-256 MB      |
+| Mixed    | 16-64 MB       |
 
 ```sql
 -- Set globally
@@ -211,10 +213,10 @@ ALTER TABLE documents FORCE ROW LEVEL SECURITY;
 
 ### Policy Types
 
-| Type | Behavior |
-|------|----------|
+| Type                 | Behavior                               |
+| -------------------- | -------------------------------------- |
 | PERMISSIVE (default) | Any matching policy grants access (OR) |
-| RESTRICTIVE | All policies must pass (AND) |
+| RESTRICTIVE          | All policies must pass (AND)           |
 
 ### Multi-Tenant Pattern
 
@@ -263,9 +265,9 @@ await db.execute(sql`SET app.current_tenant_id = ${tenantId}`);
 
 // Or use transaction
 await db.transaction(async (tx) => {
-  await tx.execute(sql`SET LOCAL app.current_tenant_id = ${tenantId}`);
-  // Queries now filtered by RLS
-  const docs = await tx.select().from(documents);
+   await tx.execute(sql`SET LOCAL app.current_tenant_id = ${tenantId}`);
+   // Queries now filtered by RLS
+   const docs = await tx.select().from(documents);
 });
 ```
 
@@ -350,17 +352,17 @@ ALTER TABLE events ATTACH PARTITION events_2025_03
 
 ### Operators
 
-| Operator | Description | Example |
-|----------|-------------|---------|
-| `->` | Get JSON object field | `data->'name'` |
-| `->>` | Get JSON field as text | `data->>'name'` |
-| `#>` | Get nested field | `data#>'{address,city}'` |
-| `#>>` | Get nested field as text | `data#>>'{address,city}'` |
-| `@>` | Contains | `data @> '{"active":true}'` |
-| `<@` | Contained by | `'{"a":1}' <@ data` |
-| `?` | Key exists | `data ? 'name'` |
-| `?\|` | Any key exists | `data ?\| array['a','b']` |
-| `?&` | All keys exist | `data ?& array['a','b']` |
+| Operator | Description              | Example                     |
+| -------- | ------------------------ | --------------------------- |
+| `->`     | Get JSON object field    | `data->'name'`              |
+| `->>`    | Get JSON field as text   | `data->>'name'`             |
+| `#>`     | Get nested field         | `data#>'{address,city}'`    |
+| `#>>`    | Get nested field as text | `data#>>'{address,city}'`   |
+| `@>`     | Contains                 | `data @> '{"active":true}'` |
+| `<@`     | Contained by             | `'{"a":1}' <@ data`         |
+| `?`      | Key exists               | `data ? 'name'`             |
+| `?\|`    | Any key exists           | `data ?\| array['a','b']`   |
+| `?&`     | All keys exist           | `data ?& array['a','b']`    |
 
 ### JSONB Functions
 
@@ -447,10 +449,14 @@ WHERE search_vector @@ query;
 
 ```typescript
 const searchResults = await db
-  .select()
-  .from(posts)
-  .where(sql`${posts.searchVector} @@ plainto_tsquery('english', ${searchTerm})`)
-  .orderBy(sql`ts_rank(${posts.searchVector}, plainto_tsquery('english', ${searchTerm})) DESC`);
+   .select()
+   .from(posts)
+   .where(
+      sql`${posts.searchVector} @@ plainto_tsquery('english', ${searchTerm})`,
+   )
+   .orderBy(
+      sql`ts_rank(${posts.searchVector}, plainto_tsquery('english', ${searchTerm})) DESC`,
+   );
 ```
 
 ---

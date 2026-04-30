@@ -14,15 +14,15 @@ Use `DBOS.patch()` to safely deploy breaking changes to workflow code. Breaking 
 ```typescript
 // BEFORE: original workflow
 async function workflowFn() {
-  await foo();
-  await bar();
+   await foo();
+   await bar();
 }
 const workflow = DBOS.registerWorkflow(workflowFn);
 
 // AFTER: breaking change - recovery will fail for in-progress workflows!
 async function workflowFn() {
-  await baz(); // Changed step
-  await bar();
+   await baz(); // Changed step
+   await bar();
 }
 const workflow = DBOS.registerWorkflow(workflowFn);
 ```
@@ -31,12 +31,12 @@ const workflow = DBOS.registerWorkflow(workflowFn);
 
 ```typescript
 async function workflowFn() {
-  if (await DBOS.patch("use-baz")) {
-    await baz(); // New workflows run this
-  } else {
-    await foo(); // Old workflows continue with original code
-  }
-  await bar();
+   if (await DBOS.patch("use-baz")) {
+      await baz(); // New workflows run this
+   } else {
+      await foo(); // Old workflows continue with original code
+   }
+   await bar();
 }
 const workflow = DBOS.registerWorkflow(workflowFn);
 ```
@@ -47,10 +47,11 @@ const workflow = DBOS.registerWorkflow(workflowFn);
 
 ```typescript
 async function workflowFn() {
-  if (await DBOS.deprecatePatch("use-baz")) { // Always returns true
-    await baz();
-  }
-  await bar();
+   if (await DBOS.deprecatePatch("use-baz")) {
+      // Always returns true
+      await baz();
+   }
+   await bar();
 }
 const workflow = DBOS.registerWorkflow(workflowFn);
 ```
@@ -59,8 +60,8 @@ const workflow = DBOS.registerWorkflow(workflowFn);
 
 ```typescript
 async function workflowFn() {
-  await baz();
-  await bar();
+   await baz();
+   await bar();
 }
 const workflow = DBOS.registerWorkflow(workflowFn);
 ```

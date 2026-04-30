@@ -23,41 +23,44 @@ await DBOS.launch();
 import { DBOSClient } from "@dbos-inc/dbos-sdk";
 
 const client = await DBOSClient.create({
-  systemDatabaseUrl: process.env.DBOS_SYSTEM_DATABASE_URL,
+   systemDatabaseUrl: process.env.DBOS_SYSTEM_DATABASE_URL,
 });
 
 try {
-  // Send a message to a workflow
-  await client.send(workflowID, "notification", "topic");
+   // Send a message to a workflow
+   await client.send(workflowID, "notification", "topic");
 
-  // Get an event from a workflow
-  const event = await client.getEvent<string>(workflowID, "status");
+   // Get an event from a workflow
+   const event = await client.getEvent<string>(workflowID, "status");
 
-  // Read a stream from a workflow
-  for await (const value of client.readStream(workflowID, "results")) {
-    console.log(value);
-  }
+   // Read a stream from a workflow
+   for await (const value of client.readStream(workflowID, "results")) {
+      console.log(value);
+   }
 
-  // Retrieve a workflow handle
-  const handle = client.retrieveWorkflow<string>(workflowID);
-  const result = await handle.getResult();
+   // Retrieve a workflow handle
+   const handle = client.retrieveWorkflow<string>(workflowID);
+   const result = await handle.getResult();
 
-  // List workflows
-  const workflows = await client.listWorkflows({ status: "ERROR" });
+   // List workflows
+   const workflows = await client.listWorkflows({ status: "ERROR" });
 
-  // Workflow management
-  await client.cancelWorkflow(workflowID);
-  await client.resumeWorkflow(workflowID);
-  await client.forkWorkflow(workflowID, stepID, { applicationVersion: "2.0.0" });
+   // Workflow management
+   await client.cancelWorkflow(workflowID);
+   await client.resumeWorkflow(workflowID);
+   await client.forkWorkflow(workflowID, stepID, {
+      applicationVersion: "2.0.0",
+   });
 
-  // Wait for first of multiple workflows
-  const first = await client.waitFirst(handles);
+   // Wait for first of multiple workflows
+   const first = await client.waitFirst(handles);
 } finally {
-  await client.destroy();
+   await client.destroy();
 }
 ```
 
 Constructor options:
+
 - `systemDatabaseUrl`: Connection string to the Postgres system database (required)
 - `systemDatabasePool`: Optional custom `node-postgres` connection pool
 - `serializer`: Optional custom serializer (must match the DBOS application's serializer)
@@ -91,12 +94,12 @@ const handle = await client.triggerSchedule("my-task");
 import { DBOSClient, DebouncerClient } from "@dbos-inc/dbos-sdk";
 
 const debouncer = new DebouncerClient(client, {
-  workflowName: "processInput",
-  debounceTimeoutMs: 120000,
+   workflowName: "processInput",
+   debounceTimeoutMs: 120000,
 });
 
 async function onUserInput(userId: string, userInput: string) {
-  await debouncer.debounce(userId, 60000, userInput);  // Wait 60s idle
+   await debouncer.debounce(userId, 60000, userInput); // Wait 60s idle
 }
 ```
 
@@ -105,7 +108,7 @@ async function onUserInput(userId: string, userInput: string) {
 ```typescript
 const versions = await client.listApplicationVersions();
 const latest = await client.getLatestApplicationVersion();
-await client.setLatestApplicationVersion("1.0.0");  // Rollback
+await client.setLatestApplicationVersion("1.0.0"); // Rollback
 ```
 
 Reference: [DBOS Client](https://docs.dbos.dev/typescript/reference/client)

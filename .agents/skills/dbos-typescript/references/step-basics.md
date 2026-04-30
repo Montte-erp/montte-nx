@@ -13,9 +13,9 @@ Any function that performs complex operations, accesses external APIs, or has si
 
 ```typescript
 async function myWorkflowFn() {
-  // External API call directly in workflow - not checkpointed!
-  const response = await fetch("https://api.example.com/data");
-  return await response.json();
+   // External API call directly in workflow - not checkpointed!
+   const response = await fetch("https://api.example.com/data");
+   return await response.json();
 }
 const myWorkflow = DBOS.registerWorkflow(myWorkflowFn);
 ```
@@ -24,12 +24,12 @@ const myWorkflow = DBOS.registerWorkflow(myWorkflowFn);
 
 ```typescript
 async function fetchData() {
-  return await fetch("https://api.example.com/data").then(r => r.json());
+   return await fetch("https://api.example.com/data").then((r) => r.json());
 }
 
 async function myWorkflowFn() {
-  const data = await DBOS.runStep(fetchData, { name: "fetchData" });
-  return data;
+   const data = await DBOS.runStep(fetchData, { name: "fetchData" });
+   return data;
 }
 const myWorkflow = DBOS.registerWorkflow(myWorkflowFn);
 ```
@@ -38,22 +38,24 @@ const myWorkflow = DBOS.registerWorkflow(myWorkflowFn);
 
 ```typescript
 async function myWorkflowFn() {
-  const data = await DBOS.runStep(
-    () => fetch("https://api.example.com/data").then(r => r.json()),
-    { name: "fetchData" }
-  );
-  return data;
+   const data = await DBOS.runStep(
+      () => fetch("https://api.example.com/data").then((r) => r.json()),
+      { name: "fetchData" },
+   );
+   return data;
 }
 ```
 
 Alternatively, you can use `DBOS.registerStep` to pre-register a step or `@DBOS.step()` as a method decorator, but `DBOS.runStep` is preferred for most use cases.
 
 Step requirements:
+
 - Inputs and outputs must be serializable (SuperJSON by default; portable JSON when configured)
 - Cannot call, start, or enqueue workflows from within steps
 - Calling a step from another step makes the called step part of the calling step's execution
 
 When to use steps:
+
 - API calls to external services
 - File system operations
 - Random number generation

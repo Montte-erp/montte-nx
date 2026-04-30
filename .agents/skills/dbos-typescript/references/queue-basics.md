@@ -13,13 +13,13 @@ Queues run many workflows concurrently with managed flow control. Use them when 
 
 ```typescript
 async function processTaskFn(task: string) {
-  // ...
+   // ...
 }
 const processTask = DBOS.registerWorkflow(processTaskFn);
 
 // Starting many workflows without control - could overwhelm resources
 for (const task of tasks) {
-  await DBOS.startWorkflow(processTask)(task);
+   await DBOS.startWorkflow(processTask)(task);
 }
 ```
 
@@ -31,25 +31,25 @@ import { DBOS, WorkflowQueue } from "@dbos-inc/dbos-sdk";
 const queue = new WorkflowQueue("task_queue");
 
 async function processTaskFn(task: string) {
-  // ...
+   // ...
 }
 const processTask = DBOS.registerWorkflow(processTaskFn);
 
 async function processAllTasksFn(tasks: string[]) {
-  const handles = [];
-  for (const task of tasks) {
-    // Enqueue by passing queueName to startWorkflow
-    const handle = await DBOS.startWorkflow(processTask, {
-      queueName: queue.name,
-    })(task);
-    handles.push(handle);
-  }
-  // Wait for all tasks
-  const results = [];
-  for (const h of handles) {
-    results.push(await h.getResult());
-  }
-  return results;
+   const handles = [];
+   for (const task of tasks) {
+      // Enqueue by passing queueName to startWorkflow
+      const handle = await DBOS.startWorkflow(processTask, {
+         queueName: queue.name,
+      })(task);
+      handles.push(handle);
+   }
+   // Wait for all tasks
+   const results = [];
+   for (const h of handles) {
+      results.push(await h.getResult());
+   }
+   return results;
 }
 const processAllTasks = DBOS.registerWorkflow(processAllTasksFn);
 ```

@@ -20,47 +20,49 @@ const queue = new WorkflowQueue("tasks", { concurrency: 1 });
 
 ```typescript
 const queue = new WorkflowQueue("tasks", {
-  partitionQueue: true,
-  concurrency: 1,
+   partitionQueue: true,
+   concurrency: 1,
 });
 
 async function processTaskFn(task: string) {
-  // ...
+   // ...
 }
 const processTask = DBOS.registerWorkflow(processTaskFn);
 
 async function onUserTask(userID: string, task: string) {
-  // Each user gets their own partition - at most 1 task per user
-  // but tasks from different users can run concurrently
-  await DBOS.startWorkflow(processTask, {
-    queueName: queue.name,
-    enqueueOptions: { queuePartitionKey: userID },
-  })(task);
+   // Each user gets their own partition - at most 1 task per user
+   // but tasks from different users can run concurrently
+   await DBOS.startWorkflow(processTask, {
+      queueName: queue.name,
+      enqueueOptions: { queuePartitionKey: userID },
+   })(task);
 }
 ```
 
 **Two-level queueing (per-user + global limits):**
 
 ```typescript
-const concurrencyQueue = new WorkflowQueue("concurrency-queue", { concurrency: 5 });
+const concurrencyQueue = new WorkflowQueue("concurrency-queue", {
+   concurrency: 5,
+});
 const partitionedQueue = new WorkflowQueue("partitioned-queue", {
-  partitionQueue: true,
-  concurrency: 1,
+   partitionQueue: true,
+   concurrency: 1,
 });
 
 // At most 1 task per user AND at most 5 tasks globally
 async function onUserTask(userID: string, task: string) {
-  await DBOS.startWorkflow(concurrencyManager, {
-    queueName: partitionedQueue.name,
-    enqueueOptions: { queuePartitionKey: userID },
-  })(task);
+   await DBOS.startWorkflow(concurrencyManager, {
+      queueName: partitionedQueue.name,
+      enqueueOptions: { queuePartitionKey: userID },
+   })(task);
 }
 
 async function concurrencyManagerFn(task: string) {
-  const handle = await DBOS.startWorkflow(processTask, {
-    queueName: concurrencyQueue.name,
-  })(task);
-  return await handle.getResult();
+   const handle = await DBOS.startWorkflow(processTask, {
+      queueName: concurrencyQueue.name,
+   })(task);
+   return await handle.getResult();
 }
 const concurrencyManager = DBOS.registerWorkflow(concurrencyManagerFn);
 ```

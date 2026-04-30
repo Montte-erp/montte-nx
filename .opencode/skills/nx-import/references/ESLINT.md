@@ -12,10 +12,10 @@ ESLint-specific guidance for `nx import`. For generic import issues (root deps, 
 
 ```json
 {
-  "plugin": "@nx/eslint/plugin",
-  "options": {
-    "targetName": "eslint:lint"
-  }
+   "plugin": "@nx/eslint/plugin",
+   "options": {
+      "targetName": "eslint:lint"
+   }
 }
 ```
 
@@ -48,15 +48,15 @@ This causes `Parsing error: ESLint was configured to run on X using parserOption
 ```json
 // .eslintrc.json
 {
-  "ignorePatterns": ["dist/**"]
+   "ignorePatterns": ["dist/**"]
 }
 ```
 
 ```js
 // .eslintrc.js — also ignore the config file itself since module.exports isn't in tsconfig
 module.exports = {
-  ignorePatterns: ['dist/**', '.eslintrc.js'],
-  // ...
+   ignorePatterns: ["dist/**", ".eslintrc.js"],
+   // ...
 };
 ```
 
@@ -70,10 +70,10 @@ When a project uses `eslint.config.cjs` (CJS flat config), `eslint .` lints the 
 
 ```js
 module.exports = tseslint.config(
-  {
-    ignores: ['dist/**', 'node_modules/**', 'eslint.config.cjs'],
-  }
-  // ...
+   {
+      ignores: ["dist/**", "node_modules/**", "eslint.config.cjs"],
+   },
+   // ...
 );
 ```
 
@@ -92,9 +92,9 @@ The same applies to `eslint.config.js` in a CJS project (no `"type": "module"`) 
 ```json
 // packages/my-package/package.json
 {
-  "devDependencies": {
-    "typescript-eslint": "^8.0.0"
-  }
+   "devDependencies": {
+      "typescript-eslint": "^8.0.0"
+   }
 }
 ```
 

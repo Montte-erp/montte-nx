@@ -55,9 +55,9 @@ function KpiPreview({
    const trend = data.comparison
       ? {
            value: Math.abs(data.comparison.percentageChange),
-           direction: (data.comparison.percentageChange >= 0 ? "up" : "down") as
-              | "up"
-              | "down",
+           direction: (data.comparison.percentageChange >= 0
+              ? "up"
+              : "down") as "up" | "down",
            comparison: "vs período anterior",
         }
       : undefined;

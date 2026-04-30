@@ -22,14 +22,19 @@ CREATE UNIQUE INDEX users_email_unique ON users(email);
 ```
 
 **In Drizzle:**
+
 ```typescript
-export const users = pgTable('users', {
-  email: text('email').notNull(),
-  createdAt: timestamp('created_at').notNull(),
-}, (table) => [
-  index('users_email_idx').on(table.email),
-  index('users_created_idx').on(table.createdAt),
-]);
+export const users = pgTable(
+   "users",
+   {
+      email: text("email").notNull(),
+      createdAt: timestamp("created_at").notNull(),
+   },
+   (table) => [
+      index("users_email_idx").on(table.email),
+      index("users_created_idx").on(table.createdAt),
+   ],
+);
 ```
 
 ### Partial Indexes
@@ -49,6 +54,7 @@ WHERE status = 'pending';
 **Benefits:** Smaller size, faster updates, more efficient queries.
 
 **In Drizzle:**
+
 ```typescript
 }, (table) => [
   index('active_users_idx')
@@ -71,10 +77,10 @@ SELECT status, total FROM orders WHERE user_id = 123;
 
 ### GIN Indexes for JSONB
 
-| Class | Size | Operators | Best For |
-|-------|------|-----------|----------|
+| Class                 | Size   | Operators      | Best For      |
+| --------------------- | ------ | -------------- | ------------- |
 | `jsonb_ops` (default) | 60-80% | @>, ?, ?\|, ?& | Key existence |
-| `jsonb_path_ops` | 20-30% | @> only | Containment |
+| `jsonb_path_ops`      | 20-30% | @> only        | Containment   |
 
 ```sql
 -- Default (supports key existence)
@@ -120,22 +126,24 @@ EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
 SELECT * FROM orders WHERE user_id = '123' AND status = 'pending';
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option  | Description                      |
+| ------- | -------------------------------- |
 | ANALYZE | Execute query, show actual times |
 | BUFFERS | Show buffer/cache hits and reads |
-| COSTS | Show planner estimates |
-| TIMING | Show per-node timing |
+| COSTS   | Show planner estimates           |
+| TIMING  | Show per-node timing             |
 
 ### Reading Query Plans
 
 **Key metrics:**
+
 - `actual time`: Startup..total time in ms
 - `rows`: Estimated vs actual row count
 - `loops`: Number of iterations
 - `Buffers: shared hit/read`: Cache hits vs disk reads
 
 **Problem indicators:**
+
 - Large discrepancy between estimated and actual rows
 - High `shared read` (cold cache, missing indexes)
 - Seq Scan on large tables
@@ -168,44 +176,47 @@ SELECT * FROM orders WHERE user_id = '123' AND status = 'pending';
 ```typescript
 // Prepare once
 const getUserById = db
-  .select()
-  .from(users)
-  .where(eq(users.id, sql.placeholder('id')))
-  .prepare('get_user_by_id');
+   .select()
+   .from(users)
+   .where(eq(users.id, sql.placeholder("id")))
+   .prepare("get_user_by_id");
 
 // Execute many times (reuses plan)
-const user1 = await getUserById.execute({ id: 'uuid-1' });
-const user2 = await getUserById.execute({ id: 'uuid-2' });
+const user1 = await getUserById.execute({ id: "uuid-1" });
+const user2 = await getUserById.execute({ id: "uuid-2" });
 ```
 
 ### Avoid N+1 Queries
 
 **Bad (N+1):**
+
 ```typescript
 const posts = await db.select().from(posts);
 for (const post of posts) {
-  const author = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, post.authorId));
-  // N+1 queries!
+   const author = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, post.authorId));
+   // N+1 queries!
 }
 ```
 
 **Good (Relational Query):**
+
 ```typescript
 const posts = await db.query.posts.findMany({
-  with: { author: true },
+   with: { author: true },
 });
 // Single query with JOIN
 ```
 
 **Good (Manual Join):**
+
 ```typescript
 const posts = await db
-  .select()
-  .from(posts)
-  .leftJoin(users, eq(posts.authorId, users.id));
+   .select()
+   .from(posts)
+   .leftJoin(users, eq(posts.authorId, users.id));
 ```
 
 ### Select Only Needed Columns
@@ -215,13 +226,11 @@ const posts = await db
 const users = await db.select().from(users);
 
 // Good - selects only needed columns
-const users = await db
-  .select({ id: users.id, email: users.email })
-  .from(users);
+const users = await db.select({ id: users.id, email: users.email }).from(users);
 
 // With relational queries
 const users = await db.query.users.findMany({
-  columns: { id: true, email: true },
+   columns: { id: true, email: true },
 });
 ```
 
@@ -230,7 +239,7 @@ const users = await db.query.users.findMany({
 ```typescript
 // Bad - individual inserts
 for (const user of users) {
-  await db.insert(usersTable).values(user);
+   await db.insert(usersTable).values(user);
 }
 
 // Good - batch insert
@@ -239,7 +248,7 @@ await db.insert(usersTable).values(users);
 // For very large batches, chunk them
 const BATCH_SIZE = 1000;
 for (let i = 0; i < users.length; i += BATCH_SIZE) {
-  await db.insert(usersTable).values(users.slice(i, i + BATCH_SIZE));
+   await db.insert(usersTable).values(users.slice(i, i + BATCH_SIZE));
 }
 ```
 
@@ -284,11 +293,11 @@ reserve_pool_size = 5
 
 ### Pooling Modes
 
-| Mode | Connection Release | Use Case |
-|------|-------------------|----------|
-| Session | After disconnect | Legacy apps |
-| Transaction | After each transaction | Most applications |
-| Statement | After each statement | Simple queries only |
+| Mode        | Connection Release     | Use Case            |
+| ----------- | ---------------------- | ------------------- |
+| Session     | After disconnect       | Legacy apps         |
+| Transaction | After each transaction | Most applications   |
+| Statement   | After each statement   | Simple queries only |
 
 ### Transaction Pooling Limitations
 
@@ -301,26 +310,26 @@ reserve_pool_size = 5
 postgres.js has built-in connection pooling:
 
 ```typescript
-import postgres from 'postgres';
+import postgres from "postgres";
 
 const client = postgres(process.env.DATABASE_URL!, {
-  max: 20,              // Max connections
-  idle_timeout: 30,     // Close idle connections after 30s
-  connect_timeout: 10,  // Connection timeout
+   max: 20, // Max connections
+   idle_timeout: 30, // Close idle connections after 30s
+   connect_timeout: 10, // Connection timeout
 });
 ```
 
 ### Drizzle with node-postgres Pool
 
 ```typescript
-import { Pool } from 'pg';
-import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
+   connectionString: process.env.DATABASE_URL,
+   max: 20,
+   idleTimeoutMillis: 30000,
+   connectionTimeoutMillis: 10000,
 });
 
 const db = drizzle(pool, { schema });
@@ -333,28 +342,28 @@ const db = drizzle(pool, { schema });
 ### Query Result Caching
 
 ```typescript
-import { Redis } from 'ioredis';
+import { Redis } from "ioredis";
 
 const redis = new Redis();
 
 async function getCachedUser(userId: string) {
-  const cacheKey = `user:${userId}`;
+   const cacheKey = `user:${userId}`;
 
-  // Try cache first
-  const cached = await redis.get(cacheKey);
-  if (cached) return JSON.parse(cached);
+   // Try cache first
+   const cached = await redis.get(cacheKey);
+   if (cached) return JSON.parse(cached);
 
-  // Query database
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, userId),
-  });
+   // Query database
+   const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+   });
 
-  // Cache result
-  if (user) {
-    await redis.setex(cacheKey, 3600, JSON.stringify(user));
-  }
+   // Cache result
+   if (user) {
+      await redis.setex(cacheKey, 3600, JSON.stringify(user));
+   }
 
-  return user;
+   return user;
 }
 ```
 
@@ -363,8 +372,8 @@ async function getCachedUser(userId: string) {
 ```typescript
 // Invalidate on update
 async function updateUser(userId: string, data: Partial<User>) {
-  await db.update(users).set(data).where(eq(users.id, userId));
-  await redis.del(`user:${userId}`);
+   await db.update(users).set(data).where(eq(users.id, userId));
+   await redis.del(`user:${userId}`);
 }
 ```
 
@@ -376,12 +385,12 @@ async function updateUser(userId: string, data: Partial<User>) {
 
 ```typescript
 async function getPage(page: number, pageSize = 20) {
-  return db
-    .select()
-    .from(posts)
-    .orderBy(desc(posts.createdAt))
-    .limit(pageSize)
-    .offset((page - 1) * pageSize);
+   return db
+      .select()
+      .from(posts)
+      .orderBy(desc(posts.createdAt))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize);
 }
 ```
 
@@ -389,12 +398,12 @@ async function getPage(page: number, pageSize = 20) {
 
 ```typescript
 async function getPostsAfter(cursor?: string, limit = 20) {
-  return db
-    .select()
-    .from(posts)
-    .where(cursor ? lt(posts.id, cursor) : undefined)
-    .orderBy(desc(posts.id))
-    .limit(limit);
+   return db
+      .select()
+      .from(posts)
+      .where(cursor ? lt(posts.id, cursor) : undefined)
+      .orderBy(desc(posts.id))
+      .limit(limit);
 }
 
 // Usage
@@ -407,25 +416,25 @@ const page2 = await getPostsAfter(lastId, 20);
 
 ```typescript
 async function getPostsAfter(
-  cursor?: { createdAt: Date; id: string },
-  limit = 20
+   cursor?: { createdAt: Date; id: string },
+   limit = 20,
 ) {
-  return db
-    .select()
-    .from(posts)
-    .where(
-      cursor
-        ? or(
-            lt(posts.createdAt, cursor.createdAt),
-            and(
-              eq(posts.createdAt, cursor.createdAt),
-              lt(posts.id, cursor.id)
-            )
-          )
-        : undefined
-    )
-    .orderBy(desc(posts.createdAt), desc(posts.id))
-    .limit(limit);
+   return db
+      .select()
+      .from(posts)
+      .where(
+         cursor
+            ? or(
+                 lt(posts.createdAt, cursor.createdAt),
+                 and(
+                    eq(posts.createdAt, cursor.createdAt),
+                    lt(posts.id, cursor.id),
+                 ),
+              )
+            : undefined,
+      )
+      .orderBy(desc(posts.createdAt), desc(posts.id))
+      .limit(limit);
 }
 ```
 
@@ -438,11 +447,11 @@ async function getPostsAfter(
 ```typescript
 // Insert many rows efficiently
 await db.insert(events).values(
-  items.map(item => ({
-    type: item.type,
-    data: item.data,
-    createdAt: new Date(),
-  }))
+   items.map((item) => ({
+      type: item.type,
+      data: item.data,
+      createdAt: new Date(),
+   })),
 );
 ```
 
@@ -454,11 +463,14 @@ await db.execute(sql`
   UPDATE products
   SET price = CASE id
     ${sql.join(
-      updates.map(u => sql`WHEN ${u.id} THEN ${u.price}`),
-      sql` `
+       updates.map((u) => sql`WHEN ${u.id} THEN ${u.price}`),
+       sql` `,
     )}
   END
-  WHERE id IN ${sql`(${sql.join(updates.map(u => u.id), sql`, `)})`}
+  WHERE id IN ${sql`(${sql.join(
+     updates.map((u) => u.id),
+     sql`, `,
+  )})`}
 `);
 ```
 
@@ -466,15 +478,15 @@ await db.execute(sql`
 
 ```typescript
 await db
-  .insert(products)
-  .values(products)
-  .onConflictDoUpdate({
-    target: products.sku,
-    set: {
-      price: sql`excluded.price`,
-      updatedAt: new Date(),
-    },
-  });
+   .insert(products)
+   .values(products)
+   .onConflictDoUpdate({
+      target: products.sku,
+      set: {
+         price: sql`excluded.price`,
+         updatedAt: new Date(),
+      },
+   });
 ```
 
 ---
@@ -482,6 +494,7 @@ await db
 ## Performance Checklist
 
 ### PostgreSQL Configuration
+
 - [ ] Set `shared_buffers` to 25% of RAM
 - [ ] Set `effective_cache_size` to 50-75% of RAM
 - [ ] Configure `work_mem` based on workload (OLTP: 4-16MB, OLAP: 64-256MB)
@@ -489,6 +502,7 @@ await db
 - [ ] Tune `io_workers` (~1/4 of CPU cores)
 
 ### Indexing
+
 - [ ] Create indexes for foreign keys
 - [ ] Use partial indexes for filtered subsets
 - [ ] Use covering indexes for hot queries
@@ -496,6 +510,7 @@ await db
 - [ ] Monitor unused indexes and remove them
 
 ### Queries
+
 - [ ] Use `EXPLAIN (ANALYZE, BUFFERS)` for optimization
 - [ ] Use prepared statements for repeated queries
 - [ ] Use relational queries API to avoid N+1
@@ -503,12 +518,14 @@ await db
 - [ ] Use cursor-based pagination for large datasets
 
 ### Application
+
 - [ ] Use connection pooling
 - [ ] Batch insert/update operations
 - [ ] Cache frequently accessed data
 - [ ] Use transactions appropriately
 
 ### Maintenance
+
 - [ ] Ensure autovacuum is configured
 - [ ] Run `ANALYZE` after bulk data changes
 - [ ] Monitor table/index bloat

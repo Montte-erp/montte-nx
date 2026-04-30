@@ -402,3 +402,72 @@ skills:
 use: "dotenv#dotenv"
  <!-- intent-skills:end -->
 
+## Billing Page — Early Access Feature Cards
+
+`apps/web/src/features/billing/ui/billing-overview.tsx`
+
+The billing overview renders product cards driven by two config objects. **Adding a new early access feature = one entry in the right config.**
+
+### Event-based categories (usage from API)
+
+```typescript
+// EARLY_ACCESS_CATEGORY_GATES: Record<categoryKey, { flag, fallbackStage }>
+// Category must also exist in CATEGORY_CONFIG.
+// When enrolled → card visible + stage badge shown.
+// When not enrolled → card hidden entirely.
+nfe:      { flag: "nfe", fallbackStage: "alpha" },
+document: { flag: "document-signing", fallbackStage: "alpha" },
+```
+
+### Coming soon categories (no enroll CTA)
+
+```typescript
+// COMING_SOON_CATEGORIES are rendered as "Em breve".
+// Current values:
+new Set(["nfe", "document"]);
+```
+
+### Stage resolution
+
+Stage is resolved from PostHog's early access feature config at runtime (`features.find(f => f.flagKey === key)?.stage`), falling back to `fallbackStage` in the local config. No manual sync needed — PostHog is the source of truth.
+
+### Flag keys (from billing-overview.tsx)
+
+| Feature            | Flag key           | Stage |
+| ------------------ | ------------------ | ----- |
+| NF-e               | `nfe`              | alpha |
+| Assinatura Digital | `document-signing` | alpha |
+
+### Other early-access flag keys (from sidebar-nav-items.ts + early-access.ts)
+
+| Feature    | Flag key             | Where used                            |
+| ---------- | -------------------- | ------------------------------------- |
+| Contatos   | `contacts`           | Sidebar gating, onboarding enrollment |
+| Estoque    | `inventory`          | Sidebar gating, onboarding enrollment |
+| Serviços   | `services`           | Sidebar gating, onboarding enrollment |
+| Dashboards | `advanced-analytics` | Sidebar gating, onboarding enrollment |
+| Dados      | `data-management`    | Sidebar gating, onboarding enrollment |
+
+<!-- nx configuration start-->
+<!-- Leave the start & end comments to automatically receive updates. -->
+
+## General Guidelines for working with Nx
+
+- For navigating/exploring the workspace, invoke the `nx-workspace` skill first - it has patterns for querying projects, targets, and dependencies
+- When running tasks (for example build, lint, test, e2e, etc.), always prefer running the task through `nx` (i.e. `nx run`, `nx run-many`, `nx affected`) instead of using the underlying tooling directly
+- Prefix nx commands with the workspace's package manager (e.g., `pnpm nx build`, `npm exec nx test`) - avoids using globally installed CLI
+- You have access to the Nx MCP server and its tools, use them to help the user
+- For Nx plugin best practices, check `node_modules/@nx/<plugin>/PLUGIN.md`. Not all plugins have this file - proceed without it if unavailable.
+- NEVER guess CLI flags - always check nx_docs or `--help` first when unsure
+
+## Scaffolding & Generators
+
+- For scaffolding tasks (creating apps, libs, project structure, setup), ALWAYS invoke the `nx-generate` skill FIRST before exploring or calling MCP tools
+
+## When to use nx_docs
+
+- USE for: advanced config options, unfamiliar flags, migration guides, plugin configuration, edge cases
+- DON'T USE for: basic generator syntax (`nx g @nx/react:app`), standard commands, things you already know
+- The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
+
+<!-- nx configuration end-->

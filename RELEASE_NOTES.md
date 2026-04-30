@@ -45,7 +45,7 @@ Semana de integracao do painel Rubi AI com suporte a threads e acoes em lote, re
 - Billing module-level ownership middlewares, remocao da camada de repository ([#810](https://github.com/Montte-erp/montte-nx/pull/810))
 - oRPC server reescrito como modulo flat, Stripe removido do auth/context ([#810](https://github.com/Montte-erp/montte-nx/pull/810))
 - Workflows de billing migrados para DBOS, removidos pacotes legados stripe/hyprpay ([#820](https://github.com/Montte-erp/montte-nx/pull/820))
-- Testes de billing movidos para diretorio __tests__ ([#810](https://github.com/Montte-erp/montte-nx/pull/810))
+- Testes de billing movidos para diretorio **tests** ([#810](https://github.com/Montte-erp/montte-nx/pull/810))
 - withTestTransaction convertido de try/catch para neverthrow ([#810](https://github.com/Montte-erp/montte-nx/pull/810))
 
 ## Outros

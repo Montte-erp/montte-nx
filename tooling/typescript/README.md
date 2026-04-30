@@ -15,6 +15,6 @@ Shared TypeScript configurations for the monorepo.
 
 ```json
 {
-  "extends": "@tooling/typescript/core.json"
+   "extends": "@tooling/typescript/core.json"
 }
 ```

@@ -1,4 +1,5 @@
 ## Commits
+
 - Merge pull request #825 from Montte-erp/manoelnetocarvalho03/mon-562-integrar-linear-releases-ao-fluxo-de-release (96168950) by Manoel Neto
 - fix(release-weekly): handle opencode action push attempt (b2f75ca4) by Manoel
 - Merge pull request #824 from Montte-erp/manoelnetocarvalho03/mon-562-integrar-linear-releases-ao-fluxo-de-release (446829d7) by Manoel Neto
@@ -133,7 +134,7 @@
 - chore(worker): drop unused stripeClient — billing migrated to HyprPay (b65873dd) by Manoel
 - refactor(hyprpay): improve error mapping and cleanup types (4c39db20) by Manoel
 - test(billing): E2E time-mocked trial-to-invoice handoff chain (b601c7b6) by Manoel
-- refactor(test): move test files to __tests__ directory ``` </think> (797f4a63) by Manoel
+- refactor(test): move test files to **tests** directory ``` </think> (797f4a63) by Manoel
 - test(billing): cover trial-expiry wrapper delaySeconds + past-trial activation (52cca87f) by Manoel
 - refactor(billing): trial-expiry uses multi-phase delaySeconds, no DBOS sleep (831dceec) by Manoel
 - feat(billing): add workflow self-scheduling + DBOS datasource refactor (a700a5bd) by Manoel
@@ -172,7 +173,7 @@
 - refactor(database): replace try/catch in withTestTransaction with neverthrow (866fbaf0) by Manoel
 - feat(database): add shared testing factories (seedTeam, seedUser) (894413af) by Manoel
 - refactor(database): move setup-test-db to src/testing for shared consumption (0f6768fb) by Manoel
-- chore(billing): include __tests__ in tsconfig (4a94a612) by Manoel
+- chore(billing): include **tests** in tsconfig (4a94a612) by Manoel
 - chore(billing): add vitest config (896ae422) by Manoel
 - chore(billing): add vitest + pglite devDependencies for test harness (8d9442ba) by Manoel
 - feat(billing): Replace usage ingestion with usage events. (d000506a) by Manoel
@@ -194,7 +195,7 @@
 - feat(core): @core/dbos package — createWorkflowClient factory (0a7bda1e) by Manoel
 - fix(core/orpc): use context.posthog not deps.posthog in telemetry middleware (a46ec940) by Manoel
 - feat(core/orpc): createORPCProcedures factory (f7e00a6f) by Manoel
-- feat(core/orpc): add ORPCContext* type interfaces (8a7ba094) by Manoel
+- feat(core/orpc): add ORPCContext\* type interfaces (8a7ba094) by Manoel
 - fix(core/orpc): add missing @core/environment path and reference (73f1bedf) by Manoel
 - feat(core): scaffold @core/orpc package (d799069f) by Manoel
 - Merge pull request #809 from Montte-erp/manoelnetocarvalho03/mon-501-epicservices-hyprpay-sdk-new-namespaces (2fa23dd0) by Manoel Neto
@@ -569,7 +570,7 @@
 - Merge pull request #780 from Montte-erp/full-store (444df3bd) by Manoel Neto
 - refactor(dbos-typescript): Improve documentation and examples refactor(web): Refactor search query and file import refactor(events): Update queue directory structure refactor(notifications): Update notification import and publisher (6a05771a) by Manoel
 - docs(skills): Add markdown files for Better Auth skills (71c385de) by Manoel
-- ```json {   "version": 1,   "skills": {     "Release": {       "source": "schpet/linear-cli",       "sourceType": "github",       "computedHash": "1584c0740971e96f6c88cfc7b4671d9907b3d94297e4a6232941f869c73ac24a"     },     "brainstorming": {       "source": "obra/superpowers",       "sourceType": "github",       "computedHash": "5cafa1558b0b6bd4d4c71f23d5567b7fcbbcdb4b0a50b0c5f69a80a3cebaf9b8"     },     "dbos-typescript": {       "source": "dbos-inc/agent-skills",       "sourceType": "github",       "computedHash": "0ea184b3ade54eedfd7109e041ec44803b12f7abc89116d9fab21a47ef40f295"     },     "linear-cli": {       "source": "schpet/linear-cli",       "sourceType": "github",       "computedHash": "5f8516b9aa8157e7710ec5d029e1c44a0e55be1c3f834f844d0c7f27dae62580"     },     "paradedb-skill": {       "source": "paradedb/agent-skills",       "sourceType": "github",       "computedHash": "7045a6e531ab5b35de1dfbbed1e8e66b12946c0d2521f145666a3bc3534f1a5d"     },     "postgres-drizzle": {       "source": "ccheney/robust-skills",       "sourceType": "github",       "computedHash": "60534e1aa880981e26360db836115df77a8e73be219c7a027e635802686b5bd9"     },     "redis-best-practices": {       "source": "mindrally/skills",       "sourceType": "github",       "computedHash": "c362f644a6e3ed9b69a86fef4aa41ebcb4ff15552f03b7431f00642af5d3d5f1"     },     "shadcn": {       "source": "shadcn/ui",       "sourceType": "github",       "computedHash": "873c67922d80775a9fdf596db7964b579f0408c30ec6e3d11989f6055bbec89f"     },     "tanstack-ai": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "d95cd0d1700d882cc2d38e6bd4f59d219954eabf579a8771f6cbccedce4892de"     },     "tanstack-config": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "f1d53bd18002a098bf55153fbbf78ab504b89ec0cf03d2fbb79d3e31b3fbe91c"     },     "tanstack-db": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "9d21b2c472a9e642273ff70b52b1107839e414860462cad6ce6df3ae15debbda"     },     "tanstack-devtools": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "ecb51f9902ae6de9f512b299e6c16bd4befc3ff2c62f8cd1ece07e31b1c73dfe"     },     "tanstack-form": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "1eb9f9fc43ab2777f586f916b2234c5340ed98f296a98b22c75cbbafcbd29b86"     },     "tanstack-integration-best-practices": {       "source": "deckardger/tanstack-agent-skills",       "sourceType": "github",       "computedHash": "f8454d0835f04539c0d90a5a481937bc0e1cd7e31ac8610f302abd3421f3d24a"     },     "tanstack-query": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "b8a0477cd4d7bf8fa54d27f8e64d82388402f0d502591db50a357df5b9995c75"     },     "tanstack-query-best-practices": {       "source": "deckardger/tanstack-agent-skills",       "sourceType": "github",       "computedHash": "21d2e8b7468a81d772b6527ad8ca178cc2f3f08af777bb9061333013ee88a0c9"     },     "tanstack-router": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "24beccc4016f91bab65547209cfd849ea5e66f3d5d92820683a9dd84669ced56"     },     "tanstack-router-best-practices": {       "source": "deckardger/tanstack-agent-skills",       "sourceType": "github",       "computedHash": "65764bc7b90e47f6023cb7f89b3af93eaaafc517754f10b9382e184d4646a77d"     },     "tanstack-start": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "e9d8355fe3e47b118e739081f1123c52aa0ecde57da840722177e1ad5caf9908"     },     "tanstack-start-best-practices": {       "source": "deckardger/tanstack-agent-skills",       "sourceType": "github",       "computedHash": "8b073187405a10f9997158f9139a9664cc801595d2fe63d542a0bac9bf2152f5"     },     "tanstack-store": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "acfc5f1217685253fa9484f8f89dc92aae96a9ae30e42001b07b2ca672c758b2"     },     "tanstack-table": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "d5ac71bd795696cd3310165c3ea0e435c310a0ac3c4e9dd45b39ed91b8dbcbb1"     },     "tanstack-virtual": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "987d0fcffeac700cea1303a13a9cecd8a4583985dd675f97ebbca27bfa592b47"     },     "ui-ux-polish": {       "source": "dicklesworthstone/agent_flywheel_clawdbot_skills_and_integrations",       "sourceType": "github",       "computedHash": "c511d893ffc6db1301030c1f426bc8399bfacbb4592ff62e0dff15ec0311baf3"     },     "ui-ux-pro-max": {       "source": "nextlevelbuilder/ui-ux-pro-max-skill",       "sourceType": "github",       "computedHash": "e688fcd4c5693e14ebd00d48e982dbd2be060fbea89f5f60531e79c704a1bc28"     },     "web-design-guidelines": {       "source": "vercel-labs/agent-skills",       "sourceType": "github",       "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"     }   }  } ``` (12341077) by Manoel
+- `json {   "version": 1,   "skills": {     "Release": {       "source": "schpet/linear-cli",       "sourceType": "github",       "computedHash": "1584c0740971e96f6c88cfc7b4671d9907b3d94297e4a6232941f869c73ac24a"     },     "brainstorming": {       "source": "obra/superpowers",       "sourceType": "github",       "computedHash": "5cafa1558b0b6bd4d4c71f23d5567b7fcbbcdb4b0a50b0c5f69a80a3cebaf9b8"     },     "dbos-typescript": {       "source": "dbos-inc/agent-skills",       "sourceType": "github",       "computedHash": "0ea184b3ade54eedfd7109e041ec44803b12f7abc89116d9fab21a47ef40f295"     },     "linear-cli": {       "source": "schpet/linear-cli",       "sourceType": "github",       "computedHash": "5f8516b9aa8157e7710ec5d029e1c44a0e55be1c3f834f844d0c7f27dae62580"     },     "paradedb-skill": {       "source": "paradedb/agent-skills",       "sourceType": "github",       "computedHash": "7045a6e531ab5b35de1dfbbed1e8e66b12946c0d2521f145666a3bc3534f1a5d"     },     "postgres-drizzle": {       "source": "ccheney/robust-skills",       "sourceType": "github",       "computedHash": "60534e1aa880981e26360db836115df77a8e73be219c7a027e635802686b5bd9"     },     "redis-best-practices": {       "source": "mindrally/skills",       "sourceType": "github",       "computedHash": "c362f644a6e3ed9b69a86fef4aa41ebcb4ff15552f03b7431f00642af5d3d5f1"     },     "shadcn": {       "source": "shadcn/ui",       "sourceType": "github",       "computedHash": "873c67922d80775a9fdf596db7964b579f0408c30ec6e3d11989f6055bbec89f"     },     "tanstack-ai": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "d95cd0d1700d882cc2d38e6bd4f59d219954eabf579a8771f6cbccedce4892de"     },     "tanstack-config": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "f1d53bd18002a098bf55153fbbf78ab504b89ec0cf03d2fbb79d3e31b3fbe91c"     },     "tanstack-db": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "9d21b2c472a9e642273ff70b52b1107839e414860462cad6ce6df3ae15debbda"     },     "tanstack-devtools": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "ecb51f9902ae6de9f512b299e6c16bd4befc3ff2c62f8cd1ece07e31b1c73dfe"     },     "tanstack-form": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "1eb9f9fc43ab2777f586f916b2234c5340ed98f296a98b22c75cbbafcbd29b86"     },     "tanstack-integration-best-practices": {       "source": "deckardger/tanstack-agent-skills",       "sourceType": "github",       "computedHash": "f8454d0835f04539c0d90a5a481937bc0e1cd7e31ac8610f302abd3421f3d24a"     },     "tanstack-query": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "b8a0477cd4d7bf8fa54d27f8e64d82388402f0d502591db50a357df5b9995c75"     },     "tanstack-query-best-practices": {       "source": "deckardger/tanstack-agent-skills",       "sourceType": "github",       "computedHash": "21d2e8b7468a81d772b6527ad8ca178cc2f3f08af777bb9061333013ee88a0c9"     },     "tanstack-router": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "24beccc4016f91bab65547209cfd849ea5e66f3d5d92820683a9dd84669ced56"     },     "tanstack-router-best-practices": {       "source": "deckardger/tanstack-agent-skills",       "sourceType": "github",       "computedHash": "65764bc7b90e47f6023cb7f89b3af93eaaafc517754f10b9382e184d4646a77d"     },     "tanstack-start": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "e9d8355fe3e47b118e739081f1123c52aa0ecde57da840722177e1ad5caf9908"     },     "tanstack-start-best-practices": {       "source": "deckardger/tanstack-agent-skills",       "sourceType": "github",       "computedHash": "8b073187405a10f9997158f9139a9664cc801595d2fe63d542a0bac9bf2152f5"     },     "tanstack-store": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "acfc5f1217685253fa9484f8f89dc92aae96a9ae30e42001b07b2ca672c758b2"     },     "tanstack-table": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "d5ac71bd795696cd3310165c3ea0e435c310a0ac3c4e9dd45b39ed91b8dbcbb1"     },     "tanstack-virtual": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "987d0fcffeac700cea1303a13a9cecd8a4583985dd675f97ebbca27bfa592b47"     },     "ui-ux-polish": {       "source": "dicklesworthstone/agent_flywheel_clawdbot_skills_and_integrations",       "sourceType": "github",       "computedHash": "c511d893ffc6db1301030c1f426bc8399bfacbb4592ff62e0dff15ec0311baf3"     },     "ui-ux-pro-max": {       "source": "nextlevelbuilder/ui-ux-pro-max-skill",       "sourceType": "github",       "computedHash": "e688fcd4c5693e14ebd00d48e982dbd2be060fbea89f5f60531e79c704a1bc28"     },     "web-design-guidelines": {       "source": "vercel-labs/agent-skills",       "sourceType": "github",       "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"     }   }  } ` (12341077) by Manoel
 - refactor(release): add skill for creating new releases. (718475a0) by Manoel
 - feat(paradedb-skill): Add example prompts and license file (2fff4935) by Manoel
 - refactor(context-panel): migrate createAtom to createStore for derived state (e94cde9c) by Manoel
@@ -647,12 +648,12 @@
 - refactor(transactions): Extract default values for transaction form (53ea2ff2) by Manoel
 - refactor(transactions): Initialize recurringFrequency and recurringCount (a8c1d266) by Manoel
 - refactor: Remove unused variables and improve type definitions (19733815) by Manoel
-- fix: remove mr-2, space-y-* override, gap-x/gap-y in credenza files (51b91ae1) by Manoel
-- fix: remove space-y-* and mr-1 in goals.tsx (3286cc47) by Manoel
+- fix: remove mr-2, space-y-\* override, gap-x/gap-y in credenza files (51b91ae1) by Manoel
+- fix: remove space-y-\* and mr-1 in goals.tsx (3286cc47) by Manoel
 - fix: remove margin utilities, move Zod schemas to module scope (44042262) by Manoel
 - fix: address code review — remove @core import, fix casts, form.Subscribe, margin utils, NotificationPayloadMap (42f36edc) by Manoel
 - fix: resolve typecheck errors in notifications/types and dbos runner (7f1f7ca8) by Manoel
-- refactor: rename all *-dialog-stack components to *-credenza (4e793e4c) by Manoel
+- refactor: rename all _-dialog-stack components to _-credenza (4e793e4c) by Manoel
 - refactor(transactions): replace secondaryForm state with useCredenza stack (3d89560b) by Manoel
 - refactor: rename TransactionDialogStack → TransactionCredenza (2272021d) by Manoel
 - chore: remove dead dialog-stack infrastructure (5c1dec0e) by Manoel
@@ -701,7 +702,7 @@
 - fix(sdk): remove type casts and non-null assertions in SDK router files (53ba1abe) by Manoel
 - feat: port SDK oRPC API from apps/server into apps/web at /api/sdk (4b7d3e23) by Manoel
 - feat: move DBOS keyword workflows into apps/web, call DBOS.startWorkflow from categories router (fa9977d2) by Manoel
-- fix: resolve code review comments — remove _options param, move team query to repo, log enqueue errors (ade840cd) by Manoel
+- fix: resolve code review comments — remove \_options param, move team query to repo, log enqueue errors (ade840cd) by Manoel
 - fix(events): guard teamId in emitEventBatch to satisfy notNull schema constraint (59e9d7c0) by Manoel
 - fix(orpc): exclude SSE requests from BatchLinkPlugin (54ffd93b) by Manoel
 - feat(categories): use Announcement component for root category name with icon and color (95382f36) by Manoel
@@ -750,7 +751,7 @@
 - feat(web): replace use-rubi-runtime with use-rubi-chat (TanStack AI useChat) (7a9d0759) by Manoel
 - feat(web): add /api/chat route (TanStack AI SSE) + rewrite chat oRPC router (b2dd4573) by Manoel
 - feat(agents): replace Mastra with TanStack AI chat() + openRouterText() (0e6a8970) by Manoel
-- chore: add TanStack AI catalog, remove @mastra/* and @assistant-ui/* from deps (9b783219) by Manoel
+- chore: add TanStack AI catalog, remove @mastra/_ and @assistant-ui/_ from deps (9b783219) by Manoel
 - feat(database): add chat repository (2e885db9) by Manoel
 - feat(database): add chat_threads and chat_messages tables (7465f5a8) by Manoel
 - feat: Migrate worker to server, implement DBOS workflows (f729cfd5) by Manoel
@@ -936,10 +937,10 @@
 - feat(hyprpay): add README with full API docs (8688bc81) by Manoel
 - feat(hyprpay): add @tanstack/intent AI agent skill (040dfb04) by Manoel
 - feat(hyprpay): add better-auth server/client plugin (8d3312a2) by Manoel
-- feat(hyprpay): implement createHyprPayClient with customers.* API (2b0ffeee) by Manoel
+- feat(hyprpay): implement createHyprPayClient with customers.\* API (2b0ffeee) by Manoel
 - feat(hyprpay): scaffold @montte/hyprpay with @tanstack/vite-config build (d3241bef) by Manoel
 - feat(settings): add HyprPay API Keys settings page (59ebba12) by Manoel
-- feat(server): register hyprpay router at /sdk/orpc/hyprpay.* (09b16141) by Manoel
+- feat(server): register hyprpay router at /sdk/orpc/hyprpay.\* (09b16141) by Manoel
 - feat(server): add hyprpay customers router (create/get/list/update) (dfb5aaa5) by Manoel
 - Merge pull request #751 from Montte-erp/cli-with-intent (b651524e) by Manoel Neto
 - feat(cli): apply @tanstack/vite-config and @tanstack/publish-config correctly per docs (696d05da) by Manoel
@@ -1059,7 +1060,7 @@
 - Merge pull request #736 from Montte-erp/manoelnetocarvalho03/mon-216-fix-code-coverage-reporting-for-core-workspace-packages-in (885e3206) by Manoel Neto
 - refactor(finance): migrate DataTable to new controlled API (eb66dfca) by Manoel
 - refactor(web): migrate contacts and credit-cards DataTable to new controlled API (92cfd736) by Manoel
-- feat(coverage): switch to Istanbul provider, include core/* src in coverage scope (5a7d8173) by Manoel
+- feat(coverage): switch to Istanbul provider, include core/\* src in coverage scope (5a7d8173) by Manoel
 - Merge pull request #735 from Montte-erp/fix-flags-sidebar (5f0bc42c) by Manoel Neto
 - chore(coverage): add @vitest/coverage-istanbul to workspace catalog and apps/web (8d115469) by Manoel
 - fix(categories): remove explicit CategoriesSearch type annotation in preloadRoute search (7b31d364) by Manoel
@@ -1169,7 +1170,7 @@
 - fix: resolve type errors after billing migration (29c8d5ba) by Manoel
 - fix(sign-up): full-width stepper bars, remove step label, improve password strength UI (4e026a6c) by Manoel
 - feat(billing): update billing UI to use Stripe Meter data (7436face) by Manoel
-- fix(core/agents): replace relative imports with @core/agents/* path aliases (8ac3590c) by Manoel
+- fix(core/agents): replace relative imports with @core/agents/\* path aliases (8ac3590c) by Manoel
 - feat(billing): replace materialized view queries with Stripe Meter API (8ebb1f21) by Manoel
 - feat(worker): remove billing reconciliation cron and materialized view refresh (10e75abb) by Manoel
 - fix(routers): replace raw ORPCError with WebAppError across 4 router files (fa0fe184) by Manoel
@@ -1183,7 +1184,7 @@
 - test(web): Assert accessorKey using type assertion (5f61c8ee) by Manoel
 - Merge pull request #716 from Montte-erp/worktree-mon-202-fix-space-y-space-x (1800009d) by Manoel Neto
 - docs: Update Claude guidelines (6c8d5cb3) by Manoel
-- fix(web): Replace space-y/x-* with flex+gap-* in auth and dashboard routes (9ab0a8ed) by Manoel
+- fix(web): Replace space-y/x-_ with flex+gap-_ in auth and dashboard routes (9ab0a8ed) by Manoel
 - test(web): Add tests for TagForm and TagColumns components (6c0290ab) by Manoel
 - refactor: Use WebAppError, AppError, and propagateError consistently (322304bc) by Manoel
 - refactor: Remove unused import and add columns memoization (665aa550) by Manoel
@@ -1361,7 +1362,7 @@
 - refactor(agents/database): Update env paths for database scripts (df53aecd) by Manoel
 - feat(tooling): Add tooling/css and boundary checks (6d90c666) by Manoel
 - refactor: Rename packages/agents to core/agents (588dec24) by Manoel
-- ```bash git add -A git commit -m "refactor(docs): remove expired docs plan" ``` (6824b501) by Manoel
+- `bash git add -A git commit -m "refactor(docs): remove expired docs plan" ` (6824b501) by Manoel
 - refactor: Remove PG_VECTOR_URL and use DATABASE_URL instead (14cd75fd) by Manoel
 - Merge pull request #661 from F-O-T/dialog-stack (0e66685a) by Manoel Neto
 - feat(transactions): use DialogStackContext to set index (9cdd8989) by Manoel
@@ -1710,7 +1711,7 @@
 - feat(worker): add bill recurrence queue and daily cron job (e12f5d75) by Manoel
 - feat(api): add bills oRPC router (84956469) by Manoel
 - feat(contacts): move Contatos to new ERP sidebar group (b3e97be6) by Manoel
-- ``` feat(ui): add useRowSelection hook ``` (30f28334) by Manoel
+- `feat(ui): add useRowSelection hook` (30f28334) by Manoel
 - feat(contacts): add contacts route page with table/card views and type filter (f7a58904) by Manoel
 - feat(database): add bills repository (4e9b7fa1) by Manoel
 - feat(contacts): add contact picker to transactions form (641be84a) by Manoel
@@ -1841,6 +1842,7 @@
 - chore: remove CMS routes (content, writers, clusters, experiments, forms, assets) (5e6c7a78) by Manoel
 
 ## Merged PRs
+
 - #825 fix(release-weekly): handle opencode action push + use gh tag creation by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/825
 - #824 fix(release-weekly): avoid VERSION env clash with opencode installer by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/824
 - #823 chore(release): drop libraries pipeline, add weekly CalVer release by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/823
@@ -1920,7 +1922,7 @@
 - #739 feat(onboarding): MON-191 organization presets — EMPRESARIAL categories, module config, nav integration by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/739
 - #738 refactor(finance): migrate DataTable to new controlled API by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/738
 - #737 refactor(contacts/credit-cards): migrate DataTable to new controlled API by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/737
-- #736 fix(coverage): report core/* workspace packages in Codecov patch coverage by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/736
+- #736 fix(coverage): report core/\* workspace packages in Codecov patch coverage by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/736
 - #735 style: Update code style and configurations by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/735
 - #734 feat(web): migrate inventory DataTable to controlled API by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/734
 - #733 feat(analytics): migrate DataTable to new controlled API and colocate private components by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/733
@@ -1934,10 +1936,10 @@
 - #724 fix(web): migrate useQuery to useSuspenseQuery by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/724
 - #723 feat(billing): MON-185 — migrar para modelo pay-as-you-go orientado a eventos by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/723
 - #722 fix: Remove as unknown as type casts in production source files by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/722
-- #721 fix(core/agents): replace relative imports with @core/agents/* aliases by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/721
+- #721 fix(core/agents): replace relative imports with @core/agents/\* aliases by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/721
 - #720 fix(routers): replace raw ORPCError with WebAppError (MON-200) by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/720
 - #718 .github/workflows: Migrate workflows to Blacksmith runners by @app/blacksmith-sh — https://github.com/Montte-erp/montte-nx/pull/718
 - #717 fix(sign-up): full-width stepper bars, remove step label, improve password strength UI by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/717
-- #716 fix(web): Replace space-y/x-* with flex+gap-* in auth and dashboard routes by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/716
+- #716 fix(web): Replace space-y/x-_ with flex+gap-_ in auth and dashboard routes by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/716
 - #715 Bank accounts by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/715
 - #714 feat(web): Add public env integration and PostHog setup by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/714

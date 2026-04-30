@@ -69,35 +69,41 @@ drizzle.config.ts         # drizzle-kit config
 ### Basic Table with Timestamps
 
 ```typescript
-export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  email: varchar('email', { length: 255 }).notNull().unique(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+export const users = pgTable("users", {
+   id: uuid("id").primaryKey().defaultRandom(),
+   email: varchar("email", { length: 255 }).notNull().unique(),
+   createdAt: timestamp("created_at").defaultNow().notNull(),
+   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 ```
 
 ### Foreign Key with Index
 
 ```typescript
-export const posts = pgTable('posts', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id),
-  title: varchar('title', { length: 255 }).notNull(),
-}, (table) => [
-  index('posts_user_id_idx').on(table.userId), // ALWAYS index FKs
-]);
+export const posts = pgTable(
+   "posts",
+   {
+      id: uuid("id").primaryKey().defaultRandom(),
+      userId: uuid("user_id")
+         .notNull()
+         .references(() => users.id),
+      title: varchar("title", { length: 255 }).notNull(),
+   },
+   (table) => [
+      index("posts_user_id_idx").on(table.userId), // ALWAYS index FKs
+   ],
+);
 ```
 
 ### Relations
 
 ```typescript
 export const usersRelations = relations(users, ({ many }) => ({
-  posts: many(posts),
+   posts: many(posts),
 }));
 
 export const postsRelations = relations(posts, ({ one }) => ({
-  author: one(users, { fields: [posts.userId], references: [users.id] }),
+   author: one(users, { fields: [posts.userId], references: [users.id] }),
 }));
 ```
 
@@ -108,7 +114,7 @@ export const postsRelations = relations(posts, ({ one }) => ({
 ```typescript
 // ✓ Single query with nested data
 const usersWithPosts = await db.query.users.findMany({
-  with: { posts: true },
+   with: { posts: true },
 });
 ```
 
@@ -116,61 +122,63 @@ const usersWithPosts = await db.query.users.findMany({
 
 ```typescript
 const activeUsers = await db
-  .select()
-  .from(users)
-  .where(eq(users.status, 'active'));
+   .select()
+   .from(users)
+   .where(eq(users.status, "active"));
 ```
 
 ### Transaction
 
 ```typescript
 await db.transaction(async (tx) => {
-  const [user] = await tx.insert(users).values({ email }).returning();
-  await tx.insert(profiles).values({ userId: user.id });
+   const [user] = await tx.insert(users).values({ email }).returning();
+   await tx.insert(profiles).values({ userId: user.id });
 });
 ```
 
 ## Performance Checklist
 
-| Priority | Check | Impact |
-|----------|-------|--------|
-| CRITICAL | Index all foreign keys | Prevents full table scans on JOINs |
-| CRITICAL | Use relational queries for nested data | Avoids N+1 |
-| HIGH | Connection pooling in production | Reduces connection overhead |
-| HIGH | `EXPLAIN ANALYZE` slow queries | Identifies missing indexes |
-| MEDIUM | Partial indexes for filtered subsets | Smaller, faster indexes |
-| MEDIUM | UUIDv7 for PKs (PG18+) | Better index locality |
+| Priority | Check                                  | Impact                             |
+| -------- | -------------------------------------- | ---------------------------------- |
+| CRITICAL | Index all foreign keys                 | Prevents full table scans on JOINs |
+| CRITICAL | Use relational queries for nested data | Avoids N+1                         |
+| HIGH     | Connection pooling in production       | Reduces connection overhead        |
+| HIGH     | `EXPLAIN ANALYZE` slow queries         | Identifies missing indexes         |
+| MEDIUM   | Partial indexes for filtered subsets   | Smaller, faster indexes            |
+| MEDIUM   | UUIDv7 for PKs (PG18+)                 | Better index locality              |
 
 ## Anti-Patterns (CRITICAL)
 
-| Anti-Pattern | Problem | Fix |
-|--------------|---------|-----|
-| **No FK index** | Slow JOINs, full scans | Add index on every FK column |
-| **N+1 in loops** | Query per row | Use `with:` relational queries |
-| **No pooling** | Connection per request | Use `@neondatabase/serverless` or similar |
-| **`push` in prod** | Data loss risk | Always use `generate` + `migrate` |
-| **Storing JSON as text** | No validation, bad queries | Use `jsonb()` column type |
+| Anti-Pattern             | Problem                    | Fix                                       |
+| ------------------------ | -------------------------- | ----------------------------------------- |
+| **No FK index**          | Slow JOINs, full scans     | Add index on every FK column              |
+| **N+1 in loops**         | Query per row              | Use `with:` relational queries            |
+| **No pooling**           | Connection per request     | Use `@neondatabase/serverless` or similar |
+| **`push` in prod**       | Data loss risk             | Always use `generate` + `migrate`         |
+| **Storing JSON as text** | No validation, bad queries | Use `jsonb()` column type                 |
 
 ## Reference Documentation
 
-| File | Purpose |
-|------|---------|
-| [references/SCHEMA.md](references/SCHEMA.md) | Column types, constraints |
-| [references/QUERIES.md](references/QUERIES.md) | Operators, joins, aggregations |
-| [references/RELATIONS.md](references/RELATIONS.md) | One-to-many, many-to-many |
-| [references/MIGRATIONS.md](references/MIGRATIONS.md) | drizzle-kit workflows |
-| [references/POSTGRES.md](references/POSTGRES.md) | PG18 features, RLS, partitioning |
-| [references/PERFORMANCE.md](references/PERFORMANCE.md) | Indexing, optimization |
-| [references/CHEATSHEET.md](references/CHEATSHEET.md) | Quick reference |
+| File                                                   | Purpose                          |
+| ------------------------------------------------------ | -------------------------------- |
+| [references/SCHEMA.md](references/SCHEMA.md)           | Column types, constraints        |
+| [references/QUERIES.md](references/QUERIES.md)         | Operators, joins, aggregations   |
+| [references/RELATIONS.md](references/RELATIONS.md)     | One-to-many, many-to-many        |
+| [references/MIGRATIONS.md](references/MIGRATIONS.md)   | drizzle-kit workflows            |
+| [references/POSTGRES.md](references/POSTGRES.md)       | PG18 features, RLS, partitioning |
+| [references/PERFORMANCE.md](references/PERFORMANCE.md) | Indexing, optimization           |
+| [references/CHEATSHEET.md](references/CHEATSHEET.md)   | Quick reference                  |
 
 ## Resources
 
 ### Drizzle ORM
+
 - **Official Documentation**: https://orm.drizzle.team
 - **GitHub Repository**: https://github.com/drizzle-team/drizzle-orm
 - **Drizzle Kit (Migrations)**: https://orm.drizzle.team/kit-docs/overview
 
 ### PostgreSQL
+
 - **Official Documentation**: https://www.postgresql.org/docs/
 - **SQL Commands Reference**: https://www.postgresql.org/docs/current/sql-commands.html
 - **Performance Tips**: https://www.postgresql.org/docs/current/performance-tips.html

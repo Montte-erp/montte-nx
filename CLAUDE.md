@@ -26,6 +26,7 @@ Scripts (`commander run|check`, `--env`, `--dry-run`): `scripts/seed-default-das
 First-time setup: `bun run setup` → `cd apps/web && docker compose up -d` → `bun run db:push && bun run seed:addons && bun run setup:stripe`.
 
 **Gotchas:**
+
 - `bun dev` re-seeds the event catalog every start; if it fails dev won't launch. Debug: `scripts/seed-event-catalog.ts run --env local`.
 - "Module has no exported member" on typecheck → stale dist. `cd core/<pkg> && bun run build`.
 - Never bump `NODE_OPTIONS` memory — fix the root cause.
@@ -35,9 +36,10 @@ First-time setup: `bun run setup` → `cd apps/web && docker compose up -d` → 
 
 ## Skills
 
-Skills live in `.agents/skills/<name>/SKILL.md`. Open the SKILL.md before writing in that domain — skill content supersedes anything stale here. CI checks → `monitor-ci`. Linear (MON-*) → `linear-cli`.
+Skills live in `.agents/skills/<name>/SKILL.md`. Open the SKILL.md before writing in that domain — skill content supersedes anything stale here. CI checks → `monitor-ci`. Linear (MON-\*) → `linear-cli`.
 
 Domain → skill map (open before coding):
+
 - oRPC handlers/errors → `neverthrow`. Schema/queries → `postgres-drizzle`. Search/BM25 → `paradedb-skill`. Redis → `redis-best-practices`.
 - Client data → `tanstack-query`. Forms → `tanstack-form`. Tables → `tanstack-table` (+ `tanstack-virtual` for long lists). Routes → `tanstack-router`. Stores → `tanstack-store` (+ `tanstack-db`). SSR/server fns → `tanstack-start` (+ `tanstack-devtools`).
 - AI agents → `tanstack-ai`. Durable workflows → `dbos-typescript`.
@@ -67,6 +69,7 @@ Add a new dep → declare in the consuming package's `package.json` with the rig
 Routers in `apps/web/src/integrations/orpc/router/`. Context: `{ db, posthog?, organizationId, userId, session, auth, headers, request, stripeClient?, workflowClient }`.
 
 **Rules:**
+
 - Errors: only `WebAppError` (factories: `notFound`, `forbidden`, `unauthorized`, `badRequest`, `conflict`, `tooManyRequests`, `internal`, `database`, `validation`, `fromAppError`). Never `ORPCError` / raw `Error` / strings. **Messages always pt-BR** — they render directly in toasts.
 - **No repository layer.** Routers query `context.db` directly; workflows use `<module>DataSource.runTransaction`.
 - All writes inside `db.transaction(async (tx) => …)`. Single reads exempt.
@@ -82,7 +85,9 @@ const itemByIdProcedure = protectedProcedure
    .input(z.object({ id: z.string().uuid() }))
    .use(async ({ context, input, next }) => {
       const result = await fromPromise(
-         context.db.query.items.findFirst({ where: (f, { eq }) => eq(f.id, input.id) }),
+         context.db.query.items.findFirst({
+            where: (f, { eq }) => eq(f.id, input.id),
+         }),
          () => WebAppError.internal("Falha ao verificar permissão."),
       ).andThen((item) =>
          !item || item.teamId !== context.teamId
@@ -133,14 +138,22 @@ Required on every route: `head()` (`"Page — Montte"` pt-BR), `pendingMs: 300` 
 ```typescript
 export const Route = createFileRoute("/feature")({
    validateSearch: z.object({
-      sorting: z.array(z.object({ id: z.string(), desc: z.boolean() })).catch([]).default([]),
-      columnFilters: z.array(z.object({ id: z.string(), value: z.unknown() })).catch([]).default([]),
+      sorting: z
+         .array(z.object({ id: z.string(), desc: z.boolean() }))
+         .catch([])
+         .default([]),
+      columnFilters: z
+         .array(z.object({ id: z.string(), value: z.unknown() }))
+         .catch([])
+         .default([]),
       page: z.number().int().min(1).catch(1).default(1),
       pageSize: z.number().int().catch(20).default(20),
    }),
    loaderDeps: ({ search: { page, pageSize } }) => ({ page, pageSize }),
    loader: ({ context, deps }) =>
-      context.queryClient.prefetchQuery(orpc.feature.getAll.queryOptions({ input: deps })),
+      context.queryClient.prefetchQuery(
+         orpc.feature.getAll.queryOptions({ input: deps }),
+      ),
    pendingMs: 300,
    pendingComponent: FeatureSkeleton,
    head: () => ({ meta: [{ title: "Feature — Montte" }] }),
@@ -157,6 +170,7 @@ Vite plugin order is critical: `tanstackStart({ router: { autoCodeSplitting: tru
 ## Database (Drizzle + ParadeDB)
 
 Schemas in `core/database/src/schemas/`. **Always namespace** — never raw `pgTable(...)`:
+
 - `financeSchema` → transactions, bank-accounts, bills, credit-cards, financial-goals, financial-settings
 - `crmSchema` → contacts, contact-settings, tags
 - `platformSchema` → dashboards, insights, event-catalog, webhooks, subscriptions, agents
@@ -169,6 +183,7 @@ Local DB image is `paradedb/paradedb` — don't swap.
 ## Auth (Better Auth)
 
 Config: `core/authentication/src/server.ts`. Plugins: Magic Link, Email OTP, 2FA, Anonymous, HyprPay.
+
 - Auth schema is read-only; extend via `additionalFields`.
 - Queries → oRPC (`orpc.organization.*`). Mutations → `authClient` directly (never `useMutation`).
 - `member.id ≠ user.id` — `member.id` for Better Auth APIs, `member.userId` for DB.
@@ -181,6 +196,7 @@ Config: `core/authentication/src/server.ts`. Plugins: Magic Link, Email OTP, 2FA
 DBOS runs in `apps/worker` — never the web process. Web enqueues via `context.workflowClient` (`DBOSClient`, PostgreSQL-backed). Each workflow file declares its own `WorkflowQueue`; DBOS processes them automatically.
 
 **Workflow rules:**
+
 - Use `<module>DataSource = new DrizzleDataSource<DatabaseInstance>(...)` per module. Inside steps: `dataSource.runTransaction(async () => { const tx = <module>DataSource.client; … }, { name })`. Generic gives a typed `client` — never cast. Never use plain `db` or repositories.
 - Worker startup, in this order, per module: `await DrizzleDataSource.initializeDBOSSchema({ connectionString })` → init context store → create queues → side-effect import workflow files. All `setup<Module>Workflows(deps)` awaited before `launchDBOS()`. `initOtel()` before `launchDBOS()`. Without `initializeDBOSSchema` the `transaction_completion` table is missing and `runTransaction` throws.
 - Logging: `DBOS.logger` only (string interpolation). Never replace with `getWorkerLogger` inside workflows — loses workflow context.
@@ -218,6 +234,7 @@ Single agent `rubiAgent` via `mastra.getAgent("rubiAgent")` + `createRequestCont
 **Bill only what costs us** (AI calls, email, storage, webhook egress). UI/CRUD/listings are free.
 
 Two ingestion paths converge on `ingestUsageEvent`:
+
 1. **Workflow steps** — call `ingestUsageEvent` inside `DBOS.runStep` after the cost-incurring action succeeds.
 2. **Router-triggered costs** — `billableProcedure` + `.meta({ billableEvent })` → `onSuccess` middleware ingests one event per success.
 
@@ -246,6 +263,7 @@ Event names live in module `constants.ts` (e.g. `CLASSIFICATION_USAGE_EVENTS`, `
 - Animations: Tailwind-first. Framer Motion only for state-dependent enter/exit, `layoutId`, gestures — client components only, wrap shadcn primitives in `motion.div` (never modify them). Animate only `transform` and `opacity`.
 
 **Component colocation:**
+
 - Single-route → `-[name]/` next to the route (TanStack Router ignores `-` prefix). Relative imports allowed.
 - Shared → `features/[name]/` (flat — no `hooks/`/`ui/`/`utils/`).
 
@@ -277,12 +295,12 @@ import { env } from "@core/environment/server";
 
 ## F-O-T Libraries (`catalog:fot`)
 
-| Library | Use for |
-|---|---|
-| `@f-o-t/money` | All money — `toMajorUnitsString(of(decimal, "BRL"))` to normalize, `format(of("1500.00","BRL"), "pt-BR")` to display |
-| `@f-o-t/csv` | CSV parse/generate — UI uses `useCsvFile` (never `FileReader.readAsText`) |
-| `@f-o-t/ofx` | OFX — `readAsArrayBuffer` + `parseBufferOrThrow(new Uint8Array(buffer))`, never `readAsText` |
-| `@f-o-t/condition-evaluator` | Rule eval — `weight` lives on `ConditionGroup`, not `Condition` |
+| Library                      | Use for                                                                                                              |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `@f-o-t/money`               | All money — `toMajorUnitsString(of(decimal, "BRL"))` to normalize, `format(of("1500.00","BRL"), "pt-BR")` to display |
+| `@f-o-t/csv`                 | CSV parse/generate — UI uses `useCsvFile` (never `FileReader.readAsText`)                                            |
+| `@f-o-t/ofx`                 | OFX — `readAsArrayBuffer` + `parseBufferOrThrow(new Uint8Array(buffer))`, never `readAsText`                         |
+| `@f-o-t/condition-evaluator` | Rule eval — `weight` lives on `ConditionGroup`, not `Condition`                                                      |
 
 XLSX in UI: `useXlsxFile` from `@/hooks/use-xlsx-file`.
 
@@ -292,13 +310,13 @@ XLSX in UI: `useXlsxFile` from `@/hooks/use-xlsx-file`.
 
 `@maskito/core` + `@maskito/react` for all structured inputs. `onInput` (not `onChange`), `defaultValue` (not `value`). `MaskitoOptions` at module scope; dynamic (CPF/CNPJ) via `useMemo`. Strip before API: `value.replace(/\D/g, "")`. Currency → `MoneyInput` from `@packages/ui/components/money-input`.
 
-| Field | Mask |
-|---|---|
-| Telefone | `["(", /\d/, /\d/, ")", " ", /\d/, /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/, /\d/, /\d/]` |
-| CPF | `[/\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "-", /\d/, /\d/]` |
-| CNPJ | `[/\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "/", /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/]` |
-| Agência | `mask: /^\d{0,4}(-\d{0,1})?$/` |
-| Conta | `mask: /^\d{0,12}(-\d{0,1})?$/` |
+| Field    | Mask                                                                                                       |
+| -------- | ---------------------------------------------------------------------------------------------------------- |
+| Telefone | `["(", /\d/, /\d/, ")", " ", /\d/, /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/, /\d/, /\d/]`                   |
+| CPF      | `[/\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "-", /\d/, /\d/]`                        |
+| CNPJ     | `[/\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "/", /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/]` |
+| Agência  | `mask: /^\d{0,4}(-\d{0,1})?$/`                                                                             |
+| Conta    | `mask: /^\d{0,12}(-\d{0,1})?$/`                                                                            |
 
 ---
 
@@ -363,20 +381,23 @@ Load `use` with `npx @tanstack/intent@latest load <use>` when a task matches `wh
 If no mapping fits, run `npx @tanstack/intent@latest list` for less common local skills.
 
 <!-- intent-skills:start -->
+
 # Skill mappings - load `use` with `npx @tanstack/intent@latest load <use>`.
+
 skills:
-  - when: "Working on the Rubi AI agent — chat endpoints, tools, middleware, structured outputs, adapter configuration, debug logging"
-    use: "@tanstack/ai#ai-core"
-  - when: "Writing or debugging fixtures for AI / OpenRouter HTTP responses in classification or agent tests"
-    use: "@copilotkit/aimock#write-fixtures"
-  - when: "TanStack Router routes, loaders, search params, navigation, code splitting, type safety, auth guards, SSR, errors"
-    use: "@tanstack/router-core#router-core"
-  - when: "TanStack Start setup — server functions, server routes, middleware, deployment, execution model, isomorphic boundaries"
-    use: "@tanstack/start-client-core#start-core"
-  - when: "React-specific TanStack Start — createStart, StartClient, StartServer, useServerFn, RSC"
-    use: "@tanstack/react-start#react-start"
-  - when: "TanStack Devtools setup, plugin panels, marketplace, production stripping"
-    use: "@tanstack/devtools#devtools-app-setup"
-  - when: "Working with .env files, dotenv config, encrypted env, variable expansion"
-    use: "dotenv#dotenv"
-<!-- intent-skills:end -->
+
+- when: "Working on the Rubi AI agent — chat endpoints, tools, middleware, structured outputs, adapter configuration, debug logging"
+  use: "@tanstack/ai#ai-core"
+- when: "Writing or debugging fixtures for AI / OpenRouter HTTP responses in classification or agent tests"
+  use: "@copilotkit/aimock#write-fixtures"
+- when: "TanStack Router routes, loaders, search params, navigation, code splitting, type safety, auth guards, SSR, errors"
+  use: "@tanstack/router-core#router-core"
+- when: "TanStack Start setup — server functions, server routes, middleware, deployment, execution model, isomorphic boundaries"
+  use: "@tanstack/start-client-core#start-core"
+- when: "React-specific TanStack Start — createStart, StartClient, StartServer, useServerFn, RSC"
+  use: "@tanstack/react-start#react-start"
+- when: "TanStack Devtools setup, plugin panels, marketplace, production stripping"
+  use: "@tanstack/devtools#devtools-app-setup"
+- when: "Working with .env files, dotenv config, encrypted env, variable expansion"
+use: "dotenv#dotenv"
+ <!-- intent-skills:end -->

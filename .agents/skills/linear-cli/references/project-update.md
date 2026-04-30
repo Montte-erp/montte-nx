@@ -13,8 +13,8 @@ Description:
 
 Options:
 
-  -h, --help           - Show this help.                      
-  --workspace  <slug>  - Target workspace (uses credentials)  
+  -h, --help           - Show this help.
+  --workspace  <slug>  - Target workspace (uses credentials)
 
 Commands:
 
@@ -37,11 +37,11 @@ Description:
 
 Options:
 
-  -h, --help                   - Show this help.                                    
-  --workspace        <slug>    - Target workspace (uses credentials)                
-  --body             <body>    - Update content (inline)                            
-  --body-file        <path>    - Read content from file                             
-  --health           <health>  - Project health status (onTrack, atRisk, offTrack)  
+  -h, --help                   - Show this help.
+  --workspace        <slug>    - Target workspace (uses credentials)
+  --body             <body>    - Update content (inline)
+  --body-file        <path>    - Read content from file
+  --health           <health>  - Project health status (onTrack, atRisk, offTrack)
   -i, --interactive            - Interactive mode with prompts
 ```
 
@@ -58,8 +58,8 @@ Description:
 
 Options:
 
-  -h, --help            - Show this help.                                   
-  --workspace  <slug>   - Target workspace (uses credentials)               
-  --json                - Output as JSON                                    
+  -h, --help            - Show this help.
+  --workspace  <slug>   - Target workspace (uses credentials)
+  --json                - Output as JSON
   --limit      <limit>  - Limit results                        (Default: 10)
 ```
