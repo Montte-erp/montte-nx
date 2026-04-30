@@ -28,6 +28,6 @@ jobs:
          - name: Run opencode
            uses: anomalyco/opencode/github@latest
            env:
-              OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+              OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
            with:
-              model: openrouter/minimax/minimax-m2.5
+              model: opencode-go/deepseek-v4-flash
