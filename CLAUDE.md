@@ -53,7 +53,6 @@ core/         # agents, database, authentication, environment, redis, logging,
               # files, posthog, stripe, transactional, utils
 apps/         # web (TanStack Start + oRPC), worker (DBOS)
 packages/     # analytics, events, notifications, ui
-libraries/    # cli (@montte/cli), hyprpay (@montte/hyprpay)
 tooling/      # oxc, tsconfigs
 ```
 
@@ -352,11 +351,9 @@ Tests live in `core/*` and `packages/*` — non-trivial logic only (Zod transfor
 
 ---
 
-## Library Releases (`libraries/`)
+## Releases
 
-Auto-published on `master` push touching `libraries/**/CHANGELOG.md` or `libraries/**/package.json` when (1) `package.json` not `private`, (2) `CHANGELOG.md` exists, (3) latest version heading matches `package.json`. Always update the changelog before merging.
-
-`@montte/cli` skills (TanStack Intent) author live in `libraries/cli/skills/<domain>/SKILL.md`. Validate before publishing: `npx @tanstack/intent@latest validate`. After source changes: `npx @tanstack/intent@latest stale`. Never commit `skills/_artifacts/`.
+Produto único (`apps/web`) — **CalVer** `YYYY.MM.DD` (tag `vYYYY.MM.DD`). Workflow `.github/workflows/release-weekly.yml` roda toda sexta 21:00 UTC: coleta commits + PRs mergeados desde a última tag, opencode bot gera release notes em pt-BR, cria tag + GitHub Release + Linear Release. Manual via `workflow_dispatch` (com `dry_run` opcional). Sem libraries publicadas — todo código vive no monorepo.
 
 ---
 

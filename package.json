@@ -197,7 +197,6 @@
       },
       "packages": [
          "tooling/*",
-         "libraries/*",
          "core/*",
          "packages/*",
          "modules/*",
@@ -228,7 +227,6 @@
       "release": "nx release",
       "release:changelog": "nx release changelog",
       "release:dry": "nx release --dry-run --first-release",
-      "release:libraries": "bun run scripts/release-library.ts",
       "release:publish": "nx release publish",
       "release:version": "nx release version",
       "reset": "bun run scripts/clean.ts reset",

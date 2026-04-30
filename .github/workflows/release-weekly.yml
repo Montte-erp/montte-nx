@@ -1,0 +1,124 @@
+name: Release Weekly
+
+on:
+   schedule:
+      - cron: "0 21 * * 5"
+   workflow_dispatch:
+      inputs:
+         dry_run:
+            description: "Generate notes only, do not create tag/release"
+            required: false
+            type: boolean
+            default: false
+
+permissions:
+   contents: write
+   pull-requests: read
+   id-token: write
+
+jobs:
+   release:
+      runs-on: blacksmith-4vcpu-ubuntu-2404
+      steps:
+         - name: Checkout
+           uses: actions/checkout@v6
+           with:
+              fetch-depth: 0
+              fetch-tags: true
+
+         - name: Compute version
+           id: version
+           run: |
+              VERSION=$(date -u '+%Y.%m.%d')
+              TAG="v${VERSION}"
+              echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+              echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+              LAST_TAG=$(git tag --list 'v[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]' --sort=-version:refname | head -n1)
+              if [ -z "$LAST_TAG" ]; then
+                FIRST_COMMIT=$(git rev-list --max-parents=0 HEAD | tail -n1)
+                LAST_TAG="$FIRST_COMMIT"
+              fi
+              echo "last_tag=${LAST_TAG}" >> "$GITHUB_OUTPUT"
+
+              if git rev-parse "$TAG" >/dev/null 2>&1; then
+                echo "Tag $TAG already exists — skipping" >&2
+                echo "skip=true" >> "$GITHUB_OUTPUT"
+              else
+                echo "skip=false" >> "$GITHUB_OUTPUT"
+              fi
+
+         - name: Collect changes since last tag
+           if: steps.version.outputs.skip != 'true'
+           id: changes
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              LAST_TAG: ${{ steps.version.outputs.last_tag }}
+           run: |
+              {
+                echo "## Commits"
+                git log --pretty=format:'- %s (%h) by %an' "${LAST_TAG}..HEAD"
+                echo
+                echo
+                echo "## Merged PRs"
+                gh pr list --state merged --limit 100 --search "merged:>$(git log -1 --format=%cI ${LAST_TAG})" --json number,title,author,labels,url \
+                  --jq '.[] | "- #\(.number) \(.title) by @\(.author.login) — \(.url)"' || true
+              } > changes.md
+              cat changes.md
+
+         - name: Generate release notes via opencode
+           if: steps.version.outputs.skip != 'true'
+           uses: anomalyco/opencode/github@latest
+           env:
+              OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+              CHANGES_FILE: changes.md
+              OUTPUT_FILE: RELEASE_NOTES.md
+              VERSION: ${{ steps.version.outputs.version }}
+           with:
+              model: openrouter/minimax/minimax-m2.5
+              prompt: |
+                 Leia o arquivo $CHANGES_FILE com commits e PRs mergeados desde a última release do Montte (ERP brasileiro).
+
+                 Gere release notes em **português brasileiro** no arquivo $OUTPUT_FILE com:
+                 - Título: "Montte $VERSION"
+                 - Resumo curto (2-3 linhas) destacando o tema da semana
+                 - Seções agrupadas por tipo de mudança, na ordem: **Novidades** (feat), **Correções** (fix), **Melhorias** (refactor/perf), **Outros** (chore/docs/test)
+                 - Cada item: linha curta descrevendo a mudança em pt-BR + link do PR (se existir) + referência MON-* (se mencionada no commit/PR)
+                 - Omita seções vazias
+                 - Não inclua commits de merge automáticos
+                 - Tom direto, sem emojis, sem fluff
+
+         - name: Create tag and GitHub release
+           if: steps.version.outputs.skip != 'true' && inputs.dry_run != true
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              TAG: ${{ steps.version.outputs.tag }}
+           run: |
+              git tag "$TAG"
+              git push origin "$TAG"
+              gh release create "$TAG" --title "Montte ${{ steps.version.outputs.version }}" --notes-file RELEASE_NOTES.md
+
+         - name: Create Linear release
+           if: steps.version.outputs.skip != 'true' && inputs.dry_run != true
+           env:
+              LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+              VERSION: ${{ steps.version.outputs.version }}
+           run: |
+              NOTES=$(jq -Rs . < RELEASE_NOTES.md)
+              curl -sS -X POST https://api.linear.app/graphql \
+                -H "Authorization: $LINEAR_API_KEY" \
+                -H "Content-Type: application/json" \
+                -d "$(jq -n --arg version "$VERSION" --argjson notes "$NOTES" '{
+                  query: "mutation($input: ReleaseCreateInput!) { releaseCreate(input: $input) { success release { id url } } }",
+                  variables: { input: { name: ("Montte " + $version), description: $notes } }
+                }')" | tee linear-response.json
+              jq -e '.data.releaseCreate.success' linear-response.json
+
+         - name: Upload notes artifact
+           if: steps.version.outputs.skip != 'true'
+           uses: actions/upload-artifact@v4
+           with:
+              name: release-notes-${{ steps.version.outputs.version }}
+              path: |
+                 changes.md
+                 RELEASE_NOTES.md
