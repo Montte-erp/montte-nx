@@ -11,10 +11,8 @@ import {
 } from "@core/database/schemas/threads";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
-import {
-   requireThread,
-   withNextThreadMessageSequence,
-} from "@modules/agents/router/middlewares";
+import { messagePartSchema } from "@modules/agents/messages";
+import { requireThread } from "@modules/agents/router/middlewares";
 
 const threadIdInputSchema = z.object({ threadId: threadSchema.shape.id });
 
@@ -32,23 +30,12 @@ const listThreadsInputSchema = z
    .object({ limit: z.number().int().min(1).max(100).default(50) })
    .default({ limit: 50 });
 
-const messagePartSchema = z.object({ type: z.string() }).passthrough();
-
-const appendMessageInputSchema = insertThreadMessageSchema
-   .pick({ id: true, role: true, toolCallId: true })
-   .extend({
-      threadId: z.string().uuid(),
-      parts: z.array(messagePartSchema),
-   });
-
-const listMessagesInputSchema = threadIdInputSchema;
-
 const syncMessageSchema = insertThreadMessageSchema
    .pick({ role: true })
    .extend({ parts: z.array(messagePartSchema) });
 
 const syncMessagesInputSchema = z.object({
-   threadId: z.string().uuid(),
+   threadId: threadSchema.shape.id,
    messages: z.array(syncMessageSchema),
 });
 
@@ -77,19 +64,36 @@ export const list = protectedProcedure
       return { threads: rows };
    });
 
+export const getById = protectedProcedure
+   .input(threadIdInputSchema)
+   .use(requireThread, (input) => input.threadId)
+   .handler(async ({ context, input }) => {
+      const result = await fromPromise(
+         context.db.query.threadMessages.findMany({
+            where: (fields, { eq }) => eq(fields.threadId, input.threadId),
+            orderBy: (fields, { asc }) => [asc(fields.sequence)],
+         }),
+         () => WebAppError.internal("Falha ao carregar conversa."),
+      );
+      if (result.isErr()) throw result.error;
+      return { thread: context.thread, messages: result.value };
+   });
+
 export const create = protectedProcedure
    .input(createThreadInputSchema)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
-         context.db
-            .insert(threads)
-            .values({
-               teamId: context.teamId,
-               organizationId: context.organizationId,
-               userId: context.userId,
-               title: input.title ?? null,
-            })
-            .returning(),
+         context.db.transaction((tx) =>
+            tx
+               .insert(threads)
+               .values({
+                  teamId: context.teamId,
+                  organizationId: context.organizationId,
+                  userId: context.userId,
+                  title: input.title ?? null,
+               })
+               .returning(),
+         ),
          () => WebAppError.internal("Falha ao criar conversa."),
       ).andThen((rows) => {
          const row = rows[0];
@@ -107,11 +111,13 @@ export const update = protectedProcedure
    .use(requireThread, (input) => input.threadId)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
-         context.db
-            .update(threads)
-            .set({ title: input.title })
-            .where(eq(threads.id, input.threadId))
-            .returning(),
+         context.db.transaction((tx) =>
+            tx
+               .update(threads)
+               .set({ title: input.title })
+               .where(eq(threads.id, input.threadId))
+               .returning(),
+         ),
          () => WebAppError.internal("Falha ao atualizar conversa."),
       ).andThen((rows) => {
          const row = rows[0];
@@ -129,58 +135,13 @@ export const remove = protectedProcedure
    .use(requireThread, (input) => input.threadId)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
-         context.db.delete(threads).where(eq(threads.id, input.threadId)),
+         context.db.transaction((tx) =>
+            tx.delete(threads).where(eq(threads.id, input.threadId)),
+         ),
          () => WebAppError.internal("Falha ao excluir conversa."),
       );
       if (result.isErr()) throw result.error;
       return { ok: true };
-   });
-
-export const messages = protectedProcedure
-   .input(listMessagesInputSchema)
-   .use(requireThread, (input) => input.threadId)
-   .handler(async ({ context, input }) => {
-      const rows = await context.db.query.threadMessages.findMany({
-         where: (fields, { eq }) => eq(fields.threadId, input.threadId),
-         orderBy: (fields, { asc }) => [asc(fields.sequence)],
-      });
-      return { messages: rows };
-   });
-
-export const appendMessage = protectedProcedure
-   .input(appendMessageInputSchema)
-   .use(requireThread, (input) => input.threadId)
-   .use(withNextThreadMessageSequence, (input) => input.threadId)
-   .handler(async ({ context, input }) => {
-      const result = await safeTry(async function* () {
-         const message = yield* fromPromise(
-            context.db.transaction(async (tx) => {
-               const [row] = await tx
-                  .insert(threadMessages)
-                  .values({
-                     id: input.id,
-                     threadId: input.threadId,
-                     sequence: context.nextThreadMessageSequence,
-                     role: input.role,
-                     parts: input.parts,
-                     toolCallId: input.toolCallId,
-                  })
-                  .returning();
-               await tx
-                  .update(threads)
-                  .set({ lastMessageAt: dayjs().toDate() })
-                  .where(eq(threads.id, input.threadId));
-               return row;
-            }),
-            () => WebAppError.internal("Falha ao salvar mensagem."),
-         );
-         if (message === undefined) {
-            return err(WebAppError.internal("Falha ao salvar mensagem."));
-         }
-         return ok(message);
-      });
-      if (result.isErr()) throw result.error;
-      return result.value;
    });
 
 export const syncMessages = protectedProcedure

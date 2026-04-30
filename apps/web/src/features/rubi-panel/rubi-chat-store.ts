@@ -1,37 +1,53 @@
 import { createStore } from "@tanstack/react-store";
 
-export interface RubiStreamInput {
-   threadId: string;
-   turnId: string;
-   pageContext: {
-      skillHint?: string;
-      route?: string;
-      title?: string;
-   };
+export interface RubiPageContext {
+   skillHint?: string;
+   route?: string;
+   title?: string;
 }
 
 export interface RubiChatState {
-   threadId: string | null;
-   streamInput: RubiStreamInput | null;
+   activeThreadId: string | null;
+   hydratedThreadId: string | null;
+   pageContext: RubiPageContext | undefined;
 }
 
 export const rubiChatStore = createStore<RubiChatState>({
-   threadId: null,
-   streamInput: null,
+   activeThreadId: null,
+   hydratedThreadId: null,
+   pageContext: undefined,
 });
 
-export function setRubiThreadId(threadId: string | null) {
-   rubiChatStore.setState((s) => ({ ...s, threadId }));
+export function startRubiThread(
+   threadId: string,
+   pageContext: RubiPageContext,
+) {
+   rubiChatStore.setState((state) => ({
+      ...state,
+      activeThreadId: threadId,
+      pageContext,
+   }));
 }
 
-export function setRubiStreamInput(streamInput: RubiStreamInput | null) {
-   rubiChatStore.setState((s) => ({ ...s, streamInput }));
+export function markRubiThreadHydrated(threadId: string) {
+   rubiChatStore.setState((state) => ({
+      ...state,
+      hydratedThreadId: threadId,
+   }));
 }
 
 export function resetRubiChat() {
-   rubiChatStore.setState(() => ({ threadId: null, streamInput: null }));
+   rubiChatStore.setState(() => ({
+      activeThreadId: null,
+      hydratedThreadId: null,
+      pageContext: undefined,
+   }));
 }
 
 export function loadRubiThread(threadId: string) {
-   rubiChatStore.setState(() => ({ threadId, streamInput: null }));
+   rubiChatStore.setState(() => ({
+      activeThreadId: threadId,
+      hydratedThreadId: null,
+      pageContext: undefined,
+   }));
 }

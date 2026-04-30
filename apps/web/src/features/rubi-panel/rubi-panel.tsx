@@ -32,6 +32,11 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Streamdown } from "streamdown";
+import {
+   textPartContent,
+   thinkingPartContent,
+   toolCallPartView,
+} from "@modules/agents/messages";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { orpc } from "@/integrations/orpc/client";
 import { RubiMascotIcon } from "./rubi-mascot-icon";
@@ -69,10 +74,16 @@ const SUGGESTION_IDS = [
    "analises",
 ];
 
+const DEFAULT_SCOPE: Scope = {
+   id: "auto",
+   label: "Auto",
+   icon: Sparkles,
+};
+
 export function RubiPanel() {
    const [value, setValue] = useState("");
    const [scopeOpen, setScopeOpen] = useState(false);
-   const [selectedScope, setSelectedScope] = useState<Scope>(SCOPES[0]!);
+   const [selectedScope, setSelectedScope] = useState<Scope>(DEFAULT_SCOPE);
    const { slug, teamSlug } = useDashboardSlugs();
 
    const chat = useRubiChat();
@@ -384,13 +395,10 @@ function ConversationView(props: {
             if (msg.role === "system") return null;
             if (msg.role === "user") {
                const text = msg.parts
-                  .filter(
-                     (p): p is { type: "text"; content: string } =>
-                        p.type === "text" &&
-                        typeof (p as { content?: unknown }).content ===
-                           "string",
-                  )
-                  .map((p) => p.content)
+                  .flatMap((part) => {
+                     const content = textPartContent(part);
+                     return content === null ? [] : [content];
+                  })
                   .join("");
                return (
                   <MessageRow key={msg.id} role="user">
@@ -434,8 +442,8 @@ function AssistantParts(props: {
          {props.parts.map((part, idx) => {
             const key = `${part.type}-${idx}`;
             if (part.type === "text") {
-               const content = (part as { content?: string }).content ?? "";
-               if (!content) return null;
+               const content = textPartContent(part);
+               if (content === null) return null;
                return (
                   <Streamdown
                      key={key}
@@ -447,8 +455,8 @@ function AssistantParts(props: {
                );
             }
             if (part.type === "thinking") {
-               const content = (part as { content?: string }).content ?? "";
-               if (!content) return null;
+               const content = thinkingPartContent(part);
+               if (content === null) return null;
                return (
                   <details
                      key={key}
@@ -464,21 +472,11 @@ function AssistantParts(props: {
                );
             }
             if (part.type === "tool-call") {
-               const tc = part as {
-                  id: string;
-                  name: string;
-                  arguments?: string;
-                  state?: string;
-                  approval?: {
-                     id: string;
-                     needsApproval: boolean;
-                     approved?: boolean;
-                  };
-                  output?: unknown;
-               };
+               const tc = toolCallPartView(part);
+               if (tc === null) return null;
                const needsDecision =
                   tc.state === "approval-requested" &&
-                  tc.approval &&
+                  tc.approval !== undefined &&
                   tc.approval.approved === undefined;
                return (
                   <div key={key} className="flex flex-col gap-2">
@@ -513,14 +511,20 @@ function AssistantParts(props: {
                               size="sm"
                               variant="outline"
                               className="h-7 px-2 text-xs"
-                              onClick={() => props.onReject(tc.approval!.id)}
+                              onClick={() => {
+                                 if (tc.approval === undefined) return;
+                                 void props.onReject(tc.approval.id);
+                              }}
                            >
                               Negar
                            </Button>
                            <Button
                               size="sm"
                               className="h-7 px-2 text-xs"
-                              onClick={() => props.onApprove(tc.approval!.id)}
+                              onClick={() => {
+                                 if (tc.approval === undefined) return;
+                                 void props.onApprove(tc.approval.id);
+                              }}
                            >
                               Aprovar
                            </Button>

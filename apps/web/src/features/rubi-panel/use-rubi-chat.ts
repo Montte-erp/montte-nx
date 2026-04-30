@@ -1,21 +1,23 @@
-import {
-   useMutation,
-   useQuery,
-   useQueryClient,
-   skipToken,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, skipToken } from "@tanstack/react-query";
 import { useStore, shallow } from "@tanstack/react-store";
-import { fetchHttpStream } from "@tanstack/ai-client";
+import { stream as aiStream } from "@tanstack/ai-client";
 import { useChat, type UIMessage } from "@tanstack/ai-react";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { fromPromise } from "neverthrow";
 import { toast } from "sonner";
-import { orpc } from "@/integrations/orpc/client";
+import {
+   dbMessagesToUIMessages,
+   pendingApprovalIds,
+   uiMessagesOnly,
+   uiMessagesToThreadMessages,
+} from "@modules/agents/messages";
+import { client, orpc } from "@/integrations/orpc/client";
 import {
    loadRubiThread,
+   markRubiThreadHydrated,
    resetRubiChat,
+   startRubiThread,
    rubiChatStore,
-   setRubiThreadId,
 } from "./rubi-chat-store";
 
 export interface RubiSendArgs {
@@ -25,45 +27,31 @@ export interface RubiSendArgs {
    pageTitle?: string;
 }
 
-interface DbMessage {
-   id: string;
-   role: "system" | "user" | "assistant" | "tool";
-   parts: unknown;
-}
+const rubiConnection = aiStream(async function* (messages) {
+   const { activeThreadId, pageContext } = rubiChatStore.state;
+   if (activeThreadId === null) return;
 
-function dbMessagesToUIMessages(rows: DbMessage[]): UIMessage[] {
-   const out: UIMessage[] = [];
-   for (const row of rows) {
-      if (!Array.isArray(row.parts)) continue;
-      out.push({
-         id: row.id,
-         role: row.role,
-         parts: row.parts,
-      } as UIMessage);
-   }
-   return out;
-}
+   const response = await client.rubi.send({
+      threadId: activeThreadId,
+      pageContext,
+      messages: uiMessagesOnly(messages),
+   });
+   yield* response;
+});
 
 export function useRubiChat() {
-   const queryClient = useQueryClient();
-   const { threadId } = useStore(
+   const { activeThreadId, hydratedThreadId } = useStore(
       rubiChatStore,
-      (s) => ({ threadId: s.threadId }),
+      (state) => ({
+         activeThreadId: state.activeThreadId,
+         hydratedThreadId: state.hydratedThreadId,
+      }),
       shallow,
    );
-   const hydratedThreadRef = useRef<string | null>(null);
-   const requestContextRef = useRef<{
-      threadId?: string;
-      pageContext?: {
-         skillHint?: string;
-         route?: string;
-         title?: string;
-      };
-   }>({});
 
-   const messagesQuery = useQuery(
-      orpc.threads.messages.queryOptions({
-         input: threadId ? { threadId } : skipToken,
+   const threadQuery = useQuery(
+      orpc.threads.getById.queryOptions({
+         input: activeThreadId ? { threadId: activeThreadId } : skipToken,
       }),
    );
 
@@ -78,157 +66,97 @@ export function useRubiChat() {
       }),
    );
 
-   const connection = useMemo(
-      () =>
-         fetchHttpStream("/api/rubi-chat", () => ({
-            body: {
-               data: {
-                  threadId: requestContextRef.current.threadId,
-                  pageContext: requestContextRef.current.pageContext,
-               },
-            },
-         })),
-      [],
-   );
-
    const messagesRef = useRef<UIMessage[]>([]);
 
    const chat = useChat({
-      connection,
+      connection: rubiConnection,
       onFinish: async () => {
-         const id = rubiChatStore.state.threadId;
-         if (!id) return;
+         const { activeThreadId } = rubiChatStore.state;
+         if (activeThreadId === null) return;
          const snapshot = messagesRef.current;
          const result = await fromPromise(
             syncMessages.mutateAsync({
-               threadId: id,
-               messages: snapshot.map((m) => ({
-                  role: m.role,
-                  parts: m.parts as never,
-               })),
+               threadId: activeThreadId,
+               messages: uiMessagesToThreadMessages(snapshot),
             }),
-            (e) => (e instanceof Error ? e : new Error(String(e))),
+            () => null,
          );
          if (result.isErr()) {
             toast.error("Falha ao salvar resposta da Rubi.");
             return;
          }
-         await queryClient.invalidateQueries({
-            queryKey: orpc.threads.messages.queryKey({
-               input: { threadId: id },
-            }),
-         });
       },
-      onError: async (error) => {
-         const id = rubiChatStore.state.threadId;
+      onError: async () => {
+         const { activeThreadId } = rubiChatStore.state;
          const snapshot = messagesRef.current;
-         if (id && snapshot.length > 0) {
+         if (activeThreadId !== null && snapshot.length > 0) {
             await fromPromise(
                syncMessages.mutateAsync({
-                  threadId: id,
-                  messages: snapshot.map((m) => ({
-                     role: m.role,
-                     parts: m.parts as never,
-                  })),
+                  threadId: activeThreadId,
+                  messages: uiMessagesToThreadMessages(snapshot),
                }),
-               (e) => (e instanceof Error ? e : new Error(String(e))),
+               () => null,
             );
          }
-         const message = error.message || "";
-         const transient = /ECONNRESET|terminated|fetch failed|network/i.test(
-            message,
-         );
-         toast.error(
-            transient
-               ? "Conexão caiu durante a resposta. Tente enviar novamente."
-               : message || "Falha no streaming.",
-         );
+         toast.error("Falha no streaming da Rubi.");
       },
    });
 
    messagesRef.current = chat.messages;
 
    useEffect(() => {
-      if (!threadId) {
-         if (hydratedThreadRef.current !== null) {
+      if (activeThreadId === null) {
+         if (hydratedThreadId !== null) {
             chat.clear();
-            hydratedThreadRef.current = null;
          }
          return;
       }
-      if (hydratedThreadRef.current === threadId) return;
-      const data = messagesQuery.data;
-      if (!data) return;
+      if (hydratedThreadId === activeThreadId) return;
+      const data = threadQuery.data;
+      if (data === undefined) return;
       chat.setMessages(dbMessagesToUIMessages(data.messages));
-      hydratedThreadRef.current = threadId;
-   }, [threadId, messagesQuery.data, chat]);
+      markRubiThreadHydrated(activeThreadId);
+   }, [activeThreadId, hydratedThreadId, threadQuery.data, chat]);
 
    async function sendMessage(args: RubiSendArgs) {
       const text = args.text.trim();
       if (!text || chat.isLoading) return;
       const result = await fromPromise(
          (async () => {
-            let id = rubiChatStore.state.threadId;
-            if (!id) {
+            let threadId = rubiChatStore.state.activeThreadId;
+            if (threadId === null) {
                const created = await createThread.mutateAsync({
                   title: text.slice(0, 80),
                });
-               id = created.id;
-               setRubiThreadId(id);
-               hydratedThreadRef.current = id;
+               threadId = created.id;
             }
-            requestContextRef.current = {
-               threadId: id,
-               pageContext: {
-                  skillHint: args.skillHint,
-                  route: args.pageRoute,
-                  title: args.pageTitle,
-               },
-            };
+            startRubiThread(threadId, {
+               skillHint: args.skillHint,
+               route: args.pageRoute,
+               title: args.pageTitle,
+            });
             await chat.sendMessage(text);
          })(),
-         (e) => (e instanceof Error ? e : new Error(String(e))),
+         () => null,
       );
       if (result.isErr()) {
-         toast.error(result.error.message || "Falha ao enviar mensagem.");
+         toast.error("Falha ao enviar mensagem.");
       }
    }
 
    function reset() {
       resetRubiChat();
       chat.clear();
-      hydratedThreadRef.current = null;
    }
 
    function loadThread(id: string) {
       loadRubiThread(id);
-      hydratedThreadRef.current = null;
    }
 
-   const pendingApprovalIds = useMemo(() => {
-      const ids: string[] = [];
-      for (const msg of chat.messages) {
-         if (msg.role !== "assistant") continue;
-         for (const part of msg.parts) {
-            if ((part as { type?: string }).type !== "tool-call") continue;
-            const tc = part as {
-               state?: string;
-               approval?: { id: string; approved?: boolean };
-            };
-            if (
-               tc.state === "approval-requested" &&
-               tc.approval &&
-               tc.approval.approved === undefined
-            ) {
-               ids.push(tc.approval.id);
-            }
-         }
-      }
-      return ids;
-   }, [chat.messages]);
+   const approvalIds = pendingApprovalIds(chat.messages);
 
    return {
-      threadId,
+      threadId: activeThreadId,
       messages: chat.messages,
       isStreaming: chat.isLoading,
       sendMessage,
@@ -236,14 +164,14 @@ export function useRubiChat() {
          chat.addToolApprovalResponse({ id, approved: true }),
       rejectTool: (id: string) =>
          chat.addToolApprovalResponse({ id, approved: false }),
-      pendingApprovalIds,
+      pendingApprovalIds: approvalIds,
       approveAll: async () => {
-         for (const id of pendingApprovalIds) {
+         for (const id of approvalIds) {
             await chat.addToolApprovalResponse({ id, approved: true });
          }
       },
       rejectAll: async () => {
-         for (const id of pendingApprovalIds) {
+         for (const id of approvalIds) {
             await chat.addToolApprovalResponse({ id, approved: false });
          }
       },

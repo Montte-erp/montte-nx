@@ -4,6 +4,7 @@ import type { PostHog, Prompts } from "@core/posthog/server";
 import { flashModel } from "@core/ai/models";
 import { createPosthogAiMiddleware } from "@core/ai/middleware";
 import { RUBI_PROMPTS } from "@modules/agents/constants";
+import type { RubiModelMessage } from "@modules/agents/messages";
 import {
    buildSkillCatalog,
    buildSkillDiscoverTool,
@@ -26,11 +27,7 @@ export interface RubiChatOptions {
    userId: string;
    organizationId: string;
    threadId?: string;
-   messages: Array<{
-      role: "user" | "assistant" | "tool";
-      content: string;
-      toolCallId?: string;
-   }>;
+   messages: RubiModelMessage[];
    pageContext: PageContext;
    abortSignal?: AbortSignal;
 }
