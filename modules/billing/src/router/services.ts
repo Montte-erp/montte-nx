@@ -9,22 +9,35 @@ import {
    sum,
 } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
+import { z } from "zod";
 import { contacts } from "@core/database/schemas/contacts";
-import { services, servicePrices } from "@core/database/schemas/services";
+import {
+   createServiceSchema,
+   services,
+   servicePrices,
+   updateServiceSchema,
+} from "@core/database/schemas/services";
 import { subscriptionItems } from "@core/database/schemas/subscription-items";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
-import {
-   createServiceSchema,
-   listServicesInputSchema,
-   idInputSchema,
-   serviceIdInputSchema,
-   bulkCreateServicesInputSchema,
-   bulkIdsInputSchema,
-   updateServiceInputSchema,
-} from "@modules/billing/contracts/services";
 import { requireService } from "@modules/billing/router/middlewares";
+
+const idInputSchema = z.object({ id: z.string().uuid() });
+const serviceIdInputSchema = z.object({ serviceId: z.string().uuid() });
+const bulkIdsInputSchema = z.object({
+   ids: z.array(z.string().uuid()).min(1),
+});
+const bulkCreateServicesInputSchema = z.object({
+   items: z.array(createServiceSchema).min(1),
+});
+const updateServiceInputSchema = idInputSchema.merge(updateServiceSchema);
+const listServicesInputSchema = z
+   .object({
+      search: z.string().optional(),
+      categoryId: z.string().uuid().optional(),
+   })
+   .optional();
 
 export const getAll = protectedProcedure
    .input(listServicesInputSchema)

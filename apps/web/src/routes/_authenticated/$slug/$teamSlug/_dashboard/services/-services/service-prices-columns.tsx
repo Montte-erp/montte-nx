@@ -11,7 +11,7 @@ import { Lock } from "lucide-react";
 import { z } from "zod";
 import type { Outputs } from "@/integrations/orpc/client";
 
-export type ServicePrice = Outputs["services"]["getVariants"][number];
+export type ServicePrice = Outputs["prices"]["list"][number];
 
 export const PRICING_TYPE_LABEL: Record<ServicePrice["type"], string> = {
    flat: "Fixo",

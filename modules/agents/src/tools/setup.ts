@@ -1,15 +1,18 @@
 import { toolDefinition } from "@tanstack/ai";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
-import { benefits, serviceBenefits } from "@core/database/schemas/benefits";
-import { meters } from "@core/database/schemas/meters";
-import { services, servicePrices } from "@core/database/schemas/services";
 import {
+   benefits,
    createBenefitSchema,
-   createMeterSchema,
+   serviceBenefits,
+} from "@core/database/schemas/benefits";
+import { createMeterSchema, meters } from "@core/database/schemas/meters";
+import {
    createPriceSchema,
    createServiceSchema,
-} from "@modules/billing/contracts/services";
+   services,
+   servicePrices,
+} from "@core/database/schemas/services";
 import type { ToolDeps } from "@modules/agents/tools/types";
 
 const setupServiceInput = z.object({

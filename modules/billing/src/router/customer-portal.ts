@@ -1,23 +1,12 @@
 import { fromPromise } from "neverthrow";
-import { billingContract } from "../contracts/billing-contract";
-import { implementerInternal } from "@orpc/server";
+import { z } from "zod";
 import { getDomain } from "@core/environment/helpers";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
-import type {
-   ORPCContext,
-   ORPCContextWithOrganization,
-} from "@core/orpc/server";
 
-const def = protectedProcedure["~orpc"];
-const impl = implementerInternal<
-   typeof billingContract.customerPortal,
-   ORPCContext,
-   ORPCContextWithOrganization
->(billingContract.customerPortal, def.config, [...def.middlewares]);
-
-export const createSession = impl.createSession.handler(
-   async ({ context, input }) => {
+export const createSession = protectedProcedure
+   .input(z.object({ externalId: z.string().min(1) }))
+   .handler(async ({ context, input }) => {
       const contactResult = await fromPromise(
          context.db.query.contacts.findFirst({
             where: (f, { and, eq }) =>
@@ -34,5 +23,4 @@ export const createSession = impl.createSession.handler(
          throw WebAppError.notFound("Cliente não encontrado.");
 
       return { url: `${getDomain()}/portal/${context.teamId}` };
-   },
-);
+   });

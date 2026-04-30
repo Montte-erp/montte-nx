@@ -6,7 +6,7 @@ import { meters } from "@core/database/schemas/meters";
 import {
    createMeterSchema,
    updateMeterSchema,
-} from "@modules/billing/contracts/services";
+} from "@core/database/schemas/meters";
 import type { ToolDeps } from "@modules/agents/tools/types";
 
 const listMetersInput = z.object({

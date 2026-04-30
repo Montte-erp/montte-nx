@@ -139,6 +139,7 @@ const baseServiceSchema = createInsertSchema(services).pick({
    description: true,
    categoryId: true,
    tagId: true,
+   costPrice: true,
 });
 
 export const createServiceSchema = baseServiceSchema.extend({
@@ -146,6 +147,7 @@ export const createServiceSchema = baseServiceSchema.extend({
    description: z.string().max(500).nullable().optional(),
    categoryId: z.string().uuid().nullable().optional(),
    tagId: z.string().uuid().nullable().optional(),
+   costPrice: priceSchema.default("0"),
 });
 
 export const updateServiceSchema = baseServiceSchema
@@ -154,6 +156,7 @@ export const updateServiceSchema = baseServiceSchema
       description: z.string().max(500).nullable().optional(),
       categoryId: z.string().uuid().nullable().optional(),
       tagId: z.string().uuid().nullable().optional(),
+      costPrice: priceSchema.optional(),
       isActive: z.boolean().optional(),
    })
    .partial();
@@ -165,6 +168,7 @@ const basePriceSchema = createInsertSchema(servicePrices).pick({
    interval: true,
    meterId: true,
    priceCap: true,
+   minPrice: true,
    trialDays: true,
    autoEnroll: true,
 });
@@ -176,6 +180,7 @@ export const createPriceSchema = basePriceSchema.extend({
    interval: z.enum(billingCycleEnum.enumValues),
    meterId: z.string().uuid().nullable().optional(),
    priceCap: priceSchema.nullable().optional(),
+   minPrice: priceSchema.nullable().optional(),
    trialDays: z.number().int().min(0).nullable().optional(),
    autoEnroll: z.boolean().default(false),
 });
@@ -187,6 +192,7 @@ export const updatePriceSchema = basePriceSchema
       interval: z.enum(billingCycleEnum.enumValues).optional(),
       isActive: z.boolean().optional(),
       priceCap: priceSchema.nullable().optional(),
+      minPrice: priceSchema.nullable().optional(),
       trialDays: z.number().int().min(0).nullable().optional(),
    })
    .partial();

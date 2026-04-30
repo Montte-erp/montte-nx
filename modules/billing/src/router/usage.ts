@@ -1,23 +1,32 @@
 import { fromPromise } from "neverthrow";
-import { billingContract } from "../contracts/billing-contract";
-import { implementerInternal } from "@orpc/server";
-import { usageEvents } from "@core/database/schemas/usage-events";
+import { z } from "zod";
+import {
+   upsertUsageEventSchema,
+   usageEvents,
+} from "@core/database/schemas/usage-events";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
-import type {
-   ORPCContext,
-   ORPCContextWithOrganization,
-} from "@core/orpc/server";
 
-const def = protectedProcedure["~orpc"];
-const impl = implementerInternal<
-   typeof billingContract.services,
-   ORPCContext,
-   ORPCContextWithOrganization
->(billingContract.services, def.config, [...def.middlewares]);
+const ingestUsageInputSchema = upsertUsageEventSchema
+   .pick({ quantity: true, idempotencyKey: true, properties: true })
+   .extend({
+      meterId: z.string().uuid().optional(),
+      eventName: z.string().min(1).optional(),
+      externalId: z.string().min(1).nullable().optional(),
+   })
+   .superRefine((data, ctx) => {
+      if (!data.meterId && !data.eventName) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Informe meterId ou eventName.",
+            path: ["meterId"],
+         });
+      }
+   });
 
-export const ingestUsage = impl.ingestUsage.handler(
-   async ({ context, input }) => {
+export const ingestUsage = protectedProcedure
+   .input(ingestUsageInputSchema)
+   .handler(async ({ context, input }) => {
       const teamId = context.teamId;
 
       const meterResult = await fromPromise(
@@ -76,5 +85,4 @@ export const ingestUsage = impl.ingestUsage.handler(
       );
       if (result.isErr()) throw result.error;
       return { success: true as const };
-   },
-);
+   });

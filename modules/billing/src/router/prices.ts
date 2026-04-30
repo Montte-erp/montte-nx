@@ -1,16 +1,21 @@
 import { eq } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
+import { z } from "zod";
 import type { DatabaseInstance } from "@core/database/client";
 import { benefits, serviceBenefits } from "@core/database/schemas/benefits";
-import { servicePrices } from "@core/database/schemas/services";
+import {
+   createPriceSchema,
+   servicePrices,
+   updatePriceSchema,
+} from "@core/database/schemas/services";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
-import {
-   createPriceForServiceInputSchema,
-   idInputSchema,
-   serviceIdInputSchema,
-   updatePriceInputSchema,
-} from "@modules/billing/contracts/services";
+
+const idInputSchema = z.object({ id: z.string().uuid() });
+const serviceIdInputSchema = z.object({ serviceId: z.string().uuid() });
+const createPriceForServiceInputSchema =
+   serviceIdInputSchema.merge(createPriceSchema);
+const updatePriceInputSchema = idInputSchema.merge(updatePriceSchema);
 import {
    computeEffectiveCost,
    formatCostBRL,
