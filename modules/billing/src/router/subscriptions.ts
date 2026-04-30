@@ -1,13 +1,12 @@
 import dayjs from "dayjs";
 import { and, count, eq, sql, sum } from "drizzle-orm";
-import { errAsync, fromPromise, okAsync, safeTry } from "neverthrow";
+import { errAsync, fromPromise, okAsync } from "neverthrow";
 import { z } from "zod";
 import { advanceByBillingInterval } from "@core/utils/date";
 import { servicePrices } from "@core/database/schemas/services";
 import {
    createSubscriptionItemSchema,
    subscriptionItems,
-   updateSubscriptionItemSchema,
 } from "@core/database/schemas/subscription-items";
 import {
    contactSubscriptions,
@@ -23,11 +22,9 @@ import { enqueueTrialExpiryWorkflow } from "@modules/billing/workflows/trial-exp
 import {
    requireContact,
    requireSubscription,
-   requireSubscriptionItem,
 } from "@modules/billing/router/middlewares";
 
 const logger = getLogger().child({ module: "billing/subscriptions" });
-const MAX_ITEMS_PER_SUBSCRIPTION = 20;
 
 const subscriptionItemInputSchema = createSubscriptionItemSchema.omit({
    subscriptionId: true,
@@ -49,12 +46,6 @@ const createSubscriptionInputSchema = createSubscriptionSchema
       }
    });
 
-const addItemInputSchema = createSubscriptionItemSchema;
-
-const updateItemInputSchema = z
-   .object({ id: z.string().uuid() })
-   .merge(updateSubscriptionItemSchema);
-
 const listInputSchema = z
    .object({
       status: z.enum(subscriptionStatusEnum.enumValues).optional(),
@@ -68,9 +59,6 @@ const expiringSoonInputSchema = z
    .optional();
 
 const idInputSchema = z.object({ id: z.string().uuid() });
-const subscriptionIdInputSchema = z.object({
-   subscriptionId: z.string().uuid(),
-});
 const priceIdInputSchema = z.object({ priceId: z.string().uuid() });
 const contactIdInputSchema = z.object({ contactId: z.string().uuid() });
 

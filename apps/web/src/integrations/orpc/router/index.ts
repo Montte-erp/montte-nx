@@ -23,6 +23,7 @@ import * as benefitsRouter from "@modules/billing/router/benefits";
 import * as metersRouter from "@modules/billing/router/meters";
 import * as pricesRouter from "@modules/billing/router/prices";
 import * as servicesRouter from "@modules/billing/router/services";
+import * as subscriptionItemsRouter from "@modules/billing/router/subscription-items";
 import * as subscriptionsRouter from "@modules/billing/router/subscriptions";
 import * as usageRouter from "@modules/billing/router/usage";
 import * as sessionRouter from "./session";
@@ -51,6 +52,7 @@ export default {
    onboarding: onboardingRouter,
    prices: pricesRouter,
    services: servicesRouter,
+   subscriptionItems: subscriptionItemsRouter,
    subscriptions: subscriptionsRouter,
    meters: metersRouter,
    benefits: benefitsRouter,
