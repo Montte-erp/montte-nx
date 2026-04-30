@@ -25,10 +25,7 @@ vi.mock("@dbos-inc/drizzle-datasource", async () => {
    return mod.drizzleDataSourceMockFactory(await dbosMocks);
 });
 
-import {
-   hyprpayUsageIngestSpy,
-   ssePublishSpy,
-} from "../helpers/mock-classification-context";
+import { ssePublishSpy } from "../helpers/mock-classification-context";
 
 vi.mock("../../src/ai/derive-keywords", () => ({
    deriveKeywords: vi.fn(),
@@ -114,14 +111,6 @@ describe("deriveKeywordsWorkflow", () => {
                categoryName: "Food",
                count: KEYWORDS.length,
             },
-         }),
-      );
-
-      expect(hyprpayUsageIngestSpy).toHaveBeenCalledTimes(1);
-      expect(hyprpayUsageIngestSpy).toHaveBeenCalledWith(
-         expect.objectContaining({
-            eventName: "ai.keyword_derived",
-            quantity: "1",
          }),
       );
    });
