@@ -30,7 +30,19 @@ import * as usageRouter from "@modules/billing/router/usage";
 import * as sessionRouter from "@modules/account/router/session";
 import * as tagsRouter from "@modules/classification/router/tags";
 import * as teamRouter from "@modules/account/router/team";
-import * as transactionsRouter from "@modules/finance/router/transactions-index";
+import * as transactionsCrud from "@modules/finance/router/transactions";
+import * as transactionsBulk from "@modules/finance/router/transactions-bulk";
+import * as transactionsList from "@modules/finance/router/transactions-list";
+import * as transactionsStatus from "@modules/finance/router/transactions-status";
+import * as transactionsSuggestions from "@modules/finance/router/transactions-suggestions";
+
+const transactionsRouter = {
+   ...transactionsCrud,
+   ...transactionsBulk,
+   ...transactionsList,
+   ...transactionsStatus,
+   ...transactionsSuggestions,
+};
 
 export default {
    account: accountRouter,

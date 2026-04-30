@@ -3,20 +3,18 @@ import {
    evaluateConditionGroup,
 } from "@f-o-t/condition-evaluator";
 import { of, toDecimal } from "@f-o-t/money";
-import { and, count, desc, eq, getTableColumns, sql } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
+import { count, sql } from "drizzle-orm";
 import { z } from "zod";
-import { bankAccounts } from "@core/database/schemas/bank-accounts";
-import { categories } from "@core/database/schemas/categories";
-import { contacts } from "@core/database/schemas/contacts";
-import { creditCards } from "@core/database/schemas/credit-cards";
-import { tags } from "@core/database/schemas/tags";
 import { transactions } from "@core/database/schemas/transactions";
 import { protectedProcedure } from "@core/orpc/server";
+import { selectTransactionsWithJoins } from "@modules/finance/services/transactions-query";
 import {
-   buildTransactionConditions,
+   buildTransactionWhere,
    type TransactionFilter,
-} from "@modules/finance/router/transactions-filters";
+} from "@modules/finance/services/transactions-where";
+
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const txStatus = z.enum(["pending", "paid", "cancelled"]);
 
 const filterSchema = z
    .object({
@@ -25,32 +23,15 @@ const filterSchema = z
       categoryId: z.string().uuid().optional(),
       tagId: z.string().uuid().optional(),
       contactId: z.string().uuid().optional(),
-      dateFrom: z
-         .string()
-         .regex(/^\d{4}-\d{2}-\d{2}$/)
-         .optional(),
-      dateTo: z
-         .string()
-         .regex(/^\d{4}-\d{2}-\d{2}$/)
-         .optional(),
+      dateFrom: isoDate.optional(),
+      dateTo: isoDate.optional(),
       search: z.string().max(100).optional(),
       creditCardId: z.string().uuid().optional(),
       uncategorized: z.boolean().optional(),
       paymentMethod: z.string().optional(),
-      status: z
-         .union([
-            z.enum(["pending", "paid", "cancelled"]),
-            z.array(z.enum(["pending", "paid", "cancelled"])),
-         ])
-         .optional(),
-      dueDateFrom: z
-         .string()
-         .regex(/^\d{4}-\d{2}-\d{2}$/)
-         .optional(),
-      dueDateTo: z
-         .string()
-         .regex(/^\d{4}-\d{2}-\d{2}$/)
-         .optional(),
+      status: z.union([txStatus, z.array(txStatus)]).optional(),
+      dueDateFrom: isoDate.optional(),
+      dueDateTo: isoDate.optional(),
       overdueOnly: z.boolean().optional(),
       view: z
          .enum(["all", "payable", "receivable", "settled", "cancelled"])
@@ -64,70 +45,26 @@ const filterSchema = z
 export const getAll = protectedProcedure
    .input(filterSchema)
    .handler(async ({ context, input }) => {
-      const filter: TransactionFilter = {
-         teamId: context.teamId,
-         ...input,
-      };
+      const filter: TransactionFilter = { teamId: context.teamId, ...input };
       const page = filter.page ?? 1;
       const pageSize = filter.pageSize ?? 50;
-      const conds = buildTransactionConditions(filter, true);
-      const whereClause = and(...conds);
+      const where = buildTransactionWhere(filter, true);
+      const cg = filter.conditionGroup;
 
-      const isWeighted = filter.conditionGroup?.scoringMode === "weighted";
-
-      const suggestedCategories = alias(categories, "suggested_categories");
-      const suggestedTags = alias(tags, "suggested_tags");
-      const tagAlias = alias(tags, "tag_alias");
-
-      if (isWeighted && filter.conditionGroup) {
-         const condGroup = filter.conditionGroup;
-         const allRows = await context.db
-            .select({
-               ...getTableColumns(transactions),
-               categoryName: categories.name,
-               creditCardName: creditCards.name,
-               bankAccountName: bankAccounts.name,
-               contactName: contacts.name,
-               suggestedCategoryName: suggestedCategories.name,
-               tagName: tagAlias.name,
-               suggestedTagName: suggestedTags.name,
-            })
-            .from(transactions)
-            .leftJoin(categories, eq(transactions.categoryId, categories.id))
-            .leftJoin(
-               suggestedCategories,
-               eq(transactions.suggestedCategoryId, suggestedCategories.id),
-            )
-            .leftJoin(
-               creditCards,
-               eq(transactions.creditCardId, creditCards.id),
-            )
-            .leftJoin(
-               bankAccounts,
-               eq(transactions.bankAccountId, bankAccounts.id),
-            )
-            .leftJoin(contacts, eq(transactions.contactId, contacts.id))
-            .leftJoin(tagAlias, eq(transactions.tagId, tagAlias.id))
-            .leftJoin(
-               suggestedTags,
-               eq(transactions.suggestedTagId, suggestedTags.id),
-            )
-            .where(whereClause)
-            .orderBy(desc(transactions.date));
-
-         const filtered = allRows.filter((row) => {
-            const result = evaluateConditionGroup(condGroup, {
-               data: {
-                  categoryId: row.categoryId ?? null,
-                  bankAccountId: row.bankAccountId,
-                  creditCardId: row.creditCardId ?? null,
-                  amount: Number(row.amount),
-                  name: row.name ?? row.description ?? "",
-               },
-            });
-            return result.passed;
-         });
-
+      if (cg?.scoringMode === "weighted") {
+         const allRows = await selectTransactionsWithJoins(context.db, where);
+         const filtered = allRows.filter(
+            (row) =>
+               evaluateConditionGroup(cg, {
+                  data: {
+                     categoryId: row.categoryId ?? null,
+                     bankAccountId: row.bankAccountId,
+                     creditCardId: row.creditCardId ?? null,
+                     amount: Number(row.amount),
+                     name: row.name ?? row.description ?? "",
+                  },
+               }).passed,
+         );
          const offset = (page - 1) * pageSize;
          return {
             data: filtered.slice(offset, offset + pageSize),
@@ -138,45 +75,9 @@ export const getAll = protectedProcedure
       const [countRow] = await context.db
          .select({ total: count() })
          .from(transactions)
-         .leftJoin(categories, eq(transactions.categoryId, categories.id))
-         .leftJoin(creditCards, eq(transactions.creditCardId, creditCards.id))
-         .leftJoin(
-            bankAccounts,
-            eq(transactions.bankAccountId, bankAccounts.id),
-         )
-         .leftJoin(contacts, eq(transactions.contactId, contacts.id))
-         .where(whereClause);
+         .where(where);
 
-      const data = await context.db
-         .select({
-            ...getTableColumns(transactions),
-            categoryName: categories.name,
-            creditCardName: creditCards.name,
-            bankAccountName: bankAccounts.name,
-            contactName: contacts.name,
-            suggestedCategoryName: suggestedCategories.name,
-            tagName: tagAlias.name,
-            suggestedTagName: suggestedTags.name,
-         })
-         .from(transactions)
-         .leftJoin(categories, eq(transactions.categoryId, categories.id))
-         .leftJoin(
-            suggestedCategories,
-            eq(transactions.suggestedCategoryId, suggestedCategories.id),
-         )
-         .leftJoin(creditCards, eq(transactions.creditCardId, creditCards.id))
-         .leftJoin(
-            bankAccounts,
-            eq(transactions.bankAccountId, bankAccounts.id),
-         )
-         .leftJoin(contacts, eq(transactions.contactId, contacts.id))
-         .leftJoin(tagAlias, eq(transactions.tagId, tagAlias.id))
-         .leftJoin(
-            suggestedTags,
-            eq(transactions.suggestedTagId, suggestedTags.id),
-         )
-         .where(whereClause)
-         .orderBy(desc(transactions.date))
+      const data = await selectTransactionsWithJoins(context.db, where)
          .limit(pageSize)
          .offset((page - 1) * pageSize);
 
@@ -186,27 +87,24 @@ export const getAll = protectedProcedure
 export const getSummary = protectedProcedure
    .input(filterSchema)
    .handler(async ({ context, input }) => {
-      const filter: TransactionFilter = {
-         teamId: context.teamId,
-         ...input,
-      };
-      const conds = buildTransactionConditions(filter, false);
-      const whereClause = and(...conds);
+      const filter: TransactionFilter = { teamId: context.teamId, ...input };
+      const where = buildTransactionWhere(filter, false);
+      const t = transactions;
       const [row] = await context.db
          .select({
             totalCount: count(),
-            incomeTotal: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' THEN ${transactions.amount} ELSE 0 END), 0)`,
-            expenseTotal: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'expense' THEN ${transactions.amount} ELSE 0 END), 0)`,
-            balance: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' THEN ${transactions.amount} WHEN ${transactions.type} = 'expense' THEN -${transactions.amount} ELSE 0 END), 0)`,
+            incomeTotal: sql<string>`COALESCE(SUM(CASE WHEN ${t.type} = 'income' THEN ${t.amount} ELSE 0 END), 0)`,
+            expenseTotal: sql<string>`COALESCE(SUM(CASE WHEN ${t.type} = 'expense' THEN ${t.amount} ELSE 0 END), 0)`,
+            balance: sql<string>`COALESCE(SUM(CASE WHEN ${t.type} = 'income' THEN ${t.amount} WHEN ${t.type} = 'expense' THEN -${t.amount} ELSE 0 END), 0)`,
          })
-         .from(transactions)
-         .where(whereClause);
+         .from(t)
+         .where(where);
 
-      const currency = "BRL";
+      const c = "BRL";
       return {
          totalCount: row?.totalCount ?? 0,
-         incomeTotal: toDecimal(of(row?.incomeTotal ?? "0", currency)),
-         expenseTotal: toDecimal(of(row?.expenseTotal ?? "0", currency)),
-         balance: toDecimal(of(row?.balance ?? "0", currency)),
+         incomeTotal: toDecimal(of(row?.incomeTotal ?? "0", c)),
+         expenseTotal: toDecimal(of(row?.expenseTotal ?? "0", c)),
+         balance: toDecimal(of(row?.balance ?? "0", c)),
       };
    });

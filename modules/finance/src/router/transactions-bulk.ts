@@ -1,4 +1,3 @@
-import { and, eq, inArray } from "drizzle-orm";
 import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
@@ -84,11 +83,13 @@ export const importStatement = protectedProcedure
       }));
 
       const inserted = await fromPromise(
-         context.db.insert(transactions).values(rows).returning({
-            id: transactions.id,
-            type: transactions.type,
-            categoryId: transactions.categoryId,
-         }),
+         context.db.transaction(async (tx) =>
+            tx.insert(transactions).values(rows).returning({
+               id: transactions.id,
+               type: transactions.type,
+               categoryId: transactions.categoryId,
+            }),
+         ),
          () => WebAppError.internal("Falha ao importar lançamentos."),
       );
       if (inserted.isErr()) throw inserted.error;
@@ -149,23 +150,18 @@ export const checkDuplicates = protectedProcedure
    )
    .use(requireBankAccount, (input) => input.bankAccountId)
    .handler(async ({ context, input }) => {
-      const existing = await context.db
-         .select({
-            date: transactions.date,
-            amount: transactions.amount,
-            type: transactions.type,
-         })
-         .from(transactions)
-         .where(
+      const existing = await context.db.query.transactions.findMany({
+         columns: { date: true, amount: true, type: true },
+         where: (f, { and, eq, inArray }) =>
             and(
-               eq(transactions.bankAccountId, input.bankAccountId),
-               eq(transactions.teamId, context.teamId),
+               eq(f.bankAccountId, input.bankAccountId),
+               eq(f.teamId, context.teamId),
                inArray(
-                  transactions.date,
+                  f.date,
                   input.transactions.map((t) => t.date),
                ),
             ),
-         );
+      });
 
       return input.transactions.map((t) => {
          const normalizedAmt = normalizeAmount(t.amount);
@@ -251,14 +247,16 @@ export const importBulk = protectedProcedure
             date: data.date,
          });
          const inserted = await fromPromise(
-            context.db
-               .insert(transactions)
-               .values({
-                  ...data,
-                  teamId: context.teamId,
-                  tagId: tagId ?? null,
-               })
-               .returning({ id: transactions.id }),
+            context.db.transaction(async (tx) =>
+               tx
+                  .insert(transactions)
+                  .values({
+                     ...data,
+                     teamId: context.teamId,
+                     tagId: tagId ?? null,
+                  })
+                  .returning({ id: transactions.id }),
+            ),
             () => WebAppError.internal("Falha ao importar lançamento."),
          );
          if (inserted.isErr()) throw inserted.error;

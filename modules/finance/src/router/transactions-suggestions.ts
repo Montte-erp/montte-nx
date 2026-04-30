@@ -13,21 +13,23 @@ export const acceptSuggestedCategory = protectedProcedure
    .input(idSchema)
    .use(requireTransaction, (input) => input.id)
    .handler(async ({ context, input }) => {
-      const tx = context.transaction;
-      if (!tx.suggestedCategoryId) {
+      const current = context.transaction;
+      if (!current.suggestedCategoryId) {
          throw WebAppError.badRequest(
             "Nenhuma sugestão de categoria disponível.",
          );
       }
       const result = await fromPromise(
-         context.db
-            .update(transactions)
-            .set({
-               categoryId: tx.suggestedCategoryId,
-               suggestedCategoryId: null,
-               updatedAt: dayjs().toDate(),
-            })
-            .where(eq(transactions.id, input.id)),
+         context.db.transaction(async (tx) =>
+            tx
+               .update(transactions)
+               .set({
+                  categoryId: current.suggestedCategoryId,
+                  suggestedCategoryId: null,
+                  updatedAt: dayjs().toDate(),
+               })
+               .where(eq(transactions.id, input.id)),
+         ),
          () =>
             WebAppError.internal("Falha ao atualizar categoria do lançamento."),
       );
@@ -40,10 +42,12 @@ export const dismissSuggestedCategory = protectedProcedure
    .use(requireTransaction, (input) => input.id)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
-         context.db
-            .update(transactions)
-            .set({ suggestedCategoryId: null, updatedAt: dayjs().toDate() })
-            .where(eq(transactions.id, input.id)),
+         context.db.transaction(async (tx) =>
+            tx
+               .update(transactions)
+               .set({ suggestedCategoryId: null, updatedAt: dayjs().toDate() })
+               .where(eq(transactions.id, input.id)),
+         ),
          () => WebAppError.internal("Falha ao descartar sugestão."),
       );
       if (result.isErr()) throw result.error;
@@ -54,21 +58,23 @@ export const acceptSuggestedTag = protectedProcedure
    .input(idSchema)
    .use(requireTransaction, (input) => input.id)
    .handler(async ({ context, input }) => {
-      const tx = context.transaction;
-      if (!tx.suggestedTagId) {
+      const current = context.transaction;
+      if (!current.suggestedTagId) {
          throw WebAppError.badRequest(
             "Nenhuma sugestão de centro de custo disponível.",
          );
       }
       const result = await fromPromise(
-         context.db
-            .update(transactions)
-            .set({
-               tagId: tx.suggestedTagId,
-               suggestedTagId: null,
-               updatedAt: dayjs().toDate(),
-            })
-            .where(eq(transactions.id, input.id)),
+         context.db.transaction(async (tx) =>
+            tx
+               .update(transactions)
+               .set({
+                  tagId: current.suggestedTagId,
+                  suggestedTagId: null,
+                  updatedAt: dayjs().toDate(),
+               })
+               .where(eq(transactions.id, input.id)),
+         ),
          () =>
             WebAppError.internal(
                "Falha ao atualizar centro de custo do lançamento.",
@@ -83,10 +89,12 @@ export const dismissSuggestedTag = protectedProcedure
    .use(requireTransaction, (input) => input.id)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
-         context.db
-            .update(transactions)
-            .set({ suggestedTagId: null, updatedAt: dayjs().toDate() })
-            .where(eq(transactions.id, input.id)),
+         context.db.transaction(async (tx) =>
+            tx
+               .update(transactions)
+               .set({ suggestedTagId: null, updatedAt: dayjs().toDate() })
+               .where(eq(transactions.id, input.id)),
+         ),
          () => WebAppError.internal("Falha ao descartar sugestão."),
       );
       if (result.isErr()) throw result.error;
