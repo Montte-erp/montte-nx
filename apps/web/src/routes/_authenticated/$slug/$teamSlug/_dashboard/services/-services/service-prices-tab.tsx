@@ -30,19 +30,19 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
 
    const [{ data: prices }, { data: meters }] = useSuspenseQueries({
       queries: [
-         orpc.services.getVariants.queryOptions({ input: { serviceId } }),
+         orpc.prices.list.queryOptions({ input: { serviceId } }),
          orpc.meters.getMeters.queryOptions({}),
       ],
    });
 
    const updateMutation = useMutation(
-      orpc.services.updateVariant.mutationOptions({
+      orpc.prices.update.mutationOptions({
          onError: (e) => toast.error(e.message),
       }),
    );
 
    const createMutation = useMutation(
-      orpc.services.createVariant.mutationOptions({
+      orpc.prices.create.mutationOptions({
          onSuccess: () => {
             toast.success("Preço criado.");
             setIsDraftActive(false);
@@ -52,7 +52,7 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
    );
 
    const deleteMutation = useMutation(
-      orpc.services.removeVariant.mutationOptions({
+      orpc.prices.remove.mutationOptions({
          onSuccess: () => toast.success("Preço excluído."),
          onError: (e) => toast.error(e.message),
       }),

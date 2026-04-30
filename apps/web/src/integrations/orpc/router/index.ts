@@ -21,6 +21,7 @@ import * as onboardingRouter from "./onboarding";
 import * as organizationRouter from "./organization";
 import * as benefitsRouter from "@modules/billing/router/benefits";
 import * as metersRouter from "@modules/billing/router/meters";
+import * as pricesRouter from "@modules/billing/router/prices";
 import * as servicesRouter from "@modules/billing/router/services";
 import * as subscriptionsRouter from "@modules/billing/router/subscriptions";
 import * as usageRouter from "@modules/billing/router/usage";
@@ -48,6 +49,7 @@ export default {
    inventory: inventoryRouter,
    notifications: notificationsRouter,
    onboarding: onboardingRouter,
+   prices: pricesRouter,
    services: servicesRouter,
    subscriptions: subscriptionsRouter,
    meters: metersRouter,

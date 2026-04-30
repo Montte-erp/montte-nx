@@ -40,7 +40,7 @@ export const Route = createFileRoute(
          }),
       );
       context.queryClient.prefetchQuery(
-         orpc.services.getVariants.queryOptions({
+         orpc.prices.list.queryOptions({
             input: { serviceId: params.serviceId },
          }),
       );
