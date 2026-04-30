@@ -1,9 +1,11 @@
 import { errAsync, fromPromise } from "neverthrow";
 import { chat } from "@tanstack/ai";
 import { z } from "zod";
+import { categorySchema } from "@core/database/schemas/categories";
+import { transactionSchema } from "@core/database/schemas/transactions";
 import { AppError } from "@core/logging/errors";
 import type { Prompts } from "@core/posthog/server";
-import { CLASSIFICATION_PROMPTS } from "../constants";
+import { CLASSIFICATION_PROMPTS } from "@modules/classification/constants";
 import { flashModel } from "@core/ai/models";
 import {
    type AiObservabilityContext,
@@ -12,18 +14,17 @@ import {
 
 const MAX_BATCH_SIZE = 20;
 
-export const classifyBatchInputSchema = z.object({
-   id: z.string(),
-   name: z.string(),
-   type: z.enum(["income", "expense"]),
-   contactName: z.string().nullish(),
-});
+export const classifyBatchInputSchema = transactionSchema
+   .pick({ id: true })
+   .extend({
+      name: z.string(),
+      type: z.enum(["income", "expense"]),
+      contactName: z.string().nullish(),
+   });
 
-export const classifyBatchOptionSchema = z.object({
-   id: z.string(),
-   name: z.string(),
-   keywords: z.array(z.string()).nullish(),
-});
+export const classifyBatchOptionSchema = categorySchema
+   .pick({ id: true, name: true, keywords: true })
+   .extend({ keywords: z.array(z.string()).nullish() });
 
 export const classifyBatchResultSchema = z.object({
    transactionId: z.string(),

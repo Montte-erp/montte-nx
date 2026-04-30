@@ -8,7 +8,7 @@ import {
    uniqueIndex,
    uuid,
 } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 import { financeSchema } from "@core/database/schemas/schemas";
 
@@ -61,6 +61,8 @@ export const categories = financeSchema.table(
       ),
    ],
 );
+
+export const categorySchema = createSelectSchema(categories);
 
 export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;

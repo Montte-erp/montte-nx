@@ -7,14 +7,17 @@ import { WorkflowError } from "@core/dbos/errors";
 import { categories } from "@core/database/schemas/categories";
 import { tags } from "@core/database/schemas/tags";
 import { transactions } from "@core/database/schemas/transactions";
-import { matchByKeywords, type KeywordMatchResult } from "../utils";
+import {
+   matchByKeywords,
+   type KeywordMatchResult,
+} from "@modules/classification/utils";
 import {
    classifyTransactionsBatch,
    type ClassifyBatchInput,
    type ClassifyBatchResult,
-} from "../ai/classify-batch";
-import { classificationSseEvents } from "../sse";
-import { CLASSIFICATION_QUEUES } from "../constants";
+} from "@modules/classification/ai/classify-batch";
+import { classificationSseEvents } from "@modules/classification/sse";
+import { CLASSIFICATION_QUEUES } from "@modules/classification/constants";
 import {
    classificationDataSource,
    getClassificationPosthog,

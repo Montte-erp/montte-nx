@@ -6,8 +6,8 @@ import { categories } from "@core/database/schemas/categories";
 import { team } from "@core/database/schemas/auth";
 import { WorkflowError } from "@core/dbos/errors";
 import { getLogger } from "@core/logging/root";
-import { classificationSseEvents } from "../sse";
-import { CLASSIFICATION_QUEUES } from "../constants";
+import { classificationSseEvents } from "@modules/classification/sse";
+import { CLASSIFICATION_QUEUES } from "@modules/classification/constants";
 import {
    classificationDataSource,
    getClassificationRedis,

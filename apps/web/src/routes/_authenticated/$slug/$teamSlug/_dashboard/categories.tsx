@@ -146,7 +146,7 @@ function CategoriesList() {
    );
 
    const bulkDeleteMutation = useMutation(
-      orpc.categories.bulkRemove.mutationOptions({
+      orpc.categoriesBulk.bulkRemove.mutationOptions({
          onError: (e) =>
             toast.error(e.message || "Erro ao excluir categorias."),
       }),
@@ -161,7 +161,7 @@ function CategoriesList() {
    );
 
    const bulkArchiveMutation = useMutation(
-      orpc.categories.bulkArchive.mutationOptions({
+      orpc.categoriesBulk.bulkArchive.mutationOptions({
          onError: (e) =>
             toast.error(e.message || "Erro ao arquivar categorias."),
       }),
@@ -195,7 +195,7 @@ function CategoriesList() {
    );
 
    const importBatchMutation = useMutation(
-      orpc.categories.importBatch.mutationOptions({
+      orpc.categoriesBulk.importBatch.mutationOptions({
          onError: (e) =>
             toast.error(e.message || "Erro ao importar categorias."),
       }),
