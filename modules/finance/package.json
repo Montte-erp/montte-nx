@@ -1,0 +1,38 @@
+{
+   "name": "@modules/finance",
+   "version": "0.1.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "type": "module",
+   "exports": {
+      "./router/*": "./src/router/*.ts",
+      "./*": "./src/*.ts"
+   },
+   "scripts": {
+      "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "test": "vitest run --passWithNoTests",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@core/database": "workspace:*",
+      "@core/logging": "workspace:*",
+      "@core/orpc": "workspace:*",
+      "@core/redis": "workspace:*",
+      "@f-o-t/condition-evaluator": "catalog:fot",
+      "@f-o-t/money": "catalog:fot",
+      "@modules/classification": "workspace:*",
+      "@orpc/server": "catalog:orpc",
+      "@packages/events": "workspace:*",
+      "dayjs": "catalog:ui",
+      "drizzle-orm": "catalog:database",
+      "neverthrow": "catalog:validation",
+      "zod": "catalog:validation"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development",
+      "vitest": "catalog:testing"
+   }
+}

@@ -25,9 +25,11 @@
          "@packages/analytics/*": ["../../packages/analytics/src/*"],
          "@packages/events/*": ["../../packages/events/src/*"],
          "@packages/ui/*": ["../../packages/ui/src/*"],
+         "@modules/account/*": ["../../modules/account/src/*"],
          "@modules/agents/*": ["../../modules/agents/src/*"],
          "@modules/billing/*": ["../../modules/billing/src/*"],
-         "@modules/classification/*": ["../../modules/classification/src/*"]
+         "@modules/classification/*": ["../../modules/classification/src/*"],
+         "@modules/finance/*": ["../../modules/finance/src/*"]
       }
    },
    "include": ["src", "__tests__"],
