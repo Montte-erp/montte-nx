@@ -7,7 +7,7 @@ import {
    createMeterSchema,
    updateMeterSchema,
 } from "@modules/billing/contracts/services";
-import type { SkillDeps } from "@modules/agents/agents/rubi/skills/types";
+import type { ToolDeps } from "@modules/agents/tools/types";
 
 const listMetersInput = z.object({
    search: z
@@ -22,7 +22,7 @@ const updateMeterInput = z
    })
    .merge(updateMeterSchema);
 
-export function buildMetersTools(deps: SkillDeps) {
+export function buildMetersTools(deps: ToolDeps) {
    const { db, teamId } = deps;
 
    const listMetersTool = toolDefinition({

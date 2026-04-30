@@ -9,7 +9,7 @@ import {
    createServiceSchema,
    updateServiceSchema,
 } from "@modules/billing/contracts/services";
-import type { SkillDeps } from "@modules/agents/agents/rubi/skills/types";
+import type { ToolDeps } from "@modules/agents/tools/types";
 
 const idInput = z.object({
    id: z.string().uuid().describe("UUID do recurso."),
@@ -48,7 +48,7 @@ const attachBenefitInput = z.object({
       .describe("UUID do benefício existente a anexar."),
 });
 
-export function buildServicesTools(deps: SkillDeps) {
+export function buildServicesTools(deps: ToolDeps) {
    const { db, teamId } = deps;
 
    const listServicesTool = toolDefinition({

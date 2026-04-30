@@ -3,7 +3,7 @@ import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { coupons, createCouponSchema } from "@core/database/schemas/coupons";
 import dayjs from "dayjs";
-import type { SkillDeps } from "@modules/agents/agents/rubi/skills/types";
+import type { ToolDeps } from "@modules/agents/tools/types";
 
 const listCouponsInput = z.object({
    isActive: z
@@ -12,7 +12,7 @@ const listCouponsInput = z.object({
       .describe("Filtra por ativo/inativo. Omitir = ambos."),
 });
 
-export function buildCouponsTools(deps: SkillDeps) {
+export function buildCouponsTools(deps: ToolDeps) {
    const { db, teamId } = deps;
 
    const listCouponsTool = toolDefinition({

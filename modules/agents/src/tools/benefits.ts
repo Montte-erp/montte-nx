@@ -3,7 +3,7 @@ import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { benefits } from "@core/database/schemas/benefits";
 import { createBenefitSchema } from "@modules/billing/contracts/services";
-import type { SkillDeps } from "@modules/agents/agents/rubi/skills/types";
+import type { ToolDeps } from "@modules/agents/tools/types";
 
 const listBenefitsInput = z.object({
    search: z
@@ -12,7 +12,7 @@ const listBenefitsInput = z.object({
       .describe("Busca parcial (ILIKE) por nome do benefício."),
 });
 
-export function buildBenefitsTools(deps: SkillDeps) {
+export function buildBenefitsTools(deps: ToolDeps) {
    const { db, teamId } = deps;
 
    const listBenefitsTool = toolDefinition({

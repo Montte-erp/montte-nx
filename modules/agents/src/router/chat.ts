@@ -8,7 +8,7 @@ import { threadMessages, threads } from "@core/database/schemas/threads";
 import { getLogger } from "@core/logging/root";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
-import { buildRubiChatArgs } from "../agents/rubi";
+import { buildRubiChatArgs } from "@modules/agents/rubi";
 import {
    chatInputSchema,
    chatStreamEventSchema,

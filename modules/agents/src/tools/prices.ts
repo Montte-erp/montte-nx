@@ -7,7 +7,7 @@ import {
    createPriceSchema,
    updatePriceSchema,
 } from "@modules/billing/contracts/services";
-import type { SkillDeps } from "@modules/agents/agents/rubi/skills/types";
+import type { ToolDeps } from "@modules/agents/tools/types";
 
 const idInput = z.object({
    id: z.string().uuid().describe("UUID do preço."),
@@ -28,7 +28,7 @@ const updatePriceInput = z
    })
    .merge(updatePriceSchema);
 
-export function buildPricesTools(deps: SkillDeps) {
+export function buildPricesTools(deps: ToolDeps) {
    const { db, teamId } = deps;
 
    const createPriceForServiceTool = toolDefinition({

@@ -7,7 +7,7 @@
    "exports": {
       "./router/*": "./src/router/*.ts",
       "./contracts/*": "./src/contracts/*.ts",
-      "./agents/*": "./src/agents/*.ts",
+      "./tools/*": "./src/tools/*.ts",
       "./*": "./src/*.ts"
    },
    "scripts": {

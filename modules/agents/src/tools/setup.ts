@@ -10,7 +10,7 @@ import {
    createPriceSchema,
    createServiceSchema,
 } from "@modules/billing/contracts/services";
-import type { SkillDeps } from "@modules/agents/agents/rubi/skills/types";
+import type { ToolDeps } from "@modules/agents/tools/types";
 
 const setupServiceInput = z.object({
    service: createServiceSchema.describe(
@@ -50,7 +50,7 @@ const setupServiceInput = z.object({
       ),
 });
 
-export function buildSetupTools(deps: SkillDeps) {
+export function buildSetupTools(deps: ToolDeps) {
    const { db, teamId } = deps;
 
    const setupServiceTool = toolDefinition({
