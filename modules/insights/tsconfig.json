@@ -1,0 +1,21 @@
+{
+   "extends": "@tooling/typescript/core.json",
+   "compilerOptions": {
+      "composite": false,
+      "declaration": false,
+      "declarationMap": false,
+      "noEmit": true,
+      "jsx": "react-jsx",
+      "paths": {
+         "@core/database": ["../../core/database/src/index.ts"],
+         "@core/database/*": ["../../core/database/src/*"],
+         "@core/logging": ["../../core/logging/src/logger.ts"],
+         "@core/logging/*": ["../../core/logging/src/*"],
+         "@core/orpc/*": ["../../core/orpc/src/*"],
+         "@modules/insights/*": ["./src/*"],
+         "@packages/analytics/*": ["../../packages/analytics/src/*"],
+         "@packages/events/*": ["../../packages/events/src/*"]
+      }
+   },
+   "include": ["src"]
+}

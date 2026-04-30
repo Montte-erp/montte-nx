@@ -47,6 +47,7 @@
       "@modules/billing": "workspace:*",
       "@modules/classification": "workspace:*",
       "@modules/finance": "workspace:*",
+      "@modules/insights": "workspace:*",
       "@orpc/client": "catalog:orpc",
       "@orpc/json-schema": "catalog:orpc",
       "@orpc/openapi": "catalog:orpc",
