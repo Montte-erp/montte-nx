@@ -42,9 +42,11 @@ export function createPosthogAiMiddleware(
 
    const baseProps = (ctx: ChatMiddlewareContext) => ({
       $ai_trace_id: ctx.requestId,
+      $ai_span_id: ctx.streamId,
       $ai_model: ctx.model,
       $ai_provider: ctx.provider,
       $ai_stream: ctx.streaming,
+      ...(ctx.conversationId && { $ai_session_id: ctx.conversationId }),
       ...(obs.promptName && { $ai_span_name: obs.promptName }),
       ...(obs.promptVersion !== undefined && {
          prompt_version: obs.promptVersion,
@@ -102,6 +104,7 @@ export function createPosthogAiMiddleware(
                : undefined,
             $ai_output_tokens: info.usage?.completionTokens,
             $ai_latency: info.duration / 1000,
+            ...(info.finishReason && { $ai_stop_reason: info.finishReason }),
          });
       },
 

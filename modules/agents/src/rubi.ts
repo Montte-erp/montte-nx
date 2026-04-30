@@ -105,6 +105,7 @@ export async function buildRubiChatArgs(options: RubiChatOptions) {
       messages: options.messages as never,
       tools: [skillDiscoverTool, advisorTool, ...domainTools],
       agentLoopStrategy: maxIterations(25),
+      ...(options.threadId && { conversationId: options.threadId }),
       abortController: options.abortSignal
          ? abortControllerFromSignal(options.abortSignal)
          : undefined,
