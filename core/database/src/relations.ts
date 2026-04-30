@@ -21,10 +21,6 @@ import { creditCardStatements } from "@core/database/schemas/credit-card-stateme
 import { dashboards } from "@core/database/schemas/dashboards";
 import { events } from "@core/database/schemas/events";
 import { insights } from "@core/database/schemas/insights";
-import {
-   inventoryMovements,
-   inventoryProducts,
-} from "@core/database/schemas/inventory";
 import { meters } from "@core/database/schemas/meters";
 import {
    resources,
@@ -181,23 +177,6 @@ export const insightsRelations = relations(insights, ({ one }) => ({
       references: [user.id],
    }),
 }));
-
-export const inventoryProductsRelations = relations(
-   inventoryProducts,
-   ({ many }) => ({
-      movements: many(inventoryMovements),
-   }),
-);
-
-export const inventoryMovementsRelations = relations(
-   inventoryMovements,
-   ({ one }) => ({
-      product: one(inventoryProducts, {
-         fields: [inventoryMovements.productId],
-         references: [inventoryProducts.id],
-      }),
-   }),
-);
 
 export const metersRelations = relations(meters, ({ many }) => ({
    prices: many(servicePrices),

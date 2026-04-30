@@ -5,12 +5,7 @@ import type { DatabaseInstance } from "@core/database/client";
 import { organization, team, teamMember } from "@core/database/schemas/auth";
 import { seedClassificationDefaults } from "@modules/classification/seeds";
 
-const EARLY_ACCESS_FLAGS = [
-   "contacts",
-   "inventory",
-   "services",
-   "advanced-analytics",
-];
+const EARLY_ACCESS_FLAGS = ["contacts", "services", "advanced-analytics"];
 
 export function enrollInAllFeatures(
    posthog: PostHog,

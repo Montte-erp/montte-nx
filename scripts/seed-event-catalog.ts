@@ -11,7 +11,6 @@ import { DASHBOARD_EVENTS } from "@packages/events/dashboard";
 import { DOCUMENT_EVENTS } from "@packages/events/document";
 import { FINANCE_EVENTS } from "@packages/events/finance";
 import { INSIGHT_EVENTS } from "@packages/events/insight";
-import { INVENTORY_EVENTS } from "@packages/events/inventory";
 import { NFE_EVENTS } from "@packages/events/nfe";
 import { SERVICE_EVENTS } from "@packages/events/service";
 import { WEBHOOK_EVENTS } from "@packages/events/webhook";
@@ -190,33 +189,6 @@ const EVENT_PRICING: EventPricing[] = [
       freeTierLimit: 0,
       displayName: "Contato Deletado",
       description: "Registrada quando um contato é deletado.",
-      isBillable: false,
-   },
-   {
-      eventName: INVENTORY_EVENTS["inventory.item_created"],
-      category: EVENT_CATEGORIES.inventory,
-      pricePerEvent: "0.010000",
-      freeTierLimit: 50,
-      displayName: "Item de Estoque Criado",
-      description: "Registrada quando um item de estoque é criado.",
-      isBillable: true,
-   },
-   {
-      eventName: INVENTORY_EVENTS["inventory.item_updated"],
-      category: EVENT_CATEGORIES.inventory,
-      pricePerEvent: "0.000000",
-      freeTierLimit: 0,
-      displayName: "Item Atualizado",
-      description: "Registrada quando um item de estoque é atualizado.",
-      isBillable: false,
-   },
-   {
-      eventName: INVENTORY_EVENTS["inventory.item_deleted"],
-      category: EVENT_CATEGORIES.inventory,
-      pricePerEvent: "0.000000",
-      freeTierLimit: 0,
-      displayName: "Item Deletado",
-      description: "Registrada quando um item de estoque é deletado.",
       isBillable: false,
    },
    {
