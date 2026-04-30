@@ -65,5 +65,13 @@ export default {
    transactions: transactionsRouter,
    organization: organizationRouter,
    rubi: rubiRouter,
-   threads: threadsRouter,
+   threads: {
+      create: threadsRouter.create,
+      getById: threadsRouter.getById,
+      list: threadsRouter.list,
+      remove: threadsRouter.remove,
+      syncMessages: threadsRouter.syncMessages,
+      update: threadsRouter.update,
+      updateTitle: threadsRouter.updateTitle,
+   },
 };

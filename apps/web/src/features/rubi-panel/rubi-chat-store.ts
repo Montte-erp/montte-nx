@@ -18,18 +18,10 @@ import {
 } from "lucide-react";
 import { fromPromise } from "neverthrow";
 import { toast } from "sonner";
-import { pendingApprovalIds, textPartContent } from "@modules/agents/messages";
-import {
-   client,
-   orpc,
-   type Inputs,
-   type Outputs,
-} from "@/integrations/orpc/client";
+import { client, orpc, type Inputs } from "@/integrations/orpc/client";
 
 type RubiSendInput = Inputs["rubi"]["send"];
 type RubiSyncMessagesInput = Inputs["threads"]["syncMessages"];
-export type RubiThreadDetails = Outputs["threads"]["getById"];
-export type RubiThreadSummary = Outputs["threads"]["list"]["threads"][number];
 
 interface RubiScopeDefinition {
    label: string;
@@ -37,7 +29,7 @@ interface RubiScopeDefinition {
    skillHint?: string;
 }
 
-export const RUBI_SCOPES_BY_ID: Record<RubiScopeId, RubiScopeDefinition> = {
+const RUBI_SCOPES_BY_ID: Record<RubiScopeId, RubiScopeDefinition> = {
    auto: { label: "Auto", icon: Sparkles },
    servicos: { label: "Serviços", icon: Briefcase, skillHint: "services" },
    contatos: { label: "Contatos", icon: Contact },
@@ -56,7 +48,7 @@ export type RubiScopeId =
    | "financeiro"
    | "analises";
 
-export const RUBI_SCOPE_IDS: RubiScopeId[] = [
+const RUBI_SCOPE_IDS: RubiScopeId[] = [
    "auto",
    "servicos",
    "contatos",
@@ -66,7 +58,7 @@ export const RUBI_SCOPE_IDS: RubiScopeId[] = [
    "analises",
 ];
 
-export const RUBI_SUGGESTION_IDS: RubiScopeId[] = [
+const RUBI_SUGGESTION_IDS: RubiScopeId[] = [
    "servicos",
    "contatos",
    "financeiro",
@@ -75,30 +67,20 @@ export const RUBI_SUGGESTION_IDS: RubiScopeId[] = [
    "analises",
 ];
 
-export interface RubiPageContext {
-   skillHint?: string;
-   route?: string;
-   title?: string;
-}
-
-export interface RubiChatState {
+interface RubiChatState {
    activeThreadId: RubiSendInput["threadId"] | null;
    composerValue: string;
-   isStreaming: boolean;
    messages: UIMessage[];
    pageContext: RubiSendInput["pageContext"];
-   pendingApprovalIds: string[];
    scopeOpen: boolean;
    selectedScopeId: RubiScopeId;
 }
 
-export const rubiChatStore = createStore<RubiChatState>({
+const rubiChatStore = createStore<RubiChatState>({
    activeThreadId: null,
    composerValue: "",
-   isStreaming: false,
    messages: [],
    pageContext: undefined,
-   pendingApprovalIds: [],
    scopeOpen: false,
    selectedScopeId: "auto",
 });
@@ -133,89 +115,21 @@ async function syncRubiMessages(messages: UIMessage[], errorMessage?: string) {
    if (result.isErr() && errorMessage !== undefined) {
       toast.error(errorMessage);
    }
-   if (result.isOk()) {
-      void client.threads.updateTitle({ threadId: activeThreadId });
-   }
+   if (result.isErr()) return;
+   void client.threads.updateTitle({ threadId: activeThreadId });
 }
 
-function startRubiThread(
-   threadId: RubiSendInput["threadId"],
-   pageContext: RubiSendInput["pageContext"],
-) {
-   rubiChatStore.setState((state) => ({
-      ...state,
-      activeThreadId: threadId,
-      pageContext,
-   }));
-}
-
-export function setRubiComposerValue(composerValue: string) {
-   rubiChatStore.setState((state) => ({ ...state, composerValue }));
-}
-
-export function setRubiScopeOpen(scopeOpen: boolean) {
-   rubiChatStore.setState((state) => ({ ...state, scopeOpen }));
-}
-
-export function selectRubiScope(selectedScopeId: RubiScopeId) {
-   rubiChatStore.setState((state) => ({
-      ...state,
-      selectedScopeId,
-      scopeOpen: false,
-   }));
-}
-
-export function resetRubiChat() {
-   rubiChatStore.setState(() => ({
-      activeThreadId: null,
-      composerValue: "",
-      isStreaming: false,
-      messages: [],
-      pageContext: undefined,
-      pendingApprovalIds: [],
-      scopeOpen: false,
-      selectedScopeId: "auto",
-   }));
-}
-
-export function loadRubiThread(thread: RubiThreadDetails) {
-   const { messages } = thread;
-   rubiChatStore.setState((state) => ({
-      ...state,
-      activeThreadId: thread.thread.id,
-      messages,
-      pageContext: undefined,
-      pendingApprovalIds: pendingApprovalIds(messages),
-   }));
-   return messages;
-}
-
-export function rubiRecentThreadsQueryOptions() {
-   return orpc.threads.list.queryOptions({ input: { limit: 5 } });
-}
-
-export function approveRubiTool(id: string) {
-   return { id, approved: true };
-}
-
-export function rejectRubiTool(id: string) {
-   return { id, approved: false };
-}
-
-export function getRubiUserMessageText(message: UIMessage) {
-   return message.parts
-      .flatMap((part) => {
-         const content = textPartContent(part);
-         return content === null ? [] : [content];
-      })
-      .join("");
-}
-
-export function setRubiPageContext(pageContext: RubiPageContext) {
-   rubiChatStore.setState((state) => ({
-      ...state,
-      pageContext,
-   }));
+function pendingApprovalIds(messages: UIMessage[]) {
+   return messages.flatMap((message) => {
+      if (message.role !== "assistant") return [];
+      return message.parts.flatMap((part) => {
+         if (part.type !== "tool-call") return [];
+         if (part.state !== "approval-requested") return [];
+         if (part.approval === undefined) return [];
+         if (part.approval.approved !== undefined) return [];
+         return [part.approval.id];
+      });
+   });
 }
 
 export function useRubiChat() {
@@ -224,16 +138,16 @@ export function useRubiChat() {
       (value) => ({
          activeThreadId: value.activeThreadId,
          composerValue: value.composerValue,
-         isStreaming: value.isStreaming,
          messages: value.messages,
-         pendingApprovalIds: value.pendingApprovalIds,
          scopeOpen: value.scopeOpen,
          selectedScopeId: value.selectedScopeId,
       }),
       shallow,
    );
 
-   const recentsQuery = useSuspenseQuery(rubiRecentThreadsQueryOptions());
+   const recentsQuery = useSuspenseQuery(
+      orpc.threads.list.queryOptions({ input: { limit: 5 } }),
+   );
    const chat = useChat({
       connection: rubiConnection,
       initialMessages: state.messages,
@@ -241,7 +155,6 @@ export function useRubiChat() {
          rubiChatStore.setState((value) => ({
             ...value,
             messages: chat.messages,
-            pendingApprovalIds: pendingApprovalIds(chat.messages),
          }));
          void syncRubiMessages(
             chat.messages,
@@ -252,7 +165,6 @@ export function useRubiChat() {
          rubiChatStore.setState((value) => ({
             ...value,
             messages: chat.messages,
-            pendingApprovalIds: pendingApprovalIds(chat.messages),
          }));
          void syncRubiMessages(chat.messages);
          toast.error("Falha no streaming da Rubi.");
@@ -281,12 +193,11 @@ export function useRubiChat() {
       suggestions,
       approveAll: async () => {
          for (const id of approvalIds) {
-            await chat.addToolApprovalResponse(approveRubiTool(id));
+            await chat.addToolApprovalResponse({ id, approved: true });
          }
       },
       approveTool: (id: string) =>
-         chat.addToolApprovalResponse(approveRubiTool(id)),
-      getUserMessageText: getRubiUserMessageText,
+         chat.addToolApprovalResponse({ id, approved: true }),
       loadThread: async (threadId: RubiSendInput["threadId"]) => {
          const result = await fromPromise(
             client.threads.getById({ threadId }),
@@ -296,26 +207,47 @@ export function useRubiChat() {
             toast.error("Falha ao carregar conversa.");
             return;
          }
-         chat.setMessages(loadRubiThread(result.value));
+         rubiChatStore.setState((value) => ({
+            ...value,
+            activeThreadId: result.value.thread.id,
+            messages: result.value.messages,
+            pageContext: undefined,
+         }));
+         chat.setMessages(result.value.messages);
       },
       rejectAll: async () => {
          for (const id of approvalIds) {
-            await chat.addToolApprovalResponse(rejectRubiTool(id));
+            await chat.addToolApprovalResponse({ id, approved: false });
          }
       },
       rejectTool: (id: string) =>
-         chat.addToolApprovalResponse(rejectRubiTool(id)),
+         chat.addToolApprovalResponse({ id, approved: false }),
       reset: () => {
-         resetRubiChat();
+         rubiChatStore.setState(() => ({
+            activeThreadId: null,
+            composerValue: "",
+            messages: [],
+            pageContext: undefined,
+            scopeOpen: false,
+            selectedScopeId: "auto",
+         }));
          chat.clear();
       },
-      selectScope: selectRubiScope,
+      selectScope: (selectedScopeId: RubiScopeId) => {
+         rubiChatStore.setState((value) => ({
+            ...value,
+            selectedScopeId,
+            scopeOpen: false,
+         }));
+      },
       sendMessage: async () => {
-         const { composerValue, isStreaming, selectedScopeId } =
-            rubiChatStore.state;
+         const { composerValue, selectedScopeId } = rubiChatStore.state;
          const text = composerValue.trim();
-         if (!text || isStreaming || chat.isLoading) return;
-         setRubiComposerValue("");
+         if (!text || chat.isLoading) return;
+         rubiChatStore.setState((value) => ({
+            ...value,
+            composerValue: "",
+         }));
          const result = await fromPromise(
             (async () => {
                let threadId = rubiChatStore.state.activeThreadId;
@@ -331,12 +263,15 @@ export function useRubiChat() {
                   activeScope.skillHint === undefined
                      ? undefined
                      : { skillHint: activeScope.skillHint };
-               startRubiThread(threadId, pageContext);
+               rubiChatStore.setState((state) => ({
+                  ...state,
+                  activeThreadId: threadId,
+                  pageContext,
+               }));
                await chat.sendMessage(text);
                rubiChatStore.setState((value) => ({
                   ...value,
                   messages: chat.messages,
-                  pendingApprovalIds: pendingApprovalIds(chat.messages),
                }));
             })(),
             () => null,
@@ -345,7 +280,11 @@ export function useRubiChat() {
             toast.error("Falha ao enviar mensagem.");
          }
       },
-      setComposerValue: setRubiComposerValue,
-      setScopeOpen: setRubiScopeOpen,
+      setComposerValue: (composerValue: string) => {
+         rubiChatStore.setState((value) => ({ ...value, composerValue }));
+      },
+      setScopeOpen: (scopeOpen: boolean) => {
+         rubiChatStore.setState((value) => ({ ...value, scopeOpen }));
+      },
    };
 }

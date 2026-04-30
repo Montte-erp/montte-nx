@@ -1,4 +1,5 @@
 import { chat } from "@tanstack/ai";
+import type { UIMessage } from "@tanstack/ai";
 import dayjs from "dayjs";
 import { eq } from "drizzle-orm";
 import { err, fromPromise, ok, safeTry } from "neverthrow";
@@ -11,8 +12,21 @@ import {
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import { flashModel } from "@core/ai/models";
-import { uiMessageSchema } from "@modules/agents/messages";
 import { requireThread } from "@modules/agents/router/middlewares";
+
+export const uiMessageSchema = z.custom<UIMessage>(
+   (value) =>
+      z
+         .object({
+            id: z.string(),
+            role: z.enum(["system", "user", "assistant"]),
+            parts: z.array(z.object({ type: z.string() }).passthrough()),
+         })
+         .passthrough()
+         .safeParse(value).success,
+);
+
+export type RubiUIMessage = z.infer<typeof uiMessageSchema>;
 
 const threadIdInputSchema = z.object({ threadId: threadSchema.shape.id });
 

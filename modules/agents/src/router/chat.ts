@@ -3,15 +3,17 @@ import {
    chat,
    type ConstrainedModelMessage,
    type StreamChunk,
-   type UIMessage,
 } from "@tanstack/ai";
 import type { OpenRouterMessageMetadataByModality } from "@tanstack/ai-openrouter";
 import { z } from "zod";
 import { getLogger } from "@core/logging/root";
 import { protectedProcedure } from "@core/orpc/server";
-import { uiMessageSchema } from "@modules/agents/messages";
 import { buildRubiChatArgs, type RubiChatOptions } from "@modules/agents/rubi";
 import { requireThread } from "@modules/agents/router/middlewares";
+import {
+   uiMessageSchema,
+   type RubiUIMessage,
+} from "@modules/agents/router/threads";
 
 const logger = getLogger().child({ module: "agents.chat" });
 
@@ -44,7 +46,7 @@ type RubiModelMessage = ConstrainedModelMessage<{
    messageMetadataByModality: OpenRouterMessageMetadataByModality;
 }>;
 
-function messagesForModel(messages: UIMessage[]): RubiModelMessage[] {
+function messagesForModel(messages: RubiUIMessage[]): RubiModelMessage[] {
    return messages.flatMap((message) => {
       if (message.role === "system") return [];
       const content = message.parts
