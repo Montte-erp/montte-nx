@@ -1,19 +1,41 @@
 import { and, asc, count, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
-import { benefits, serviceBenefits } from "@core/database/schemas/benefits";
+import { z } from "zod";
+import {
+   benefitTypeEnum,
+   benefits,
+   createBenefitSchema,
+   serviceBenefits,
+   updateBenefitSchema,
+} from "@core/database/schemas/benefits";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import {
-   bulkSetActiveInputSchema,
-   createAndAttachBenefitInputSchema,
-   createBenefitSchema,
-   idInputSchema,
-   listBenefitsInputSchema,
-   serviceBenefitLinkSchema,
-   serviceIdInputSchema,
-   updateBenefitInputSchema,
-} from "../contracts/services";
-import { requireBenefit, requireService } from "./middlewares";
+   requireBenefit,
+   requireService,
+} from "@modules/billing/router/middlewares";
+
+const idInputSchema = z.object({ id: z.string().uuid() });
+const serviceIdInputSchema = z.object({ serviceId: z.string().uuid() });
+const updateBenefitInputSchema = idInputSchema.merge(updateBenefitSchema);
+const createAndAttachBenefitInputSchema =
+   serviceIdInputSchema.merge(createBenefitSchema);
+const serviceBenefitLinkSchema = z.object({
+   serviceId: z.string().uuid(),
+   benefitId: z.string().uuid(),
+});
+const bulkSetActiveInputSchema = z.object({
+   ids: z.array(z.string().uuid()).min(1),
+   isActive: z.boolean(),
+});
+const listBenefitsInputSchema = z
+   .object({
+      search: z.string().optional(),
+      isActive: z.boolean().optional(),
+      onlyInUse: z.boolean().optional(),
+      type: z.enum(benefitTypeEnum.enumValues).optional(),
+   })
+   .optional();
 
 export const createBenefit = protectedProcedure
    .input(createBenefitSchema)

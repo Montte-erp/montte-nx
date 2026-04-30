@@ -6,7 +6,7 @@ import { servicePrices } from "@core/database/schemas/services";
 import {
    createPriceSchema,
    updatePriceSchema,
-} from "@modules/billing/contracts/services";
+} from "@core/database/schemas/services";
 import type { ToolDeps } from "@modules/agents/tools/types";
 
 const idInput = z.object({

@@ -1,14 +1,23 @@
 import { os } from "@orpc/server";
 import { err, fromPromise, ok } from "neverthrow";
+import { z } from "zod";
 import { WebAppError } from "@core/logging/errors";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
-import type {
-   ContactByIdRef,
-   ContactFkRef,
-} from "../contracts/billing-contract";
 
 const base = os.$context<ORPCContextWithOrganization>();
 
+export const contactByIdRefSchema = z.union([
+   z.object({ id: z.string().uuid() }),
+   z.object({ externalId: z.string().min(1) }),
+]);
+
+export const contactFkRefSchema = z.union([
+   z.object({ contactId: z.string().uuid() }),
+   z.object({ externalId: z.string().min(1) }),
+]);
+
+export type ContactByIdRef = z.infer<typeof contactByIdRefSchema>;
+export type ContactFkRef = z.infer<typeof contactFkRefSchema>;
 export type ContactRef = ContactByIdRef | ContactFkRef;
 
 export const requireService = base.middleware(
@@ -118,6 +127,23 @@ export const requireSubscription = base.middleware(
       );
       if (result.isErr()) throw result.error;
       return next({ context: { subscription: result.value } });
+   },
+);
+
+export const requireCoupon = base.middleware(
+   async ({ context, next }, id: string) => {
+      const result = await fromPromise(
+         context.db.query.coupons.findFirst({
+            where: (f, { eq }) => eq(f.id, id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).andThen((coupon) =>
+         !coupon || coupon.teamId !== context.teamId
+            ? err(WebAppError.notFound("Cupom não encontrado."))
+            : ok(coupon),
+      );
+      if (result.isErr()) throw result.error;
+      return next({ context: { coupon: result.value } });
    },
 );
 

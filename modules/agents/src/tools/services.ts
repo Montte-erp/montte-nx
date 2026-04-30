@@ -3,13 +3,16 @@ import { and, eq, inArray } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { serviceBenefits } from "@core/database/schemas/benefits";
-import { services } from "@core/database/schemas/services";
 import {
-   bulkCreateServicesInputSchema,
    createServiceSchema,
+   services,
    updateServiceSchema,
-} from "@modules/billing/contracts/services";
+} from "@core/database/schemas/services";
 import type { ToolDeps } from "@modules/agents/tools/types";
+
+const bulkCreateServicesInputSchema = z.object({
+   items: z.array(createServiceSchema).min(1),
+});
 
 const idInput = z.object({
    id: z.string().uuid().describe("UUID do recurso."),

@@ -4,12 +4,16 @@ import {
    computeInvoice,
    computeLine,
    type ComputeInvoiceInput,
-   type InvoiceCoupon,
-   type PricingBenefit,
-   type PricingContext,
-   type PricingCoupon,
-   type PricingLine,
-} from "../../src/services/pricing-engine";
+} from "../../src/services/pricing/engine";
+import type {
+   InvoiceCoupon,
+   PricingCoupon,
+} from "../../src/services/pricing/coupons";
+import type {
+   PricingBenefit,
+   PricingContext,
+   PricingLine,
+} from "../../src/services/pricing/lines";
 
 const SUNDAY = 0;
 const MONDAY = 1;

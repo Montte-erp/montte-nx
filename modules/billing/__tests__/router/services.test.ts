@@ -38,6 +38,7 @@ vi.mock("@core/orpc/server", async () =>
 );
 
 import * as servicesRouter from "../../src/router/services";
+import * as pricesRouter from "../../src/router/prices";
 import * as subscriptionsRouter from "../../src/router/subscriptions";
 import * as metersRouter from "../../src/router/meters";
 import * as benefitsRouter from "../../src/router/benefits";
@@ -362,7 +363,7 @@ describe("services router", () => {
             extras: { hyprpayClient: createHyprpayMock() },
          });
          const result = await call(
-            servicesRouter.getVariants,
+            pricesRouter.list,
             { serviceId: service.id },
             { context: ctx },
          );
@@ -381,7 +382,7 @@ describe("services router", () => {
          });
          await expect(
             call(
-               servicesRouter.getVariants,
+               pricesRouter.list,
                { serviceId: service.id },
                { context: ctx },
             ),
@@ -399,7 +400,7 @@ describe("services router", () => {
             extras: { hyprpayClient: createHyprpayMock() },
          });
          const result = await call(
-            servicesRouter.createVariant,
+            pricesRouter.create,
             {
                serviceId: service.id,
                name: "Plano Flat",
@@ -427,7 +428,7 @@ describe("services router", () => {
          });
          await expect(
             call(
-               servicesRouter.createVariant,
+               pricesRouter.create,
                {
                   serviceId: service.id,
                   name: "Metered",
@@ -453,7 +454,7 @@ describe("services router", () => {
          });
          await expect(
             call(
-               servicesRouter.createVariant,
+               pricesRouter.create,
                {
                   serviceId: service.id,
                   name: "Metered",
@@ -479,7 +480,7 @@ describe("services router", () => {
             extras: { hyprpayClient: createHyprpayMock() },
          });
          const result = await call(
-            servicesRouter.createVariant,
+            pricesRouter.create,
             {
                serviceId: service.id,
                name: "Plano Medido",
@@ -509,7 +510,7 @@ describe("services router", () => {
             extras: { hyprpayClient: createHyprpayMock() },
          });
          const result = await call(
-            servicesRouter.updateVariant,
+            pricesRouter.update,
             { id: price.id, name: "Novo Nome" },
             { context: ctx },
          );
@@ -541,7 +542,7 @@ describe("services router", () => {
          });
          await expect(
             call(
-               servicesRouter.updateVariant,
+               pricesRouter.update,
                { id: price.id, type: "metered", meterId: null },
                { context: ctx },
             ),
@@ -567,7 +568,7 @@ describe("services router", () => {
          });
          await expect(
             call(
-               servicesRouter.updateVariant,
+               pricesRouter.update,
                { id: price.id, name: "Hack" },
                { context: ctx },
             ),
@@ -589,7 +590,7 @@ describe("services router", () => {
             extras: { hyprpayClient: createHyprpayMock() },
          });
          const result = await call(
-            servicesRouter.removeVariant,
+            pricesRouter.remove,
             { id: price.id },
             { context: ctx },
          );
@@ -618,11 +619,7 @@ describe("services router", () => {
             extras: { hyprpayClient: createHyprpayMock() },
          });
          await expect(
-            call(
-               servicesRouter.removeVariant,
-               { id: price.id },
-               { context: ctx },
-            ),
+            call(pricesRouter.remove, { id: price.id }, { context: ctx }),
          ).rejects.toSatisfy(
             (e: Error & { code?: string }) => e.code === "NOT_FOUND",
          );

@@ -10,6 +10,7 @@ import {
    uniqueIndex,
    uuid,
 } from "drizzle-orm/pg-core";
+import { createSelectSchema } from "drizzle-zod";
 import { of, toMinorUnitsString } from "@f-o-t/money";
 import { z } from "zod";
 import { contacts } from "@core/database/schemas/contacts";
@@ -219,3 +220,5 @@ export const updateCouponSchema = z.object({
 
 export type CreateCouponInput = z.infer<typeof createCouponSchema>;
 export type UpdateCouponInput = z.infer<typeof updateCouponSchema>;
+
+export const couponSchema = createSelectSchema(coupons);

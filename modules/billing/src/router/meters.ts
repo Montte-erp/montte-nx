@@ -1,19 +1,33 @@
 import { and, asc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
-import { meters } from "@core/database/schemas/meters";
+import { z } from "zod";
+import {
+   createMeterSchema,
+   meterAggregationEnum,
+   meters,
+   updateMeterSchema,
+} from "@core/database/schemas/meters";
 import { servicePrices, services } from "@core/database/schemas/services";
 import { benefits } from "@core/database/schemas/benefits";
 import { coupons } from "@core/database/schemas/coupons";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
-import {
-   bulkSetActiveInputSchema,
-   createMeterSchema,
-   idInputSchema,
-   listMetersInputSchema,
-   updateMeterInputSchema,
-} from "../contracts/services";
-import { requireMeter } from "./middlewares";
+import { requireMeter } from "@modules/billing/router/middlewares";
+
+const idInputSchema = z.object({ id: z.string().uuid() });
+const updateMeterInputSchema = idInputSchema.merge(updateMeterSchema);
+const bulkSetActiveInputSchema = z.object({
+   ids: z.array(z.string().uuid()).min(1),
+   isActive: z.boolean(),
+});
+const listMetersInputSchema = z
+   .object({
+      search: z.string().optional(),
+      isActive: z.boolean().optional(),
+      onlyInUse: z.boolean().optional(),
+      aggregation: z.enum(meterAggregationEnum.enumValues).optional(),
+   })
+   .optional();
 
 export const createMeter = protectedProcedure
    .input(createMeterSchema)

@@ -9,7 +9,7 @@ import {
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 import { meters } from "@core/database/schemas/meters";
 import { services } from "@core/database/schemas/services";
@@ -127,3 +127,5 @@ export const updateBenefitSchema = z.object({
 
 export type CreateBenefitInput = z.infer<typeof createBenefitSchema>;
 export type UpdateBenefitInput = z.infer<typeof updateBenefitSchema>;
+
+export const benefitSchema = createSelectSchema(benefits);

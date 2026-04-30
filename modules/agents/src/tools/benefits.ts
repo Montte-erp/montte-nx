@@ -2,7 +2,7 @@ import { toolDefinition } from "@tanstack/ai";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { benefits } from "@core/database/schemas/benefits";
-import { createBenefitSchema } from "@modules/billing/contracts/services";
+import { createBenefitSchema } from "@core/database/schemas/benefits";
 import type { ToolDeps } from "@modules/agents/tools/types";
 
 const listBenefitsInput = z.object({

@@ -8,10 +8,12 @@ import {
    computeInvoice,
    type ComputeInvoiceInput,
    type InvoiceComputation,
-   type InvoiceCoupon,
-   type PricingBenefit,
-   type PricingLine,
-} from "./pricing-engine";
+} from "@modules/billing/services/pricing/engine";
+import type { InvoiceCoupon } from "@modules/billing/services/pricing/coupons";
+import type {
+   PricingBenefit,
+   PricingLine,
+} from "@modules/billing/services/pricing/lines";
 
 export type UsageRow = { meterId: string; total: string | null };
 

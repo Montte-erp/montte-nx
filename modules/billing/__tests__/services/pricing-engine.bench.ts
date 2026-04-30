@@ -2,9 +2,9 @@ import { bench, describe } from "vitest";
 import {
    computeInvoice,
    type ComputeInvoiceInput,
-   type PricingCoupon,
-   type PricingLine,
-} from "../../src/services/pricing-engine";
+} from "../../src/services/pricing/engine";
+import type { PricingCoupon } from "../../src/services/pricing/coupons";
+import type { PricingLine } from "../../src/services/pricing/lines";
 
 function makeLine(i: number): PricingLine {
    const meterId = `00000000-0000-0000-0000-${String(i).padStart(12, "0")}`;

@@ -30,6 +30,7 @@ vi.mock("@core/orpc/server", async () =>
 );
 
 import * as subscriptionsRouter from "../../src/router/subscriptions";
+import * as subscriptionItemsRouter from "../../src/router/subscription-items";
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -631,7 +632,7 @@ describe("subscriptions router", () => {
             extras: { hyprpayClient: createHyprpayMock() },
          });
          const result = await call(
-            subscriptionsRouter.addItem,
+            subscriptionItemsRouter.add,
             {
                subscriptionId: sub.id,
                priceId: price.id,
@@ -674,7 +675,7 @@ describe("subscriptions router", () => {
          });
          await expect(
             call(
-               subscriptionsRouter.addItem,
+               subscriptionItemsRouter.add,
                {
                   subscriptionId: sub.id,
                   priceId: price.id,
@@ -709,7 +710,7 @@ describe("subscriptions router", () => {
          });
          await expect(
             call(
-               subscriptionsRouter.addItem,
+               subscriptionItemsRouter.add,
                {
                   subscriptionId: otherSub.id,
                   priceId: price.id,
@@ -746,7 +747,7 @@ describe("subscriptions router", () => {
             extras: { hyprpayClient: createHyprpayMock() },
          });
          const result = await call(
-            subscriptionsRouter.updateItem,
+            subscriptionItemsRouter.update,
             { id: item.id, quantity: 7 },
             { context: ctx },
          );
@@ -783,7 +784,7 @@ describe("subscriptions router", () => {
          });
          await expect(
             call(
-               subscriptionsRouter.updateItem,
+               subscriptionItemsRouter.update,
                { id: otherItem.id, quantity: 99 },
                { context: ctx },
             ),
@@ -815,7 +816,7 @@ describe("subscriptions router", () => {
             extras: { hyprpayClient: createHyprpayMock() },
          });
          const result = await call(
-            subscriptionsRouter.removeItem,
+            subscriptionItemsRouter.remove,
             { id: item.id },
             { context: ctx },
          );
@@ -857,7 +858,7 @@ describe("subscriptions router", () => {
          });
          await expect(
             call(
-               subscriptionsRouter.removeItem,
+               subscriptionItemsRouter.remove,
                { id: otherItem.id },
                { context: ctx },
             ),
@@ -923,7 +924,7 @@ describe("subscriptions router", () => {
             extras: { hyprpayClient: createHyprpayMock() },
          });
          const result = await call(
-            subscriptionsRouter.listItems,
+            subscriptionItemsRouter.list,
             { subscriptionId: sub.id },
             { context: ctx },
          );
