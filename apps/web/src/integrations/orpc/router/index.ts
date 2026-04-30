@@ -4,7 +4,7 @@ import * as threadsRouter from "@modules/agents/router/threads";
 import * as agentSettingsRouter from "@modules/account/router/agent-settings";
 import * as analyticsRouter from "./analytics";
 import * as apiKeysRouter from "@modules/account/router/api-keys";
-import * as bankAccountsRouter from "./bank-accounts";
+import * as bankAccountsRouter from "@modules/finance/router/bank-accounts";
 import * as billingRouter from "@modules/billing/router/billing";
 import * as categoriesRouter from "@modules/classification/router/categories";
 import * as categoriesBulkRouter from "@modules/classification/router/categories-bulk";
@@ -12,10 +12,10 @@ import * as cnpjRouter from "@modules/account/router/cnpj";
 import * as contactSettingsRouter from "@modules/account/router/contact-settings";
 import * as contactsRouter from "@modules/billing/router/contacts";
 import * as couponsRouter from "@modules/billing/router/coupons";
-import * as creditCardsRouter from "./credit-cards";
+import * as creditCardsRouter from "@modules/finance/router/credit-cards";
 import * as customerPortalRouter from "@modules/billing/router/customer-portal";
 import * as dashboardsRouter from "./dashboards";
-import * as financialSettingsRouter from "./financial-settings";
+import * as financialSettingsRouter from "@modules/account/router/financial-settings";
 import * as insightsRouter from "./insights";
 import * as notificationsRouter from "./notifications";
 import * as onboardingRouter from "@modules/account/router/onboarding";
@@ -30,7 +30,7 @@ import * as usageRouter from "@modules/billing/router/usage";
 import * as sessionRouter from "@modules/account/router/session";
 import * as tagsRouter from "@modules/classification/router/tags";
 import * as teamRouter from "@modules/account/router/team";
-import * as transactionsRouter from "./transactions";
+import * as transactionsRouter from "@modules/finance/router/transactions-index";
 
 export default {
    account: accountRouter,

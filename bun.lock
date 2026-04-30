@@ -59,9 +59,11 @@
         "@maskito/core": "catalog:ui",
         "@maskito/kit": "catalog:ui",
         "@maskito/react": "catalog:ui",
+        "@modules/account": "workspace:*",
         "@modules/agents": "workspace:*",
         "@modules/billing": "workspace:*",
         "@modules/classification": "workspace:*",
+        "@modules/finance": "workspace:*",
         "@orpc/client": "catalog:orpc",
         "@orpc/json-schema": "catalog:orpc",
         "@orpc/openapi": "catalog:orpc",
@@ -510,6 +512,30 @@
         "@tooling/typescript": "workspace:*",
         "drizzle-kit": "catalog:database",
         "drizzle-seed": "catalog:database",
+        "typescript": "catalog:development",
+        "vitest": "catalog:testing",
+      },
+    },
+    "modules/finance": {
+      "name": "@modules/finance",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/database": "workspace:*",
+        "@core/logging": "workspace:*",
+        "@core/orpc": "workspace:*",
+        "@core/redis": "workspace:*",
+        "@f-o-t/condition-evaluator": "catalog:fot",
+        "@f-o-t/money": "catalog:fot",
+        "@modules/classification": "workspace:*",
+        "@orpc/server": "catalog:orpc",
+        "@packages/events": "workspace:*",
+        "dayjs": "catalog:ui",
+        "drizzle-orm": "catalog:database",
+        "neverthrow": "catalog:validation",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
         "typescript": "catalog:development",
         "vitest": "catalog:testing",
       },
@@ -1323,6 +1349,8 @@
     "@modules/billing": ["@modules/billing@workspace:modules/billing"],
 
     "@modules/classification": ["@modules/classification@workspace:modules/classification"],
+
+    "@modules/finance": ["@modules/finance@workspace:modules/finance"],
 
     "@mongodb-js/saslprep": ["@mongodb-js/saslprep@1.4.6", "", { "dependencies": { "sparse-bitfield": "^3.0.3" } }, "sha512-y+x3H1xBZd38n10NZF/rEBlvDOOMQ6LKUTHqr8R9VkJ+mmQOYtJFxIlkkK8fZrtOiL6VixbOBWMbZGBdal3Z1g=="],
 
