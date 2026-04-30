@@ -6,7 +6,6 @@
    "type": "module",
    "exports": {
       "./router/*": "./src/router/*.ts",
-      "./contracts/*": "./src/contracts/*.ts",
       "./tools/*": "./src/tools/*.ts",
       "./*": "./src/*.ts"
    },

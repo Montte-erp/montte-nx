@@ -8,1482 +8,1454 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
-import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
-import { Route as AuthMagicLinkRouteImport } from './routes/auth/magic-link'
-import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
-import { Route as AuthEmailVerificationRouteImport } from './routes/auth/email-verification'
-import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
-import { Route as ApiRubiChatRouteImport } from './routes/api/rubi-chat'
-import { Route as ApiPingRouteImport } from './routes/api/ping'
-import { Route as ApiHealthRouteImport } from './routes/api/health'
-import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
-import { Route as AuthenticatedSlugRouteImport } from './routes/_authenticated/$slug'
-import { Route as AuthSignInIndexRouteImport } from './routes/auth/sign-in/index'
-import { Route as AuthSignInEmailRouteImport } from './routes/auth/sign-in/email'
-import { Route as ApiRpcSplatRouteImport } from './routes/api/rpc/$'
-import { Route as ApiOpenapiSplatRouteImport } from './routes/api/openapi/$'
-import { Route as ApiFilesSplatRouteImport } from './routes/api/files/$'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as AuthenticatedSlugTeamSlugRouteImport } from './routes/_authenticated/$slug/$teamSlug'
-import { Route as CallbackOrganizationInvitationInvitationIdRouteImport } from './routes/callback/organization/invitation/$invitationId'
-import { Route as AuthenticatedSlugTeamSlugDashboardRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard'
-import { Route as AuthenticatedSlugTeamSlugDashboardTransactionsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/transactions'
-import { Route as AuthenticatedSlugTeamSlugDashboardTagsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/tags'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings'
-import { Route as AuthenticatedSlugTeamSlugDashboardServicesRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/services'
-import { Route as AuthenticatedSlugTeamSlugDashboardCreditCardsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/credit-cards'
-import { Route as AuthenticatedSlugTeamSlugDashboardContactsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/contacts'
-import { Route as AuthenticatedSlugTeamSlugDashboardChatRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/chat'
-import { Route as AuthenticatedSlugTeamSlugDashboardCategoriesRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/categories'
-import { Route as AuthenticatedSlugTeamSlugDashboardBankAccountsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/index'
-import { Route as AuthenticatedSlugTeamSlugDashboardServicesIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/services/index'
-import { Route as AuthenticatedSlugTeamSlugDashboardHomeIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/home/index'
-import { Route as AuthenticatedSlugTeamSlugDashboardContactsIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/contacts/index'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsSecurityRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/security'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProfileRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/profile'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/customization'
-import { Route as AuthenticatedSlugTeamSlugDashboardServicesMetersRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/services/meters'
-import { Route as AuthenticatedSlugTeamSlugDashboardServicesCouponsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/services/coupons'
-import { Route as AuthenticatedSlugTeamSlugDashboardServicesBenefitsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/services/benefits'
-import { Route as AuthenticatedSlugTeamSlugDashboardServicesServiceIdRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/services/$serviceId'
-import { Route as AuthenticatedSlugTeamSlugDashboardContactsContactIdRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/contacts/$contactId'
-import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/index'
-import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/index'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/api-keys'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone'
-import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId'
-import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as AuthRouteImport } from "./routes/auth";
+import { Route as AuthenticatedRouteImport } from "./routes/_authenticated";
+import { Route as IndexRouteImport } from "./routes/index";
+import { Route as AuthSignUpRouteImport } from "./routes/auth/sign-up";
+import { Route as AuthSignInRouteImport } from "./routes/auth/sign-in";
+import { Route as AuthMagicLinkRouteImport } from "./routes/auth/magic-link";
+import { Route as AuthForgotPasswordRouteImport } from "./routes/auth/forgot-password";
+import { Route as AuthEmailVerificationRouteImport } from "./routes/auth/email-verification";
+import { Route as AuthCallbackRouteImport } from "./routes/auth/callback";
+import { Route as ApiPingRouteImport } from "./routes/api/ping";
+import { Route as ApiHealthRouteImport } from "./routes/api/health";
+import { Route as AuthenticatedOnboardingRouteImport } from "./routes/_authenticated/onboarding";
+import { Route as AuthenticatedSlugRouteImport } from "./routes/_authenticated/$slug";
+import { Route as AuthSignInIndexRouteImport } from "./routes/auth/sign-in/index";
+import { Route as AuthSignInEmailRouteImport } from "./routes/auth/sign-in/email";
+import { Route as ApiRpcSplatRouteImport } from "./routes/api/rpc/$";
+import { Route as ApiOpenapiSplatRouteImport } from "./routes/api/openapi/$";
+import { Route as ApiFilesSplatRouteImport } from "./routes/api/files/$";
+import { Route as ApiAuthSplatRouteImport } from "./routes/api/auth/$";
+import { Route as AuthenticatedSlugTeamSlugRouteImport } from "./routes/_authenticated/$slug/$teamSlug";
+import { Route as CallbackOrganizationInvitationInvitationIdRouteImport } from "./routes/callback/organization/invitation/$invitationId";
+import { Route as AuthenticatedSlugTeamSlugDashboardRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard";
+import { Route as AuthenticatedSlugTeamSlugDashboardTransactionsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/transactions";
+import { Route as AuthenticatedSlugTeamSlugDashboardTagsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/tags";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings";
+import { Route as AuthenticatedSlugTeamSlugDashboardServicesRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/services";
+import { Route as AuthenticatedSlugTeamSlugDashboardCreditCardsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/credit-cards";
+import { Route as AuthenticatedSlugTeamSlugDashboardContactsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/contacts";
+import { Route as AuthenticatedSlugTeamSlugDashboardChatRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/chat";
+import { Route as AuthenticatedSlugTeamSlugDashboardCategoriesRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/categories";
+import { Route as AuthenticatedSlugTeamSlugDashboardBankAccountsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsIndexRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/index";
+import { Route as AuthenticatedSlugTeamSlugDashboardServicesIndexRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/services/index";
+import { Route as AuthenticatedSlugTeamSlugDashboardHomeIndexRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/home/index";
+import { Route as AuthenticatedSlugTeamSlugDashboardContactsIndexRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/contacts/index";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsSecurityRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/security";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProfileRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/profile";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/customization";
+import { Route as AuthenticatedSlugTeamSlugDashboardServicesMetersRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/services/meters";
+import { Route as AuthenticatedSlugTeamSlugDashboardServicesCouponsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/services/coupons";
+import { Route as AuthenticatedSlugTeamSlugDashboardServicesBenefitsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/services/benefits";
+import { Route as AuthenticatedSlugTeamSlugDashboardServicesServiceIdRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/services/$serviceId";
+import { Route as AuthenticatedSlugTeamSlugDashboardContactsContactIdRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/contacts/$contactId";
+import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/index";
+import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/index";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/api-keys";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone";
+import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId";
+import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos";
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents";
 
 const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
+   id: "/auth",
+   path: "/auth",
+   getParentRoute: () => rootRouteImport,
+} as any);
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
-  id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
+   id: "/_authenticated",
+   getParentRoute: () => rootRouteImport,
+} as any);
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
+   id: "/",
+   path: "/",
+   getParentRoute: () => rootRouteImport,
+} as any);
 const AuthSignUpRoute = AuthSignUpRouteImport.update({
-  id: '/sign-up',
-  path: '/sign-up',
-  getParentRoute: () => AuthRoute,
-} as any)
+   id: "/sign-up",
+   path: "/sign-up",
+   getParentRoute: () => AuthRoute,
+} as any);
 const AuthSignInRoute = AuthSignInRouteImport.update({
-  id: '/sign-in',
-  path: '/sign-in',
-  getParentRoute: () => AuthRoute,
-} as any)
+   id: "/sign-in",
+   path: "/sign-in",
+   getParentRoute: () => AuthRoute,
+} as any);
 const AuthMagicLinkRoute = AuthMagicLinkRouteImport.update({
-  id: '/magic-link',
-  path: '/magic-link',
-  getParentRoute: () => AuthRoute,
-} as any)
+   id: "/magic-link",
+   path: "/magic-link",
+   getParentRoute: () => AuthRoute,
+} as any);
 const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => AuthRoute,
-} as any)
+   id: "/forgot-password",
+   path: "/forgot-password",
+   getParentRoute: () => AuthRoute,
+} as any);
 const AuthEmailVerificationRoute = AuthEmailVerificationRouteImport.update({
-  id: '/email-verification',
-  path: '/email-verification',
-  getParentRoute: () => AuthRoute,
-} as any)
+   id: "/email-verification",
+   path: "/email-verification",
+   getParentRoute: () => AuthRoute,
+} as any);
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/callback',
-  path: '/callback',
-  getParentRoute: () => AuthRoute,
-} as any)
-const ApiRubiChatRoute = ApiRubiChatRouteImport.update({
-  id: '/api/rubi-chat',
-  path: '/api/rubi-chat',
-  getParentRoute: () => rootRouteImport,
-} as any)
+   id: "/callback",
+   path: "/callback",
+   getParentRoute: () => AuthRoute,
+} as any);
 const ApiPingRoute = ApiPingRouteImport.update({
-  id: '/api/ping',
-  path: '/api/ping',
-  getParentRoute: () => rootRouteImport,
-} as any)
+   id: "/api/ping",
+   path: "/api/ping",
+   getParentRoute: () => rootRouteImport,
+} as any);
 const ApiHealthRoute = ApiHealthRouteImport.update({
-  id: '/api/health',
-  path: '/api/health',
-  getParentRoute: () => rootRouteImport,
-} as any)
+   id: "/api/health",
+   path: "/api/health",
+   getParentRoute: () => rootRouteImport,
+} as any);
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
+   id: "/onboarding",
+   path: "/onboarding",
+   getParentRoute: () => AuthenticatedRoute,
+} as any);
 const AuthenticatedSlugRoute = AuthenticatedSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
+   id: "/$slug",
+   path: "/$slug",
+   getParentRoute: () => AuthenticatedRoute,
+} as any);
 const AuthSignInIndexRoute = AuthSignInIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthSignInRoute,
-} as any)
+   id: "/",
+   path: "/",
+   getParentRoute: () => AuthSignInRoute,
+} as any);
 const AuthSignInEmailRoute = AuthSignInEmailRouteImport.update({
-  id: '/email',
-  path: '/email',
-  getParentRoute: () => AuthSignInRoute,
-} as any)
+   id: "/email",
+   path: "/email",
+   getParentRoute: () => AuthSignInRoute,
+} as any);
 const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
-  id: '/api/rpc/$',
-  path: '/api/rpc/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
+   id: "/api/rpc/$",
+   path: "/api/rpc/$",
+   getParentRoute: () => rootRouteImport,
+} as any);
 const ApiOpenapiSplatRoute = ApiOpenapiSplatRouteImport.update({
-  id: '/api/openapi/$',
-  path: '/api/openapi/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
+   id: "/api/openapi/$",
+   path: "/api/openapi/$",
+   getParentRoute: () => rootRouteImport,
+} as any);
 const ApiFilesSplatRoute = ApiFilesSplatRouteImport.update({
-  id: '/api/files/$',
-  path: '/api/files/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
+   id: "/api/files/$",
+   path: "/api/files/$",
+   getParentRoute: () => rootRouteImport,
+} as any);
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
+   id: "/api/auth/$",
+   path: "/api/auth/$",
+   getParentRoute: () => rootRouteImport,
+} as any);
 const AuthenticatedSlugTeamSlugRoute =
-  AuthenticatedSlugTeamSlugRouteImport.update({
-    id: '/$teamSlug',
-    path: '/$teamSlug',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugRouteImport.update({
+      id: "/$teamSlug",
+      path: "/$teamSlug",
+      getParentRoute: () => AuthenticatedSlugRoute,
+   } as any);
 const CallbackOrganizationInvitationInvitationIdRoute =
-  CallbackOrganizationInvitationInvitationIdRouteImport.update({
-    id: '/callback/organization/invitation/$invitationId',
-    path: '/callback/organization/invitation/$invitationId',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+   CallbackOrganizationInvitationInvitationIdRouteImport.update({
+      id: "/callback/organization/invitation/$invitationId",
+      path: "/callback/organization/invitation/$invitationId",
+      getParentRoute: () => rootRouteImport,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardRoute =
-  AuthenticatedSlugTeamSlugDashboardRouteImport.update({
-    id: '/_dashboard',
-    getParentRoute: () => AuthenticatedSlugTeamSlugRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardRouteImport.update({
+      id: "/_dashboard",
+      getParentRoute: () => AuthenticatedSlugTeamSlugRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardTransactionsRoute =
-  AuthenticatedSlugTeamSlugDashboardTransactionsRouteImport.update({
-    id: '/transactions',
-    path: '/transactions',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardTransactionsRouteImport.update({
+      id: "/transactions",
+      path: "/transactions",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardTagsRoute =
-  AuthenticatedSlugTeamSlugDashboardTagsRouteImport.update({
-    id: '/tags',
-    path: '/tags',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardTagsRouteImport.update({
+      id: "/tags",
+      path: "/tags",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardSettingsRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsRouteImport.update({
-    id: '/settings',
-    path: '/settings',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardSettingsRouteImport.update({
+      id: "/settings",
+      path: "/settings",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardServicesRoute =
-  AuthenticatedSlugTeamSlugDashboardServicesRouteImport.update({
-    id: '/services',
-    path: '/services',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardServicesRouteImport.update({
+      id: "/services",
+      path: "/services",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardCreditCardsRoute =
-  AuthenticatedSlugTeamSlugDashboardCreditCardsRouteImport.update({
-    id: '/credit-cards',
-    path: '/credit-cards',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardCreditCardsRouteImport.update({
+      id: "/credit-cards",
+      path: "/credit-cards",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardContactsRoute =
-  AuthenticatedSlugTeamSlugDashboardContactsRouteImport.update({
-    id: '/contacts',
-    path: '/contacts',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardContactsRouteImport.update({
+      id: "/contacts",
+      path: "/contacts",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardChatRoute =
-  AuthenticatedSlugTeamSlugDashboardChatRouteImport.update({
-    id: '/chat',
-    path: '/chat',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardChatRouteImport.update({
+      id: "/chat",
+      path: "/chat",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardCategoriesRoute =
-  AuthenticatedSlugTeamSlugDashboardCategoriesRouteImport.update({
-    id: '/categories',
-    path: '/categories',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardCategoriesRouteImport.update({
+      id: "/categories",
+      path: "/categories",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardBankAccountsRoute =
-  AuthenticatedSlugTeamSlugDashboardBankAccountsRouteImport.update({
-    id: '/bank-accounts',
-    path: '/bank-accounts',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardBankAccountsRouteImport.update({
+      id: "/bank-accounts",
+      path: "/bank-accounts",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardSettingsIndexRouteImport.update({
+      id: "/",
+      path: "/",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardServicesIndexRoute =
-  AuthenticatedSlugTeamSlugDashboardServicesIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardServicesRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardServicesIndexRouteImport.update({
+      id: "/",
+      path: "/",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardServicesRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardHomeIndexRoute =
-  AuthenticatedSlugTeamSlugDashboardHomeIndexRouteImport.update({
-    id: '/home/',
-    path: '/home/',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardHomeIndexRouteImport.update({
+      id: "/home/",
+      path: "/home/",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardContactsIndexRoute =
-  AuthenticatedSlugTeamSlugDashboardContactsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardContactsRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardContactsIndexRouteImport.update({
+      id: "/",
+      path: "/",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardContactsRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsSecurityRouteImport.update({
-    id: '/security',
-    path: '/security',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardSettingsSecurityRouteImport.update({
+      id: "/security",
+      path: "/security",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsProfileRouteImport.update({
-    id: '/profile',
-    path: '/profile',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardSettingsProfileRouteImport.update({
+      id: "/profile",
+      path: "/profile",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRouteImport.update({
-    id: '/feature-previews',
-    path: '/feature-previews',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRouteImport.update({
+      id: "/feature-previews",
+      path: "/feature-previews",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRouteImport.update({
-    id: '/danger-zone',
-    path: '/danger-zone',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRouteImport.update({
+      id: "/danger-zone",
+      path: "/danger-zone",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRouteImport.update({
-    id: '/customization',
-    path: '/customization',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRouteImport.update({
+      id: "/customization",
+      path: "/customization",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardServicesMetersRoute =
-  AuthenticatedSlugTeamSlugDashboardServicesMetersRouteImport.update({
-    id: '/meters',
-    path: '/meters',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardServicesRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardServicesMetersRouteImport.update({
+      id: "/meters",
+      path: "/meters",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardServicesRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardServicesCouponsRoute =
-  AuthenticatedSlugTeamSlugDashboardServicesCouponsRouteImport.update({
-    id: '/coupons',
-    path: '/coupons',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardServicesRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardServicesCouponsRouteImport.update({
+      id: "/coupons",
+      path: "/coupons",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardServicesRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute =
-  AuthenticatedSlugTeamSlugDashboardServicesBenefitsRouteImport.update({
-    id: '/benefits',
-    path: '/benefits',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardServicesRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardServicesBenefitsRouteImport.update({
+      id: "/benefits",
+      path: "/benefits",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardServicesRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute =
-  AuthenticatedSlugTeamSlugDashboardServicesServiceIdRouteImport.update({
-    id: '/$serviceId',
-    path: '/$serviceId',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardServicesRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardServicesServiceIdRouteImport.update({
+      id: "/$serviceId",
+      path: "/$serviceId",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardServicesRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute =
-  AuthenticatedSlugTeamSlugDashboardContactsContactIdRouteImport.update({
-    id: '/$contactId',
-    path: '/$contactId',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardContactsRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardContactsContactIdRouteImport.update({
+      id: "/$contactId",
+      path: "/$contactId",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardContactsRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute =
-  AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRouteImport.update({
-    id: '/analytics/insights/',
-    path: '/analytics/insights/',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRouteImport.update({
+      id: "/analytics/insights/",
+      path: "/analytics/insights/",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute =
-  AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRouteImport.update({
-    id: '/analytics/dashboards/',
-    path: '/analytics/dashboards/',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRouteImport.update(
+      {
+         id: "/analytics/dashboards/",
+         path: "/analytics/dashboards/",
+         getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+      } as any,
+   );
 const AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRouteImport.update(
-    {
-      id: '/project/integrations',
-      path: '/project/integrations',
-      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-    } as any,
-  )
+   AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRouteImport.update(
+      {
+         id: "/project/integrations",
+         path: "/project/integrations",
+         getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+      } as any,
+   );
 const AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRouteImport.update({
-    id: '/project/general',
-    path: '/project/general',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRouteImport.update({
+      id: "/project/general",
+      path: "/project/general",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRouteImport.update(
-    {
-      id: '/project/danger-zone',
-      path: '/project/danger-zone',
-      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-    } as any,
-  )
+   AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRouteImport.update(
+      {
+         id: "/project/danger-zone",
+         path: "/project/danger-zone",
+         getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+      } as any,
+   );
 const AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRouteImport.update({
-    id: '/project/api-keys',
-    path: '/project/api-keys',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-  } as any)
+   AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRouteImport.update({
+      id: "/project/api-keys",
+      path: "/project/api-keys",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+   } as any);
 const AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRouteImport.update(
-    {
-      id: '/organization/members',
-      path: '/organization/members',
-      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-    } as any,
-  )
+   AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRouteImport.update(
+      {
+         id: "/organization/members",
+         path: "/organization/members",
+         getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+      } as any,
+   );
 const AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRouteImport.update(
-    {
-      id: '/organization/general',
-      path: '/organization/general',
-      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-    } as any,
-  )
+   AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRouteImport.update(
+      {
+         id: "/organization/general",
+         path: "/organization/general",
+         getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+      } as any,
+   );
 const AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRouteImport.update(
-    {
-      id: '/organization/danger-zone',
-      path: '/organization/danger-zone',
-      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-    } as any,
-  )
+   AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRouteImport.update(
+      {
+         id: "/organization/danger-zone",
+         path: "/organization/danger-zone",
+         getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+      } as any,
+   );
 const AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute =
-  AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRouteImport.update(
-    {
-      id: '/analytics/insights/$insightId',
-      path: '/analytics/insights/$insightId',
-      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-    } as any,
-  )
+   AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRouteImport.update(
+      {
+         id: "/analytics/insights/$insightId",
+         path: "/analytics/insights/$insightId",
+         getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+      } as any,
+   );
 const AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute =
-  AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRouteImport.update(
-    {
-      id: '/analytics/dashboards/$dashboardId',
-      path: '/analytics/dashboards/$dashboardId',
-      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-    } as any,
-  )
+   AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRouteImport.update(
+      {
+         id: "/analytics/dashboards/$dashboardId",
+         path: "/analytics/dashboards/$dashboardId",
+         getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+      } as any,
+   );
 const AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRouteImport.update(
-    {
-      id: '/project/products/financeiro',
-      path: '/project/products/financeiro',
-      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-    } as any,
-  )
+   AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRouteImport.update(
+      {
+         id: "/project/products/financeiro",
+         path: "/project/products/financeiro",
+         getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+      } as any,
+   );
 const AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRouteImport.update(
-    {
-      id: '/project/products/contatos',
-      path: '/project/products/contatos',
-      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-    } as any,
-  )
+   AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRouteImport.update(
+      {
+         id: "/project/products/contatos",
+         path: "/project/products/contatos",
+         getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+      } as any,
+   );
 const AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRouteImport.update(
-    {
-      id: '/project/products/ai-agents',
-      path: '/project/products/ai-agents',
-      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-    } as any,
-  )
+   AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRouteImport.update(
+      {
+         id: "/project/products/ai-agents",
+         path: "/project/products/ai-agents",
+         getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+      } as any,
+   );
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/auth': typeof AuthRouteWithChildren
-  '/$slug': typeof AuthenticatedSlugRouteWithChildren
-  '/onboarding': typeof AuthenticatedOnboardingRoute
-  '/api/health': typeof ApiHealthRoute
-  '/api/ping': typeof ApiPingRoute
-  '/api/rubi-chat': typeof ApiRubiChatRoute
-  '/auth/callback': typeof AuthCallbackRoute
-  '/auth/email-verification': typeof AuthEmailVerificationRoute
-  '/auth/forgot-password': typeof AuthForgotPasswordRoute
-  '/auth/magic-link': typeof AuthMagicLinkRoute
-  '/auth/sign-in': typeof AuthSignInRouteWithChildren
-  '/auth/sign-up': typeof AuthSignUpRoute
-  '/$slug/$teamSlug': typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/files/$': typeof ApiFilesSplatRoute
-  '/api/openapi/$': typeof ApiOpenapiSplatRoute
-  '/api/rpc/$': typeof ApiRpcSplatRoute
-  '/auth/sign-in/email': typeof AuthSignInEmailRoute
-  '/auth/sign-in/': typeof AuthSignInIndexRoute
-  '/callback/organization/invitation/$invitationId': typeof CallbackOrganizationInvitationInvitationIdRoute
-  '/$slug/$teamSlug/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
-  '/$slug/$teamSlug/categories': typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
-  '/$slug/$teamSlug/chat': typeof AuthenticatedSlugTeamSlugDashboardChatRoute
-  '/$slug/$teamSlug/contacts': typeof AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren
-  '/$slug/$teamSlug/credit-cards': typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
-  '/$slug/$teamSlug/services': typeof AuthenticatedSlugTeamSlugDashboardServicesRouteWithChildren
-  '/$slug/$teamSlug/settings': typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren
-  '/$slug/$teamSlug/tags': typeof AuthenticatedSlugTeamSlugDashboardTagsRoute
-  '/$slug/$teamSlug/transactions': typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute
-  '/$slug/$teamSlug/contacts/$contactId': typeof AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute
-  '/$slug/$teamSlug/services/$serviceId': typeof AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute
-  '/$slug/$teamSlug/services/benefits': typeof AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute
-  '/$slug/$teamSlug/services/coupons': typeof AuthenticatedSlugTeamSlugDashboardServicesCouponsRoute
-  '/$slug/$teamSlug/services/meters': typeof AuthenticatedSlugTeamSlugDashboardServicesMetersRoute
-  '/$slug/$teamSlug/settings/customization': typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute
-  '/$slug/$teamSlug/settings/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute
-  '/$slug/$teamSlug/settings/feature-previews': typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute
-  '/$slug/$teamSlug/settings/profile': typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute
-  '/$slug/$teamSlug/settings/security': typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute
-  '/$slug/$teamSlug/contacts/': typeof AuthenticatedSlugTeamSlugDashboardContactsIndexRoute
-  '/$slug/$teamSlug/home/': typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRoute
-  '/$slug/$teamSlug/services/': typeof AuthenticatedSlugTeamSlugDashboardServicesIndexRoute
-  '/$slug/$teamSlug/settings/': typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute
-  '/$slug/$teamSlug/analytics/dashboards/$dashboardId': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute
-  '/$slug/$teamSlug/analytics/insights/$insightId': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute
-  '/$slug/$teamSlug/settings/organization/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute
-  '/$slug/$teamSlug/settings/organization/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute
-  '/$slug/$teamSlug/settings/organization/members': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute
-  '/$slug/$teamSlug/settings/project/api-keys': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRoute
-  '/$slug/$teamSlug/settings/project/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute
-  '/$slug/$teamSlug/settings/project/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute
-  '/$slug/$teamSlug/settings/project/integrations': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute
-  '/$slug/$teamSlug/analytics/dashboards/': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute
-  '/$slug/$teamSlug/analytics/insights/': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute
-  '/$slug/$teamSlug/settings/project/products/ai-agents': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute
-  '/$slug/$teamSlug/settings/project/products/contatos': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute
-  '/$slug/$teamSlug/settings/project/products/financeiro': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute
+   "/": typeof IndexRoute;
+   "/auth": typeof AuthRouteWithChildren;
+   "/$slug": typeof AuthenticatedSlugRouteWithChildren;
+   "/onboarding": typeof AuthenticatedOnboardingRoute;
+   "/api/health": typeof ApiHealthRoute;
+   "/api/ping": typeof ApiPingRoute;
+   "/auth/callback": typeof AuthCallbackRoute;
+   "/auth/email-verification": typeof AuthEmailVerificationRoute;
+   "/auth/forgot-password": typeof AuthForgotPasswordRoute;
+   "/auth/magic-link": typeof AuthMagicLinkRoute;
+   "/auth/sign-in": typeof AuthSignInRouteWithChildren;
+   "/auth/sign-up": typeof AuthSignUpRoute;
+   "/$slug/$teamSlug": typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren;
+   "/api/auth/$": typeof ApiAuthSplatRoute;
+   "/api/files/$": typeof ApiFilesSplatRoute;
+   "/api/openapi/$": typeof ApiOpenapiSplatRoute;
+   "/api/rpc/$": typeof ApiRpcSplatRoute;
+   "/auth/sign-in/email": typeof AuthSignInEmailRoute;
+   "/auth/sign-in/": typeof AuthSignInIndexRoute;
+   "/callback/organization/invitation/$invitationId": typeof CallbackOrganizationInvitationInvitationIdRoute;
+   "/$slug/$teamSlug/bank-accounts": typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute;
+   "/$slug/$teamSlug/categories": typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute;
+   "/$slug/$teamSlug/chat": typeof AuthenticatedSlugTeamSlugDashboardChatRoute;
+   "/$slug/$teamSlug/contacts": typeof AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren;
+   "/$slug/$teamSlug/credit-cards": typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute;
+   "/$slug/$teamSlug/services": typeof AuthenticatedSlugTeamSlugDashboardServicesRouteWithChildren;
+   "/$slug/$teamSlug/settings": typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren;
+   "/$slug/$teamSlug/tags": typeof AuthenticatedSlugTeamSlugDashboardTagsRoute;
+   "/$slug/$teamSlug/transactions": typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute;
+   "/$slug/$teamSlug/contacts/$contactId": typeof AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute;
+   "/$slug/$teamSlug/services/$serviceId": typeof AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute;
+   "/$slug/$teamSlug/services/benefits": typeof AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute;
+   "/$slug/$teamSlug/services/coupons": typeof AuthenticatedSlugTeamSlugDashboardServicesCouponsRoute;
+   "/$slug/$teamSlug/services/meters": typeof AuthenticatedSlugTeamSlugDashboardServicesMetersRoute;
+   "/$slug/$teamSlug/settings/customization": typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute;
+   "/$slug/$teamSlug/settings/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute;
+   "/$slug/$teamSlug/settings/feature-previews": typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute;
+   "/$slug/$teamSlug/settings/profile": typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute;
+   "/$slug/$teamSlug/settings/security": typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute;
+   "/$slug/$teamSlug/contacts/": typeof AuthenticatedSlugTeamSlugDashboardContactsIndexRoute;
+   "/$slug/$teamSlug/home/": typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRoute;
+   "/$slug/$teamSlug/services/": typeof AuthenticatedSlugTeamSlugDashboardServicesIndexRoute;
+   "/$slug/$teamSlug/settings/": typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute;
+   "/$slug/$teamSlug/analytics/dashboards/$dashboardId": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute;
+   "/$slug/$teamSlug/analytics/insights/$insightId": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute;
+   "/$slug/$teamSlug/settings/organization/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute;
+   "/$slug/$teamSlug/settings/organization/general": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute;
+   "/$slug/$teamSlug/settings/organization/members": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute;
+   "/$slug/$teamSlug/settings/project/api-keys": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRoute;
+   "/$slug/$teamSlug/settings/project/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute;
+   "/$slug/$teamSlug/settings/project/general": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute;
+   "/$slug/$teamSlug/settings/project/integrations": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute;
+   "/$slug/$teamSlug/analytics/dashboards/": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute;
+   "/$slug/$teamSlug/analytics/insights/": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute;
+   "/$slug/$teamSlug/settings/project/products/ai-agents": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute;
+   "/$slug/$teamSlug/settings/project/products/contatos": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute;
+   "/$slug/$teamSlug/settings/project/products/financeiro": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/auth': typeof AuthRouteWithChildren
-  '/$slug': typeof AuthenticatedSlugRouteWithChildren
-  '/onboarding': typeof AuthenticatedOnboardingRoute
-  '/api/health': typeof ApiHealthRoute
-  '/api/ping': typeof ApiPingRoute
-  '/api/rubi-chat': typeof ApiRubiChatRoute
-  '/auth/callback': typeof AuthCallbackRoute
-  '/auth/email-verification': typeof AuthEmailVerificationRoute
-  '/auth/forgot-password': typeof AuthForgotPasswordRoute
-  '/auth/magic-link': typeof AuthMagicLinkRoute
-  '/auth/sign-up': typeof AuthSignUpRoute
-  '/$slug/$teamSlug': typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/files/$': typeof ApiFilesSplatRoute
-  '/api/openapi/$': typeof ApiOpenapiSplatRoute
-  '/api/rpc/$': typeof ApiRpcSplatRoute
-  '/auth/sign-in/email': typeof AuthSignInEmailRoute
-  '/auth/sign-in': typeof AuthSignInIndexRoute
-  '/callback/organization/invitation/$invitationId': typeof CallbackOrganizationInvitationInvitationIdRoute
-  '/$slug/$teamSlug/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
-  '/$slug/$teamSlug/categories': typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
-  '/$slug/$teamSlug/chat': typeof AuthenticatedSlugTeamSlugDashboardChatRoute
-  '/$slug/$teamSlug/credit-cards': typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
-  '/$slug/$teamSlug/tags': typeof AuthenticatedSlugTeamSlugDashboardTagsRoute
-  '/$slug/$teamSlug/transactions': typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute
-  '/$slug/$teamSlug/contacts/$contactId': typeof AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute
-  '/$slug/$teamSlug/services/$serviceId': typeof AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute
-  '/$slug/$teamSlug/services/benefits': typeof AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute
-  '/$slug/$teamSlug/services/coupons': typeof AuthenticatedSlugTeamSlugDashboardServicesCouponsRoute
-  '/$slug/$teamSlug/services/meters': typeof AuthenticatedSlugTeamSlugDashboardServicesMetersRoute
-  '/$slug/$teamSlug/settings/customization': typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute
-  '/$slug/$teamSlug/settings/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute
-  '/$slug/$teamSlug/settings/feature-previews': typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute
-  '/$slug/$teamSlug/settings/profile': typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute
-  '/$slug/$teamSlug/settings/security': typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute
-  '/$slug/$teamSlug/contacts': typeof AuthenticatedSlugTeamSlugDashboardContactsIndexRoute
-  '/$slug/$teamSlug/home': typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRoute
-  '/$slug/$teamSlug/services': typeof AuthenticatedSlugTeamSlugDashboardServicesIndexRoute
-  '/$slug/$teamSlug/settings': typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute
-  '/$slug/$teamSlug/analytics/dashboards/$dashboardId': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute
-  '/$slug/$teamSlug/analytics/insights/$insightId': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute
-  '/$slug/$teamSlug/settings/organization/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute
-  '/$slug/$teamSlug/settings/organization/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute
-  '/$slug/$teamSlug/settings/organization/members': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute
-  '/$slug/$teamSlug/settings/project/api-keys': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRoute
-  '/$slug/$teamSlug/settings/project/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute
-  '/$slug/$teamSlug/settings/project/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute
-  '/$slug/$teamSlug/settings/project/integrations': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute
-  '/$slug/$teamSlug/analytics/dashboards': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute
-  '/$slug/$teamSlug/analytics/insights': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute
-  '/$slug/$teamSlug/settings/project/products/ai-agents': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute
-  '/$slug/$teamSlug/settings/project/products/contatos': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute
-  '/$slug/$teamSlug/settings/project/products/financeiro': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute
+   "/": typeof IndexRoute;
+   "/auth": typeof AuthRouteWithChildren;
+   "/$slug": typeof AuthenticatedSlugRouteWithChildren;
+   "/onboarding": typeof AuthenticatedOnboardingRoute;
+   "/api/health": typeof ApiHealthRoute;
+   "/api/ping": typeof ApiPingRoute;
+   "/auth/callback": typeof AuthCallbackRoute;
+   "/auth/email-verification": typeof AuthEmailVerificationRoute;
+   "/auth/forgot-password": typeof AuthForgotPasswordRoute;
+   "/auth/magic-link": typeof AuthMagicLinkRoute;
+   "/auth/sign-up": typeof AuthSignUpRoute;
+   "/$slug/$teamSlug": typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren;
+   "/api/auth/$": typeof ApiAuthSplatRoute;
+   "/api/files/$": typeof ApiFilesSplatRoute;
+   "/api/openapi/$": typeof ApiOpenapiSplatRoute;
+   "/api/rpc/$": typeof ApiRpcSplatRoute;
+   "/auth/sign-in/email": typeof AuthSignInEmailRoute;
+   "/auth/sign-in": typeof AuthSignInIndexRoute;
+   "/callback/organization/invitation/$invitationId": typeof CallbackOrganizationInvitationInvitationIdRoute;
+   "/$slug/$teamSlug/bank-accounts": typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute;
+   "/$slug/$teamSlug/categories": typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute;
+   "/$slug/$teamSlug/chat": typeof AuthenticatedSlugTeamSlugDashboardChatRoute;
+   "/$slug/$teamSlug/credit-cards": typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute;
+   "/$slug/$teamSlug/tags": typeof AuthenticatedSlugTeamSlugDashboardTagsRoute;
+   "/$slug/$teamSlug/transactions": typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute;
+   "/$slug/$teamSlug/contacts/$contactId": typeof AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute;
+   "/$slug/$teamSlug/services/$serviceId": typeof AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute;
+   "/$slug/$teamSlug/services/benefits": typeof AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute;
+   "/$slug/$teamSlug/services/coupons": typeof AuthenticatedSlugTeamSlugDashboardServicesCouponsRoute;
+   "/$slug/$teamSlug/services/meters": typeof AuthenticatedSlugTeamSlugDashboardServicesMetersRoute;
+   "/$slug/$teamSlug/settings/customization": typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute;
+   "/$slug/$teamSlug/settings/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute;
+   "/$slug/$teamSlug/settings/feature-previews": typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute;
+   "/$slug/$teamSlug/settings/profile": typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute;
+   "/$slug/$teamSlug/settings/security": typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute;
+   "/$slug/$teamSlug/contacts": typeof AuthenticatedSlugTeamSlugDashboardContactsIndexRoute;
+   "/$slug/$teamSlug/home": typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRoute;
+   "/$slug/$teamSlug/services": typeof AuthenticatedSlugTeamSlugDashboardServicesIndexRoute;
+   "/$slug/$teamSlug/settings": typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute;
+   "/$slug/$teamSlug/analytics/dashboards/$dashboardId": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute;
+   "/$slug/$teamSlug/analytics/insights/$insightId": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute;
+   "/$slug/$teamSlug/settings/organization/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute;
+   "/$slug/$teamSlug/settings/organization/general": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute;
+   "/$slug/$teamSlug/settings/organization/members": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute;
+   "/$slug/$teamSlug/settings/project/api-keys": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRoute;
+   "/$slug/$teamSlug/settings/project/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute;
+   "/$slug/$teamSlug/settings/project/general": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute;
+   "/$slug/$teamSlug/settings/project/integrations": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute;
+   "/$slug/$teamSlug/analytics/dashboards": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute;
+   "/$slug/$teamSlug/analytics/insights": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute;
+   "/$slug/$teamSlug/settings/project/products/ai-agents": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute;
+   "/$slug/$teamSlug/settings/project/products/contatos": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute;
+   "/$slug/$teamSlug/settings/project/products/financeiro": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/_authenticated': typeof AuthenticatedRouteWithChildren
-  '/auth': typeof AuthRouteWithChildren
-  '/_authenticated/$slug': typeof AuthenticatedSlugRouteWithChildren
-  '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
-  '/api/health': typeof ApiHealthRoute
-  '/api/ping': typeof ApiPingRoute
-  '/api/rubi-chat': typeof ApiRubiChatRoute
-  '/auth/callback': typeof AuthCallbackRoute
-  '/auth/email-verification': typeof AuthEmailVerificationRoute
-  '/auth/forgot-password': typeof AuthForgotPasswordRoute
-  '/auth/magic-link': typeof AuthMagicLinkRoute
-  '/auth/sign-in': typeof AuthSignInRouteWithChildren
-  '/auth/sign-up': typeof AuthSignUpRoute
-  '/_authenticated/$slug/$teamSlug': typeof AuthenticatedSlugTeamSlugRouteWithChildren
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/files/$': typeof ApiFilesSplatRoute
-  '/api/openapi/$': typeof ApiOpenapiSplatRoute
-  '/api/rpc/$': typeof ApiRpcSplatRoute
-  '/auth/sign-in/email': typeof AuthSignInEmailRoute
-  '/auth/sign-in/': typeof AuthSignInIndexRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard': typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren
-  '/callback/organization/invitation/$invitationId': typeof CallbackOrganizationInvitationInvitationIdRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/categories': typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/chat': typeof AuthenticatedSlugTeamSlugDashboardChatRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/contacts': typeof AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren
-  '/_authenticated/$slug/$teamSlug/_dashboard/credit-cards': typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/services': typeof AuthenticatedSlugTeamSlugDashboardServicesRouteWithChildren
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings': typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren
-  '/_authenticated/$slug/$teamSlug/_dashboard/tags': typeof AuthenticatedSlugTeamSlugDashboardTagsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/transactions': typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/contacts/$contactId': typeof AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/services/$serviceId': typeof AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/services/benefits': typeof AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/services/coupons': typeof AuthenticatedSlugTeamSlugDashboardServicesCouponsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/services/meters': typeof AuthenticatedSlugTeamSlugDashboardServicesMetersRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/customization': typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews': typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/profile': typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/security': typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/contacts/': typeof AuthenticatedSlugTeamSlugDashboardContactsIndexRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/home/': typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/services/': typeof AuthenticatedSlugTeamSlugDashboardServicesIndexRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/': typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/api-keys': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute
+   __root__: typeof rootRouteImport;
+   "/": typeof IndexRoute;
+   "/_authenticated": typeof AuthenticatedRouteWithChildren;
+   "/auth": typeof AuthRouteWithChildren;
+   "/_authenticated/$slug": typeof AuthenticatedSlugRouteWithChildren;
+   "/_authenticated/onboarding": typeof AuthenticatedOnboardingRoute;
+   "/api/health": typeof ApiHealthRoute;
+   "/api/ping": typeof ApiPingRoute;
+   "/auth/callback": typeof AuthCallbackRoute;
+   "/auth/email-verification": typeof AuthEmailVerificationRoute;
+   "/auth/forgot-password": typeof AuthForgotPasswordRoute;
+   "/auth/magic-link": typeof AuthMagicLinkRoute;
+   "/auth/sign-in": typeof AuthSignInRouteWithChildren;
+   "/auth/sign-up": typeof AuthSignUpRoute;
+   "/_authenticated/$slug/$teamSlug": typeof AuthenticatedSlugTeamSlugRouteWithChildren;
+   "/api/auth/$": typeof ApiAuthSplatRoute;
+   "/api/files/$": typeof ApiFilesSplatRoute;
+   "/api/openapi/$": typeof ApiOpenapiSplatRoute;
+   "/api/rpc/$": typeof ApiRpcSplatRoute;
+   "/auth/sign-in/email": typeof AuthSignInEmailRoute;
+   "/auth/sign-in/": typeof AuthSignInIndexRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard": typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren;
+   "/callback/organization/invitation/$invitationId": typeof CallbackOrganizationInvitationInvitationIdRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts": typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/categories": typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/chat": typeof AuthenticatedSlugTeamSlugDashboardChatRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/contacts": typeof AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren;
+   "/_authenticated/$slug/$teamSlug/_dashboard/credit-cards": typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/services": typeof AuthenticatedSlugTeamSlugDashboardServicesRouteWithChildren;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings": typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren;
+   "/_authenticated/$slug/$teamSlug/_dashboard/tags": typeof AuthenticatedSlugTeamSlugDashboardTagsRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/transactions": typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/contacts/$contactId": typeof AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/services/$serviceId": typeof AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/services/benefits": typeof AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/services/coupons": typeof AuthenticatedSlugTeamSlugDashboardServicesCouponsRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/services/meters": typeof AuthenticatedSlugTeamSlugDashboardServicesMetersRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings/customization": typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews": typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings/profile": typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings/security": typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/contacts/": typeof AuthenticatedSlugTeamSlugDashboardContactsIndexRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/home/": typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/services/": typeof AuthenticatedSlugTeamSlugDashboardServicesIndexRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings/": typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/api-keys": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/auth'
-    | '/$slug'
-    | '/onboarding'
-    | '/api/health'
-    | '/api/ping'
-    | '/api/rubi-chat'
-    | '/auth/callback'
-    | '/auth/email-verification'
-    | '/auth/forgot-password'
-    | '/auth/magic-link'
-    | '/auth/sign-in'
-    | '/auth/sign-up'
-    | '/$slug/$teamSlug'
-    | '/api/auth/$'
-    | '/api/files/$'
-    | '/api/openapi/$'
-    | '/api/rpc/$'
-    | '/auth/sign-in/email'
-    | '/auth/sign-in/'
-    | '/callback/organization/invitation/$invitationId'
-    | '/$slug/$teamSlug/bank-accounts'
-    | '/$slug/$teamSlug/categories'
-    | '/$slug/$teamSlug/chat'
-    | '/$slug/$teamSlug/contacts'
-    | '/$slug/$teamSlug/credit-cards'
-    | '/$slug/$teamSlug/services'
-    | '/$slug/$teamSlug/settings'
-    | '/$slug/$teamSlug/tags'
-    | '/$slug/$teamSlug/transactions'
-    | '/$slug/$teamSlug/contacts/$contactId'
-    | '/$slug/$teamSlug/services/$serviceId'
-    | '/$slug/$teamSlug/services/benefits'
-    | '/$slug/$teamSlug/services/coupons'
-    | '/$slug/$teamSlug/services/meters'
-    | '/$slug/$teamSlug/settings/customization'
-    | '/$slug/$teamSlug/settings/danger-zone'
-    | '/$slug/$teamSlug/settings/feature-previews'
-    | '/$slug/$teamSlug/settings/profile'
-    | '/$slug/$teamSlug/settings/security'
-    | '/$slug/$teamSlug/contacts/'
-    | '/$slug/$teamSlug/home/'
-    | '/$slug/$teamSlug/services/'
-    | '/$slug/$teamSlug/settings/'
-    | '/$slug/$teamSlug/analytics/dashboards/$dashboardId'
-    | '/$slug/$teamSlug/analytics/insights/$insightId'
-    | '/$slug/$teamSlug/settings/organization/danger-zone'
-    | '/$slug/$teamSlug/settings/organization/general'
-    | '/$slug/$teamSlug/settings/organization/members'
-    | '/$slug/$teamSlug/settings/project/api-keys'
-    | '/$slug/$teamSlug/settings/project/danger-zone'
-    | '/$slug/$teamSlug/settings/project/general'
-    | '/$slug/$teamSlug/settings/project/integrations'
-    | '/$slug/$teamSlug/analytics/dashboards/'
-    | '/$slug/$teamSlug/analytics/insights/'
-    | '/$slug/$teamSlug/settings/project/products/ai-agents'
-    | '/$slug/$teamSlug/settings/project/products/contatos'
-    | '/$slug/$teamSlug/settings/project/products/financeiro'
-  fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/auth'
-    | '/$slug'
-    | '/onboarding'
-    | '/api/health'
-    | '/api/ping'
-    | '/api/rubi-chat'
-    | '/auth/callback'
-    | '/auth/email-verification'
-    | '/auth/forgot-password'
-    | '/auth/magic-link'
-    | '/auth/sign-up'
-    | '/$slug/$teamSlug'
-    | '/api/auth/$'
-    | '/api/files/$'
-    | '/api/openapi/$'
-    | '/api/rpc/$'
-    | '/auth/sign-in/email'
-    | '/auth/sign-in'
-    | '/callback/organization/invitation/$invitationId'
-    | '/$slug/$teamSlug/bank-accounts'
-    | '/$slug/$teamSlug/categories'
-    | '/$slug/$teamSlug/chat'
-    | '/$slug/$teamSlug/credit-cards'
-    | '/$slug/$teamSlug/tags'
-    | '/$slug/$teamSlug/transactions'
-    | '/$slug/$teamSlug/contacts/$contactId'
-    | '/$slug/$teamSlug/services/$serviceId'
-    | '/$slug/$teamSlug/services/benefits'
-    | '/$slug/$teamSlug/services/coupons'
-    | '/$slug/$teamSlug/services/meters'
-    | '/$slug/$teamSlug/settings/customization'
-    | '/$slug/$teamSlug/settings/danger-zone'
-    | '/$slug/$teamSlug/settings/feature-previews'
-    | '/$slug/$teamSlug/settings/profile'
-    | '/$slug/$teamSlug/settings/security'
-    | '/$slug/$teamSlug/contacts'
-    | '/$slug/$teamSlug/home'
-    | '/$slug/$teamSlug/services'
-    | '/$slug/$teamSlug/settings'
-    | '/$slug/$teamSlug/analytics/dashboards/$dashboardId'
-    | '/$slug/$teamSlug/analytics/insights/$insightId'
-    | '/$slug/$teamSlug/settings/organization/danger-zone'
-    | '/$slug/$teamSlug/settings/organization/general'
-    | '/$slug/$teamSlug/settings/organization/members'
-    | '/$slug/$teamSlug/settings/project/api-keys'
-    | '/$slug/$teamSlug/settings/project/danger-zone'
-    | '/$slug/$teamSlug/settings/project/general'
-    | '/$slug/$teamSlug/settings/project/integrations'
-    | '/$slug/$teamSlug/analytics/dashboards'
-    | '/$slug/$teamSlug/analytics/insights'
-    | '/$slug/$teamSlug/settings/project/products/ai-agents'
-    | '/$slug/$teamSlug/settings/project/products/contatos'
-    | '/$slug/$teamSlug/settings/project/products/financeiro'
-  id:
-    | '__root__'
-    | '/'
-    | '/_authenticated'
-    | '/auth'
-    | '/_authenticated/$slug'
-    | '/_authenticated/onboarding'
-    | '/api/health'
-    | '/api/ping'
-    | '/api/rubi-chat'
-    | '/auth/callback'
-    | '/auth/email-verification'
-    | '/auth/forgot-password'
-    | '/auth/magic-link'
-    | '/auth/sign-in'
-    | '/auth/sign-up'
-    | '/_authenticated/$slug/$teamSlug'
-    | '/api/auth/$'
-    | '/api/files/$'
-    | '/api/openapi/$'
-    | '/api/rpc/$'
-    | '/auth/sign-in/email'
-    | '/auth/sign-in/'
-    | '/_authenticated/$slug/$teamSlug/_dashboard'
-    | '/callback/organization/invitation/$invitationId'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/categories'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/chat'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/contacts'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/credit-cards'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/services'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/tags'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/transactions'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/contacts/$contactId'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/services/$serviceId'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/services/benefits'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/services/coupons'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/services/meters'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/customization'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/profile'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/security'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/contacts/'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/home/'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/services/'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/api-keys'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro'
-  fileRoutesById: FileRoutesById
+   fileRoutesByFullPath: FileRoutesByFullPath;
+   fullPaths:
+      | "/"
+      | "/auth"
+      | "/$slug"
+      | "/onboarding"
+      | "/api/health"
+      | "/api/ping"
+      | "/auth/callback"
+      | "/auth/email-verification"
+      | "/auth/forgot-password"
+      | "/auth/magic-link"
+      | "/auth/sign-in"
+      | "/auth/sign-up"
+      | "/$slug/$teamSlug"
+      | "/api/auth/$"
+      | "/api/files/$"
+      | "/api/openapi/$"
+      | "/api/rpc/$"
+      | "/auth/sign-in/email"
+      | "/auth/sign-in/"
+      | "/callback/organization/invitation/$invitationId"
+      | "/$slug/$teamSlug/bank-accounts"
+      | "/$slug/$teamSlug/categories"
+      | "/$slug/$teamSlug/chat"
+      | "/$slug/$teamSlug/contacts"
+      | "/$slug/$teamSlug/credit-cards"
+      | "/$slug/$teamSlug/services"
+      | "/$slug/$teamSlug/settings"
+      | "/$slug/$teamSlug/tags"
+      | "/$slug/$teamSlug/transactions"
+      | "/$slug/$teamSlug/contacts/$contactId"
+      | "/$slug/$teamSlug/services/$serviceId"
+      | "/$slug/$teamSlug/services/benefits"
+      | "/$slug/$teamSlug/services/coupons"
+      | "/$slug/$teamSlug/services/meters"
+      | "/$slug/$teamSlug/settings/customization"
+      | "/$slug/$teamSlug/settings/danger-zone"
+      | "/$slug/$teamSlug/settings/feature-previews"
+      | "/$slug/$teamSlug/settings/profile"
+      | "/$slug/$teamSlug/settings/security"
+      | "/$slug/$teamSlug/contacts/"
+      | "/$slug/$teamSlug/home/"
+      | "/$slug/$teamSlug/services/"
+      | "/$slug/$teamSlug/settings/"
+      | "/$slug/$teamSlug/analytics/dashboards/$dashboardId"
+      | "/$slug/$teamSlug/analytics/insights/$insightId"
+      | "/$slug/$teamSlug/settings/organization/danger-zone"
+      | "/$slug/$teamSlug/settings/organization/general"
+      | "/$slug/$teamSlug/settings/organization/members"
+      | "/$slug/$teamSlug/settings/project/api-keys"
+      | "/$slug/$teamSlug/settings/project/danger-zone"
+      | "/$slug/$teamSlug/settings/project/general"
+      | "/$slug/$teamSlug/settings/project/integrations"
+      | "/$slug/$teamSlug/analytics/dashboards/"
+      | "/$slug/$teamSlug/analytics/insights/"
+      | "/$slug/$teamSlug/settings/project/products/ai-agents"
+      | "/$slug/$teamSlug/settings/project/products/contatos"
+      | "/$slug/$teamSlug/settings/project/products/financeiro";
+   fileRoutesByTo: FileRoutesByTo;
+   to:
+      | "/"
+      | "/auth"
+      | "/$slug"
+      | "/onboarding"
+      | "/api/health"
+      | "/api/ping"
+      | "/auth/callback"
+      | "/auth/email-verification"
+      | "/auth/forgot-password"
+      | "/auth/magic-link"
+      | "/auth/sign-up"
+      | "/$slug/$teamSlug"
+      | "/api/auth/$"
+      | "/api/files/$"
+      | "/api/openapi/$"
+      | "/api/rpc/$"
+      | "/auth/sign-in/email"
+      | "/auth/sign-in"
+      | "/callback/organization/invitation/$invitationId"
+      | "/$slug/$teamSlug/bank-accounts"
+      | "/$slug/$teamSlug/categories"
+      | "/$slug/$teamSlug/chat"
+      | "/$slug/$teamSlug/credit-cards"
+      | "/$slug/$teamSlug/tags"
+      | "/$slug/$teamSlug/transactions"
+      | "/$slug/$teamSlug/contacts/$contactId"
+      | "/$slug/$teamSlug/services/$serviceId"
+      | "/$slug/$teamSlug/services/benefits"
+      | "/$slug/$teamSlug/services/coupons"
+      | "/$slug/$teamSlug/services/meters"
+      | "/$slug/$teamSlug/settings/customization"
+      | "/$slug/$teamSlug/settings/danger-zone"
+      | "/$slug/$teamSlug/settings/feature-previews"
+      | "/$slug/$teamSlug/settings/profile"
+      | "/$slug/$teamSlug/settings/security"
+      | "/$slug/$teamSlug/contacts"
+      | "/$slug/$teamSlug/home"
+      | "/$slug/$teamSlug/services"
+      | "/$slug/$teamSlug/settings"
+      | "/$slug/$teamSlug/analytics/dashboards/$dashboardId"
+      | "/$slug/$teamSlug/analytics/insights/$insightId"
+      | "/$slug/$teamSlug/settings/organization/danger-zone"
+      | "/$slug/$teamSlug/settings/organization/general"
+      | "/$slug/$teamSlug/settings/organization/members"
+      | "/$slug/$teamSlug/settings/project/api-keys"
+      | "/$slug/$teamSlug/settings/project/danger-zone"
+      | "/$slug/$teamSlug/settings/project/general"
+      | "/$slug/$teamSlug/settings/project/integrations"
+      | "/$slug/$teamSlug/analytics/dashboards"
+      | "/$slug/$teamSlug/analytics/insights"
+      | "/$slug/$teamSlug/settings/project/products/ai-agents"
+      | "/$slug/$teamSlug/settings/project/products/contatos"
+      | "/$slug/$teamSlug/settings/project/products/financeiro";
+   id:
+      | "__root__"
+      | "/"
+      | "/_authenticated"
+      | "/auth"
+      | "/_authenticated/$slug"
+      | "/_authenticated/onboarding"
+      | "/api/health"
+      | "/api/ping"
+      | "/auth/callback"
+      | "/auth/email-verification"
+      | "/auth/forgot-password"
+      | "/auth/magic-link"
+      | "/auth/sign-in"
+      | "/auth/sign-up"
+      | "/_authenticated/$slug/$teamSlug"
+      | "/api/auth/$"
+      | "/api/files/$"
+      | "/api/openapi/$"
+      | "/api/rpc/$"
+      | "/auth/sign-in/email"
+      | "/auth/sign-in/"
+      | "/_authenticated/$slug/$teamSlug/_dashboard"
+      | "/callback/organization/invitation/$invitationId"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/categories"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/chat"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/contacts"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/credit-cards"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/services"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/tags"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/transactions"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/contacts/$contactId"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/services/$serviceId"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/services/benefits"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/services/coupons"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/services/meters"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/customization"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/profile"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/security"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/contacts/"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/home/"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/services/"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/api-keys"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro";
+   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
-  AuthRoute: typeof AuthRouteWithChildren
-  ApiHealthRoute: typeof ApiHealthRoute
-  ApiPingRoute: typeof ApiPingRoute
-  ApiRubiChatRoute: typeof ApiRubiChatRoute
-  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiFilesSplatRoute: typeof ApiFilesSplatRoute
-  ApiOpenapiSplatRoute: typeof ApiOpenapiSplatRoute
-  ApiRpcSplatRoute: typeof ApiRpcSplatRoute
-  CallbackOrganizationInvitationInvitationIdRoute: typeof CallbackOrganizationInvitationInvitationIdRoute
+   IndexRoute: typeof IndexRoute;
+   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren;
+   AuthRoute: typeof AuthRouteWithChildren;
+   ApiHealthRoute: typeof ApiHealthRoute;
+   ApiPingRoute: typeof ApiPingRoute;
+   ApiAuthSplatRoute: typeof ApiAuthSplatRoute;
+   ApiFilesSplatRoute: typeof ApiFilesSplatRoute;
+   ApiOpenapiSplatRoute: typeof ApiOpenapiSplatRoute;
+   ApiRpcSplatRoute: typeof ApiRpcSplatRoute;
+   CallbackOrganizationInvitationInvitationIdRoute: typeof CallbackOrganizationInvitationInvitationIdRoute;
 }
 
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/sign-up': {
-      id: '/auth/sign-up'
-      path: '/sign-up'
-      fullPath: '/auth/sign-up'
-      preLoaderRoute: typeof AuthSignUpRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/sign-in': {
-      id: '/auth/sign-in'
-      path: '/sign-in'
-      fullPath: '/auth/sign-in'
-      preLoaderRoute: typeof AuthSignInRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/magic-link': {
-      id: '/auth/magic-link'
-      path: '/magic-link'
-      fullPath: '/auth/magic-link'
-      preLoaderRoute: typeof AuthMagicLinkRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/forgot-password': {
-      id: '/auth/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/auth/forgot-password'
-      preLoaderRoute: typeof AuthForgotPasswordRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/email-verification': {
-      id: '/auth/email-verification'
-      path: '/email-verification'
-      fullPath: '/auth/email-verification'
-      preLoaderRoute: typeof AuthEmailVerificationRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/api/rubi-chat': {
-      id: '/api/rubi-chat'
-      path: '/api/rubi-chat'
-      fullPath: '/api/rubi-chat'
-      preLoaderRoute: typeof ApiRubiChatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/ping': {
-      id: '/api/ping'
-      path: '/api/ping'
-      fullPath: '/api/ping'
-      preLoaderRoute: typeof ApiPingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/health': {
-      id: '/api/health'
-      path: '/api/health'
-      fullPath: '/api/health'
-      preLoaderRoute: typeof ApiHealthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/onboarding': {
-      id: '/_authenticated/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/$slug': {
-      id: '/_authenticated/$slug'
-      path: '/$slug'
-      fullPath: '/$slug'
-      preLoaderRoute: typeof AuthenticatedSlugRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/auth/sign-in/': {
-      id: '/auth/sign-in/'
-      path: '/'
-      fullPath: '/auth/sign-in/'
-      preLoaderRoute: typeof AuthSignInIndexRouteImport
-      parentRoute: typeof AuthSignInRoute
-    }
-    '/auth/sign-in/email': {
-      id: '/auth/sign-in/email'
-      path: '/email'
-      fullPath: '/auth/sign-in/email'
-      preLoaderRoute: typeof AuthSignInEmailRouteImport
-      parentRoute: typeof AuthSignInRoute
-    }
-    '/api/rpc/$': {
-      id: '/api/rpc/$'
-      path: '/api/rpc/$'
-      fullPath: '/api/rpc/$'
-      preLoaderRoute: typeof ApiRpcSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/openapi/$': {
-      id: '/api/openapi/$'
-      path: '/api/openapi/$'
-      fullPath: '/api/openapi/$'
-      preLoaderRoute: typeof ApiOpenapiSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/files/$': {
-      id: '/api/files/$'
-      path: '/api/files/$'
-      fullPath: '/api/files/$'
-      preLoaderRoute: typeof ApiFilesSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/$slug/$teamSlug': {
-      id: '/_authenticated/$slug/$teamSlug'
-      path: '/$teamSlug'
-      fullPath: '/$slug/$teamSlug'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/callback/organization/invitation/$invitationId': {
-      id: '/callback/organization/invitation/$invitationId'
-      path: '/callback/organization/invitation/$invitationId'
-      fullPath: '/callback/organization/invitation/$invitationId'
-      preLoaderRoute: typeof CallbackOrganizationInvitationInvitationIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard'
-      path: ''
-      fullPath: '/$slug/$teamSlug'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/transactions': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/transactions'
-      path: '/transactions'
-      fullPath: '/$slug/$teamSlug/transactions'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardTransactionsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/tags': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/tags'
-      path: '/tags'
-      fullPath: '/$slug/$teamSlug/tags'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardTagsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings'
-      path: '/settings'
-      fullPath: '/$slug/$teamSlug/settings'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/services': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/services'
-      path: '/services'
-      fullPath: '/$slug/$teamSlug/services'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/credit-cards': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/credit-cards'
-      path: '/credit-cards'
-      fullPath: '/$slug/$teamSlug/credit-cards'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/contacts': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/contacts'
-      path: '/contacts'
-      fullPath: '/$slug/$teamSlug/contacts'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/chat': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/chat'
-      path: '/chat'
-      fullPath: '/$slug/$teamSlug/chat'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardChatRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/categories': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/categories'
-      path: '/categories'
-      fullPath: '/$slug/$teamSlug/categories'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardCategoriesRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts'
-      path: '/bank-accounts'
-      fullPath: '/$slug/$teamSlug/bank-accounts'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/'
-      path: '/'
-      fullPath: '/$slug/$teamSlug/settings/'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/services/': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/services/'
-      path: '/'
-      fullPath: '/$slug/$teamSlug/services/'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/home/': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/home/'
-      path: '/home'
-      fullPath: '/$slug/$teamSlug/home/'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/contacts/': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/contacts/'
-      path: '/'
-      fullPath: '/$slug/$teamSlug/contacts/'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/security': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/security'
-      path: '/security'
-      fullPath: '/$slug/$teamSlug/settings/security'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/profile': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/profile'
-      path: '/profile'
-      fullPath: '/$slug/$teamSlug/settings/profile'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews'
-      path: '/feature-previews'
-      fullPath: '/$slug/$teamSlug/settings/feature-previews'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone'
-      path: '/danger-zone'
-      fullPath: '/$slug/$teamSlug/settings/danger-zone'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/customization': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/customization'
-      path: '/customization'
-      fullPath: '/$slug/$teamSlug/settings/customization'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/services/meters': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/services/meters'
-      path: '/meters'
-      fullPath: '/$slug/$teamSlug/services/meters'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesMetersRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/services/coupons': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/services/coupons'
-      path: '/coupons'
-      fullPath: '/$slug/$teamSlug/services/coupons'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesCouponsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/services/benefits': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/services/benefits'
-      path: '/benefits'
-      fullPath: '/$slug/$teamSlug/services/benefits'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesBenefitsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/services/$serviceId': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/services/$serviceId'
-      path: '/$serviceId'
-      fullPath: '/$slug/$teamSlug/services/$serviceId'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesServiceIdRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/contacts/$contactId': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/contacts/$contactId'
-      path: '/$contactId'
-      fullPath: '/$slug/$teamSlug/contacts/$contactId'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsContactIdRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/'
-      path: '/analytics/insights'
-      fullPath: '/$slug/$teamSlug/analytics/insights/'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/'
-      path: '/analytics/dashboards'
-      fullPath: '/$slug/$teamSlug/analytics/dashboards/'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations'
-      path: '/project/integrations'
-      fullPath: '/$slug/$teamSlug/settings/project/integrations'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general'
-      path: '/project/general'
-      fullPath: '/$slug/$teamSlug/settings/project/general'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone'
-      path: '/project/danger-zone'
-      fullPath: '/$slug/$teamSlug/settings/project/danger-zone'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/api-keys': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/api-keys'
-      path: '/project/api-keys'
-      fullPath: '/$slug/$teamSlug/settings/project/api-keys'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members'
-      path: '/organization/members'
-      fullPath: '/$slug/$teamSlug/settings/organization/members'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general'
-      path: '/organization/general'
-      fullPath: '/$slug/$teamSlug/settings/organization/general'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone'
-      path: '/organization/danger-zone'
-      fullPath: '/$slug/$teamSlug/settings/organization/danger-zone'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId'
-      path: '/analytics/insights/$insightId'
-      fullPath: '/$slug/$teamSlug/analytics/insights/$insightId'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId'
-      path: '/analytics/dashboards/$dashboardId'
-      fullPath: '/$slug/$teamSlug/analytics/dashboards/$dashboardId'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro'
-      path: '/project/products/financeiro'
-      fullPath: '/$slug/$teamSlug/settings/project/products/financeiro'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos'
-      path: '/project/products/contatos'
-      fullPath: '/$slug/$teamSlug/settings/project/products/contatos'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents'
-      path: '/project/products/ai-agents'
-      fullPath: '/$slug/$teamSlug/settings/project/products/ai-agents'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
-  }
+declare module "@tanstack/react-router" {
+   interface FileRoutesByPath {
+      "/auth": {
+         id: "/auth";
+         path: "/auth";
+         fullPath: "/auth";
+         preLoaderRoute: typeof AuthRouteImport;
+         parentRoute: typeof rootRouteImport;
+      };
+      "/_authenticated": {
+         id: "/_authenticated";
+         path: "";
+         fullPath: "/";
+         preLoaderRoute: typeof AuthenticatedRouteImport;
+         parentRoute: typeof rootRouteImport;
+      };
+      "/": {
+         id: "/";
+         path: "/";
+         fullPath: "/";
+         preLoaderRoute: typeof IndexRouteImport;
+         parentRoute: typeof rootRouteImport;
+      };
+      "/auth/sign-up": {
+         id: "/auth/sign-up";
+         path: "/sign-up";
+         fullPath: "/auth/sign-up";
+         preLoaderRoute: typeof AuthSignUpRouteImport;
+         parentRoute: typeof AuthRoute;
+      };
+      "/auth/sign-in": {
+         id: "/auth/sign-in";
+         path: "/sign-in";
+         fullPath: "/auth/sign-in";
+         preLoaderRoute: typeof AuthSignInRouteImport;
+         parentRoute: typeof AuthRoute;
+      };
+      "/auth/magic-link": {
+         id: "/auth/magic-link";
+         path: "/magic-link";
+         fullPath: "/auth/magic-link";
+         preLoaderRoute: typeof AuthMagicLinkRouteImport;
+         parentRoute: typeof AuthRoute;
+      };
+      "/auth/forgot-password": {
+         id: "/auth/forgot-password";
+         path: "/forgot-password";
+         fullPath: "/auth/forgot-password";
+         preLoaderRoute: typeof AuthForgotPasswordRouteImport;
+         parentRoute: typeof AuthRoute;
+      };
+      "/auth/email-verification": {
+         id: "/auth/email-verification";
+         path: "/email-verification";
+         fullPath: "/auth/email-verification";
+         preLoaderRoute: typeof AuthEmailVerificationRouteImport;
+         parentRoute: typeof AuthRoute;
+      };
+      "/auth/callback": {
+         id: "/auth/callback";
+         path: "/callback";
+         fullPath: "/auth/callback";
+         preLoaderRoute: typeof AuthCallbackRouteImport;
+         parentRoute: typeof AuthRoute;
+      };
+      "/api/ping": {
+         id: "/api/ping";
+         path: "/api/ping";
+         fullPath: "/api/ping";
+         preLoaderRoute: typeof ApiPingRouteImport;
+         parentRoute: typeof rootRouteImport;
+      };
+      "/api/health": {
+         id: "/api/health";
+         path: "/api/health";
+         fullPath: "/api/health";
+         preLoaderRoute: typeof ApiHealthRouteImport;
+         parentRoute: typeof rootRouteImport;
+      };
+      "/_authenticated/onboarding": {
+         id: "/_authenticated/onboarding";
+         path: "/onboarding";
+         fullPath: "/onboarding";
+         preLoaderRoute: typeof AuthenticatedOnboardingRouteImport;
+         parentRoute: typeof AuthenticatedRoute;
+      };
+      "/_authenticated/$slug": {
+         id: "/_authenticated/$slug";
+         path: "/$slug";
+         fullPath: "/$slug";
+         preLoaderRoute: typeof AuthenticatedSlugRouteImport;
+         parentRoute: typeof AuthenticatedRoute;
+      };
+      "/auth/sign-in/": {
+         id: "/auth/sign-in/";
+         path: "/";
+         fullPath: "/auth/sign-in/";
+         preLoaderRoute: typeof AuthSignInIndexRouteImport;
+         parentRoute: typeof AuthSignInRoute;
+      };
+      "/auth/sign-in/email": {
+         id: "/auth/sign-in/email";
+         path: "/email";
+         fullPath: "/auth/sign-in/email";
+         preLoaderRoute: typeof AuthSignInEmailRouteImport;
+         parentRoute: typeof AuthSignInRoute;
+      };
+      "/api/rpc/$": {
+         id: "/api/rpc/$";
+         path: "/api/rpc/$";
+         fullPath: "/api/rpc/$";
+         preLoaderRoute: typeof ApiRpcSplatRouteImport;
+         parentRoute: typeof rootRouteImport;
+      };
+      "/api/openapi/$": {
+         id: "/api/openapi/$";
+         path: "/api/openapi/$";
+         fullPath: "/api/openapi/$";
+         preLoaderRoute: typeof ApiOpenapiSplatRouteImport;
+         parentRoute: typeof rootRouteImport;
+      };
+      "/api/files/$": {
+         id: "/api/files/$";
+         path: "/api/files/$";
+         fullPath: "/api/files/$";
+         preLoaderRoute: typeof ApiFilesSplatRouteImport;
+         parentRoute: typeof rootRouteImport;
+      };
+      "/api/auth/$": {
+         id: "/api/auth/$";
+         path: "/api/auth/$";
+         fullPath: "/api/auth/$";
+         preLoaderRoute: typeof ApiAuthSplatRouteImport;
+         parentRoute: typeof rootRouteImport;
+      };
+      "/_authenticated/$slug/$teamSlug": {
+         id: "/_authenticated/$slug/$teamSlug";
+         path: "/$teamSlug";
+         fullPath: "/$slug/$teamSlug";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugRouteImport;
+         parentRoute: typeof AuthenticatedSlugRoute;
+      };
+      "/callback/organization/invitation/$invitationId": {
+         id: "/callback/organization/invitation/$invitationId";
+         path: "/callback/organization/invitation/$invitationId";
+         fullPath: "/callback/organization/invitation/$invitationId";
+         preLoaderRoute: typeof CallbackOrganizationInvitationInvitationIdRouteImport;
+         parentRoute: typeof rootRouteImport;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard";
+         path: "";
+         fullPath: "/$slug/$teamSlug";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/transactions": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/transactions";
+         path: "/transactions";
+         fullPath: "/$slug/$teamSlug/transactions";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardTransactionsRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/tags": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/tags";
+         path: "/tags";
+         fullPath: "/$slug/$teamSlug/tags";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardTagsRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings";
+         path: "/settings";
+         fullPath: "/$slug/$teamSlug/settings";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/services": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/services";
+         path: "/services";
+         fullPath: "/$slug/$teamSlug/services";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/credit-cards": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/credit-cards";
+         path: "/credit-cards";
+         fullPath: "/$slug/$teamSlug/credit-cards";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/contacts": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/contacts";
+         path: "/contacts";
+         fullPath: "/$slug/$teamSlug/contacts";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/chat": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/chat";
+         path: "/chat";
+         fullPath: "/$slug/$teamSlug/chat";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardChatRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/categories": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/categories";
+         path: "/categories";
+         fullPath: "/$slug/$teamSlug/categories";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardCategoriesRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts";
+         path: "/bank-accounts";
+         fullPath: "/$slug/$teamSlug/bank-accounts";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings/": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/";
+         path: "/";
+         fullPath: "/$slug/$teamSlug/settings/";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/services/": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/services/";
+         path: "/";
+         fullPath: "/$slug/$teamSlug/services/";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesIndexRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/home/": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/home/";
+         path: "/home";
+         fullPath: "/$slug/$teamSlug/home/";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/contacts/": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/contacts/";
+         path: "/";
+         fullPath: "/$slug/$teamSlug/contacts/";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsIndexRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings/security": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/security";
+         path: "/security";
+         fullPath: "/$slug/$teamSlug/settings/security";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings/profile": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/profile";
+         path: "/profile";
+         fullPath: "/$slug/$teamSlug/settings/profile";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews";
+         path: "/feature-previews";
+         fullPath: "/$slug/$teamSlug/settings/feature-previews";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone";
+         path: "/danger-zone";
+         fullPath: "/$slug/$teamSlug/settings/danger-zone";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings/customization": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/customization";
+         path: "/customization";
+         fullPath: "/$slug/$teamSlug/settings/customization";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/services/meters": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/services/meters";
+         path: "/meters";
+         fullPath: "/$slug/$teamSlug/services/meters";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesMetersRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/services/coupons": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/services/coupons";
+         path: "/coupons";
+         fullPath: "/$slug/$teamSlug/services/coupons";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesCouponsRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/services/benefits": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/services/benefits";
+         path: "/benefits";
+         fullPath: "/$slug/$teamSlug/services/benefits";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesBenefitsRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/services/$serviceId": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/services/$serviceId";
+         path: "/$serviceId";
+         fullPath: "/$slug/$teamSlug/services/$serviceId";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesServiceIdRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/contacts/$contactId": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/contacts/$contactId";
+         path: "/$contactId";
+         fullPath: "/$slug/$teamSlug/contacts/$contactId";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsContactIdRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/";
+         path: "/analytics/insights";
+         fullPath: "/$slug/$teamSlug/analytics/insights/";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/";
+         path: "/analytics/dashboards";
+         fullPath: "/$slug/$teamSlug/analytics/dashboards/";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations";
+         path: "/project/integrations";
+         fullPath: "/$slug/$teamSlug/settings/project/integrations";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general";
+         path: "/project/general";
+         fullPath: "/$slug/$teamSlug/settings/project/general";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone";
+         path: "/project/danger-zone";
+         fullPath: "/$slug/$teamSlug/settings/project/danger-zone";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/api-keys": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/api-keys";
+         path: "/project/api-keys";
+         fullPath: "/$slug/$teamSlug/settings/project/api-keys";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members";
+         path: "/organization/members";
+         fullPath: "/$slug/$teamSlug/settings/organization/members";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general";
+         path: "/organization/general";
+         fullPath: "/$slug/$teamSlug/settings/organization/general";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone";
+         path: "/organization/danger-zone";
+         fullPath: "/$slug/$teamSlug/settings/organization/danger-zone";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId";
+         path: "/analytics/insights/$insightId";
+         fullPath: "/$slug/$teamSlug/analytics/insights/$insightId";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId";
+         path: "/analytics/dashboards/$dashboardId";
+         fullPath: "/$slug/$teamSlug/analytics/dashboards/$dashboardId";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro";
+         path: "/project/products/financeiro";
+         fullPath: "/$slug/$teamSlug/settings/project/products/financeiro";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos";
+         path: "/project/products/contatos";
+         fullPath: "/$slug/$teamSlug/settings/project/products/contatos";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents";
+         path: "/project/products/ai-agents";
+         fullPath: "/$slug/$teamSlug/settings/project/products/ai-agents";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
+      };
+   }
 }
 
 interface AuthenticatedSlugTeamSlugDashboardContactsRouteChildren {
-  AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute
-  AuthenticatedSlugTeamSlugDashboardContactsIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsIndexRoute
+   AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute;
+   AuthenticatedSlugTeamSlugDashboardContactsIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsIndexRoute;
 }
 
 const AuthenticatedSlugTeamSlugDashboardContactsRouteChildren: AuthenticatedSlugTeamSlugDashboardContactsRouteChildren =
-  {
-    AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute:
-      AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute,
-    AuthenticatedSlugTeamSlugDashboardContactsIndexRoute:
-      AuthenticatedSlugTeamSlugDashboardContactsIndexRoute,
-  }
+   {
+      AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute:
+         AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute,
+      AuthenticatedSlugTeamSlugDashboardContactsIndexRoute:
+         AuthenticatedSlugTeamSlugDashboardContactsIndexRoute,
+   };
 
 const AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren =
-  AuthenticatedSlugTeamSlugDashboardContactsRoute._addFileChildren(
-    AuthenticatedSlugTeamSlugDashboardContactsRouteChildren,
-  )
+   AuthenticatedSlugTeamSlugDashboardContactsRoute._addFileChildren(
+      AuthenticatedSlugTeamSlugDashboardContactsRouteChildren,
+   );
 
 interface AuthenticatedSlugTeamSlugDashboardServicesRouteChildren {
-  AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute
-  AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute
-  AuthenticatedSlugTeamSlugDashboardServicesCouponsRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesCouponsRoute
-  AuthenticatedSlugTeamSlugDashboardServicesMetersRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesMetersRoute
-  AuthenticatedSlugTeamSlugDashboardServicesIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesIndexRoute
+   AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute;
+   AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute;
+   AuthenticatedSlugTeamSlugDashboardServicesCouponsRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesCouponsRoute;
+   AuthenticatedSlugTeamSlugDashboardServicesMetersRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesMetersRoute;
+   AuthenticatedSlugTeamSlugDashboardServicesIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesIndexRoute;
 }
 
 const AuthenticatedSlugTeamSlugDashboardServicesRouteChildren: AuthenticatedSlugTeamSlugDashboardServicesRouteChildren =
-  {
-    AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute:
-      AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute,
-    AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute:
-      AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute,
-    AuthenticatedSlugTeamSlugDashboardServicesCouponsRoute:
-      AuthenticatedSlugTeamSlugDashboardServicesCouponsRoute,
-    AuthenticatedSlugTeamSlugDashboardServicesMetersRoute:
-      AuthenticatedSlugTeamSlugDashboardServicesMetersRoute,
-    AuthenticatedSlugTeamSlugDashboardServicesIndexRoute:
-      AuthenticatedSlugTeamSlugDashboardServicesIndexRoute,
-  }
+   {
+      AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute:
+         AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute,
+      AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute:
+         AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute,
+      AuthenticatedSlugTeamSlugDashboardServicesCouponsRoute:
+         AuthenticatedSlugTeamSlugDashboardServicesCouponsRoute,
+      AuthenticatedSlugTeamSlugDashboardServicesMetersRoute:
+         AuthenticatedSlugTeamSlugDashboardServicesMetersRoute,
+      AuthenticatedSlugTeamSlugDashboardServicesIndexRoute:
+         AuthenticatedSlugTeamSlugDashboardServicesIndexRoute,
+   };
 
 const AuthenticatedSlugTeamSlugDashboardServicesRouteWithChildren =
-  AuthenticatedSlugTeamSlugDashboardServicesRoute._addFileChildren(
-    AuthenticatedSlugTeamSlugDashboardServicesRouteChildren,
-  )
+   AuthenticatedSlugTeamSlugDashboardServicesRoute._addFileChildren(
+      AuthenticatedSlugTeamSlugDashboardServicesRouteChildren,
+   );
 
 interface AuthenticatedSlugTeamSlugDashboardSettingsRouteChildren {
-  AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute
-  AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute
-  AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute
-  AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute
-  AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute
-  AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute
-  AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute
-  AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute
-  AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute
-  AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRoute
-  AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute
-  AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute
-  AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute
-  AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute
-  AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute
-  AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute
+   AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute;
+   AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute;
+   AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute;
+   AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute;
+   AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute;
+   AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute;
+   AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute;
+   AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute;
+   AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute;
+   AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRoute;
+   AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute;
+   AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute;
+   AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute;
+   AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute;
+   AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute;
+   AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute;
 }
 
 const AuthenticatedSlugTeamSlugDashboardSettingsRouteChildren: AuthenticatedSlugTeamSlugDashboardSettingsRouteChildren =
-  {
-    AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute,
-    AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute,
-    AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute,
-    AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute,
-    AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute,
-    AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute,
-    AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute,
-    AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute,
-    AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute,
-    AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRoute,
-    AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute,
-    AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute,
-    AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute,
-    AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute,
-    AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute,
-    AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute,
-  }
+   {
+      AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute,
+      AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute,
+      AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute,
+      AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute,
+      AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute,
+      AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute,
+      AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute,
+      AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute,
+      AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute,
+      AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsProjectApiKeysRoute,
+      AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute,
+      AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute,
+      AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute,
+      AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute,
+      AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute,
+      AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute,
+   };
 
 const AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren =
-  AuthenticatedSlugTeamSlugDashboardSettingsRoute._addFileChildren(
-    AuthenticatedSlugTeamSlugDashboardSettingsRouteChildren,
-  )
+   AuthenticatedSlugTeamSlugDashboardSettingsRoute._addFileChildren(
+      AuthenticatedSlugTeamSlugDashboardSettingsRouteChildren,
+   );
 
 interface AuthenticatedSlugTeamSlugDashboardRouteChildren {
-  AuthenticatedSlugTeamSlugDashboardBankAccountsRoute: typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
-  AuthenticatedSlugTeamSlugDashboardCategoriesRoute: typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
-  AuthenticatedSlugTeamSlugDashboardChatRoute: typeof AuthenticatedSlugTeamSlugDashboardChatRoute
-  AuthenticatedSlugTeamSlugDashboardContactsRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren
-  AuthenticatedSlugTeamSlugDashboardCreditCardsRoute: typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
-  AuthenticatedSlugTeamSlugDashboardServicesRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesRouteWithChildren
-  AuthenticatedSlugTeamSlugDashboardSettingsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren
-  AuthenticatedSlugTeamSlugDashboardTagsRoute: typeof AuthenticatedSlugTeamSlugDashboardTagsRoute
-  AuthenticatedSlugTeamSlugDashboardTransactionsRoute: typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute
-  AuthenticatedSlugTeamSlugDashboardHomeIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRoute
-  AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute
-  AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute
-  AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute
-  AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute
+   AuthenticatedSlugTeamSlugDashboardBankAccountsRoute: typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute;
+   AuthenticatedSlugTeamSlugDashboardCategoriesRoute: typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute;
+   AuthenticatedSlugTeamSlugDashboardChatRoute: typeof AuthenticatedSlugTeamSlugDashboardChatRoute;
+   AuthenticatedSlugTeamSlugDashboardContactsRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren;
+   AuthenticatedSlugTeamSlugDashboardCreditCardsRoute: typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute;
+   AuthenticatedSlugTeamSlugDashboardServicesRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesRouteWithChildren;
+   AuthenticatedSlugTeamSlugDashboardSettingsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren;
+   AuthenticatedSlugTeamSlugDashboardTagsRoute: typeof AuthenticatedSlugTeamSlugDashboardTagsRoute;
+   AuthenticatedSlugTeamSlugDashboardTransactionsRoute: typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute;
+   AuthenticatedSlugTeamSlugDashboardHomeIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRoute;
+   AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute;
+   AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute;
+   AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute;
+   AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute;
 }
 
 const AuthenticatedSlugTeamSlugDashboardRouteChildren: AuthenticatedSlugTeamSlugDashboardRouteChildren =
-  {
-    AuthenticatedSlugTeamSlugDashboardBankAccountsRoute:
-      AuthenticatedSlugTeamSlugDashboardBankAccountsRoute,
-    AuthenticatedSlugTeamSlugDashboardCategoriesRoute:
-      AuthenticatedSlugTeamSlugDashboardCategoriesRoute,
-    AuthenticatedSlugTeamSlugDashboardChatRoute:
-      AuthenticatedSlugTeamSlugDashboardChatRoute,
-    AuthenticatedSlugTeamSlugDashboardContactsRoute:
-      AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren,
-    AuthenticatedSlugTeamSlugDashboardCreditCardsRoute:
-      AuthenticatedSlugTeamSlugDashboardCreditCardsRoute,
-    AuthenticatedSlugTeamSlugDashboardServicesRoute:
-      AuthenticatedSlugTeamSlugDashboardServicesRouteWithChildren,
-    AuthenticatedSlugTeamSlugDashboardSettingsRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren,
-    AuthenticatedSlugTeamSlugDashboardTagsRoute:
-      AuthenticatedSlugTeamSlugDashboardTagsRoute,
-    AuthenticatedSlugTeamSlugDashboardTransactionsRoute:
-      AuthenticatedSlugTeamSlugDashboardTransactionsRoute,
-    AuthenticatedSlugTeamSlugDashboardHomeIndexRoute:
-      AuthenticatedSlugTeamSlugDashboardHomeIndexRoute,
-    AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute:
-      AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute,
-    AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute:
-      AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute,
-    AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute:
-      AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute,
-    AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute:
-      AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute,
-  }
+   {
+      AuthenticatedSlugTeamSlugDashboardBankAccountsRoute:
+         AuthenticatedSlugTeamSlugDashboardBankAccountsRoute,
+      AuthenticatedSlugTeamSlugDashboardCategoriesRoute:
+         AuthenticatedSlugTeamSlugDashboardCategoriesRoute,
+      AuthenticatedSlugTeamSlugDashboardChatRoute:
+         AuthenticatedSlugTeamSlugDashboardChatRoute,
+      AuthenticatedSlugTeamSlugDashboardContactsRoute:
+         AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren,
+      AuthenticatedSlugTeamSlugDashboardCreditCardsRoute:
+         AuthenticatedSlugTeamSlugDashboardCreditCardsRoute,
+      AuthenticatedSlugTeamSlugDashboardServicesRoute:
+         AuthenticatedSlugTeamSlugDashboardServicesRouteWithChildren,
+      AuthenticatedSlugTeamSlugDashboardSettingsRoute:
+         AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren,
+      AuthenticatedSlugTeamSlugDashboardTagsRoute:
+         AuthenticatedSlugTeamSlugDashboardTagsRoute,
+      AuthenticatedSlugTeamSlugDashboardTransactionsRoute:
+         AuthenticatedSlugTeamSlugDashboardTransactionsRoute,
+      AuthenticatedSlugTeamSlugDashboardHomeIndexRoute:
+         AuthenticatedSlugTeamSlugDashboardHomeIndexRoute,
+      AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute:
+         AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute,
+      AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute:
+         AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute,
+      AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute:
+         AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute,
+      AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute:
+         AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute,
+   };
 
 const AuthenticatedSlugTeamSlugDashboardRouteWithChildren =
-  AuthenticatedSlugTeamSlugDashboardRoute._addFileChildren(
-    AuthenticatedSlugTeamSlugDashboardRouteChildren,
-  )
+   AuthenticatedSlugTeamSlugDashboardRoute._addFileChildren(
+      AuthenticatedSlugTeamSlugDashboardRouteChildren,
+   );
 
 interface AuthenticatedSlugTeamSlugRouteChildren {
-  AuthenticatedSlugTeamSlugDashboardRoute: typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren
+   AuthenticatedSlugTeamSlugDashboardRoute: typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren;
 }
 
 const AuthenticatedSlugTeamSlugRouteChildren: AuthenticatedSlugTeamSlugRouteChildren =
-  {
-    AuthenticatedSlugTeamSlugDashboardRoute:
-      AuthenticatedSlugTeamSlugDashboardRouteWithChildren,
-  }
+   {
+      AuthenticatedSlugTeamSlugDashboardRoute:
+         AuthenticatedSlugTeamSlugDashboardRouteWithChildren,
+   };
 
 const AuthenticatedSlugTeamSlugRouteWithChildren =
-  AuthenticatedSlugTeamSlugRoute._addFileChildren(
-    AuthenticatedSlugTeamSlugRouteChildren,
-  )
+   AuthenticatedSlugTeamSlugRoute._addFileChildren(
+      AuthenticatedSlugTeamSlugRouteChildren,
+   );
 
 interface AuthenticatedSlugRouteChildren {
-  AuthenticatedSlugTeamSlugRoute: typeof AuthenticatedSlugTeamSlugRouteWithChildren
+   AuthenticatedSlugTeamSlugRoute: typeof AuthenticatedSlugTeamSlugRouteWithChildren;
 }
 
 const AuthenticatedSlugRouteChildren: AuthenticatedSlugRouteChildren = {
-  AuthenticatedSlugTeamSlugRoute: AuthenticatedSlugTeamSlugRouteWithChildren,
-}
+   AuthenticatedSlugTeamSlugRoute: AuthenticatedSlugTeamSlugRouteWithChildren,
+};
 
 const AuthenticatedSlugRouteWithChildren =
-  AuthenticatedSlugRoute._addFileChildren(AuthenticatedSlugRouteChildren)
+   AuthenticatedSlugRoute._addFileChildren(AuthenticatedSlugRouteChildren);
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedSlugRoute: typeof AuthenticatedSlugRouteWithChildren
-  AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
+   AuthenticatedSlugRoute: typeof AuthenticatedSlugRouteWithChildren;
+   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute;
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedSlugRoute: AuthenticatedSlugRouteWithChildren,
-  AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
-}
+   AuthenticatedSlugRoute: AuthenticatedSlugRouteWithChildren,
+   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
+};
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
-  AuthenticatedRouteChildren,
-)
+   AuthenticatedRouteChildren,
+);
 
 interface AuthSignInRouteChildren {
-  AuthSignInEmailRoute: typeof AuthSignInEmailRoute
-  AuthSignInIndexRoute: typeof AuthSignInIndexRoute
+   AuthSignInEmailRoute: typeof AuthSignInEmailRoute;
+   AuthSignInIndexRoute: typeof AuthSignInIndexRoute;
 }
 
 const AuthSignInRouteChildren: AuthSignInRouteChildren = {
-  AuthSignInEmailRoute: AuthSignInEmailRoute,
-  AuthSignInIndexRoute: AuthSignInIndexRoute,
-}
+   AuthSignInEmailRoute: AuthSignInEmailRoute,
+   AuthSignInIndexRoute: AuthSignInIndexRoute,
+};
 
 const AuthSignInRouteWithChildren = AuthSignInRoute._addFileChildren(
-  AuthSignInRouteChildren,
-)
+   AuthSignInRouteChildren,
+);
 
 interface AuthRouteChildren {
-  AuthCallbackRoute: typeof AuthCallbackRoute
-  AuthEmailVerificationRoute: typeof AuthEmailVerificationRoute
-  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
-  AuthMagicLinkRoute: typeof AuthMagicLinkRoute
-  AuthSignInRoute: typeof AuthSignInRouteWithChildren
-  AuthSignUpRoute: typeof AuthSignUpRoute
+   AuthCallbackRoute: typeof AuthCallbackRoute;
+   AuthEmailVerificationRoute: typeof AuthEmailVerificationRoute;
+   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute;
+   AuthMagicLinkRoute: typeof AuthMagicLinkRoute;
+   AuthSignInRoute: typeof AuthSignInRouteWithChildren;
+   AuthSignUpRoute: typeof AuthSignUpRoute;
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
-  AuthCallbackRoute: AuthCallbackRoute,
-  AuthEmailVerificationRoute: AuthEmailVerificationRoute,
-  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
-  AuthMagicLinkRoute: AuthMagicLinkRoute,
-  AuthSignInRoute: AuthSignInRouteWithChildren,
-  AuthSignUpRoute: AuthSignUpRoute,
-}
+   AuthCallbackRoute: AuthCallbackRoute,
+   AuthEmailVerificationRoute: AuthEmailVerificationRoute,
+   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+   AuthMagicLinkRoute: AuthMagicLinkRoute,
+   AuthSignInRoute: AuthSignInRouteWithChildren,
+   AuthSignUpRoute: AuthSignUpRoute,
+};
 
-const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren);
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AuthenticatedRoute: AuthenticatedRouteWithChildren,
-  AuthRoute: AuthRouteWithChildren,
-  ApiHealthRoute: ApiHealthRoute,
-  ApiPingRoute: ApiPingRoute,
-  ApiRubiChatRoute: ApiRubiChatRoute,
-  ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiFilesSplatRoute: ApiFilesSplatRoute,
-  ApiOpenapiSplatRoute: ApiOpenapiSplatRoute,
-  ApiRpcSplatRoute: ApiRpcSplatRoute,
-  CallbackOrganizationInvitationInvitationIdRoute:
-    CallbackOrganizationInvitationInvitationIdRoute,
-}
+   IndexRoute: IndexRoute,
+   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+   AuthRoute: AuthRouteWithChildren,
+   ApiHealthRoute: ApiHealthRoute,
+   ApiPingRoute: ApiPingRoute,
+   ApiAuthSplatRoute: ApiAuthSplatRoute,
+   ApiFilesSplatRoute: ApiFilesSplatRoute,
+   ApiOpenapiSplatRoute: ApiOpenapiSplatRoute,
+   ApiRpcSplatRoute: ApiRpcSplatRoute,
+   CallbackOrganizationInvitationInvitationIdRoute:
+      CallbackOrganizationInvitationInvitationIdRoute,
+};
 export const routeTree = rootRouteImport
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
+   ._addFileChildren(rootRouteChildren)
+   ._addFileTypes<FileRouteTypes>();

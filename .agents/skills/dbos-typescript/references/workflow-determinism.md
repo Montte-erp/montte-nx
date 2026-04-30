@@ -13,15 +13,15 @@ Workflow functions must be deterministic: given the same inputs and step return 
 
 ```typescript
 async function exampleWorkflowFn() {
-  // Random value in workflow breaks recovery!
-  // On replay, Math.random() returns a different value,
-  // so the workflow may take a different branch.
-  const choice = Math.random() > 0.5 ? 1 : 0;
-  if (choice === 0) {
-    await stepOne();
-  } else {
-    await stepTwo();
-  }
+   // Random value in workflow breaks recovery!
+   // On replay, Math.random() returns a different value,
+   // so the workflow may take a different branch.
+   const choice = Math.random() > 0.5 ? 1 : 0;
+   if (choice === 0) {
+      await stepOne();
+   } else {
+      await stepTwo();
+   }
 }
 const exampleWorkflow = DBOS.registerWorkflow(exampleWorkflowFn);
 ```
@@ -30,21 +30,22 @@ const exampleWorkflow = DBOS.registerWorkflow(exampleWorkflowFn);
 
 ```typescript
 async function exampleWorkflowFn() {
-  // Step result is checkpointed - replay uses the saved value
-  const choice = await DBOS.runStep(
-    () => Promise.resolve(Math.random() > 0.5 ? 1 : 0),
-    { name: "generateChoice" }
-  );
-  if (choice === 0) {
-    await stepOne();
-  } else {
-    await stepTwo();
-  }
+   // Step result is checkpointed - replay uses the saved value
+   const choice = await DBOS.runStep(
+      () => Promise.resolve(Math.random() > 0.5 ? 1 : 0),
+      { name: "generateChoice" },
+   );
+   if (choice === 0) {
+      await stepOne();
+   } else {
+      await stepTwo();
+   }
 }
 const exampleWorkflow = DBOS.registerWorkflow(exampleWorkflowFn);
 ```
 
 Non-deterministic operations that must be in steps:
+
 - Random number generation (use `DBOS.randomUUID()` for UUIDs)
 - Getting current time (use `DBOS.now()` for timestamps)
 - Accessing external APIs

@@ -1,10 +1,10 @@
 ---
 name: paradedb-skill
 description: >
-  Expert guidance on ParadeDB full-text search, hybrid search (BM25 + semantic),
-  aggregations, and analytics in Postgres. Use when writing ParadeDB queries,
-  creating BM25 indexes, configuring tokenizers, or implementing
-  Elasticsearch-quality search in Postgres.
+   Expert guidance on ParadeDB full-text search, hybrid search (BM25 + semantic),
+   aggregations, and analytics in Postgres. Use when writing ParadeDB queries,
+   creating BM25 indexes, configuring tokenizers, or implementing
+   Elasticsearch-quality search in Postgres.
 ---
 
 # ParadeDB Skill

@@ -3,7 +3,6 @@ name: tanstack-virtual
 description: Headless UI for virtualizing large element lists at 60FPS in TS/JS, React, Vue, Solid, Svelte, Lit & Angular.
 ---
 
-
 ## Overview
 
 TanStack Virtual provides virtualization logic for rendering only visible items in large lists, grids, and tables. It calculates which items are in the viewport and positions them with absolute positioning, keeping DOM node count minimal regardless of dataset size.
@@ -20,45 +19,45 @@ npm install @tanstack/react-virtual
 ## Core Pattern
 
 ```tsx
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 function VirtualList() {
-  const parentRef = useRef<HTMLDivElement>(null)
+   const parentRef = useRef<HTMLDivElement>(null);
 
-  const virtualizer = useVirtualizer({
-    count: 10000,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 35, // estimated row height in px
-    overscan: 5,
-  })
+   const virtualizer = useVirtualizer({
+      count: 10000,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => 35, // estimated row height in px
+      overscan: 5,
+   });
 
-  return (
-    <div ref={parentRef} style={{ height: '400px', overflow: 'auto' }}>
-      <div
-        style={{
-          height: `${virtualizer.getTotalSize()}px`,
-          width: '100%',
-          position: 'relative',
-        }}
-      >
-        {virtualizer.getVirtualItems().map((virtualItem) => (
-          <div
-            key={virtualItem.key}
+   return (
+      <div ref={parentRef} style={{ height: "400px", overflow: "auto" }}>
+         <div
             style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: `${virtualItem.size}px`,
-              transform: `translateY(${virtualItem.start}px)`,
+               height: `${virtualizer.getTotalSize()}px`,
+               width: "100%",
+               position: "relative",
             }}
-          >
-            Row {virtualItem.index}
-          </div>
-        ))}
+         >
+            {virtualizer.getVirtualItems().map((virtualItem) => (
+               <div
+                  key={virtualItem.key}
+                  style={{
+                     position: "absolute",
+                     top: 0,
+                     left: 0,
+                     width: "100%",
+                     height: `${virtualItem.size}px`,
+                     transform: `translateY(${virtualItem.start}px)`,
+                  }}
+               >
+                  Row {virtualItem.index}
+               </div>
+            ))}
+         </div>
       </div>
-    </div>
-  )
+   );
 }
 ```
 
@@ -66,33 +65,33 @@ function VirtualList() {
 
 ### Required
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `count` | `number` | Total number of items |
-| `getScrollElement` | `() => Element \| null` | Returns scroll container |
-| `estimateSize` | `(index) => number` | Estimated item size (overestimate recommended) |
+| Option             | Type                    | Description                                    |
+| ------------------ | ----------------------- | ---------------------------------------------- |
+| `count`            | `number`                | Total number of items                          |
+| `getScrollElement` | `() => Element \| null` | Returns scroll container                       |
+| `estimateSize`     | `(index) => number`     | Estimated item size (overestimate recommended) |
 
 ### Optional
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `overscan` | `number` | `1` | Extra items rendered beyond viewport |
-| `horizontal` | `boolean` | `false` | Horizontal virtualization |
-| `gap` | `number` | `0` | Gap between items (px) |
-| `lanes` | `number` | `1` | Number of lanes (masonry/grid) |
-| `paddingStart` | `number` | `0` | Padding before first item |
-| `paddingEnd` | `number` | `0` | Padding after last item |
-| `scrollPaddingStart` | `number` | `0` | Offset for scrollTo positioning |
-| `scrollPaddingEnd` | `number` | `0` | Offset for scrollTo positioning |
-| `initialOffset` | `number` | `0` | Starting scroll position |
-| `initialRect` | `Rect` | - | Initial dimensions (SSR) |
-| `enabled` | `boolean` | `true` | Enable/disable |
-| `getItemKey` | `(index) => Key` | `(i) => i` | Stable key for items |
-| `rangeExtractor` | `(range) => number[]` | default | Custom visible indices |
-| `scrollToFn` | `(offset, options, instance) => void` | default | Custom scroll behavior |
-| `measureElement` | `(el, entry, instance) => number` | default | Custom measurement |
-| `onChange` | `(instance, sync) => void` | - | State change callback |
-| `isScrollingResetDelay` | `number` | `150` | Delay before scroll complete |
+| Option                  | Type                                  | Default    | Description                          |
+| ----------------------- | ------------------------------------- | ---------- | ------------------------------------ |
+| `overscan`              | `number`                              | `1`        | Extra items rendered beyond viewport |
+| `horizontal`            | `boolean`                             | `false`    | Horizontal virtualization            |
+| `gap`                   | `number`                              | `0`        | Gap between items (px)               |
+| `lanes`                 | `number`                              | `1`        | Number of lanes (masonry/grid)       |
+| `paddingStart`          | `number`                              | `0`        | Padding before first item            |
+| `paddingEnd`            | `number`                              | `0`        | Padding after last item              |
+| `scrollPaddingStart`    | `number`                              | `0`        | Offset for scrollTo positioning      |
+| `scrollPaddingEnd`      | `number`                              | `0`        | Offset for scrollTo positioning      |
+| `initialOffset`         | `number`                              | `0`        | Starting scroll position             |
+| `initialRect`           | `Rect`                                | -          | Initial dimensions (SSR)             |
+| `enabled`               | `boolean`                             | `true`     | Enable/disable                       |
+| `getItemKey`            | `(index) => Key`                      | `(i) => i` | Stable key for items                 |
+| `rangeExtractor`        | `(range) => number[]`                 | default    | Custom visible indices               |
+| `scrollToFn`            | `(offset, options, instance) => void` | default    | Custom scroll behavior               |
+| `measureElement`        | `(el, entry, instance) => number`     | default    | Custom measurement                   |
+| `onChange`              | `(instance, sync) => void`            | -          | State change callback                |
+| `isScrollingResetDelay` | `number`                              | `150`      | Delay before scroll complete         |
 
 ## Virtualizer API
 
@@ -117,12 +116,12 @@ virtualizer.measure()
 
 ```typescript
 interface VirtualItem {
-  key: Key           // Unique key
-  index: number      // Index in source data
-  start: number      // Pixel offset (use for transform)
-  end: number        // End pixel offset
-  size: number       // Item dimension
-  lane: number       // Lane index (multi-column)
+   key: Key; // Unique key
+   index: number; // Index in source data
+   start: number; // Pixel offset (use for transform)
+   end: number; // End pixel offset
+   size: number; // Item dimension
+   lane: number; // Lane index (multi-column)
 }
 ```
 
@@ -132,28 +131,30 @@ Use `measureElement` ref for items with unknown heights:
 
 ```tsx
 const virtualizer = useVirtualizer({
-  count: items.length,
-  getScrollElement: () => parentRef.current,
-  estimateSize: () => 50, // overestimate
-})
+   count: items.length,
+   getScrollElement: () => parentRef.current,
+   estimateSize: () => 50, // overestimate
+});
 
-{virtualizer.getVirtualItems().map((virtualItem) => (
-  <div
-    key={virtualItem.key}
-    data-index={virtualItem.index}  // REQUIRED for measurement
-    ref={virtualizer.measureElement} // Attach for dynamic measurement
-    style={{
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100%',
-      transform: `translateY(${virtualItem.start}px)`,
-      // Do NOT set fixed height - let content determine it
-    }}
-  >
-    {items[virtualItem.index].content}
-  </div>
-))}
+{
+   virtualizer.getVirtualItems().map((virtualItem) => (
+      <div
+         key={virtualItem.key}
+         data-index={virtualItem.index} // REQUIRED for measurement
+         ref={virtualizer.measureElement} // Attach for dynamic measurement
+         style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            transform: `translateY(${virtualItem.start}px)`,
+            // Do NOT set fixed height - let content determine it
+         }}
+      >
+         {items[virtualItem.index].content}
+      </div>
+   ));
+}
 ```
 
 ## Horizontal Virtualization
@@ -185,142 +186,166 @@ const virtualizer = useVirtualizer({
 
 ```tsx
 function VirtualGrid() {
-  const parentRef = useRef<HTMLDivElement>(null)
+   const parentRef = useRef<HTMLDivElement>(null);
 
-  const rowVirtualizer = useVirtualizer({
-    count: 10000,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 35,
-    overscan: 5,
-  })
+   const rowVirtualizer = useVirtualizer({
+      count: 10000,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => 35,
+      overscan: 5,
+   });
 
-  const columnVirtualizer = useVirtualizer({
-    count: 10000,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 100,
-    horizontal: true,
-    overscan: 5,
-  })
+   const columnVirtualizer = useVirtualizer({
+      count: 10000,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => 100,
+      horizontal: true,
+      overscan: 5,
+   });
 
-  return (
-    <div ref={parentRef} style={{ height: '500px', width: '500px', overflow: 'auto' }}>
-      <div style={{
-        height: `${rowVirtualizer.getTotalSize()}px`,
-        width: `${columnVirtualizer.getTotalSize()}px`,
-        position: 'relative',
-      }}>
-        {rowVirtualizer.getVirtualItems().map((virtualRow) => (
-          <Fragment key={virtualRow.key}>
-            {columnVirtualizer.getVirtualItems().map((virtualColumn) => (
-              <div
-                key={virtualColumn.key}
-                style={{
-                  position: 'absolute',
-                  width: `${virtualColumn.size}px`,
-                  height: `${virtualRow.size}px`,
-                  transform: `translateX(${virtualColumn.start}px) translateY(${virtualRow.start}px)`,
-                }}
-              >
-                Cell {virtualRow.index},{virtualColumn.index}
-              </div>
+   return (
+      <div
+         ref={parentRef}
+         style={{ height: "500px", width: "500px", overflow: "auto" }}
+      >
+         <div
+            style={{
+               height: `${rowVirtualizer.getTotalSize()}px`,
+               width: `${columnVirtualizer.getTotalSize()}px`,
+               position: "relative",
+            }}
+         >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => (
+               <Fragment key={virtualRow.key}>
+                  {columnVirtualizer.getVirtualItems().map((virtualColumn) => (
+                     <div
+                        key={virtualColumn.key}
+                        style={{
+                           position: "absolute",
+                           width: `${virtualColumn.size}px`,
+                           height: `${virtualRow.size}px`,
+                           transform: `translateX(${virtualColumn.start}px) translateY(${virtualRow.start}px)`,
+                        }}
+                     >
+                        Cell {virtualRow.index},{virtualColumn.index}
+                     </div>
+                  ))}
+               </Fragment>
             ))}
-          </Fragment>
-        ))}
+         </div>
       </div>
-    </div>
-  )
+   );
 }
 ```
 
 ## Window Scrolling
 
 ```tsx
-import { useWindowVirtualizer } from '@tanstack/react-virtual'
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 
 function WindowList() {
-  const listRef = useRef<HTMLDivElement>(null)
+   const listRef = useRef<HTMLDivElement>(null);
 
-  const virtualizer = useWindowVirtualizer({
-    count: 10000,
-    estimateSize: () => 45,
-    overscan: 5,
-    scrollMargin: listRef.current?.offsetTop ?? 0,
-  })
+   const virtualizer = useWindowVirtualizer({
+      count: 10000,
+      estimateSize: () => 45,
+      overscan: 5,
+      scrollMargin: listRef.current?.offsetTop ?? 0,
+   });
 
-  return (
-    <div ref={listRef}>
-      <div style={{
-        height: `${virtualizer.getTotalSize()}px`,
-        position: 'relative',
-      }}>
-        {virtualizer.getVirtualItems().map((item) => (
-          <div
-            key={item.key}
+   return (
+      <div ref={listRef}>
+         <div
             style={{
-              position: 'absolute',
-              height: `${item.size}px`,
-              transform: `translateY(${item.start - virtualizer.options.scrollMargin}px)`,
+               height: `${virtualizer.getTotalSize()}px`,
+               position: "relative",
             }}
-          >
-            Row {item.index}
-          </div>
-        ))}
+         >
+            {virtualizer.getVirtualItems().map((item) => (
+               <div
+                  key={item.key}
+                  style={{
+                     position: "absolute",
+                     height: `${item.size}px`,
+                     transform: `translateY(${item.start - virtualizer.options.scrollMargin}px)`,
+                  }}
+               >
+                  Row {item.index}
+               </div>
+            ))}
+         </div>
       </div>
-    </div>
-  )
+   );
 }
 ```
 
 ## Infinite Scrolling
 
 ```tsx
-import { useVirtualizer } from '@tanstack/react-virtual'
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 function InfiniteList() {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ['items'],
-    queryFn: ({ pageParam = 0 }) => fetchItems(pageParam),
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-  })
+   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+      useInfiniteQuery({
+         queryKey: ["items"],
+         queryFn: ({ pageParam = 0 }) => fetchItems(pageParam),
+         getNextPageParam: (lastPage) => lastPage.nextCursor,
+      });
 
-  const allItems = data?.pages.flatMap((page) => page.items) ?? []
+   const allItems = data?.pages.flatMap((page) => page.items) ?? [];
 
-  const virtualizer = useVirtualizer({
-    count: hasNextPage ? allItems.length + 1 : allItems.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 50,
-    overscan: 5,
-  })
+   const virtualizer = useVirtualizer({
+      count: hasNextPage ? allItems.length + 1 : allItems.length,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => 50,
+      overscan: 5,
+   });
 
-  useEffect(() => {
-    const items = virtualizer.getVirtualItems()
-    const lastItem = items[items.length - 1]
-    if (lastItem && lastItem.index >= allItems.length - 1 && hasNextPage && !isFetchingNextPage) {
-      fetchNextPage()
-    }
-  }, [virtualizer.getVirtualItems(), hasNextPage, isFetchingNextPage, allItems.length])
+   useEffect(() => {
+      const items = virtualizer.getVirtualItems();
+      const lastItem = items[items.length - 1];
+      if (
+         lastItem &&
+         lastItem.index >= allItems.length - 1 &&
+         hasNextPage &&
+         !isFetchingNextPage
+      ) {
+         fetchNextPage();
+      }
+   }, [
+      virtualizer.getVirtualItems(),
+      hasNextPage,
+      isFetchingNextPage,
+      allItems.length,
+   ]);
 
-  // Render virtual items, show loader row for last item if loading
+   // Render virtual items, show loader row for last item if loading
 }
 ```
 
 ## Sticky Items
 
 ```tsx
-import { defaultRangeExtractor, Range } from '@tanstack/react-virtual'
+import { defaultRangeExtractor, Range } from "@tanstack/react-virtual";
 
-const stickyIndexes = [0, 10, 20, 30] // Header indices
+const stickyIndexes = [0, 10, 20, 30]; // Header indices
 
 const virtualizer = useVirtualizer({
-  count: 1000,
-  getScrollElement: () => parentRef.current,
-  estimateSize: () => 50,
-  rangeExtractor: useCallback((range: Range) => {
-    const next = new Set([...stickyIndexes, ...defaultRangeExtractor(range)])
-    return [...next].sort((a, b) => a - b)
-  }, [stickyIndexes]),
-})
+   count: 1000,
+   getScrollElement: () => parentRef.current,
+   estimateSize: () => 50,
+   rangeExtractor: useCallback(
+      (range: Range) => {
+         const next = new Set([
+            ...stickyIndexes,
+            ...defaultRangeExtractor(range),
+         ]);
+         return [...next].sort((a, b) => a - b);
+      },
+      [stickyIndexes],
+   ),
+});
 
 // Render sticky items with position: sticky; top: 0; zIndex: 1
 ```
@@ -329,18 +354,18 @@ const virtualizer = useVirtualizer({
 
 ```tsx
 const virtualizer = useVirtualizer({
-  scrollToFn: (offset, { behavior }, instance) => {
-    if (behavior === 'smooth') {
-      // Custom easing animation
-      instance.scrollElement?.scrollTo({ top: offset, behavior: 'smooth' })
-    } else {
-      instance.scrollElement?.scrollTo({ top: offset })
-    }
-  },
-})
+   scrollToFn: (offset, { behavior }, instance) => {
+      if (behavior === "smooth") {
+         // Custom easing animation
+         instance.scrollElement?.scrollTo({ top: offset, behavior: "smooth" });
+      } else {
+         instance.scrollElement?.scrollTo({ top: offset });
+      }
+   },
+});
 
 // Usage
-virtualizer.scrollToIndex(500, { align: 'center', behavior: 'smooth' })
+virtualizer.scrollToIndex(500, { align: "center", behavior: "smooth" });
 ```
 
 ## Best Practices
@@ -354,8 +379,8 @@ virtualizer.scrollToIndex(500, { align: 'center', behavior: 'smooth' })
 7. **Use `gap` option** instead of margins (margins interfere with measurement)
 8. **Use `paddingStart/End`** instead of CSS padding on the container
 9. **Use `enabled: false`** to pause when the list is hidden
-10. **Memoize callbacks** (`estimateSize`, `getItemKey`, `rangeExtractor`)
-11. **Use `will-change: transform`** CSS on items for GPU acceleration
+10.   **Memoize callbacks** (`estimateSize`, `getItemKey`, `rangeExtractor`)
+11.   **Use `will-change: transform`** CSS on items for GPU acceleration
 
 ## Common Pitfalls
 

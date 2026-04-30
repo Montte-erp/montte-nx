@@ -21,15 +21,15 @@ bun add -D eslint-plugin-neverthrow
 
 ## Mental Model
 
-| Throwing style                                  | neverthrow style                                   |
-| ----------------------------------------------- | -------------------------------------------------- |
-| `throw new Error("bad")`                        | `return err(new AppError("bad"))`                  |
-| `try { x } catch (e) { ... }`                   | `fromPromise(x, (e) => mapErr(e))`                 |
-| `const v = await p; doThing(v)`                 | `p.andThen(doThing)` or `yield* p` in `safeTry`    |
-| `if (e) throw; return x`                        | `ok(x)` / `err(e)`                                 |
-| `.catch(e => fallback)`                         | `.orElse(e => ok(fallback))`                       |
-| Side effects on success                        | `.andTee(fn)` — errors ignored, value passes       |
-| Side effects then continue                      | `.andThrough(fn)` — errors short-circuit          |
+| Throwing style                  | neverthrow style                                |
+| ------------------------------- | ----------------------------------------------- |
+| `throw new Error("bad")`        | `return err(new AppError("bad"))`               |
+| `try { x } catch (e) { ... }`   | `fromPromise(x, (e) => mapErr(e))`              |
+| `const v = await p; doThing(v)` | `p.andThen(doThing)` or `yield* p` in `safeTry` |
+| `if (e) throw; return x`        | `ok(x)` / `err(e)`                              |
+| `.catch(e => fallback)`         | `.orElse(e => ok(fallback))`                    |
+| Side effects on success         | `.andTee(fn)` — errors ignored, value passes    |
+| Side effects then continue      | `.andThrough(fn)` — errors short-circuit        |
 
 Result is **not thenable**; `ResultAsync` **is** thenable (`await` yields a `Result`).
 
@@ -37,14 +37,19 @@ Result is **not thenable**; `ResultAsync` **is** thenable (`await` yields a `Res
 
 ```typescript
 import {
-   ok, err,                       // sync constructors
-   Ok, Err, Result,                // sync types
-   okAsync, errAsync, ResultAsync, // async constructors + type
-   fromThrowable,                  // sync wrap
-   fromAsyncThrowable,             // async wrap
-   fromPromise,                    // Promise<T> → ResultAsync<T, E>
-   fromSafePromise,                // Promise that can't throw
-   safeTry,                        // generator-based do-notation
+   ok,
+   err, // sync constructors
+   Ok,
+   Err,
+   Result, // sync types
+   okAsync,
+   errAsync,
+   ResultAsync, // async constructors + type
+   fromThrowable, // sync wrap
+   fromAsyncThrowable, // async wrap
+   fromPromise, // Promise<T> → ResultAsync<T, E>
+   fromSafePromise, // Promise that can't throw
+   safeTry, // generator-based do-notation
 } from "neverthrow";
 ```
 
@@ -58,30 +63,30 @@ err<T, E>(error: E): Err<T, E>
 ```
 
 ```typescript
-const r1 = ok({ id: "123" });   // Ok
-const r2 = err("missing");      // Err
-r1.isOk();                      // true
-r2.isErr();                     // true
+const r1 = ok({ id: "123" }); // Ok
+const r2 = err("missing"); // Err
+r1.isOk(); // true
+r2.isErr(); // true
 ```
 
 ### Core methods
 
-| Method              | Signature                                                         | Purpose                                                                   |
-| ------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `isOk()`            | `() => boolean` (type guard for `Ok`)                             | Branch on success.                                                        |
-| `isErr()`           | `() => boolean` (type guard for `Err`)                            | Branch on failure.                                                        |
-| `map`               | `<U>(fn: (t: T) => U) => Result<U, E>`                            | Transform `Ok` value. Leaves `Err` unchanged.                             |
-| `mapErr`            | `<F>(fn: (e: E) => F) => Result<T, F>`                            | Transform `Err`. Leaves `Ok` unchanged.                                   |
-| `unwrapOr`          | `(fallback: T) => T`                                              | Extract `Ok` value or return fallback.                                    |
-| `andThen`           | `<U, F>(fn: (t: T) => Result<U, F>) => Result<U, E \| F>`         | Chain fallible sync op. Flattens nested `Result`.                         |
-| `asyncAndThen`      | `<U, F>(fn: (t: T) => ResultAsync<U, F>) => ResultAsync<U, E\|F>` | Chain into async world.                                                   |
-| `orElse`            | `<U, A>(fn: (e: E) => Result<U, A>) => Result<U\|T, A>`           | Error recovery; may convert `Err` → `Ok`.                                 |
-| `match`             | `<A, B>(onOk: (t)=>A, onErr: (e)=>B) => A\|B`                     | Fold both branches to a single value. Callbacks may return different types; result is `A \| B`.  |
-| `asyncMap`          | `<U>(fn: (t: T) => Promise<U>) => ResultAsync<U, E>`              | Map to async; result becomes `ResultAsync`.                               |
-| `andTee`            | `(fn: (t: T) => unknown) => Result<T, E>`                         | Side-effect on `Ok`; passed-in errors **swallowed** (e.g. logging).       |
-| `orTee`             | `(fn: (e: E) => unknown) => Result<T, E>`                         | Side-effect on `Err`; passed-in errors swallowed.                         |
-| `andThrough`        | `<F>(fn: (t: T) => Result<unknown, F>) => Result<T, E\|F>`        | Side-effect on `Ok`; **errors propagate**. Value passes through.          |
-| `asyncAndThrough`   | `<F>(fn: (t) => ResultAsync<unknown, F>) => ResultAsync<T, E\|F>` | Async variant of `andThrough`.                                            |
+| Method            | Signature                                                         | Purpose                                                                                         |
+| ----------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `isOk()`          | `() => boolean` (type guard for `Ok`)                             | Branch on success.                                                                              |
+| `isErr()`         | `() => boolean` (type guard for `Err`)                            | Branch on failure.                                                                              |
+| `map`             | `<U>(fn: (t: T) => U) => Result<U, E>`                            | Transform `Ok` value. Leaves `Err` unchanged.                                                   |
+| `mapErr`          | `<F>(fn: (e: E) => F) => Result<T, F>`                            | Transform `Err`. Leaves `Ok` unchanged.                                                         |
+| `unwrapOr`        | `(fallback: T) => T`                                              | Extract `Ok` value or return fallback.                                                          |
+| `andThen`         | `<U, F>(fn: (t: T) => Result<U, F>) => Result<U, E \| F>`         | Chain fallible sync op. Flattens nested `Result`.                                               |
+| `asyncAndThen`    | `<U, F>(fn: (t: T) => ResultAsync<U, F>) => ResultAsync<U, E\|F>` | Chain into async world.                                                                         |
+| `orElse`          | `<U, A>(fn: (e: E) => Result<U, A>) => Result<U\|T, A>`           | Error recovery; may convert `Err` → `Ok`.                                                       |
+| `match`           | `<A, B>(onOk: (t)=>A, onErr: (e)=>B) => A\|B`                     | Fold both branches to a single value. Callbacks may return different types; result is `A \| B`. |
+| `asyncMap`        | `<U>(fn: (t: T) => Promise<U>) => ResultAsync<U, E>`              | Map to async; result becomes `ResultAsync`.                                                     |
+| `andTee`          | `(fn: (t: T) => unknown) => Result<T, E>`                         | Side-effect on `Ok`; passed-in errors **swallowed** (e.g. logging).                             |
+| `orTee`           | `(fn: (e: E) => unknown) => Result<T, E>`                         | Side-effect on `Err`; passed-in errors swallowed.                                               |
+| `andThrough`      | `<F>(fn: (t: T) => Result<unknown, F>) => Result<T, E\|F>`        | Side-effect on `Ok`; **errors propagate**. Value passes through.                                |
+| `asyncAndThrough` | `<F>(fn: (t) => ResultAsync<unknown, F>) => ResultAsync<T, E\|F>` | Async variant of `andThrough`.                                                                  |
 
 ### Static class methods
 
@@ -145,13 +150,14 @@ Async version — use `async function*`:
 function computation(): Promise<Result<number, string>> {
    return safeTry<number, string>(async function* () {
       const a = yield* (await promiseOfResult()).mapErr((e) => `1: ${e}`);
-      const b = yield* resultAsyncValue().mapErr((e) => `2: ${e}`);   // ResultAsync works directly
+      const b = yield* resultAsyncValue().mapErr((e) => `2: ${e}`); // ResultAsync works directly
       return ok(a + b);
    });
 }
 ```
 
 Rules:
+
 1. Entire block is a generator function.
 2. `yield* <RESULT>` inside aborts on `Err` or unwraps to `T`.
 3. Return `ok(...)` / `err(...)` from the generator.
@@ -168,15 +174,25 @@ Wrap DB work in `fromPromise` with an async IIFE; inside, use `throw AppError.*(
 import { fromPromise, ok, err } from "neverthrow";
 import { AppError, validateInput } from "@core/logging/errors";
 
-export function createCategory(db: DatabaseInstance, teamId: string, data: CreateCategoryInput) {
+export function createCategory(
+   db: DatabaseInstance,
+   teamId: string,
+   data: CreateCategoryInput,
+) {
    return fromPromise(
       (async () => {
          const validated = validateInput(createCategorySchema, data);
-         const [row] = await db.insert(categories).values({ ...validated, teamId }).returning();
+         const [row] = await db
+            .insert(categories)
+            .values({ ...validated, teamId })
+            .returning();
          if (!row) throw AppError.database("Failed to create category");
          return row;
       })(),
-      (e) => (e instanceof AppError ? e : AppError.database("Failed to create category", { cause: e })),
+      (e) =>
+         e instanceof AppError
+            ? e
+            : AppError.database("Failed to create category", { cause: e }),
    );
 }
 ```
@@ -184,10 +200,18 @@ export function createCategory(db: DatabaseInstance, teamId: string, data: Creat
 Chain dependent ops with `.andThen(...)`:
 
 ```typescript
-export function archiveCategory(db: DatabaseInstance, id: string, teamId: string) {
+export function archiveCategory(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
    return ensureCategoryOwnership(db, id, teamId).andThen(() =>
       fromPromise(
-         db.update(categories).set({ archivedAt: dayjs().toDate() }).where(eq(categories.id, id)).returning(),
+         db
+            .update(categories)
+            .set({ archivedAt: dayjs().toDate() })
+            .where(eq(categories.id, id))
+            .returning(),
          (e) => AppError.database("Failed to archive category", { cause: e }),
       ),
    );
@@ -205,7 +229,9 @@ import { WebAppError } from "@core/logging/errors";
 
 return (await createCategory(context.db, context.teamId, input)).match(
    (category) => category,
-   (e) => { throw WebAppError.fromAppError(e); },
+   (e) => {
+      throw WebAppError.fromAppError(e);
+   },
 );
 ```
 
@@ -227,16 +253,24 @@ import { fromPromise } from "neverthrow";
 import { ORPCError } from "@orpc/client";
 
 onSubmitAsync: async ({ value }) => {
-   const result = await fromPromise(createMutation.mutateAsync(value), (e) => e);
+   const result = await fromPromise(
+      createMutation.mutateAsync(value),
+      (e) => e,
+   );
    if (result.isErr()) {
-      if (result.error instanceof ORPCError && result.error.code === "CONFLICT") {
+      if (
+         result.error instanceof ORPCError &&
+         result.error.code === "CONFLICT"
+      ) {
          return { fields: { name: "Já existe um registro com esse valor." } };
       }
-      return result.error instanceof Error ? result.error.message : "Erro inesperado.";
+      return result.error instanceof Error
+         ? result.error.message
+         : "Erro inesperado.";
    }
    toast.success("Salvo com sucesso.");
    return null;
-}
+};
 ```
 
 For simple forms without field-level server conflicts, use plain `onSubmit` + `toast.error` — `fromPromise` only required when discriminating error types.
@@ -250,7 +284,9 @@ Workflow steps must use repositories (already return `ResultAsync`). Chain with 
 ### Convert a throwing third-party call
 
 ```typescript
-const safeParse = Result.fromThrowable(JSON.parse, (e) => AppError.validation("Invalid JSON", { cause: e }));
+const safeParse = Result.fromThrowable(JSON.parse, (e) =>
+   AppError.validation("Invalid JSON", { cause: e }),
+);
 const result = safeParse(untrustedJson); // Result<unknown, AppError>
 ```
 
@@ -301,8 +337,8 @@ const flat = nested.andThen((inner) => inner); // Result<number, E1 | E2>
 
 ```typescript
 validateInput(schema, data)
-   .andTee((v) => logger.info({ v }, "validated"))    // log, continue regardless
-   .andThrough((v) => auditLog(v))                    // fail if auditLog fails
+   .andTee((v) => logger.info({ v }, "validated")) // log, continue regardless
+   .andThrough((v) => auditLog(v)) // fail if auditLog fails
    .andThen(insertUser);
 ```
 
@@ -317,7 +353,7 @@ validateInput(schema, data)
 7. **TypeScript narrowing** — after `if (r.isErr()) return ...`, `r` narrows to `Ok<T, E>` and `r.value` is accessible.
 8. **No `try/catch` to convert** — if you find yourself wrapping existing neverthrow code in `try/catch`, it's wrong. Use `.match` / `.mapErr`.
 9. **`safeTry` + Promise<Result>** — must `await` before `yield*`. `ResultAsync` can be `yield*`'d directly.
-10. **Error union explosion** — chaining `.andThen` across many different error types produces wide union. Use `.mapErr` early to normalize to a single error type (Montte: `AppError`).
+10.   **Error union explosion** — chaining `.andThen` across many different error types produces wide union. Use `.mapErr` early to normalize to a single error type (Montte: `AppError`).
 
 ## Testing
 
@@ -343,20 +379,20 @@ Forces every `Result` to be consumed via `.match`, `.unwrapOr`, or `._unsafeUnwr
 
 ## Quick Reference — When to use what
 
-| Need                                                        | Tool                                                  |
-| ----------------------------------------------------------- | ----------------------------------------------------- |
-| Wrap throwing sync fn                                       | `Result.fromThrowable(fn, errFn)`                     |
-| Wrap Promise                                                | `ResultAsync.fromPromise(p, errFn)`                   |
-| Wrap Promise-returning fn (sync throws possible)            | `ResultAsync.fromThrowable(fn, errFn)`                |
-| Chain sync fallible op                                      | `.andThen(fn)`                                        |
-| Chain async fallible op                                     | `.andThen(fn)` on `ResultAsync`; `asyncAndThen` on `Result` |
-| Transform Ok value                                          | `.map(fn)`                                            |
-| Transform Err                                               | `.mapErr(fn)`                                         |
-| Recover from Err                                            | `.orElse(fn)`                                         |
-| Fold to single value                                        | `.match(onOk, onErr)`                                 |
-| Side-effect, ignore inner failure                           | `.andTee(fn)` / `.orTee(fn)`                          |
-| Side-effect, propagate inner failure                        | `.andThrough(fn)` / `.asyncAndThrough(fn)`            |
-| Run many in parallel, stop on first Err                     | `Result.combine([...])` / `ResultAsync.combine([...])` |
-| Run many in parallel, collect all Errs                      | `.combineWithAllErrors([...])`                        |
-| Eliminate `if (r.isErr()) return` boilerplate               | `safeTry(function*() { ... })`                        |
-| Default value on Err                                        | `.unwrapOr(default)`                                  |
+| Need                                             | Tool                                                        |
+| ------------------------------------------------ | ----------------------------------------------------------- |
+| Wrap throwing sync fn                            | `Result.fromThrowable(fn, errFn)`                           |
+| Wrap Promise                                     | `ResultAsync.fromPromise(p, errFn)`                         |
+| Wrap Promise-returning fn (sync throws possible) | `ResultAsync.fromThrowable(fn, errFn)`                      |
+| Chain sync fallible op                           | `.andThen(fn)`                                              |
+| Chain async fallible op                          | `.andThen(fn)` on `ResultAsync`; `asyncAndThen` on `Result` |
+| Transform Ok value                               | `.map(fn)`                                                  |
+| Transform Err                                    | `.mapErr(fn)`                                               |
+| Recover from Err                                 | `.orElse(fn)`                                               |
+| Fold to single value                             | `.match(onOk, onErr)`                                       |
+| Side-effect, ignore inner failure                | `.andTee(fn)` / `.orTee(fn)`                                |
+| Side-effect, propagate inner failure             | `.andThrough(fn)` / `.asyncAndThrough(fn)`                  |
+| Run many in parallel, stop on first Err          | `Result.combine([...])` / `ResultAsync.combine([...])`      |
+| Run many in parallel, collect all Errs           | `.combineWithAllErrors([...])`                              |
+| Eliminate `if (r.isErr()) return` boilerplate    | `safeTry(function*() { ... })`                              |
+| Default value on Err                             | `.unwrapOr(default)`                                        |

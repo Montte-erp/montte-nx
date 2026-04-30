@@ -13,8 +13,8 @@ Assign a workflow ID to ensure a workflow executes only once, even if called mul
 
 ```typescript
 async function processPaymentFn(orderId: string, amount: number) {
-  await DBOS.runStep(() => chargeCard(amount), { name: "chargeCard" });
-  await DBOS.runStep(() => updateOrder(orderId), { name: "updateOrder" });
+   await DBOS.runStep(() => chargeCard(amount), { name: "chargeCard" });
+   await DBOS.runStep(() => updateOrder(orderId), { name: "updateOrder" });
 }
 const processPayment = DBOS.registerWorkflow(processPaymentFn);
 
@@ -27,8 +27,8 @@ await processPayment("order-123", 50); // Double charge!
 
 ```typescript
 async function processPaymentFn(orderId: string, amount: number) {
-  await DBOS.runStep(() => chargeCard(amount), { name: "chargeCard" });
-  await DBOS.runStep(() => updateOrder(orderId), { name: "updateOrder" });
+   await DBOS.runStep(() => chargeCard(amount), { name: "chargeCard" });
+   await DBOS.runStep(() => updateOrder(orderId), { name: "updateOrder" });
 }
 const processPayment = DBOS.registerWorkflow(processPaymentFn);
 
@@ -44,8 +44,8 @@ Access the current workflow ID inside a workflow:
 
 ```typescript
 async function myWorkflowFn() {
-  const currentID = DBOS.workflowID;
-  console.log(`Running workflow: ${currentID}`);
+   const currentID = DBOS.workflowID;
+   console.log(`Running workflow: ${currentID}`);
 }
 ```
 

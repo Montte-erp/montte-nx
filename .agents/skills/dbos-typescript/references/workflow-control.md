@@ -40,15 +40,11 @@ const steps = await DBOS.listWorkflowSteps(workflowID);
 // steps[i].functionID is the step's ID
 
 // Fork from a specific step
-const forkHandle = await DBOS.forkWorkflow<string>(
-  workflowID,
-  startStep,
-  {
-    newWorkflowID: "new-wf-id",
-    applicationVersion: "2.0.0",
-    timeoutMS: 60000,
-  }
-);
+const forkHandle = await DBOS.forkWorkflow<string>(workflowID, startStep, {
+   newWorkflowID: "new-wf-id",
+   applicationVersion: "2.0.0",
+   timeoutMS: 60000,
+});
 const forkResult = await forkHandle.getResult();
 ```
 

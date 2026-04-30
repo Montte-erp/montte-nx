@@ -22,22 +22,30 @@ DBOS.registerScheduled(myWorkflow, { crontab: "*/30 * * * * *" });
 import { DBOS } from "@dbos-inc/dbos-sdk";
 
 async function everyFiveMinutesFn(scheduledTime: Date, context: unknown) {
-  DBOS.logger.info(`Running task scheduled for ${scheduledTime}`);
+   DBOS.logger.info(`Running task scheduled for ${scheduledTime}`);
 }
 const everyFiveMinutes = DBOS.registerWorkflow(everyFiveMinutesFn);
 
 async function main() {
-  DBOS.setConfig({ name: "my-app", systemDatabaseUrl: process.env.DBOS_SYSTEM_DATABASE_URL });
-  await DBOS.launch();
+   DBOS.setConfig({
+      name: "my-app",
+      systemDatabaseUrl: process.env.DBOS_SYSTEM_DATABASE_URL,
+   });
+   await DBOS.launch();
 
-  // applySchedules is idempotent - safe to call on every restart
-  await DBOS.applySchedules([
-    { scheduleName: "my-task", workflowFn: everyFiveMinutes, schedule: "*/5 * * * *" },
-  ]);
+   // applySchedules is idempotent - safe to call on every restart
+   await DBOS.applySchedules([
+      {
+         scheduleName: "my-task",
+         workflowFn: everyFiveMinutes,
+         schedule: "*/5 * * * *",
+      },
+   ]);
 }
 ```
 
 Scheduled workflow requirements:
+
 - Must accept two arguments: `scheduledTime` (`Date`) and `context` (any serializable value)
 - Not supported for workflows on instantiated objects
 - `createSchedule` fails if the schedule already exists; use `applySchedules` for startup
@@ -48,26 +56,26 @@ Use `createSchedule` for schedules created dynamically at runtime:
 
 ```typescript
 async function customerWorkflowFn(scheduledTime: Date, customerId: string) {
-  // ...
+   // ...
 }
 const customerWorkflow = DBOS.registerWorkflow(customerWorkflowFn);
 
 async function onCustomerRegistration(customerId: string) {
-  await DBOS.createSchedule({
-    scheduleName: `customer-${customerId}-sync`,
-    workflowFn: customerWorkflow,
-    schedule: "0 * * * *",
-    context: customerId,
-  });
+   await DBOS.createSchedule({
+      scheduleName: `customer-${customerId}-sync`,
+      workflowFn: customerWorkflow,
+      schedule: "0 * * * *",
+      context: customerId,
+   });
 }
 ```
 
 ### Managing Schedules at Runtime
 
 ```typescript
-await DBOS.pauseSchedule("my-task");        // Stop firing
-await DBOS.resumeSchedule("my-task");       // Resume firing
-await DBOS.deleteSchedule("my-task");       // Remove entirely
+await DBOS.pauseSchedule("my-task"); // Stop firing
+await DBOS.resumeSchedule("my-task"); // Resume firing
+await DBOS.deleteSchedule("my-task"); // Remove entirely
 
 const schedules = await DBOS.listSchedules({ status: "ACTIVE" });
 const schedule = await DBOS.getSchedule("my-task");
@@ -79,9 +87,9 @@ Backfill missed executions (already-executed times are automatically skipped):
 
 ```typescript
 await DBOS.backfillSchedule(
-  "my-task",
-  new Date("2025-01-01T00:00:00Z"),
-  new Date("2025-01-02T00:00:00Z"),
+   "my-task",
+   new Date("2025-01-01T00:00:00Z"),
+   new Date("2025-01-02T00:00:00Z"),
 );
 ```
 

@@ -10,36 +10,36 @@ Comprehensive reference for defining PostgreSQL schemas with Drizzle ORM.
 
 ```typescript
 import {
-  pgTable,
-  uuid,
-  text,
-  varchar,
-  char,
-  integer,
-  smallint,
-  bigint,
-  serial,
-  smallserial,
-  bigserial,
-  boolean,
-  timestamp,
-  date,
-  time,
-  interval,
-  numeric,
-  decimal,
-  real,
-  doublePrecision,
-  json,
-  jsonb,
-  pgEnum,
-  index,
-  uniqueIndex,
-  primaryKey,
-  foreignKey,
-  check,
-} from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
+   pgTable,
+   uuid,
+   text,
+   varchar,
+   char,
+   integer,
+   smallint,
+   bigint,
+   serial,
+   smallserial,
+   bigserial,
+   boolean,
+   timestamp,
+   date,
+   time,
+   interval,
+   numeric,
+   decimal,
+   real,
+   doublePrecision,
+   json,
+   jsonb,
+   pgEnum,
+   index,
+   uniqueIndex,
+   primaryKey,
+   foreignKey,
+   check,
+} from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 ```
 
 ---
@@ -208,14 +208,14 @@ import { sql } from 'drizzle-orm';
 
 ```typescript
 // Define enum type
-export const statusEnum = pgEnum('status', ['pending', 'active', 'archived']);
-export const roleEnum = pgEnum('user_role', ['admin', 'user', 'guest']);
+export const statusEnum = pgEnum("status", ["pending", "active", "archived"]);
+export const roleEnum = pgEnum("user_role", ["admin", "user", "guest"]);
 
 // Use in table
-export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  status: statusEnum('status').notNull().default('pending'),
-  role: roleEnum('role').notNull().default('user'),
+export const users = pgTable("users", {
+   id: uuid("id").primaryKey().defaultRandom(),
+   status: statusEnum("status").notNull().default("pending"),
+   role: roleEnum("role").notNull().default("user"),
 });
 ```
 
@@ -223,8 +223,10 @@ export const users = pgTable('users', {
 
 ```typescript
 // Check constraint instead of pg enum (easier to modify)
-export const users = pgTable('users', {
-  status: text('status', { enum: ['pending', 'active', 'archived'] }).notNull(),
+export const users = pgTable("users", {
+   status: text("status", {
+      enum: ["pending", "active", "archived"],
+   }).notNull(),
 });
 ```
 
@@ -276,13 +278,17 @@ email: text('email').notNull().unique(),
 ### Check Constraints
 
 ```typescript
-export const products = pgTable('products', {
-  price: numeric('price', { precision: 10, scale: 2 }).notNull(),
-  quantity: integer('quantity').notNull(),
-}, (table) => [
-  check('price_positive', sql`${table.price} > 0`),
-  check('quantity_non_negative', sql`${table.quantity} >= 0`),
-]);
+export const products = pgTable(
+   "products",
+   {
+      price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+      quantity: integer("quantity").notNull(),
+   },
+   (table) => [
+      check("price_positive", sql`${table.price} > 0`),
+      check("quantity_non_negative", sql`${table.quantity} >= 0`),
+   ],
+);
 ```
 
 ---
@@ -292,11 +298,11 @@ export const products = pgTable('products', {
 ### Inline Reference
 
 ```typescript
-export const posts = pgTable('posts', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  authorId: uuid('author_id')
-    .notNull()
-    .references(() => users.id),
+export const posts = pgTable("posts", {
+   id: uuid("id").primaryKey().defaultRandom(),
+   authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
 });
 ```
 
@@ -314,28 +320,32 @@ authorId: uuid('author_id')
 ### Self-Referential
 
 ```typescript
-import { AnyPgColumn } from 'drizzle-orm/pg-core';
+import { AnyPgColumn } from "drizzle-orm/pg-core";
 
-export const categories = pgTable('categories', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  name: text('name').notNull(),
-  parentId: uuid('parent_id').references((): AnyPgColumn => categories.id),
+export const categories = pgTable("categories", {
+   id: uuid("id").primaryKey().defaultRandom(),
+   name: text("name").notNull(),
+   parentId: uuid("parent_id").references((): AnyPgColumn => categories.id),
 });
 ```
 
 ### Composite Foreign Key
 
 ```typescript
-export const orderItems = pgTable('order_items', {
-  orderId: uuid('order_id').notNull(),
-  productId: uuid('product_id').notNull(),
-  quantity: integer('quantity').notNull(),
-}, (table) => [
-  foreignKey({
-    columns: [table.orderId, table.productId],
-    foreignColumns: [orders.id, products.id],
-  }),
-]);
+export const orderItems = pgTable(
+   "order_items",
+   {
+      orderId: uuid("order_id").notNull(),
+      productId: uuid("product_id").notNull(),
+      quantity: integer("quantity").notNull(),
+   },
+   (table) => [
+      foreignKey({
+         columns: [table.orderId, table.productId],
+         foreignColumns: [orders.id, products.id],
+      }),
+   ],
+);
 ```
 
 ---
@@ -405,15 +415,21 @@ index('idx').on(table.location).using('gist'),
 ## Composite Primary Key
 
 ```typescript
-import { primaryKey } from 'drizzle-orm/pg-core';
+import { primaryKey } from "drizzle-orm/pg-core";
 
-export const usersToGroups = pgTable('users_to_groups', {
-  userId: uuid('user_id').notNull().references(() => users.id),
-  groupId: uuid('group_id').notNull().references(() => groups.id),
-  joinedAt: timestamp('joined_at').notNull().defaultNow(),
-}, (table) => [
-  primaryKey({ columns: [table.userId, table.groupId] }),
-]);
+export const usersToGroups = pgTable(
+   "users_to_groups",
+   {
+      userId: uuid("user_id")
+         .notNull()
+         .references(() => users.id),
+      groupId: uuid("group_id")
+         .notNull()
+         .references(() => groups.id),
+      joinedAt: timestamp("joined_at").notNull().defaultNow(),
+   },
+   (table) => [primaryKey({ columns: [table.userId, table.groupId] })],
+);
 ```
 
 ---
@@ -424,25 +440,25 @@ export const usersToGroups = pgTable('users_to_groups', {
 
 ```typescript
 const timestamps = {
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true })
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
+   createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+   updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
 };
 
-export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  email: text('email').notNull(),
-  ...timestamps,
+export const users = pgTable("users", {
+   id: uuid("id").primaryKey().defaultRandom(),
+   email: text("email").notNull(),
+   ...timestamps,
 });
 
-export const posts = pgTable('posts', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  title: text('title').notNull(),
-  ...timestamps,
+export const posts = pgTable("posts", {
+   id: uuid("id").primaryKey().defaultRandom(),
+   title: text("title").notNull(),
+   ...timestamps,
 });
 ```
 
@@ -451,25 +467,29 @@ export const posts = pgTable('posts', {
 ## Soft Delete Pattern
 
 ```typescript
-export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  email: text('email').notNull(),
-  deletedAt: timestamp('deleted_at', { withTimezone: true }),
-  ...timestamps,
-}, (table) => [
-  // Partial index for active users only
-  index('active_users_email_idx')
-    .on(table.email)
-    .where(sql`deleted_at IS NULL`),
-]);
+export const users = pgTable(
+   "users",
+   {
+      id: uuid("id").primaryKey().defaultRandom(),
+      email: text("email").notNull(),
+      deletedAt: timestamp("deleted_at", { withTimezone: true }),
+      ...timestamps,
+   },
+   (table) => [
+      // Partial index for active users only
+      index("active_users_email_idx")
+         .on(table.email)
+         .where(sql`deleted_at IS NULL`),
+   ],
+);
 
 // Query active users
-import { isNull } from 'drizzle-orm';
+import { isNull } from "drizzle-orm";
 
 const activeUsers = await db
-  .select()
-  .from(users)
-  .where(isNull(users.deletedAt));
+   .select()
+   .from(users)
+   .where(isNull(users.deletedAt));
 ```
 
 ---
@@ -477,21 +497,27 @@ const activeUsers = await db
 ## Multi-Tenant Pattern
 
 ```typescript
-export const tenants = pgTable('tenants', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  name: text('name').notNull(),
+export const tenants = pgTable("tenants", {
+   id: uuid("id").primaryKey().defaultRandom(),
+   name: text("name").notNull(),
 });
 
-export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
-  email: text('email').notNull(),
-}, (table) => [
-  // Unique email per tenant
-  uniqueIndex('users_tenant_email_idx').on(table.tenantId, table.email),
-  // Index for tenant queries
-  index('users_tenant_idx').on(table.tenantId),
-]);
+export const users = pgTable(
+   "users",
+   {
+      id: uuid("id").primaryKey().defaultRandom(),
+      tenantId: uuid("tenant_id")
+         .notNull()
+         .references(() => tenants.id),
+      email: text("email").notNull(),
+   },
+   (table) => [
+      // Unique email per tenant
+      uniqueIndex("users_tenant_email_idx").on(table.tenantId, table.email),
+      // Index for tenant queries
+      index("users_tenant_idx").on(table.tenantId),
+   ],
+);
 ```
 
 ---
@@ -501,12 +527,14 @@ export const users = pgTable('users', {
 ### Stored (Computed at Write)
 
 ```typescript
-export const products = pgTable('products', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  price: numeric('price', { precision: 10, scale: 2 }).notNull(),
-  taxRate: numeric('tax_rate', { precision: 5, scale: 4 }).notNull(),
-  totalPrice: numeric('total_price', { precision: 10, scale: 2 })
-    .generatedAlwaysAs(sql`price * (1 + tax_rate)`),
+export const products = pgTable("products", {
+   id: uuid("id").primaryKey().defaultRandom(),
+   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+   taxRate: numeric("tax_rate", { precision: 5, scale: 4 }).notNull(),
+   totalPrice: numeric("total_price", {
+      precision: 10,
+      scale: 2,
+   }).generatedAlwaysAs(sql`price * (1 + tax_rate)`),
 });
 ```
 

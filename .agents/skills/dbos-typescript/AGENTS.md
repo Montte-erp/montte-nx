@@ -24,41 +24,46 @@ dbos-typescript/
 
 ## Reference Categories
 
-| Priority | Category | Impact | Prefix |
-|----------|----------|--------|--------|
-| 1 | Lifecycle | CRITICAL | `lifecycle-` |
-| 2 | Workflow | CRITICAL | `workflow-` |
-| 3 | Step | HIGH | `step-` |
-| 4 | Queue | HIGH | `queue-` |
-| 5 | Communication | MEDIUM | `comm-` |
-| 6 | Pattern | MEDIUM | `pattern-` |
-| 7 | Testing | LOW-MEDIUM | `test-` |
-| 8 | Client | MEDIUM | `client-` |
-| 9 | Advanced | LOW | `advanced-` |
+| Priority | Category      | Impact     | Prefix       |
+| -------- | ------------- | ---------- | ------------ |
+| 1        | Lifecycle     | CRITICAL   | `lifecycle-` |
+| 2        | Workflow      | CRITICAL   | `workflow-`  |
+| 3        | Step          | HIGH       | `step-`      |
+| 4        | Queue         | HIGH       | `queue-`     |
+| 5        | Communication | MEDIUM     | `comm-`      |
+| 6        | Pattern       | MEDIUM     | `pattern-`   |
+| 7        | Testing       | LOW-MEDIUM | `test-`      |
+| 8        | Client        | MEDIUM     | `client-`    |
+| 9        | Advanced      | LOW        | `advanced-`  |
 
 Reference files are named `{prefix}-{topic}.md` (e.g., `query-missing-indexes.md`).
 
 ## Available References
 
 **Advanced** (`advanced-`):
+
 - `references/advanced-patching.md`
 - `references/advanced-serialization.md`
 - `references/advanced-versioning.md`
 
 **Client** (`client-`):
+
 - `references/client-enqueue.md`
 - `references/client-setup.md`
 
 **Communication** (`comm-`):
+
 - `references/comm-events.md`
 - `references/comm-messages.md`
 - `references/comm-streaming.md`
 
 **Lifecycle** (`lifecycle-`):
+
 - `references/lifecycle-config.md`
 - `references/lifecycle-express.md`
 
 **Pattern** (`pattern-`):
+
 - `references/pattern-classes.md`
 - `references/pattern-debouncing.md`
 - `references/pattern-idempotency.md`
@@ -66,6 +71,7 @@ Reference files are named `{prefix}-{topic}.md` (e.g., `query-missing-indexes.md
 - `references/pattern-sleep.md`
 
 **Queue** (`queue-`):
+
 - `references/queue-basics.md`
 - `references/queue-concurrency.md`
 - `references/queue-deduplication.md`
@@ -75,14 +81,17 @@ Reference files are named `{prefix}-{topic}.md` (e.g., `query-missing-indexes.md
 - `references/queue-rate-limiting.md`
 
 **Step** (`step-`):
+
 - `references/step-basics.md`
 - `references/step-retries.md`
 - `references/step-transactions.md`
 
 **Testing** (`test-`):
+
 - `references/test-setup.md`
 
 **Workflow** (`workflow-`):
+
 - `references/workflow-background.md`
 - `references/workflow-constraints.md`
 - `references/workflow-control.md`
@@ -92,4 +101,4 @@ Reference files are named `{prefix}-{topic}.md` (e.g., `query-missing-indexes.md
 
 ---
 
-*32 reference files across 9 categories*
+_32 reference files across 9 categories_

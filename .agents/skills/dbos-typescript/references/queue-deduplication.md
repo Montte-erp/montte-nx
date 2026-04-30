@@ -14,7 +14,7 @@ Set a deduplication ID when enqueuing to prevent duplicate workflow executions. 
 ```typescript
 // Multiple clicks could enqueue duplicates
 async function handleClick(userId: string) {
-  await DBOS.startWorkflow(processTask, { queueName: queue.name })("task");
+   await DBOS.startWorkflow(processTask, { queueName: queue.name })("task");
 }
 ```
 
@@ -24,26 +24,27 @@ async function handleClick(userId: string) {
 const queue = new WorkflowQueue("task_queue");
 
 async function processTaskFn(task: string) {
-  // ...
+   // ...
 }
 const processTask = DBOS.registerWorkflow(processTaskFn);
 
 async function handleClick(userId: string) {
-  try {
-    await DBOS.startWorkflow(processTask, {
-      queueName: queue.name,
-      enqueueOptions: { deduplicationID: userId },
-    })("task");
-  } catch (e) {
-    // DBOSQueueDuplicatedError - workflow already active for this user
-    console.log("Task already in progress for user:", userId);
-  }
+   try {
+      await DBOS.startWorkflow(processTask, {
+         queueName: queue.name,
+         enqueueOptions: { deduplicationID: userId },
+      })("task");
+   } catch (e) {
+      // DBOSQueueDuplicatedError - workflow already active for this user
+      console.log("Task already in progress for user:", userId);
+   }
 }
 ```
 
 Deduplication is per-queue. The deduplication ID is active while the workflow has status `ENQUEUED` or `PENDING`. Once the workflow completes, a new workflow with the same deduplication ID can be enqueued.
 
 This is useful for:
+
 - Ensuring one active task per user
 - Preventing duplicate form submissions
 - Idempotent event processing

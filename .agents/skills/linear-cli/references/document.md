@@ -13,15 +13,15 @@ Description:
 
 Options:
 
-  -h, --help           - Show this help.                      
-  --workspace  <slug>  - Target workspace (uses credentials)  
+  -h, --help           - Show this help.
+  --workspace  <slug>  - Target workspace (uses credentials)
 
 Commands:
 
-  list, l                  - List documents                    
-  view, v    <id>          - View a document's content         
-  create, c                - Create a new document             
-  update, u  <documentId>  - Update an existing document       
+  list, l                  - List documents
+  view, v    <id>          - View a document's content
+  create, c                - Create a new document
+  update, u  <documentId>  - Update an existing document
   delete, d  [documentId]  - Delete a document (moves to trash)
 ```
 
@@ -40,11 +40,11 @@ Description:
 
 Options:
 
-  -h, --help              - Show this help.                                        
-  --workspace  <slug>     - Target workspace (uses credentials)                    
-  --project    <project>  - Filter by project (slug or name)                       
-  --issue      <issue>    - Filter by issue (identifier like TC-123)               
-  --json                  - Output as JSON                                         
+  -h, --help              - Show this help.
+  --workspace  <slug>     - Target workspace (uses credentials)
+  --project    <project>  - Filter by project (slug or name)
+  --issue      <issue>    - Filter by issue (identifier like TC-123)
+  --json                  - Output as JSON
   --limit      <limit>    - Limit results                             (Default: 50)
 ```
 
@@ -61,10 +61,10 @@ Description:
 
 Options:
 
-  -h, --help           - Show this help.                        
-  --workspace  <slug>  - Target workspace (uses credentials)    
-  --raw                - Output raw markdown without rendering  
-  -w, --web            - Open document in browser               
+  -h, --help           - Show this help.
+  --workspace  <slug>  - Target workspace (uses credentials)
+  --raw                - Output raw markdown without rendering
+  -w, --web            - Open document in browser
   --json               - Output full document as JSON
 ```
 
@@ -81,14 +81,14 @@ Description:
 
 Options:
 
-  -h, --help                     - Show this help.                           
-  --workspace         <slug>     - Target workspace (uses credentials)       
-  -t, --title         <title>    - Document title (required)                 
-  -c, --content       <content>  - Markdown content (inline)                 
-  -f, --content-file  <path>     - Read content from file                    
-  --project           <project>  - Attach to project (slug or ID)            
-  --issue             <issue>    - Attach to issue (identifier like TC-123)  
-  --icon              <icon>     - Document icon (emoji)                     
+  -h, --help                     - Show this help.
+  --workspace         <slug>     - Target workspace (uses credentials)
+  -t, --title         <title>    - Document title (required)
+  -c, --content       <content>  - Markdown content (inline)
+  -f, --content-file  <path>     - Read content from file
+  --project           <project>  - Attach to project (slug or ID)
+  --issue             <issue>    - Attach to issue (identifier like TC-123)
+  --icon              <icon>     - Document icon (emoji)
   -i, --interactive              - Interactive mode with prompts
 ```
 
@@ -105,12 +105,12 @@ Description:
 
 Options:
 
-  -h, --help                     - Show this help.                              
-  --workspace         <slug>     - Target workspace (uses credentials)          
-  -t, --title         <title>    - New title for the document                   
-  -c, --content       <content>  - New markdown content (inline)                
-  -f, --content-file  <path>     - Read new content from file                   
-  --icon              <icon>     - New icon (emoji)                             
+  -h, --help                     - Show this help.
+  --workspace         <slug>     - Target workspace (uses credentials)
+  -t, --title         <title>    - New title for the document
+  -c, --content       <content>  - New markdown content (inline)
+  -f, --content-file  <path>     - Read new content from file
+  --icon              <icon>     - New icon (emoji)
   -e, --edit                     - Open current content in $EDITOR for editing
 ```
 
@@ -127,10 +127,10 @@ Description:
 
 Options:
 
-  -h, --help              - Show this help.                                     
-  --workspace   <slug>    - Target workspace (uses credentials)                 
-  -y, --yes               - Skip confirmation prompt                            
-  --bulk        <ids...>  - Delete multiple documents by slug or ID             
-  --bulk-file   <file>    - Read document slugs/IDs from a file (one per line)  
+  -h, --help              - Show this help.
+  --workspace   <slug>    - Target workspace (uses credentials)
+  -y, --yes               - Skip confirmation prompt
+  --bulk        <ids...>  - Delete multiple documents by slug or ID
+  --bulk-file   <file>    - Read document slugs/IDs from a file (one per line)
   --bulk-stdin            - Read document slugs/IDs from stdin
 ```

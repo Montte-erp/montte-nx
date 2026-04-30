@@ -63,6 +63,7 @@
       "@core/utils": "workspace:*",
       "@f-o-t/condition-evaluator": "catalog:fot",
       "@f-o-t/money": "catalog:fot",
+      "@tanstack/ai": "catalog:tanstack-ai",
       "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",
       "neverthrow": "catalog:validation",

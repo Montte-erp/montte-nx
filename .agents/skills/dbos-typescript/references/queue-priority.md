@@ -22,24 +22,25 @@ const queue = new WorkflowQueue("tasks");
 const queue = new WorkflowQueue("tasks", { priorityEnabled: true });
 
 async function processTaskFn(task: string) {
-  // ...
+   // ...
 }
 const processTask = DBOS.registerWorkflow(processTaskFn);
 
 // High priority task (lower number = higher priority)
 await DBOS.startWorkflow(processTask, {
-  queueName: queue.name,
-  enqueueOptions: { priority: 1 },
+   queueName: queue.name,
+   enqueueOptions: { priority: 1 },
 })("urgent-task");
 
 // Low priority task
 await DBOS.startWorkflow(processTask, {
-  queueName: queue.name,
-  enqueueOptions: { priority: 100 },
+   queueName: queue.name,
+   enqueueOptions: { priority: 100 },
 })("background-task");
 ```
 
 Priority rules:
+
 - Range: `1` to `2,147,483,647`
 - Lower number = higher priority
 - Workflows **without** assigned priorities have the highest priority (run first)

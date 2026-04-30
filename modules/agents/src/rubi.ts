@@ -1,4 +1,5 @@
-import { maxIterations } from "@tanstack/ai";
+import { maxIterations, type ConstrainedModelMessage } from "@tanstack/ai";
+import type { OpenRouterMessageMetadataByModality } from "@tanstack/ai-openrouter";
 import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog, Prompts } from "@core/posthog/server";
 import { flashModel } from "@core/ai/models";
@@ -16,7 +17,7 @@ import { buildPricesTools } from "@modules/agents/tools/prices";
 import { buildServicesTools } from "@modules/agents/tools/services";
 import { buildSetupTools } from "@modules/agents/tools/setup";
 import type { ToolDeps } from "@modules/agents/tools/types";
-import type { PageContext } from "@modules/agents/contracts/chat";
+import type { PageContext } from "@modules/agents/router/chat";
 
 export interface RubiChatOptions {
    db: DatabaseInstance;
@@ -26,7 +27,10 @@ export interface RubiChatOptions {
    userId: string;
    organizationId: string;
    threadId?: string;
-   messages: ReadonlyArray<unknown>;
+   messages: ConstrainedModelMessage<{
+      inputModalities: readonly ["text"];
+      messageMetadataByModality: OpenRouterMessageMetadataByModality;
+   }>[];
    pageContext: PageContext;
    abortSignal?: AbortSignal;
 }
@@ -40,7 +44,7 @@ Toda tool de leitura/escrita retorna um campo \`ui\` com um spec json-render que
 Vocabulário disponível no catalog (quando o tool não monta o spec por você): Card, Stack, Grid, Separator, Heading, Text, Badge, Alert, Table, Accordion, Collapsible, Tabs, Progress, Skeleton, Spinner, Avatar, Image, Link, Tooltip.`;
 
 function formatPageContext(pageContext: PageContext): string {
-   if (!pageContext) return "Nenhum contexto de página fornecido.";
+   if (pageContext === undefined) return "Nenhum contexto de página fornecido.";
    const lines: string[] = [];
    if (pageContext.skillHint)
       lines.push(
@@ -91,8 +95,6 @@ export async function buildRubiChatArgs(options: RubiChatOptions) {
 
    const rootTemplate = await options.prompts.get(RUBI_PROMPTS.root, {
       withMetadata: false,
-      fallback:
-         "Você é Rubi, a assistente de IA do Montte. Responda em pt-BR de forma direta e amigável.",
    });
    const systemPrompt = options.prompts.compile(rootTemplate, {
       skill_catalog: buildSkillCatalog(),
@@ -102,7 +104,7 @@ export async function buildRubiChatArgs(options: RubiChatOptions) {
    return {
       adapter: flashModel,
       systemPrompts: [systemPrompt, RENDERING_PRIMER],
-      messages: options.messages as never,
+      messages: options.messages,
       tools: [skillDiscoverTool, advisorTool, ...domainTools],
       agentLoopStrategy: maxIterations(25),
       ...(options.threadId && { conversationId: options.threadId }),
