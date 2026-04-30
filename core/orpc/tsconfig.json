@@ -11,7 +11,6 @@
          "@core/database/*": ["../../core/database/src/*"],
          "@core/dbos/*": ["../../core/dbos/src/*"],
          "@core/environment/*": ["../../core/environment/src/*"],
-         "@core/hyprpay/*": ["../../core/hyprpay/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
@@ -22,7 +21,6 @@
    },
    "references": [
       { "path": "../database" },
-      { "path": "../hyprpay" },
       { "path": "../dbos" },
       { "path": "../environment" },
       { "path": "../logging" },

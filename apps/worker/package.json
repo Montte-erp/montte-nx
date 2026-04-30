@@ -11,11 +11,9 @@
    "dependencies": {
       "@core/database": "workspace:*",
       "@core/environment": "workspace:*",
-      "@core/hyprpay": "workspace:*",
       "@core/logging": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",
-      "@core/stripe": "workspace:*",
       "@core/transactional": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers",
       "@modules/billing": "workspace:*",

@@ -22,7 +22,7 @@ import { InsightBuilder } from "@/features/analytics/ui/insight-builder";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
-} from "@/features/billing/ui/early-access-banner";
+} from "@/components/blocks/early-access-banner";
 import {
    ContextPanelAction,
    ContextPanelDivider,

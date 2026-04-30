@@ -2,11 +2,9 @@ import { env } from "@core/environment/web";
 import { createDb } from "@core/database/client";
 import { createRedis } from "@core/redis/connection";
 import { createPostHog, createPromptsClient } from "@core/posthog/server";
-import { createStripeClient } from "@core/stripe";
 import { createMinioClient } from "@core/files/client";
 import { createResendClient } from "@core/transactional/utils";
 import { createAuth } from "@core/authentication/server";
-import { createHyprpay } from "@core/hyprpay/client";
 import { DBOSClient } from "@dbos-inc/dbos-sdk";
 
 export const workflowClient = DBOSClient.create({
@@ -21,8 +19,6 @@ export const posthogPrompts = createPromptsClient({
    projectApiKey: env.POSTHOG_KEY,
    host: env.POSTHOG_HOST,
 });
-export const stripeClient = createStripeClient(env.STRIPE_SECRET_KEY);
-export const hyprpayClient = createHyprpay(env.HYPRPAY_API_KEY);
 export const minioClient = createMinioClient({
    endpoint: env.MINIO_ENDPOINT,
    accessKey: env.MINIO_ACCESS_KEY,

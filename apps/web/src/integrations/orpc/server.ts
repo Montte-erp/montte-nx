@@ -13,7 +13,6 @@ import {
 } from "@core/posthog/server";
 import { AppError, WebAppError } from "@core/logging/errors";
 import type { Redis } from "@core/redis/connection";
-import type { StripeClient } from "@core/stripe";
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { sanitizeData } from "@core/utils/sanitization";
 import {
@@ -22,7 +21,6 @@ import {
    posthog,
    posthogPrompts,
    redis,
-   stripeClient,
    workflowClient,
 } from "@/integrations/singletons";
 
@@ -37,7 +35,6 @@ export interface ORPCContextWithAuth extends ORPCContext {
    session: Awaited<ReturnType<AuthInstance["api"]["getSession"]>> | null;
    posthog: PostHog;
    posthogPrompts: Prompts;
-   stripeClient: StripeClient;
    redis: Redis;
    workflowClient: DBOSClient;
 }
@@ -68,7 +65,6 @@ const withDeps = base.use(async ({ context, next }) => {
          session: sessionResult.isOk() ? sessionResult.value : null,
          posthog,
          posthogPrompts,
-         stripeClient,
          redis,
          workflowClient: await workflowClient,
       },

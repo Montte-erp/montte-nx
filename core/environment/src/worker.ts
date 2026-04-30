@@ -10,13 +10,9 @@ export const env = createEnv({
       POSTHOG_KEY: z.string().min(1),
       POSTHOG_PERSONAL_API_KEY: z.string().min(1),
 
-      STRIPE_SECRET_KEY: z.string(),
-
       RESEND_API_KEY: z.string(),
 
       OPENROUTER_API_KEY: z.string().optional(),
-
-      HYPRPAY_API_KEY: z.string().min(1),
 
       LOG_LEVEL: z
          .enum(["trace", "debug", "info", "warn", "error", "fatal"])

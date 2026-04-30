@@ -11,29 +11,18 @@
          "@core/database/*": ["../../core/database/src/*"],
          "@core/environment/*": ["../../core/environment/src/*"],
          "@core/files/*": ["../../core/files/src/*"],
-         "@core/hyprpay/*": ["../../core/hyprpay/dist/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
-         "@core/stripe": ["../../core/stripe/src/index.ts"],
-         "@core/stripe/*": ["../../core/stripe/src/*"],
          "@core/transactional/*": ["../../core/transactional/src/*"],
-         "@core/utils/*": ["../../core/utils/src/*"],
-         "@montte/hyprpay": ["../../libraries/hyprpay/dist/esm/index.d.ts"],
-         "@montte/hyprpay/*": ["../../libraries/hyprpay/dist/esm/*"]
+         "@core/utils/*": ["../../core/utils/src/*"]
       }
    },
    "include": ["src"],
    "references": [
       {
-         "path": "../hyprpay"
-      },
-      {
          "path": "../transactional"
-      },
-      {
-         "path": "../stripe"
       },
       {
          "path": "../redis"

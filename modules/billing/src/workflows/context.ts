@@ -4,7 +4,6 @@ import { createStore } from "@tanstack/store";
 import type { DatabaseInstance } from "@core/database/client";
 import * as schema from "@core/database/schema";
 import { env } from "@core/environment/worker";
-import type { HyprPayClient } from "@core/hyprpay/client";
 import type { Redis } from "@core/redis/connection";
 import type { ResendClient } from "@core/transactional/utils";
 import { BILLING_QUEUES } from "../constants";
@@ -17,27 +16,43 @@ export const billingDataSource = new DrizzleDataSource<DatabaseInstance>(
    schema,
 );
 
+type IngestUsageInput = {
+   eventName: string;
+   quantity: string;
+   idempotencyKey: string;
+   externalId?: string;
+   properties?: Record<string, unknown>;
+};
+
+type UsageIngestor = {
+   services: {
+      ingestUsage: (input: IngestUsageInput) => Promise<{ success: true }>;
+   };
+};
+
+const noopUsageIngestor: UsageIngestor = {
+   services: {
+      ingestUsage: async () => ({ success: true }),
+   },
+};
+
 type BillingWorkflowContext = {
    redis: Redis | null;
    resendClient: ResendClient | null;
-   hyprpayClient: HyprPayClient | null;
 };
 
 const store = createStore<BillingWorkflowContext>({
    redis: null,
    resendClient: null,
-   hyprpayClient: null,
 });
 
 export function initBillingWorkflowContext(
    redis: Redis,
    resendClient: ResendClient,
-   hyprpayClient: HyprPayClient,
 ) {
    store.setState(() => ({
       redis,
       resendClient,
-      hyprpayClient,
    }));
 }
 
@@ -54,11 +69,8 @@ export function getBillingResendClient(): ResendClient {
    return resendClient;
 }
 
-export function getBillingHyprpay(): HyprPayClient {
-   const { hyprpayClient } = store.state;
-   if (!hyprpayClient)
-      throw new Error("Billing workflow context not initialized");
-   return hyprpayClient;
+export function getBillingHyprpay(): UsageIngestor {
+   return noopUsageIngestor;
 }
 
 export function createBillingQueues(options: { workerConcurrency: number }) {

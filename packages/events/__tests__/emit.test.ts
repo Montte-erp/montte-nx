@@ -39,10 +39,6 @@ vi.mock("@f-o-t/money", () => ({
    toMajorUnitsString: () => "0.000000",
 }));
 
-vi.mock("@core/stripe/constants", () => ({
-   STRIPE_METER_EVENTS: {} as Record<string, string>,
-}));
-
 import { EVENT_CATEGORIES } from "../src/catalog";
 import { emitEvent } from "../src/emit";
 

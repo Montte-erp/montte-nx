@@ -6,7 +6,6 @@ import * as schema from "@core/database/schema";
 import { env } from "@core/environment/worker";
 import type { Redis } from "@core/redis/connection";
 import type { PostHog, Prompts } from "@core/posthog/server";
-import type { HyprPayClient } from "@core/hyprpay/client";
 import { CLASSIFICATION_QUEUES } from "../constants";
 
 export { createEnqueuer, registerWorkflowOnce } from "@core/dbos/factory";
@@ -17,30 +16,46 @@ export const classificationDataSource = new DrizzleDataSource<DatabaseInstance>(
    schema,
 );
 
+type IngestUsageInput = {
+   eventName: string;
+   quantity: string;
+   idempotencyKey: string;
+   externalId?: string;
+   properties?: Record<string, unknown>;
+};
+
+type UsageIngestor = {
+   services: {
+      ingestUsage: (input: IngestUsageInput) => Promise<{ success: true }>;
+   };
+};
+
+const noopUsageIngestor: UsageIngestor = {
+   services: {
+      ingestUsage: async () => ({ success: true }),
+   },
+};
+
 type ClassificationWorkflowContext = {
    posthog: PostHog | null;
    redis: Redis | null;
-   hyprpayClient: HyprPayClient | null;
    prompts: Prompts | null;
 };
 
 const store = createStore<ClassificationWorkflowContext>({
    posthog: null,
    redis: null,
-   hyprpayClient: null,
    prompts: null,
 });
 
 export function initClassificationWorkflowContext(deps: {
    redis: Redis;
    posthog: PostHog;
-   hyprpayClient: HyprPayClient;
    prompts: Prompts;
 }) {
    store.setState(() => ({
       posthog: deps.posthog,
       redis: deps.redis,
-      hyprpayClient: deps.hyprpayClient,
       prompts: deps.prompts,
    }));
 }
@@ -66,11 +81,8 @@ export function getClassificationRedis(): Redis {
    return redis;
 }
 
-export function getClassificationHyprpay(): HyprPayClient {
-   const { hyprpayClient } = store.state;
-   if (!hyprpayClient)
-      throw new Error("Classification workflow context not initialized");
-   return hyprpayClient;
+export function getClassificationHyprpay(): UsageIngestor {
+   return noopUsageIngestor;
 }
 
 export function createClassificationQueues(options: {

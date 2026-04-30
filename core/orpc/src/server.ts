@@ -1,11 +1,9 @@
-import { createHash } from "node:crypto";
 import dayjs from "dayjs";
 import { err, fromPromise, fromThrowable, ok } from "neverthrow";
 import { z } from "zod";
 import { logs } from "@opentelemetry/api-logs";
-import { ORPCError, onSuccess, os } from "@orpc/server";
+import { ORPCError, os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
-import { createHyprpay } from "@core/hyprpay/client";
 import { createDb } from "@core/database/client";
 import { env } from "@core/environment/web";
 import {
@@ -37,7 +35,6 @@ const posthogPrompts = createPromptsClient({
    host: env.POSTHOG_HOST,
 });
 const resendClient = createResendClient(env.RESEND_API_KEY);
-const hyprpayClient = createHyprpay(env.HYPRPAY_API_KEY);
 const auth = createAuth({
    db,
    redis,
@@ -110,7 +107,6 @@ const withDeps = base.use(async ({ context, next }) => {
             posthogPrompts,
             redis,
             workflowClient: await workflowClient,
-            hyprpayClient,
          },
       });
    }
@@ -131,7 +127,6 @@ const withDeps = base.use(async ({ context, next }) => {
          posthogPrompts,
          redis,
          workflowClient: await workflowClient,
-         hyprpayClient,
       },
    });
 });
@@ -283,49 +278,6 @@ const withTelemetry = withOrganization.use(
    },
 );
 
-const withBilling = withTelemetry.use(
-   onSuccess(async (_result, { context, path, procedure }, input) => {
-      const eventName = procedure["~orpc"].meta.billableEvent;
-      if (!eventName) return;
-
-      const headerKey =
-         context.headers.get("idempotency-key") ??
-         context.headers.get("x-idempotency-key") ??
-         context.headers.get("x-request-id");
-      const idempotencyKey =
-         headerKey ??
-         createHash("sha256")
-            .update(
-               `${context.organizationId}|${path.join(".")}|${JSON.stringify(input ?? null)}`,
-            )
-            .digest("hex");
-
-      const result = await fromPromise(
-         context.hyprpayClient.services.ingestUsage({
-            eventName,
-            quantity: "1",
-            idempotencyKey,
-            properties: { path: path.join(".") },
-         }),
-         (e) => (e instanceof Error ? e : new Error(String(e))),
-      );
-
-      if (result.isErr()) {
-         otelLogger.emit({
-            severityText: "warn",
-            body: "billable event ingest failed",
-            attributes: {
-               "error.message": result.error.message,
-               path: path.join("."),
-               eventName,
-               organizationId: context.organizationId,
-               teamId: context.teamId,
-            },
-         });
-      }
-   }),
-);
-
 export type {
    ORPCContext,
    ORPCContextWithAuth,
@@ -336,4 +288,4 @@ export type {
 export const publicProcedure = withDeps;
 export const authenticatedProcedure = withAuth;
 export const protectedProcedure = withTelemetry;
-export const billableProcedure = withBilling;
+export const billableProcedure = withTelemetry;

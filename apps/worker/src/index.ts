@@ -6,7 +6,6 @@ import { createDb } from "@core/database/client";
 import { createRedis } from "@core/redis/connection";
 import { createPostHog, createPromptsClient } from "@core/posthog/server";
 import { createResendClient } from "@core/transactional/utils";
-import { createHyprpay } from "@core/hyprpay/client";
 import { setupBillingWorkflows } from "@modules/billing/workflows/setup";
 import { setupClassificationWorkflows } from "@modules/classification/workflows/setup";
 
@@ -28,20 +27,17 @@ const promptsClient = createPromptsClient({
    host: env.POSTHOG_HOST,
 });
 const resendClient = createResendClient(env.RESEND_API_KEY);
-const hyprpayClient = createHyprpay(env.HYPRPAY_API_KEY);
 
 logger.info("Starting worker");
 
 await setupBillingWorkflows({
    redis,
    resendClient,
-   hyprpayClient,
    workerConcurrency: 10,
 });
 const classification = await setupClassificationWorkflows({
    redis,
    posthog,
-   hyprpayClient,
    prompts: promptsClient,
    workerConcurrency: 10,
 });

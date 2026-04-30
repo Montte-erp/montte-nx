@@ -3,7 +3,6 @@ import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog, Prompts } from "@core/posthog/server";
 import type { Redis } from "@core/redis/connection";
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
-import type { HyprPayClient } from "@core/hyprpay/client";
 
 export interface ORPCContext {
    headers: Headers;
@@ -18,7 +17,6 @@ export interface ORPCContextWithAuth extends ORPCContext {
    posthogPrompts: Prompts;
    redis: Redis;
    workflowClient: DBOSClient;
-   hyprpayClient: HyprPayClient;
 }
 
 export interface ORPCContextAuthenticated extends ORPCContextWithAuth {

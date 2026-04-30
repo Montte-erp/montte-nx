@@ -22,7 +22,7 @@ import { QueryBoundary } from "@/components/query-boundary";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
-} from "@/features/billing/ui/early-access-banner";
+} from "@/components/blocks/early-access-banner";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { InventoryHistorySheet } from "./-inventory/inventory-history-sheet";
 import { InventoryMovementCredenza } from "./-inventory/inventory-movement-credenza";

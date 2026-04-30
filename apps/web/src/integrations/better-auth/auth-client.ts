@@ -1,5 +1,4 @@
 import { apiKeyClient } from "@better-auth/api-key/client";
-import { stripeClient } from "@better-auth/stripe/client";
 import {
    emailOTPClient,
    inferAdditionalFields,
@@ -28,7 +27,6 @@ export const authClient = createBetterAuthClient({
    },
    plugins: [
       inferAdditionalFields<AuthInstance>(),
-      stripeClient({ subscription: true }),
       magicLinkClient(),
       emailOTPClient(),
       organizationClient({ teams: { enabled: true } }),
