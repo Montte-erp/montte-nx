@@ -19,16 +19,10 @@
          "path": "./core/database"
       },
       {
-         "path": "./libraries/cli"
-      },
-      {
          "path": "./core/logging"
       },
       {
          "path": "./core/posthog"
-      },
-      {
-         "path": "./core/stripe"
       },
       {
          "path": "./packages/ui"
@@ -38,9 +32,6 @@
       },
       {
          "path": "./core/redis"
-      },
-      {
-         "path": "./core/hyprpay"
       },
       {
          "path": "./core/sse"
