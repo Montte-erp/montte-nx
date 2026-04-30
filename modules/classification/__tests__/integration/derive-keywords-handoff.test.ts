@@ -51,6 +51,15 @@ vi.mock("../../src/workflows/context", async (importOriginal) => {
       ...actual,
       getClassificationRedis: () => ({}),
       getClassificationPosthog: () => ({ capture: vi.fn() }),
+      getClassificationPrompts: () => ({
+         get: vi.fn().mockResolvedValue({
+            source: "active",
+            prompt: "derive keywords",
+            name: "montte-derive-keywords",
+            version: 1,
+         }),
+         compile: vi.fn((prompt: string) => prompt),
+      }),
    };
 });
 

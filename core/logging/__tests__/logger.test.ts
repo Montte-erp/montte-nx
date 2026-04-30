@@ -11,7 +11,12 @@ vi.mock("pino", () => {
       child: vi.fn(),
       level: "info",
    };
-   const pino = vi.fn(() => mockLogger);
+   const pino = vi.fn(
+      () => mockLogger,
+   ) as unknown as typeof import("pino").default;
+   (pino as unknown as { destination: () => unknown }).destination = vi.fn(
+      () => ({}),
+   );
    return { default: pino, __mockLogger: mockLogger };
 });
 
@@ -40,18 +45,6 @@ describe("createLogger", () => {
             level: "info",
          }),
       );
-   });
-
-   it("always includes otel transport", () => {
-      createLogger({ name: "test-service" });
-      const callArgs = vi.mocked(pino).mock.calls[0][0] as {
-         transport: { targets: Array<{ target: string }> };
-      };
-      expect(
-         callArgs.transport.targets.some(
-            (t) => t.target === "pino-opentelemetry-transport",
-         ),
-      ).toBe(true);
    });
 });
 

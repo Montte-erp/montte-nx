@@ -89,7 +89,8 @@ describe("deriveKeywordsWorkflow", () => {
       });
 
       expect(deriveKeywords).toHaveBeenCalledTimes(1);
-      const [aiInput, observability] = vi.mocked(deriveKeywords).mock.calls[0]!;
+      const [, aiInput, observability] =
+         vi.mocked(deriveKeywords).mock.calls[0]!;
       expect(aiInput).toMatchObject({
          name: "Food",
          description: null,
