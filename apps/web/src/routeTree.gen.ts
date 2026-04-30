@@ -40,7 +40,6 @@ import { Route as AuthenticatedSlugTeamSlugDashboardCreditCardsRouteImport } fro
 import { Route as AuthenticatedSlugTeamSlugDashboardContactsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/contacts'
 import { Route as AuthenticatedSlugTeamSlugDashboardChatRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/chat'
 import { Route as AuthenticatedSlugTeamSlugDashboardCategoriesRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/categories'
-import { Route as AuthenticatedSlugTeamSlugDashboardBillingRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/billing'
 import { Route as AuthenticatedSlugTeamSlugDashboardBankAccountsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/index'
 import { Route as AuthenticatedSlugTeamSlugDashboardServicesIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/services/index'
@@ -235,12 +234,6 @@ const AuthenticatedSlugTeamSlugDashboardCategoriesRoute =
   AuthenticatedSlugTeamSlugDashboardCategoriesRouteImport.update({
     id: '/categories',
     path: '/categories',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
-const AuthenticatedSlugTeamSlugDashboardBillingRoute =
-  AuthenticatedSlugTeamSlugDashboardBillingRouteImport.update({
-    id: '/billing',
-    path: '/billing',
     getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
   } as any)
 const AuthenticatedSlugTeamSlugDashboardBankAccountsRoute =
@@ -475,7 +468,6 @@ export interface FileRoutesByFullPath {
   '/auth/sign-in/': typeof AuthSignInIndexRoute
   '/callback/organization/invitation/$invitationId': typeof CallbackOrganizationInvitationInvitationIdRoute
   '/$slug/$teamSlug/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
-  '/$slug/$teamSlug/billing': typeof AuthenticatedSlugTeamSlugDashboardBillingRoute
   '/$slug/$teamSlug/categories': typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
   '/$slug/$teamSlug/chat': typeof AuthenticatedSlugTeamSlugDashboardChatRoute
   '/$slug/$teamSlug/contacts': typeof AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren
@@ -537,7 +529,6 @@ export interface FileRoutesByTo {
   '/auth/sign-in': typeof AuthSignInIndexRoute
   '/callback/organization/invitation/$invitationId': typeof CallbackOrganizationInvitationInvitationIdRoute
   '/$slug/$teamSlug/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
-  '/$slug/$teamSlug/billing': typeof AuthenticatedSlugTeamSlugDashboardBillingRoute
   '/$slug/$teamSlug/categories': typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
   '/$slug/$teamSlug/chat': typeof AuthenticatedSlugTeamSlugDashboardChatRoute
   '/$slug/$teamSlug/credit-cards': typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
@@ -600,7 +591,6 @@ export interface FileRoutesById {
   '/_authenticated/$slug/$teamSlug/_dashboard': typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren
   '/callback/organization/invitation/$invitationId': typeof CallbackOrganizationInvitationInvitationIdRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/billing': typeof AuthenticatedSlugTeamSlugDashboardBillingRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/categories': typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/chat': typeof AuthenticatedSlugTeamSlugDashboardChatRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/contacts': typeof AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren
@@ -665,7 +655,6 @@ export interface FileRouteTypes {
     | '/auth/sign-in/'
     | '/callback/organization/invitation/$invitationId'
     | '/$slug/$teamSlug/bank-accounts'
-    | '/$slug/$teamSlug/billing'
     | '/$slug/$teamSlug/categories'
     | '/$slug/$teamSlug/chat'
     | '/$slug/$teamSlug/contacts'
@@ -727,7 +716,6 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/callback/organization/invitation/$invitationId'
     | '/$slug/$teamSlug/bank-accounts'
-    | '/$slug/$teamSlug/billing'
     | '/$slug/$teamSlug/categories'
     | '/$slug/$teamSlug/chat'
     | '/$slug/$teamSlug/credit-cards'
@@ -789,7 +777,6 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/$teamSlug/_dashboard'
     | '/callback/organization/invitation/$invitationId'
     | '/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/billing'
     | '/_authenticated/$slug/$teamSlug/_dashboard/categories'
     | '/_authenticated/$slug/$teamSlug/_dashboard/chat'
     | '/_authenticated/$slug/$teamSlug/_dashboard/contacts'
@@ -1061,13 +1048,6 @@ declare module '@tanstack/react-router' {
       path: '/categories'
       fullPath: '/$slug/$teamSlug/categories'
       preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardCategoriesRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/billing': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/billing'
-      path: '/billing'
-      fullPath: '/$slug/$teamSlug/billing'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardBillingRouteImport
       parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
     }
     '/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts': {
@@ -1400,7 +1380,6 @@ const AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren =
 
 interface AuthenticatedSlugTeamSlugDashboardRouteChildren {
   AuthenticatedSlugTeamSlugDashboardBankAccountsRoute: typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
-  AuthenticatedSlugTeamSlugDashboardBillingRoute: typeof AuthenticatedSlugTeamSlugDashboardBillingRoute
   AuthenticatedSlugTeamSlugDashboardCategoriesRoute: typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
   AuthenticatedSlugTeamSlugDashboardChatRoute: typeof AuthenticatedSlugTeamSlugDashboardChatRoute
   AuthenticatedSlugTeamSlugDashboardContactsRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren
@@ -1421,8 +1400,6 @@ const AuthenticatedSlugTeamSlugDashboardRouteChildren: AuthenticatedSlugTeamSlug
   {
     AuthenticatedSlugTeamSlugDashboardBankAccountsRoute:
       AuthenticatedSlugTeamSlugDashboardBankAccountsRoute,
-    AuthenticatedSlugTeamSlugDashboardBillingRoute:
-      AuthenticatedSlugTeamSlugDashboardBillingRoute,
     AuthenticatedSlugTeamSlugDashboardCategoriesRoute:
       AuthenticatedSlugTeamSlugDashboardCategoriesRoute,
     AuthenticatedSlugTeamSlugDashboardChatRoute:

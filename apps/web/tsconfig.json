@@ -14,15 +14,12 @@
          "@core/dbos/*": ["../../core/dbos/src/*"],
          "@core/environment/*": ["../../core/environment/src/*"],
          "@core/files/*": ["../../core/files/src/*"],
-         "@core/hyprpay/*": ["../../core/hyprpay/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
          "@core/sse": ["../../core/sse/src/sse.ts"],
-         "@core/stripe": ["../../core/stripe/src/index.ts"],
-         "@core/stripe/*": ["../../core/stripe/src/*"],
          "@core/transactional/*": ["../../core/transactional/src/*"],
          "@core/utils/*": ["../../core/utils/src/*"],
          "@packages/analytics/*": ["../../packages/analytics/src/*"],
@@ -30,11 +27,7 @@
          "@packages/ui/*": ["../../packages/ui/src/*"],
          "@modules/agents/*": ["../../modules/agents/src/*"],
          "@modules/billing/*": ["../../modules/billing/src/*"],
-         "@modules/classification/*": ["../../modules/classification/src/*"],
-         "@montte/cli": ["../../libraries/cli/src/index.ts"],
-         "@montte/cli/*": ["../../libraries/cli/src/*"],
-         "@montte/hyprpay": ["../../libraries/hyprpay/src/index.ts"],
-         "@montte/hyprpay/*": ["../../libraries/hyprpay/src/*"]
+         "@modules/classification/*": ["../../modules/classification/src/*"]
       }
    },
    "include": ["src", "__tests__"],
@@ -53,9 +46,6 @@
       },
       {
          "path": "../../core/utils"
-      },
-      {
-         "path": "../../core/stripe"
       },
       {
          "path": "../../core/redis"

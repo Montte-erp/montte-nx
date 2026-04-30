@@ -28,21 +28,6 @@ export const promptsClientStub = {
    compile: vi.fn((prompt: string) => prompt),
 };
 
-export const hyprpayUsageIngestSpy = vi.fn(
-   async (_input: {
-      meterId?: string;
-      eventName?: string;
-      quantity: string;
-      idempotencyKey: string;
-      externalId?: string | null;
-      properties?: Record<string, unknown>;
-   }) => ({ success: true as const }),
-);
-
-const hyprpayClientStub = {
-   services: { ingestUsage: hyprpayUsageIngestSpy },
-};
-
 vi.mock("../../src/sse", async () => {
    return {
       classificationSseEvents: {
@@ -63,7 +48,6 @@ vi.mock("../../src/workflows/context", async (importOriginal) => {
       ...actual,
       getClassificationRedis: () => ({}),
       getClassificationPosthog: () => ({ capture: posthogCaptureSpy }),
-      getClassificationHyprpay: () => hyprpayClientStub,
       getClassificationPrompts: () => promptsClientStub,
    };
 });

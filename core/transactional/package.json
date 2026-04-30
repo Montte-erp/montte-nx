@@ -16,10 +16,6 @@
          "types": "./dist/utils.d.ts",
          "default": "./dist/utils.js"
       },
-      "./usage-events": {
-         "types": "./dist/usage-events.d.ts",
-         "default": "./dist/usage-events.js"
-      },
       "./emails/*": {
          "types": "./dist/emails/*.d.ts",
          "default": "./dist/emails/*.js"

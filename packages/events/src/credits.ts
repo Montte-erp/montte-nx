@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import type { Redis } from "@core/redis/connection";
-import { FREE_TIER_LIMITS } from "@core/stripe/constants";
+
+const FREE_TIER_LIMITS: Record<string, number> = {};
 
 function usageHashKey(organizationId: string): string {
    return `usage:${organizationId}`;
@@ -72,10 +73,9 @@ export async function enforceCreditBudget(
    organizationId: string,
    eventName: string,
    redis?: Redis,
-   stripeCustomerId?: string | null,
 ): Promise<void> {
    const withinFree = await isWithinFreeTier(organizationId, eventName, redis);
-   if (!withinFree && !stripeCustomerId) {
+   if (!withinFree) {
       throw new Error(`Free tier limit exceeded for ${eventName}`);
    }
 }

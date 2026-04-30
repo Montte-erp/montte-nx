@@ -10,14 +10,12 @@ import { events } from "@core/database/schemas/events";
 import { getLogger } from "@core/logging/root";
 import type { PostHog } from "@core/posthog/server";
 import type { WebhookDeliveryJobData } from "./queues/webhook-delivery";
-import type { StripeClient } from "@core/stripe";
-import { STRIPE_METER_EVENTS } from "@core/stripe/constants";
 import type { Redis } from "@core/redis/connection";
 import type { EmitFn, EventCategory } from "./catalog";
 
 const logger = getLogger().child({ module: "events" });
 
-import { incrementUsage, isWithinFreeTier } from "./credits";
+import { incrementUsage } from "./credits";
 import { getEventPrice } from "./utils";
 
 export interface EmitEventParams {
@@ -33,15 +31,11 @@ export interface EmitEventParams {
    ipAddress?: string;
    userAgent?: string;
    priceOverride?: Money;
-   stripeClient?: StripeClient;
-   stripeCustomerId?: string;
 }
 
 export function createEmitFn(
    db: DatabaseInstance,
    posthog?: PostHog,
-   stripeClient?: StripeClient,
-   stripeCustomerId?: string,
    redis?: Redis,
 ): EmitFn {
    return (params) =>
@@ -49,8 +43,6 @@ export function createEmitFn(
          ...params,
          db,
          posthog,
-         stripeClient,
-         stripeCustomerId,
          redis,
       });
 }
@@ -126,34 +118,6 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
 
       if (isBillable) {
          await incrementUsage(organizationId, eventName, redis);
-         const withinFree = await isWithinFreeTier(
-            organizationId,
-            eventName,
-            redis,
-         );
-         const meterEventName = STRIPE_METER_EVENTS[eventName];
-         if (
-            !withinFree &&
-            meterEventName &&
-            params.stripeClient &&
-            params.stripeCustomerId
-         ) {
-            try {
-               await params.stripeClient.billing.meterEvents.create({
-                  event_name: meterEventName,
-                  payload: {
-                     stripe_customer_id: params.stripeCustomerId,
-                     value: "1",
-                  },
-                  timestamp: Math.floor(Date.now() / 1000),
-               });
-            } catch (stripeErr) {
-               logger.error(
-                  { err: stripeErr, meterEventName },
-                  "Failed to send meter event to Stripe",
-               );
-            }
-         }
       }
 
       if (posthog) {

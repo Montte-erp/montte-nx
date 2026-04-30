@@ -8,7 +8,7 @@ import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
-} from "@/features/billing/ui/early-access-banner";
+} from "@/components/blocks/early-access-banner";
 import { QueryBoundary } from "@/components/query-boundary";
 import { orpc } from "@/integrations/orpc/client";
 import { buildContactColumns } from "../-contacts/contacts-columns";

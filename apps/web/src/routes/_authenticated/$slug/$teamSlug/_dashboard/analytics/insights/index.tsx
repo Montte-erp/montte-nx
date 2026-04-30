@@ -28,7 +28,7 @@ import { DEFAULT_KPI_CONFIG } from "@/features/analytics/hooks/use-insight-confi
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
-} from "@/features/billing/ui/early-access-banner";
+} from "@/components/blocks/early-access-banner";
 import { ContextPanelAction } from "@/features/context-panel/context-panel-info";
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";

@@ -24,7 +24,6 @@
       "@core/database": "workspace:*",
       "@core/dbos": "workspace:*",
       "@core/environment": "workspace:*",
-      "@core/hyprpay": "workspace:*",
       "@core/logging": "workspace:*",
       "@core/orpc": "workspace:*",
       "@core/posthog": "workspace:*",

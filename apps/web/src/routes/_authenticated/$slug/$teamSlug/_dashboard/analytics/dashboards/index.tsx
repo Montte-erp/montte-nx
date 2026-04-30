@@ -22,7 +22,7 @@ import { PageHeader } from "@/components/page-header";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
-} from "@/features/billing/ui/early-access-banner";
+} from "@/components/blocks/early-access-banner";
 import { ContextPanelAction } from "@/features/context-panel/context-panel-info";
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { useCredenza } from "@/hooks/use-credenza";

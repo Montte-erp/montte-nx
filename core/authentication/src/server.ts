@@ -1,5 +1,4 @@
 import { apiKey } from "@better-auth/api-key";
-import { hyprpay } from "@montte/hyprpay/better-auth";
 import { findMemberByUserId } from "@core/database/repositories/auth-repository";
 import * as schema from "@core/database/schema";
 import { getDomain, isProduction } from "@core/environment/helpers";
@@ -67,7 +66,6 @@ export interface CreateAuthDeps {
       BETTER_AUTH_URL?: string;
       BETTER_AUTH_SECRET: string;
       BETTER_AUTH_TRUSTED_ORIGINS: string;
-      HYPRPAY_API_KEY: string;
    };
 }
 
@@ -341,12 +339,6 @@ export function createAuth(deps: CreateAuthDeps) {
             enableMetadata: true,
             defaultPrefix: "mntt_",
             apiKeyHeaders: ["sdk-api-key", "x-api-key"],
-         }),
-
-         hyprpay({
-            apiKey: env.HYPRPAY_API_KEY,
-            createCustomerOnSignUp: true,
-            syncCustomerOnUpdate: true,
          }),
 
          tanstackStartCookies(),

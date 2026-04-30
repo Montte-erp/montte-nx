@@ -29,9 +29,8 @@ vi.mock("../../src/ai/derive-keywords", () => ({
    deriveKeywords: vi.fn(),
 }));
 
-const { ssePublishSpy, hyprpayUsageIngestSpy } = vi.hoisted(() => ({
+const { ssePublishSpy } = vi.hoisted(() => ({
    ssePublishSpy: vi.fn(),
-   hyprpayUsageIngestSpy: vi.fn(),
 }));
 
 vi.mock("../../src/sse", () => ({
@@ -52,8 +51,14 @@ vi.mock("../../src/workflows/context", async (importOriginal) => {
       ...actual,
       getClassificationRedis: () => ({}),
       getClassificationPosthog: () => ({ capture: vi.fn() }),
-      getClassificationHyprpay: () => ({
-         services: { ingestUsage: hyprpayUsageIngestSpy },
+      getClassificationPrompts: () => ({
+         get: vi.fn().mockResolvedValue({
+            source: "active",
+            prompt: "derive keywords",
+            name: "montte-derive-keywords",
+            version: 1,
+         }),
+         compile: vi.fn((prompt: string) => prompt),
       }),
    };
 });
@@ -99,9 +104,6 @@ beforeEach(async () => {
             timestamp: new Date().toISOString(),
          }),
    );
-   hyprpayUsageIngestSpy.mockImplementation(async () => ({
-      success: true as const,
-   }));
 });
 
 const KEYWORDS = ["fast food", "restaurant", "burger", "delivery", "cafe"];

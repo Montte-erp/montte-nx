@@ -7,14 +7,11 @@
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],
          "@core/environment/worker": ["../../core/environment/src/worker.ts"],
-         "@core/hyprpay/*": ["../../core/hyprpay/src/*"],
          "@core/environment/*": ["../../core/environment/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
-         "@core/stripe": ["../../core/stripe/src/index.ts"],
-         "@core/stripe/*": ["../../core/stripe/src/*"],
          "@core/transactional/*": ["../../core/transactional/dist/*"],
          "@modules/billing/*": ["../../modules/billing/src/*"],
          "@modules/classification/*": ["../../modules/classification/src/*"]
@@ -22,9 +19,6 @@
    },
    "include": ["src"],
    "references": [
-      {
-         "path": "../../core/stripe"
-      },
       {
          "path": "../../core/redis"
       },

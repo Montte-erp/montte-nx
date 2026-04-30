@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import { advanceByBillingInterval } from "@core/utils/date";
 import { and, count, eq, sql, sum } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
-import { billingContract } from "@montte/hyprpay/contract";
+import { billingContract } from "../contracts/billing-contract";
 import { implementerInternal } from "@orpc/server";
 import { servicePrices } from "@core/database/schemas/services";
 import { subscriptionItems } from "@core/database/schemas/subscription-items";

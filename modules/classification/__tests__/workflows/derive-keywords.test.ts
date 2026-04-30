@@ -25,10 +25,7 @@ vi.mock("@dbos-inc/drizzle-datasource", async () => {
    return mod.drizzleDataSourceMockFactory(await dbosMocks);
 });
 
-import {
-   hyprpayUsageIngestSpy,
-   ssePublishSpy,
-} from "../helpers/mock-classification-context";
+import { ssePublishSpy } from "../helpers/mock-classification-context";
 
 vi.mock("../../src/ai/derive-keywords", () => ({
    deriveKeywords: vi.fn(),
@@ -92,7 +89,8 @@ describe("deriveKeywordsWorkflow", () => {
       });
 
       expect(deriveKeywords).toHaveBeenCalledTimes(1);
-      const [aiInput, observability] = vi.mocked(deriveKeywords).mock.calls[0]!;
+      const [, aiInput, observability] =
+         vi.mocked(deriveKeywords).mock.calls[0]!;
       expect(aiInput).toMatchObject({
          name: "Food",
          description: null,
@@ -114,14 +112,6 @@ describe("deriveKeywordsWorkflow", () => {
                categoryName: "Food",
                count: KEYWORDS.length,
             },
-         }),
-      );
-
-      expect(hyprpayUsageIngestSpy).toHaveBeenCalledTimes(1);
-      expect(hyprpayUsageIngestSpy).toHaveBeenCalledWith(
-         expect.objectContaining({
-            eventName: "ai.keyword_derived",
-            quantity: "1",
          }),
       );
    });

@@ -31,14 +31,7 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useLocation, useRouter } from "@tanstack/react-router";
-import {
-   Check,
-   ChevronsUpDown,
-   CreditCard,
-   Plus,
-   Settings,
-   UserPlus,
-} from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Settings, UserPlus } from "lucide-react";
 import { useCallback, useTransition } from "react";
 import { QueryBoundary } from "@/components/query-boundary";
 import { CreateTeamForm } from "./-sidebar-scope-switcher/create-team-form";
@@ -223,22 +216,12 @@ function SidebarScopeSwitcherContent() {
                      </CredenzaHeader>
                      <CredenzaBody className="px-4">
                         <p className="text-sm text-muted-foreground">
-                           Faça upgrade para o add-on Boost para criar espaços
-                           ilimitados
+                           Você atingiu o limite de espaços do seu plano.
                         </p>
                      </CredenzaBody>
                      <CredenzaFooter>
                         <Button onClick={closeCredenza} variant="outline">
-                           Cancelar
-                        </Button>
-                        <Button asChild>
-                           <Link
-                              onClick={closeCredenza}
-                              params={{ slug, teamSlug }}
-                              to="/$slug/$teamSlug/billing"
-                           >
-                              Ver planos
-                           </Link>
+                           Fechar
                         </Button>
                      </CredenzaFooter>
                   </>
@@ -415,16 +398,6 @@ function SidebarScopeSwitcherContent() {
                            </DropdownMenuItem>
                         </DropdownMenuSubContent>
                      </DropdownMenuSub>
-
-                     <DropdownMenuItem asChild>
-                        <Link
-                           params={{ slug, teamSlug }}
-                           to="/$slug/$teamSlug/billing"
-                        >
-                           <CreditCard className="size-4" />
-                           Cobrança & uso
-                        </Link>
-                     </DropdownMenuItem>
 
                      <DropdownMenuItem asChild>
                         <Link

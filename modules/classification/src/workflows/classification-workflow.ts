@@ -14,13 +14,9 @@ import {
    type ClassifyBatchResult,
 } from "../ai/classify-batch";
 import { classificationSseEvents } from "../sse";
-import {
-   CLASSIFICATION_QUEUES,
-   CLASSIFICATION_USAGE_EVENTS,
-} from "../constants";
+import { CLASSIFICATION_QUEUES } from "../constants";
 import {
    classificationDataSource,
-   getClassificationHyprpay,
    getClassificationPosthog,
    getClassificationPrompts,
    getClassificationRedis,
@@ -331,32 +327,6 @@ async function classifyTransactionsBatchWorkflowFn(
          WorkflowError.internal("Falha ao emitir eventos SSE.", { cause: e }),
    );
    if (emitResult.isErr()) throw emitResult.error;
-
-   if (aiResults.length > 0) {
-      await DBOS.runStep(
-         async () => {
-            const result = await fromPromise(
-               getClassificationHyprpay().services.ingestUsage({
-                  eventName:
-                     CLASSIFICATION_USAGE_EVENTS.aiTransactionClassified,
-                  quantity: String(aiResults.length),
-                  idempotencyKey: `classify-${DBOS.workflowID ?? buildWorkflowId(input)}`,
-                  properties: {
-                     transactionCount: aiResults.length,
-                     keywordMatched: keywordMatched.length,
-                  },
-               }),
-               (e) => (e instanceof Error ? e : new Error(String(e))),
-            );
-            if (result.isErr()) {
-               DBOS.logger.warn(
-                  `usage ingestion failed for ai.transaction_classified — team=${input.teamId} err=${result.error.message}`,
-               );
-            }
-         },
-         { name: "ingestUsage" },
-      );
-   }
 
    DBOS.logger.info(
       `${ctx} completed — keyword=${keywordMatched.length} ai=${aiResults.length} written=${writes.length}`,

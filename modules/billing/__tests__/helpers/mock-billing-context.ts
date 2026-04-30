@@ -22,17 +22,6 @@ export const billingResendSpies = {
    sendBillingTrialExpiryWarning: vi.fn().mockResolvedValue(undefined),
 };
 
-export const billingHyprpayUsageIngestSpy = vi.fn(
-   async (_input: {
-      meterId?: string;
-      eventName?: string;
-      quantity: string;
-      idempotencyKey: string;
-      externalId?: string | null;
-      properties?: Record<string, unknown>;
-   }) => ({ success: true as const }),
-);
-
 vi.mock("../../src/sse", async () => {
    return {
       billingSseEvents: {
@@ -56,9 +45,6 @@ vi.mock("../../src/workflows/context", async (importOriginal) => {
       ...actual,
       getBillingRedis: () => ({}),
       getBillingResendClient: () => ({}),
-      getBillingHyprpay: () => ({
-         services: { ingestUsage: billingHyprpayUsageIngestSpy },
-      }),
    };
 });
 

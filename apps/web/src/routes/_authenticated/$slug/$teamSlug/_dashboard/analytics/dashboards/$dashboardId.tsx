@@ -7,7 +7,7 @@ import { DashboardView } from "@/features/analytics/ui/dashboard-view";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
-} from "@/features/billing/ui/early-access-banner";
+} from "@/components/blocks/early-access-banner";
 import { orpc } from "@/integrations/orpc/client";
 
 const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
