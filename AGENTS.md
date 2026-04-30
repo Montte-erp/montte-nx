@@ -1,236 +1,277 @@
-# Montte - Claude Code Guidelines
+# Montte — Claude Code Guidelines
 
-AI-powered ERP built as an Nx monorepo with Bun. Provides AI-assisted workflows, analytics, automation, and team collaboration.
+AI-powered ERP. Nx monorepo, Bun, TanStack Start (SSR), oRPC, TanStack Query, Drizzle ORM, PostgreSQL (ParadeDB). Brazilian Portuguese (pt-BR).
 
 ---
 
 ## Commands
 
 ```bash
-# Development
-bun dev              # Seed event catalog (local) then start web app
-bun dev:all          # Start all apps and packages
-bun dev:worker       # Worker only
-
-# ⚠️ bun dev seeds the event catalog on every start (--env local).
-# If seeding fails, the dev server won't launch. Run the seed manually to debug:
-# bun run scripts/seed-event-catalog.ts run --env local
-
-# Build & Quality
-bun run build        # Build all (Nx cached)
-bun run typecheck    # TypeScript checks
-bun run check        # oxlint
-bun run format       # oxfmt format
-bun run format:check # oxfmt check
-bun run test         # Tests with parallelization
-
-# ⚠️ NEVER use NODE_OPTIONS to increase memory for builds
-# If builds run out of memory, fix the root cause (dependencies, bundle size, etc.)
-# Do NOT add NODE_OPTIONS='--max-old-space-size=...' to build commands
-
-# Database
-bun run db:push      # Push schema changes
-bun run db:studio:local  # Drizzle Studio (local)
-bun run db:studio:prod   # Drizzle Studio (production)
-
-# Scripts (all in root scripts/ directory)
-bun run scripts/seed-default-dashboard.ts run [--env production] [--dry-run]
-bun run scripts/seed-event-catalog.ts run [--env production] [--dry-run]
-bun run scripts/doctor.ts check
+bun dev                  # seeds event catalog (local) then starts web
+bun dev:all              # all apps + packages
+bun run build            # Nx-cached build
+bun run typecheck
+bun run check            # oxlint
+bun run format           # oxfmt
+bun run test             # parallel
+bun run db:push
+bun run db:studio:local       # or db:studio:prod
+bun run check-boundaries # enforce import layer rules
+bun run clean[:cache]
+bun run auth:generate    # regen Better Auth schema
 ```
+
+Scripts (`commander run|check`, `--env`, `--dry-run`): `scripts/seed-default-dashboard.ts`, `scripts/seed-event-catalog.ts`, `scripts/doctor.ts`.
+
+First-time setup: `bun run setup` → `cd apps/web && docker compose up -d` → `bun run db:push && bun run seed:addons && bun run setup:stripe`.
+
+**Gotchas:**
+
+- `bun dev` re-seeds the event catalog every start; if it fails dev won't launch. Debug: `scripts/seed-event-catalog.ts run --env local`.
+- "Module has no exported member" on typecheck → stale dist. `cd core/<pkg> && bun run build`.
+- Never bump `NODE_OPTIONS` memory — fix the root cause.
+- `apps/web/src/routeTree.gen.ts` is generated — never edit.
 
 ---
 
-## Monorepo Structure
+## Skills
 
-```
-montte-nx/
-├── core/
-│   ├── database/        # Drizzle ORM schemas & repositories
-│   ├── authentication/  # Better Auth setup
-│   ├── environment/     # Zod-validated env vars
-│   ├── redis/           # Redis singleton
-│   ├── logging/         # Pino logger
-│   ├── files/           # MinIO file storage singleton
-│   ├── posthog/         # PostHog server/client setup
-│   ├── stripe/          # Stripe singleton and helpers
-│   ├── transactional/   # Resend + email utilities
-│   └── utils/           # Shared utilities + error classes
-├── apps/
-│   ├── web/             # React/Vite SPA — main dashboard + oRPC routers
-│   ├── server/          # Elysia API server for SDK consumers
-│   └── worker/          # BullMQ background job processor (plain Bun process)
-├── packages/
-│   ├── agents/          # Mastra AI agents (planning, research, editing)
-│   ├── analytics/       # Analytics engine
-│   ├── events/          # Event catalog, schemas, emit, credits
-│   ├── feedback/        # Product feedback primitives
-│   └── ui/              # Radix + Tailwind + CVA components
-├── libraries/
-│   └── sdk/             # TypeScript SDK for Montte API
-└── tooling/
-    ├── oxc/             # oxlint + oxfmt configs
-    └── typescript/      # Shared TypeScript configs
-```
+Skills live in `.agents/skills/<name>/SKILL.md`. Open the SKILL.md before writing in that domain — skill content supersedes anything stale here. CI checks → `monitor-ci`. Linear (MON-\*) → `linear-cli`.
+
+Domain → skill map (open before coding):
+
+- oRPC handlers/errors → `neverthrow`. Schema/queries → `postgres-drizzle`. Search/BM25 → `paradedb-skill`. Redis → `redis-best-practices`.
+- Client data → `tanstack-query`. Forms → `tanstack-form`. Tables → `tanstack-table` (+ `tanstack-virtual` for long lists). Routes → `tanstack-router`. Stores → `tanstack-store` (+ `tanstack-db`). SSR/server fns → `tanstack-start` (+ `tanstack-devtools`).
+- AI agents → `tanstack-ai`. Durable workflows → `dbos-typescript`.
+- Auth → `better-auth-best-practices` (sub-skills exist for email/2FA/orgs/scaffolding).
+- shadcn primitives → `shadcn`. UI/UX review → `ui-ux-expert`. A11y → `wcag-audit-patterns`.
 
 ---
 
-## API Layer — oRPC (NOT tRPC)
+## Monorepo
 
-Routers live in `apps/web/src/integrations/orpc/router/`. Uses `@orpc/server`, NOT tRPC.
-
-**Available routers:** account, agent, analytics, bank-accounts, billing, bills, budget-goals, categories, chat, contacts, credit-cards, dashboards, early-access, feedback, insights, inventory, onboarding, organization, search, services, services-bills, session, tags, team, transactions, webhooks
-
-**Router pattern:**
-
-```typescript
-import { ORPCError } from "@orpc/server";
-import { protectedProcedure } from "../server";
-
-export const getAll = protectedProcedure
-   .input(z.object({ teamId: z.string().uuid() }))
-   .handler(async ({ context, input }) => {
-      // context: { db, posthog?, organizationId, userId, session, auth, headers, request, stripeClient? }
-   });
+```
+core/         # agents, database, authentication, environment, redis, logging,
+              # files, posthog, stripe, transactional, utils
+apps/         # web (TanStack Start + oRPC), worker (DBOS)
+packages/     # analytics, events, notifications, ui
+tooling/      # oxc, tsconfigs
 ```
 
-**Errors in routers:** Use `ORPCError` — NOT native `Error`, NOT `APIError`/`AppError`:
+Catalogs (root `package.json`): `analytics-client`, `assistant-ui`, `astro`, `auth`, `database`, `development`, `dnd`, `environment`, `files`, `fot`, `logging`, `mastra`, `orpc`, `payments`, `react`, `search-providers`, `server`, `tanstack`, `tanstack-ai`, `telemetry`, `testing`, `transactional`, `ui`, `validation`, `vite`, `workers`. Internal: `"@core/database": "workspace:*"`.
 
-```typescript
-throw new ORPCError("NOT_FOUND", { message: "Transaction not found" });
-throw new ORPCError("FORBIDDEN", { message: "Insufficient permissions" });
-```
-
-**Errors in repositories** (`core/database/src/repositories/`): Use `AppError` + `propagateError()` from `@core/utils/errors`.
+Add a new dep → declare in the consuming package's `package.json` with the right catalog key.
 
 ---
 
-## Client-Side Patterns (oRPC + TanStack Query)
+## API — oRPC (NOT tRPC)
 
-```typescript
-// Queries — use useSuspenseQuery, NOT useQuery (guarantees data defined)
-const { data } = useSuspenseQuery(
-   orpc.transactions.getAll.queryOptions({ input: { page: 1, pageSize: 20 } })
-);
-
-// Mutations — callbacks go INSIDE mutationOptions()
-const mutation = useMutation(
-   orpc.transactions.create.mutationOptions({
-      onSuccess: () => { queryClient.invalidateQueries(...) },
-   })
-);
-```
+Routers in `apps/web/src/integrations/orpc/router/`. Context: `{ db, posthog?, organizationId, userId, session, auth, headers, request, stripeClient?, workflowClient }`.
 
 **Rules:**
 
-- `input` goes INSIDE `queryOptions()`, not as a separate argument
-- Only use `useQuery` for optional/polling/conditional queries
-- Wrap suspense components in `<Suspense fallback={...}>` at route/layout level
-- NEVER dynamically import hooks (`await import("@tanstack/react-query")` breaks React rules)
+- Errors: only `WebAppError` (factories: `notFound`, `forbidden`, `unauthorized`, `badRequest`, `conflict`, `tooManyRequests`, `internal`, `database`, `validation`, `fromAppError`). Never `ORPCError` / raw `Error` / strings. **Messages always pt-BR** — they render directly in toasts.
+- **No repository layer.** Routers query `context.db` directly; workflows use `<module>DataSource.runTransaction`.
+- All writes inside `db.transaction(async (tx) => …)`. Single reads exempt.
+- Business-rule checks (conflict/notFound) **outside** the transaction. `mapErr` always to `WebAppError.internal`. Empty `returning()` → throw `WebAppError.internal` (specific) outside the tx.
+- Ownership via middleware: fetch entity, check `teamId`, pass via `next({ context: { entity } })`. Handler never re-queries.
+- Bulk ops: dedicated procedure + `Promise.allSettled` server-side. Never loop `mutateAsync` on the client.
+- Cost-incurring procedures: use `billableProcedure` + `.meta({ billableEvent: "<name>" })`. Pure CRUD stays on `protectedProcedure`.
 
-**Global cache invalidation:** `apps/web/src/integrations/tanstack-query/root-provider.tsx` configures a `MutationCache` with a global `onSuccess` that calls `queryClient.invalidateQueries()` (no filter) after **every** successful mutation. This invalidates all active queries automatically — per-mutation `invalidateQueries` calls are only needed when you need to invalidate queries that belong to a different component tree or before the mutation resolves. Do NOT report missing per-mutation invalidations as bugs.
+Canonical pattern:
+
+```typescript
+const itemByIdProcedure = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .use(async ({ context, input, next }) => {
+      const result = await fromPromise(
+         context.db.query.items.findFirst({
+            where: (f, { eq }) => eq(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar permissão."),
+      ).andThen((item) =>
+         !item || item.teamId !== context.teamId
+            ? err(WebAppError.notFound("Item não encontrado."))
+            : ok(item),
+      );
+      if (result.isErr()) throw result.error;
+      return next({ context: { item: result.value } });
+   });
+```
+
+Available routers: account, agent-settings, analytics, api-keys, bank-accounts, billing, bills, budget-goals, categories, contact-settings, contacts, credit-cards, dashboards, financial-settings, insights, notifications, onboarding, organization, services, services-bills, session, tags, team, transactions.
+
+---
+
+## Client (oRPC + TanStack Query)
+
+- `useSuspenseQuery` by default. Wrap every use in `<QueryBoundary fallback={<Skel/>} errorTitle="…">` — never raw `ErrorBoundary + Suspense`.
+- Conditional queries: `useQuery + skipToken`, **or** render a child `<Suspense>{cond && <Child id/>}</Suspense>` for `useSuspenseQuery`. Never `useQuery + enabled`.
+- 2+ independent queries in one component → `useSuspenseQueries` (no waterfalls).
+- `select` aggressively — derive shape, don't store derived state.
+- `input` inside `queryOptions()`. Callbacks inside `mutationOptions()`. Always use `orpc.proc.queryKey()` / `mutationKey()` — never manual arrays.
+- Global `MutationCache` invalidates all queries after every mutation. Opt out with `meta: { skipGlobalInvalidation: true }`.
+- Filters / sort / pagination / tabs / selected ids → URL search params via `validateSearch` + `navigate({ search: prev => …, replace: true })`. Not `useState`.
+- SSE → `useQuery + experimental_liveOptions`. Never `consumeEventIterator + useEffect`.
+- Types: `import type { Inputs, Outputs } from "@/integrations/orpc/client"`. Frontend never imports `@core/*`.
+- Slugs: use `useDashboardSlugs` / `useOrgSlug` / `useTeamSlug` / `useActiveOrganization` / `useActiveTeam`. Never raw `useParams`.
+- Direct `orpc.*` calls only inside route loaders for prefetch — components always use `useMutation`/`useSuspenseQuery`.
+
+---
+
+## Forms (TanStack Form)
+
+- Schema at module level, never inside the component.
+- `isInvalid = isTouched && errors.length > 0`. Drop `isTouched` for server-error-bound fields (conflicts with `onSubmitAsync`).
+- Always set `id`, `name`, `aria-invalid`; `htmlFor` on `<FieldLabel>`. `children={(field) => …}` as explicit prop.
+- `onSubmitAsync` only when a server conflict maps to a visible field. Generic CRUD → `onSubmit` + `toast.error` (use `fromPromise`). Server-field error returns `{ fields: { fieldName: "…" } }`. No footer error paragraph.
+- `form.Subscribe` selectors must be specific — never `state => state`.
+- Multi-step forms: local React context via factory function; type via `ReturnType<typeof createMyForm>`.
+- Nav guard: `useBlocker({ withResolver: true, disabled: isCreate })`.
+
+---
+
+## Routes (TanStack Start)
+
+Required on every route: `head()` (`"Page — Montte"` pt-BR), `pendingMs: 300` + `pendingComponent` when loader prefetches, `errorComponent` when loader uses blocking `ensureQueryData`, `validateSearch` fields use `.catch()` (never `.optional()`), `loaderDeps` whenever the loader reads search params.
+
+```typescript
+export const Route = createFileRoute("/feature")({
+   validateSearch: z.object({
+      sorting: z
+         .array(z.object({ id: z.string(), desc: z.boolean() }))
+         .catch([])
+         .default([]),
+      columnFilters: z
+         .array(z.object({ id: z.string(), value: z.unknown() }))
+         .catch([])
+         .default([]),
+      page: z.number().int().min(1).catch(1).default(1),
+      pageSize: z.number().int().catch(20).default(20),
+   }),
+   loaderDeps: ({ search: { page, pageSize } }) => ({ page, pageSize }),
+   loader: ({ context, deps }) =>
+      context.queryClient.prefetchQuery(
+         orpc.feature.getAll.queryOptions({ input: deps }),
+      ),
+   pendingMs: 300,
+   pendingComponent: FeatureSkeleton,
+   head: () => ({ meta: [{ title: "Feature — Montte" }] }),
+   component: FeaturePage,
+});
+```
+
+Vite plugin order is critical: `tanstackStart({ router: { autoCodeSplitting: true } })` → `nitro({ preset: "bun" })` → `viteReact()`.
+
+`createServerFn` only for HTTP-pure ops needing `process.env` or request context — not a replacement for oRPC. **Never `VITE_*` / `import.meta.env`** for public env vars (breaks Railway skipped builds) — read `process.env` from a server fn and pass via loader. Theme: `theme` cookie read in root loader, applied as `<html className>` (no `dangerouslySetInnerHTML`). Devtools always inside `<ClientOnly>` + `import.meta.env.DEV`.
+
+---
+
+## Database (Drizzle + ParadeDB)
+
+Schemas in `core/database/src/schemas/`. **Always namespace** — never raw `pgTable(...)`:
+
+- `financeSchema` → transactions, bank-accounts, bills, credit-cards, financial-goals, financial-settings
+- `crmSchema` → contacts, contact-settings, tags
+- `platformSchema` → dashboards, insights, event-catalog, webhooks, subscriptions, agents
+- `auth` → Better Auth managed, **read-only** (use `additionalFields` in auth config)
+
+Local DB image is `paradedb/paradedb` — don't swap.
+
+---
+
+## Auth (Better Auth)
+
+Config: `core/authentication/src/server.ts`. Plugins: Magic Link, Email OTP, 2FA, Anonymous, HyprPay.
+
+- Auth schema is read-only; extend via `additionalFields`.
+- Queries → oRPC (`orpc.organization.*`). Mutations → `authClient` directly (never `useMutation`).
+- `member.id ≠ user.id` — `member.id` for Better Auth APIs, `member.userId` for DB.
+- Loading state: `useTransition`, not `useState<boolean>`.
+
+---
+
+## Worker / DBOS
+
+DBOS runs in `apps/worker` — never the web process. Web enqueues via `context.workflowClient` (`DBOSClient`, PostgreSQL-backed). Each workflow file declares its own `WorkflowQueue`; DBOS processes them automatically.
+
+**Workflow rules:**
+
+- Use `<module>DataSource = new DrizzleDataSource<DatabaseInstance>(...)` per module. Inside steps: `dataSource.runTransaction(async () => { const tx = <module>DataSource.client; … }, { name })`. Generic gives a typed `client` — never cast. Never use plain `db` or repositories.
+- Worker startup, in this order, per module: `await DrizzleDataSource.initializeDBOSSchema({ connectionString })` → init context store → create queues → side-effect import workflow files. All `setup<Module>Workflows(deps)` awaited before `launchDBOS()`. `initOtel()` before `launchDBOS()`. Without `initializeDBOSSchema` the `transaction_completion` table is missing and `runTransaction` throws.
+- Logging: `DBOS.logger` only (string interpolation). Never replace with `getWorkerLogger` inside workflows — loses workflow context.
+- Scheduling per-instance waits: `enqueueOptions.delaySeconds` on enqueue / self-reschedule (`DELAYED` status, no slot held). `DBOS.sleepms` may hold the slot — avoid for long waits. Reserve `@DBOS.scheduled` for fixed cron only.
+- Self-rescheduling: re-check status in tx → do work → compute next wake **inside `DBOS.runStep`** → `DBOS.startWorkflow(self, { workflowID: "<deterministic-per-period>", queueName, enqueueOptions: { delaySeconds } })`.
+- Workflow inputs always carry both `teamId` and `organizationId` — don't look them up inside steps.
+
+Existing queues: `workflow:categorize` (10), `workflow:derive-keywords` (5), `workflow:benefit-lifecycle`, `workflow:period-end-invoice`, `workflow:trial-expiry`.
+
+**Testing:** mock `@dbos-inc/dbos-sdk` with `vi.hoisted` + `dbosSdkMockFactory` / `drizzleDataSourceMockFactory` from `@core/dbos/testing/mock-dbos` — `registerWorkflow` must return the function directly. pglite-backed `setupTestDb()` for assertions. Time-mocked: `vi.useFakeTimers()` + `vi.setSystemTime(T0)`. End-to-end real-runtime smoke: `__tests__/integration/dbos-smoke.test.ts` (pglite + `@electric-sql/pglite-socket`). Example: `__tests__/workflows/period-end-invoice.test.ts`.
+
+---
+
+## AI Agents
+
+Always `@tanstack/ai` + `@tanstack/ai-openrouter` (`catalog:tanstack-ai`). Never the Vercel AI SDK (`ai`, `@openrouter/ai-sdk-provider`).
+
+```typescript
+const result = await chat({
+   adapter: openRouterText("liquid/lfm2-8b-a1b", { apiKey: env.OPENROUTER_API_KEY }),
+   messages: [{ role: "user", content: [{ type: "text", content: prompt }] }],
+   outputSchema: z.object({ … }),
+   stream: false,
+});
+```
+
+Single agent `rubiAgent` via `mastra.getAgent("rubiAgent")` + `createRequestContext({ userId, teamId, organizationId, model, language: "pt-BR" })` from `@packages/agents`.
+
+---
+
+## Billing (HyprPay)
+
+100% usage-based. Customer = Better Auth organization (`externalId = organization.id`). Subscriptions support seats via item `quantity`. Stripe is legacy-only — `@core/stripe` will be removed.
+
+**Bill only what costs us** (AI calls, email, storage, webhook egress). UI/CRUD/listings are free.
+
+Two ingestion paths converge on `ingestUsageEvent`:
+
+1. **Workflow steps** — call `ingestUsageEvent` inside `DBOS.runStep` after the cost-incurring action succeeds.
+2. **Router-triggered costs** — `billableProcedure` + `.meta({ billableEvent })` → `onSuccess` middleware ingests one event per success.
+
+Event names live in module `constants.ts` (e.g. `CLASSIFICATION_USAGE_EVENTS`, `TRANSACTIONAL_USAGE_EVENTS`). `ingestUsageEvent` is no-op without a configured meter and never throws — failed ingestion logs only, never rolls back the work. Always pass an `idempotencyKey`.
 
 ---
 
 ## Code Style
 
-**Files:** kebab-case (`transactions-table.tsx`, `use-transactions.ts`)
-**Components:** PascalCase `[Feature][Action][Type]` (`TransactionsTable`, `AgentSettingsSection`)
-**Hooks:** `use[Feature][Action]` (`useTransactions`, `useCreateTransaction`)
-
-**No comments in code.** Never add comments, JSDoc, section dividers, or inline explanations. Code should be self-documenting.
-
-**No barrel files.** Never create `index.ts` re-exports. Import directly from source files using package.json exports:
-
-```typescript
-// Good
-import { Button } from "@packages/ui/components/button";
-import { emitEvent } from "@packages/events/emit";
-
-// Bad — bypasses exports
-import { Button } from "@packages/ui/src/components/button";
-import { emitEvent } from "@packages/events";
-```
-
-**No relative imports in core/.** Core packages must use `@core/<package>/*` path aliases for all internal imports. Relative imports (`./`, `../`) are banned by oxlint (`no-restricted-imports` in `tooling/oxc/core.json`). Each package has `"@core/<package>/*": ["./src/*"]` in its `tsconfig.json`.
-
-```typescript
-// ✅ Good — path alias
-import { createSafeLogger } from "@core/logging";
-import type { Logger } from "@core/logging/types";
-import { categories } from "@core/database/schemas/categories";
-
-// ❌ Bad — relative import (oxlint error)
-import { createSafeLogger } from "./logger";
-import type { Logger } from "../types";
-import { categories } from "./categories";
-```
-
-**oxlint suppression:** Place `// oxlint-ignore <rule-name>` or `// oxlint-ignore -- <reason>` directly above the triggering line. For JSX props, place above the prop, not the element.
-
-**Array index keys:** Prefer `key={\`step-${index + 1}\`}`over suppressing`noArrayIndexKey`.
-
-**No dynamic imports.** Never use `await import(...)` for project modules. Always use static `import` at the top of the file. Dynamic imports break tree-shaking and are unnecessary in this codebase.
-
-**Dates:** Always use `dayjs` for all date manipulation (parsing, formatting, arithmetic). Never use raw `Date` math or manual string formatting for dates.
+- TypeScript: **never `as`** in any form (including `[] as string[]`) — fix the source type. No redundant return types Claude can infer. No unused params (delete; no `_foo`). No JSDoc / section comments / inline rationale. No barrel files. No relative imports in `core/` — `@core/<pkg>/*`. No dynamic imports.
+- Errors: **no `try/catch`** — use `neverthrow` (`fromPromise`, `fromThrowable`, `ok`, `err`, `Result`, `ResultAsync`, `safeTry`). Patterns: early return on `isErr`, `andThen` chains, no `match(v=>v, e=>throw)`, no `Promise.reject` inside `match`, fire-and-forget uses `.catch(log)`. Exception: tests and scripts.
+- Control flow: early returns, never `else` after `return`. Minimize `useEffect` — derive state or use event handlers; `useEffect` only for external sync. Use `useCallback`, never `useStableHandler`.
+- Dates: always `dayjs`. Never `new Date()` (exceptions: Drizzle `.$onUpdate()`, test fixtures). `.toDate()` for Drizzle, `.toISOString()` for ISO, `.format("YYYY-MM-DD")` for date strings.
+- Naming: files kebab-case. Components PascalCase `[Feature][Action][Type]`. Hooks `use[Feature][Action]`.
+- Tailwind: **no margin utilities** (`m-`, `mt-`, `mx-`, `space-x-*`, `space-y-*`) — use `gap-*`. Only `gap-2` or `gap-4`. Spacing/sizing only `2` and `4` suffixes (`p-*`, `px-*`, `size-*`).
+- oxlint suppress: `// oxlint-ignore <rule>`. Array index keys: `` `step-${index + 1}` ``.
+- Domain naming: tags are always **"Centro de Custo"**.
 
 ---
 
-## Data Table Pattern
+## UI Conventions
 
-Use `DataTable` from `@packages/ui/components/data-table` for all tabular lists.
+- Modals/sheets/drawers: **always `useCredenza`**. Destructive confirmation: `useAlertDialog`. Never import Sheet/Dialog/Drawer/AlertDialog/Credenza directly. `useSheet` is unused.
+- Empty states: `Empty / EmptyHeader / EmptyMedia / EmptyTitle / EmptyDescription / EmptyContent` from `@packages/ui/components/empty`.
+- DataTable (`@packages/ui/components/data-table`): never wrap in `Card`. Required props: `getRowId`, `sorting`, `onSortingChange`, `columnFilters`, `onColumnFiltersChange`, `tableState`, `onTableStateChange`. Column defs **must** be memoized. `manualSorting`/`manualFiltering` already wired internally. Per usage: a module-level `createLocalStorageState<DataTableStoredState | null>("montte:datatable:<feature>", null)` + `validateSearch` with `sorting` + `columnFilters` arrays. `ColumnMeta`: `label`, `filterVariant` (`"text"|"select"|"range"|"date"`), `align`, `exportable`. View toggle via `useViewSwitch("feature:view", VIEWS)` — never `renderMobileCard`.
+- Animations: Tailwind-first. Framer Motion only for state-dependent enter/exit, `layoutId`, gestures — client components only, wrap shadcn primitives in `motion.div` (never modify them). Animate only `transform` and `opacity`.
 
-**Rules:**
+**Component colocation:**
 
-- Prefer `DataTable` over manual `Table` primitives for list views.
-- Tables should be expandable via row click using `renderSubComponent`.
-- Do not wrap `DataTable` in `Card`/`CardContent` containers.
-
-### Card View (`view` prop)
-
-DataTable supports a `view` prop (`"table" | "card"`). When `view="card"`, it dynamically renders visible columns as Card components — **no hand-crafted card templates**.
-
-- **Never** use `renderMobileCard` — it was removed. There is no mobile card prop.
-- **Never** write inline `if (view === "card") { return <grid>... }` blocks in page components. Always pass `view` to DataTable and let it handle the layout.
-- Card layout uses the same column definitions, column visibility, row selection, and `renderActions` as the table view.
-
-**Card structure:**
-
-- `CardHeader` — 1st column as `CardTitle`, 2nd column as `CardDescription`
-- `CardAction` — Row selection checkbox (when `enableRowSelection` is true)
-- `CardContent` — Remaining columns in a 2-column grid with uppercase labels
-- `CardFooter` — `renderActions` output, right-aligned
-
-**Do not override** Card component default styles (padding, gap, text sizes). Use the Card as-is — only add `gap-4` on the root Card.
-
-**Page integration pattern:**
-
-```typescript
-// 1. Define view config
-const VIEWS: [ViewConfig<"table" | "card">, ViewConfig<"table" | "card">] = [
-   { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
-   { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
-];
-
-// 2. Use hook
-const { currentView, setView, views } = useViewSwitch("feature:view", VIEWS);
-
-// 3. Pass to header
-<DefaultHeader viewSwitch={{ options: views, currentView, onViewChange: setView }} />
-// or <PageHeader panelViewSwitch={{ options: views, currentView, onViewChange: setView }} />
-
-// 4. Pass view to DataTable
-<DataTable columns={columns} data={data} view={currentView} renderActions={...} />
-```
+- Single-route → `-[name]/` next to the route (TanStack Router ignores `-` prefix). Relative imports allowed.
+- Shared → `features/[name]/` (flat — no `hooks/`/`ui/`/`utils/`).
 
 ---
 
-## Core Singletons
-
-Core packages export ready-to-use singletons that read from `@core/environment` directly. Never create factory functions that receive env values as parameters — import the singleton instead.
+## Singletons
 
 ```typescript
-// ✅ Import singletons directly from core
 import { db } from "@core/database/client";
 import { auth } from "@core/authentication/server";
 import { redis } from "@core/redis/connection";
@@ -239,469 +280,125 @@ import { stripeClient } from "@core/stripe";
 import { resendClient } from "@core/transactional/utils";
 import { minioClient } from "@core/files/client";
 import { env } from "@core/environment/server";
-
-// ❌ Never create factory functions that receive env
-const db = createDb({ databaseUrl: env.DATABASE_URL });
-const redis = createRedisConnection(env.REDIS_URL);
-const posthog = getPosthogConfig(env);
 ```
-
-**No re-export wrapper files.** Apps should import singletons directly from `@core/*`. Never create intermediate files like `integrations/database.ts` that just re-export a core singleton.
 
 ---
 
-## Package Exports
+## State / Storage / Pacing
 
-Packages use explicit `package.json` exports. Always match the export path exactly:
+- Stores: `@tanstack/store` + `@tanstack/react-store` only. Never Zustand/Jotai/React-context for shared mutable state. `createStore()` (not `new Store()`). Object selectors always pass `shallow`. Derived → `createAtom`. Async → `createAsyncAtom`. Persisted → `createPersistedStore` from `@/lib/store`. Cross-store → `createStoreEffect`. Multi-store updates → `batch()`. Never store `ReactNode` (use render fns). Per-instance stores inside `useState` may use `new Store()`. SSR safety: `createClientOnlyFn` / `createIsomorphicFn` — never `typeof window` guards.
+- All localStorage keys prefixed `montte:`.
+- SSR-safe hooks via `foxact` subpaths — never `@uidotdev/usehooks`. Common: `foxact/use-local-storage`, `foxact/create-local-storage-state`, `foxact/use-session-storage`, `foxact/use-media-query`, `foxact/invariant`, `foxact/merge-refs`, `foxact/use-isomorphic-layout-effect`.
+- Debounce/throttle/rate-limit: `@tanstack/react-pacer`. Never `foxact/use-debounced-value`. Async/`mutateAsync` → always `useAsyncDebouncedCallback`. Options object: `{ wait: 350 }`.
+
+---
+
+## F-O-T Libraries (`catalog:fot`)
+
+| Library                      | Use for                                                                                                              |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `@f-o-t/money`               | All money — `toMajorUnitsString(of(decimal, "BRL"))` to normalize, `format(of("1500.00","BRL"), "pt-BR")` to display |
+| `@f-o-t/csv`                 | CSV parse/generate — UI uses `useCsvFile` (never `FileReader.readAsText`)                                            |
+| `@f-o-t/ofx`                 | OFX — `readAsArrayBuffer` + `parseBufferOrThrow(new Uint8Array(buffer))`, never `readAsText`                         |
+| `@f-o-t/condition-evaluator` | Rule eval — `weight` lives on `ConditionGroup`, not `Condition`                                                      |
+
+XLSX in UI: `useXlsxFile` from `@/hooks/use-xlsx-file`.
+
+---
+
+## Inputs (Maskito)
+
+`@maskito/core` + `@maskito/react` for all structured inputs. `onInput` (not `onChange`), `defaultValue` (not `value`). `MaskitoOptions` at module scope; dynamic (CPF/CNPJ) via `useMemo`. Strip before API: `value.replace(/\D/g, "")`. Currency → `MoneyInput` from `@packages/ui/components/money-input`.
+
+| Field    | Mask                                                                                                       |
+| -------- | ---------------------------------------------------------------------------------------------------------- |
+| Telefone | `["(", /\d/, /\d/, ")", " ", /\d/, /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/, /\d/, /\d/]`                   |
+| CPF      | `[/\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "-", /\d/, /\d/]`                        |
+| CNPJ     | `[/\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "/", /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/]` |
+| Agência  | `mask: /^\d{0,4}(-\d{0,1})?$/`                                                                             |
+| Conta    | `mask: /^\d{0,12}(-\d{0,1})?$/`                                                                            |
+
+---
+
+## PostHog
+
+All config in `@core/posthog/config` — never duplicate in `apps/web`.
 
 ```typescript
-// Core packages use @core/* prefix
-import { db } from "@core/database/client";
-import { bankAccounts } from "@core/database/schemas/bank-accounts";
-import { createBankAccount } from "@core/database/repositories/bank-accounts-repository";
-import { auth } from "@core/authentication/server";
-import { env } from "@core/environment/server";
-import { redis } from "@core/redis/connection";
-import { posthog } from "@core/posthog/server";
-import { stripeClient } from "@core/stripe";
-import { resendClient } from "@core/transactional/utils";
-import { minioClient } from "@core/files/client";
-import { AppError } from "@core/logging/errors";
-
-// Feature packages use @packages/* prefix
-import { emitEvent } from "@packages/events/emit";
-import { Button } from "@packages/ui/components/button";
+import { POSTHOG_SURVEYS, FEATURE_FLAG_KEYS } from "@core/posthog/config";
 ```
 
-Common patterns: `.` (root), `./client`, `./server`, `./schemas/*`, `./repositories/*`, `./components/*`
+Import `usePostHog` from `posthog-js/react` directly — never re-export. `posthog.identify` + `posthog.group` only in `_dashboard.tsx` loader. `opt_in_site_apps: true` for `renderSurvey()`. Early-access stages from `getEarlyAccessFeatures()` — never hardcoded.
+
+Surveys: `bugReport`, `featureRequest`, `featureFeedback`, `feedbackContatos`, `feedbackGestaoServicos`, `feedbackAnalisesAvancadas`, `feedbackDados`. Flags: `contatos`, `gestao-de-servicos`, `analises-avancadas`, `dados`.
 
 ---
 
-## AI Agents (packages/agents/)
+## Environment
 
-Current Mastra setup registers a single domain agent: `rubiAgent`.
-
-**Usage in routers:**
-
-```typescript
-import { mastra, createRequestContext } from "@packages/agents";
-
-const agent = mastra.getAgent("rubiAgent");
-const context = createRequestContext({
-   userId: "user-id",
-   teamId: "team-id",
-   organizationId: "organization-id",
-   model: "openrouter/moonshotai/kimi-k2.5",
-   language: "pt-BR",
-});
-
-const result = await agent.generate("Summarize this month's transactions", {
-   requestContext: context,
-});
-```
-
-**Agent IDs (Mastra registration):**
-
-- `rubiAgent` — finance assistant and ERP workflows
+`SCREAMING_SNAKE_CASE`, Zod-validated in `core/environment/src/server.ts`. `.env*` lives in `apps/web/`. Public vars only via server fn → loader data (never `VITE_*` / `import.meta.env`).
 
 ---
 
-## Feature Folder Structure (in apps/web/src/features/)
+## Onboarding
 
-```
-features/[name]/
-├── hooks/     use-[feature]-context.tsx, use-[feature]-[action].ts
-├── ui/        [feature]-[action]-credenza.tsx, [feature]-section.tsx
-└── utils/     (when needed)
-```
-
-Features: access-control, analytics, bank-accounts, billing, bills, budget-goals, categories, contacts, credit-cards, feedback, file-upload, inventory, onboarding, organization, rubi-chat, search, services, settings, tags, transactions, webhooks
-
----
-
-## Routes (TanStack Router — file-based)
-
-```
-apps/web/src/routes/
-├── auth/                  # sign-in, sign-up, forgot-password, magic-link
-├── _authenticated/
-│   └── $slug/
-│       └── $teamSlug/     # team-scoped dashboard routes
-│           └── _dashboard/
-│               ├── transactions.tsx
-│               ├── bank-accounts.tsx
-│               ├── bills.tsx
-│               └── inventory/
-└── api/                   # API routes
-```
-
-Conventions: kebab-case files, `$` for dynamic segments, `_` for layout routes.
-
----
-
-## Database (Drizzle ORM + PostgreSQL)
-
-**Schemas** at `core/database/src/schemas/`: bank-accounts, bills, budget-goals, categories, contacts, credit-cards, dashboards, insights, inventory, services, transactions, webhooks, auth, etc.
-
-**Repository pattern** at `core/database/src/repositories/`:
-
-```typescript
-export async function createBankAccount(
-   teamId: string,
-   data: CreateBankAccountInput,
-) {
-   const validated = validateInput(createBankAccountSchema, data);
-   try {
-      const [account] = await db
-         .insert(bankAccounts)
-         .values({ ...validated, teamId })
-         .returning();
-      if (!account) throw AppError.database("Failed to create bank account");
-      return account;
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to create bank account");
-   }
-}
-```
-
----
-
-## Authentication (Better Auth)
-
-Config at `core/authentication/src/server.ts`. Plugins: Google OAuth, Magic Link, Email OTP, 2FA, Anonymous sessions.
-
-**⚠️ CRITICAL: Auth Tables Are Read-Only**
-
-Better Auth fully manages these tables in `core/database/src/schemas/auth.ts`:
-
-- `user`, `session`, `account`, `verification`
-- `organization`, `team`, `member`, `teamMember`
-- `invitation`, `twoFactor`
-
-**Rules:**
-
-- **NEVER** edit these Drizzle schema definitions directly (fields, defaults, constraints)
-- **NEVER** add/remove/modify columns in these tables manually
-- To add custom fields to `user`, `session`, `organization`, or `team`:
-   - **ALWAYS** use `additionalFields` in `core/authentication/src/server.ts`
-   - Schema changes must go through Better Auth's config
-- Other tables (`member`, `invitation`, `twoFactor`, etc.) have NO `additionalFields` support
-   - These are entirely managed by Better Auth core
-   - Cannot be customized — use separate related tables if needed
-
-```typescript
-// core/authentication/src/server.ts
-organization({
-   schema: {
-      team: {
-         additionalFields: {
-            onboardingProducts: {
-               type: "json",
-               defaultValue: null,
-               validator: {
-                  input: z
-                     .array(z.enum(["content", "forms", "analytics"]))
-                     .nullable(),
-               },
-            },
-         },
-      },
-   },
-});
-```
-
-Field types: `"string"` (TEXT), `"boolean"` (BOOLEAN), `"number"` (INTEGER), `"string[]"` (TEXT[]), `"json"` (JSONB + Zod validator)
-
-**Query/Mutation split for Better Auth**
-
-- **Queries** (read operations) → always use oRPC (`orpc.organization.*`), even for Better Auth-owned data like members, teams, and invitations. oRPC procedures enrich the raw Better Auth data with DB fields (plans, credits, slugs, etc.) that the raw client cannot provide.
-- **Mutations** (write operations) → use `authClient` directly. Never wrap these in oRPC.
-
-```typescript
-// ✅ Mutations — authClient only
-authClient.organization.create({ name, slug });
-authClient.organization.update({ data: { name }, organizationId });
-authClient.organization.delete({ organizationId });
-authClient.organization.inviteMember({ email, role, organizationId });
-authClient.organization.removeMember({ memberIdOrEmail, organizationId });
-authClient.organization.updateMemberRole({ memberId, role, organizationId });
-authClient.organization.cancelInvitation({ invitationId });
-authClient.organization.setActive({ organizationId });
-authClient.organization.createTeam({ name, organizationId });
-authClient.organization.setActiveTeam({ teamId });
-
-// ✅ Queries — always oRPC (even for Better Auth data)
-orpc.organization.getMembers.queryOptions({});
-orpc.organization.getOrganizationTeams.queryOptions({});
-orpc.organization.getActiveOrganization.queryOptions({});
-orpc.organization.getMemberTeams.queryOptions({ input: { userId } });
-```
-
-**member.id vs user.id**
-`member.id` (member record ID, PK of the member table) and `user.id` (user UUID) are different values and must never be used interchangeably.
-
-- Use `member.id` for Better Auth mutation APIs (`removeMember`, `updateMemberRole`).
-- Use `member.userId` for queries against user-keyed tables (`teamMember.userId`, isSelf checks).
-- `getMembers` must expose both: `id` (member record ID) and `userId` (user ID).
-
-**Client-side authClient usage rules:**
-
-- **NEVER** wrap `authClient` calls inside `useMutation` — call them directly
-- Most authClient calls live inside TanStack Form's `onSubmit` handler
-- For loading state use `useTransition` — NOT `useState<boolean>`
-- `startTransition(async () => { ... })` wraps the async authClient call (React 19 supports async transitions)
-- `isPending` from `useTransition` drives button `disabled` and spinner
-
-```typescript
-// ✅ Correct — TanStack Form + useTransition
-const [isPending, startTransition] = useTransition();
-
-const form = useForm({
-   defaultValues: { name: "" },
-   onSubmit: async ({ value }) => {
-      const { error } = await authClient.updateUser({ name: value.name });
-      if (error) { toast.error(error.message ?? "Erro"); return; }
-      toast.success("Salvo!");
-   },
-   validators: { onBlur: schema },
-});
-
-const handleSubmit = useCallback((e: FormEvent) => {
-   e.preventDefault();
-   e.stopPropagation();
-   startTransition(async () => { await form.handleSubmit(); });
-}, [form, startTransition]);
-
-// Button uses isPending + form.Subscribe for canSubmit
-<form.Subscribe>
-   {(formState) => (
-      <Button disabled={!formState.canSubmit || isPending} type="submit">
-         {isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
-         Salvar
-      </Button>
-   )}
-</form.Subscribe>
-
-// ❌ Wrong — never wrap authClient in useMutation
-const mutation = useMutation({ mutationFn: () => authClient.updateUser({ name }) });
-```
-
-For simple button actions (no form): `startTransition(async () => { await authClient.method(...) })` directly in the onClick handler.
-
----
-
-## Global UI Hooks (TanStack Store)
-
-| Hook             | Purpose                           | Use For                                           |
-| ---------------- | --------------------------------- | ------------------------------------------------- |
-| `useSheet`       | Side panel forms                  | Creating/editing records, agents, brands, invites |
-| `useCredenza`    | Modal (desktop) / Drawer (mobile) | Selecting agents, export formats                  |
-| `useAlertDialog` | Destructive confirmations         | Deleting records, revoking access                 |
-
-**⚠️ ALWAYS use these hooks — NEVER import Credenza, Dialog, Sheet, Drawer, or AlertDialog components manually.**
-
-These hooks are backed by a global TanStack Store and render portals at the root layout. Using them ensures correct z-index stacking, consistent animations, and mobile responsiveness without any local component state.
-
-```typescript
-// ✅ Correct — use the global hook
-const { openCredenza } = useCredenza();
-openCredenza({ children: <SelectAgentForm /> });
-
-const { openSheet, closeSheet } = useSheet();
-openSheet({ children: <CreateTransactionForm onSuccess={closeSheet} /> });
-
-const { openAlertDialog } = useAlertDialog();
-openAlertDialog({
-   title: "Delete transaction?",
-   description: "This action cannot be undone.",
-   onAction: () => deleteTransaction(id),
-});
-
-// ❌ Wrong — never import and render these directly
-import { Credenza, CredenzaContent } from "@packages/ui/components/credenza";
-import { Sheet, SheetContent } from "@packages/ui/components/sheet";
-import { AlertDialog } from "@packages/ui/components/alert-dialog";
-```
-
----
-
-## SSR-Safe Browser Hooks
-
-`@uidotdev/usehooks` hooks that access browser APIs (`useMediaQuery`, `useLocalStorage`) crash on the server. Use project-local SSR-safe wrappers instead.
-
-**Wrappers:**
-
-- `useSafeMediaQuery(query)` → `@packages/ui/hooks/use-media-query`
-- `useSafeLocalStorage<T>(key, initialValue)` → `@/hooks/use-local-storage` (apps/web only)
-
-Both use `useIsomorphicLayoutEffect` from `@dnd-kit/utilities` (runs as `useLayoutEffect` on client, `useEffect` on server — eliminates flash between SSR value and real value).
-
-**Pattern rules:**
-
-```typescript
-// ✅ Viewport breakpoint checks → use useIsMobile() (single source of truth)
-import { useIsMobile } from "@packages/ui/hooks/use-mobile";
-const isMobile = useIsMobile();
-const isDesktop = !isMobile; // inverse of (max-width: 767px)
-
-// ✅ Non-breakpoint media queries (PWA display-mode, prefers-color-scheme, etc.)
-import { useSafeMediaQuery } from "@packages/ui/hooks/use-media-query";
-const isStandalone = useSafeMediaQuery("(display-mode: standalone)");
-
-// ✅ localStorage persistence
-import { useSafeLocalStorage } from "@/hooks/use-local-storage";
-const [value, setValue] = useSafeLocalStorage("my-key", defaultValue);
-
-// ❌ Never use these directly — SSR-unsafe
-import { useMediaQuery, useLocalStorage } from "@uidotdev/usehooks";
-```
-
-**Safe to use directly from `@uidotdev/usehooks`** (no browser APIs during render):
-
-- `useDebounce` — pure JS timing
-- `useCopyToClipboard` — only called in event handlers
-
-**Navigator/window checks in hooks:** wrap in `useIsomorphicLayoutEffect` from `@dnd-kit/utilities`, never in render body.
-
----
-
-## Events & Credits (packages/events/)
-
-File-per-category pattern: `finance.ts`, `ai.ts`, `contact.ts`, `inventory.ts`, `service.ts`, `nfe.ts`, `document.ts`, `webhook.ts`, `emit.ts`, `credits.ts`
-
-- `emitEvent()` is non-throwing (inner try-catch)
-- `enforceCreditBudget()` throws plain Error — wrap as `ORPCError("FORBIDDEN")` in routers
-- In generators, emit/track BEFORE final yield (post-yield code may not run)
+- Org: `organization.onboardingCompleted`
+- Project: `team.onboardingCompleted`, `team.onboardingProducts`, `team.onboardingTasks`
+- Procedures: `apps/web/src/integrations/orpc/router/onboarding.ts`
 
 ---
 
 ## Testing
 
-Tests live at `apps/web/__tests__/integrations/orpc/router/`. Run with Vitest.
-
 ```bash
-bun run test                          # Run all tests (Nx parallelized)
-npx vitest run apps/web/__tests__/integrations/orpc/router/transactions.test.ts  # Single file
+bun run test
+npx vitest run <file>
 ```
 
-**Gotcha — Better Auth tables need explicit `createdAt`:**
-`member` and `team` tables don't have `.defaultNow()` on `createdAt`. Tests that insert into these tables MUST provide `createdAt: new Date()` explicitly or the insert will fail.
-
-```typescript
-// ✅ Correct
-await db.insert(member).values({ ...memberData, createdAt: new Date() });
-
-// ❌ Will fail — createdAt has no DB default
-await db.insert(member).values(memberData);
-```
-
-Use the `orpc-testing` skill when writing new oRPC procedure tests.
+Tests live in `core/*` and `packages/*` — non-trivial logic only (Zod transforms, date/math, analytics, credits, repository queries). **No unit/integration tests in `apps/*`** (E2E pending, not yet introduced). Never test routers/components/hooks/singletons/file existence.
 
 ---
 
-## Scripts
+## Nx
 
-All scripts go in root `scripts/` directory. NEVER in `packages/*/` or `apps/*/`.
-
-Required patterns: `commander` CLI with `run` + `check` commands, `--env` flag, `--dry-run` flag, `chalk` for colored output, env loaded from `core/database/.env*`.
-
-See existing scripts in `scripts/` for the standard template.
-
----
-
-## Environment Variables
-
-- SCREAMING_SNAKE_CASE naming
-- Validated with Zod in `core/environment/src/{server,worker}.ts`
-- Client-side: `VITE_` prefix
-- Env files in `core/database/` (`.env`, `.env.local`, `.env.production`)
+- Always run via `nx`/`bun nx run|run-many|affected` — not the underlying tool.
+- Plugin docs at `node_modules/@nx/<plugin>/PLUGIN.md` when present.
+- Use Nx MCP tools when available. Never guess flags — check `nx_docs` or `--help`.
+- Skill triage: scaffolding → `nx-generate`. Run tasks → `nx-run-tasks`. New package + `TS2307` for `@core/*`/`@packages/*`/`@montte/*` → `link-workspace-packages`. New plugin → `nx-plugins`. Importing repos → `nx-import`.
 
 ---
 
-## Onboarding (Two Flows)
+## Releases
 
-1. **Organization onboarding** — one-time workspace setup (`organization.onboardingCompleted`)
-2. **Project onboarding** — per-team setup (`team.onboardingCompleted`, `team.onboardingProducts`, `team.onboardingTasks`)
-
-Procedures in `apps/web/src/integrations/orpc/router/onboarding.ts`.
+Produto único (`apps/web`) — **CalVer** `YYYY.MM.DD` (tag `vYYYY.MM.DD`). Workflow `.github/workflows/release-weekly.yml` roda toda sexta 21:00 UTC: coleta commits + PRs mergeados desde a última tag, opencode bot gera release notes em pt-BR, cria tag + GitHub Release + Linear Release. Manual via `workflow_dispatch` (com `dry_run` opcional). Sem libraries publicadas — todo código vive no monorepo.
 
 ---
 
-## Billing Model
+## TanStack Intent Skill Mappings
 
-100% usage-based billing via Stripe meter events. No fixed plans or credit pools. Each billable event has a free tier (enforced via Redis counters with monthly TTL). Usage above the free tier is reported to Stripe as meter events and billed automatically. Optional addon subscriptions (Boost, Scale, Enterprise) unlock additional features. Redis tracks real-time usage; materialized views reconcile hourly (worker cron).
+Load `use` with `npx @tanstack/intent@latest load <use>` when a task matches `when`. Sub-skills auto-load via parent.
 
----
+If no mapping fits, run `npx @tanstack/intent@latest list` for less common local skills.
 
-## Billing Page — Early Access Feature Cards
+<!-- intent-skills:start -->
 
-`apps/web/src/features/billing/ui/billing-overview.tsx`
+# Skill mappings - load `use` with `npx @tanstack/intent@latest load <use>`.
 
-The billing overview renders product cards driven by two config objects. **Adding a new early access feature = one entry in the right config.**
+skills:
 
-### Event-based categories (usage from API)
+- when: "Working on the Rubi AI agent — chat endpoints, tools, middleware, structured outputs, adapter configuration, debug logging"
+  use: "@tanstack/ai#ai-core"
+- when: "Writing or debugging fixtures for AI / OpenRouter HTTP responses in classification or agent tests"
+  use: "@copilotkit/aimock#write-fixtures"
+- when: "TanStack Router routes, loaders, search params, navigation, code splitting, type safety, auth guards, SSR, errors"
+  use: "@tanstack/router-core#router-core"
+- when: "TanStack Start setup — server functions, server routes, middleware, deployment, execution model, isomorphic boundaries"
+  use: "@tanstack/start-client-core#start-core"
+- when: "React-specific TanStack Start — createStart, StartClient, StartServer, useServerFn, RSC"
+  use: "@tanstack/react-start#react-start"
+- when: "TanStack Devtools setup, plugin panels, marketplace, production stripping"
+  use: "@tanstack/devtools#devtools-app-setup"
+- when: "Working with .env files, dotenv config, encrypted env, variable expansion"
+use: "dotenv#dotenv"
+ <!-- intent-skills:end -->
 
-```typescript
-// EARLY_ACCESS_CATEGORY_GATES: Record<categoryKey, { flag, fallbackStage }>
-// Category must also exist in CATEGORY_CONFIG.
-// When enrolled → card visible + stage badge shown.
-// When not enrolled → card hidden entirely.
-nfe:      { flag: "nfe", fallbackStage: "alpha" },
-document: { flag: "document-signing", fallbackStage: "alpha" },
-```
-
-### Coming soon categories (no enroll CTA)
-
-```typescript
-// COMING_SOON_CATEGORIES are rendered as "Em breve".
-// Current values:
-new Set(["nfe", "document"]);
-```
-
-### Stage resolution
-
-Stage is resolved from PostHog's early access feature config at runtime (`features.find(f => f.flagKey === key)?.stage`), falling back to `fallbackStage` in the local config. No manual sync needed — PostHog is the source of truth.
-
-### Flag keys (from billing-overview.tsx)
-
-| Feature            | Flag key           | Stage |
-| ------------------ | ------------------ | ----- |
-| NF-e               | `nfe`              | alpha |
-| Assinatura Digital | `document-signing` | alpha |
-
-### Other early-access flag keys (from sidebar-nav-items.ts + early-access.ts)
-
-| Feature    | Flag key             | Where used                            |
-| ---------- | -------------------- | ------------------------------------- |
-| Contatos   | `contacts`           | Sidebar gating, onboarding enrollment |
-| Estoque    | `inventory`          | Sidebar gating, onboarding enrollment |
-| Serviços   | `services`           | Sidebar gating, onboarding enrollment |
-| Dashboards | `advanced-analytics` | Sidebar gating, onboarding enrollment |
-| Dados      | `data-management`    | Sidebar gating, onboarding enrollment |
-
-
-<!-- nx configuration start-->
-<!-- Leave the start & end comments to automatically receive updates. -->
-
-## General Guidelines for working with Nx
-
-- For navigating/exploring the workspace, invoke the `nx-workspace` skill first - it has patterns for querying projects, targets, and dependencies
-- When running tasks (for example build, lint, test, e2e, etc.), always prefer running the task through `nx` (i.e. `nx run`, `nx run-many`, `nx affected`) instead of using the underlying tooling directly
-- Prefix nx commands with the workspace's package manager (e.g., `pnpm nx build`, `npm exec nx test`) - avoids using globally installed CLI
-- You have access to the Nx MCP server and its tools, use them to help the user
-- For Nx plugin best practices, check `node_modules/@nx/<plugin>/PLUGIN.md`. Not all plugins have this file - proceed without it if unavailable.
-- NEVER guess CLI flags - always check nx_docs or `--help` first when unsure
-
-## Scaffolding & Generators
-
-- For scaffolding tasks (creating apps, libs, project structure, setup), ALWAYS invoke the `nx-generate` skill FIRST before exploring or calling MCP tools
-
-## When to use nx_docs
-
-- USE for: advanced config options, unfamiliar flags, migration guides, plugin configuration, edge cases
-- DON'T USE for: basic generator syntax (`nx g @nx/react:app`), standard commands, things you already know
-- The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
-
-
-<!-- nx configuration end-->

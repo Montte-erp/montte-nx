@@ -5,7 +5,7 @@ import chalk from "chalk";
 import { config as loadDotenv } from "dotenv";
 import { cac } from "cac";
 
-const REQUIRED_SCHEMAS = ["auth", "finance", "crm", "inventory", "platform"];
+const REQUIRED_SCHEMAS = ["auth", "finance", "crm", "platform"];
 
 const colors = {
    cyan: chalk.cyan,

@@ -12,9 +12,6 @@ export const agentSettings = platformSchema.table("agent_settings", {
       .notNull()
       .default(true),
    dataSourceContacts: boolean("data_source_contacts").notNull().default(true),
-   dataSourceInventory: boolean("data_source_inventory")
-      .notNull()
-      .default(true),
    dataSourceServices: boolean("data_source_services").notNull().default(true),
    createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

@@ -94,7 +94,7 @@ const itemByIdProcedure = protectedProcedure
    });
 ```
 
-Available routers: account, agent-settings, analytics, api-keys, bank-accounts, billing, bills, budget-goals, categories, contact-settings, contacts, credit-cards, dashboards, financial-settings, insights, inventory, notifications, onboarding, organization, services, services-bills, session, tags, team, transactions.
+Available routers: account, agent-settings, analytics, api-keys, bank-accounts, billing, bills, budget-goals, categories, contact-settings, contacts, credit-cards, dashboards, financial-settings, insights, notifications, onboarding, organization, services, services-bills, session, tags, team, transactions.
 
 ---
 
@@ -159,7 +159,6 @@ Vite plugin order is critical: `tanstackStart({ router: { autoCodeSplitting: tru
 Schemas in `core/database/src/schemas/`. **Always namespace** — never raw `pgTable(...)`:
 - `financeSchema` → transactions, bank-accounts, bills, credit-cards, financial-goals, financial-settings
 - `crmSchema` → contacts, contact-settings, tags
-- `inventorySchema` → inventory items
 - `platformSchema` → dashboards, insights, event-catalog, webhooks, subscriptions, agents
 - `auth` → Better Auth managed, **read-only** (use `additionalFields` in auth config)
 
@@ -313,7 +312,7 @@ import { POSTHOG_SURVEYS, FEATURE_FLAG_KEYS } from "@core/posthog/config";
 
 Import `usePostHog` from `posthog-js/react` directly — never re-export. `posthog.identify` + `posthog.group` only in `_dashboard.tsx` loader. `opt_in_site_apps: true` for `renderSurvey()`. Early-access stages from `getEarlyAccessFeatures()` — never hardcoded.
 
-Surveys: `bugReport`, `featureRequest`, `featureFeedback`, `feedbackContatos`, `feedbackProdutosEstoque`, `feedbackGestaoServicos`, `feedbackAnalisesAvancadas`, `feedbackDados`. Flags: `contatos`, `produtos-estoque`, `gestao-de-servicos`, `analises-avancadas`, `dados`.
+Surveys: `bugReport`, `featureRequest`, `featureFeedback`, `feedbackContatos`, `feedbackGestaoServicos`, `feedbackAnalisesAvancadas`, `feedbackDados`. Flags: `contatos`, `gestao-de-servicos`, `analises-avancadas`, `dados`.
 
 ---
 

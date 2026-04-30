@@ -17,7 +17,6 @@ import * as customerPortalRouter from "@modules/billing/router/customer-portal";
 import * as dashboardsRouter from "./dashboards";
 import * as financialSettingsRouter from "./financial-settings";
 import * as insightsRouter from "./insights";
-import * as inventoryRouter from "./inventory";
 import * as notificationsRouter from "./notifications";
 import * as onboardingRouter from "@modules/account/router/onboarding";
 import * as organizationRouter from "@modules/account/router/organization";
@@ -51,7 +50,6 @@ export default {
    dashboards: dashboardsRouter,
    financialSettings: financialSettingsRouter,
    insights: insightsRouter,
-   inventory: inventoryRouter,
    notifications: notificationsRouter,
    onboarding: onboardingRouter,
    prices: pricesRouter,

@@ -56,10 +56,6 @@
          "types": "./dist/contact.d.ts",
          "default": "./dist/contact.js"
       },
-      "./inventory": {
-         "types": "./dist/inventory.d.ts",
-         "default": "./dist/inventory.js"
-      },
       "./service": {
          "types": "./dist/service.d.ts",
          "default": "./dist/service.js"
