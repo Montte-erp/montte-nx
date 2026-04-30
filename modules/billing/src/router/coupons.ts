@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import { and, eq, inArray } from "drizzle-orm";
 import { err, fromPromise, ok } from "neverthrow";
 import { z } from "zod";
-import { billingContract } from "@montte/hyprpay/contract";
+import { billingContract } from "../contracts/billing-contract";
 import { implementerInternal } from "@orpc/server";
 import { coupons } from "@core/database/schemas/coupons";
 import { WebAppError } from "@core/logging/errors";

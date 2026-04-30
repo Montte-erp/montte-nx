@@ -5,14 +5,10 @@ import { categories } from "@core/database/schemas/categories";
 import { WorkflowError } from "@core/dbos/errors";
 import { deriveKeywords } from "../ai/derive-keywords";
 import { classificationSseEvents } from "../sse";
-import {
-   CLASSIFICATION_QUEUES,
-   CLASSIFICATION_USAGE_EVENTS,
-} from "../constants";
+import { CLASSIFICATION_QUEUES } from "../constants";
 import {
    classificationDataSource,
    createEnqueuer,
-   getClassificationHyprpay,
    getClassificationPosthog,
    getClassificationPrompts,
    getClassificationRedis,
@@ -146,29 +142,6 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsWorkflowInput) {
          }
       },
       { name: "emitSse" },
-   );
-
-   await DBOS.runStep(
-      async () => {
-         const result = await fromPromise(
-            getClassificationHyprpay().services.ingestUsage({
-               eventName: CLASSIFICATION_USAGE_EVENTS.aiKeywordDerived,
-               quantity: "1",
-               idempotencyKey: `derive-${input.categoryId}-${DBOS.workflowID ?? "no-wf"}`,
-               properties: {
-                  categoryId: input.categoryId,
-                  keywordCount: keywords.length,
-               },
-            }),
-            (e) => (e instanceof Error ? e : new Error(String(e))),
-         );
-         if (result.isErr()) {
-            DBOS.logger.warn(
-               `usage ingestion failed for ai.keyword_derived — team=${input.teamId} err=${result.error.message}`,
-            );
-         }
-      },
-      { name: "ingestUsage" },
    );
 
    DBOS.logger.info(`${ctx} completed — wrote ${keywords.length} keywords`);

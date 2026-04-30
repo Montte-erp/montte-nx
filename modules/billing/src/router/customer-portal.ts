@@ -1,5 +1,5 @@
 import { fromPromise } from "neverthrow";
-import { billingContract } from "@montte/hyprpay/contract";
+import { billingContract } from "../contracts/billing-contract";
 import { implementerInternal } from "@orpc/server";
 import { getDomain } from "@core/environment/helpers";
 import { WebAppError } from "@core/logging/errors";

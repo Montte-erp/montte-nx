@@ -2,7 +2,10 @@ import { os } from "@orpc/server";
 import { err, fromPromise, ok } from "neverthrow";
 import { WebAppError } from "@core/logging/errors";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
-import type { ContactByIdRef, ContactFkRef } from "@montte/hyprpay/contract";
+import type {
+   ContactByIdRef,
+   ContactFkRef,
+} from "../contracts/billing-contract";
 
 const base = os.$context<ORPCContextWithOrganization>();
 

@@ -16,26 +16,6 @@ export const billingDataSource = new DrizzleDataSource<DatabaseInstance>(
    schema,
 );
 
-type IngestUsageInput = {
-   eventName: string;
-   quantity: string;
-   idempotencyKey: string;
-   externalId?: string;
-   properties?: Record<string, unknown>;
-};
-
-type UsageIngestor = {
-   services: {
-      ingestUsage: (input: IngestUsageInput) => Promise<{ success: true }>;
-   };
-};
-
-const noopUsageIngestor: UsageIngestor = {
-   services: {
-      ingestUsage: async () => ({ success: true }),
-   },
-};
-
 type BillingWorkflowContext = {
    redis: Redis | null;
    resendClient: ResendClient | null;
@@ -67,10 +47,6 @@ export function getBillingResendClient(): ResendClient {
    if (!resendClient)
       throw new Error("Billing workflow context not initialized");
    return resendClient;
-}
-
-export function getBillingHyprpay(): UsageIngestor {
-   return noopUsageIngestor;
 }
 
 export function createBillingQueues(options: { workerConcurrency: number }) {

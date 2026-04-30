@@ -27,9 +27,7 @@
          "@packages/ui/*": ["../../packages/ui/src/*"],
          "@modules/agents/*": ["../../modules/agents/src/*"],
          "@modules/billing/*": ["../../modules/billing/src/*"],
-         "@modules/classification/*": ["../../modules/classification/src/*"],
-         "@montte/cli": ["../../libraries/cli/src/index.ts"],
-         "@montte/cli/*": ["../../libraries/cli/src/*"]
+         "@modules/classification/*": ["../../modules/classification/src/*"]
       }
    },
    "include": ["src", "__tests__"],

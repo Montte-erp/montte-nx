@@ -10,40 +10,15 @@ import {
    sendBillingTrialExpired,
    sendBillingTrialExpiryWarning,
 } from "@core/transactional/client";
-import { TRANSACTIONAL_USAGE_EVENTS } from "@core/transactional/usage-events";
 import { billingSseEvents } from "../sse";
 import { BILLING_QUEUES } from "../constants";
 import {
-   getBillingHyprpay,
    getBillingRedis,
    getBillingResendClient,
    createEnqueuer,
    billingDataSource,
    registerWorkflowOnce,
 } from "./context";
-
-async function ingestEmailSent(
-   organizationId: string,
-   idempotencyKey: string,
-   properties: Record<string, unknown>,
-   externalId?: string | null,
-) {
-   const result = await fromPromise(
-      getBillingHyprpay().services.ingestUsage({
-         eventName: TRANSACTIONAL_USAGE_EVENTS.emailSent,
-         quantity: "1",
-         idempotencyKey,
-         externalId: externalId ?? undefined,
-         properties,
-      }),
-      (e) => (e instanceof Error ? e : new Error(String(e))),
-   );
-   if (result.isErr()) {
-      DBOS.logger.warn(
-         `usage ingestion failed for email.sent — org=${organizationId} err=${result.error.message}`,
-      );
-   }
-}
 import {
    periodEndInvoiceWorkflow,
    type PeriodEndInvoiceInput,
@@ -93,15 +68,6 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
                      trialEndsAt: dayjs(input.trialEndsAt).format("DD/MM/YYYY"),
                      from: input.emailFrom,
                   });
-                  await ingestEmailSent(
-                     input.organizationId,
-                     `email-trial-warning-${input.subscriptionId}`,
-                     {
-                        kind: "billing.trial_expiry_warning",
-                        subscriptionId: input.subscriptionId,
-                     },
-                     input.contactExternalId,
-                  );
                }
             },
             { name: "sendPreExpiryWarning" },
@@ -205,15 +171,6 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
                   contactName,
                   from: input.emailFrom,
                });
-               await ingestEmailSent(
-                  input.organizationId,
-                  `email-trial-expired-${input.subscriptionId}`,
-                  {
-                     kind: "billing.trial_expired",
-                     subscriptionId: input.subscriptionId,
-                  },
-                  input.contactExternalId,
-               );
             }
          },
          { name: "sendExpiryEmails" },

@@ -88,9 +88,7 @@ function CreateApiKeyFormInner({
          <CredenzaHeader>
             <CredenzaTitle>Nova chave de API</CredenzaTitle>
             <CredenzaDescription>
-               Use esta chave para autenticar o SDK{" "}
-               <code className="font-mono text-xs">@montte/hyprpay</code> neste
-               espaço.
+               Use esta chave para autenticar webhooks neste espaço.
             </CredenzaDescription>
          </CredenzaHeader>
 

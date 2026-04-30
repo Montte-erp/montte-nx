@@ -16,26 +16,6 @@ export const classificationDataSource = new DrizzleDataSource<DatabaseInstance>(
    schema,
 );
 
-type IngestUsageInput = {
-   eventName: string;
-   quantity: string;
-   idempotencyKey: string;
-   externalId?: string;
-   properties?: Record<string, unknown>;
-};
-
-type UsageIngestor = {
-   services: {
-      ingestUsage: (input: IngestUsageInput) => Promise<{ success: true }>;
-   };
-};
-
-const noopUsageIngestor: UsageIngestor = {
-   services: {
-      ingestUsage: async () => ({ success: true }),
-   },
-};
-
 type ClassificationWorkflowContext = {
    posthog: PostHog | null;
    redis: Redis | null;
@@ -79,10 +59,6 @@ export function getClassificationRedis(): Redis {
    if (!redis)
       throw new Error("Classification workflow context not initialized");
    return redis;
-}
-
-export function getClassificationHyprpay(): UsageIngestor {
-   return noopUsageIngestor;
 }
 
 export function createClassificationQueues(options: {

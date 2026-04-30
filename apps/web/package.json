@@ -45,7 +45,6 @@
       "@modules/agents": "workspace:*",
       "@modules/billing": "workspace:*",
       "@modules/classification": "workspace:*",
-      "@montte/cli": "workspace:*",
       "@orpc/client": "catalog:orpc",
       "@orpc/json-schema": "catalog:orpc",
       "@orpc/openapi": "catalog:orpc",

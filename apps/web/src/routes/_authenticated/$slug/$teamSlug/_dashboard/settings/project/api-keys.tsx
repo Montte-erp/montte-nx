@@ -114,9 +114,7 @@ function ApiKeysContent() {
                   Chaves de API
                </h1>
                <p className="mt-1 text-sm text-muted-foreground">
-                  Use estas chaves para autenticar o SDK{" "}
-                  <code className="font-mono text-xs">@montte/hyprpay</code>{" "}
-                  neste espaço.
+                  Use estas chaves para autenticar webhooks neste espaço.
                </p>
             </div>
             <Button

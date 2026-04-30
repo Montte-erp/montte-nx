@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { and, count, desc, eq, inArray, min, sum } from "drizzle-orm";
 import { err, fromPromise, ok } from "neverthrow";
-import { billingContract } from "@montte/hyprpay/contract";
+import { billingContract } from "../contracts/billing-contract";
 import { implementerInternal } from "@orpc/server";
 import type { DatabaseInstance } from "@core/database/client";
 import { contacts } from "@core/database/schemas/contacts";
