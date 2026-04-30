@@ -8,7 +8,11 @@ import { WorkflowError } from "@core/dbos/errors";
 import { getLogger } from "@core/logging/root";
 import { classificationSseEvents } from "../sse";
 import { CLASSIFICATION_QUEUES } from "../constants";
-import { classificationDataSource, getClassificationRedis } from "./context";
+import {
+   classificationDataSource,
+   getClassificationRedis,
+   registerWorkflowOnce,
+} from "./context";
 import { deriveKeywordsWorkflow } from "./derive-keywords-workflow";
 
 const STALE_DAYS = 30;
@@ -163,7 +167,7 @@ async function emitBackfillSse(args: { teamId: string; processed: number }) {
    );
 }
 
-export const backfillKeywordsWorkflow = DBOS.registerWorkflow(
+export const backfillKeywordsWorkflow = registerWorkflowOnce(
    backfillKeywordsWorkflowFn,
    { name: "backfillKeywordsWorkflow" },
 );

@@ -30,3 +30,13 @@ export const appendMessageInputSchema = z.object({
 });
 
 export const listMessagesInputSchema = threadIdInputSchema;
+
+export const syncMessagesInputSchema = z.object({
+   threadId: z.string().uuid(),
+   messages: z.array(
+      z.object({
+         role: z.enum(["system", "user", "assistant", "tool"]),
+         parts: z.array(messagePartSchema),
+      }),
+   ),
+});

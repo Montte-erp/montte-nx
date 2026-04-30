@@ -34,7 +34,6 @@ interface DbMessage {
 function dbMessagesToUIMessages(rows: DbMessage[]): UIMessage[] {
    const out: UIMessage[] = [];
    for (const row of rows) {
-      if (row.role === "tool") continue;
       if (!Array.isArray(row.parts)) continue;
       out.push({
          id: row.id,
@@ -73,8 +72,8 @@ export function useRubiChat() {
          meta: { skipGlobalInvalidation: true },
       }),
    );
-   const appendMessage = useMutation(
-      orpc.threads.appendMessage.mutationOptions({
+   const syncMessages = useMutation(
+      orpc.threads.syncMessages.mutationOptions({
          meta: { skipGlobalInvalidation: true },
       }),
    );
@@ -92,16 +91,21 @@ export function useRubiChat() {
       [],
    );
 
+   const messagesRef = useRef<UIMessage[]>([]);
+
    const chat = useChat({
       connection,
-      onFinish: async (message) => {
+      onFinish: async () => {
          const id = rubiChatStore.state.threadId;
          if (!id) return;
+         const snapshot = messagesRef.current;
          const result = await fromPromise(
-            appendMessage.mutateAsync({
+            syncMessages.mutateAsync({
                threadId: id,
-               role: "assistant",
-               parts: message.parts as never,
+               messages: snapshot.map((m) => ({
+                  role: m.role,
+                  parts: m.parts as never,
+               })),
             }),
             (e) => (e instanceof Error ? e : new Error(String(e))),
          );
@@ -115,10 +119,34 @@ export function useRubiChat() {
             }),
          });
       },
-      onError: (error) => {
-         toast.error(error.message || "Falha no streaming.");
+      onError: async (error) => {
+         const id = rubiChatStore.state.threadId;
+         const snapshot = messagesRef.current;
+         if (id && snapshot.length > 0) {
+            await fromPromise(
+               syncMessages.mutateAsync({
+                  threadId: id,
+                  messages: snapshot.map((m) => ({
+                     role: m.role,
+                     parts: m.parts as never,
+                  })),
+               }),
+               (e) => (e instanceof Error ? e : new Error(String(e))),
+            );
+         }
+         const message = error.message || "";
+         const transient = /ECONNRESET|terminated|fetch failed|network/i.test(
+            message,
+         );
+         toast.error(
+            transient
+               ? "Conexão caiu durante a resposta. Tente enviar novamente."
+               : message || "Falha no streaming.",
+         );
       },
    });
+
+   messagesRef.current = chat.messages;
 
    useEffect(() => {
       if (!threadId) {
@@ -149,11 +177,6 @@ export function useRubiChat() {
                setRubiThreadId(id);
                hydratedThreadRef.current = id;
             }
-            await appendMessage.mutateAsync({
-               threadId: id,
-               role: "user",
-               parts: [{ type: "text", content: text }],
-            });
             requestContextRef.current = {
                threadId: id,
                pageContext: {
@@ -182,6 +205,28 @@ export function useRubiChat() {
       hydratedThreadRef.current = null;
    }
 
+   const pendingApprovalIds = useMemo(() => {
+      const ids: string[] = [];
+      for (const msg of chat.messages) {
+         if (msg.role !== "assistant") continue;
+         for (const part of msg.parts) {
+            if ((part as { type?: string }).type !== "tool-call") continue;
+            const tc = part as {
+               state?: string;
+               approval?: { id: string; approved?: boolean };
+            };
+            if (
+               tc.state === "approval-requested" &&
+               tc.approval &&
+               tc.approval.approved === undefined
+            ) {
+               ids.push(tc.approval.id);
+            }
+         }
+      }
+      return ids;
+   }, [chat.messages]);
+
    return {
       threadId,
       messages: chat.messages,
@@ -191,6 +236,17 @@ export function useRubiChat() {
          chat.addToolApprovalResponse({ id, approved: true }),
       rejectTool: (id: string) =>
          chat.addToolApprovalResponse({ id, approved: false }),
+      pendingApprovalIds,
+      approveAll: async () => {
+         for (const id of pendingApprovalIds) {
+            await chat.addToolApprovalResponse({ id, approved: true });
+         }
+      },
+      rejectAll: async () => {
+         for (const id of pendingApprovalIds) {
+            await chat.addToolApprovalResponse({ id, approved: false });
+         }
+      },
       reset,
       loadThread,
    };

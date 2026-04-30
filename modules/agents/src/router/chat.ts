@@ -135,9 +135,11 @@ export const stream = protectedProcedure
       const args = await buildRubiChatArgs({
          db: context.db,
          prompts: context.posthogPrompts,
+         posthog: context.posthog,
          teamId: context.teamId,
          userId: context.userId,
          organizationId: context.organizationId,
+         threadId: input.threadId,
          messages,
          pageContext: input.pageContext,
          abortSignal: signal,
@@ -191,9 +193,11 @@ export const send = protectedProcedure
       const args = await buildRubiChatArgs({
          db: context.db,
          prompts: context.posthogPrompts,
+         posthog: context.posthog,
          teamId: context.teamId,
          userId: context.userId,
          organizationId: context.organizationId,
+         threadId: input.threadId,
          messages,
          pageContext: input.pageContext,
          abortSignal: signal,

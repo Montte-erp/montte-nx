@@ -135,12 +135,37 @@ export function RubiPanel() {
 
          <ContextPanelContent className="flex flex-col gap-4">
             {hasConversation ? (
-               <ConversationView
-                  messages={chat.messages}
-                  pending={chat.isStreaming}
-                  onApprove={chat.approveTool}
-                  onReject={chat.rejectTool}
-               />
+               <>
+                  {chat.pendingApprovalIds.length >= 2 ? (
+                     <div className="sticky top-0 z-10 flex items-center gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs">
+                        <span className="flex-1">
+                           {chat.pendingApprovalIds.length} ações aguardando
+                           aprovação
+                        </span>
+                        <Button
+                           size="sm"
+                           variant="outline"
+                           className="h-7 px-2 text-xs"
+                           onClick={() => chat.rejectAll()}
+                        >
+                           Negar tudo
+                        </Button>
+                        <Button
+                           size="sm"
+                           className="h-7 px-2 text-xs"
+                           onClick={() => chat.approveAll()}
+                        >
+                           Aprovar tudo ({chat.pendingApprovalIds.length})
+                        </Button>
+                     </div>
+                  ) : null}
+                  <ConversationView
+                     messages={chat.messages}
+                     pending={chat.isStreaming}
+                     onApprove={chat.approveTool}
+                     onReject={chat.rejectTool}
+                  />
+               </>
             ) : (
                <div className="flex flex-1 flex-col items-center justify-center gap-4">
                   <RubiMascotIcon className="size-12" />

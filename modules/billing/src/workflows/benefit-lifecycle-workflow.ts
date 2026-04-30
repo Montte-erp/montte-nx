@@ -7,7 +7,12 @@ import { benefitGrants } from "@core/database/schemas/benefit-grants";
 import type { SubscriptionStatus } from "@core/database/schemas/subscriptions";
 import { billingSseEvents } from "../sse";
 import { BILLING_QUEUES } from "../constants";
-import { billingDataSource, getBillingRedis, createEnqueuer } from "./context";
+import {
+   billingDataSource,
+   getBillingRedis,
+   createEnqueuer,
+   registerWorkflowOnce,
+} from "./context";
 
 export type BenefitLifecycleInput = {
    teamId: string;
@@ -182,7 +187,7 @@ async function benefitLifecycleWorkflowFn(input: BenefitLifecycleInput) {
    }
 }
 
-export const benefitLifecycleWorkflow = DBOS.registerWorkflow(
+export const benefitLifecycleWorkflow = registerWorkflowOnce(
    benefitLifecycleWorkflowFn,
 );
 

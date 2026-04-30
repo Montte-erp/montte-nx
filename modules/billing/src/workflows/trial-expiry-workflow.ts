@@ -19,6 +19,7 @@ import {
    getBillingResendClient,
    createEnqueuer,
    billingDataSource,
+   registerWorkflowOnce,
 } from "./context";
 
 async function ingestEmailSent(
@@ -283,7 +284,7 @@ async function trialExpiryWorkflowFn(input: TrialExpiryInput) {
    DBOS.logger.info(`${ctx} completed — subscription activated`);
 }
 
-export const trialExpiryWorkflow = DBOS.registerWorkflow(trialExpiryWorkflowFn);
+export const trialExpiryWorkflow = registerWorkflowOnce(trialExpiryWorkflowFn);
 
 const enqueueTrialExpiryRaw = createEnqueuer<TrialExpiryInput>(
    trialExpiryWorkflowFn.name,

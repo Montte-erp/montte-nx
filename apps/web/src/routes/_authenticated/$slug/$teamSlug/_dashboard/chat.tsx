@@ -12,7 +12,7 @@ export const Route = createFileRoute(
 
 function ChatPage() {
    return (
-      <div className="mx-auto flex h-full w-full max-w-3xl flex-col">
+      <div className="mx-auto flex h-full w-full max-w-5xl flex-col">
          <RubiPanel />
       </div>
    );

@@ -44,6 +44,7 @@ export function buildSkillDiscoverTool(deps: SkillDiscoverDeps) {
          };
       }
       const template = await deps.prompts.get(skill.promptName, {
+         withMetadata: false,
          fallback: `Playbook da skill ${skill.name} indisponível no momento.`,
       });
       return {

@@ -1,22 +1,26 @@
-import type { ToolCall } from "@tanstack/ai";
 import type { DatabaseInstance } from "@core/database/client";
-import type { Prompts } from "@core/posthog/server";
-import { proModel } from "@core/ai/models";
+import type { PostHog, Prompts } from "@core/posthog/server";
+import { maxIterations } from "@tanstack/ai";
+import { flashModel } from "@core/ai/models";
+import { createPosthogAiMiddleware } from "@core/ai/middleware";
 import { RUBI_PROMPTS } from "../../constants";
 import {
    buildAllSkillTools,
    buildSkillCatalog,
    buildSkillDiscoverTool,
 } from "./skills";
-import type { ChatMessage, PageContext } from "../../contracts/chat";
+import { buildAdvisorTool } from "./tools/advisor";
+import type { PageContext } from "../../contracts/chat";
 
 export interface RubiChatOptions {
    db: DatabaseInstance;
    prompts: Prompts;
+   posthog: PostHog;
    teamId: string;
    userId: string;
    organizationId: string;
-   messages: ChatMessage[];
+   threadId?: string;
+   messages: ReadonlyArray<unknown>;
    pageContext: PageContext;
    abortSignal?: AbortSignal;
 }
@@ -44,8 +48,17 @@ export async function buildRubiChatArgs(options: RubiChatOptions) {
    const skillDiscoverTool = buildSkillDiscoverTool({
       prompts: options.prompts,
    });
+   const turnId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+   const advisorTool = buildAdvisorTool({
+      prompts: options.prompts,
+      posthog: options.posthog,
+      distinctId: options.userId,
+      threadId: options.threadId,
+      turnId,
+   });
 
    const rootTemplate = await options.prompts.get(RUBI_PROMPTS.root, {
+      withMetadata: false,
       fallback:
          "Você é Rubi, a assistente de IA do Montte. Responda em pt-BR de forma direta e amigável.",
    });
@@ -54,23 +67,38 @@ export async function buildRubiChatArgs(options: RubiChatOptions) {
       page_context: formatPageContext(options.pageContext),
    });
 
+   const renderingPrimer = `## Renderização (json-render)
+
+Toda tool de leitura/escrita retorna um campo \`ui\` com um spec json-render que o cliente renderiza usando shadcn. Você nunca precisa formatar a saída em markdown — o spec já mostra a tabela/alert/card.
+
+**Não duplique a informação em texto.** Após uma tool call, escreva no máximo 1-2 frases curtas conectando o resultado à próxima ação. Nunca repita a tabela / contagem / nomes que o spec já mostra.
+
+Vocabulário disponível no catalog (quando o tool não monta o spec por você): Card, Stack, Grid, Separator, Heading, Text, Badge, Alert, Table, Accordion, Collapsible, Tabs, Progress, Skeleton, Spinner, Avatar, Image, Link, Tooltip.`;
+
    return {
-      adapter: proModel,
-      systemPrompts: [systemPrompt],
-      messages: options.messages.map((m) => ({
-         role: m.role,
-         content: m.content,
-         toolCalls: m.toolCalls?.map<ToolCall>((tc) => ({
-            id: tc.id,
-            type: "function",
-            function: { name: tc.name, arguments: tc.arguments },
-         })),
-         toolCallId: m.toolCallId,
-      })),
-      tools: [skillDiscoverTool, ...skillTools],
+      adapter: flashModel,
+      systemPrompts: [systemPrompt, renderingPrimer],
+      messages: options.messages as never,
+      tools: [skillDiscoverTool, advisorTool, ...skillTools],
+      agentLoopStrategy: maxIterations(25),
       abortController: options.abortSignal
          ? abortControllerFromSignal(options.abortSignal)
          : undefined,
+      middleware: [
+         createPosthogAiMiddleware({
+            posthog: options.posthog,
+            distinctId: options.userId,
+            promptName: RUBI_PROMPTS.root,
+            customProperties: {
+               rubi_role: "executor",
+               ...(options.threadId && { rubi_thread_id: options.threadId }),
+               rubi_turn_id: turnId,
+               ...(options.pageContext?.skillHint && {
+                  rubi_skill: options.pageContext.skillHint,
+               }),
+            },
+         }),
+      ],
    };
 }
 

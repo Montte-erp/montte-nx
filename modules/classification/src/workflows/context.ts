@@ -9,7 +9,7 @@ import type { PostHog, Prompts } from "@core/posthog/server";
 import type { HyprPayClient } from "@core/hyprpay/client";
 import { CLASSIFICATION_QUEUES } from "../constants";
 
-export { createEnqueuer } from "@core/dbos/factory";
+export { createEnqueuer, registerWorkflowOnce } from "@core/dbos/factory";
 
 export const classificationDataSource = new DrizzleDataSource<DatabaseInstance>(
    "classification",

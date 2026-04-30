@@ -24,6 +24,7 @@ import {
    getClassificationPosthog,
    getClassificationPrompts,
    getClassificationRedis,
+   registerWorkflowOnce,
 } from "./context";
 
 const AI_CHUNK_SIZE = 20;
@@ -362,7 +363,7 @@ async function classifyTransactionsBatchWorkflowFn(
    );
 }
 
-export const classifyTransactionsBatchWorkflow = DBOS.registerWorkflow(
+export const classifyTransactionsBatchWorkflow = registerWorkflowOnce(
    classifyTransactionsBatchWorkflowFn,
 );
 

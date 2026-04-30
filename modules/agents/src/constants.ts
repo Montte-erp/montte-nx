@@ -1,5 +1,6 @@
 export const RUBI_PROMPTS = {
    root: "montte-rubi-root",
+   advisor: "montte-rubi-advisor",
    skillServices: "montte-rubi-skill-services",
 } as const;
 

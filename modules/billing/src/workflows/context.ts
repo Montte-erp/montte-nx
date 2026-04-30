@@ -9,7 +9,7 @@ import type { Redis } from "@core/redis/connection";
 import type { ResendClient } from "@core/transactional/utils";
 import { BILLING_QUEUES } from "../constants";
 
-export { createEnqueuer } from "@core/dbos/factory";
+export { createEnqueuer, registerWorkflowOnce } from "@core/dbos/factory";
 
 export const billingDataSource = new DrizzleDataSource<DatabaseInstance>(
    "billing",

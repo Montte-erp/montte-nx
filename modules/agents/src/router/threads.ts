@@ -9,6 +9,7 @@ import {
    createThreadInputSchema,
    listMessagesInputSchema,
    listThreadsInputSchema,
+   syncMessagesInputSchema,
    threadIdInputSchema,
    updateThreadInputSchema,
 } from "../contracts/threads";
@@ -135,4 +136,34 @@ export const appendMessage = protectedProcedure
       if (!result.value)
          throw WebAppError.internal("Falha ao salvar mensagem.");
       return result.value;
+   });
+
+export const syncMessages = protectedProcedure
+   .input(syncMessagesInputSchema)
+   .use(requireThread, (input) => input.threadId)
+   .handler(async ({ context, input }) => {
+      const result = await fromPromise(
+         context.db.transaction(async (tx) => {
+            await tx
+               .delete(threadMessages)
+               .where(eq(threadMessages.threadId, input.threadId));
+            if (input.messages.length > 0) {
+               await tx.insert(threadMessages).values(
+                  input.messages.map((m, index) => ({
+                     threadId: input.threadId,
+                     sequence: index,
+                     role: m.role,
+                     parts: m.parts,
+                  })),
+               );
+            }
+            await tx
+               .update(threads)
+               .set({ lastMessageAt: dayjs().toDate() })
+               .where(eq(threads.id, input.threadId));
+         }),
+         () => WebAppError.internal("Falha ao sincronizar mensagens."),
+      );
+      if (result.isErr()) throw result.error;
+      return { ok: true };
    });
