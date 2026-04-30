@@ -70,12 +70,12 @@ jobs:
            if: steps.version.outputs.skip != 'true'
            uses: anomalyco/opencode/github@latest
            env:
-              OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+              OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
               CHANGES_FILE: changes.md
               OUTPUT_FILE: RELEASE_NOTES.md
               VERSION: ${{ steps.version.outputs.version }}
            with:
-              model: openrouter/minimax/minimax-m2.5
+              model: opencode-go/deepseek-v4-flash
               prompt: |
                  Leia o arquivo $CHANGES_FILE com commits e PRs mergeados desde a última release do Montte (ERP brasileiro).
 
