@@ -10,7 +10,6 @@ describe("EVENT_CATEGORIES", () => {
          dashboard: "dashboard",
          insight: "insight",
          contact: "contact",
-         inventory: "inventory",
          service: "service",
          nfe: "nfe",
          document: "document",

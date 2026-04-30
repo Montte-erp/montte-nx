@@ -7,7 +7,6 @@ import {
    FlaskConical,
    KeyRound,
    Network,
-   Package,
    Palette,
    Settings2,
    Shield,
@@ -58,13 +57,6 @@ export const settingsNavSections: SettingsNavSection[] = [
                   title: "Financeiro",
                   href: "/$slug/$teamSlug/settings/project/products/financeiro",
                   icon: DollarSign,
-               },
-               {
-                  id: "module-estoque",
-                  title: "Estoque",
-                  href: "/$slug/$teamSlug/settings/project/products/estoque",
-                  icon: Package,
-                  earlyAccessFlag: "produtos-estoque",
                },
                {
                   id: "module-contatos",

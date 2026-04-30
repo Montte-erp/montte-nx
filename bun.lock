@@ -395,6 +395,31 @@
         "typescript": "catalog:development",
       },
     },
+    "modules/account": {
+      "name": "@modules/account",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/authentication": "workspace:*",
+        "@core/database": "workspace:*",
+        "@core/files": "workspace:*",
+        "@core/logging": "workspace:*",
+        "@core/orpc": "workspace:*",
+        "@core/utils": "workspace:*",
+        "@modules/classification": "workspace:*",
+        "@orpc/server": "catalog:orpc",
+        "dayjs": "catalog:ui",
+        "drizzle-orm": "catalog:database",
+        "drizzle-zod": "catalog:database",
+        "neverthrow": "catalog:validation",
+        "posthog-node": "catalog:analytics-client",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
+        "typescript": "catalog:development",
+        "vitest": "catalog:testing",
+      },
+    },
     "modules/agents": {
       "name": "@modules/agents",
       "version": "0.1.0",
@@ -1290,6 +1315,8 @@
     "@maskito/react": ["@maskito/react@5.2.2", "", { "peerDependencies": { "@maskito/core": "^5.2.2", "react": ">=16.8", "react-dom": ">=16.8" } }, "sha512-msI6RFuiWP/sFMvLkPF1e3Lihqzcox8xRZ4gnQESoQ23DOVlPL8MfpW10w5GFD859YGzKjW8LoGddxvRE9cAIA=="],
 
     "@mermaid-js/parser": ["@mermaid-js/parser@1.1.0", "", { "dependencies": { "langium": "^4.0.0" } }, "sha512-gxK9ZX2+Fex5zu8LhRQoMeMPEHbc73UKZ0FQ54YrQtUxE1VVhMwzeNtKRPAu5aXks4FasbMe4xB4bWrmq6Jlxw=="],
+
+    "@modules/account": ["@modules/account@workspace:modules/account"],
 
     "@modules/agents": ["@modules/agents@workspace:modules/agents"],
 

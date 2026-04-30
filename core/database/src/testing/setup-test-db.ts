@@ -17,7 +17,6 @@ export async function setupTestDb() {
    const { apply } = await pushSchema(schema, db as any, [
       "finance",
       "crm",
-      "inventory",
       "platform",
    ]);
    await apply();

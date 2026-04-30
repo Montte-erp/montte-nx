@@ -15,7 +15,6 @@ export * from "@core/database/schemas/event-catalog";
 export * from "@core/database/schemas/events";
 export * from "@core/database/schemas/insights";
 export * from "@core/database/schemas/invoices";
-export * from "@core/database/schemas/inventory";
 export * from "@core/database/schemas/meters";
 export * from "@core/database/schemas/services";
 export * from "@core/database/schemas/settings-financial";
@@ -31,7 +30,6 @@ export {
    authSchema,
    financeSchema,
    crmSchema,
-   inventorySchema,
    platformSchema,
    settingsSchema,
    agentsSchema,
