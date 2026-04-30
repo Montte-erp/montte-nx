@@ -24,7 +24,6 @@
       "@core/utils": "workspace:*",
       "@modules/classification": "workspace:*",
       "@orpc/server": "catalog:orpc",
-      "@packages/analytics": "workspace:*",
       "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",
       "drizzle-zod": "catalog:database",

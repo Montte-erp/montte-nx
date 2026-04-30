@@ -63,7 +63,6 @@ export const createWorkspace = authenticatedProcedure
          organizationId: org.id,
          teamId: created.id,
          userId: context.userId,
-         workspaceName: teamName,
          slug,
       });
 
@@ -241,7 +240,7 @@ export const completeOnboarding = protectedProcedure
 
       const teamRecord = await db.query.team.findFirst({
          where: (f, { eq }) => eq(f.id, teamId),
-         columns: { name: true, slug: true },
+         columns: { slug: true },
       });
 
       await runOnboardingCompletion({
@@ -249,7 +248,6 @@ export const completeOnboarding = protectedProcedure
          organizationId,
          teamId,
          userId,
-         workspaceName: teamRecord?.name ?? "Workspace",
          slug: teamRecord?.slug ?? teamId,
       });
 

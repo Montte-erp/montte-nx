@@ -16,8 +16,7 @@
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
          "@core/utils/*": ["../../core/utils/src/*"],
-         "@modules/classification/*": ["../classification/src/*"],
-         "@packages/analytics/*": ["../../packages/analytics/src/*"]
+         "@modules/classification/*": ["../classification/src/*"]
       }
    },
    "include": ["src"]

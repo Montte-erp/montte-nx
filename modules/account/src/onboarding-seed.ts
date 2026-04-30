@@ -1,20 +1,9 @@
 import dayjs from "dayjs";
 import { eq } from "drizzle-orm";
-import { fromPromise } from "neverthrow";
 import type { PostHog } from "posthog-node";
 import type { DatabaseInstance } from "@core/database/client";
 import { organization, team, teamMember } from "@core/database/schemas/auth";
-import { insights } from "@core/database/schemas/insights";
-import { getInsightById } from "@core/database/repositories/insight-repository";
-import { getLogger } from "@core/logging/root";
 import { seedClassificationDefaults } from "@modules/classification/seeds";
-import { computeInsightData } from "@packages/analytics/compute-insight";
-import {
-   createDefaultDashboard,
-   createDefaultInsights,
-} from "@packages/analytics/seed-defaults";
-
-const logger = getLogger().child({ module: "account:onboarding-seed" });
 
 const EARLY_ACCESS_FLAGS = [
    "contacts",
@@ -47,10 +36,9 @@ export async function runOnboardingCompletion(args: {
    organizationId: string;
    teamId: string;
    userId: string;
-   workspaceName: string;
    slug: string;
 }) {
-   const { db, organizationId, teamId, userId, workspaceName, slug } = args;
+   const { db, organizationId, teamId, userId, slug } = args;
 
    await db
       .insert(teamMember)
@@ -73,39 +61,6 @@ export async function runOnboardingCompletion(args: {
       .set({ onboardingCompleted: true })
       .where(eq(organization.id, organizationId));
 
-   const insightIds = await createDefaultInsights(
-      db,
-      organizationId,
-      teamId,
-      userId,
-   );
-
-   for (const insightId of insightIds) {
-      const computed = await fromPromise(
-         (async () => {
-            const insight = await getInsightById(db, insightId);
-            if (!insight) return;
-            const data = await computeInsightData(db, insight);
-            await db
-               .update(insights)
-               .set({ cachedResults: data, lastComputedAt: dayjs().toDate() })
-               .where(eq(insights.id, insightId));
-         })(),
-         (e) => e,
-      );
-      if (computed.isErr())
-         logger.error(
-            { err: computed.error, insightId },
-            "Insight compute failed",
-         );
-   }
-
-   await createDefaultDashboard(
-      db,
-      organizationId,
-      teamId,
-      userId,
-      `Dashboard ${workspaceName}`,
-      insightIds,
-   );
+   // TODO(MON-566 / modules/insights): seed default insights + dashboard.
+   // Lives outside account scope — analytics module owns dashboard/insight seeds.
 }
