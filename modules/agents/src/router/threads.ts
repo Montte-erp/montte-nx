@@ -1,41 +1,79 @@
 import dayjs from "dayjs";
-import { and, asc, desc, eq, max } from "drizzle-orm";
-import { fromPromise } from "neverthrow";
-import { threadMessages, threads } from "@core/database/schemas/threads";
+import { eq } from "drizzle-orm";
+import { err, fromPromise, ok, safeTry } from "neverthrow";
+import { z } from "zod";
+import {
+   insertThreadMessageSchema,
+   insertThreadSchema,
+   threadMessages,
+   threads,
+   threadSchema,
+} from "@core/database/schemas/threads";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import {
-   appendMessageInputSchema,
-   createThreadInputSchema,
-   listMessagesInputSchema,
-   listThreadsInputSchema,
-   syncMessagesInputSchema,
-   threadIdInputSchema,
-   updateThreadInputSchema,
-} from "../contracts/threads";
-import { requireThread } from "./middlewares";
+   requireThread,
+   withNextThreadMessageSequence,
+} from "@modules/agents/router/middlewares";
+
+const threadIdInputSchema = z.object({ threadId: threadSchema.shape.id });
+
+const createThreadInputSchema = insertThreadSchema
+   .pick({ title: true })
+   .extend({ title: z.string().min(1).max(200).optional() });
+
+const updateThreadInputSchema = threadIdInputSchema.merge(
+   insertThreadSchema
+      .pick({ title: true })
+      .extend({ title: z.string().min(1).max(200) }),
+);
+
+const listThreadsInputSchema = z
+   .object({ limit: z.number().int().min(1).max(100).default(50) })
+   .default({ limit: 50 });
+
+const messagePartSchema = z.object({ type: z.string() }).passthrough();
+
+const appendMessageInputSchema = insertThreadMessageSchema
+   .pick({ id: true, role: true, toolCallId: true })
+   .extend({
+      threadId: z.string().uuid(),
+      parts: z.array(messagePartSchema),
+   });
+
+const listMessagesInputSchema = threadIdInputSchema;
+
+const syncMessageSchema = insertThreadMessageSchema
+   .pick({ role: true })
+   .extend({ parts: z.array(messagePartSchema) });
+
+const syncMessagesInputSchema = z.object({
+   threadId: z.string().uuid(),
+   messages: z.array(syncMessageSchema),
+});
 
 export const list = protectedProcedure
    .input(listThreadsInputSchema)
    .handler(async ({ context, input }) => {
-      const limit = input?.limit ?? 50;
-      const rows = await context.db
-         .select({
-            id: threads.id,
-            title: threads.title,
-            lastMessageAt: threads.lastMessageAt,
-            createdAt: threads.createdAt,
-            updatedAt: threads.updatedAt,
-         })
-         .from(threads)
-         .where(
+      const rows = await context.db.query.threads.findMany({
+         columns: {
+            id: true,
+            title: true,
+            lastMessageAt: true,
+            createdAt: true,
+            updatedAt: true,
+         },
+         where: (fields, { and, eq }) =>
             and(
-               eq(threads.teamId, context.teamId),
-               eq(threads.userId, context.userId),
+               eq(fields.teamId, context.teamId),
+               eq(fields.userId, context.userId),
             ),
-         )
-         .orderBy(desc(threads.lastMessageAt), desc(threads.createdAt))
-         .limit(limit);
+         orderBy: (fields, { desc }) => [
+            desc(fields.lastMessageAt),
+            desc(fields.createdAt),
+         ],
+         limit: input.limit,
+      });
       return { threads: rows };
    });
 
@@ -53,11 +91,15 @@ export const create = protectedProcedure
             })
             .returning(),
          () => WebAppError.internal("Falha ao criar conversa."),
-      );
+      ).andThen((rows) => {
+         const row = rows[0];
+         if (row === undefined) {
+            return err(WebAppError.internal("Falha ao criar conversa."));
+         }
+         return ok(row);
+      });
       if (result.isErr()) throw result.error;
-      const [row] = result.value;
-      if (!row) throw WebAppError.internal("Falha ao criar conversa.");
-      return row;
+      return result.value;
    });
 
 export const update = protectedProcedure
@@ -71,11 +113,15 @@ export const update = protectedProcedure
             .where(eq(threads.id, input.threadId))
             .returning(),
          () => WebAppError.internal("Falha ao atualizar conversa."),
-      );
+      ).andThen((rows) => {
+         const row = rows[0];
+         if (row === undefined) {
+            return err(WebAppError.internal("Falha ao atualizar conversa."));
+         }
+         return ok(row);
+      });
       if (result.isErr()) throw result.error;
-      const [row] = result.value;
-      if (!row) throw WebAppError.internal("Falha ao atualizar conversa.");
-      return row;
+      return result.value;
    });
 
 export const remove = protectedProcedure
@@ -94,47 +140,46 @@ export const messages = protectedProcedure
    .input(listMessagesInputSchema)
    .use(requireThread, (input) => input.threadId)
    .handler(async ({ context, input }) => {
-      const rows = await context.db
-         .select()
-         .from(threadMessages)
-         .where(eq(threadMessages.threadId, input.threadId))
-         .orderBy(asc(threadMessages.sequence));
+      const rows = await context.db.query.threadMessages.findMany({
+         where: (fields, { eq }) => eq(fields.threadId, input.threadId),
+         orderBy: (fields, { asc }) => [asc(fields.sequence)],
+      });
       return { messages: rows };
    });
 
 export const appendMessage = protectedProcedure
    .input(appendMessageInputSchema)
    .use(requireThread, (input) => input.threadId)
+   .use(withNextThreadMessageSequence, (input) => input.threadId)
    .handler(async ({ context, input }) => {
-      const result = await fromPromise(
-         context.db.transaction(async (tx) => {
-            const seqRows = await tx
-               .select({ next: max(threadMessages.sequence) })
-               .from(threadMessages)
-               .where(eq(threadMessages.threadId, input.threadId));
-            const sequence = (seqRows[0]?.next ?? -1) + 1;
-            const inserted = await tx
-               .insert(threadMessages)
-               .values({
-                  id: input.id,
-                  threadId: input.threadId,
-                  sequence,
-                  role: input.role,
-                  parts: input.parts,
-                  toolCallId: input.toolCallId ?? null,
-               })
-               .returning();
-            await tx
-               .update(threads)
-               .set({ lastMessageAt: dayjs().toDate() })
-               .where(eq(threads.id, input.threadId));
-            return inserted[0];
-         }),
-         () => WebAppError.internal("Falha ao salvar mensagem."),
-      );
+      const result = await safeTry(async function* () {
+         const message = yield* fromPromise(
+            context.db.transaction(async (tx) => {
+               const [row] = await tx
+                  .insert(threadMessages)
+                  .values({
+                     id: input.id,
+                     threadId: input.threadId,
+                     sequence: context.nextThreadMessageSequence,
+                     role: input.role,
+                     parts: input.parts,
+                     toolCallId: input.toolCallId,
+                  })
+                  .returning();
+               await tx
+                  .update(threads)
+                  .set({ lastMessageAt: dayjs().toDate() })
+                  .where(eq(threads.id, input.threadId));
+               return row;
+            }),
+            () => WebAppError.internal("Falha ao salvar mensagem."),
+         );
+         if (message === undefined) {
+            return err(WebAppError.internal("Falha ao salvar mensagem."));
+         }
+         return ok(message);
+      });
       if (result.isErr()) throw result.error;
-      if (!result.value)
-         throw WebAppError.internal("Falha ao salvar mensagem.");
       return result.value;
    });
 
@@ -142,28 +187,31 @@ export const syncMessages = protectedProcedure
    .input(syncMessagesInputSchema)
    .use(requireThread, (input) => input.threadId)
    .handler(async ({ context, input }) => {
-      const result = await fromPromise(
-         context.db.transaction(async (tx) => {
-            await tx
-               .delete(threadMessages)
-               .where(eq(threadMessages.threadId, input.threadId));
-            if (input.messages.length > 0) {
-               await tx.insert(threadMessages).values(
-                  input.messages.map((m, index) => ({
-                     threadId: input.threadId,
-                     sequence: index,
-                     role: m.role,
-                     parts: m.parts,
-                  })),
-               );
-            }
-            await tx
-               .update(threads)
-               .set({ lastMessageAt: dayjs().toDate() })
-               .where(eq(threads.id, input.threadId));
-         }),
-         () => WebAppError.internal("Falha ao sincronizar mensagens."),
-      );
+      const result = await safeTry(async function* () {
+         yield* fromPromise(
+            context.db.transaction(async (tx) => {
+               await tx
+                  .delete(threadMessages)
+                  .where(eq(threadMessages.threadId, input.threadId));
+               if (input.messages.length > 0) {
+                  await tx.insert(threadMessages).values(
+                     input.messages.map((message, index) => ({
+                        threadId: input.threadId,
+                        sequence: index,
+                        role: message.role,
+                        parts: message.parts,
+                     })),
+                  );
+               }
+               await tx
+                  .update(threads)
+                  .set({ lastMessageAt: dayjs().toDate() })
+                  .where(eq(threads.id, input.threadId));
+            }),
+            () => WebAppError.internal("Falha ao sincronizar mensagens."),
+         );
+         return ok({ ok: true });
+      });
       if (result.isErr()) throw result.error;
-      return { ok: true };
+      return result.value;
    });

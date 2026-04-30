@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import {
    index,
    integer,
@@ -61,6 +62,11 @@ export const threadMessages = agentsSchema.table(
    },
    (t) => [index("thread_messages_thread_seq_idx").on(t.threadId, t.sequence)],
 );
+
+export const threadSchema = createSelectSchema(threads);
+export const threadMessageSchema = createSelectSchema(threadMessages);
+export const insertThreadSchema = createInsertSchema(threads);
+export const insertThreadMessageSchema = createInsertSchema(threadMessages);
 
 export type Thread = typeof threads.$inferSelect;
 export type NewThread = typeof threads.$inferInsert;
