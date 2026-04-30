@@ -61,6 +61,7 @@
       "@tanstack/devtools-event-client": "catalog:tanstack",
       "@tanstack/match-sorter-utils": "catalog:tanstack",
       "@tanstack/pacer": "catalog:tanstack",
+      "@tanstack/react-ai-devtools": "catalog:tanstack",
       "@tanstack/react-devtools": "catalog:tanstack",
       "@tanstack/react-form": "catalog:tanstack",
       "@tanstack/react-form-devtools": "catalog:tanstack",

@@ -1,4 +1,5 @@
 import { fromThrowable } from "neverthrow";
+import { z } from "zod";
 import type { PostHog } from "@core/posthog/server";
 import type {
    AfterToolCallInfo,
@@ -6,29 +7,31 @@ import type {
    ChatMiddlewareContext,
 } from "@tanstack/ai";
 
-export type AiObservabilityContext = {
-   posthog: PostHog;
-   distinctId: string;
-   promptName?: string;
-   promptVersion?: number;
-   customProperties?: Record<string, unknown>;
-};
+const observabilityContextSchema = z.object({
+   posthog: z.custom<PostHog>(),
+   distinctId: z.string(),
+   promptName: z.string().optional(),
+   promptVersion: z.number().optional(),
+   customProperties: z.record(z.string(), z.unknown()).optional(),
+});
 
-interface ToolCallSummary {
-   id: string;
-   name: string;
-   ok: boolean;
-   durationMs: number;
-   error?: string;
-}
+const toolCallSummarySchema = z.object({
+   id: z.string(),
+   name: z.string(),
+   ok: z.boolean(),
+   durationMs: z.number(),
+   error: z.string().optional(),
+});
+
+const errorWithMessageSchema = z.object({ message: z.string() });
+
+export type AiObservabilityContext = z.infer<typeof observabilityContextSchema>;
+type ToolCallSummary = z.infer<typeof toolCallSummarySchema>;
 
 function toMessage(error: unknown): string {
-   return typeof error === "object" &&
-      error !== null &&
-      "message" in error &&
-      typeof error.message === "string"
-      ? error.message
-      : String(error);
+   return (
+      errorWithMessageSchema.safeParse(error).data?.message ?? String(error)
+   );
 }
 
 export function createPosthogAiMiddleware(

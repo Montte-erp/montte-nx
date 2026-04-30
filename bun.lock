@@ -78,6 +78,7 @@
         "@tanstack/devtools-event-client": "catalog:tanstack",
         "@tanstack/match-sorter-utils": "catalog:tanstack",
         "@tanstack/pacer": "catalog:tanstack",
+        "@tanstack/react-ai-devtools": "catalog:tanstack",
         "@tanstack/react-devtools": "catalog:tanstack",
         "@tanstack/react-form": "catalog:tanstack",
         "@tanstack/react-form-devtools": "catalog:tanstack",
@@ -162,6 +163,7 @@
         "@tanstack/ai": "catalog:tanstack-ai",
         "@tanstack/ai-openrouter": "catalog:tanstack-ai",
         "neverthrow": "catalog:validation",
+        "zod": "catalog:validation",
       },
       "devDependencies": {
         "@tooling/typescript": "workspace:*",
@@ -724,6 +726,7 @@
       "@tanstack/devtools-vite": "^0.6.0",
       "@tanstack/match-sorter-utils": "^8.19.4",
       "@tanstack/pacer": "^0.21.0",
+      "@tanstack/react-ai-devtools": "^0.2.29",
       "@tanstack/react-devtools": "^0.10.2",
       "@tanstack/react-form": "^1.29.0",
       "@tanstack/react-form-devtools": "^0.2.21",
@@ -2012,6 +2015,8 @@
 
     "@tanstack/ai-client": ["@tanstack/ai-client@0.8.0", "", { "dependencies": { "@tanstack/ai": "0.14.0", "@tanstack/ai-event-client": "0.2.8" } }, "sha512-8G3mKwVWn/lwZlUcZgm1aTYWB96otFmr6LsYT+dOehOq1SrR8SiSbkSOVzozQXkfZFviHSueZXlLe/J6LrbVOg=="],
 
+    "@tanstack/ai-devtools-core": ["@tanstack/ai-devtools-core@0.3.25", "", { "dependencies": { "@tanstack/ai": "0.14.0", "@tanstack/ai-event-client": "0.2.8", "@tanstack/devtools-ui": "^0.5.1", "@tanstack/devtools-utils": "^0.4.0", "goober": "^2.1.18", "solid-js": "^1.9.10" } }, "sha512-nu7OtdCF1a86aRXVQEMU5Z30WcFuAbgjWvD7WtFJl73T0CiM+8bCywYE9giaw8kR42+EZ8eUzE2tUV2TI0JrtQ=="],
+
     "@tanstack/ai-event-client": ["@tanstack/ai-event-client@0.2.8", "", { "dependencies": { "@tanstack/devtools-event-client": "^0.4.1" }, "peerDependencies": { "@tanstack/ai": "0.14.0" } }, "sha512-pdvT1hh7UorwBiDLrXnI5BFDfc7JSqnN06LaQHG4TGRl/621UnUrh16hQKOMn/msArKiCj+n+TG+cw4mDwMaLw=="],
 
     "@tanstack/ai-openrouter": ["@tanstack/ai-openrouter@0.8.2", "", { "dependencies": { "@openrouter/sdk": "0.12.14", "@tanstack/ai": "0.14.0" } }, "sha512-bhg1UPIXYkC9RLApw+YS4dLMDyCTHG72x3hbSKqbwtbGYAiLNwOudscFvfG9Br21sMhzttB1fyBjA7tz2QBPTQ=="],
@@ -2049,6 +2054,8 @@
     "@tanstack/query-core": ["@tanstack/query-core@5.99.0", "", {}, "sha512-3Jv3WQG0BCcH7G+7lf/bP8QyBfJOXeY+T08Rin3GZ1bshvwlbPt7NrDHMEzGdKIOmOzvIQmxjk28YEQX60k7pQ=="],
 
     "@tanstack/query-devtools": ["@tanstack/query-devtools@5.99.0", "", {}, "sha512-m4ufXaJ8FjWXw7xDtyzE/6fkZAyQFg9WrbMrUpt8ZecRJx58jiFOZ2lxZMphZdIpAnIeto/S8stbwLKLusyckQ=="],
+
+    "@tanstack/react-ai-devtools": ["@tanstack/react-ai-devtools@0.2.29", "", { "dependencies": { "@tanstack/ai-devtools-core": "0.3.25", "@tanstack/devtools-utils": "^0.4.0" }, "peerDependencies": { "@types/react": "^17.0.0 || ^18.0.0 || ^19.0.0", "react": "^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-me4GnO6zWjzKWCSVVPA3GB0a4UGERXZR/DQZUTjgn/ri8QkRIy/SkWc9jy9Y8UuYIrC0GTbmxj73wT5vxTGHqg=="],
 
     "@tanstack/react-devtools": ["@tanstack/react-devtools@0.10.2", "", { "dependencies": { "@tanstack/devtools": "0.11.2" }, "peerDependencies": { "@types/react": ">=16.8", "@types/react-dom": ">=16.8", "react": ">=16.8", "react-dom": ">=16.8" } }, "sha512-1BmZyxOrI5SqmRJ5MgkYZNNdnlLsJxQRI2YgorrAvcF2MxK6x5RcuStvD8+YlXoMw3JtNukPxoITirKAnKYDQA=="],
 
