@@ -62,15 +62,17 @@ export const addMember = protectedProcedure
          throw WebAppError.badRequest("Usuário já é membro do projeto.");
 
       const result = await fromPromise(
-         context.db
-            .insert(teamMember)
-            .values({
-               teamId: input.teamId,
-               userId: input.userId,
-               createdAt: dayjs().toDate(),
-            })
-            .returning()
-            .then((rows) => rows[0]),
+         context.db.transaction(async (tx) =>
+            tx
+               .insert(teamMember)
+               .values({
+                  teamId: input.teamId,
+                  userId: input.userId,
+                  createdAt: dayjs().toDate(),
+               })
+               .returning()
+               .then((rows) => rows[0]),
+         ),
          () => WebAppError.internal("Falha ao adicionar membro."),
       );
       if (result.isErr()) throw result.error;
@@ -84,15 +86,16 @@ export const removeMember = protectedProcedure
    .use(requireOrganizationTeam, (input) => input.teamId)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
-         context.db
-            .delete(teamMember)
-            .where(
-               and(
-                  eq(teamMember.teamId, input.teamId),
-                  eq(teamMember.userId, input.userId),
-               ),
-            )
-            .then(() => undefined),
+         context.db.transaction(async (tx) => {
+            await tx
+               .delete(teamMember)
+               .where(
+                  and(
+                     eq(teamMember.teamId, input.teamId),
+                     eq(teamMember.userId, input.userId),
+                  ),
+               );
+         }),
          () => WebAppError.internal("Falha ao remover membro."),
       );
       if (result.isErr()) throw result.error;

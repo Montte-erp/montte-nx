@@ -26,15 +26,17 @@ export const upsertSettings = protectedProcedure
    .input(upsertInput)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
-         context.db
-            .insert(contactSettings)
-            .values({ teamId: context.teamId, ...input })
-            .onConflictDoUpdate({
-               target: contactSettings.teamId,
-               set: { ...input, updatedAt: dayjs().toDate() },
-            })
-            .returning()
-            .then((rows) => rows[0]),
+         context.db.transaction(async (tx) =>
+            tx
+               .insert(contactSettings)
+               .values({ teamId: context.teamId, ...input })
+               .onConflictDoUpdate({
+                  target: contactSettings.teamId,
+                  set: { ...input, updatedAt: dayjs().toDate() },
+               })
+               .returning()
+               .then((rows) => rows[0]),
+         ),
          () => WebAppError.internal("Falha ao salvar configurações."),
       );
       if (result.isErr()) throw result.error;

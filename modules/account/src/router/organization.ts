@@ -1,32 +1,42 @@
 import { eq } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
-import { member, organization } from "@core/database/schemas/auth";
+import { organization } from "@core/database/schemas/auth";
 import { generatePresignedPutUrl } from "@core/files/client";
 import { WebAppError } from "@core/logging/errors";
 import { authenticatedProcedure, protectedProcedure } from "@core/orpc/server";
 
-const isStatus = (e: unknown, status: string, code: number) =>
-   !!e &&
-   typeof e === "object" &&
-   "status" in e &&
-   ((e as { status?: unknown }).status === status ||
-      (e as { statusCode?: unknown }).statusCode === code);
+const authError = (fallback: string) => (e: unknown) => {
+   if (e && typeof e === "object") {
+      const status =
+         "status" in e ? (e as { status: unknown }).status : undefined;
+      const code =
+         "statusCode" in e
+            ? (e as { statusCode: unknown }).statusCode
+            : undefined;
+      if (status === "UNAUTHORIZED" || code === 401)
+         return WebAppError.unauthorized("Autenticação necessária.");
+      if (status === "FORBIDDEN" || code === 403)
+         return WebAppError.forbidden("Permissões insuficientes.");
+   }
+   return WebAppError.internal(fallback);
+};
 
 export const getOrganizations = authenticatedProcedure.handler(
-   async ({ context }) =>
-      context.db
-         .select({
-            id: organization.id,
-            name: organization.name,
-            slug: organization.slug,
-            logo: organization.logo,
-            role: member.role,
-            onboardingCompleted: organization.onboardingCompleted,
-         })
-         .from(member)
-         .innerJoin(organization, eq(member.organizationId, organization.id))
-         .where(eq(member.userId, context.userId)),
+   async ({ context }) => {
+      const rows = await context.db.query.member.findMany({
+         where: (f, { eq }) => eq(f.userId, context.userId),
+         with: { organization: true },
+      });
+      return rows.map((m) => ({
+         id: m.organization.id,
+         name: m.organization.name,
+         slug: m.organization.slug,
+         logo: m.organization.logo,
+         role: m.role,
+         onboardingCompleted: m.organization.onboardingCompleted,
+      }));
+   },
 );
 
 export const getActiveOrganization = protectedProcedure.handler(
@@ -35,37 +45,28 @@ export const getActiveOrganization = protectedProcedure.handler(
       if (!orgId) return null;
 
       const result = await fromPromise(
-         (async () => {
-            const org = await context.auth.api.getFullOrganization({
-               headers: context.headers,
-               query: { organizationId: orgId },
-            });
-            if (!org) return null;
-            const teams = await context.auth.api.listOrganizationTeams({
-               headers: context.headers,
-               query: { organizationId: org.id },
-            });
-            return {
-               ...org,
-               activeSubscription: null,
-               projectLimit: 1,
-               projectCount: teams.length,
-            };
-         })(),
-         (e) => e,
+         context.auth.api.getFullOrganization({
+            headers: context.headers,
+            query: { organizationId: orgId },
+         }),
+         authError("Falha ao recuperar dados da organização."),
+      ).andThen((org) =>
+         !org
+            ? fromPromise(Promise.resolve(null), () => WebAppError.internal(""))
+            : fromPromise(
+                 context.auth.api.listOrganizationTeams({
+                    headers: context.headers,
+                    query: { organizationId: org.id },
+                 }),
+                 authError("Falha ao recuperar projetos da organização."),
+              ).map((teams) => ({
+                 ...org,
+                 activeSubscription: null,
+                 projectLimit: 1,
+                 projectCount: teams.length,
+              })),
       );
-      if (result.isErr()) {
-         const e = result.error;
-         if (isStatus(e, "UNAUTHORIZED", 401))
-            throw WebAppError.unauthorized(
-               "Autenticação necessária para acessar a organização.",
-            );
-         if (isStatus(e, "FORBIDDEN", 403))
-            throw WebAppError.forbidden(
-               "Permissões insuficientes para acessar a organização.",
-            );
-         throw WebAppError.internal("Falha ao recuperar dados da organização.");
-      }
+      if (result.isErr()) throw result.error;
       return result.value;
    },
 );
@@ -77,20 +78,10 @@ export const getOrganizationTeams = protectedProcedure.handler(
             headers: context.headers,
             query: { organizationId: context.organizationId },
          }),
-         (e) => e,
+         authError("Falha ao listar projetos da organização."),
       );
-      if (result.isErr()) {
-         const e = result.error;
-         if (isStatus(e, "UNAUTHORIZED", 401))
-            throw WebAppError.unauthorized("Autenticação necessária.");
-         if (isStatus(e, "FORBIDDEN", 403))
-            throw WebAppError.forbidden("Permissões insuficientes.");
-         throw WebAppError.internal("Falha ao listar projetos da organização.");
-      }
-      return result.value.map((t) => ({
-         ...t,
-         slug: (t as { slug: string }).slug,
-      }));
+      if (result.isErr()) throw result.error;
+      return result.value;
    },
 );
 
@@ -100,7 +91,7 @@ export const getMembers = protectedProcedure.handler(async ({ context }) => {
          headers: context.headers,
          query: { organizationId: context.organizationId },
       }),
-      () => WebAppError.internal("Falha ao listar membros."),
+      authError("Falha ao listar membros."),
    );
    if (result.isErr()) throw result.error;
    return result.value.members.map((m) => ({
@@ -116,11 +107,15 @@ export const getMembers = protectedProcedure.handler(async ({ context }) => {
 
 export const getPendingInvitations = protectedProcedure.handler(
    async ({ context }) => {
-      const invitations = await context.auth.api.listInvitations({
-         headers: context.headers,
-         query: { organizationId: context.organizationId },
-      });
-      return invitations
+      const result = await fromPromise(
+         context.auth.api.listInvitations({
+            headers: context.headers,
+            query: { organizationId: context.organizationId },
+         }),
+         authError("Falha ao listar convites."),
+      );
+      if (result.isErr()) throw result.error;
+      return result.value
          .filter((inv) => inv.status === "pending")
          .map((inv) => ({
             id: inv.id,
@@ -175,11 +170,12 @@ export const updateLogo = protectedProcedure
    .input(z.object({ logoUrl: z.string() }))
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
-         context.db
-            .update(organization)
-            .set({ logo: input.logoUrl })
-            .where(eq(organization.id, context.organizationId))
-            .then(() => undefined),
+         context.db.transaction(async (tx) => {
+            await tx
+               .update(organization)
+               .set({ logo: input.logoUrl })
+               .where(eq(organization.id, context.organizationId));
+         }),
          () => WebAppError.internal("Falha ao atualizar logo."),
       );
       if (result.isErr()) throw result.error;

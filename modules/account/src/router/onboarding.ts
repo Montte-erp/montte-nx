@@ -1,4 +1,5 @@
 import { eq, sql } from "drizzle-orm";
+import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { cnpjDataSchema } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
@@ -112,26 +113,10 @@ export const getOnboardingStatus = protectedProcedure.handler(
 
       const [insightCount, categoryCount, transactionCount, bankAccountCount] =
          await Promise.all([
-            db
-               .select({ c: sql<number>`count(*)::int` })
-               .from(insights)
-               .where(eq(insights.organizationId, organizationId))
-               .then((r) => r[0]?.c ?? 0),
-            db
-               .select({ c: sql<number>`count(*)::int` })
-               .from(categories)
-               .where(eq(categories.teamId, teamId))
-               .then((r) => r[0]?.c ?? 0),
-            db
-               .select({ c: sql<number>`count(*)::int` })
-               .from(transactions)
-               .where(eq(transactions.teamId, teamId))
-               .then((r) => r[0]?.c ?? 0),
-            db
-               .select({ c: sql<number>`count(*)::int` })
-               .from(bankAccounts)
-               .where(eq(bankAccounts.teamId, teamId))
-               .then((r) => r[0]?.c ?? 0),
+            db.$count(insights, eq(insights.organizationId, organizationId)),
+            db.$count(categories, eq(categories.teamId, teamId)),
+            db.$count(transactions, eq(transactions.teamId, teamId)),
+            db.$count(bankAccounts, eq(bankAccounts.teamId, teamId)),
          ]);
 
       const stored = currentTeam.onboardingTasks ?? {};
@@ -185,21 +170,27 @@ export const fixOnboarding = authenticatedProcedure
       if (!targetTeam)
          throw WebAppError.notFound("Nenhum projeto na organização.");
 
-      if (!org.onboardingCompleted)
-         await db
-            .update(organization)
-            .set({ onboardingCompleted: true })
-            .where(eq(organization.id, input.organizationId));
+      const result = await fromPromise(
+         db.transaction(async (tx) => {
+            if (!org.onboardingCompleted)
+               await tx
+                  .update(organization)
+                  .set({ onboardingCompleted: true })
+                  .where(eq(organization.id, input.organizationId));
 
-      if (!targetTeam.onboardingCompleted)
-         await db
-            .update(team)
-            .set({
-               slug: targetTeam.slug ?? "",
-               onboardingProducts: ["finance"],
-               onboardingCompleted: true,
-            })
-            .where(eq(team.id, targetTeam.id));
+            if (!targetTeam.onboardingCompleted)
+               await tx
+                  .update(team)
+                  .set({
+                     slug: targetTeam.slug ?? "",
+                     onboardingProducts: ["finance"],
+                     onboardingCompleted: true,
+                  })
+                  .where(eq(team.id, targetTeam.id));
+         }),
+         () => WebAppError.internal("Falha ao corrigir onboarding."),
+      );
+      if (result.isErr()) throw result.error;
 
       return { orgSlug: org.slug, teamSlug: targetTeam.slug };
    });
@@ -211,12 +202,14 @@ async function markTaskDone(
    teamId: string,
    taskId: string,
 ) {
-   await db
-      .update(team)
-      .set({
-         onboardingTasks: sql`COALESCE(${team.onboardingTasks}, '{}'::jsonb) || ${JSON.stringify({ [taskId]: true })}::jsonb`,
-      })
-      .where(eq(team.id, teamId));
+   await db.transaction(async (tx) => {
+      await tx
+         .update(team)
+         .set({
+            onboardingTasks: sql`COALESCE(${team.onboardingTasks}, '{}'::jsonb) || ${JSON.stringify({ [taskId]: true })}::jsonb`,
+         })
+         .where(eq(team.id, teamId));
+   });
 }
 
 export const completeTask = protectedProcedure

@@ -40,26 +40,28 @@ export async function runOnboardingCompletion(args: {
 }) {
    const { db, organizationId, teamId, userId, slug } = args;
 
-   await db
-      .insert(teamMember)
-      .values({ teamId, userId, createdAt: dayjs().toDate() });
+   await db.transaction(async (tx) => {
+      await tx
+         .insert(teamMember)
+         .values({ teamId, userId, createdAt: dayjs().toDate() });
 
-   const seed = await seedClassificationDefaults(db, teamId);
-   if (seed.isErr()) throw seed.error;
+      const seed = await seedClassificationDefaults(tx, teamId);
+      if (seed.isErr()) throw seed.error;
 
-   await db
-      .update(team)
-      .set({
-         slug,
-         onboardingProducts: ["finance"],
-         onboardingCompleted: true,
-      })
-      .where(eq(team.id, teamId));
+      await tx
+         .update(team)
+         .set({
+            slug,
+            onboardingProducts: ["finance"],
+            onboardingCompleted: true,
+         })
+         .where(eq(team.id, teamId));
 
-   await db
-      .update(organization)
-      .set({ onboardingCompleted: true })
-      .where(eq(organization.id, organizationId));
+      await tx
+         .update(organization)
+         .set({ onboardingCompleted: true })
+         .where(eq(organization.id, organizationId));
+   });
 
    // TODO(MON-566 / modules/insights): seed default insights + dashboard.
    // Lives outside account scope — analytics module owns dashboard/insight seeds.
