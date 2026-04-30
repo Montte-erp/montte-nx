@@ -7,11 +7,8 @@ import {
 } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
-import { createEmitFn } from "@packages/events/emit";
-import { emitFinanceStatementImported } from "@packages/events/finance";
 import { enqueueClassifyTransactionsBatchWorkflow } from "@modules/classification/workflows/classification-workflow";
 import {
-   creditEnforcement,
    requireBankAccount,
    requireValidFinancialReferences,
 } from "@modules/finance/router/middlewares";
@@ -53,7 +50,6 @@ const importStatementSchema = z.object({
 });
 
 export const importStatement = protectedProcedure
-   .use(creditEnforcement("finance.statement_imported"))
    .input(importStatementSchema)
    .use(requireBankAccount, (input) => input.bankAccountId)
    .handler(async ({ context, input }) => {
@@ -109,21 +105,6 @@ export const importStatement = protectedProcedure
             );
          }
       }
-
-      const emit = createEmitFn(context.db, context.posthog);
-      await emitFinanceStatementImported(
-         emit,
-         {
-            organizationId: context.organizationId,
-            userId: context.userId,
-            teamId: context.teamId,
-         },
-         {
-            bankAccountId: input.bankAccountId,
-            format: input.format,
-            rowCount: rows.length,
-         },
-      ).catch(() => undefined);
 
       return { imported: rows.length };
    });

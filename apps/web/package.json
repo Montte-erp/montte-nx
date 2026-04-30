@@ -54,8 +54,6 @@
       "@orpc/server": "catalog:orpc",
       "@orpc/tanstack-query": "catalog:orpc",
       "@orpc/zod": "catalog:orpc",
-      "@packages/analytics": "workspace:*",
-      "@packages/events": "workspace:*",
       "@packages/ui": "workspace:*",
       "@tailwindcss/vite": "catalog:vite",
       "@tanstack/ai": "catalog:tanstack-ai",

@@ -1,4 +1,4 @@
-import type { TransactionFilters } from "@packages/analytics/types";
+import type { TransactionFilters } from "@modules/insights/types";
 import { Button } from "@packages/ui/components/button";
 import {
    Popover,

@@ -20,8 +20,6 @@
       "@core/logging": "workspace:*",
       "@core/orpc": "workspace:*",
       "@orpc/server": "catalog:orpc",
-      "@packages/analytics": "workspace:*",
-      "@packages/events": "workspace:*",
       "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",
       "neverthrow": "catalog:validation",

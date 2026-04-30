@@ -5,8 +5,6 @@ import { os } from "@orpc/server";
 import { WebAppError } from "@core/logging/errors";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
 import { transactions } from "@core/database/schemas/transactions";
-import { enforceCreditBudget, incrementUsage } from "@packages/events/credits";
-
 const base = os.$context<ORPCContextWithOrganization>();
 
 export const requireBankAccount = base.middleware(
@@ -176,30 +174,4 @@ export async function requireValidFinancialReferences(
          throw WebAppError.badRequest("Contato inválido.");
       }
    }
-}
-
-export function creditEnforcement(eventName: string) {
-   return base.middleware(async ({ context, next }) => {
-      const enforce = await fromPromise(
-         enforceCreditBudget(context.organizationId, eventName, context.redis),
-         (e) => e,
-      );
-      if (enforce.isErr()) {
-         const e = enforce.error;
-         const msg = e instanceof Error ? e.message : "";
-         if (msg.startsWith("Free tier limit exceeded")) {
-            throw WebAppError.forbidden(
-               "Limite do plano gratuito atingido. Faça upgrade para continuar.",
-            );
-         }
-         throw e;
-      }
-      const result = await next();
-      await incrementUsage(
-         context.organizationId,
-         eventName,
-         context.redis,
-      ).catch(() => undefined);
-      return result;
-   });
 }

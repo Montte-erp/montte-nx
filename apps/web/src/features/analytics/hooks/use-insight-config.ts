@@ -3,7 +3,7 @@ import type {
    InsightConfig,
    KpiConfig,
    TimeSeriesConfig,
-} from "@packages/analytics/types";
+} from "@modules/insights/types";
 import { Store, useStore, shallow } from "@tanstack/react-store";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import { useCallback, useState } from "react";

@@ -5,7 +5,7 @@ import type {
    KpiResult,
    TimeSeriesConfig,
    TimeSeriesResult,
-} from "@packages/analytics/types";
+} from "@modules/insights/types";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle } from "lucide-react";

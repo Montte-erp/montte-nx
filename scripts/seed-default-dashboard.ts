@@ -3,7 +3,7 @@ import * as path from "node:path";
 import { createDb } from "@core/database/client";
 import { dashboards } from "@core/database/schemas/dashboards";
 import { insights } from "@core/database/schemas/insights";
-import { DEFAULT_INSIGHTS } from "@packages/analytics/defaults";
+import { DEFAULT_INSIGHTS } from "@modules/insights/defaults";
 import chalk from "chalk";
 import { cac } from "cac";
 import { config } from "dotenv";

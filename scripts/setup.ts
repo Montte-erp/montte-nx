@@ -87,15 +87,5 @@ try {
    process.exit(1);
 }
 
-try {
-   console.log(colors.blue("▶ Seeding event catalog..."));
-   execSync("bun run scripts/seed-event-catalog.ts run --env local", {
-      stdio: "inherit",
-   });
-} catch {
-   console.error(colors.red("❌ Event catalog seeding failed."));
-   process.exit(1);
-}
-
 console.log("");
 console.log(colors.green.bold("✅ Setup complete! Run 'bun dev' to start."));

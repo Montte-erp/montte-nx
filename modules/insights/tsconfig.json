@@ -12,9 +12,7 @@
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
-         "@modules/insights/*": ["./src/*"],
-         "@packages/analytics/*": ["../../packages/analytics/src/*"],
-         "@packages/events/*": ["../../packages/events/src/*"]
+         "@modules/insights/*": ["./src/*"]
       }
    },
    "include": ["src"]

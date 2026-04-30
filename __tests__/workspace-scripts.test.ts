@@ -57,7 +57,6 @@ describe("workspace scripts", () => {
          "scripts/doctor.ts",
          "scripts/env-setup.ts",
          "scripts/seed-default-dashboard.ts",
-         "scripts/seed-event-catalog.ts",
       ];
 
       for (const scriptFile of scriptFiles) {
@@ -72,7 +71,6 @@ describe("workspace scripts", () => {
          "scripts/doctor.ts",
          "scripts/env-setup.ts",
          "scripts/seed-default-dashboard.ts",
-         "scripts/seed-event-catalog.ts",
       ];
 
       for (const scriptFile of scriptFiles) {

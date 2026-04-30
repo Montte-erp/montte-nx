@@ -1,4 +1,4 @@
-import type { TimeSeriesConfig } from "@packages/analytics/types";
+import type { TimeSeriesConfig } from "@modules/insights/types";
 import { Button } from "@packages/ui/components/button";
 import { Label } from "@packages/ui/components/label";
 import {

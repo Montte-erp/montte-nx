@@ -11,8 +11,6 @@ export * from "@core/database/schemas/credit-cards";
 export * from "@core/database/schemas/credit-card-statements";
 export * from "@core/database/schemas/credit-card-statement-totals";
 export * from "@core/database/schemas/dashboards";
-export * from "@core/database/schemas/event-catalog";
-export * from "@core/database/schemas/events";
 export * from "@core/database/schemas/insights";
 export * from "@core/database/schemas/invoices";
 export * from "@core/database/schemas/meters";
@@ -24,7 +22,6 @@ export * from "@core/database/schemas/tags";
 export * from "@core/database/schemas/threads";
 export * from "@core/database/schemas/transactions";
 export * from "@core/database/schemas/usage-events";
-export * from "@core/database/schemas/webhooks";
 export * from "@core/database/relations";
 export {
    authSchema,

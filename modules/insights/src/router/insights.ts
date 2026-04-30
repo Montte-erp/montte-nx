@@ -10,13 +10,7 @@ import {
 import { WebAppError } from "@core/logging/errors";
 import { getLogger } from "@core/logging/root";
 import { protectedProcedure } from "@core/orpc/server";
-import { computeInsightData } from "@packages/analytics/compute-insight";
-import {
-   emitInsightCreated,
-   emitInsightDeleted,
-   emitInsightUpdated,
-} from "@packages/events/insight";
-import { createEmitFn } from "@packages/events/emit";
+import { computeInsightData } from "@modules/insights/compute-insight";
 import {
    requireDashboard,
    requireInsight,
@@ -25,16 +19,10 @@ import {
 const logger = getLogger().child({ module: "router:insights" });
 const idSchema = z.object({ id: z.string().uuid() });
 
-function logEmitFailure(event: string) {
-   return (e: unknown) => {
-      logger.error({ err: e, event }, "Failed to emit insight event");
-   };
-}
-
 export const create = protectedProcedure
    .input(createInsightSchema)
    .handler(async ({ context, input }) => {
-      const { db, organizationId, teamId, userId, posthog } = context;
+      const { db, organizationId, teamId, userId } = context;
 
       const result = await fromPromise(
          db.transaction(async (tx) =>
@@ -53,13 +41,6 @@ export const create = protectedProcedure
       if (result.isErr()) throw result.error;
       const [insight] = result.value;
       if (!insight) throw WebAppError.internal("Falha ao criar insight.");
-
-      emitInsightCreated(
-         createEmitFn(db, posthog),
-         { organizationId, userId, teamId },
-         { insightId: insight.id, name: input.name },
-      ).catch(logEmitFailure("insight.created"));
-
       return insight;
    });
 
@@ -97,11 +78,10 @@ export const update = protectedProcedure
    .input(idSchema.merge(updateInsightSchema))
    .use(requireInsight, (input) => input.id)
    .handler(async ({ context, input }) => {
-      const { db, organizationId, teamId, userId, posthog } = context;
       const { id, ...updateData } = input;
 
       const result = await fromPromise(
-         db.transaction(async (tx) =>
+         context.db.transaction(async (tx) =>
             tx
                .update(insights)
                .set(updateData)
@@ -113,16 +93,6 @@ export const update = protectedProcedure
       if (result.isErr()) throw result.error;
       const [updated] = result.value;
       if (!updated) throw WebAppError.notFound("Insight não encontrado.");
-
-      const changedFields = Object.keys(updateData).filter(
-         (k) => updateData[k as keyof typeof updateData] !== undefined,
-      );
-      emitInsightUpdated(
-         createEmitFn(db, posthog),
-         { organizationId, userId, teamId },
-         { insightId: id, changedFields },
-      ).catch(logEmitFailure("insight.updated"));
-
       return updated;
    });
 
@@ -130,22 +100,13 @@ export const remove = protectedProcedure
    .input(idSchema)
    .use(requireInsight, (input) => input.id)
    .handler(async ({ context, input }) => {
-      const { db, organizationId, teamId, userId, posthog } = context;
-
       const deleted = await fromPromise(
-         db.transaction(async (tx) =>
+         context.db.transaction(async (tx) =>
             tx.delete(insights).where(eq(insights.id, input.id)),
          ),
          () => WebAppError.internal("Falha ao excluir insight."),
       );
       if (deleted.isErr()) throw deleted.error;
-
-      emitInsightDeleted(
-         createEmitFn(db, posthog),
-         { organizationId, userId, teamId },
-         { insightId: input.id },
-      ).catch(logEmitFailure("insight.deleted"));
-
       return { success: true };
    });
 

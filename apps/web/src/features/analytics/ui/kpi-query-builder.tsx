@@ -1,4 +1,4 @@
-import type { KpiConfig } from "@packages/analytics/types";
+import type { KpiConfig } from "@modules/insights/types";
 import { Label } from "@packages/ui/components/label";
 import {
    Select,

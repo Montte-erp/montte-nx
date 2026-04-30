@@ -5,7 +5,6 @@ import * as agentSettingsRouter from "@modules/account/router/agent-settings";
 import * as analyticsRouter from "@modules/insights/router/analytics";
 import * as apiKeysRouter from "@modules/account/router/api-keys";
 import * as bankAccountsRouter from "@modules/finance/router/bank-accounts";
-import * as billingRouter from "@modules/billing/router/billing";
 import * as categoriesRouter from "@modules/classification/router/categories";
 import * as categoriesBulkRouter from "@modules/classification/router/categories-bulk";
 import * as cnpjRouter from "@modules/account/router/cnpj";
@@ -50,7 +49,6 @@ export default {
    analytics: analyticsRouter,
    apiKeys: apiKeysRouter,
    bankAccounts: bankAccountsRouter,
-   billing: billingRouter,
    creditCards: creditCardsRouter,
    categories: categoriesRouter,
    categoriesBulk: categoriesBulkRouter,

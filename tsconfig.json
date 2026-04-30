@@ -7,13 +7,7 @@
          "path": "./core/transactional"
       },
       {
-         "path": "./packages/analytics"
-      },
-      {
          "path": "./core/environment"
-      },
-      {
-         "path": "./packages/events"
       },
       {
          "path": "./core/database"

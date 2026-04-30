@@ -66,12 +66,4 @@ try {
    );
 }
 
-// ── 5. Seed event catalog ─────────────────────────────────────────────────────
-step("Seeding event catalog...");
-try {
-   run("bun run scripts/seed-event-catalog.ts run --env local");
-} catch {
-   console.log(colors.yellow("⚠ Event catalog seeding failed — continuing."));
-}
-
 ok("Dev init complete.");

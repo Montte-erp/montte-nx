@@ -2,10 +2,10 @@ import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
-import { executeBreakdownQuery } from "@packages/analytics/compute-breakdown";
-import { executeKpiQuery } from "@packages/analytics/compute-kpi";
-import { executeTimeSeriesQuery } from "@packages/analytics/compute-time-series";
-import { insightConfigSchema } from "@packages/analytics/types";
+import { executeBreakdownQuery } from "@modules/insights/compute-breakdown";
+import { executeKpiQuery } from "@modules/insights/compute-kpi";
+import { executeTimeSeriesQuery } from "@modules/insights/compute-time-series";
+import { insightConfigSchema } from "@modules/insights/types";
 import { requireDefaultDashboard } from "@modules/insights/router/middlewares";
 
 export const query = protectedProcedure

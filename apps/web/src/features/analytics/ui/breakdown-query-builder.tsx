@@ -1,4 +1,4 @@
-import type { BreakdownConfig } from "@packages/analytics/types";
+import type { BreakdownConfig } from "@modules/insights/types";
 import { Label } from "@packages/ui/components/label";
 import {
    Select,

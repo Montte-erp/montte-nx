@@ -71,8 +71,6 @@
         "@orpc/server": "catalog:orpc",
         "@orpc/tanstack-query": "catalog:orpc",
         "@orpc/zod": "catalog:orpc",
-        "@packages/analytics": "workspace:*",
-        "@packages/events": "workspace:*",
         "@packages/ui": "workspace:*",
         "@tailwindcss/vite": "catalog:vite",
         "@tanstack/ai": "catalog:tanstack-ai",
@@ -530,7 +528,6 @@
         "@f-o-t/money": "catalog:fot",
         "@modules/classification": "workspace:*",
         "@orpc/server": "catalog:orpc",
-        "@packages/events": "workspace:*",
         "dayjs": "catalog:ui",
         "drizzle-orm": "catalog:database",
         "neverthrow": "catalog:validation",
@@ -550,8 +547,6 @@
         "@core/logging": "workspace:*",
         "@core/orpc": "workspace:*",
         "@orpc/server": "catalog:orpc",
-        "@packages/analytics": "workspace:*",
-        "@packages/events": "workspace:*",
         "dayjs": "catalog:ui",
         "drizzle-orm": "catalog:database",
         "neverthrow": "catalog:validation",
@@ -561,41 +556,6 @@
         "@tooling/typescript": "workspace:*",
         "typescript": "catalog:development",
         "vitest": "catalog:testing",
-      },
-    },
-    "packages/analytics": {
-      "name": "@packages/analytics",
-      "version": "0.1.0",
-      "dependencies": {
-        "@core/database": "workspace:*",
-        "@core/logging": "workspace:*",
-        "@core/utils": "workspace:*",
-        "dayjs": "catalog:ui",
-        "drizzle-orm": "catalog:database",
-        "zod": "catalog:validation",
-      },
-      "devDependencies": {
-        "@tooling/typescript": "workspace:*",
-        "typescript": "catalog:development",
-      },
-    },
-    "packages/events": {
-      "name": "@packages/events",
-      "version": "0.1.0",
-      "dependencies": {
-        "@core/database": "workspace:*",
-        "@core/logging": "workspace:*",
-        "@core/posthog": "workspace:*",
-        "@core/redis": "workspace:*",
-        "@f-o-t/money": "catalog:fot",
-        "@orpc/server": "catalog:orpc",
-        "dayjs": "catalog:ui",
-        "drizzle-orm": "catalog:database",
-        "zod": "catalog:validation",
-      },
-      "devDependencies": {
-        "@tooling/typescript": "workspace:*",
-        "typescript": "catalog:development",
       },
     },
     "packages/ui": {
@@ -1646,10 +1606,6 @@
     "@oxlint/binding-win32-ia32-msvc": ["@oxlint/binding-win32-ia32-msvc@1.60.0", "", { "os": "win32", "cpu": "ia32" }, "sha512-33YxL1sqwYNZXtn3MD/4dno6s0xeedXOJlT1WohkVD565WvohClZUr7vwKdAk954n4xiEWJkewiCr+zLeq7AeA=="],
 
     "@oxlint/binding-win32-x64-msvc": ["@oxlint/binding-win32-x64-msvc@1.60.0", "", { "os": "win32", "cpu": "x64" }, "sha512-JOro4ZcfBLamJCyfURQmOQByoorgOdx3ZjAkSqnb/CyG/i+lN3KoV5LAgk5ZAW6DPq7/Cx7n23f8DuTWXTWgyQ=="],
-
-    "@packages/analytics": ["@packages/analytics@workspace:packages/analytics"],
-
-    "@packages/events": ["@packages/events@workspace:packages/events"],
 
     "@packages/ui": ["@packages/ui@workspace:packages/ui"],
 
