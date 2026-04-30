@@ -1,5 +1,6 @@
 import type { AuthInstance } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
+import type { MinioClient } from "@core/files/client";
 import type { PostHog, Prompts } from "@core/posthog/server";
 import type { Redis } from "@core/redis/connection";
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
@@ -17,6 +18,7 @@ export interface ORPCContextWithAuth extends ORPCContext {
    posthogPrompts: Prompts;
    redis: Redis;
    workflowClient: DBOSClient;
+   minioClient: MinioClient;
 }
 
 export interface ORPCContextAuthenticated extends ORPCContextWithAuth {

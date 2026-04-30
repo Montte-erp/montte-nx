@@ -67,7 +67,7 @@ export const CnpjStep = forwardRef<StepHandle, CnpjStepProps>(function CnpjStep(
    ref,
 ) {
    const fetchCnpjMutation = useMutation(
-      orpc.onboarding.fetchCnpjData.mutationOptions(),
+      orpc.cnpj.fetchCnpjData.mutationOptions(),
    );
 
    const form = useForm({
