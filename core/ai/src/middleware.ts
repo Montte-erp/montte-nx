@@ -1,3 +1,4 @@
+import { fromThrowable } from "neverthrow";
 import type { PostHog } from "@core/posthog/server";
 import type {
    AfterToolCallInfo,
@@ -21,10 +22,20 @@ interface ToolCallSummary {
    error?: string;
 }
 
+function toMessage(error: unknown): string {
+   return typeof error === "object" &&
+      error !== null &&
+      "message" in error &&
+      typeof error.message === "string"
+      ? error.message
+      : String(error);
+}
+
 export function createPosthogAiMiddleware(
    obs: AiObservabilityContext,
 ): ChatMiddleware {
    const toolCalls: ToolCallSummary[] = [];
+   const safeCapture = fromThrowable(obs.posthog.capture.bind(obs.posthog));
 
    const baseProps = (ctx: ChatMiddlewareContext) => ({
       $ai_trace_id: ctx.requestId,
@@ -38,6 +49,22 @@ export function createPosthogAiMiddleware(
       ...obs.customProperties,
    });
 
+   const captureGeneration = (
+      ctx: ChatMiddlewareContext,
+      extra: Record<string, unknown>,
+   ) => {
+      safeCapture({
+         distinctId: obs.distinctId,
+         event: "$ai_generation",
+         properties: {
+            ...baseProps(ctx),
+            rubi_tool_calls: toolCalls,
+            rubi_tool_call_count: toolCalls.length,
+            ...extra,
+         },
+      });
+   };
+
    return {
       name: "posthog-ai-observability",
 
@@ -48,56 +75,38 @@ export function createPosthogAiMiddleware(
             ok: info.ok,
             durationMs: info.duration,
             error:
-               !info.ok && info.error
-                  ? info.error instanceof Error
-                     ? info.error.message
-                     : String(info.error)
-                  : undefined,
+               info.ok || info.error == null
+                  ? undefined
+                  : toMessage(info.error),
          });
       },
 
       onFinish: (ctx, info) => {
-         const input = [
-            ...ctx.systemPrompts.map((sp) => ({
-               role: "system" as const,
-               content: sp,
-            })),
-            ...ctx.messages.map((m) => ({ role: m.role, content: m.content })),
-         ];
-
-         obs.posthog.capture({
-            distinctId: obs.distinctId,
-            event: "$ai_generation",
-            properties: {
-               ...baseProps(ctx),
-               $ai_input: input,
-               $ai_input_tokens: info.usage?.promptTokens,
-               $ai_output_choices: info.content
-                  ? [{ role: "assistant", content: info.content }]
-                  : undefined,
-               $ai_output_tokens: info.usage?.completionTokens,
-               $ai_latency: info.duration / 1000,
-               rubi_tool_calls: toolCalls,
-               rubi_tool_call_count: toolCalls.length,
-            },
+         captureGeneration(ctx, {
+            $ai_input: [
+               ...ctx.systemPrompts.map((content) => ({
+                  role: "system",
+                  content,
+               })),
+               ...ctx.messages.map((m) => ({
+                  role: m.role,
+                  content: m.content,
+               })),
+            ],
+            $ai_input_tokens: info.usage?.promptTokens,
+            $ai_output_choices: info.content
+               ? [{ role: "assistant", content: info.content }]
+               : undefined,
+            $ai_output_tokens: info.usage?.completionTokens,
+            $ai_latency: info.duration / 1000,
          });
       },
 
       onError: (ctx, info) => {
-         obs.posthog.capture({
-            distinctId: obs.distinctId,
-            event: "$ai_generation",
-            properties: {
-               ...baseProps(ctx),
-               $ai_is_error: true,
-               $ai_error:
-                  info.error instanceof Error
-                     ? info.error.message
-                     : String(info.error),
-               $ai_latency: info.duration / 1000,
-               rubi_tool_calls: toolCalls,
-               rubi_tool_call_count: toolCalls.length,
-            },
+         captureGeneration(ctx, {
+            $ai_is_error: true,
+            $ai_error: toMessage(info.error),
+            $ai_latency: info.duration / 1000,
          });
       },
    };

@@ -161,6 +161,7 @@
         "@core/posthog": "workspace:*",
         "@tanstack/ai": "catalog:tanstack-ai",
         "@tanstack/ai-openrouter": "catalog:tanstack-ai",
+        "neverthrow": "catalog:validation",
       },
       "devDependencies": {
         "@tooling/typescript": "workspace:*",
