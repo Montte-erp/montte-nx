@@ -22,14 +22,13 @@
          "@core/sse": ["../../core/sse/src/sse.ts"],
          "@core/transactional/*": ["../../core/transactional/src/*"],
          "@core/utils/*": ["../../core/utils/src/*"],
-         "@packages/analytics/*": ["../../packages/analytics/src/*"],
-         "@packages/events/*": ["../../packages/events/src/*"],
          "@packages/ui/*": ["../../packages/ui/src/*"],
          "@modules/account/*": ["../../modules/account/src/*"],
          "@modules/agents/*": ["../../modules/agents/src/*"],
          "@modules/billing/*": ["../../modules/billing/src/*"],
          "@modules/classification/*": ["../../modules/classification/src/*"],
-         "@modules/finance/*": ["../../modules/finance/src/*"]
+         "@modules/finance/*": ["../../modules/finance/src/*"],
+         "@modules/insights/*": ["../../modules/insights/src/*"]
       }
    },
    "include": ["src", "__tests__"],
@@ -39,12 +38,6 @@
       },
       {
          "path": "../../packages/ui"
-      },
-      {
-         "path": "../../packages/events"
-      },
-      {
-         "path": "../../packages/analytics"
       },
       {
          "path": "../../core/utils"

@@ -4,7 +4,7 @@ import type {
    KpiConfig,
    TimeSeriesConfig,
    TransactionFilters,
-} from "@packages/analytics/types";
+} from "@modules/insights/types";
 import { Button } from "@packages/ui/components/button";
 import { Card, CardContent } from "@packages/ui/components/card";
 import { cn } from "@packages/ui/lib/utils";

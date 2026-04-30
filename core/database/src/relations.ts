@@ -19,7 +19,6 @@ import { coupons, couponRedemptions } from "@core/database/schemas/coupons";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
 import { dashboards } from "@core/database/schemas/dashboards";
-import { events } from "@core/database/schemas/events";
 import { insights } from "@core/database/schemas/insights";
 import { meters } from "@core/database/schemas/meters";
 import {
@@ -35,10 +34,6 @@ import {
    transactions,
 } from "@core/database/schemas/transactions";
 import { usageEvents } from "@core/database/schemas/usage-events";
-import {
-   webhookDeliveries,
-   webhookEndpoints,
-} from "@core/database/schemas/webhooks";
 
 export const userRelations = relations(user, ({ many }) => ({
    sessions: many(session),
@@ -145,21 +140,6 @@ export const dashboardsRelations = relations(dashboards, ({ one }) => ({
    createdByUser: one(user, {
       fields: [dashboards.createdBy],
       references: [user.id],
-   }),
-}));
-
-export const eventsRelations = relations(events, ({ one }) => ({
-   organization: one(organization, {
-      fields: [events.organizationId],
-      references: [organization.id],
-   }),
-   user: one(user, {
-      fields: [events.userId],
-      references: [user.id],
-   }),
-   team: one(team, {
-      fields: [events.teamId],
-      references: [team.id],
    }),
 }));
 
@@ -396,32 +376,3 @@ export const usageEventsRelations = relations(usageEvents, ({ one }) => ({
       references: [meters.id],
    }),
 }));
-
-export const webhookEndpointsRelations = relations(
-   webhookEndpoints,
-   ({ one, many }) => ({
-      organization: one(organization, {
-         fields: [webhookEndpoints.organizationId],
-         references: [organization.id],
-      }),
-      team: one(team, {
-         fields: [webhookEndpoints.teamId],
-         references: [team.id],
-      }),
-      deliveries: many(webhookDeliveries),
-   }),
-);
-
-export const webhookDeliveriesRelations = relations(
-   webhookDeliveries,
-   ({ one }) => ({
-      webhookEndpoint: one(webhookEndpoints, {
-         fields: [webhookDeliveries.webhookEndpointId],
-         references: [webhookEndpoints.id],
-      }),
-      event: one(events, {
-         fields: [webhookDeliveries.eventId],
-         references: [events.id],
-      }),
-   }),
-);

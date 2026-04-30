@@ -1,4 +1,4 @@
-import type { InsightConfig } from "@packages/analytics/types";
+import type { InsightConfig } from "@modules/insights/types";
 import { Button } from "@packages/ui/components/button";
 import {
    DropdownMenu,

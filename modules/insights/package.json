@@ -1,5 +1,5 @@
 {
-   "name": "@modules/finance",
+   "name": "@modules/insights",
    "version": "0.1.0",
    "private": true,
    "license": "Apache-2.0",
@@ -19,10 +19,6 @@
       "@core/database": "workspace:*",
       "@core/logging": "workspace:*",
       "@core/orpc": "workspace:*",
-      "@core/redis": "workspace:*",
-      "@f-o-t/condition-evaluator": "catalog:fot",
-      "@f-o-t/money": "catalog:fot",
-      "@modules/classification": "workspace:*",
       "@orpc/server": "catalog:orpc",
       "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",

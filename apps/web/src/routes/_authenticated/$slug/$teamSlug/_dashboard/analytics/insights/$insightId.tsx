@@ -1,4 +1,4 @@
-import { insightConfigSchema } from "@packages/analytics/types";
+import { insightConfigSchema } from "@modules/insights/types";
 import {
    ContextPanel,
    ContextPanelContent,

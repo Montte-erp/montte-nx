@@ -13,8 +13,7 @@
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
-         "@modules/classification/*": ["../classification/src/*"],
-         "@packages/events/*": ["../../packages/events/src/*"]
+         "@modules/classification/*": ["../classification/src/*"]
       }
    },
    "include": ["src"]

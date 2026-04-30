@@ -2,8 +2,8 @@ import type {
    BreakdownConfig,
    KpiConfig,
    TimeSeriesConfig,
-} from "@packages/analytics/types";
-import { insightConfigSchema } from "@packages/analytics/types";
+} from "@modules/insights/types";
+import { insightConfigSchema } from "@modules/insights/types";
 import type { InsightType } from "@/features/analytics/hooks/use-insight-config";
 import { Button } from "@packages/ui/components/button";
 import {

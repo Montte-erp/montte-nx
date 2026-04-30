@@ -64,14 +64,13 @@
         "@modules/billing": "workspace:*",
         "@modules/classification": "workspace:*",
         "@modules/finance": "workspace:*",
+        "@modules/insights": "workspace:*",
         "@orpc/client": "catalog:orpc",
         "@orpc/json-schema": "catalog:orpc",
         "@orpc/openapi": "catalog:orpc",
         "@orpc/server": "catalog:orpc",
         "@orpc/tanstack-query": "catalog:orpc",
         "@orpc/zod": "catalog:orpc",
-        "@packages/analytics": "workspace:*",
-        "@packages/events": "workspace:*",
         "@packages/ui": "workspace:*",
         "@tailwindcss/vite": "catalog:vite",
         "@tanstack/ai": "catalog:tanstack-ai",
@@ -203,6 +202,7 @@
         "@core/utils": "workspace:*",
         "@f-o-t/condition-evaluator": "catalog:fot",
         "@f-o-t/money": "catalog:fot",
+        "@tanstack/ai": "catalog:tanstack-ai",
         "dayjs": "catalog:ui",
         "drizzle-orm": "catalog:database",
         "neverthrow": "catalog:validation",
@@ -528,7 +528,6 @@
         "@f-o-t/money": "catalog:fot",
         "@modules/classification": "workspace:*",
         "@orpc/server": "catalog:orpc",
-        "@packages/events": "workspace:*",
         "dayjs": "catalog:ui",
         "drizzle-orm": "catalog:database",
         "neverthrow": "catalog:validation",
@@ -540,39 +539,23 @@
         "vitest": "catalog:testing",
       },
     },
-    "packages/analytics": {
-      "name": "@packages/analytics",
+    "modules/insights": {
+      "name": "@modules/insights",
       "version": "0.1.0",
       "dependencies": {
         "@core/database": "workspace:*",
         "@core/logging": "workspace:*",
-        "@core/utils": "workspace:*",
-        "dayjs": "catalog:ui",
-        "drizzle-orm": "catalog:database",
-        "zod": "catalog:validation",
-      },
-      "devDependencies": {
-        "@tooling/typescript": "workspace:*",
-        "typescript": "catalog:development",
-      },
-    },
-    "packages/events": {
-      "name": "@packages/events",
-      "version": "0.1.0",
-      "dependencies": {
-        "@core/database": "workspace:*",
-        "@core/logging": "workspace:*",
-        "@core/posthog": "workspace:*",
-        "@core/redis": "workspace:*",
-        "@f-o-t/money": "catalog:fot",
+        "@core/orpc": "workspace:*",
         "@orpc/server": "catalog:orpc",
         "dayjs": "catalog:ui",
         "drizzle-orm": "catalog:database",
+        "neverthrow": "catalog:validation",
         "zod": "catalog:validation",
       },
       "devDependencies": {
         "@tooling/typescript": "workspace:*",
         "typescript": "catalog:development",
+        "vitest": "catalog:testing",
       },
     },
     "packages/ui": {
@@ -1352,6 +1335,8 @@
 
     "@modules/finance": ["@modules/finance@workspace:modules/finance"],
 
+    "@modules/insights": ["@modules/insights@workspace:modules/insights"],
+
     "@mongodb-js/saslprep": ["@mongodb-js/saslprep@1.4.6", "", { "dependencies": { "sparse-bitfield": "^3.0.3" } }, "sha512-y+x3H1xBZd38n10NZF/rEBlvDOOMQ6LKUTHqr8R9VkJ+mmQOYtJFxIlkkK8fZrtOiL6VixbOBWMbZGBdal3Z1g=="],
 
     "@mrleebo/prisma-ast": ["@mrleebo/prisma-ast@0.13.1", "", { "dependencies": { "chevrotain": "^10.5.0", "lilconfig": "^2.1.0" } }, "sha512-XyroGQXcHrZdvmrGJvsA9KNeOOgGMg1Vg9OlheUsBOSKznLMDl+YChxbkboRHvtFYJEMRYmlV3uoo/njCw05iw=="],
@@ -1621,10 +1606,6 @@
     "@oxlint/binding-win32-ia32-msvc": ["@oxlint/binding-win32-ia32-msvc@1.60.0", "", { "os": "win32", "cpu": "ia32" }, "sha512-33YxL1sqwYNZXtn3MD/4dno6s0xeedXOJlT1WohkVD565WvohClZUr7vwKdAk954n4xiEWJkewiCr+zLeq7AeA=="],
 
     "@oxlint/binding-win32-x64-msvc": ["@oxlint/binding-win32-x64-msvc@1.60.0", "", { "os": "win32", "cpu": "x64" }, "sha512-JOro4ZcfBLamJCyfURQmOQByoorgOdx3ZjAkSqnb/CyG/i+lN3KoV5LAgk5ZAW6DPq7/Cx7n23f8DuTWXTWgyQ=="],
-
-    "@packages/analytics": ["@packages/analytics@workspace:packages/analytics"],
-
-    "@packages/events": ["@packages/events@workspace:packages/events"],
 
     "@packages/ui": ["@packages/ui@workspace:packages/ui"],
 

@@ -9,15 +9,10 @@
       "paths": {
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],
-         "@core/dbos/*": ["../../core/dbos/src/*"],
-         "@core/environment/*": ["../../core/environment/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
-         "@core/redis/*": ["../../core/redis/src/*"],
-         "@core/sse": ["../../core/sse/src/sse.ts"],
-         "@core/transactional/*": ["../../core/transactional/src/*"],
-         "@modules/billing/*": ["./src/*"]
+         "@modules/insights/*": ["./src/*"]
       }
    },
    "include": ["src"]
