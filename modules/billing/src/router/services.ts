@@ -12,6 +12,13 @@ import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { contacts } from "@core/database/schemas/contacts";
 import {
+   benefits,
+   createBenefitSchema,
+   serviceBenefits,
+} from "@core/database/schemas/benefits";
+import { createMeterSchema, meters } from "@core/database/schemas/meters";
+import {
+   createPriceSchema,
    createServiceSchema,
    services,
    servicePrices,
@@ -28,6 +35,10 @@ const serviceIdInputSchema = z.object({ serviceId: z.string().uuid() });
 const bulkIdsInputSchema = z.object({
    ids: z.array(z.string().uuid()).min(1),
 });
+const bulkSetActiveInputSchema = z.object({
+   ids: z.array(z.string().uuid()).min(1),
+   isActive: z.boolean(),
+});
 const bulkCreateServicesInputSchema = z.object({
    items: z.array(createServiceSchema).min(1),
 });
@@ -36,8 +47,22 @@ const listServicesInputSchema = z
    .object({
       search: z.string().optional(),
       categoryId: z.string().uuid().optional(),
+      isActive: z.boolean().optional(),
    })
    .optional();
+const setupInputSchema = z.object({
+   service: createServiceSchema,
+   meter: z
+      .union([z.object({ id: z.string().uuid() }), createMeterSchema])
+      .optional(),
+   prices: z.array(createPriceSchema).optional().default([]),
+   benefits: z
+      .array(
+         z.union([z.object({ id: z.string().uuid() }), createBenefitSchema]),
+      )
+      .optional()
+      .default([]),
+});
 
 export const getAll = protectedProcedure
    .input(listServicesInputSchema)
@@ -56,6 +81,8 @@ export const getAll = protectedProcedure
                }
                if (input?.categoryId)
                   conditions.push(eq(f.categoryId, input.categoryId));
+               if (input?.isActive !== undefined)
+                  conditions.push(eq(f.isActive, input.isActive));
                return and(...conditions);
             },
             with: { category: true, tag: true },
@@ -281,6 +308,155 @@ export const bulkRemove = protectedProcedure
       const deleted = settled.filter((r) => r.status === "fulfilled").length;
       const failed = input.ids.length - deleted;
       return { deleted, failed };
+   });
+
+export const bulkSetActive = protectedProcedure
+   .input(bulkSetActiveInputSchema)
+   .handler(async ({ context, input }) => {
+      const result = await fromPromise(
+         context.db.transaction(async (tx) =>
+            tx
+               .update(services)
+               .set({ isActive: input.isActive })
+               .where(
+                  and(
+                     inArray(services.id, input.ids),
+                     eq(services.teamId, context.teamId),
+                  ),
+               )
+               .returning({ id: services.id, name: services.name }),
+         ),
+         () => WebAppError.internal("Falha ao atualizar serviços."),
+      );
+      if (result.isErr()) throw result.error;
+      return { updated: result.value.length, services: result.value };
+   });
+
+export const setup = protectedProcedure
+   .input(setupInputSchema)
+   .handler(async ({ context, input }) => {
+      const teamId = context.teamId;
+      const existingMeterId =
+         input.meter && "id" in input.meter ? input.meter.id : null;
+      const existingBenefitIds = (input.benefits ?? [])
+         .filter((b): b is { id: string } => "id" in b)
+         .map((b) => b.id);
+
+      const ownership = await fromPromise(
+         Promise.all([
+            existingMeterId
+               ? context.db.query.meters.findFirst({
+                    columns: { id: true, name: true },
+                    where: (f, { and: a, eq: e }) =>
+                       a(e(f.id, existingMeterId), e(f.teamId, teamId)),
+                 })
+               : Promise.resolve(null),
+            existingBenefitIds.length
+               ? context.db.query.benefits.findMany({
+                    columns: { id: true, name: true },
+                    where: (f, { and: a, eq: e, inArray: ia }) =>
+                       a(e(f.teamId, teamId), ia(f.id, existingBenefitIds)),
+                 })
+               : Promise.resolve([]),
+         ]),
+         () =>
+            WebAppError.internal(
+               "Falha ao verificar medidor/benefícios existentes.",
+            ),
+      );
+      if (ownership.isErr()) throw ownership.error;
+      const [existingMeter, existingBenefits] = ownership.value;
+
+      if (existingMeterId && !existingMeter)
+         throw WebAppError.notFound("Medidor não encontrado.");
+      if (existingBenefitIds.length !== existingBenefits.length)
+         throw WebAppError.notFound(
+            "Um ou mais benefícios não pertencem à equipe.",
+         );
+
+      const result = await fromPromise(
+         context.db.transaction(async (tx) => {
+            const [serviceRow] = await tx
+               .insert(services)
+               .values({ ...input.service, teamId })
+               .returning();
+            if (!serviceRow) throw new Error("rollback:service");
+
+            let meterId: string | null = existingMeter?.id ?? null;
+            let createdMeter: { id: string; name: string } | null = null;
+            if (input.meter && !("id" in input.meter)) {
+               const [meterRow] = await tx
+                  .insert(meters)
+                  .values({ ...input.meter, teamId })
+                  .returning();
+               if (!meterRow) throw new Error("rollback:meter");
+               meterId = meterRow.id;
+               createdMeter = { id: meterRow.id, name: meterRow.name };
+            }
+
+            const priceList = input.prices ?? [];
+            const priceRows = priceList.length
+               ? await tx
+                    .insert(servicePrices)
+                    .values(
+                       priceList.map((p) => ({
+                          ...p,
+                          teamId,
+                          serviceId: serviceRow.id,
+                          meterId: p.meterId ?? meterId ?? null,
+                       })),
+                    )
+                    .returning()
+               : [];
+
+            const attachedBenefits: Array<{ id: string; name: string }> = [
+               ...existingBenefits,
+            ];
+            for (const existing of existingBenefits) {
+               await tx
+                  .insert(serviceBenefits)
+                  .values({
+                     serviceId: serviceRow.id,
+                     benefitId: existing.id,
+                  })
+                  .onConflictDoNothing();
+            }
+
+            const newBenefitsInput = (input.benefits ?? []).filter(
+               (b): b is Exclude<typeof b, { id: string }> => !("id" in b),
+            );
+            for (const b of newBenefitsInput) {
+               const [bRow] = await tx
+                  .insert(benefits)
+                  .values({
+                     ...b,
+                     teamId,
+                     meterId: b.meterId ?? meterId ?? null,
+                  })
+                  .returning();
+               if (!bRow) throw new Error("rollback:benefit");
+               await tx
+                  .insert(serviceBenefits)
+                  .values({ serviceId: serviceRow.id, benefitId: bRow.id });
+               attachedBenefits.push({ id: bRow.id, name: bRow.name });
+            }
+
+            return {
+               service: { id: serviceRow.id, name: serviceRow.name },
+               meter: createdMeter ?? (meterId ? { id: meterId } : null),
+               prices: priceRows.map((p) => ({
+                  id: p.id,
+                  name: p.name,
+                  basePrice: p.basePrice,
+                  interval: p.interval,
+               })),
+               benefits: attachedBenefits,
+            };
+         }),
+         () => WebAppError.internal("Falha ao criar serviço completo."),
+      );
+      if (result.isErr()) throw result.error;
+      return result.value;
    });
 
 export const exportAll = protectedProcedure.handler(async ({ context }) => {

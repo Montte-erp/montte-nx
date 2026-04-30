@@ -3,7 +3,7 @@ import "@/polyfill";
 import { chat, toHttpResponse } from "@tanstack/ai";
 import { createFileRoute } from "@tanstack/react-router";
 import { buildRubiChatArgs } from "@modules/agents/rubi";
-import { db, posthog, posthogPrompts } from "@/integrations/singletons";
+import { posthog, posthogPrompts } from "@/integrations/singletons";
 import { auth } from "@/integrations/singletons";
 
 async function handle({ request }: { request: Request }) {
@@ -32,12 +32,11 @@ async function handle({ request }: { request: Request }) {
       typeof body.data?.threadId === "string" ? body.data.threadId : undefined;
 
    const args = await buildRubiChatArgs({
-      db,
       prompts: posthogPrompts,
       posthog,
-      teamId,
       userId: session.user.id,
-      organizationId,
+      headers: request.headers,
+      request,
       threadId,
       messages,
       pageContext,

@@ -133,12 +133,11 @@ export const stream = protectedProcedure
       }
 
       const args = await buildRubiChatArgs({
-         db: context.db,
          prompts: context.posthogPrompts,
          posthog: context.posthog,
-         teamId: context.teamId,
          userId: context.userId,
-         organizationId: context.organizationId,
+         headers: context.headers,
+         request: context.request,
          threadId: input.threadId,
          messages,
          pageContext: input.pageContext,
@@ -191,12 +190,11 @@ export const send = protectedProcedure
 
       const messages = await loadHistory(context.db, input.threadId);
       const args = await buildRubiChatArgs({
-         db: context.db,
          prompts: context.posthogPrompts,
          posthog: context.posthog,
-         teamId: context.teamId,
          userId: context.userId,
-         organizationId: context.organizationId,
+         headers: context.headers,
+         request: context.request,
          threadId: input.threadId,
          messages,
          pageContext: input.pageContext,

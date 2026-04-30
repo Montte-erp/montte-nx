@@ -1,9 +1,9 @@
 import { maxIterations } from "@tanstack/ai";
-import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog, Prompts } from "@core/posthog/server";
 import { flashModel } from "@core/ai/models";
 import { createPosthogAiMiddleware } from "@core/ai/middleware";
 import { RUBI_PROMPTS } from "@modules/agents/constants";
+import { createRubiToolClient } from "@modules/agents/orpc-tool-router";
 import {
    buildSkillCatalog,
    buildSkillDiscoverTool,
@@ -19,12 +19,11 @@ import type { ToolDeps } from "@modules/agents/tools/types";
 import type { PageContext } from "@modules/agents/contracts/chat";
 
 export interface RubiChatOptions {
-   db: DatabaseInstance;
    prompts: Prompts;
    posthog: PostHog;
-   teamId: string;
    userId: string;
-   organizationId: string;
+   headers: Headers;
+   request: Request;
    threadId?: string;
    messages: ReadonlyArray<unknown>;
    pageContext: PageContext;
@@ -77,7 +76,8 @@ function abortControllerFromSignal(signal: AbortSignal) {
 
 export async function buildRubiChatArgs(options: RubiChatOptions) {
    const turnId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-   const toolDeps: ToolDeps = { db: options.db, teamId: options.teamId };
+   const orpcClient = createRubiToolClient(options.headers, options.request);
+   const toolDeps: ToolDeps = { orpcClient };
 
    const skillDiscoverTool = buildSkillDiscoverTool(options.prompts);
    const advisorTool = buildAdvisorTool({

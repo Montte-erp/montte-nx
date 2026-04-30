@@ -1,6 +1,5 @@
-import type { DatabaseInstance } from "@core/database/client";
+import type { RubiToolClient } from "@modules/agents/orpc-tool-router";
 
 export interface ToolDeps {
-   db: DatabaseInstance;
-   teamId: string;
+   orpcClient: RubiToolClient;
 }
