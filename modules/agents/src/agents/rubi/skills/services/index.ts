@@ -1,11 +1,14 @@
-import { RUBI_PROMPTS, RUBI_SKILL_IDS } from "../../../../constants";
-import { buildBenefitsTools } from "./tools/benefits";
-import { buildCouponsTools } from "./tools/coupons";
-import { buildMetersTools } from "./tools/meters";
-import { buildPricesTools } from "./tools/prices";
-import { buildServicesTools } from "./tools/services";
-import { buildSetupTools } from "./tools/setup";
-import type { Skill, SkillDeps } from "../types";
+import { RUBI_PROMPTS, RUBI_SKILL_IDS } from "@modules/agents/constants";
+import { buildBenefitsTools } from "@modules/agents/agents/rubi/skills/services/tools/benefits";
+import { buildCouponsTools } from "@modules/agents/agents/rubi/skills/services/tools/coupons";
+import { buildMetersTools } from "@modules/agents/agents/rubi/skills/services/tools/meters";
+import { buildPricesTools } from "@modules/agents/agents/rubi/skills/services/tools/prices";
+import { buildServicesTools } from "@modules/agents/agents/rubi/skills/services/tools/services";
+import { buildSetupTools } from "@modules/agents/agents/rubi/skills/services/tools/setup";
+import type {
+   Skill,
+   SkillDeps,
+} from "@modules/agents/agents/rubi/skills/types";
 
 function buildServiceTools(deps: SkillDeps) {
    return [

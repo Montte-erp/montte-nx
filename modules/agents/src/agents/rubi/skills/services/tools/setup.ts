@@ -1,5 +1,4 @@
 import { toolDefinition } from "@tanstack/ai";
-import { and, eq } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { benefits, serviceBenefits } from "@core/database/schemas/benefits";
@@ -11,25 +10,45 @@ import {
    createPriceSchema,
    createServiceSchema,
 } from "@modules/billing/contracts/services";
-import type { SkillDeps } from "../../types";
+import type { SkillDeps } from "@modules/agents/agents/rubi/skills/types";
 
 const setupServiceInput = z.object({
-   service: createServiceSchema,
+   service: createServiceSchema.describe(
+      "Dados base do serviço a criar (nome, descrição, costPrice, etc).",
+   ),
    meter: z
-      .union([z.object({ id: z.string().uuid() }), createMeterSchema])
-      .optional(),
-   prices: z.array(createPriceSchema).optional().default([]),
+      .union([
+         z
+            .object({ id: z.string().uuid() })
+            .describe("UUID de medidor já existente para reusar."),
+         createMeterSchema.describe("Dados de novo medidor a criar."),
+      ])
+      .optional()
+      .describe(
+         "Medidor para preços por consumo. Reusar (id) ou criar novo. Omitir se serviço não usa medidor.",
+      ),
+   prices: z
+      .array(createPriceSchema)
+      .optional()
+      .default([])
+      .describe(
+         "Lista de preços a criar. Cada preço herda meterId do bloco meter quando não informado.",
+      ),
    benefits: z
       .array(
-         z.union([z.object({ id: z.string().uuid() }), createBenefitSchema]),
+         z.union([
+            z
+               .object({ id: z.string().uuid() })
+               .describe("UUID de benefício já existente para anexar."),
+            createBenefitSchema.describe("Dados de novo benefício a criar."),
+         ]),
       )
       .optional()
-      .default([]),
+      .default([])
+      .describe(
+         "Lista de benefícios a anexar. Reusar (id) ou criar novos. Novos benefícios herdam meterId do bloco meter quando não informado.",
+      ),
 });
-
-function errMessage(e: unknown) {
-   return e instanceof Error ? e.message : String(e);
-}
 
 export function buildSetupTools(deps: SkillDeps) {
    const { db, teamId } = deps;
@@ -42,40 +61,64 @@ export function buildSetupTools(deps: SkillDeps) {
       needsApproval: true,
       lazy: true,
    }).server(async (input) => {
+      const existingMeterId =
+         input.meter && "id" in input.meter ? input.meter.id : null;
+      const existingBenefitIds = (input.benefits ?? [])
+         .filter((b): b is { id: string } => "id" in b)
+         .map((b) => b.id);
+
+      const ownershipResult = await fromPromise(
+         Promise.all([
+            existingMeterId
+               ? db.query.meters.findFirst({
+                    columns: { id: true, name: true },
+                    where: (f, { and: a, eq: e }) =>
+                       a(e(f.id, existingMeterId), e(f.teamId, teamId)),
+                 })
+               : Promise.resolve(null),
+            existingBenefitIds.length
+               ? db.query.benefits.findMany({
+                    columns: { id: true, name: true },
+                    where: (f, { and: a, eq: e, inArray }) =>
+                       a(
+                          e(f.teamId, teamId),
+                          inArray(f.id, existingBenefitIds),
+                       ),
+                 })
+               : Promise.resolve([]),
+         ]),
+         () => "Falha ao verificar medidor/benefícios existentes.",
+      );
+      if (ownershipResult.isErr())
+         return { ok: false as const, error: ownershipResult.error };
+      const [existingMeter, existingBenefits] = ownershipResult.value;
+
+      if (existingMeterId && !existingMeter)
+         return { ok: false as const, error: "Medidor não encontrado." };
+      if (existingBenefitIds.length !== existingBenefits.length)
+         return {
+            ok: false as const,
+            error: "Um ou mais benefícios não pertencem à equipe.",
+         };
+
       const result = await fromPromise(
          db.transaction(async (tx) => {
             const [serviceRow] = await tx
                .insert(services)
                .values({ ...input.service, teamId })
                .returning();
-            if (!serviceRow) throw new Error("Falha ao criar serviço.");
+            if (!serviceRow) throw new Error("rollback:service");
 
-            let meterId: string | null = null;
+            let meterId: string | null = existingMeter?.id ?? null;
             let createdMeter: { id: string; name: string } | null = null;
-            if (input.meter) {
-               if ("id" in input.meter) {
-                  const owner = await tx
-                     .select({ id: meters.id, name: meters.name })
-                     .from(meters)
-                     .where(
-                        and(
-                           eq(meters.id, input.meter.id),
-                           eq(meters.teamId, teamId),
-                        ),
-                     )
-                     .limit(1);
-                  if (owner.length === 0)
-                     throw new Error("Medidor não encontrado.");
-                  meterId = owner[0]!.id;
-               } else {
-                  const [meterRow] = await tx
-                     .insert(meters)
-                     .values({ ...input.meter, teamId })
-                     .returning();
-                  if (!meterRow) throw new Error("Falha ao criar medidor.");
-                  meterId = meterRow.id;
-                  createdMeter = { id: meterRow.id, name: meterRow.name };
-               }
+            if (input.meter && !("id" in input.meter)) {
+               const [meterRow] = await tx
+                  .insert(meters)
+                  .values({ ...input.meter, teamId })
+                  .returning();
+               if (!meterRow) throw new Error("rollback:meter");
+               meterId = meterRow.id;
+               createdMeter = { id: meterRow.id, name: meterRow.name };
             }
 
             const prices = input.prices ?? [];
@@ -93,39 +136,36 @@ export function buildSetupTools(deps: SkillDeps) {
                     .returning()
                : [];
 
-            const attachedBenefits: Array<{ id: string; name: string }> = [];
-            const benefitsInput = input.benefits ?? [];
-            for (const b of benefitsInput) {
-               if ("id" in b) {
-                  const owner = await tx
-                     .select({ id: benefits.id, name: benefits.name })
-                     .from(benefits)
-                     .where(
-                        and(eq(benefits.id, b.id), eq(benefits.teamId, teamId)),
-                     )
-                     .limit(1);
-                  if (owner.length === 0)
-                     throw new Error("Benefício não encontrado.");
-                  await tx
-                     .insert(serviceBenefits)
-                     .values({ serviceId: serviceRow.id, benefitId: b.id })
-                     .onConflictDoNothing();
-                  attachedBenefits.push(owner[0]!);
-               } else {
-                  const [bRow] = await tx
-                     .insert(benefits)
-                     .values({
-                        ...b,
-                        teamId,
-                        meterId: b.meterId ?? meterId ?? null,
-                     })
-                     .returning();
-                  if (!bRow) throw new Error("Falha ao criar benefício.");
-                  await tx
-                     .insert(serviceBenefits)
-                     .values({ serviceId: serviceRow.id, benefitId: bRow.id });
-                  attachedBenefits.push({ id: bRow.id, name: bRow.name });
-               }
+            const attachedBenefits: Array<{ id: string; name: string }> = [
+               ...existingBenefits,
+            ];
+            for (const existing of existingBenefits) {
+               await tx
+                  .insert(serviceBenefits)
+                  .values({
+                     serviceId: serviceRow.id,
+                     benefitId: existing.id,
+                  })
+                  .onConflictDoNothing();
+            }
+
+            const newBenefitsInput = (input.benefits ?? []).filter(
+               (b): b is Exclude<typeof b, { id: string }> => !("id" in b),
+            );
+            for (const b of newBenefitsInput) {
+               const [bRow] = await tx
+                  .insert(benefits)
+                  .values({
+                     ...b,
+                     teamId,
+                     meterId: b.meterId ?? meterId ?? null,
+                  })
+                  .returning();
+               if (!bRow) throw new Error("rollback:benefit");
+               await tx
+                  .insert(serviceBenefits)
+                  .values({ serviceId: serviceRow.id, benefitId: bRow.id });
+               attachedBenefits.push({ id: bRow.id, name: bRow.name });
             }
 
             return {
@@ -140,7 +180,7 @@ export function buildSetupTools(deps: SkillDeps) {
                benefits: attachedBenefits,
             };
          }),
-         errMessage,
+         () => "Falha ao criar serviço completo.",
       );
       if (result.isErr()) return { ok: false as const, error: result.error };
       return { ok: true as const, ...result.value };

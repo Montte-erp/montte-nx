@@ -1,16 +1,16 @@
 import { toolDefinition } from "@tanstack/ai";
-import { and, eq, ilike } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { benefits } from "@core/database/schemas/benefits";
 import { createBenefitSchema } from "@modules/billing/contracts/services";
-import type { SkillDeps } from "../../types";
+import type { SkillDeps } from "@modules/agents/agents/rubi/skills/types";
 
-const listBenefitsInput = z.object({ search: z.string().optional() });
-
-function errMessage(e: unknown) {
-   return e instanceof Error ? e.message : String(e);
-}
+const listBenefitsInput = z.object({
+   search: z
+      .string()
+      .optional()
+      .describe("Busca parcial (ILIKE) por nome do benefício."),
+});
 
 export function buildBenefitsTools(deps: SkillDeps) {
    const { db, teamId } = deps;
@@ -22,24 +22,23 @@ export function buildBenefitsTools(deps: SkillDeps) {
       inputSchema: listBenefitsInput,
       lazy: true,
    }).server(async ({ search }) => {
-      const rows = await db
-         .select({
-            id: benefits.id,
-            name: benefits.name,
-            type: benefits.type,
-            meterId: benefits.meterId,
-            creditAmount: benefits.creditAmount,
-            unitCost: benefits.unitCost,
-            isActive: benefits.isActive,
-         })
-         .from(benefits)
-         .where(
-            and(
-               eq(benefits.teamId, teamId),
-               search ? ilike(benefits.name, `%${search}%`) : undefined,
+      const rows = await db.query.benefits.findMany({
+         columns: {
+            id: true,
+            name: true,
+            type: true,
+            meterId: true,
+            creditAmount: true,
+            unitCost: true,
+            isActive: true,
+         },
+         where: (f, { and: a, eq: e, ilike, sql }) =>
+            a(
+               e(f.teamId, teamId),
+               search ? ilike(f.name, sql`${`%${search}%`}`) : undefined,
             ),
-         )
-         .limit(50);
+         limit: 50,
+      });
       return { count: rows.length, items: rows };
    });
 
@@ -52,23 +51,24 @@ export function buildBenefitsTools(deps: SkillDeps) {
       lazy: true,
    }).server(async (input) => {
       const result = await fromPromise(
-         db.transaction(async (tx) => {
-            const [row] = await tx
+         db.transaction(async (tx) =>
+            tx
                .insert(benefits)
                .values({ ...input, teamId })
-               .returning();
-            if (!row) throw new Error("Falha ao criar benefício.");
-            return row;
-         }),
-         errMessage,
+               .returning(),
+         ),
+         () => "Falha ao criar benefício.",
       );
       if (result.isErr()) return { ok: false as const, error: result.error };
+      const [row] = result.value;
+      if (!row)
+         return { ok: false as const, error: "Falha ao criar benefício." };
       return {
          ok: true as const,
          benefit: {
-            id: result.value.id,
-            name: result.value.name,
-            type: result.value.type,
+            id: row.id,
+            name: row.name,
+            type: row.type,
          },
       };
    });

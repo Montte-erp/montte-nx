@@ -15,6 +15,7 @@
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
+         "@modules/agents/*": ["./src/*"],
          "@modules/billing/*": ["../billing/src/*"]
       }
    },

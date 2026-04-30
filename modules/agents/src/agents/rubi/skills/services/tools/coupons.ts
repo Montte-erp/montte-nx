@@ -1,16 +1,16 @@
 import { toolDefinition } from "@tanstack/ai";
-import { and, asc, eq } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { coupons, createCouponSchema } from "@core/database/schemas/coupons";
 import dayjs from "dayjs";
-import type { SkillDeps } from "../../types";
+import type { SkillDeps } from "@modules/agents/agents/rubi/skills/types";
 
-const listCouponsInput = z.object({ isActive: z.boolean().optional() });
-
-function errMessage(e: unknown) {
-   return e instanceof Error ? e.message : String(e);
-}
+const listCouponsInput = z.object({
+   isActive: z
+      .boolean()
+      .optional()
+      .describe("Filtra por ativo/inativo. Omitir = ambos."),
+});
 
 export function buildCouponsTools(deps: SkillDeps) {
    const { db, teamId } = deps;
@@ -22,33 +22,30 @@ export function buildCouponsTools(deps: SkillDeps) {
       inputSchema: listCouponsInput,
       lazy: true,
    }).server(async ({ isActive }) => {
-      const rows = await db
-         .select({
-            id: coupons.id,
-            code: coupons.code,
-            scope: coupons.scope,
-            type: coupons.type,
-            amount: coupons.amount,
-            direction: coupons.direction,
-            duration: coupons.duration,
-            durationMonths: coupons.durationMonths,
-            trigger: coupons.trigger,
-            redeemBy: coupons.redeemBy,
-            usedCount: coupons.usedCount,
-            maxUses: coupons.maxUses,
-            isActive: coupons.isActive,
-         })
-         .from(coupons)
-         .where(
-            and(
-               eq(coupons.teamId, teamId),
-               isActive === undefined
-                  ? undefined
-                  : eq(coupons.isActive, isActive),
+      const rows = await db.query.coupons.findMany({
+         columns: {
+            id: true,
+            code: true,
+            scope: true,
+            type: true,
+            amount: true,
+            direction: true,
+            duration: true,
+            durationMonths: true,
+            trigger: true,
+            redeemBy: true,
+            usedCount: true,
+            maxUses: true,
+            isActive: true,
+         },
+         where: (f, { and: a, eq: e }) =>
+            a(
+               e(f.teamId, teamId),
+               isActive === undefined ? undefined : e(f.isActive, isActive),
             ),
-         )
-         .orderBy(asc(coupons.createdAt))
-         .limit(50);
+         orderBy: (f, { asc }) => [asc(f.createdAt)],
+         limit: 50,
+      });
       return { count: rows.length, items: rows };
    });
 
@@ -60,21 +57,28 @@ export function buildCouponsTools(deps: SkillDeps) {
       needsApproval: true,
       lazy: true,
    }).server(async (input) => {
-      const existing = await db.query.coupons.findFirst({
-         where: (f, { and: a, eq: e, sql }) =>
-            a(
-               e(f.teamId, teamId),
-               sql`lower(${f.code}) = lower(${input.code})`,
-            ),
-      });
-      if (existing)
+      const existingResult = await fromPromise(
+         db.query.coupons.findFirst({
+            columns: { id: true },
+            where: (f, { and: a, eq: e, sql }) =>
+               a(
+                  e(f.teamId, teamId),
+                  sql`lower(${f.code}) = lower(${input.code})`,
+               ),
+         }),
+         () => "Falha ao verificar cupom existente.",
+      );
+      if (existingResult.isErr())
+         return { ok: false as const, error: existingResult.error };
+      if (existingResult.value)
          return {
             ok: false as const,
             error: "Já existe um cupom com esse código.",
          };
+
       const result = await fromPromise(
-         db.transaction(async (tx) => {
-            const [row] = await tx
+         db.transaction(async (tx) =>
+            tx
                .insert(coupons)
                .values({
                   ...input,
@@ -83,21 +87,21 @@ export function buildCouponsTools(deps: SkillDeps) {
                      ? dayjs(input.redeemBy).toDate()
                      : undefined,
                })
-               .returning();
-            if (!row) throw new Error("Falha ao criar cupom.");
-            return row;
-         }),
-         errMessage,
+               .returning(),
+         ),
+         () => "Falha ao criar cupom.",
       );
       if (result.isErr()) return { ok: false as const, error: result.error };
+      const [row] = result.value;
+      if (!row) return { ok: false as const, error: "Falha ao criar cupom." };
       return {
          ok: true as const,
          coupon: {
-            id: result.value.id,
-            code: result.value.code,
-            scope: result.value.scope,
-            type: result.value.type,
-            amount: result.value.amount,
+            id: row.id,
+            code: row.code,
+            scope: row.scope,
+            type: row.type,
+            amount: row.amount,
          },
       };
    });

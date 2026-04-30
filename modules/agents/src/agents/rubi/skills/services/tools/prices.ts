@@ -2,26 +2,31 @@ import { toolDefinition } from "@tanstack/ai";
 import { and, eq } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
-import { services, servicePrices } from "@core/database/schemas/services";
+import { servicePrices } from "@core/database/schemas/services";
 import {
    createPriceSchema,
    updatePriceSchema,
 } from "@modules/billing/contracts/services";
-import type { SkillDeps } from "../../types";
+import type { SkillDeps } from "@modules/agents/agents/rubi/skills/types";
 
-const idInput = z.object({ id: z.string().uuid() });
+const idInput = z.object({
+   id: z.string().uuid().describe("UUID do preço."),
+});
 
 const createPriceForServiceInput = z
-   .object({ serviceId: z.string().uuid() })
+   .object({
+      serviceId: z
+         .string()
+         .uuid()
+         .describe("UUID do serviço dono do novo preço."),
+   })
    .merge(createPriceSchema);
 
 const updatePriceInput = z
-   .object({ id: z.string().uuid() })
+   .object({
+      id: z.string().uuid().describe("UUID do preço a atualizar."),
+   })
    .merge(updatePriceSchema);
-
-function errMessage(e: unknown) {
-   return e instanceof Error ? e.message : String(e);
-}
 
 export function buildPricesTools(deps: SkillDeps) {
    const { db, teamId } = deps;
@@ -34,33 +39,38 @@ export function buildPricesTools(deps: SkillDeps) {
       needsApproval: true,
       lazy: true,
    }).server(async ({ serviceId, ...priceData }) => {
+      const ownerResult = await fromPromise(
+         db.query.services.findFirst({
+            columns: { id: true },
+            where: (f, { and: a, eq: e }) =>
+               a(e(f.id, serviceId), e(f.teamId, teamId)),
+         }),
+         () => "Falha ao verificar serviço.",
+      );
+      if (ownerResult.isErr())
+         return { ok: false as const, error: ownerResult.error };
+      if (!ownerResult.value)
+         return { ok: false as const, error: "Serviço não encontrado." };
+
       const result = await fromPromise(
-         db.transaction(async (tx) => {
-            const owner = await tx
-               .select({ id: services.id })
-               .from(services)
-               .where(
-                  and(eq(services.id, serviceId), eq(services.teamId, teamId)),
-               )
-               .limit(1);
-            if (owner.length === 0) throw new Error("Serviço não encontrado.");
-            const [row] = await tx
+         db.transaction(async (tx) =>
+            tx
                .insert(servicePrices)
                .values({ ...priceData, teamId, serviceId })
-               .returning();
-            if (!row) throw new Error("Falha ao criar preço.");
-            return row;
-         }),
-         errMessage,
+               .returning(),
+         ),
+         () => "Falha ao criar preço.",
       );
       if (result.isErr()) return { ok: false as const, error: result.error };
+      const [row] = result.value;
+      if (!row) return { ok: false as const, error: "Falha ao criar preço." };
       return {
          ok: true as const,
          price: {
-            id: result.value.id,
-            name: result.value.name,
-            basePrice: result.value.basePrice,
-            interval: result.value.interval,
+            id: row.id,
+            name: row.name,
+            basePrice: row.basePrice,
+            interval: row.interval,
          },
       };
    });
@@ -73,8 +83,8 @@ export function buildPricesTools(deps: SkillDeps) {
       lazy: true,
    }).server(async ({ id, ...data }) => {
       const result = await fromPromise(
-         db.transaction(async (tx) => {
-            const [row] = await tx
+         db.transaction(async (tx) =>
+            tx
                .update(servicePrices)
                .set(data)
                .where(
@@ -83,19 +93,19 @@ export function buildPricesTools(deps: SkillDeps) {
                      eq(servicePrices.teamId, teamId),
                   ),
                )
-               .returning();
-            if (!row) throw new Error("Preço não encontrado.");
-            return row;
-         }),
-         errMessage,
+               .returning(),
+         ),
+         () => "Falha ao atualizar preço.",
       );
       if (result.isErr()) return { ok: false as const, error: result.error };
+      const [row] = result.value;
+      if (!row) return { ok: false as const, error: "Preço não encontrado." };
       return {
          ok: true as const,
          price: {
-            id: result.value.id,
-            name: result.value.name,
-            basePrice: result.value.basePrice,
+            id: row.id,
+            name: row.name,
+            basePrice: row.basePrice,
          },
       };
    });
@@ -119,7 +129,7 @@ export function buildPricesTools(deps: SkillDeps) {
                )
                .returning({ id: servicePrices.id }),
          ),
-         errMessage,
+         () => "Falha ao remover preço.",
       );
       if (result.isErr()) return { ok: false as const, error: result.error };
       if (result.value.length === 0)

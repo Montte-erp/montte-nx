@@ -1,5 +1,5 @@
 import { toolDefinition } from "@tanstack/ai";
-import { and, eq, ilike, or } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { meters } from "@core/database/schemas/meters";
@@ -7,17 +7,20 @@ import {
    createMeterSchema,
    updateMeterSchema,
 } from "@modules/billing/contracts/services";
-import type { SkillDeps } from "../../types";
+import type { SkillDeps } from "@modules/agents/agents/rubi/skills/types";
 
-const listMetersInput = z.object({ search: z.string().optional() });
+const listMetersInput = z.object({
+   search: z
+      .string()
+      .optional()
+      .describe("Busca parcial (ILIKE) em nome ou eventName do medidor."),
+});
 
 const updateMeterInput = z
-   .object({ id: z.string().uuid() })
+   .object({
+      id: z.string().uuid().describe("UUID do medidor a atualizar."),
+   })
    .merge(updateMeterSchema);
-
-function errMessage(e: unknown) {
-   return e instanceof Error ? e.message : String(e);
-}
 
 export function buildMetersTools(deps: SkillDeps) {
    const { db, teamId } = deps;
@@ -29,29 +32,28 @@ export function buildMetersTools(deps: SkillDeps) {
       inputSchema: listMetersInput,
       lazy: true,
    }).server(async ({ search }) => {
-      const rows = await db
-         .select({
-            id: meters.id,
-            name: meters.name,
-            eventName: meters.eventName,
-            aggregation: meters.aggregation,
-            aggregationProperty: meters.aggregationProperty,
-            unitCost: meters.unitCost,
-            isActive: meters.isActive,
-         })
-         .from(meters)
-         .where(
-            and(
-               eq(meters.teamId, teamId),
+      const rows = await db.query.meters.findMany({
+         columns: {
+            id: true,
+            name: true,
+            eventName: true,
+            aggregation: true,
+            aggregationProperty: true,
+            unitCost: true,
+            isActive: true,
+         },
+         where: (f, { and: a, eq: e, ilike, or, sql }) =>
+            a(
+               e(f.teamId, teamId),
                search
                   ? or(
-                       ilike(meters.name, `%${search}%`),
-                       ilike(meters.eventName, `%${search}%`),
+                       ilike(f.name, sql`${`%${search}%`}`),
+                       ilike(f.eventName, sql`${`%${search}%`}`),
                     )
                   : undefined,
             ),
-         )
-         .limit(50);
+         limit: 50,
+      });
       return { count: rows.length, items: rows };
    });
 
@@ -64,23 +66,23 @@ export function buildMetersTools(deps: SkillDeps) {
       lazy: true,
    }).server(async (input) => {
       const result = await fromPromise(
-         db.transaction(async (tx) => {
-            const [row] = await tx
+         db.transaction(async (tx) =>
+            tx
                .insert(meters)
                .values({ ...input, teamId })
-               .returning();
-            if (!row) throw new Error("Falha ao criar medidor.");
-            return row;
-         }),
-         errMessage,
+               .returning(),
+         ),
+         () => "Falha ao criar medidor.",
       );
       if (result.isErr()) return { ok: false as const, error: result.error };
+      const [row] = result.value;
+      if (!row) return { ok: false as const, error: "Falha ao criar medidor." };
       return {
          ok: true as const,
          meter: {
-            id: result.value.id,
-            name: result.value.name,
-            eventName: result.value.eventName,
+            id: row.id,
+            name: row.name,
+            eventName: row.eventName,
          },
       };
    });
@@ -93,21 +95,21 @@ export function buildMetersTools(deps: SkillDeps) {
       lazy: true,
    }).server(async ({ id, ...data }) => {
       const result = await fromPromise(
-         db.transaction(async (tx) => {
-            const [row] = await tx
+         db.transaction(async (tx) =>
+            tx
                .update(meters)
                .set(data)
                .where(and(eq(meters.id, id), eq(meters.teamId, teamId)))
-               .returning();
-            if (!row) throw new Error("Medidor não encontrado.");
-            return row;
-         }),
-         errMessage,
+               .returning(),
+         ),
+         () => "Falha ao atualizar medidor.",
       );
       if (result.isErr()) return { ok: false as const, error: result.error };
+      const [row] = result.value;
+      if (!row) return { ok: false as const, error: "Medidor não encontrado." };
       return {
          ok: true as const,
-         meter: { id: result.value.id, name: result.value.name },
+         meter: { id: row.id, name: row.name },
       };
    });
 
