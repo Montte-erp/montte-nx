@@ -1,0 +1,1943 @@
+## Commits
+- Merge pull request #825 from Montte-erp/manoelnetocarvalho03/mon-562-integrar-linear-releases-ao-fluxo-de-release (96168950) by Manoel Neto
+- fix(release-weekly): handle opencode action push attempt (b2f75ca4) by Manoel
+- Merge pull request #824 from Montte-erp/manoelnetocarvalho03/mon-562-integrar-linear-releases-ao-fluxo-de-release (446829d7) by Manoel Neto
+- fix(release-weekly): rename VERSION env to RELEASE_VERSION (59347569) by Manoel
+- Merge pull request #823 from Montte-erp/manoelnetocarvalho03/mon-562-integrar-linear-releases-ao-fluxo-de-release (92bae4ad) by Manoel Neto
+- fix(opencode): use OPENCODE_API_KEY + deepseek-v4-flash (c2d26102) by Manoel
+- fix(release-weekly): use OPENCODE_API_KEY + deepseek-v4-flash model (c717d35c) by Manoel
+- chore(release): drop libraries pipeline, add weekly CalVer release (35edbd7e) by Manoel
+- Merge pull request #821 from Montte-erp/manoelnetocarvalho03/mon-557-debloat-modulesagents-flatten-skill-registry-split (540c6387) by Manoel Neto
+- refactor(ai): capture full PostHog LLM Analytics property set (298cb7c3) by Manoel
+- refactor(ai): align observability with PostHog LLM Analytics spec (5d4157f1) by Manoel
+- refactor(ai): zod-derived types in middleware + add AI devtools panel (a8711d02) by Manoel
+- refactor(ai): clean up posthog observability middleware (ba1e2477) by Manoel
+- docs(claude): add TanStack Intent skill mappings block (638cb151) by Manoel
+- refactor(agents): flatten architecture to module-level layout (9ebaa8c7) by Manoel
+- refactor(agents): use db.query, scoped imports, neverthrow ownership checks (f8ec8ed1) by Manoel
+- refactor(agents): split monolithic tools.ts into per-domain files (e5aa3d35) by Manoel
+- Merge pull request #820 from Montte-erp/manoelnetocarvalho03/mon-556-kill-billing-integration-stripe-hyprpay-client-out-of-montte (1c74779e) by Manoel Neto
+- test: update mocks and adjust test assertions (4d0a77bd) by Manoel
+- fix(ci): remove dead /billing route refs and libraries/cli tsconfig path (a1e745f8) by Manoel
+- build(bun): remove unused dependencies (8d2c32fd) by Manoel
+- chore: remove seed-addons and setup-stripe scripts (4af7d098) by Manoel
+- refactor: remove CLI and HyprPay SDK dependencies and usage ingestion (9defd220) by Manoel
+- chore: remove stripe and hyprpay billing integrations (cab398ea) by Manoel
+- Merge pull request #819 from Montte-erp/ai-services (3d22936e) by Manoel Neto
+- feat: integrate json-render, add advisor tool, and bulk approval UI (639bb48f) by Manoel
+- feat(web): implement rubi chat panel and threading support (b1082df7) by Manoel
+- feat: Add Montte AI panel and refactor prompts client injection (a9100c52) by Manoel
+- Merge branch 'rubi-agent' into ai-services (df89a824) by Manoel
+- feat(agents): scaffold modules/agents with rubi chat foundation (e53b5dcb) by Manoel
+- Merge pull request #818 from Montte-erp/new-org (eb03cdec) by Manoel Neto
+- feat(onboarding): allow skipping CNPJ step (daa7aa9f) by Manoel
+- refactor: remove manage organization form (e1f37547) by Manoel
+- refactor(onboarding): switch new organization flow to onboarding route (13f9cc45) by Manoel
+- refactor(logging): use synchronous Pino destination for logging (e6bfab04) by Manoel
+- Merge pull request #817 from Montte-erp/service-tour (6b54997a) by Manoel Neto
+- feat: add in-app tour onboarding for services (10b73ff9) by Manoel
+- Merge pull request #816 from Montte-erp/services-update (bb98cf56) by Manoel Neto
+- style: replace preset buttons with select dropdown in rate cell (c880f2c6) by Manoel
+- feat(ui): add NumberInput component (3214166d) by Manoel
+- refactor: standardize toast imports and inline service actions menu (5920228b) by Manoel
+- refactor: simplify mutations and extract meter creation hook (e753a664) by Manoel
+- refactor(web): Extract service tab toolbar component (0e11db51) by Manoel
+- refactor: extract service actions menu and tabs list components (30415ae6) by Manoel
+- Merge pull request #815 from Montte-erp/org (116d4a37) by Manoel Neto
+- fix(members): simplify invite flow error handling (8115a3ba) by Manoel
+- feat(members): add pending invitations and refactor members page (1c2a4426) by Manoel
+- Merge pull request #814 from Montte-erp/services (9dd6bff6) by Manoel Neto
+- fix(billing): correct pricing calculations and credit flow (4a08efb3) by Manoel
+- refactor(billing): restructure invoice workflow and pricing UI (48d3579f) by Manoel
+- perf(billing): optimize pricing engine and add benchmarks (4404ba8e) by Manoel
+- feat: add bulk operations and refactor pricing engine (45487262) by Manoel
+- fix(billing): enforce basePrice is zero for metered pricing types (9471aed9) by Manoel
+- feat(services): add bulk actions and duplicate feature (9bea4372) by Manoel
+- feat: add coupons, meter usage tracking, and pricing engine (2431ab7b) by Manoel
+- refactor: remove Google OAuth and data-management, restructure services (1faa380b) by Manoel
+- feat(services): adds service detail page and pricing management (66c477be) by Manoel
+- Merge pull request #813 from Montte-erp/sidebar-animation (100756ab) by Manoel Neto
+- refactor(web): removes sidebar slide animations (72414d43) by Manoel
+- feat(web): add sidebar transition animations (80de0f96) by Manoel
+- style: apply consistent code formatting (02924f11) by Manoel
+- chore: regenerate route tree and bump hyprpay dependency (05d9810a) by Manoel
+- Merge pull request #812 from Montte-erp/fix-build-web-hyprpay (7b16c840) by Manoel Neto
+- fix(build): route web/worker builds through nx for dep ordering (0e91668f) by Manoel
+- Merge pull request #811 from Montte-erp/modules/classification (cf295602) by Manoel Neto
+- fix(ci): build deps before typecheck/test in CI (41652b11) by Manoel
+- docs: delete billing router split plan (6d4078b4) by Manoel
+- fix(billing): tighten idempotency, contact linkage, and tx scoping (2d44886e) by Manoel
+- refactor(billing): splits monolithic billing router into focused modules (d303c11a) by Manoel
+- refactor(hyprpay): migrate usage ingestion to SDK client (b0553968) by Manoel
+- feat(auth): register hyprpay better-auth plugin in createAuth (3137f5f8) by Manoel
+- feat(hyprpay): re-enable better-auth plugin against new contact API (b2efe4e5) by Manoel
+- chore(hyprpay): bump @montte/hyprpay to 0.4.1 (5108637e) by Manoel
+- refactor(billing): bind 7 SDK service handlers to billingContract (23afbfb8) by Manoel
+- refactor(billing): bind contacts handlers to billingContract; tighten outputs (21de1a93) by Manoel
+- refactor(billing): bind coupons handlers to billingContract (24deee39) by Manoel
+- refactor(billing): bind customer-portal handler to billingContract via implementerInternal (a0ebf694) by Manoel
+- test(billing): unit + smoke for billable ingestion path (c68babb9) by Manoel
+- fix(orpc): billableProcedure ingests via shared helper, no SDK self-loop (8d5d0ce3) by Manoel
+- feat(hyprpay): meter lookup by (teamId, eventName) + cache + direct DB insert (bbdcca5f) by Manoel
+- test(billing): align hyprpay mock with billingContract namespaces (d6eaa77e) by Manoel
+- refactor(billing): requireContact accepts contact ref union (b3b60930) by Manoel
+- refactor(billing): move contacts router to modules/billing inline drizzle (295beecc) by Manoel
+- refactor(hyprpay): unify contract to billingContract v0.4.0 (e2e49f18) by Manoel
+- refactor(billing): inline coupon validate + drop usage/portal procs (c21b9b27) by Manoel
+- docs: billing contract unification design (8dd776e5) by Manoel
+- chore(web): drop legacy /api/sdk surface (54c4b93b) by Manoel
+- refactor(billing): port hyprpay SDK handlers to modules/billing router (f0cac0c6) by Manoel
+- fix(api): split RPC and OpenAPI mounts so RPCLink keeps wire format (faa791b0) by Manoel
+- feat(orpc): api-key auth bridge + OpenAPI handler (48f500ad) by Manoel
+- feat(billing): migrate to HyprPay usage-based billing (20f19efa) by Manoel
+- test(classification): align suite with new architecture (72cd9b72) by Manoel
+- feat(classification): module-owned seeds + prompts catalog (7f933c99) by Manoel
+- feat(hyprpay): centralize HyprPay client + usage ingestion in @core/hyprpay (f2e6b4ef) by Manoel
+- refactor(workspace): drop packages/workflows + core/agents, consolidate @core/sse (4714ca07) by Manoel
+- refactor(notifications): migrate notification system to SSE (9e4352e5) by Manoel
+- test(classification): pglite-socket DBOS smoke + derive-keywords handoff integration tests (2bc0bda8) by Manoel
+- refactor(classification): drop legacy AI actions, obsolete workflows, and categories/tags repos (4c281105) by Manoel
+- feat(worker): wire setupClassificationWorkflows + cron schedule registration (dd6368be) by Manoel
+- refactor(classification): migrate categories+tags routers to module (4c4f6b73) by Manoel
+- feat(classification): setupClassificationWorkflows + daily cron applySchedules (7664270e) by Manoel
+- feat(classification/workflows): backfillKeywordsWorkflow (daily cron) emitting classification.keywords_backfilled SSE (83312bfe) by Manoel
+- docs(plans): redesign Task 12 backfill-keywords-workflow around @core/sse events (119481ab) by Manoel
+- feat(classification/workflows): deriveKeywordsWorkflow (entity-discriminated) emitting classification.keywords_derived SSE (dbf47b2b) by Manoel
+- docs(plans): redesign Task 11 derive-keywords-workflow around @core/sse events (75e0ca97) by Manoel
+- feat(classification/workflows): batch classification workflow with keyword + AI fallback (4535abcf) by Manoel
+- feat(classification): add keyword-match + classify-batch primitives for batch workflow (e7a5f09e) by Manoel
+- docs(plans): redesign Task 10 around batch classification + keyword auto-match (06455a53) by Manoel
+- docs(plans): record Task 9 SSE redesign — @core/sse replaces packages/notifications (12ca792e) by Manoel
+- feat(core/sse): add defineSseEvents factory + classification event registry (b190ed6b) by Manoel
+- feat(core/sse): scaffold SSE package — scopes, channels, publisher, subscriber (a85f6b97) by Manoel
+- feat(classification/ai): deriveKeywords (entity-discriminated, proModel) (a41a7405) by Manoel
+- build(deps): expand @tanstack/ai-openrouter patch with full deepseek-v4 specs (57e8ff66) by Manoel
+- docs(plans): record bun patch for deepseek-v4 models + Task 0 status (1d91c026) by Manoel
+- build(deps): patch @tanstack/ai-openrouter to add deepseek/deepseek-v4-{pro,flash} (c6154656) by Manoel
+- feat(classification/ai): classifyTransaction (one-shot category+tag via aimock-tested flashModel) (6d7cbb6b) by Manoel
+- feat(core/ai): support OPENROUTER_BASE_URL for aimock-driven tests (652c45b9) by Manoel
+- feat(classification): add classificationDataSource + workflow context store (49cce584) by Manoel
+- docs(plans): note Task 5 Option A + aimock for Task 7/8 AI tests (da505d7b) by Manoel
+- refactor(classification): establish @modules/classification/contracts as canonical Zod path (27d0b3a2) by Manoel
+- fix(classification): align ClassificationQueueName with BillingQueueName value-union pattern (d03c3ba1) by Manoel
+- feat(modules/classification): scaffold package mirroring @modules/billing (b4bdece3) by Manoel
+- feat(posthog): consolidate categorize+suggest-tag into classifyTransaction prompt (6394a423) by Manoel
+- chore(core/ai): add format scripts and document @ts-expect-error trigger (01496f5f) by Manoel
+- feat(core/ai): scaffold central AI package with deepseek pro/flash adapters (dc5ae9d7) by Manoel
+- chore(deps): bump @tanstack/ai + @tanstack/ai-openrouter catalog versions (18faa9b3) by Manoel
+- docs(plans): classification module migration plan (b699d854) by Manoel
+- Merge pull request #810 from Montte-erp/mdoules/billing (983a4a9a) by Manoel Neto
+- build(nx): add build dependency to typecheck (9c6c750f) by Manoel
+- build(web): update nitro and add pglite-socket (b0b61c63) by Manoel
+- test(billing): DBOS smoke integration test via pglite-socket (15c05d32) by Manoel
+- chore(worker): drop unused stripeClient — billing migrated to HyprPay (b65873dd) by Manoel
+- refactor(hyprpay): improve error mapping and cleanup types (4c39db20) by Manoel
+- test(billing): E2E time-mocked trial-to-invoice handoff chain (b601c7b6) by Manoel
+- refactor(test): move test files to __tests__ directory ``` </think> (797f4a63) by Manoel
+- test(billing): cover trial-expiry wrapper delaySeconds + past-trial activation (52cca87f) by Manoel
+- refactor(billing): trial-expiry uses multi-phase delaySeconds, no DBOS sleep (831dceec) by Manoel
+- feat(billing): add workflow self-scheduling + DBOS datasource refactor (a700a5bd) by Manoel
+- refactor(core/database): remove benefits meters services invoices repos (a84e1841) by Manoel
+- refactor(billing): restructure exports and update billing UI (d6e5e6a9) by Manoel
+- refactor(core): remove legacy auth, db and update billing (fa0599f0) by Manoel
+- feat(billing): wire trialing subscription input and drop unused source field (a11365c8) by Manoel
+- test(billing): assert invoice email periodStart/periodEnd both DD/MM/YYYY (1c45e230) by Manoel
+- fix(billing): format periodEnd as DD/MM/YYYY in invoice email (c7320a1f) by Manoel
+- test(billing): assert createSubscription fans out benefit-lifecycle enqueue (c030372d) by Manoel
+- fix(billing): enqueue benefit-lifecycle for every unique item service (312c160c) by Manoel
+- test(billing): cover period-end-invoice workflow (08eaa565) by Manoel
+- test(billing): cover trial-expiry workflow (872aa298) by Manoel
+- test(billing): cover benefit-lifecycle workflow (d5846c9d) by Manoel
+- test(billing): cover MRR aggregate and subscription items (d17baeef) by Manoel
+- test(billing): cover meters, benefits, and usage ingestion (ee8ba746) by Manoel
+- test(billing): cover subscription lifecycle procedures (6456a255) by Manoel
+- test(billing): cover service price variants procedures (2ac4512c) by Manoel
+- refactor: remove deprecated DBOS workflows and restructure server (3e873a96) by Manoel
+- test(billing): cover service CRUD procedures (36ca5f54) by Manoel
+- test(billing): cover coupons router procedures (1d9a8c43) by Manoel
+- feat(orpc): extract mock-server helper for router tests (8d0c91c3) by Manoel
+- test(billing): cover billing router procedures (dca69f08) by Manoel
+- test(billing): update mocks to use async types (fe1a3574) by Manoel
+- refactor(billing): extract billing module for HyprPay migration (9e37219a) by Manoel
+- test(billing): add billing-specific publisher + resend mocks (cb805563) by Manoel
+- test(billing): add billing factories and hyprpay mock helpers (f836e99f) by Manoel
+- refactor(billing): inline helper functions (cc9045ba) by Manoel
+- feat(core): add database schemas and hyprpay integration (bced6dea) by Manoel
+- docs(orpc): clarify test-context escape hatches and workflow-mock shape (a0fa34c4) by Manoel
+- feat(orpc): add shared createTestContext testing helper (35a560d1) by Manoel
+- refactor(dbos): expose mock factories for literal vi.mock call-site hoisting (9290b036) by Manoel
+- feat(dbos): add shared mock-dbos testing helper (8f60f025) by Manoel
+- fixfix (7869fd14) by Manoel
+- refactor(database): harden testing factories and align smoke test imports (9a1f3091) by Manoel
+- refactor(database): replace try/catch in withTestTransaction with neverthrow (866fbaf0) by Manoel
+- feat(database): add shared testing factories (seedTeam, seedUser) (894413af) by Manoel
+- refactor(database): move setup-test-db to src/testing for shared consumption (0f6768fb) by Manoel
+- chore(billing): include __tests__ in tsconfig (4a94a612) by Manoel
+- chore(billing): add vitest config (896ae422) by Manoel
+- chore(billing): add vitest + pglite devDependencies for test harness (8d9442ba) by Manoel
+- feat(billing): Replace usage ingestion with usage events. (d000506a) by Manoel
+- refactor(billing): module-level ownership middleware builders, remove repository layer from services (bdd3356e) by Manoel
+- chore(billing): remove barrel files from contracts and router (44a6db02) by Manoel
+- refactor(billing): ownership as middlewares, remove hyprpay null guards, make hyprpay plugin client required (606eb673) by Manoel
+- refactor(orpc): Improve error handling and procedure definitions (51da4d19) by Manoel
+- chore(orpc): declare @orpc/contract as explicit dependency (e2833117) by Manoel
+- refactor(orpc): rewrite server as flat module, drop Stripe from auth/context (ae785f03) by Manoel
+- feat(modules/billing): add contracts and constants, wire schemas from drizzle-zod (646077f6) by Manoel
+- feat(modules/billing): implement billing, coupons and services routers (567104bc) by Manoel
+- feat(core): expose HyprPay client through oRPC context (d4afd83a) by Manoel
+- feat(modules/billing): scaffold package (9ac8ce3c) by Manoel
+- feat(core/orpc): add singleton server + createBillableProcedure (a2ee39a9) by Manoel
+- feat(core/orpc): add createSDKProcedure factory and SDK context types (445ba60c) by Manoel
+- feat(auth): add HyprPay Better Auth plugin alongside Stripe (f83f3578) by Manoel
+- fix(hyprpay): use syncCustomerOnUpdate flag for name sync hook (8a85fe1e) by Manoel
+- feat(hyprpay): add Better Auth plugin scaffold (a406d2bb) by Manoel
+- feat(core): @core/dbos package — createWorkflowClient factory (0a7bda1e) by Manoel
+- fix(core/orpc): use context.posthog not deps.posthog in telemetry middleware (a46ec940) by Manoel
+- feat(core/orpc): createORPCProcedures factory (f7e00a6f) by Manoel
+- feat(core/orpc): add ORPCContext* type interfaces (8a7ba094) by Manoel
+- fix(core/orpc): add missing @core/environment path and reference (73f1bedf) by Manoel
+- feat(core): scaffold @core/orpc package (d799069f) by Manoel
+- Merge pull request #809 from Montte-erp/manoelnetocarvalho03/mon-501-epicservices-hyprpay-sdk-new-namespaces (2fa23dd0) by Manoel Neto
+- chore: Upgrade @tanstack/intent to 0.0.34 (7a1bf56c) by Manoel
+- fix(hyprpay): address code review violations (ca6713c0) by Manoel
+- chore: Update npm packages (ef345743) by Manoel
+- fix(sdk): correct coupons contract scope, add subscription+items transaction, fix price-scope validation (3ab74bbb) by Manoel
+- feat(hyprpay-sdk): release 0.2.0 with subscriptions, usage, benefits, coupons, customerPortal (9a780423) by Manoel
+- feat(hyprpay-sdk): add subscriptions, usage, benefits, coupons, customerPortal client methods (6172bbc7) by Manoel
+- feat(sdk): implement hyprpay.customerPortal.createSession (signed JWT portal URL) (37340035) by Manoel
+- feat(sdk): implement hyprpay.coupons.validate router (192c98d8) by Manoel
+- feat(sdk): implement hyprpay.benefits router (check, list) (d90b0168) by Manoel
+- feat(sdk): implement hyprpay.usage router (ingest via DBOS, list) (bd1ffdf1) by Manoel
+- feat(sdk): implement hyprpay.subscriptions router (create, cancel, list, addItem, updateItem, removeItem) (7c923ee1) by Manoel
+- feat(hyprpay-sdk): add subscriptions contract definitions (adeb104f) by Manoel
+- refactor(sdk): split hyprpay router into folder structure (df6af814) by Manoel
+- feat(sdk): extend SDK context with workflowClient (f91d2410) by Manoel
+- Merge pull request #807 from Montte-erp/manoelnetocarvalho03/mon-500-epicservices-orpc-routers-for-new-entities (8cc8d294) by Manoel Neto
+- feat(services): oRPC routers for meters, benefits, coupons, service prices, subscription items (c94d5bb2) by Manoel
+- Merge pull request #806 from Montte-erp/manoelnetocarvalho03/mon-502-epicservices-dbos-workflows-billing-lifecycle (480c480a) by Manoel Neto
+- fix(billing): scope coupon redemption count by couponId and add billing lifecycle plan (2c615aa1) by Manoel
+- fix(workflows): replace raw db queries with repos and use f-o-t/money for invoice arithmetic (2dd5a6d8) by Manoel
+- fix(billing): add currency to invoice notification payload and make email sender configurable (7db3cfcf) by Manoel
+- fix(workflows): use dayjs for timestamp and include teamId in usage ingestion workflowID (ae498923) by Manoel
+- fix(workflows): implement upgrade path in benefit lifecycle using previousStatus (7d93f2e8) by Manoel
+- fix(database): add currency field and unique period constraint to invoices (d9d871c7) by Manoel
+- feat(orpc): wire billable procedures for meter, benefit, subscription, usage ingestion (d4fc641e) by Manoel
+- feat(workflows): add trial expiry DBOS workflow with pre-expiry warning emails (cbe3252a) by Manoel
+- fix(workflows): remove redundant non-null assertion in period-end invoice workflow (46741292) by Manoel
+- feat(workflows): add period-end invoice generation DBOS workflow (9117de4e) by Manoel
+- feat(workflows): add benefit lifecycle DBOS workflow (00e47b9e) by Manoel
+- feat(workflows): add usage ingestion DBOS workflow (f666eec6) by Manoel
+- feat(notifications): add billing lifecycle notification types (59ad5e97) by Manoel
+- feat(database): add benefit-grants and invoices repositories (24e1f26d) by Manoel
+- feat(database): add invoices schema (f0b35c0e) by Manoel
+- feat(database): add benefit_grants schema (279109c8) by Manoel
+- feat(events): add meter_created, benefit_created, subscription.created, usage.ingested emit functions (80bc5b44) by Manoel
+- feat(stripe): add subscription.created, usage.ingested, service.meter_created, service.benefit_created constants (9620928b) by Manoel
+- Merge pull request #805 from Montte-erp/manoelnetocarvalho03/mon-499-epicservices-schema-data-layer-migration (31119b89) by Manoel Neto
+- feat(database): implement services pricing paradigm ``` (3f5e28d5) by Manoel
+- refactor(database): update servicePrices relations and add benefits relations. (29cf7b62) by Manoel
+- refactor(database): remove instanceof AppError checks, add transactions, use db.query for list queries (2b225590) by Manoel
+- test(database): fix existing tests for services pricing schema migration (d0752089) by Manoel
+- feat(database): add benefits-repository with attach/detach tests (6201d667) by Manoel
+- feat(database): add coupons-repository with redeem tests (c9945d60) by Manoel
+- feat(database): add subscription-items-repository with tests (f176003c) by Manoel
+- feat(database): add meters-repository with tests (3c21d167) by Manoel
+- refactor(database): update subscriptions-repository - remove variant/negotiatedPrice references (488585d9) by Manoel
+- refactor(database): rename variant functions to price in services-repository (2b926dfc) by Manoel
+- feat(database): update relations for new tables and renamed servicePrices (9fb4e4d9) by Manoel
+- feat(database): export new schemas (meters, coupons, benefits, subscription-items) (199326ca) by Manoel
+- feat(database): change usage_events.meterId from text to uuid FK → meters (bdffb64f) by Manoel
+- feat(database): add benefits and service_benefits schemas (7e2865d1) by Manoel
+- fix(database): update subscriptions-repository and relations after schema migration (e36e72ab) by Manoel
+- feat(database): add subscription_items schema (346dbb8b) by Manoel
+- feat(database): add coupons/coupon_redemptions schemas and update contactSubscriptions (18751cba) by Manoel
+- feat(database): rename serviceVariants to servicePrices, remove services.basePrice (d5434522) by Manoel
+- feat(database): add meters schema (f3f7e6aa) by Manoel
+- Merge pull request #804 from Montte-erp/manoelnetocarvalho03/mon-515-featservices-schema-usage_events-table-repository (be3445a3) by Manoel Neto
+- chore: update dependencies in core/database (e02a6a09) by Manoel
+- feat(database): Add usage events repository tests. (40ae38b9) by Manoel
+- refactor: Use numeric column type for quantity (f814e267) by Manoel
+- refactor: update route tree and usage events repository (a27a7b8f) by Manoel
+- feat(database): Add usage events repository (3d442c4e) by Manoel
+- Merge pull request #801 from Montte-erp/contacts-refactor (f676fe8b) by Manoel Neto
+- refactor: Improve error handling in tests (5ba524d1) by Manoel
+- refactor: Use useSelector hook and error handling (acf47d03) by Manoel
+- refactor(web): Remove variantId and negotiatedPrice optional fields (18a97f7a) by Manoel
+- style: Format route tree file (d204b69d) by Manoel
+- feat(contacts): wire tabs, actions and add transaction ``` (d40aaef9) by Manoel
+- fix(contacts): use popover for vincular serviço, add renderActions for draft row save/cancel (e8c38ae9) by Manoel
+- fix(contacts): remove forbidden as cast in tab state handler (da531d29) by Manoel
+- refactor(contacts): tabs at toolbar level with contextual actions, rename to Serviços (30820957) by Manoel
+- feat(contacts): add inline transaction creation from contact detail (f8f51688) by Manoel
+- feat(contacts): add archive/reactivate action to detail page (2da8305f) by Manoel
+- feat(contacts): add Transações/Assinaturas tabs to detail page (1c3a13a4) by Manoel
+- feat(contacts): add archive and reactivate router procedures (d206e301) by Manoel
+- feat(contacts): implement contact detail page layout and content (2d6b2c45) by Manoel
+- feat(contacts): use name as title, document as description in detail header; remove actions (28ebeb97) by Manoel
+- feat(ui): add onBack prop to DefaultHeader; use it on contact detail page (681fdd61) by Manoel
+- feat(contacts): restructure to layout+index, add inline editing, fix navigation (75a766f8) by Manoel
+- fix(contacts): remove duplicate navigate declaration in contacts-list (ef177349) by Manoel
+- feat(contacts): dynamic CPF/CNPJ mask on document field, remove duplicate export button, add view details action (325d3cd8) by Manoel
+- feat(contacts): add toolbar with search, import, export, + button and type tabs (5a954056) by Manoel
+- feat(contacts): wire full detail page and row-click navigation (d755fb7f) by Manoel
+- feat(contacts): add detail page scaffold and all tab components (8523bf6b) by Manoel
+- refactor(contacts): migrate repositories to neverthrow + pt-BR errors (bd97db0e) by Manoel
+- Merge pull request #800 from Montte-erp/debloat (1814a828) by Manoel Neto
+- fix(web): use WebAppError in services route (5ae7331a) by Manoel
+- chore: Update bun.lock file (0c858821) by Manoel
+- feat(transactions): Remove mark as paid credenza. (ebcffd5a) by Manoel
+- feat(web): Add service import credenza component (24ff55c3) by Manoel
+- refactor(web): remove unused import and comments (e6d4d069) by Manoel
+- style(web): improve quick prompts design in chat page (a884b687) by Manoel
+- style(web): Remove unused drop-shadow class (189d0954) by Manoel
+- style(web): Format route file (b708744e) by Manoel
+- refactor(web): migrate routeTree.gen.ts to TS files (0211f2a7) by Manoel
+- chore: Update generated route tree file (4bcc9cd3) by Manoel
+- feat(categories): native inline create/edit, import, remove deprecated files (7c8bf7bf) by Manoel
+- style: format route tree file (20da116a) by Manoel
+- feat(categories): native inline create/edit, import, remove deprecated files (491e8137) by Manoel
+- feat(credit-cards): native inline create, import, remove deprecated files (40f3bde1) by Manoel
+- refactor(data-table): use useEffectEvent for external changes. (18705a25) by Manoel
+- feat(bank-accounts): native inline create, import, remove deprecated files (0f5b6cd8) by Manoel
+- feat(inventory): native inline create, remove deprecated inventory-product-form (404e9777) by Manoel
+- feat(contacts): native inline create, move columns file, remove deprecated files (a396904c) by Manoel
+- feat(web): Add chat page and quick actions. (72f327cb) by Manoel
+- feat(web): implement new assistant view and dashboard tabs (75cd1da0) by Manoel
+- feat(datatable): migrate bank-accounts, credit-cards, contacts, services, inventory to DataTableRoot (98e475f9) by Manoel
+- feat: Remove unused SubscriptionForm component (03aace0e) by Manoel
+- refactor(workflows): Simplify queue creation (2ddd2d94) by Manoel
+- refactor: Replace deprecated enqueue functions with new ones (2d7dd689) by Manoel
+- refactor(transactions): Remove try-caches for async operations. (bfea5ca4) by Manoel
+- style: Format route tree file (a418ea47) by Manoel
+- feat(web): Add bulk edit buttons to transactions list. (4491ceb8) by Manoel
+- fix(web): Handle resolved label for select cell (1dc2bdc1) by Manoel
+- feat(data-table): Add new components for row editing (a5dc3670) by Manoel
+- feat(transactions): Remove transaction summary cards logic (4bde5e4b) by Manoel
+- feat(transactions): Mark transaction as paid/unpaid (e6627ec4) by Manoel
+- Merge pull request #799 from Montte-erp/categories-refactor (9b441bd1) by Manoel Neto
+- refactor(web): Improve category table and data fetching (72534a31) by Manoel
+- feat(web): Implement paginated list for categories (654866e0) by Manoel
+- Merge pull request #798 from Montte-erp/manoelnetocarvalho03/mon-491-refactordata-table-import-nativo-upload-mapeamento-preview-e (f02b254e) by Manoel Neto
+- feat(data-table): Add virtualization for import rows. (f1d7aa2e) by Manoel
+- style(data-table): Use Button component for editable cell (33522aeb) by Manoel
+- style(web): Use separator and ghost button for import section (487d2ca6) by Manoel
+- feat(data-table): implement native data import button (733d564c) by Manoel
+- feat(data-table): Integrate error handling with fromPromise feat(tags): Implement bulk create tags on import ``` (022b4a9a) by Manoel
+- fix(data-table): Prevent import when importState is not ready (6281775a) by Manoel
+- feat(data-table): Add import component enhancements (2a14d9e9) by Manoel
+- feat(data-table): implement native data table import ``` (32339313) by Manoel
+- feat(transactions): add native DataTable import button (dad39bdd) by Manoel
+- fix(data-table): unexport internal utilities (f0fdc0b3) by Manoel
+- feat(data-table): add DataTableImportButton orchestrator (381242ad) by Manoel
+- feat(data-table): add ConfirmStep (68dcfe29) by Manoel
+- fix(data-table): remove as cast in commitEdit (25d93f84) by Manoel
+- fix(data-table): remove as cast and fix virtualRow key in PreviewStep (d3ca5a6f) by Manoel
+- feat(data-table): add virtualized PreviewStep with selection and bulk actions (c4268f0a) by Manoel
+- fix(data-table): use gap-2 instead of gap-1 in MapStep (71585502) by Manoel
+- feat(data-table): add MapStep with auto-match (00272c58) by Manoel
+- feat(data-table): add ImportStepBar and UploadStep (72402d5d) by Manoel
+- fix(data-table): remove reverse substring false positives in autoMatch (c5ea0073) by Manoel
+- feat(data-table): add import types and utilities (26b012fe) by Manoel
+- feat(data-table): add importIgnore to ColumnMeta (dfcc7acf) by Manoel
+- Merge pull request #797 from Montte-erp/manoelnetocarvalho03/mon-496-featweb-redesign-sidebar-posthog-layout-collapsible-sections (a059e413) by Manoel Neto
+- refactor(dashboard): Use router state when setting sidebar tab (4db3c913) by Manoel
+- refactor(dashboard): Use useNavigate and adjust sidebar padding (d97cc87a) by Manoel
+- feat(web): Implement sidebar tabs functionality (cb51a50a) by Manoel
+- chore: Update bun.lock with new package versions (79e461e2) by Manoel
+- feat: Integrate sidebar tab state management (1971739a) by Manoel
+- refactor(tags): remove unused code and stats related components (30f657b3) by Manoel
+- refactor: Improve context panel and dashboard layout (f1e6c235) by Manoel
+- style(web): Update assistente icon in sidebar (13bf3fe7) by Manoel
+- refactor: Improve data table and context panel components (113044b4) by Manoel
+- feat(web): Add keyboard shortcuts and command dialog (6d1c3c83) by Manoel
+- feat(web): Add chat panel and command dialog to sidebar (3ca5c6cb) by Manoel
+- feat(sidebar): tabs Navegar/Assistente, collapsible nav groups, inline edit mode, remove modal config (75a6d281) by Manoel
+- fix(sidebar): scope switcher to header top, account menu stays at footer (08c8aa68) by Manoel
+- fix(sidebar): move scope switcher to footer bottom, clean up header (973f5531) by Manoel
+- feat(sidebar): PROJETO collapsible section wrapping main nav items (5d7f1e45) by Manoel
+- feat(sidebar): PostHog layout — scope switcher to header, account to footer, chat stub (fb2ec71b) by Manoel
+- feat(sidebar): extract SidebarAccountMenu from scope switcher (e0dbf36c) by Manoel
+- Merge pull request #796 from Montte-erp/manoelnetocarvalho03/mon-495-featweb-redesign-context-panel-move-tab-icons-to-right-side (e3974fa7) by Manoel Neto
+- feat(sidebar): refactor sidebar to match PostHog design (66cbc845) by Manoel
+- refactor(sidebar): migrate context panel rail to button (f6a02ac3) by Manoel
+- refactor(web): remove tooltip from export button (e2db8af3) by Manoel
+- fix(rail): increase label to text-sm (8a556541) by Manoel
+- fix(rail): revert to vertical-lr without upright orientation (611a1ca0) by Manoel
+- fix(rail): vertical-lr + upright text, rounded hover on buttons (c2e26b7c) by Manoel
+- fix(rail): char-per-line text, fix hover gap, rename feedback label (16922839) by Manoel
+- feat(rail): add dots menu with feedback/docs, remove Feedback from sidebar (f3b562e1) by Manoel
+- fix(context-panel): use inline style for writing-mode to ensure top-to-bottom text (3e430398) by Manoel
+- fix(context-panel): remove unused cn import from rail (5b7090e6) by Manoel
+- fix(context-panel): hide rail when panel open, fix text direction to top-to-bottom (31e55427) by Manoel
+- refactor(context-panel): move rail outside white card into bg-sidebar strip (1ce28c9b) by Manoel
+- refactor(context-panel): change rail to floating circular badges on right edge (10526744) by Manoel
+- fix(context-panel): remove redundant size=icon prop from rail button (b1d657dd) by Manoel
+- feat(page-header): remove desktop ContextPanelHeaderActions (replaced by rail) (768f2fd2) by Manoel
+- feat(dashboard): add ContextPanelRail to right side of content area (2d964747) by Manoel
+- feat(context-panel): replace tab buttons in panel header with active tab label (86c451b9) by Manoel
+- feat(context-panel): add ContextPanelRail component (62baec99) by Manoel
+- Merge pull request #795 from Montte-erp/manoelnetocarvalho03/mon-487-refactordata-table-inline-editing-via-columnmeta (55e00c24) by Manoel Neto
+- feat(web): Add inline edit mode for data table. (d89ac6b1) by Manoel
+- feat(data-table): Add draft row for tag creation (5986afe3) by Manoel
+- fix(data-table): add EditableCell with TanStack Form and popover support (43326886) by Manoel
+- fix(data-table): remove row hover color from TableRow default style (eeb11c30) by Manoel
+- refactor(data-table): highlight editable cell on hover, not row (fcfa165d) by Manoel
+- refactor(data-table): highlight full row on hover (73e04960) by Manoel
+- refactor(data-table): hover shows pencil icon only, remove bg/ring effects (054c641a) by Manoel
+- refactor(data-table): all editable cells use popover, remove inline mode (dd95caf4) by Manoel
+- fix(data-table): move EditableCell to web app data-table-content (ef4605dc) by Manoel
+- feat(tags): inline editing for name and description, remove edit credenza (55f822eb) by Manoel
+- feat(data-table): add inline editing via ColumnMeta with EditableCell (fb87ba17) by Manoel
+- Merge pull request #794 from Montte-erp/manoelnetocarvalho03/mon-481-feattags-redesign-centros-de-custo-table-native-posthog (765d1310) by Manoel Neto
+- refactor(data-table): improve exportRows and use EXPORT_FORMATS (125b3b0d) by Manoel
+- refactor: Pass empty input to getAll tags queries (86d2330d) by Manoel
+- refactor(web): Refactor data table export and tag columns. (5cf97ce2) by Manoel
+- refactor: Add aria-label to buttons and shields (dd1da239) by Manoel
+- feat(web): Add export selected button to data table (3345bb35) by Manoel
+- refactor: Use pagination for tag listing and related updates (8efc75f0) by Manoel
+- refactor(tags): Improve tags columns rendering (10becd60) by Manoel
+- feat(database): Add bulk archive tags functionality (b1696684) by Manoel
+- feat(web): Add bulk archive tags functionality (35558d0f) by Manoel
+- Merge pull request #793 from Montte-erp/manoelnetocarvalho03/mon-490-refactordata-table-export-nativo-csv-xlsx-e-export-de (e544b781) by Manoel Neto
+- docs(agents): Update README with context and structure (dcbf9d2a) by Manoel
+- feat(data-table): integrate DataTableExportButton into DataTableToolbar (af56e10b) by Manoel
+- fix(data-table): derive export filename from storageKey via context (61a97784) by Manoel
+- fix(data-table): shadcn + WCAG 2.2 audit fixes on DataTableExportButton (31b5f0d9) by Manoel
+- feat(data-table): add DataTableExportButton with CSV and XLSX export (182e0587) by Manoel
+- feat(data-table): add exportIgnore to ColumnMeta (2e426b6e) by Manoel
+- Merge pull request #792 from Montte-erp/manoelnetocarvalho03/mon-484-refactordata-table-selecao-e-bulk-actions-nativos (6d8d9128) by Manoel Neto
+- fix(selection-action-bar): remove mx-2 margin utility on separator (7e4091d8) by Manoel
+- refactor(data-table): remove data-change reset effect (e37ed77e) by Manoel
+- fix(data-table): two selection sync issues (e8d55c75) by Manoel
+- fix(selection-action-bar): shadcn + WCAG 2.2 audit fixes (b80a6fa2) by Manoel
+- feat(data-table): add DataTableBulkActions compound component (e03eb59d) by Manoel
+- Merge pull request #791 from Montte-erp/manoelnetocarvalho03/mon-483-refactordata-table-toolbar-base-busca-chips-de-filtros (6bd799b4) by Manoel Neto
+- fix(data-table): Improve filter condition (18f29ab1) by Manoel
+- refactor(data-table): Use columnFilters instead of filterValues (27d554d9) by Manoel
+- refactor(data-table): Update data table toolbar form usage (b0c3ef52) by Manoel
+- refactor(web): Use context provider for toolbar state (058f79d3) by Manoel
+- refactor(web): Use react-form and remove searchColumnId (720dda2b) by Manoel
+- refactor(data-table): Remove unnecessary useEffect for input (e8385d6b) by Manoel
+- feat(web): Create data table toolbar component (45be7512) by Manoel
+- Merge pull request #790 from Montte-erp/manoelnetocarvalho03/mon-482-refactordata-table-foundation-datatableroot-composicao (1be3f942) by Manoel Neto
+- refactor: Use `useDataTable` hook in content and empty state (8e6a18fe) by Manoel
+- refactor(data-table): Use isVirtualized for setting scroll styles (8123b272) by Manoel
+- feat(data-table): Conditionally render actions column pinning (8846b4a7) by Manoel
+- chore(worker): Update railway.json drainingSeconds to integer (0f3f9a64) by Manoel
+- feat(data-table): Implement virtualized scrolling for content (5233dfaf) by Manoel
+- refactor(data-table): improve actions column and skeleton component (c8fabbb9) by Manoel
+- refactor(data-table): replace context with foxact/context-state (d2c8bf4d) by Manoel
+- refactor(web): Replace useStore with useSelector in DataTableRoot. (ca2efcfb) by Manoel
+- (docs): Remove DataTable composition shell plan ``` (8095c706) by Manoel
+- refactor: Improve data table content and root components (7c7053b1) by Manoel
+- refactor(data-table): remove context.ts and use react-table context ``` (a5d65b8b) by Manoel
+- feat(data-table): Add DataTableSkeleton component for route pending states (32bb7373) by Manoel
+- feat(data-table): add standalone DataTablePagination component (e803514b) by Manoel
+- feat(data-table): add DataTableEmptyState composition slot component (b27cf869) by Manoel
+- chore(data-table): remove Next.js "use client" directives (16727ce0) by Manoel
+- feat(data-table): add DataTableContent component (bcece76b) by Manoel
+- refactor(data-table): fix memoization issues in DataTableRoot (0ed80881) by Manoel
+- feat(data-table): Create DataTableRoot composition shell provider (16fb0e09) by Manoel
+- refactor(data-table): remove renderExpandedRow from DataTableContextValue (c63d88c3) by Manoel
+- feat(data-table): add DataTableContext module for composition shell (ef0d55b0) by Manoel
+- docs: Update documentation format (79ee71d6) by Manoel
+- Merge pull request #789 from Montte-erp/manoelnetocarvalho03/mon-440-featcc-ai-sugestao-automatica-de-cc-via-tanstack-ai-no-form (10c53cd7) by Manoel Neto
+- refactor(suggest-tag): Handle null AI tag suggestions (85f3f3d5) by Manoel
+- chore: remove unused file ``` (4a775eea) by Manoel
+- feat(core): Add AI observability support (f9ba029d) by Manoel
+- feat(posthog): add Zod validation for prompt variables in POSTHOG_PROMPTS (de04d410) by Manoel
+- feat(agents): compile system prompts from PostHog with vars, minimal user messages (55315485) by Manoel
+- refactor(posthog): make POSTHOG_PERSONAL_API_KEY required, simplify prompts singleton (255fcf55) by Manoel
+- refactor(posthog): use typed env from core/environment/web in prompts singleton (23b030a0) by Manoel
+- refactor(posthog): replace getClient fn with module-level singleton (f34b7baa) by Manoel
+- refactor(agents): use neverthrow in fetchSystemPrompt and andThen in actions (5172b6c4) by Manoel
+- feat(agents): centralize AI system prompts in PostHog Prompt Management (db87cd2d) by Manoel
+- feat(tags-schema): add keywords Zod validation (max 20 items, max 60 chars each) (0a7e2a9d) by Manoel
+- feat(mon-440): AI tag suggestion backend — keyword match + LLM fallback DBOS workflow (6c9f4ad4) by Manoel
+- feat(transactions-router): enqueue suggest-tag, add acceptSuggestedTag and dismissSuggestedTag (bc0d2080) by Manoel
+- feat(tags-router): enqueue derive-tag-keywords on create/update (e0e66a38) by Manoel
+- fix(suggest-tag-workflow): use dayjs instead of new Date (b320bc58) by Manoel
+- feat(workflows): add suggest-tag workflow (61c3d4e0) by Manoel
+- feat(workflows): add derive-tag-keywords workflow (7373de9b) by Manoel
+- feat(notifications,events): add AI_TAG_KEYWORD_DERIVED and AI_TAG_SUGGESTED types (b78870ca) by Manoel
+- feat(agents): add inferTagWithAI action (4b883a38) by Manoel
+- feat(transactions-repository): add updateTransactionTag, join tagName/suggestedTagName in listTransactions (d161301f) by Manoel
+- feat(tags-repository): add findTagByKeywords and updateTagKeywords (c9bdf6f4) by Manoel
+- feat(schema): add keywords to tags, suggestedTagId to transactions (c25f4d9a) by Manoel
+- Merge pull request #788 from Montte-erp/manoelnetocarvalho03/mon-435-featcc-repository-getbyid-protecao-de-delete-e-campos (469df11d) by Manoel Neto
+- test(tags-repository): add tests for getById method (3d2243c3) by Manoel
+- Merge pull request #787 from Montte-erp/manoelnetocarvalho03/mon-439-featcc-settings-configuracao-de-cc-obrigatorio-por-espaco (27905ad2) by Manoel Neto
+- refactor(financial-settings): Zod schemas, db.transaction, enforceCostCenterPolicy in repo (b5b147f2) by Manoel
+- refactor: Move cost center policy to financial repo (f209ae92) by Manoel
+- docs: Update test guidelines and remove deprecated info (85cbfae5) by Manoel
+- refactor(transactions): use DatabaseInstance type in enforceCostCenterPolicy (4648287d) by Manoel
+- feat(transaction-form): costCenterRequired client-side validation (96bc94f6) by Manoel
+- feat(transactions): server-side costCenterRequired enforcement (ab337485) by Manoel
+- refactor(financial-settings-ui): single costCenterRequired toggle (ef276959) by Manoel
+- refactor(financial-settings-router): use new settings.financial table (172434e1) by Manoel
+- refactor(financial-config-repo): use settings.financial, neverthrow (ec1bd6a6) by Manoel
+- refactor(database): remove finance.financial_settings table (f914ca2f) by Manoel
+- feat(database): add settings.financial table with costCenterRequired (32f4e34b) by Manoel
+- feat(database): add settings PG schema (83a4ed6d) by Manoel
+- Merge pull request #786 from Montte-erp/manoelnetocarvalho03/mon-434-featcc-schema-adicionar-sistemaordem-e-migrar-para-fk-1n-em (62e1d026) by Manoel Neto
+- refactor(seed-event-catalog): Use drizzle with node-postgres pool (3e892d54) by Manoel
+- refactor: Use logging/errors import path and update stripe api version (96a77db1) by Manoel
+- refactor(worker): Await posthog.shutdown and remove composite flag (b6bae7ac) by Manoel
+- chore(stripe): Update Stripe API version (7e5a9d51) by Manoel
+- docs(web): Update README with DBOSClient and jobs details (5eda8249) by Manoel
+- refactor: Remove unused dependencies and clean up imports (035845e6) by Manoel
+- feat(apps/worker): Add DBOS worker process. (e767347d) by Manoel
+- feat(worker): Add Railway deployment configuration (e29afd91) by Manoel
+- refactor(logging): Use root logger for worker (9ced9287) by Manoel
+- refactor(logging): Update import paths (76fd64bd) by Manoel
+- feat(web): Update web README for worker separation (bab385f2) by Manoel
+- feat: Create worker app with build and start scripts (f76c41db) by Manoel
+- feat(web): Add worker process (509ade45) by Manoel
+- refactor: Improve error handling and validation in tags repository (05799c74) by Manoel
+- refactor: Simplify transaction and subscription handling (eaa3c9d0) by Manoel
+- refactor: Remove transaction_tags table and relations (92854723) by Manoel
+- Merge pull request #785 from Montte-erp/manoelnetocarvalho03/mon-467-refactorworkflows-extrair-dbos-para-packagesworkflows (26c347de) by Manoel Neto
+- fix(web): Handle AppError in orpc server (af0320af) by Manoel
+- chore(deps): remove test helpers (d0d7c9fe) by Manoel
+- refactor(web): Improve oRPC server error & telemetry handling (f44c8387) by Manoel
+- feat(deps): Add @packages/workflows and neverthrow packages (a03f806c) by Manoel
+- feat(agents): Add neverthrow to agent dependencies. (548ed875) by Manoel
+- refactor(agents): update actions exports to use wildcard (e5967789) by Manoel
+- refactor(notifications): Inject job publisher into ORPC context (fc00984c) by Manoel
+- refactor(workflows): Refactor workflows and context setup (e6816ce6) by Manoel
+- feat(web): Add workflows package dependency (4084cc2d) by Manoel
+- Merge pull request #784 from Montte-erp/manoelnetocarvalho03/mon-466-refactorcentro-de-custos-migrar-repositorios-para-neverthrow (2165bcf8) by Manoel Neto
+- refactor: Update repository error handling in CLAUDE.md (dbeed47e) by Manoel
+- docs(neverthrow): Update documentation for match method (edb2f11e) by Manoel
+- docs: Update skills and best practices table (71edd729) by Manoel
+- refactor(data-view): extract import & virtual table and types ``` (767fb56e) by Manoel
+- feat(neverthrow): Add file for neverthrow skill. (5f050a75) by Manoel
+- refactor(data-view): extract and implement data table refactor plan (6baf8551) by Manoel
+- Merge pull request #781 from Montte-erp/manoelnetocarvalho03/mon-389-refactorcategories-audit-ux-shadcn-bugs-padroes-e-melhorias (1c9a6649) by Manoel Neto
+- refactor(categories): Improve batch creation and archiving logic (bf397717) by Manoel
+- feat(categories): Implement bulk archive endpoint (f744c30d) by Manoel
+- refactor(web): update category types and column defs (48a60fb4) by Manoel
+- refactor(web): remove card view and related code (3e7c5a56) by Manoel
+- feat(categories): 2-item import/export menu, button active state, XLSX import support (314241c7) by Manoel
+- feat(categories): add docker compose service name (d3a61d38) by Manoel
+- fix(categories): WCAG aria-label and aria-hidden on view toggle buttons (1efa701f) by Manoel
+- fix(categories): WCAG sr-only status text, icon aria-hidden, MapStep scroll (6a812a26) by Manoel
+- fix(categories): WCAG aria labels and hidden icons in filter bar (1ba76c75) by Manoel
+- fix(categories): form validators + WCAG aria labels on form controls (8622653d) by Manoel
+- feat(categories): realistic skeletons + context-scoped view switch (403ef5fb) by Manoel
+- feat(categories): implement categories import/export refactor (0d69267d) by Manoel
+- fix(categories): validate localStorage mapping with Zod, use virtualRow.key (22153556) by Manoel
+- feat(categories): add XLSX export option to dropdown (ecbb35e4) by Manoel
+- fix(categories): remaining gap-1 → gap-2 in MapStep column label (a2fecbcb) by Manoel
+- fix(categories): hooks-of-rules order, remove as casts, fix gap-1 in import credenza (7ce31c9c) by Manoel
+- feat(categories): rewrite import credenza — 4 steps, StepBar, Dropzone, Combobox (09910476) by Manoel
+- fix(categories): derive mappedCategories with useMemo, safe JSON.parse (d94b2235) by Manoel
+- feat(categories): add CategoryImportProvider context with logic layer (1ca10f45) by Manoel
+- feat(categories): implement UX refactor V2 based on the plan ``` (2039504f) by Manoel
+- feat(categories): view toggle with tooltips and same size, filter pills → Toggle buttons, gap-4 consistent (99176770) by Manoel
+- feat(categories): type toggle with icons and padding, unarchive AlertDialog confirmation (88298be3) by Manoel
+- feat(categories): archived indicator as icon+tooltip, remove keywords tooltip from name column (1c7e12e9) by Manoel
+- feat(categories): redesign filter bar with pill-style toggle filters (97296b29) by Manoel
+- feat(categories): expose description field in form and card view (24715ce6) by Manoel
+- feat(categories): unarchive action in table and card views (ca50fa05) by Manoel
+- feat(categories): add unarchive oRPC procedure (5a1159f2) by Manoel
+- feat(categories): isArchived field in CategoryRow + archived visual differentiation (47fcb576) by Manoel
+- feat(categories): archive action requires AlertDialog confirmation (746b5202) by Manoel
+- fix(categories): use gap-2 instead of gap-1/gap-1.5 in card subcategories section (3b71c064) by Manoel
+- feat(categories): parent-child visual hierarchy in table and card views (5c45f7b9) by Manoel
+- feat(categories): Announcement component for keywords column + improved tooltip (914fcf88) by Manoel
+- feat(categories): icon-only import/export button (c70f988f) by Manoel
+- feat(categories): implement the full refactor plan (30c4e7f5) by Manoel
+- fix(categories): processFile error handling, stepper race, bulk archive filter, replace nav, virtualizer HTML (dea94a71) by Manoel
+- feat(categories): add mobile card view with view toggle (T12) (514f65b4) by Manoel
+- fix(categories): add participatesDre to subcategory creation in importBatch (887157b5) by Manoel
+- feat(categories): move search to server-side (U8) (2a11499b) by Manoel
+- fix(categories): replace mr-2 with gap-2 on import button (dd72683f) by Manoel
+- feat(categories): rewrite import credenza with stepper, drag-drop, virtualizer (B2/B3/U1/U6) (ccd3fcd0) by Manoel
+- feat(categories): support subcategories in importBatch payload (B1) (839191b1) by Manoel
+- feat(categories): replace segmented control with ToggleGroup (U9) (dde4d42f) by Manoel
+- feat(categories): add bulk archive to SelectionActionBar (U3) (2dfc165a) by Manoel
+- feat(categories): group import/export in DropdownMenu (U2) (fee70cc9) by Manoel
+- feat(categories): add subcategories and keywords count columns (U4) (08318281) by Manoel
+- fix(categories): export subcategories in CSV and replace try/catch with neverthrow (B4/P1) (b3b00f9d) by Manoel
+- fix(categories): remove margin utilities, fix disallowed gap values (806067bd) by Manoel
+- feat(categories): improve skeleton to reflect real structure (beeba073) by Manoel
+- fix(categories): narrow form.Subscribe selector in SubcategoryForm (cf5bc5d3) by Manoel
+- fix(categories): narrow form.Subscribe selector in CategoryForm (3995e860) by Manoel
+- feat(wcag-audit-patterns): Add WCAG audit patterns skill. (bf948c01) by Manoel
+- chore: Remove release skill documentation (db7e2ee9) by Manoel
+- Merge pull request #780 from Montte-erp/full-store (444df3bd) by Manoel Neto
+- refactor(dbos-typescript): Improve documentation and examples refactor(web): Refactor search query and file import refactor(events): Update queue directory structure refactor(notifications): Update notification import and publisher (6a05771a) by Manoel
+- docs(skills): Add markdown files for Better Auth skills (71c385de) by Manoel
+- ```json {   "version": 1,   "skills": {     "Release": {       "source": "schpet/linear-cli",       "sourceType": "github",       "computedHash": "1584c0740971e96f6c88cfc7b4671d9907b3d94297e4a6232941f869c73ac24a"     },     "brainstorming": {       "source": "obra/superpowers",       "sourceType": "github",       "computedHash": "5cafa1558b0b6bd4d4c71f23d5567b7fcbbcdb4b0a50b0c5f69a80a3cebaf9b8"     },     "dbos-typescript": {       "source": "dbos-inc/agent-skills",       "sourceType": "github",       "computedHash": "0ea184b3ade54eedfd7109e041ec44803b12f7abc89116d9fab21a47ef40f295"     },     "linear-cli": {       "source": "schpet/linear-cli",       "sourceType": "github",       "computedHash": "5f8516b9aa8157e7710ec5d029e1c44a0e55be1c3f834f844d0c7f27dae62580"     },     "paradedb-skill": {       "source": "paradedb/agent-skills",       "sourceType": "github",       "computedHash": "7045a6e531ab5b35de1dfbbed1e8e66b12946c0d2521f145666a3bc3534f1a5d"     },     "postgres-drizzle": {       "source": "ccheney/robust-skills",       "sourceType": "github",       "computedHash": "60534e1aa880981e26360db836115df77a8e73be219c7a027e635802686b5bd9"     },     "redis-best-practices": {       "source": "mindrally/skills",       "sourceType": "github",       "computedHash": "c362f644a6e3ed9b69a86fef4aa41ebcb4ff15552f03b7431f00642af5d3d5f1"     },     "shadcn": {       "source": "shadcn/ui",       "sourceType": "github",       "computedHash": "873c67922d80775a9fdf596db7964b579f0408c30ec6e3d11989f6055bbec89f"     },     "tanstack-ai": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "d95cd0d1700d882cc2d38e6bd4f59d219954eabf579a8771f6cbccedce4892de"     },     "tanstack-config": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "f1d53bd18002a098bf55153fbbf78ab504b89ec0cf03d2fbb79d3e31b3fbe91c"     },     "tanstack-db": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "9d21b2c472a9e642273ff70b52b1107839e414860462cad6ce6df3ae15debbda"     },     "tanstack-devtools": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "ecb51f9902ae6de9f512b299e6c16bd4befc3ff2c62f8cd1ece07e31b1c73dfe"     },     "tanstack-form": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "1eb9f9fc43ab2777f586f916b2234c5340ed98f296a98b22c75cbbafcbd29b86"     },     "tanstack-integration-best-practices": {       "source": "deckardger/tanstack-agent-skills",       "sourceType": "github",       "computedHash": "f8454d0835f04539c0d90a5a481937bc0e1cd7e31ac8610f302abd3421f3d24a"     },     "tanstack-query": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "b8a0477cd4d7bf8fa54d27f8e64d82388402f0d502591db50a357df5b9995c75"     },     "tanstack-query-best-practices": {       "source": "deckardger/tanstack-agent-skills",       "sourceType": "github",       "computedHash": "21d2e8b7468a81d772b6527ad8ca178cc2f3f08af777bb9061333013ee88a0c9"     },     "tanstack-router": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "24beccc4016f91bab65547209cfd849ea5e66f3d5d92820683a9dd84669ced56"     },     "tanstack-router-best-practices": {       "source": "deckardger/tanstack-agent-skills",       "sourceType": "github",       "computedHash": "65764bc7b90e47f6023cb7f89b3af93eaaafc517754f10b9382e184d4646a77d"     },     "tanstack-start": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "e9d8355fe3e47b118e739081f1123c52aa0ecde57da840722177e1ad5caf9908"     },     "tanstack-start-best-practices": {       "source": "deckardger/tanstack-agent-skills",       "sourceType": "github",       "computedHash": "8b073187405a10f9997158f9139a9664cc801595d2fe63d542a0bac9bf2152f5"     },     "tanstack-store": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "acfc5f1217685253fa9484f8f89dc92aae96a9ae30e42001b07b2ca672c758b2"     },     "tanstack-table": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "d5ac71bd795696cd3310165c3ea0e435c310a0ac3c4e9dd45b39ed91b8dbcbb1"     },     "tanstack-virtual": {       "source": "tanstack-skills/tanstack-skills",       "sourceType": "github",       "computedHash": "987d0fcffeac700cea1303a13a9cecd8a4583985dd675f97ebbca27bfa592b47"     },     "ui-ux-polish": {       "source": "dicklesworthstone/agent_flywheel_clawdbot_skills_and_integrations",       "sourceType": "github",       "computedHash": "c511d893ffc6db1301030c1f426bc8399bfacbb4592ff62e0dff15ec0311baf3"     },     "ui-ux-pro-max": {       "source": "nextlevelbuilder/ui-ux-pro-max-skill",       "sourceType": "github",       "computedHash": "e688fcd4c5693e14ebd00d48e982dbd2be060fbea89f5f60531e79c704a1bc28"     },     "web-design-guidelines": {       "source": "vercel-labs/agent-skills",       "sourceType": "github",       "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"     }   }  } ``` (12341077) by Manoel
+- refactor(release): add skill for creating new releases. (718475a0) by Manoel
+- feat(paradedb-skill): Add example prompts and license file (2fff4935) by Manoel
+- refactor(context-panel): migrate createAtom to createStore for derived state (e94cde9c) by Manoel
+- feat(tanstack-ai): Add TanStack AI skill feat(dbos-typescript): Add DBOS TypeScript skill feat(tanstack-db): Add TanStack DB skill feat(tanstack-devtools): Add TanStack Devtools skill feat(tanstack-form): Add TanStack Form skill feat(tanstack-query): Add TanStack Query skill feat(tanstack-router): Add TanStack Router skill feat(tanstack-start): Add TanStack Start skill feat(tanstack-store): Add TanStack Store skill feat(tanstack-table): Add TanStack Table skill feat(tanstack-virtual): Add TanStack Virtual skill chore(packages/events): Update events skill chore(README): Update agent skills ``` (0d435039) by Manoel
+- refactor(store): extract store effects and persisted store features (bc19e5a4) by Manoel
+- refactor: Remove unused feature tests and imports (82ac81f3) by Manoel
+- fix(docs): update CLAUDE.md and README.md with new instructions (3f02ca71) by Manoel
+- Merge pull request #778 from Montte-erp/manoelnetocarvalho03/mon-260-persisted-store-clean (3562ae3b) by Manoel Neto
+- refactor(sidebar): unify fragmented sidebar state into single sidebarStore (69e1b37c) by Manoel
+- Merge pull request #777 from Montte-erp/manoelnetocarvalho03/mon-260-persisted-store-clean (c66e63fb) by Manoel Neto
+- refactor(store): integrate foxact createLocalStorageState into createPersistedStore (cf8548c1) by Manoel
+- Merge pull request #776 from Montte-erp/manoelnetocarvalho03/mon-346-extract-product-specific-components-from-packagesui-into-a (e118eccf) by Manoel Neto
+- refactor(store): add createPersistedStore utility and migrate sidebarNavStore (76718261) by Manoel
+- Merge pull request #775 from Montte-erp/manoelnetocarvalho03/mon-350-add-accessibility-rationale-to-usecredenzausealertdialog (bde8fe34) by Manoel Neto
+- perf(store): narrow useStore selectors to prevent unnecessary re-renders (502d40da) by Manoel
+- refactor: remove unused stats-card and time-period-chips from packages/ui (5ef7725c) by Manoel
+- refactor: move feature-stage-badge to apps/web blocks, remove showcase (67ea4a95) by Manoel
+- refactor: move quick-access-card component to apps/web blocks (f8b98959) by Manoel
+- fix: remove use client directive from banner (not Next.js) (49ca751c) by Manoel
+- refactor: move banner component to apps/web blocks (e622bb47) by Manoel
+- refactor: move announcement component to apps/web blocks (95ddaedb) by Manoel
+- Merge pull request #774 from Montte-erp/manoelnetocarvalho03/mon-350-add-accessibility-rationale-to-usecredenzausealertdialog (1f7f5e69) by Manoel Neto
+- docs(claude): audit and condense CLAUDE.md for clarity (3109f2ba) by Manoel
+- Merge pull request #773 from Montte-erp/manoelnetocarvalho03/mon-350-add-accessibility-rationale-to-usecredenzausealertdialog (d4279fda) by Manoel Neto
+- docs: Add rationale for using Credenza components (761583a2) by Manoel
+- Merge pull request #772 from Montte-erp/manoelnetocarvalho03/mon-348-add-animation-policy-to-claudemd (98fd98fc) by Manoel Neto
+- Merge branch 'master' into manoelnetocarvalho03/mon-348-add-animation-policy-to-claudemd (87398539) by Manoel
+- Merge pull request #771 from Montte-erp/manoelnetocarvalho03/mon-230-featdevtools-maximizar-uso-do-tanstack-devtools-form-panel (bab164d6) by Manoel Neto
+- docs(claude): add animation policy to CLAUDE.md (c4f52d95) by Manoel
+- feat(devtools): centralize and expand TanStack devtools configuration (eb0db922) by Manoel
+- Merge pull request #770 from Montte-erp/manoelnetocarvalho03/mon-215-refactor-replace-new-date-and-date-fns-with-dayjs-across-the (f510311c) by Manoel Neto
+- refactor(billing): Improve date calculations using dayjs (ecffb933) by Manoel
+- refactor: Migrate date operations to use dayjs library (78deafbf) by Manoel
+- refactor: Use dayjs for date formatting and manipulation (97257932) by Manoel
+- Merge pull request #766 from Montte-erp/credit-card (79a87e0d) by Manoel Neto
+- fix(credit-cards): fix brand/status Select type errors after null default change (5d8be092) by Manoel
+- fix(credit-cards): address code review — ownership check, remove as casts, remove unused getSummary (d45cce1f) by Manoel
+- Merge pull request #769 from Montte-erp/fix/feature-previews-coming-soon (5e466c1c) by Manoel Neto
+- fix(feature-previews): remove stale coming soon entries — keep only CRM (Twenty), Coworking, NFS-e (7bee02ed) by Manoel
+- fix: apply Brazilian DD/MM/YYYY display format to date fields (48792843) by Manoel
+- fix(credit-cards): sync status column filter to URL, fix test assertions, restore subcategory expanded state (6dc82784) by Manoel
+- fix(hyprpay): name fallback to email, sync name on user update (fb153cf0) by Manoel
+- fix(hyprpay): rebuild 0.1.4 with correct databaseHooks dist (4f3734c6) by Manoel
+- Merge pull request #768 from Montte-erp/worktree-fix-hyprpay-base-url (b0bab71b) by Manoel Neto
+- chore: merge master, resolve hyprpay version conflicts (ca236b9b) by Manoel
+- fix(hyprpay): correct default base URL and RPC path, exclude test files from build (9a9f212a) by Manoel
+- Merge pull request #767 from Montte-erp/worktree-fix-hyprpay-better-auth (38804b5a) by Manoel Neto
+- fix(hyprpay): exclude test files from tsconfig build and typecheck (ae12058d) by Manoel
+- test(hyprpay): update better-auth plugin tests for databaseHooks (be66f1c4) by Manoel
+- fix(hyprpay): move databaseHooks into init() for proper type inference (cc9c175c) by Manoel
+- fix(hyprpay): use databaseHooks.user.create.after for customer sync (c3f562e2) by Manoel
+- fix(credit-cards): export pageSize max 1000, transaction dropdowns pageSize 100, remove dead sorting URL state, remove dead upload next button (eedc3d1b) by Manoel
+- refactor(credit-cards): full refactor to match transactions UI/UX (df0ff89d) by Manoel
+- feat(credit-cards): expandable row showing current statement summary (89cca129) by Manoel
+- fix(credit-cards): select for day fields, announcement columns, icon-only panel actions (f99863b4) by Manoel
+- feat(credit-cards): add import credenza with CSV/XLSX column mapping (303a530b) by Manoel
+- feat(credit-cards): add export credenza with CSV and XLSX (03f759b3) by Manoel
+- feat(credit-cards): add bulkCreate procedure and repository function (3d92b396) by Manoel
+- feat(credit-cards): update CreditCardsList with pagination URL state (b3fd17b2) by Manoel
+- feat(credit-cards): add paginated getAll and getSummary procedure (2a0f5815) by Manoel
+- feat(credit-cards): add pagination, filters and summary to repository (6f7372b8) by Manoel
+- Merge pull request #765 from Montte-erp/manoelnetocarvalho03/mon-234-refactor-substituir-dialog-stacks-manuais-por-usecredenza (7f9c1664) by Manoel Neto
+- refactor(budget-goal-credenza): Wrap content with query boundary (b4b41ae5) by Manoel
+- refactor: Replace Suspense with QueryBoundary for error handling (a88b2a92) by Manoel
+- refactor(transactions): Use QueryBoundary for new card form (1e454acd) by Manoel
+- refactor: Replace optional with catch and add QueryBoundary component (ad4036a8) by Manoel
+- refactor: Use useCsvFile hook to process CSV files (8e2d0740) by Manoel
+- docs: Update CLAUDE.md with parsing guidance and gotchas (ed6e3d21) by Manoel
+- refactor(service-import-credenza): Use useCsvFile hook (dccee5a4) by Manoel
+- refactor(transactions): Wrap transaction credenza in Suspense (14a2bbf7) by Manoel
+- refactor: Replace Suspense with QueryBoundary for error handling (310ec63b) by Manoel
+- fix(transactions): Update bank account field name (5c2204b1) by Manoel
+- fix(transactions): Convert date to date object using dayjs (ad12cd9e) by Manoel
+- refactor(transactions): Use zod for transaction form schema (9c91f3df) by Manoel
+- refactor(transactions): Extract default values for transaction form (53ea2ff2) by Manoel
+- refactor(transactions): Initialize recurringFrequency and recurringCount (a8c1d266) by Manoel
+- refactor: Remove unused variables and improve type definitions (19733815) by Manoel
+- fix: remove mr-2, space-y-* override, gap-x/gap-y in credenza files (51b91ae1) by Manoel
+- fix: remove space-y-* and mr-1 in goals.tsx (3286cc47) by Manoel
+- fix: remove margin utilities, move Zod schemas to module scope (44042262) by Manoel
+- fix: address code review — remove @core import, fix casts, form.Subscribe, margin utils, NotificationPayloadMap (42f36edc) by Manoel
+- fix: resolve typecheck errors in notifications/types and dbos runner (7f1f7ca8) by Manoel
+- refactor: rename all *-dialog-stack components to *-credenza (4e793e4c) by Manoel
+- refactor(transactions): replace secondaryForm state with useCredenza stack (3d89560b) by Manoel
+- refactor: rename TransactionDialogStack → TransactionCredenza (2272021d) by Manoel
+- chore: remove dead dialog-stack infrastructure (5c1dec0e) by Manoel
+- Merge pull request #764 from Montte-erp/manoelnetocarvalho03/mon-246-featagents-auto-categorize-transactions-on-creation-via-llm (52de82b6) by Manoel Neto
+- refactor(transactions): Remove autoCategorize and clear suggestion (7c4aa1aa) by Manoel
+- feat(transactions): Add category suggestion to the table (b11bd78a) by Manoel
+- feat(sidebar): Filter sidebar items based on visibility (3e77e4bb) by Manoel
+- feat(categories): Add keywords tooltip to category columns (8f850090) by Manoel
+- refactor: Remove HMR and enqueue function usages (fccbf2ee) by Manoel
+- refactor(web): Boot DBOS workflows in a function (31632053) by Manoel
+- docs: Update documentation for conditional queries (0aeebffd) by Manoel
+- chore: Install dependencies if node_modules are missing (36d92f69) by Manoel
+- feat(transactions): Add auto-categorization functionality (b4f5a757) by Manoel
+- feat(transactions): Remove auto-categorize option. (b0a1cb11) by Manoel
+- feat(auto-categorization): implement initial workflow (d0f483f9) by Manoel
+- feat: add accept/dismiss suggested category procedures and UI (6fdde1eb) by Manoel
+- feat(ui): add sugestão IA badge to transactions category column (43af9202) by Manoel
+- feat(router): trigger categorization workflow on transaction create (3f127f46) by Manoel
+- feat(workflow): add CategorizationWorkflow (13917167) by Manoel
+- feat(repo): add findCategoryByKeywords (54bc2c1a) by Manoel
+- feat(repo): add updateTransactionCategory (4e1b6647) by Manoel
+- feat(schema): add suggestedCategoryId to transactions (1b50c0a6) by Manoel
+- docs: Update documentation for web oRPC and billing model (fa2ba013) by Manoel
+- Merge pull request #763 from Montte-erp/manoelnetocarvalho03/mon-199-ai-auto-derivar-palavras-chave-de-categorias (30801d25) by Manoel Neto
+- refactor(backfill): Add workflow ID and log emit errors (329218fa) by Manoel
+- feat(notifications): Invalidate query on specific notification types (ec9436e9) by Manoel
+- test(web): Mock DBOS SDK and workflows (ec9ccdd1) by Manoel
+- refactor(web): Use web env in dbos init and refactor nitro config (577bf893) by Manoel
+- feat(web): Add dbos-sdk to nitro externals (989eadf6) by Manoel
+- feat(web): Add new paths for cli and hyprpay library (dbd68a5f) by Manoel
+- chore: Remove hot reload and unsubscribe call (a1086c6c) by Manoel
+- refactor(categories): Fetch stripeCustomerId for keyword derivation (944712a5) by Manoel
+- refactor(derive-keywords): Remove env var from openrouter adapter (fe5c62b1) by Manoel
+- style(docs): fix typo in the plan (7e231e03) by Manoel
+- refactor(web): Use bun for starting containers and update config (6aaef4fc) by Manoel
+- refactor: Update backfill keywords workflow and query (2ea544e6) by Manoel
+- fix(database): Exclude default categories from list (96ae6709) by Manoel
+- refactor: Improve DBOS lifecycle with HMR support (bda1ab68) by Manoel
+- feat(web): Add AI icon and refactor keyword generation. (63fd0c29) by Manoel
+- refactor: Migrate AI workflows and notifications to DBOS (98295986) by Manoel
+- style(web): Add esbuild target for build improvements (f5a94a02) by Manoel
+- docs: update CLAUDE.md — remove apps/server references (13600099) by Manoel
+- chore: delete apps/server — fully consolidated into apps/web (9738ea44) by Manoel
+- fix(sdk): remove redundant generic annotations in sdk-auth (9e2c58d8) by Manoel
+- fix(sdk): remove remaining type casts and redundant generics (e2948704) by Manoel
+- fix(sdk): remove type casts and non-null assertions in SDK router files (53ba1abe) by Manoel
+- feat: port SDK oRPC API from apps/server into apps/web at /api/sdk (4b7d3e23) by Manoel
+- feat: move DBOS keyword workflows into apps/web, call DBOS.startWorkflow from categories router (fa9977d2) by Manoel
+- fix: resolve code review comments — remove _options param, move team query to repo, log enqueue errors (ade840cd) by Manoel
+- fix(events): guard teamId in emitEventBatch to satisfy notNull schema constraint (59e9d7c0) by Manoel
+- fix(orpc): exclude SSE requests from BatchLinkPlugin (54ffd93b) by Manoel
+- feat(categories): use Announcement component for root category name with icon and color (95382f36) by Manoel
+- feat(scripts): add backfill-category-icons migration script (939b22a8) by Manoel
+- chore: Remove unnecessary seed scripts from dev:all command (add0e682) by Manoel
+- feat(categories): add colors to default seeded root categories (31a8a62d) by Manoel
+- Revert "fix(workflows): switch model to qwen/qwen3.5-flash-02-23" (01fb5f8a) by Manoel
+- fix(workflows): switch model to qwen/qwen3.5-flash-02-23 (52ecd47b) by Manoel
+- feat(categories): add icons to default seeded categories (ae53c83f) by Manoel
+- fix(events): add ai.keyword_derived to event catalog seed (05ff8eda) by Manoel
+- fix(events): pass userId through full flow and null-safe userId/teamId in emit (1401db98) by Manoel
+- fix(workflows): switch model to google/gemini-3.1-flash-lite-preview (cb2e7475) by Manoel
+- fix(workflows): switch model to nvidia/nemotron-3-super-120b-a12b (ba2ea5d5) by Manoel
+- feat(workflows): add DBOS.logger logging to derive-keywords workflow (4c02112a) by Manoel
+- fix(agents): replace liquid/lfm2-8b-a1b with qwen/qwen3.5-9b in model catalog (14e9c513) by Manoel
+- fix(workflows): switch model to qwen/qwen3.5-9b — liquid/lfm2-8b-a1b returns 404 (bdb002f5) by Manoel
+- fix(workflows): replace Result types with throw/catch — DBOS can't serialize neverthrow Result (c91f194d) by Manoel
+- fix(server): use /dev/tcp instead of pg_isready for Postgres readiness check (2e3f2c30) by Manoel
+- fix(server): wait for Postgres to be ready before starting (46e7e52a) by Manoel
+- fix(server): read from .env.local instead of .env (af17278f) by Manoel
+- fix(server): remove redundant container-start from dev script (7bc6f0af) by Manoel
+- docs(claude): document experimental_liveOptions for SSE / Event Iterator queries (af99dccf) by Manoel
+- refactor(notifications): use experimental_liveOptions instead of consumeEventIterator (bee82174) by Manoel
+- docs(claude): document TanStack AI, no unused params, no redundant types, workflows use repos (f5e12d96) by Manoel
+- refactor(workflows): migrate to TanStack AI, use repositories, clean up bloat (966374af) by Manoel
+- feat(notifications): add @packages/notifications and billing constants (b78eb7b8) by Manoel
+- fix: teamId filter in backfill, saveStep error handling, remove as cast in publisher (6abf7881) by Manoel
+- feat(categories): fire-and-forget keyword derivation on create/update (e87b93eb) by Manoel
+- feat(server): add daily backfill cron for category keywords (c500b260) by Manoel
+- feat(server): add /internal/jobs/derive-keywords HTTP endpoint (f4d9e254) by Manoel
+- feat(server): add DeriveKeywordsWorkflow DBOS workflow with neverthrow (198c03fc) by Manoel
+- feat(notifications): add useJobNotifications hook and wire into DashboardLayout (9ee78418) by Manoel
+- feat(notifications): add oRPC SSE subscribe procedure (035b3e92) by Manoel
+- feat(notifications): add jobPublisher singletons in apps/web and apps/server (15a51f6b) by Manoel
+- feat(events): add ai.keyword_derived schema and emitter (9ad90904) by Manoel
+- feat(billing): add ai.keyword_derived and notifications.delivered billing constants (704a8387) by Manoel
+- fix(notifications): validate parsed events, fix resource leak, timestamp datetime, peerDeps (86634768) by Manoel
+- fix(notifications): simplify createJobPublisher to single redis arg (c0421153) by Manoel
+- feat(notifications): add @packages/notifications with schema, types, publisher factory (5b52eb89) by Manoel
+- Merge pull request #762 from Montte-erp/manoelnetocarvalho03/mon-239-infraagents-remove-mastra-migrate-coreagents-to-vercel-ai (abb361eb) by Manoel Neto
+- feat: Remove unused dependencies and simplify chatRubi function (65eb6612) by Manoel
+- refactor(agents): Migrate AI agent framework to TanStack AI (00bd4266) by Manoel
+- chore: Remove unused UI components (a3653143) by Manoel
+- refactor(web): Remove unused dependencies and files (47e7c983) by Manoel
+- feat(web): migrate to TanStack AI - remove @assistant-ui packages (a66315b5) by Manoel
+- feat(web): replace use-rubi-runtime with use-rubi-chat (TanStack AI useChat) (7a9d0759) by Manoel
+- feat(web): add /api/chat route (TanStack AI SSE) + rewrite chat oRPC router (b2dd4573) by Manoel
+- feat(agents): replace Mastra with TanStack AI chat() + openRouterText() (0e6a8970) by Manoel
+- chore: add TanStack AI catalog, remove @mastra/* and @assistant-ui/* from deps (9b783219) by Manoel
+- feat(database): add chat repository (2e885db9) by Manoel
+- feat(database): add chat_threads and chat_messages tables (7465f5a8) by Manoel
+- feat: Migrate worker to server, implement DBOS workflows (f729cfd5) by Manoel
+- Merge pull request #761 from Montte-erp/manoelnetocarvalho03/mon-236-infraworker-replace-bullmq-node-cron-with-dbos-durable (0c4c4124) by Manoel Neto
+- refactor(server): Remove unused dependency and fix transaction issues (1acaaf59) by Manoel
+- refactor: Remove unused allowedDomains config and usages (c7bd3cbd) by Manoel
+- refactor(core): remove domain check and update team schema (fe822434) by Manoel
+- fix: add externalId to createContactSchema and remove deleted updateAllowedDomains test (c86c0549) by Manoel
+- feat(server): add Elysia onError handler for AppError and WebAppError (eeb5b3c0) by Manoel
+- refactor(server): replace ORPCError with WebAppError in billable procedure (089c4ecb) by Manoel
+- refactor(server): replace ORPCError with WebAppError in HyprPay handlers (eeb17382) by Manoel
+- refactor(server): replace ORPCError with WebAppError in auth middleware (4424d1c5) by Manoel
+- feat(logging): add optional source tag to WebAppError otel emission (12f40d93) by Manoel
+- feat(server): add billable procedure middleware for credit enforcement and event emission (8f72a026) by Manoel
+- feat(server): Implement event emitting for transaction creation/update (d1abe736) by Manoel
+- chore(server): remove events SDK router and @packages/events dependency (1c9221fe) by Manoel
+- chore(server): remove feature workflows — infra PR scope only (c9bd445b) by Manoel
+- refactor: Update dayjs and neverthrow in bun.lock (11b831da) by Manoel
+- chore: remove all BullMQ/worker remnants — fully migrated to DBOS (a4797410) by Manoel
+- chore: Upgrade dependencies in bun.lock (a0444c80) by Manoel
+- fix(server): webhook Elysia receiver + DBOS sender, catalog pins, remove teamId dead field (7e2a8f78) by Manoel
+- refactor(server): use getServerLogger and pass logLevel to DBOS config (caf9e932) by Manoel
+- fix(server): address code review issues — webhook delivery, bill-occurrences durability, dayjs, pinned deps (bc66ecac) by Manoel
+- refactor(server): add neverthrow Result types to workflows (830447a9) by Manoel
+- refactor(server): use neverthrow fromPromise for email sends in budget-alerts (9ec702b7) by Manoel
+- refactor(server): requireTeamId returns Result in hyprpay router (792e3bfa) by Manoel
+- refactor(server): use neverthrow fromPromise in refresh-insights workflow (aaca1acd) by Manoel
+- refactor(server): update middleware to use neverthrow Result types from sdk-auth (86c1e2bc) by Manoel
+- fix(server): remove unnecessary as-const casts and ok(undefined as void) (5a727a44) by Manoel
+- refactor(server): migrate sdk-auth to neverthrow Result types (ea2db321) by Manoel
+- chore(server): add neverthrow dependency (bb06157a) by Manoel
+- feat(server): Improve bill occurrences and budget alerts (b3a4e4bd) by Manoel
+- feat(env): add server env config and remove worker.ts (3772d1af) by Manoel
+- chore: delete apps/worker — jobs migrated to apps/server via DBOS (d4772e86) by Manoel
+- feat(server): wire DBOS.launch() into server startup and shutdown (330ce2dc) by Manoel
+- feat(server): add RefreshInsightsWorkflow, BillOccurrencesWorkflow, BudgetAlertsWorkflow as DBOS workflows (05217df6) by Manoel
+- chore(server): add @dbos-inc/dbos-sdk and @packages/analytics (de89f6ef) by Manoel
+- docs: Update navigation guard and worker instructions (623df722) by Manoel
+- docs: Update tech stack and project structure descriptions (93f56118) by Manoel
+- Merge pull request #760 from Montte-erp/manoelnetocarvalho03/mon-26-contas-bancarias-importacao-criacaoedicao-e-listagem (fef77f0d) by Manoel Neto
+- refactor(bank-accounts): Use hook for xlsx generation and improve import (88c77d81) by Manoel
+- refactor(bank-accounts): Allow no bank account type selection (29607f8b) by Manoel
+- refactor(bank-account): Use hook for file download (ac3afbf9) by Manoel
+- chore: Upgrade @packages/ui/bun-types to version 1.3.12 (2658614a) by Manoel
+- refactor: Migrate bank accounts columns to new UI components (80c3701b) by Manoel
+- feat(bank-accounts): Add bulk create and balance features (52cb18c0) by Manoel
+- style(web): Wrap PreviewStep body with TooltipProvider (84cccf54) by Manoel
+- feat(bank-account): Add bulk bank code input in preview step (24f1d8a6) by Manoel
+- feat(bank-accounts): add bank account export functionality (b8351190) by Manoel
+- refactor(bank-accounts): simplify confirm step to plain item list (d4cd7135) by Manoel
+- feat(bank-accounts): rich confirm step with virtualizer table, checkboxes, inline remove, bulk remove, total balance summary (ee2a5f90) by Manoel
+- feat(bank-accounts): full-featured preview step with virtualizer, checkboxes, ignore/unignore, bulk actions (5e870274) by Manoel
+- fix(bank-accounts): use sentinel value for empty SelectItem in import map step (bf2ba892) by Manoel
+- fix(bank-accounts): address code review issues in import feature (e3e9a1e8) by Manoel
+- feat(bank-accounts): wire import panelAction in bank accounts page (70bb70ee) by Manoel
+- feat(bank-accounts): add bank account import credenza UI (0b15cf3d) by Manoel
+- feat(bank-accounts): add bank account import context and logic (554cb03a) by Manoel
+- feat(bank-accounts): add bulkCreate oRPC procedure (f64b1087) by Manoel
+- feat(bank-accounts): add bulkCreateBankAccounts repository function (2167c76b) by Manoel
+- Merge pull request #759 from Montte-erp/manoelnetocarvalho03/mon-229-tanstack-table-uso-no-maximo-potencial-server-side-manual (4ee05026) by Manoel Neto
+- style(ui): Refactor pinning styles in data table component (ec21c005) by Manoel
+- style(ui): Adjust zIndex for dragging pinned columns (a7492e4d) by Manoel
+- refactor: Refactor data table components (68562279) by Manoel
+- feat(data-table): add column ordering events for internal state updates (3f9dae35) by Manoel
+- fix(transactions): apply default column pinning for users with existing stored state (119072fe) by Manoel
+- fix(data-table): use ref in onColumnPinningChange to prevent stale closure (fe1726cd) by Manoel
+- fix(data-table): move ColumnMeta augmentation after imports and use oxlint-ignore (67d4cebf) by Manoel
+- docs(claude-md): document manualSorting/manualFiltering, column memoization, pinning, and ColumnMeta (db761d2b) by Manoel
+- feat(data-table): add typed ColumnMeta augmentation with label, filterVariant, align, exportable (1bac41f6) by Manoel
+- feat(data-table): add faceted row/unique-value/min-max models for filter UI (1565ca8c) by Manoel
+- feat(transactions): pin description and amount columns by default (c5d2e6cb) by Manoel
+- feat(data-table): add column pinning support with sticky positioning (b97bedfe) by Manoel
+- perf(tables): memoize column definitions to prevent re-creation on every render (97c8ad7f) by Manoel
+- fix(data-table): add manualSorting and manualFiltering to prevent client-side re-sort on server-paginated data (8014ead1) by Manoel
+- Merge pull request #758 from Montte-erp/manoelnetocarvalho03/mon-227-tanstack-form-uso-no-maximo-potencial-server-validation (fcf90a28) by Manoel Neto
+- feat(web): Add next button for OTP in forgot password flow (f9657e9f) by Manoel
+- feat(credit-cards): Show spinner while submitting the form (c13eaebb) by Manoel
+- refactor: Improve documentation and form handling in forms (40a50918) by Manoel
+- refactor: Improve credit card form submit logic (dd280ce5) by Manoel
+- refactor(bills): Use mutation hook for bill update (10ccd8a5) by Manoel
+- docs: Update documentation for patterns & rules (e5398065) by Manoel
+- refactor(web): Use useSuspenseQuery for insight metadata (e5ea11c2) by Manoel
+- refactor: Use query key for disabled insight query (83daf0d9) by Manoel
+- fix: Ensure blocker methods are optional in dialogs (cc4988a8) by Manoel
+- refactor: Improve server-side form validation and error handling (c46c58bc) by Manoel
+- feat(web): Add navigation guard to credit card and service forms (04586d0d) by Manoel
+- docs: Update hook selection and key rules (44c56e34) by Manoel
+- refactor: Use SuspenseQueries in billing and services. (f3b33e90) by Manoel
+- fix(review): address four code review comments (7d1cce48) by Manoel
+- refactor(analytics): migrate useInsightConfig to TanStack Store + Pacer with proper search params (b763980f) by Manoel
+- refactor(forms): use useAlertDialog hook in useBlocker navigation guards (94988145) by Manoel
+- docs(claude): update CLAUDE.md with TanStack Form, Query, and Pacer patterns (415f055a) by Manoel
+- feat(forms): add useBlocker navigation guard to edit forms (263e92b8) by Manoel
+- refactor(boundaries): migrate ErrorBoundary+createErrorFallback to QueryBoundary (40847cbb) by Manoel
+- perf(transactions): add keepPreviousData to prevent flicker on pagination (8c8d97d7) by Manoel
+- feat(queries): migrate useQuery+enabled to skipToken+useSuspenseQuery (9b9657b6) by Manoel
+- perf(forms): replace non-selective form.Subscribe selectors across all forms (5d8fcbbc) by Manoel
+- perf(analytics): migrate insight config debounce to Pacer (0d83e434) by Manoel
+- feat(bank-accounts): inline server errors via onSubmitAsync (31a1f989) by Manoel
+- feat(contacts): inline server errors via onSubmitAsync (5e663713) by Manoel
+- perf(categories): migrate debounce to useDebouncedCallback from Pacer (261cc873) by Manoel
+- perf(transactions): migrate debounce to useDebouncedCallback from Pacer (9e28eb78) by Manoel
+- fix(bills): replace as-cast with type guard for bill type field (df3b0e42) by Manoel
+- feat(bills): inline server errors via onSubmitAsync (329f611f) by Manoel
+- perf(query): parallel queries in useActiveTeam via useSuspenseQueries (b7a03ef8) by Manoel
+- fix(ui): FieldError handles plain string errors from onSubmitAsync (04249532) by Manoel
+- Merge pull request #757 from Montte-erp/manoelnetocarvalho03/mon-223-tanstack-start-adocao-completa-de-apis-e-padroes (96909d78) by Manoel Neto
+- refactor: Remove vite-tsconfig-paths plugin and fix tsconfig paths (6f3a6b98) by Manoel
+- feat(credit-cards): Add bulk remove functionality refactor(ui): Use flex for spacing in multiple components refactor(ui): Use flex for spacing in multiple components refactor(ui): Use flex for spacing in multiple components refactor(ui): Use flex for spacing in multiple components refactor(ui): Use flex for spacing in multiple components refactor(ui): Use flex for spacing in multiple components refactor(ui): Use flex for spacing in multiple components refactor(db): Add bulk delete for credit cards fix(settings/members): Fix sorting and filter defaults (852733c3) by Manoel
+- refactor: Move error fallback to query boundary component (455d354f) by Manoel
+- feat: Add QueryBoundary component and use it (44724ee7) by Manoel
+- refactor: Use env variables directly and handle undefined publicEnv (9941ad2b) by Manoel
+- refactor(web): Pass publicEnv via router context for SSR. (cf201dca) by Manoel
+- docs: Update CLAUDE.md with TanStack Start usage details (13646d5f) by Manoel
+- refactor: Remove window check in getPublicEnv and use process.env (d5695738) by Manoel
+- feat: persist theme selection via cookie (c73d0a2f) by Manoel
+- Merge pull request #756 from Montte-erp/manoelnetocarvalho03/mon-222-tanstack-router-v1-adocao-completa-de-apis-e-padroes (504dcebf) by Manoel Neto
+- refactor: Improve UI components and schema defaults (be547562) by Manoel
+- refactor: Remove unused 'context' field in several files (0149d97f) by Manoel
+- refactor: Use ResultAsync for CNPJ data fetching (72d8ac8e) by Manoel
+- refactor: Remove async from fetchCnpjFromBrasilApi function (b68ae659) by Manoel
+- feat(web): fix tableSearchSchema and migrate transaction pagination ``` (fc32df05) by Manoel
+- docs: update CLAUDE.md with TanStack Router v1 required patterns (19ccb002) by Manoel
+- feat(web): add head() with page titles to remaining dashboard routes (edf16709) by Manoel
+- feat(web): add pendingComponent and head to listing routes (5c22bf07) by Manoel
+- feat(web): migrate transactions pagination to URL search params with loaderDeps (6d45feb0) by Manoel
+- fix(web): add .catch() to tableSearchSchema fields for invalid URL param safety (43cd4756) by Manoel
+- feat(web): enable autoCodeSplitting in TanStack Router Vite plugin (1ab202bf) by Manoel
+- feat(web): add missing router config options and type registration (5af2a040) by Manoel
+- Merge pull request #755 from Montte-erp/cnpj (918d1cb6) by Manoel Neto
+- style(web): Update routeTree.gen.ts (12d4108c) by Manoel
+- feat: Allow null values for some cnpj fields (0ad753f5) by Manoel
+- Merge pull request #754 from Montte-erp/fix-libraries (201e3312) by Manoel Neto
+- chore(cli): Add .gitignore and remove build/publish scripts (eb6d986d) by Manoel
+- build(web): update route tree gen file (1b38717d) by Manoel
+- feat(release): Include GitHub Actions ID token write (61fba363) by Manoel
+- Merge pull request #752 from Montte-erp/manoelnetocarvalho03/mon-327-feat-monttehyprpay-sdk-v01-customer-lifecycle (b59852c7) by Manoel Neto
+- fix(api-keys): use renderActions + useAlertDialog for revoke, remove inline action column (095152fd) by Manoel
+- refactor(api-keys): remove useState/useTransition, use form state for key reveal (eb1050f6) by Manoel
+- Merge remote-tracking branch 'origin/master' into manoelnetocarvalho03/mon-327-feat-monttehyprpay-sdk-v01-customer-lifecycle (99547c61) by Manoel
+- Merge pull request #753 from Montte-erp/fix-contentta (31dda696) by Manoel Neto
+- docs: Update CONTRIBUTING.md and README.md with setup instructions (29bcb3c4) by Manoel
+- feat(api-keys): stepped credenza with Stepper line + CredenzaHeader/Body/Footer (dfaca90f) by Manoel
+- fix(api-keys): match members header style, remove badge from key preview (c2f5dd69) by Manoel
+- fix(web/tests): schema-qualify raw SQL and inject env vars for PGlite (90c5d6a6) by Manoel
+- chore: Improve local development setup and environment variables (ae9e1694) by Manoel
+- feat: Add setup script and related improvements (bd8ec8fc) by Manoel
+- chore: Override env vars when loading .env files (2e6d2474) by Manoel
+- chore: Ensure schemas before db push (9284fad3) by Manoel
+- feat: Add schema ensuring to db-push and create ensure-schemas script (4f73f11b) by Manoel
+- fix: Improve error message when table does not exist (d77ca1ca) by Manoel
+- refactor: Update project name and related files (352efc88) by Manoel
+- fix(web): inject test env vars in vitest config before modules load (51a3ad60) by Manoel
+- feat: Add AI, Document, and NFE events to event catalog (bed1e7cf) by Manoel
+- chore: Add .env.staging to .gitignore and update CLAUDE.md (52c788ef) by Manoel
+- test(hyprpay): add unit tests for errors, client, and better-auth plugin (f7e28604) by Manoel
+- fix(server): add @montte/hyprpay path aliases to tsconfig for typecheck (b600f1b3) by Manoel
+- fix(hyprpay): bundle better-auth subpath and pass --passWithNoTests (adefc50b) by Manoel
+- fix(hyprpay): remove dead getCustomer client action — no server endpoint exists (540fda80) by Manoel
+- docs: add implementation plan for hyprpay neverthrow + api-keys settings (91b159f1) by Manoel
+- fix(settings): infer ApiKeyRow from Outputs, add validation error display (1225a88b) by Manoel
+- fix(settings): useCallback/useMemo for columns, defensive guard in handleOpenCreate, remove ApiKeysSearch type (bebfbc11) by Manoel
+- feat(settings): rewrite api-keys — DataTable, oRPC list, authClient mutations, useCredenza (3f1269e9) by Manoel
+- fix(settings): add onBlur handler and aria-label to CreateApiKeyForm (004f9433) by Manoel
+- feat(settings): add CreateApiKeyForm using authClient mutation (4ec9fd24) by Manoel
+- fix(settings): add aria-label to revoke button in api-keys columns (a9c877b8) by Manoel
+- feat(settings): add api-keys DataTable column definitions (277706b7) by Manoel
+- chore(orpc): fix alphabetical order of apiKeys in router index (9a8caad2) by Manoel
+- chore(orpc): register api-keys router (75f687ea) by Manoel
+- style(orpc): use dot notation for metadata.teamId in api-keys router (90201e28) by Manoel
+- feat(orpc): add api-keys list query router (6cc835a7) by Manoel
+- style(hyprpay): use early return over if/else in better-auth plugin (befa51aa) by Manoel
+- fix(hyprpay): restore non-blocking guarantee and add error logging in better-auth plugin (7a3e038c) by Manoel
+- feat(hyprpay): re-export neverthrow Result types from index (a02424a6) by Manoel
+- fix(hyprpay): add pages to listResultSchema, rewrite client with neverthrow ResultAsync (d86d0051) by Manoel
+- fix: fix typecheck and test failures after pgSchema migration (644b01f2) by Manoel
+- fix(web): fix api-keys page — correct apiKeyClient import, method names, route tree (8698f928) by Manoel
+- chore: update bun.lock (6d933035) by Manoel
+- feat(hyprpay): replace manual fetch with oRPC contract-first client (7343539e) by Manoel
+- feat(server): bind hyprpay router to oRPC contract (494d7d9c) by Manoel
+- feat(hyprpay): add oRPC contract for customers procedures (4d8c1a54) by Manoel
+- fix(hyprpay): fix build — esbuild subpaths, publint, SKILL.md format (01074127) by Manoel
+- feat(hyprpay): add README with full API docs (8688bc81) by Manoel
+- feat(hyprpay): add @tanstack/intent AI agent skill (040dfb04) by Manoel
+- feat(hyprpay): add better-auth server/client plugin (8d3312a2) by Manoel
+- feat(hyprpay): implement createHyprPayClient with customers.* API (2b0ffeee) by Manoel
+- feat(hyprpay): scaffold @montte/hyprpay with @tanstack/vite-config build (d3241bef) by Manoel
+- feat(settings): add HyprPay API Keys settings page (59ebba12) by Manoel
+- feat(server): register hyprpay router at /sdk/orpc/hyprpay.* (09b16141) by Manoel
+- feat(server): add hyprpay customers router (create/get/list/update) (dfb5aaa5) by Manoel
+- Merge pull request #751 from Montte-erp/cli-with-intent (b651524e) by Manoel Neto
+- feat(cli): apply @tanstack/vite-config and @tanstack/publish-config correctly per docs (696d05da) by Manoel
+- fix(cli): correct SKILL.md frontmatter and vite mergeConfig argument order (d231e937) by Manoel
+- feat(cli): add TanStack Intent agent skills and migrate build to @tanstack/vite-config (95b51fd4) by Manoel
+- chore(database): remove drizzle schema (4e16f307) by Manoel
+- chore(database): export pgSchema instances and add schemaFilter to drizzle.config (17177761) by Manoel
+- chore(database): move platform tables to platform pgSchema (7321618f) by Manoel
+- chore(database): move inventory tables to inventory pgSchema (430130ce) by Manoel
+- chore(database): move contacts/services/tags to crm pgSchema (c406cf57) by Manoel
+- chore(database): move transactions/bills/credit-cards to finance pgSchema (3b3d16c5) by Manoel
+- chore(database): move finance base tables to finance pgSchema (10337d6c) by Manoel
+- chore(database): move auth tables to auth pgSchema (e590deb4) by Manoel
+- Merge pull request #750 from Montte-erp/ui-importing (72c341d3) by Manoel Neto
+- fix(web): Update date format in statement import (59995f97) by Manoel
+- fix(web): resolve code review issues in statement import and sidebar (ccadcae0) by Manoel
+- feat(transactions): Add duplicate transaction detection to import flow (661405d5) by Manoel
+- refactor(statement-import): Use `closeTopCredenza` instead of `closeCredenza` (37d12c2a) by Manoel
+- feat(web): Add bulk edit actions and ignore row functionality (ff46940e) by Manoel
+- fix(web): Use named import for foxact/invariant (5c43f9d5) by Manoel
+- feat(web): Use context to manage import state (99f77c3e) by Manoel
+- refactor(web): Improve statement import logic and parsing (574ad306) by Manoel
+- refactor: Improve transaction export component (38526d3c) by Manoel
+- refactor(web): Remove skipToken and useSuspenseQuery updates (b1e0ad2b) by Manoel
+- refactor(web): memoize date parsing and return value (f570a486) by Manoel
+- feat(ui): Prevent outside interact on selection toolbar (f01bab24) by Manoel
+- feat(import): render selection action bar inline in PreviewStep credenza (45e333d1) by Manoel
+- refactor(import): replace useSelectionToolbar with local state in PreviewStep (9acd4b51) by Manoel
+- fix(transactions): Handle empty data in export loop and type fixes (d825207d) by Manoel
+- fix(transactions): replace raw button, money totals, useTransition, inputs (451d038a) by Manoel
+- refactor(hooks): useSuspenseQuery + skipToken for useCnpj (79179740) by Manoel
+- refactor(import): Input/Label/Toggle for raw elements in PreviewStep (9c94fdb6) by Manoel
+- refactor(import): replace raw buttons in TemplateCredenza and MapStep (ae0969be) by Manoel
+- refactor(import): useTransition for isParsing, Button for baixar modelo (f5f3e49a) by Manoel
+- refactor(import): sumOrZero replaces totalIncome/totalExpense reduce (8c618891) by Manoel
+- refactor(import): parseAmount use absolute, bankAccountId useLocalStorage (11d705c7) by Manoel
+- perf(hooks): remove useMemo from useCsvFile/useXlsxFile (f39a36f2) by Manoel
+- perf(hooks): useCsvFile/useXlsxFile — useCallback + useMemo for stable references (57d3530b) by Manoel
+- refactor(import): TemplateCredenza — hook generate methods + useFileDownload (20d3e7bf) by Manoel
+- refactor(hooks): useSelectionToolbar — global store, GlobalSelectionToolbar in root (d806cdb3) by Manoel
+- refactor(hooks): useXlsxFile — inline parse, add generate, drop FileReader (64389c32) by Manoel
+- refactor(hooks): useCsvFile — inline parse, add generate, drop FileReader (3013e6c0) by Manoel
+- refactor(hooks): useCnpj — merge imports (0461ac2e) by Manoel
+- refactor(hooks): useCnpj — fix types, useQuery + enabled, remove explicit return type (b4fc5171) by Manoel
+- refactor(hooks): useCnpj — inline logic, remove helper fns, unexport CnpjData (d538bf36) by Manoel
+- fix(transactions): ensure categoryId flows through import payload (1fb43191) by Manoel
+- feat(transactions): add Categoria column to import preview table (a9fcb300) by Manoel
+- feat(hooks): useSelectionToolbar — selection state + global floating toolbar (020b1d2a) by Manoel
+- refactor(transactions): redesign MapStep layout for wide credenza (01b1d525) by Manoel
+- refactor(hooks): rename useCnpjData → useCnpj, internalize date helpers (94ea0417) by Manoel
+- feat(app): add useCsvFile and useXlsxFile hooks ``` (2651c7cd) by Manoel
+- refactor(transactions): rename tags to centros de custo ``` (4ee0587a) by Manoel
+- fix(transactions): improve tooltip and add validation error display (7ec63bb2) by Manoel
+- feat(transactions): import wizard PM improvements (f0edc31c) by Manoel
+- refactor(transactions): improve plan for import wizard redesign (2f3684d9) by Manoel
+- fix(transactions): remove ml-auto, remove ConfirmStep wrapper, fix OFX duplicate detection (f6c47857) by Manoel
+- feat(transactions): confirm step skip-duplicates checkbox and final import wizard redesign (949180ac) by Manoel
+- feat(transactions): preview totals, date range and duplicate row detection (0b32aa85) by Manoel
+- feat(transactions): DE PARA with inline sample data and localStorage mapping cache (30df93a8) by Manoel
+- feat(transactions): lift bankAccountId to wizard, add account selector in upload step (ae5c8466) by Manoel
+- refactor(transactions): rename import dialog-stack to credenza (cc259c1a) by Manoel
+- feat(transactions): add checkDuplicates oRPC procedure (f0fcfafe) by Manoel
+- Merge pull request #749 from Montte-erp/chore/test-cleanup (2af56a67) by Manoel Neto
+- fix(claude): remove duplicate lines from rebase conflict (9727e297) by Manoel
+- chore(tests): remove bloat tests, scope coverage to tested layers (fe5060a3) by Manoel
+- docs(claude): compress verbose examples, update testing policy (e64e647f) by Manoel
+- Merge pull request #746 from Montte-erp/manoelnetocarvalho03/mon-190-featimport-implement-statement-import-importacao-de (57a1f20e) by Manoel Neto
+- fix(typecheck): remove unused posthog import and drop createClientOnlyFn from onEnter (f2d8d220) by Manoel
+- chore(posthog): remove unused getPosthogClient export (123bd523) by Manoel
+- fix(import): address code review issues and add test coverage (6a716b25) by Manoel
+- chore(deps): normalize @tanstack/react-pacer to catalog reference (8d2992e5) by Manoel
+- refactor(transactions): remove unused sidebar quick-create effect (55f8df1b) by Manoel
+- refactor(transactions): consolidate to one import/export action each, use Credenza (bd817dc5) by Manoel
+- refactor(posthog): use createClientOnlyFn instead of createIsomorphicFn (f6d488af) by Manoel
+- fix(posthog): use correct user fields in identify and add getPosthogClient isomorphic helper (bc6ba1b3) by Manoel
+- Merge branch 'master' into manoelnetocarvalho03/mon-190-featimport-implement-statement-import-importacao-de (2d1297e1) by Manoel
+- Merge pull request #748 from Montte-erp/feat/paradedb (770b8162) by Manoel Neto
+- feat(database): migrate from pgvector to ParadeDB (1c72c71e) by Manoel
+- Merge pull request #747 from Montte-erp/fix-credenzas (af3c4515) by Manoel Neto
+- test(categories): Add more test cases for create/getAll/update test(onboarding): Add tests for onboarding router functions (21d5734e) by Manoel
+- style(web): Update tag form placeholder text (71f6ae5c) by Manoel
+- refactor(cnpj-step): Use useStore hook for form state (eb45094f) by Manoel
+- feat(deps): Upgrade @tanstack/pacer to react-pacer (2264ab00) by Manoel
+- refactor(web): remove unnecessary state from CNPJ step (6b270180) by Manoel
+- refactor: Use `useDebouncedCallback` for cnpj fetching (d70c1014) by Manoel
+- fix(review): merge duplicate useMemo import, size-4 swatch, fetch timeout, masked field a11y, CLAUDE.md example (df2a06a6) by Manoel
+- feat(ui): add Maskito input masking, fix credenzas and form bugs (1a09c370) by Manoel
+- refactor(orpc): add credit enforcement middleware, colocate statement import component (08e3f8a7) by Manoel
+- refactor(transactions): migrate to Credenza, use @f-o-t/csv and @f-o-t/money (089cc29f) by Manoel
+- feat(transactions): add statement import button to transactions page (439f7b5a) by Manoel
+- fix(transactions): remove remaining type casts and margin utilities (6609284f) by Manoel
+- fix(transactions): fix code quality issues in StatementImportDialogStack (b8b5ac6c) by Manoel
+- feat(transactions): add StatementImportDialogStack (CSV/XLSX/OFX) (d7fc7f0f) by Manoel
+- feat(transactions): add importStatement procedure with billing (ff04b69d) by Manoel
+- chore(deps): add xlsx for XLSX statement parsing (659c2de8) by Manoel
+- feat(billing): add finance.statement_imported free tier and pricing (5dfb9190) by Manoel
+- Merge pull request #743 from Montte-erp/manoelnetocarvalho03/mon-207-fixweb-standardize-empty-states-suspense-fallbacks-and (fc7a0f46) by Manoel Neto
+- Merge pull request #742 from Montte-erp/manoelnetocarvalho03/mon-214-fix-tanstack-form-field-component-usage-pattern (96b96863) by Manoel Neto
+- Merge pull request #740 from Montte-erp/manoelnetocarvalho03/mon-193-refactortransactions-migrate-datatable-to-new-controlled-api (9153b44f) by Manoel Neto
+- feat(events): add finance.statement_imported event (c0f9b6f8) by Manoel
+- fix(web): standardize empty states, Suspense fallbacks and ErrorBoundary usage (5499d32f) by Manoel
+- fix(forms): add missing isTouched guard and data-invalid props per review (5ca477dd) by Manoel
+- fix(transactions): remove as casts and add replace:true to navigate (9f125ef4) by Manoel
+- Merge pull request #739 from Montte-erp/manoelnetocarvalho03/mon-191-featonboarding-implement-organization-presets-pre-sets-for (57d44b8d) by Manoel Neto
+- Merge pull request #738 from Montte-erp/manoelnetocarvalho03/mon-195-refactorfinance-pages-migrate-datatable-to-new-controlled (461841a6) by Manoel Neto
+- Merge pull request #737 from Montte-erp/manoelnetocarvalho03/mon-194-refactorcontacts-credit-cards-migrate-datatable-to-new (50563ea6) by Manoel Neto
+- fix(forms): fix transaction dialog stack form fields and update CLAUDE.md with TanStack Form pattern (a3c4730a) by Manoel
+- fix(forms): add a11y attributes and standardize children prop in feature forms (0794dc1c) by Manoel
+- fix(forms): add a11y attributes and standardize children prop in route/layout forms (a5fbbd7e) by Manoel
+- fix(forms): replace !isValid with errors.length > 0 and move Zod schemas to module level (f8255f0a) by Manoel
+- test(lib): add unit tests for tableSearchSchema (1e1a8026) by Manoel
+- refactor(web): address review feedback — replace:true, shared tableSearchSchema (8c62f1cc) by Manoel
+- chore(auth): remove unused context additionalField from organization (was defaulting to personal) (2c1d994f) by Manoel
+- chore: merge master, remove premature module-config tables (YAGNI) (62192166) by Manoel
+- chore(web): fix margin utilities, type cast and comments in settings pages (e07e7d04) by Manoel
+- refactor(transactions): migrate DataTable to new controlled API (b0c14ddf) by Manoel
+- Merge pull request #736 from Montte-erp/manoelnetocarvalho03/mon-216-fix-code-coverage-reporting-for-core-workspace-packages-in (885e3206) by Manoel Neto
+- refactor(finance): migrate DataTable to new controlled API (eb66dfca) by Manoel
+- refactor(web): migrate contacts and credit-cards DataTable to new controlled API (92cfd736) by Manoel
+- feat(coverage): switch to Istanbul provider, include core/* src in coverage scope (5a7d8173) by Manoel
+- Merge pull request #735 from Montte-erp/fix-flags-sidebar (5f0bc42c) by Manoel Neto
+- chore(coverage): add @vitest/coverage-istanbul to workspace catalog and apps/web (8d115469) by Manoel
+- fix(categories): remove explicit CategoriesSearch type annotation in preloadRoute search (7b31d364) by Manoel
+- refactor(web): colocate inventory UI and fix DataTable handler stability (5341945a) by Manoel
+- feat(web): migrate inventory DataTable to controlled API (62a47619) by Manoel
+- feat(analytics): migrate DataTable to new controlled API and colocate private components (d3ed6173) by Manoel
+- refactor(context-panel): Remove unused components and dependencies (15ded9bd) by Manoel
+- Merge pull request #734 from Montte-erp/manoelnetocarvalho03/mon-196-refactorinventory-migrate-datatable-to-new-controlled-api (5a7b35a2) by Manoel Neto
+- Merge pull request #733 from Montte-erp/manoelnetocarvalho03/mon-198-refactoranalytics-migrate-datatable-to-new-controlled-api (c4bb1ece) by Manoel Neto
+- style: Update code style and configurations (68e77d0d) by Manoel
+- feat(ui): wire organizacao_modulo config into sidebar nav visibility (94392bb1) by Manoel
+- feat(analytics): migrate DataTable to new controlled API and colocate private components (45d0f75a) by Manoel
+- feat(orpc): add organization-config router (getModules, updateModule, getRotuloConfig) (5800cc56) by Manoel
+- Merge pull request #732 from Montte-erp/manoelnetocarvalho03/mon-197-refactorsettings-migrate-datatable-to-new-controlled-api (1b8026a7) by Manoel Neto
+- feat(onboarding): seed empresarial categories and module config at org creation (c10352c3) by Manoel
+- refactor(web): colocate inventory UI and fix DataTable handler stability (6ea5190b) by Manoel
+- feat(database): add organization-config repository (3434e815) by Manoel
+- feat(database): replace DEFAULT_CATEGORIES with seedEmpresarialCategories preset (8aa6e30a) by Manoel
+- style(web): replace if/else with early return in handleUpdateRole (25522c38) by Manoel
+- feat(database): add organizacao_modulo and organizacao_rotulo_config schemas (b92710dc) by Manoel
+- fix(web): address code review on members DataTable migration (1527852e) by Manoel
+- Merge pull request #730 from Montte-erp/manoelnetocarvalho03/mon-206-featsettings-feature-previews-page-coming-soon-features-with (244a1188) by Manoel Neto
+- chore(web): remove useAccountType hook — app is EMPRESARIAL-only, no personal account type (f3061ea7) by Manoel
+- feat(web): migrate inventory DataTable to controlled API (fe7f0040) by Manoel
+- Merge remote-tracking branch 'origin/master' into manoelnetocarvalho03/mon-206-featsettings-feature-previews-page-coming-soon-features-with (4bbaef64) by Manoel
+- Merge pull request #731 from Montte-erp/manoelnetocarvalho03/mon-233-bugfeature-preview-feature-ativada-nao-aparece-na-navbar (17e9a8a8) by Manoel Neto
+- Merge pull request #729 from Montte-erp/manoelnetocarvalho03/mon-213-create-useorgslug-and-useteamslug-hooks-to-replace-direct (8beca18c) by Manoel Neto
+- refactor(web): migrate members settings DataTable to new controlled API (28e39d0e) by Manoel
+- Merge branch 'master' of https://github.com/Montte-erp/montte-nx into manoelnetocarvalho03/mon-213-create-useorgslug-and-useteamslug-hooks-to-replace-direct (9d96d291) by Manoel
+- chore(test): remove UI unit tests for layout components (e2e only going forward) (d3871a0b) by Manoel
+- chore(ci): ignore UI layout/feature/route files from codecov patch coverage (07bd0b8e) by Manoel
+- feat(feature-previews): sync coming-soon notifications to PostHog person properties (af737de0) by Manoel
+- fix(feature-previews): fix enrollment wipe on refresh, decouple coming-soon state (3b005420) by Manoel
+- test(web): add tests for useDashboardSlugs, useOrgSlug, useTeamSlug hooks (0f8932e5) by Manoel
+- test(feature-preview): update use-early-access test to reflect new enrollment contract (d3b94fb7) by Manoel
+- Merge pull request #727 from Montte-erp/manoelnetocarvalho03/mon-217-clean-up-viteconfigts-and-vitestconfigts-remove-redundancies (019e19cd) by Manoel Neto
+- feat(web): add useDashboardSlugs combined hook, use it where both slugs are needed (91765047) by Manoel
+- refactor(web): use select option in useParams instead of ?? "" (77cc8218) by Manoel
+- fix(web): import defineConfig from vitest/config and reset plugins in vitest (5031b5b4) by Manoel
+- Merge pull request #728 from Montte-erp/manoelnetocarvalho03/mon-232-docs-reescrever-readme-e-contributing-corrigir-marcastack (5c8acdeb) by Manoel Neto
+- fix(feature-preview): preserve enrolled keys across page reloads (44baf27a) by Manoel
+- feat(web): add useOrgSlug and useTeamSlug hooks, replace direct useParams calls (0756cb07) by Manoel
+- feat(settings): add coming soon section to feature previews page (5c03a73e) by Manoel
+- docs: rewrite README and CONTRIBUTING for Montte brand and stack (98fea5bd) by Manoel
+- chore(web): extend vitest config from vite config, remove vite-tsconfig-paths workaround (03eefc39) by Manoel
+- Merge pull request #723 from Montte-erp/manoelnetocarvalho03/mon-185-billing-migrar-para-modelo-pay-as-you-go-orientado-a-eventos (4372056c) by Manoel Neto
+- chore(dev): wire seed-addons and setup-stripe into dev startup scripts (53e9e30b) by Manoel
+- feat(billing): scope billing to implemented features only, make UI catalog-driven (ec1181c0) by Manoel
+- test(billing): cover Redis fail-open paths and getEventCatalog (37d9a4ff) by Manoel
+- fix(billing): fail-open on Redis errors, guard AddonsSection during load, wrap getEventCatalog (82d2db87) by Manoel
+- chore: merge master — remove deleted agent router, keep billing changes (e8981819) by Manoel
+- Merge pull request #722 from Montte-erp/manoelnetocarvalho03/mon-203-types-as-unknown-as-type-casts-in-production-source-files (e5512f0f) by Manoel Neto
+- fix: mark tagIds as touched via setFieldMeta when new tag is created (fae6f965) by Manoel
+- fix: mark tagIds as touched when new tag is created in edit mode (56605a82) by Manoel
+- ci: add boundary check workflow (c240748a) by Manoel
+- test: fix main element selector in dashboard layout tests (d500e6e9) by Manoel
+- test: fix stale mocks in dashboard-layout test, add settings layout coverage (d65950b5) by Manoel
+- fix(billing): block AI calls when free tier exceeded and no Stripe billing (8b75bab5) by Manoel
+- fix: annotate prev in bank-accounts search callbacks, preserve tagIds when untouched on edit (02408b90) by Manoel
+- Merge branch 'master' into manoelnetocarvalho03/mon-203-types-as-unknown-as-type-casts-in-production-source-files (b4f327d7) by Manoel
+- fix(billing): add value_grouping_window+limit to listEventSummaries, guard pexpire with pttl, warn on addon reactivation (2b51b13d) by Manoel
+- fix(billing): remove contradictory throw after Promise.allSettled, drop unused skeleton (4ba3b894) by Manoel
+- fix: merge master and annotate prev in tags search callbacks (ed74a474) by Manoel
+- Merge pull request #715 from Montte-erp/bank-accounts (bb030b1e) by Manoel Neto
+- fix: add validateSearch and DataTable required props to tags route (96f103c8) by Manoel
+- feat(ci): Update workflow to use new runner name (583fa08b) by Manoel
+- fix(billing): remove invalid value_grouping_window from listEventSummaries (2775c092) by Manoel
+- fix: Annotate prev parameters in categories search callbacks (794f63e3) by Manoel
+- fix(billing): address code review issues (c713fb5d) by Manoel
+- Merge pull request #713 from Montte-erp/cost-centers (ac708650) by Manoel Neto
+- fix: Remove aiCommandStream route and chat routes until AI infra is ready (7b1f0c2e) by Manoel
+- feat(billing): add getEventCatalog procedure to billing router (0dedc0c1) by Manoel
+- test(database): add bulkDeleteTags and bulkDeleteCategories repository tests (40becb6a) by Manoel
+- test(tags): update error message assertion to match new terminology (acd42bb6) by Manoel
+- fix(typecheck): remove stale shouldShowErrorModal reference in auth-client (a809bc3d) by Manoel
+- fix: wire getEventCatalog query in event-definitions page (e20102fb) by Manoel
+- fix: Address code review — remove residual type casts (642f9a39) by Manoel
+- chore: merge master — keep billing UI and auth-client rewrites (31716e5b) by Manoel
+- Merge branch 'master' of https://github.com/Montte-erp/montte-nx into cost-centers (38d19323) by Manoel
+- Merge pull request #724 from Montte-erp/manoelnetocarvalho03/mon-201-queries-usequery-used-instead-of-usesuspensequery-across (6efc4b65) by Manoel Neto
+- Merge pull request #725 from Montte-erp/manoelnetocarvalho03/mon-204-features-unimplemented-todos-danger-zone-delete-dashboard (9e4d26e3) by Manoel Neto
+- fix(tags): use 'Centro de custo' terminology in error message (7e675bd0) by Manoel
+- Merge branch 'master' into cost-centers (4e932f26) by Manoel
+- fix: remove unused withFailingDb helper and dead error tracker in auth-client (a2497e3f) by Manoel
+- chore: resolve merge conflicts with master (f6df7593) by Manoel
+- fix: inject auth error into survey sent payload via extraPayload (4782f3c4) by Manoel
+- fix: inject auth error message into bug report survey description (24dc3181) by Manoel
+- Revert "fix: add error toast before survey modal, try/catch on dashboard create, form validation" (7c8602ee) by Manoel
+- fix: add error toast before survey modal, try/catch on dashboard create, form validation (4112003d) by Manoel
+- fix: add error toast before survey modal, try/catch on dashboard create, form validation (54c124f7) by Manoel
+- feat(scripts): add setup-stripe script to create Stripe meters, products, and prices (f3c793b6) by Manoel
+- fix(billing): address code review — dead guard, concurrency-limited Stripe fan-out, getMeterUsage tests (14726fdf) by Manoel
+- refactor: reuse existing bug report survey modal for auth errors (c883b89b) by Manoel
+- fix(web): remove unused UsageSkeleton from billing-usage (34c0288e) by Manoel
+- Merge pull request #717 from Montte-erp/fix/sign-up (9202fbb6) by Manoel Neto
+- feat: implement danger zone deletions, dashboard create, and auth error modal (711273dd) by Manoel
+- Merge pull request #720 from Montte-erp/manoelnetocarvalho03/mon-200-routers-raw-orpcerror-used-instead-of-webapperror-bypasses (d0f0da5a) by Manoel Neto
+- fix(web): fix typecheck errors from useSuspenseQuery migration (ff7c6787) by Manoel
+- docs: add Suspense, ErrorBoundary and Empty state guidelines to CLAUDE.md (0a703910) by Manoel
+- fix(web): migrate useQuery to useSuspenseQuery across billing, analytics, services and route components (02084a9d) by Manoel
+- test(events): update credits tests to use hash-based Redis API (805c7094) by Manoel
+- feat(billing): implement getAddons/hasAddon from subscription table + seed-addons script (2bdf1645) by Manoel
+- feat(scripts): update event catalog seed with new billable event definitions (09643011) by Manoel
+- test(routers): add missing coverage for WebAppError error paths (9acf8426) by Manoel
+- Merge pull request #721 from Montte-erp/manoelnetocarvalho03/mon-205-coreagents-relative-imports-violate-core-alias-rule-oxlint (4aeb9381) by Manoel Neto
+- fix: Remove as unknown as type casts in production source files (41f7c4c3) by Manoel
+- fix: resolve type errors after billing migration (29c8d5ba) by Manoel
+- fix(sign-up): full-width stepper bars, remove step label, improve password strength UI (4e026a6c) by Manoel
+- feat(billing): update billing UI to use Stripe Meter data (7436face) by Manoel
+- fix(core/agents): replace relative imports with @core/agents/* path aliases (8ac3590c) by Manoel
+- feat(billing): replace materialized view queries with Stripe Meter API (8ebb1f21) by Manoel
+- feat(worker): remove billing reconciliation cron and materialized view refresh (10e75abb) by Manoel
+- fix(routers): replace raw ORPCError with WebAppError across 4 router files (fa0fe184) by Manoel
+- feat(database): remove billing materialized views (Stripe is source of truth) (ff1e3b1a) by Manoel
+- feat(stripe): expand event catalog constants for pay-as-you-go model (fcda93c4) by Manoel
+- refactor(events): migrate Redis usage tracking to hash per org (e51ace03) by Manoel
+- test: Add tests for error handling on tag form and bulk remove (03640ac1) by Manoel
+- Merge pull request #718 from Montte-erp/blacksmith-migration-1800009 (9aabf747) by Manoel Neto
+- Migrate workflows to Blacksmith (161712cd) by blacksmith-sh[bot]
+- Merge branch 'master' into cost-centers (89839498) by Manoel
+- test(web): Assert accessorKey using type assertion (5f61c8ee) by Manoel
+- Merge pull request #716 from Montte-erp/worktree-mon-202-fix-space-y-space-x (1800009d) by Manoel Neto
+- docs: Update Claude guidelines (6c8d5cb3) by Manoel
+- fix(web): Replace space-y/x-* with flex+gap-* in auth and dashboard routes (9ab0a8ed) by Manoel
+- test(web): Add tests for TagForm and TagColumns components (6c0290ab) by Manoel
+- refactor: Use WebAppError, AppError, and propagateError consistently (322304bc) by Manoel
+- refactor: Remove unused import and add columns memoization (665aa550) by Manoel
+- feat(categories): Implement bulk delete with default category check (589d4a43) by Manoel
+- test(web): Add tests for bulkRemove category and tag operations (9816ff4f) by Manoel
+- feat(bank-accounts): Add filter bar component and functionality (c73a14e3) by Manoel
+- feat(web): Add bank account columns and table. (a5eb1913) by Manoel
+- Merge pull request #714 from Montte-erp/env-for-skipped-builds (3949120a) by Manoel Neto
+- fix(web): Escape script tags in public env (eec08511) by Manoel
+- fix(web): Ensure POSTHOG_KEY is not an empty string (c48cfc13) by Manoel
+- refactor(web): Use POSTHOG_HOST and KEY env vars (922fb0b4) by Manoel
+- feat: Implement bulk remove for categories and tags (705b9004) by Manoel
+- feat(web): Add public env integration and PostHog setup (b828fdb5) by Manoel
+- Merge branch 'master' into cost-centers (c97f4094) by Manoel
+- Merge pull request #712 from Montte-erp/skipped-builds (e907ce25) by Manoel Neto
+- ci: Use environment variables for base and head (3d65372d) by Manoel
+- style(ui): Improve data table and table header styles (5b885617) by Manoel
+- refactor(tags): Rename tag related files to center of cost (db316927) by Manoel
+- feat: Add CI workflow and update railway.json files (e288e88d) by Manoel
+- feat(web): Integrate Nitro for server-side rendering (574548de) by Manoel
+- Merge pull request #711 from Montte-erp/data-table-fix (3db7c7ce) by Manoel Neto
+- fix(categories): Handle subcategory creation errors and category type (1daaeb46) by Manoel
+- docs: Remove stable handler section (87041fd1) by Manoel
+- style: Remove unnecessary margin utility and improve docs (44ce0137) by Manoel
+- feat(categories): Add subcategories and refactor form (6f79ec48) by Manoel
+- feat(web): Add subcategory form and credenza hook (0926562f) by Manoel
+- refactor: Remove redundant enableRowSelection from data tables (5c753c93) by Manoel
+- feat(transactions): Add table state persistence using local storage (8882bb99) by Manoel
+- style: Add code style guidelines (f30deacd) by Manoel
+- feat(web): Add search input to category filter bar (3acbbee6) by Manoel
+- style(web): Add search input to CategoriesPage (e06dcf57) by Manoel
+- refactor(web): use tanstack router for category filters (2772c0e3) by Manoel
+- refactor(web): Move category components to new route directory refactor(ui): Use PointerSensor instead of MouseSensor/TouchSensor style(ui): improve category table header styles (2b4760c3) by Manoel
+- refactor: Remove unused row reorder features from DataTable (096cf426) by Manoel
+- refactor(ui): Simplify DataTable component logic and remove unused. (8718f1e3) by Manoel
+- refactor(ui): update DataTable and call sites to use URL state, remove flags (630ccf8d) by Manoel
+- feat(ui): Add local storage for column order and visibility (7250d457) by Manoel
+- Merge pull request #710 from Montte-erp/better-posthog (a6950db1) by Manoel Neto
+- fix(feedback): close modal when survey not found & fix rating value (0dbdab76) by Manoel
+- feat(web): Add tests for feedback features (04ea136a) by Manoel
+- fix(feedback): Handle survey not found and dismiss events correctly (0c71d64e) by Manoel
+- fix: replace useStableHandler with useRef+useIsomorphicLayoutEffect in event-listener, data-table, money-input; fix survey dismissed stale closure; fix earlyAccessFlag on Assistente IA nav item; replace useStableHandler in customization.tsx (8dc611e6) by Manoel
+- test: add coverage tests for use-early-access hook and AutoBugReporter component (5240262e) by Manoel
+- feat(feedback): Add monthly satisfaction survey (d48cb723) by Manoel
+- refactor: Migrate survey modal and feedback button (c5699f87) by Manoel
+- test(web): Improve AutoBugReporter test coverage (3e1a42f5) by Manoel
+- feat: Use displaySurvey to show surveys via PostHog (63cc7ee6) by Manoel
+- fix: seed enrolledKeys from PostHog isFeatureEnabled on initial load (ea8cf8b2) by Manoel
+- refactor(auth): Remove unused user hooks and additional fields (9d033916) by Manoel
+- refactor: delete feature-flags.ts and surveys.ts, consolidate into config.ts (0ba1cfdf) by Manoel
+- refactor: Add primary key and uuid defaults to schemas (10ce05d9) by Manoel
+- feat: remove early-access oRPC router, enrollment handled via PostHog + localStorage (5bb30400) by Manoel
+- fix: remove telemetryConsent from test auth, delete unused use-posthog-identity hook (833022b3) by Manoel
+- fix: pass all stages to getEarlyAccessFeatures, fix createLocalStorageState setter usage (4ae55628) by Manoel
+- refactor(early-access): Remove EarlyAccessProvider component (1aaef7f1) by Manoel
+- refactor(dashboard): Remove loader function (58223cbc) by Manoel
+- refactor: simplify useEarlyAccess — all state in createLocalStorageState, no useState/Context (550a7efc) by Manoel
+- refactor: useEarlyAccess — localStorage for enrollment+banner, no STATIC_FEATURES, PostHog only (b68a20a0) by Manoel
+- feat(web): Initialize Posthog on dashboard route enter (2f94345b) by Manoel
+- refactor: rewrite useEarlyAccess — remove oRPC, createLocalStorageState for banner, PostHog as source of truth (3e6dcb70) by Manoel
+- docs: add PostHog patterns and no-useStableHandler rule to CLAUDE.md (a04e065e) by Manoel
+- fix: use POSTHOG_SURVEYS constants, sidebar feedback button renders survey (ae19ac1d) by Manoel
+- merge: consolidate posthog config, remove useStableHandler, identity in loader (249568a6) by Manoel
+- refactor: merge posthog config, remove useStableHandler, move identity to router loader (e1ec65f8) by Manoel
+- chore(web): Add .tanstack to .gitignore (91d369d5) by Manoel
+- feat: delete custom feedback forms and @packages/feedback package (cfafd969) by Manoel
+- fix: post-merge typecheck fixes (fa2ec666) by Manoel
+- merge: resolve conflicts from dynamic stage badges branch (2bd0dee9) by Manoel
+- feat: dynamic stage badges from PostHog, typed FEATURE_FLAG_KEYS (e887a037) by Manoel
+- feat: update EarlyAccessBanner to use posthog renderSurvey (889ac81e) by Manoel
+- feat: restore AutoBugReporter using PostHog native survey (af36add0) by Manoel
+- feat: remove AutoBugReporter, replace sidebar feedback popover with posthog capture (a2f7a5a0) by Manoel
+- feat: remove oRPC feedback router and feedbackSender singleton (52b950cc) by Manoel
+- feat: add POSTHOG_SURVEYS and FEATURE_FLAG_KEYS to core/posthog (943e7a65) by Manoel
+- feat: replace DB-backed telemetry consent with PostHog native opt-out (19128749) by Manoel
+- feat: slim down posthog client.tsx, replace wrappers with direct usage (8f97e990) by Manoel
+- Merge pull request #704 from Montte-erp/settings-refactor (166e1655) by Manoel Neto
+- feat(web): Implement agent settings endpoint (e86e35f3) by Manoel
+- refactor(docs): add hook rules to settings refactor plan (71963a68) by Manoel
+- feat(settings): implement Contatos module settings - schema, repo, router, form (93635642) by Manoel
+- feat(settings): implement Financeiro module settings - schema, repo, router, form (1697cdeb) by Manoel
+- fix(settings): replace space-y-4 with flex flex-col gap-4 in estoque skeleton (791692a4) by Manoel
+- refactor(settings): migrate estoque form to TanStack Form (54a13dea) by Manoel
+- fix(settings): remove frontend Zod schema, use Inputs/Outputs types in ai-agents page (27a4aa69) by Manoel
+- feat(settings): add Rubi IA settings page with model, language, tone, and data source config (1a0d43d0) by Manoel
+- fix(agent): fix destructive upsert - accept partial data, remove duplicate defaults (247cfbfd) by Manoel
+- feat(agent): add settings repository, oRPC procedures, and integration tests (35fff52d) by Manoel
+- fix(db): use text instead of varchar(255) for agent modelId (d337436d) by Manoel
+- feat(db): add agent_settings table for Rubi IA configuration (fd1da5bd) by Manoel
+- refactor(settings): clean up stage type - extract alias, remove GA noise (dd75f7c2) by Manoel
+- feat(settings): add stage badges to module sidebar nav items (0106bcd1) by Manoel
+- Merge pull request #688 from Montte-erp/auth-refactor (9ec6ee6c) by Manoel Neto
+- docs: Update feature folder structure documentation (c3058f0d) by Manoel
+- fix(auth): replace mr-2 with gap-2 flex wrapper on sign-up submit spinner (cf281960) by Manoel
+- refactor(auth): use useTransition in sign-up form submission (222c4ff9) by Manoel
+- fix(settings): replace gap-3 with gap-4, remove unnecessary optional chaining in InviteMemberForm (21993cf0) by Manoel
+- fix(settings): replace useMutation with useTransition for authClient in InviteMemberForm (8da36d40) by Manoel
+- refactor(settings): colocate invite member form in -members/ private folder (3048fafa) by Manoel
+- fix(auth): replace gap-1 with gap-2 in password strength bars (fa240b7d) by Manoel
+- feat(auth): add password strength card to sign-up password step (0402b791) by Manoel
+- fix(auth): correct Portuguese diacritics and simplify TermsAndPrivacyText markup (117cb522) by Manoel
+- refactor(auth): extract shared TermsAndPrivacyText and GoogleIcon to -auth/ private folder (6097f2ec) by Manoel
+- refactor(organization): extract PENDING_INVITATION_KEY to features/organization/constants (4ece6669) by Manoel
+- Merge pull request #687 from Montte-erp/hooks-refactor (b067b204) by Manoel Neto
+- refactor: update dependencies and UI components (407b457b) by Manoel
+- refactor: Use stable handler and update local storage keys (de8af5c4) by Manoel
+- refactor(web): improve finance nav preferences hook (5f9b10b1) by Manoel
+- refactor(web): use local storage for data table column visibility (3b539d32) by Manoel
+- remove unused files (a22c4915) by Manoel
+- refactor: use createLocalStorageState in ThemeProvider, montte: key prefix, update CLAUDE.md (bf5d44b2) by Manoel
+- fix: make ThemeProviderContext nullable so invariant is meaningful (dd20a18f) by Manoel
+- refactor: replace throw new Error context guards with foxact/invariant (5c0e63ac) by Manoel
+- refactor: useLocalStorage in DataTable, mergeRefs in MoneyInput (2af81965) by Manoel
+- refactor: replace () => {} noop callbacks with foxact/noop (4c8d52e9) by Manoel
+- refactor: replace TanStack Store with createLocalStorageState in sidebar hooks (a7d98170) by Manoel
+- refactor(web): Update import path for open in new tab (0022cedf) by Manoel
+- docs: document foxact hooks usage in CLAUDE.md (1922734d) by Manoel
+- refactor: remove useIsMobile, use foxact/use-media-query directly (419c8657) by Manoel
+- build(deps): add foxact to ui catalog (2d517b17) by Manoel
+- refactor: replace React.useLayoutEffect with foxact in sidebar.tsx, remove comments (6cbd6bd5) by Manoel
+- refactor: use useStableHandler for onRowSelectionChange in DataTable (251f029b) by Manoel
+- refactor: use foxact useSingleton for Set ref, remove comments in dashboard-layout (6706885d) by Manoel
+- refactor: replace window.open with foxact openInNewTab, remove comments (e1ad3b8a) by Manoel
+- refactor: remove isBrowser check and comments from theme-provider (3ede3537) by Manoel
+- refactor: replace local useDebouncedCallback with useStableHandler in MoneyInput (29909944) by Manoel
+- refactor: replace manual debounce timers with foxact/use-debounced-value (87c7b57f) by Manoel
+- refactor: use useStableHandler in useEventListener hooks (e9475aa0) by Manoel
+- refactor: use useStableHandler for save callbacks in editable-dashboard-grid (656dc83d) by Manoel
+- fix: update stale test mock and remove comments (c5f58729) by Manoel
+- refactor: replace manual clipboard patterns with foxact/use-clipboard (af74c2a8) by Manoel
+- refactor: replace useSafeLocalStorage wrapper with foxact/use-local-storage (99ced4d0) by Manoel
+- refactor: replace manual stable-handler ref pattern with foxact/use-stable-handler (147b3285) by Manoel
+- refactor: replace useSafeMediaQuery wrapper with foxact/use-media-query (46f11cf2) by Manoel
+- style: remove comments from hook files (435d148d) by Manoel
+- refactor: migrate callback.tsx useIsomorphicLayoutEffect to foxact (782583f3) by Manoel
+- refactor: replace local useDebounce with foxact/use-debounced-value (23d08313) by Manoel
+- refactor: migrate use-insight-config debounce to foxact (700e785c) by Manoel
+- refactor: replace @dnd-kit/utilities useIsomorphicLayoutEffect with foxact (4b6183d0) by Manoel
+- build(deps): add foxact, remove @uidotdev/usehooks (de398c71) by Manoel
+- Merge pull request #665 from Montte-erp/refactor-features (15085dc4) by Manoel Neto
+- refactor: Refactor settings page for project general settings (214e8821) by Manoel
+- refactor(web): Update createTestAuth with new schema fields (390c3f90) by Manoel
+- chore: sync routeTree.gen.ts (6f027fd0) by Manoel
+- chore: Update routeTree.gen.ts file (f827625a) by Manoel
+- refactor: Remove useNavigate from sidebar-nav.tsx (88b7a45b) by Manoel
+- feat: Remove search and webhooks routes (5323d1d3) by Manoel
+- Merge branch 'master' into refactor-features (811075aa) by Manoel
+- chore(scripts): add script to create removed features issues (10700093) by Manoel
+- Merge pull request #664 from Montte-erp/onboarding-new (218519a0) by Manoel Neto
+- refactor: Remove unused imports and config references (d23ad862) by Manoel
+- feat(core/logging): Rename createOtelLogger to createLogger (b7a29173) by Manoel
+- build(server): Add external dependencies to build script (fcdbb3bf) by Manoel
+- refactor: Rename `createLogger` to `createOtelLogger` (9f71ff02) by Manoel
+- refactor: Remove unused API key config and cache files (15b62ef3) by Manoel
+- refactor: Add missing tsconfig paths to vitest configs (39b4db5c) by Manoel
+- feat: Add debounce hook and improve CNPJ lookup (9e415551) by Manoel
+- refactor: Update vitest config to include logging. (434df377) by Manoel
+- refactor: Use useCallback for toggle access handler (2314fdd8) by Manoel
+- refactor(access-control): Use memo for teamMemberIds (4035df9e) by Manoel
+- build(deps): Update bun.lock (ffbd30f7) by Manoel
+- refactor(CLAUDE.md): Add type inference guidelines for oRPC (47282afe) by Manoel
+- feat(web): Add CNPJ step to onboarding wizard (5df9e1a4) by Manoel
+- refactor: Update route tree definitions (fa674bdc) by Manoel
+- chore: Remove nitro plugin from web config (c1e30f55) by Manoel
+- Merge pull request #663 from Montte-erp/catalog (0d8848ee) by Manoel Neto
+- feat(server): Use dotenv for dev and build commands (2cca825e) by Manoel
+- chore(agents): update engines to include environment changes (0cbd1fd3) by Manoel
+- refactor(deps): Move agents package to core. (694e1674) by Manoel
+- docs: Update environment file directory description (7eab0c2b) by Manoel
+- fix: Update env file path in error message (b97f3c88) by Manoel
+- refactor: Update database package directory path (6cd444f4) by Manoel
+- chore(database): Update db commands to use web app .env files (80bbdbbe) by Manoel
+- refactor: Update catalog dependencies versions and names (8a255720) by Manoel
+- Merge pull request #662 from Montte-erp/core/mastra (7a8f060a) by Manoel Neto
+- refactor(agents/database): Update env paths for database scripts (df53aecd) by Manoel
+- feat(tooling): Add tooling/css and boundary checks (6d90c666) by Manoel
+- refactor: Rename packages/agents to core/agents (588dec24) by Manoel
+- ```bash git add -A git commit -m "refactor(docs): remove expired docs plan" ``` (6824b501) by Manoel
+- refactor: Remove PG_VECTOR_URL and use DATABASE_URL instead (14cd75fd) by Manoel
+- Merge pull request #661 from F-O-T/dialog-stack (0e66685a) by Manoel Neto
+- feat(transactions): use DialogStackContext to set index (9cdd8989) by Manoel
+- refactor: Inline InsightEditDialogStackContent component (fb621d09) by Manoel
+- feat(ui): remove use-credenza and all legacy credenza files (a366cb76) by Manoel
+- fix(ui): replace closeCredenza with closeDialogStack in form components (5be36718) by Manoel
+- feat(ui): update all call sites from useCredenza to useDialogStack (0d4d3821) by Manoel
+- fix(ui): fix comments/gap/date/useQuery issues in remaining migrated forms (83f1562a) by Manoel
+- feat(ui): migrate remaining form components to dialog-stack (a0acd093) by Manoel
+- fix(ui): fix nesting/comments/gap issues in feedback/org/layout forms (c624a806) by Manoel
+- feat(ui): migrate feedback/org/layout form components to dialog-stack (bc93d297) by Manoel
+- fix(ui): fix body/footer wrappers, useQuery, comments, gap values in Task 5 forms (b53a360f) by Manoel
+- feat(ui): migrate service/tag/webhook form components to dialog-stack (63dead0e) by Manoel
+- fix(ui): remove comments and fix date/gap issues in entity forms (a9255b4a) by Manoel
+- feat(ui): migrate entity form components to dialog-stack (f927f76a) by Manoel
+- fix(ui): fix quality issues in large dialog-stack migrations (d995f7c3) by Manoel
+- feat(ui): migrate large credenza forms to dialog-stack (ac63123f) by Manoel
+- fix(ui): replace space-y with flex+gap in inventory-movement-dialog-stack (20d8dcea) by Manoel
+- feat(ui): migrate medium credenza forms to dialog-stack (c3678a8b) by Manoel
+- fix(ui): fix date/query/tailwind issues in dialog-stack migrations (68854285) by Manoel
+- feat(ui): migrate small credenza forms to dialog-stack (9ab29e9d) by Manoel
+- docs: add full dialog-stack migration plan (f292565d) by Manoel
+- fix(ui): remove redundant useEffect from DialogStack causing infinite re-render loop (06262ce3) by Manoel
+- feat(transactions): wire TransactionDialogStack to create/edit call sites (02765808) by Manoel
+- feat(transactions): add TransactionDialogStack replacing TransactionCredenza (91a3a090) by Manoel
+- feat(ui): register GlobalDialogStack in root layout (52fb74aa) by Manoel
+- feat(ui): add useDialogStack global hook (eeede89d) by Manoel
+- Merge pull request #660 from F-O-T/new-data-table (33fc9a02) by Manoel Neto
+- ci(web): Rename workflow and remove config files (b2a68bfc) by Manoel
+- refactor: Use import alias for react-table types (2f32af62) by Manoel
+- refactor(ui): improve column and row reorder logic (5814e3c8) by Manoel
+- refactor: Improve bills generation and add row order checks (be3e20dd) by Manoel
+- fix(bills): Correct bill generation loop condition (9bbd09af) by Manoel
+- refactor(web): remove view switch and its dependency (989656ff) by Manoel
+- refactor: Update route tree (09095945) by Manoel
+- feat(ui): Add drag and drop functionality to data table (22793ee9) by Manoel
+- chore(web): update route tree generation code (6a5bc715) by Manoel
+- refactor: Replace attachmentUrl with attachments array (c181cb7c) by Manoel
+- Merge pull request #659 from lucas-furtadob/montte-2 (0442e51c) by Manoel Neto
+- big refactorfix (19482b8e) by Manoel
+- chore: Adjust x and y coordinates for the "Modais de Contas Bancárias" and "Contas Financeiras" frames. (0d2a239d) by Lucas
+- feat: Introduce new agent skills and related files for enhanced UI/UX and design capabilities. (327d67a1) by Lucas
+- feat: Introduce a comprehensive suite of UI/UX design skills, including a BM25 search engine and extensive design guideline data. (ff3690f4) by Lucas
+- Merge pull request #658 from lucas-furtadob/montte-2 (59b8ca5e) by Manoel Neto
+- feat: Introduce new UI/UX agent skills, including design references, data, and scripts, and update the skills lock file. (491c8593) by Lucas
+- feat(web): Update start command and add nitro (60cb745d) by Manoel
+- style(web): Add ssr: "data-only" to dashboard route (8182b2e6) by Manoel
+- feat: Prefetch session data on root route. (1636d338) by Manoel
+- fix(web): Use dist/server/server.js for server start (6ef42732) by Manoel
+- chore(web): Update railway.json and vite config files. (5ab13358) by Manoel
+- refactor(web): Remove vite-tsconfig-paths package (ab04f62e) by Manoel
+- style: Remove unneeded Dockerfile (bd7c4d20) by Manoel
+- chore: Remove OpenTelemetry initialization import (ed88d6a7) by Manoel
+- feat(web): Add Dockerfile and update railway.json (b1c80a1f) by Manoel
+- build(web): Remove nitro preset from build command (a1026e96) by Manoel
+- fix(web): Change start command to use node (e0f56c05) by Manoel
+- feat(server): add types and references to apps/server tsconfig.json (3ee1a86d) by Manoel
+- refactor: Move env files to common directory (7708d666) by Manoel
+- fix(web): Update session in database after setting org/team IDs (d45204b3) by Manoel
+- refactor(server): migrate singletons to server and web apps (e4a887fd) by Manoel
+- feat(web): Add /api/ping route (34538732) by Manoel
+- refactor(web): Conditionally prefetch session data (928ee623) by Manoel
+- chore(web): Use node for start command and preset (3ddfde4e) by Manoel
+- feat(web): Add /api/health endpoint (64013f9f) by Manoel
+- refactor: Remove Electric SQL dependencies (efe54f82) by Manoel
+- style(web): Add core and packages to watch patterns (be3fd8df) by Manoel
+- refactor: Update route tree generation (3a115ea3) by Manoel
+- refactor: Use drizzle-orm/zod for createInsertSchema (9ea6f83a) by Manoel
+- refactor(web): format and align routeTree.gen.ts (bbe57da9) by Manoel
+- refactor: Update route tree generation file (caeed16c) by Manoel
+- feat(web): Add Posthog-js as a dependency (9700721b) by Manoel
+- refactor(web): update generated route tree file (b7a6809c) by Manoel
+- refactor: Use selector in Subscribe components (726b43bd) by Manoel
+- fix(orpc): Add try/catch to transactions and enrollment (1923b1bd) by Manoel
+- refactor(web): Use web/server env for server side code (c3e088b3) by Manoel
+- refactor: Remove arcjet package and usage (6701dcda) by Manoel
+- refactor(web): Use web env from environment package (c2987c32) by Manoel
+- fix(web): Use optional chaining for posthog session id (422ecdf6) by Manoel
+- feat(web): Mock all missing dependencies in tests (56af3d57) by Manoel
+- chore(cli): Allow prepare script to fail without exiting (24626894) by Manoel
+- test(web): Add integration tests for global search router (4d024177) by Manoel
+- refactor: Remove skip from tests and update query for PGlite compat (d85c40c7) by Manoel
+- feat(cli): add basic cli commands for accounts, categories, and budgets (899126f4) by Manoel
+- ci: Add coverage report and upload to Codecov (7a0143d3) by Manoel
+- feat: Add tooling and config for workspace script testing. (2e46f2f9) by Manoel
+- style(scripts): Update contribute and remove stale packages (6ee2bb1d) by Manoel
+- feat(web): migrate to pglite test migrations (3b591db5) by Manoel
+- feat(test): Add bills test file feat(test): Add inventory test file feat(test): Add transactions test file feat(test): Add organization tests file (d0e2db51) by Manoel
+- refactor(deps): upgrade dependencies (457a9d92) by Manoel
+- refactor(feedback): Migrate to singleton sender (d99a69cf) by Manoel
+- chore: Remove unused search package types and providers (0bdf9152) by Manoel
+- refactor(ui): remove PlateJS hard delete changes (5a7dd512) by Manoel
+- style: Update documentation and guidelines (61b16b96) by Manoel
+- feat(arcjet): Integrate Arcjet rate limiting and bot detection (10933b25) by Manoel
+- refactor(analytics): rewrite compute files with Drizzle operators and tests (322ac562) by Manoel
+- fix(analytics): fix type errors in compute-kpi and seed-defaults (b5de1930) by Manoel
+- fix(analytics): make date-ranges tests timezone-independent (cc29b3d1) by Manoel
+- test(analytics): add defaults.test.ts for DEFAULT_INSIGHTS validation (5679cff9) by Manoel
+- refactor(analytics): replace raw SQL with Drizzle operators, clean compute files (0568b4c5) by Manoel
+- refactor(analytics): update package scaffolding to new pattern (88ab8d91) by Manoel
+- refactor: remove remaining factory wrappers for auth and database (1eec414f) by Manoel
+- refactor: convert core packages to module-level singletons (ce34f135) by Manoel
+- refactor: Extract server instance imports (5f417ace) by Manoel
+- feat(events): add initial event test and move tests. (c7a4ed4d) by Manoel
+- refactor(posthog): remove SDK capture functions, use logger instead (4ddacb3e) by Manoel
+- test(posthog): add SDK server function tests (0e56d45d) by Manoel
+- test(posthog): rewrite server tests with vitest and mocks (ed813444) by Manoel
+- feat(database): implement budget-goals and financial-goals repositories (7ed56a3d) by Manoel
+- test(database): add webhook repository tests (a09887df) by Manoel
+- refactor(database): add Zod validators to webhooks schema and convert repo to singleton db (52f59d04) by Manoel
+- test(database): add insight repository tests (bb0f3e8d) by Manoel
+- refactor(database): add Zod validators to insights schema and convert repo to singleton db (a7c8033e) by Manoel
+- test(database): add dashboard repository tests (9a6e3a71) by Manoel
+- refactor(database): convert dashboard-repository to singleton db + validateInput (40287e4b) by Manoel
+- fix(database): add stub assets table for materialized view compatibility (085cecab) by Manoel
+- refactor(database): inline enums into owner schemas and delete enums.ts (9e0dd17e) by Manoel
+- refactor(database): clean up relations for deleted schemas (8519beae) by Manoel
+- refactor(database): remove repositories for deleted schemas (2681715b) by Manoel
+- refactor(database): remove 8 unused schemas (ba5112cf) by Manoel
+- docs(database): add database refactor implementation plan — 14 tasks (8608fdaa) by Manoel
+- docs(database): add database refactor design — schema cleanup and standardization (7867aabc) by Manoel
+- test(database): add bills repository tests (7944bf0c) by Manoel
+- test(database): add transactions repository tests (00459581) by Manoel
+- refactor(database): update consumers to new repository signatures (e008ed7f) by Manoel
+- refactor(database): rewrite bills repository with singleton db pattern (90b325ad) by Manoel
+- refactor(database): rewrite transactions repository with singleton db pattern (9fd6ba52) by Manoel
+- feat(database): add Zod validators to bills schema and make contactId FK (a94999a8) by Manoel
+- feat(database): add Zod validators to transactions schema (0ed2bf92) by Manoel
+- test(database): add contacts repository tests (9d4a6c59) by Manoel
+- refactor(database): rewrite contacts repository with singleton db pattern (426d6579) by Manoel
+- fix(database): correct drizzle-zod import path in contacts schema (ac30135d) by Manoel
+- feat(database): add isArchived field and Zod validators to contacts schema (e852ca52) by Manoel
+- docs(docs): add transactions, bills & contacts refactoring implementation plan (809a304e) by Manoel
+- docs(docs): add transactions & bills refactoring design (e9fdd9c8) by Manoel
+- test(database): add financial-goals repository tests (ff511bf4) by Manoel
+- test(database): add budget-goals repository tests (79364422) by Manoel
+- feat(database): add financial-goals repository with atomic movements (fa9be260) by Manoel
+- refactor(database): rewrite budget-goals repository with singleton db, Zod validation, @f-o-t/money (d995d40c) by Manoel
+- feat(database): add financial-goals schema with movements and Zod validators (dc0a0389) by Manoel
+- refactor(database): add Zod validators to budget-goals schema, make categoryId notNull (dcf64ca9) by Manoel
+- feat: Setup lefthook for formatting and commit message linting (6e8879fa) by Manoel
+- feat(database): add tagHasTransactions helper and tests (3f1d6775) by Manoel
+- feat(database): add tags repository with description field, validators, and tests (e680339e) by Manoel
+- test(database): add categories repository tests (050300cd) by Manoel
+- refactor(database): rewrite categories repository with singleton db pattern (843843c3) by Manoel
+- test(database): add categories validator tests (e6774331) by Manoel
+- refactor(database): remove subcategories schema and update all references (389812a0) by Manoel
+- fix(database): add FK on parentId, fix validator consistency in categories schema (a5db9f6b) by Manoel
+- fix(database): add default(1) to categories level column (39941546) by Manoel
+- refactor(database): rewrite categories schema with self-referential hierarchy and DRE support (71140f57) by Manoel
+- docs: add categories refactor implementation plan (0af1b61c) by Manoel
+- docs: add categories module design document (72077009) by Manoel
+- test(database): add bank accounts repository integration tests (584aea90) by Manoel
+- test(database): add credit cards repository integration tests (5290f554) by Manoel
+- test(database): add materialized view integration test with PGLite (36d7d248) by Manoel
+- feat(database): add credit card statements repository (60cd9eb6) by Manoel
+- fix(database): use singleton db in statement guard (ab5735b5) by Manoel
+- refactor(database): rewrite credit cards repository with singleton pattern (f5d5d35b) by Manoel
+- test(database): add credit card statement validator tests (978114f9) by Manoel
+- feat(database): add relations for credit cards and statements (7ea19410) by Manoel
+- feat(database): add credit card statement totals materialized view (e82e89e0) by Manoel
+- feat(database): add credit card statements schema with validators (1fbe7516) by Manoel
+- test(database): add credit card validator tests (5d6fb8ab) by Manoel
+- feat(database): add statementPeriod column to transactions (bdfe628d) by Manoel
+- feat(database): add credit card date helpers with dayjs (41f38232) by Manoel
+- feat(database): add drizzle-zod validators for credit cards (5e8427b3) by Manoel
+- feat(database): add status and brand enums to credit cards schema (84c3ff8e) by Manoel
+- fix(database): add type annotation to test callbacks (5acec3b7) by Manoel
+- fix(database): convert Date to string for Drizzle date column in bank accounts (d80249e4) by Manoel
+- docs: add changelog for bank accounts to conta financeira refactor (e79bc354) by Manoel
+- test(database): add bank accounts validator tests (635ce9de) by Manoel
+- test(bank-accounts): add mock factory (51f3315d) by Manoel
+- refactor(database): rewrite bank-accounts repository with Zod validation and @f-o-t/money (5ebc9661) by Manoel
+- fix(utils): accept ZodEffects in validateInput (477b0f90) by Manoel
+- feat(database): add Zod validators for bank accounts (c9d6f4be) by Manoel
+- feat(database): add status enum and fix initialBalanceDate type in bank accounts (6c29c054) by Manoel
+- fix: remove unused imports from relations migration (755c5c43) by Manoel
+- refactor: migrate db.query calls to drizzle v1 object-based filter syntax (6ec78157) by Manoel
+- refactor: migrate drizzle relations to v2 defineRelations() (c7b728fc) by Manoel
+- refactor: migrate drizzle-zod imports to drizzle-orm/zod (8a089cdc) by Manoel
+- chore: upgrade drizzle-orm and drizzle-kit to v1 beta (ce08cfe5) by Manoel
+- docs: update CLAUDE.md for restructured monorepo (215b7fa5) by Manoel
+- refactor: move infrastructure packages to core/ and update imports (fa79dde3) by Manoel
+- refactor: consolidate TypeScript configs into 3 presets (core, package, app) (7015dbf6) by Manoel
+- chore: migrate from Biome to OXC (oxlint + oxfmt) (3ff5defb) by Manoel
+- chore: add per-workspace oxlint configs with boundary rules (111158c1) by Manoel
+- chore: add OXC tooling configs (oxlint + oxfmt) (229fc42f) by Manoel
+- fix (5d7186e7) by Manoel
+- fix (5c007655) by Manoel
+- feat(categories): Add import and export features (4705b85d) by Manoel
+- feat(web): Add payment type to bill form and list (def18538) by Manoel
+- feat(transactions): Add payment method and fix date format (c99dfe09) by Manoel
+- refactor(logging): Use initLogger in server and worker files (e6b16764) by Manoel
+- feat(posthog): Enable exception auto capture (284cc649) by Manoel
+- feat: Filter categories by type in bills and transactions forms (46d5797c) by Manoel
+- refactor: Rename "transação" to "lançamento" (985728f2) by Manoel
+- refactor(early-access): Remove unnecessary mutation logic (dcc4c6bf) by Manoel
+- feat: Implement PostHog health heartbeat in all apps (d4c89f40) by Manoel
+- feat(logging): install OTel SDK and instrument apps for logs (0b8bc4e2) by Manoel
+- feat(posthog): enable exception autocapture + fix trpc_error → orpc_error (5def33b3) by Manoel
+- feat: wire OTel SDK into worker + enable OTel transport in logger singletons (9a0214bf) by Manoel
+- feat(orpc): add LoggingHandlerPlugin + OTel init + server graceful shutdown (b909887e) by Manoel
+- feat(orpc): add PostHog identification to OTel logs (posthogDistinctId + sessionId) (c2be3e92) by Manoel
+- feat(web): send PostHog session ID header with oRPC requests (0fbf04ac) by Manoel
+- feat(logging): add Pino-to-OTel transport bridge (7753b804) by Manoel
+- feat(logging): add OTel SDK initializer with oRPC instrumentation (48f30544) by Manoel
+- feat(environment): add optional POSTHOG_KEY to worker env (770be9d2) by Manoel
+- chore: add OpenTelemetry and oRPC logging packages (83f8bc23) by Manoel
+- refactor(web): Use useSuspenseQuery for dashboard tiles (83f63bbb) by Manoel
+- feat(web): enhance PageHeader mobile with dropdown items (d53ae3b3) by Manoel
+- feat(transactions): add new field mappings to import/export (31dbccf2) by Manoel
+- feat(transactions): add paymentMethod, installment fields to form (4ac257a7) by Manoel
+- feat(transactions): add columns, totalizadores, and new filters per PM spec (51f28cfb) by Manoel
+- feat(transactions): add paymentMethod, items, installments, getSummary to oRPC router (66da1fbf) by Manoel
+- feat(transactions): add paymentMethod filter, name JOINs, summary, items CRUD to repository (c22ac1c6) by Manoel
+- feat(transactions): add paymentMethod enum, installment fields, transaction_items table, nullable bankAccountId (4d3e6b61) by Manoel
+- fix(services): add description to credenza header (e12c4a16) by Manoel
+- style(services): use w-full on service form credenzas (4ef1fd40) by Manoel
+- refactor(services): flat 2-column form layout, remove collapsibles (dea48e4c) by Manoel
+- feat(services): add max-h to credenza, reorganize form with collapsible sections (1a1f60e1) by Manoel
+- fix(services): wrap DataTable in TooltipProvider, use aria-label in form (1710c4f1) by Manoel
+- fix(services): replace combobox with plain input for service name (783b2ddb) by Manoel
+- feat(services): implement full services feature per PM spec #636 (7a7911f7) by Manoel
+- fix(services): review fixes — combobox for name, credenza hook, remove useTransition, use @f-o-t/money (3e2f59a2) by Manoel
+- feat(services): update oRPC router with filters, bulkCreate, and exportAll (a3dc23f7) by Manoel
+- feat(database): add serviceType enum, basePrice/type/categoryId/tagId to services (4883d0d6) by Manoel
+- feat(web): Implement projectLimit based on Stripe data refactor(web): Refactor column order in tables feat(web): Add services import plan document ``` (9872c1b4) by Manoel
+- chore: ignore worktrees directory (568cefbb) by Manoel
+- feat(ui): Implement card view for DataTable component (bf140546) by Manoel
+- style(web): remove mobile card renderers (7a079274) by Manoel
+- fix(data-table): append actions as real column instead of separate cells (9897b342) by Manoel
+- refactor(tables): move all column actions to DataTable renderActions prop (74a76cd4) by Manoel
+- refactor(server): Use referenceId instead of userId in SDK auth (4584b59d) by Manoel
+- fix(transactions): Require bank account ID and improve bills query (572281c3) by Manoel
+- refactor(bank-accounts): Simplify bank account types and forms. (ca286ef8) by Manoel
+- feat(orpc): Add budget goals router (62007a77) by Manoel
+- style(authentication): Remove crossSubDomainCookies config (295397e1) by Manoel
+- refactor(auth): Improve callback logic and remove queryClient hook (11c20fab) by Manoel
+- style: Update email theme and color scheme (a1aa72b3) by Manoel
+- refactor(authentication): Remove baseURL configuration (e043f3cc) by Manoel
+- style: Update illustration in auth page (2f50a054) by Manoel
+- chore: Upgrade better-auth and dependencies (b12a5b2d) by Manoel
+- feat(transactions): Add prerequisites guard for transaction creation (5ba11ff3) by Manoel
+- feat(billing): Add platform add-ons section to billing overview page (076c2e36) by Manoel
+- fix(dashboards): show edit layout button in header, remove resize dropdown, fix critical review issues (e6c7982c) by Manoel
+- feat(dashboards): add edit mode toggle with Cancel/Save header, page action, and toast (b3aaf925) by Manoel
+- feat(dashboards): add resize handle to DashboardTile using useDraggable (ae3b4ac2) by Manoel
+- feat(dashboards): handle resize drag end in DashboardGrid (3cd39125) by Manoel
+- feat(dashboards): wire isEditingLayout into EditableDashboardGrid, remove UnsavedChangesBar (f1e953f8) by Manoel
+- feat: Add organization invitation flow (3f8ba70a) by Manoel
+- refactor: Remove unused PlanBanner and related components (7014d313) by Manoel
+- feat(dashboards): implement dashboard edit mode functionality (e50964fd) by Manoel
+- feat(web): Add panel action to display actions in panel header (5bc54462) by Manoel
+- style(web): Change feature stage to concept (b372431f) by Manoel
+- feat(billing): migrate to metered usage-based billing (phase 1) (a305e2bd) by Manoel
+- feat(web): delete use-sheet hook, complete sheet-to-credenza migration (0500f65c) by Manoel
+- feat(web): remove GlobalSheet from root layout (d101de79) by Manoel
+- feat(web): migrate sidebar scope switcher sheet calls to credenza (cafa5478) by Manoel
+- feat(web): migrate webhooks page sheet to credenza (13af8bae) by Manoel
+- feat(web): migrate security page session sheet to credenza (db1fc059) by Manoel
+- feat(web): migrate personal-api-keys page sheet to credenza (f5f7e12a) by Manoel
+- feat(web): migrate inventory page sheet calls to credenza (5c5a6cb0) by Manoel
+- feat(web): add credenza header to inventory history component (d49a4fba) by Manoel
+- fix(web): rename stale Sheet identifiers to Credenza in members.tsx (de408741) by Manoel
+- feat(web): migrate members page invite sheet to credenza (ef3bb524) by Manoel
+- feat(web): migrate webhook-form to credenza (cc5dba90) by Manoel
+- feat(web): migrate create-key-form to credenza (b50eff74) by Manoel
+- feat(web): migrate session-details-form to credenza (65796fc5) by Manoel
+- fix(web): fix credenza body indentation in manage-organization-form (33cc12f0) by Manoel
+- feat(web): migrate manage-organization-form to credenza (7fff164e) by Manoel
+- feat(web): migrate create-team-form to credenza (b7416ad9) by Manoel
+- feat(web): Add onboarding fix and prevent redirect loop (ae451aa5) by Manoel
+- feat(services): add sidebar nav item and billing overview early access card (f9a262f6) by Manoel
+- feat(services): add revenue analytics header (3c9dfadf) by Manoel
+- fix(services): only show discount badge when negotiatedPrice is positive and below basePrice (ccacbda4) by Manoel
+- feat(services): add subscription form with live discount calculation (abf80016) by Manoel
+- feat(services): add service create/edit form with variants (12811d64) by Manoel
+- feat(services): add services catalog page and columns (a6bc9e5d) by Manoel
+- fix(services): use correct Mar/YYYY format for bill descriptions (8aac83c8) by Manoel
+- feat(services): auto-generate and cancel bills on subscription lifecycle (a8220675) by Manoel
+- feat(sidebar): gate Produtos behind inventory early access flag (1c0f539a) by Manoel
+- fix(sidebar): remove top padding from nav groups (f5f45b55) by Manoel
+- fix(orpc): fix ownership checks and rename procedure exports in services router (3fc2e039) by Manoel
+- fix(sidebar): exclude main group from SidebarNav to prevent duplicate rendering (6ea15ffa) by Manoel
+- fix(settings): move inventory settings to Módulos/Estoque, remove duplicate page and nav item (0e195f71) by Manoel
+- feat(orpc): add services router (463bcd4c) by Manoel
+- feat(sidebar): split erp group into Finanças and ERP labeled groups (e0010f69) by Manoel
+- fix(services): address code quality issues in services-repository (2e770165) by Manoel
+- feat: add early access feedback banner to contacts screen (20d232a4) by Manoel
+- fix: use insights-specific copy for early access banner on insights screens (52ac77ca) by Manoel
+- feat: add early access feedback banner to analytics screens (9a4a2c18) by Manoel
+- fix(insights): wrap handleDelete in useCallback, guard handleCreate against double-click (894a33c4) by Manoel
+- feat(settings): add inventory settings page (919a7b15) by Manoel
+- feat(db): add services repository (7ec47a22) by Manoel
+- feat(insights): create empty insight on click instead of navigating to new page (7c5b3ad1) by Manoel
+- feat(settings): simplify Assistente IA settings for ERP context (84da2f6b) by Manoel
+- feat(settings): add Contatos module settings placeholder (a1b6197d) by Manoel
+- feat(settings): add Estoque module settings placeholder (79ffd5ae) by Manoel
+- feat(settings): add Financeiro module settings placeholder (40b9a989) by Manoel
+- feat(web): add inventory route and sidebar nav (422df061) by Manoel
+- fix(sidebar): render unlabeled nav groups and update configure condition to erp (ea584eb3) by Manoel
+- fix(db): extract shared enums, fix comment, add externalId index (b8d0e6e5) by Manoel
+- feat(settings): restructure nav from CMS Produtos to ERP Módulos (cea5a956) by Manoel
+- chore: remove finance nav group, update all route refs to top-level paths (d098dd86) by Manoel
+- feat(ui): add inventory feature components (d452f4f8) by Manoel
+- feat(api): add inventory oRPC router (44c27b26) by Manoel
+- chore: move finance routes up one level (remove finance/ prefix) (e73968c5) by Manoel
+- feat(db): add inventory repository (703ed08e) by Manoel
+- feat(db): add inventory schema (products, movements, settings) (4072fade) by Manoel
+- chore: add @f-o-t/uom to web app (3ab8f134) by Manoel
+- feat(db): add source/externalId to contacts, contactId/subscriptionId to bills, export services schema (47efb32f) by Manoel
+- feat(services): add improvements to UI and code. (d1082466) by Manoel
+- fix(db): fix teamId convention, resource FK, and relations in services schema (785174ca) by Manoel
+- fix(db): export NewResource type from services schema (8d83b4ca) by Manoel
+- feat(db): add services, service_variants, contact_subscriptions, resources schemas (36dca873) by Manoel
+- chore: fix stale SDK Server log message after rename (21a7efd8) by Manoel
+- chore: fix bun.lock and docs after sdk-server rename (f09dba25) by Manoel
+- chore: rename sdk-server to server (35b8d90d) by Manoel
+- feat: Update quick suggestions and welcome messages (53805123) by Manoel
+- feat(dashboard): Add sidebar config form (962d2def) by Manoel
+- feat(web): Add account type step to onboarding wizard (4f364c11) by Manoel
+- feat(onboarding): refactor to remove all api-key logic and files (05c071b8) by Manoel
+- fix(finance): add biome-ignore for pre-existing lint issue in credit-cards-columns (6c102a53) by Manoel
+- feat(bank-accounts): add projected balance column (current + pending bills) (265b46e0) by Manoel
+- feat(transactions): add 'create as bill' option for unpaid expenses and future transactions (6686d015) by Manoel
+- feat(sidebar): add configurable item visibility with localStorage persistence (e5901174) by Manoel
+- feat(sidebar): add quick-create action for new transaction (40767767) by Manoel
+- feat(goals): add summary totals bar with limit, spent, remaining, alert count (828f34ac) by Manoel
+- feat(categories): replace icon grid with searchable combobox (744e94d3) by Manoel
+- feat(transactions): add credit card field, replace tag checkboxes with combobox (c5607d0d) by Manoel
+- feat(transactions): add category, account, credit card filter comboboxes (17dda871) by Manoel
+- feat(transactions): add category and credit card columns to table (ec7b4a71) by Manoel
+- fix(credit-cards): allow limit edit on update, add bankAccountId field (59728db2) by Manoel
+- feat(transactions): join category/card names, add uncategorized and creditCardId filters (ea9916bb) by Manoel
+- feat(bank-accounts): add computed current balance to table (eb2f7f4a) by Manoel
+- feat(categories,tags): add archive procedure and filter archived from list (be16e39b) by Manoel
+- feat(tags): add deletion protection and archive procedure (ad926bf3) by Manoel
+- feat(schema): add bankAccountId FK to credit_cards (d1b2689d) by Manoel
+- feat(schema): add isArchived to categories and tags (cd25cdae) by Manoel
+- fix(bills): fix typecheck and lint errors (566dc343) by Manoel
+- feat(bills): add sidebar nav and transaction parcelar/recorrente actions (a3e0a858) by Manoel
+- feat(bills): add /finance/bills route with payable/receivable tabs and summary bar (2c8f7f2a) by Manoel
+- feat(bills): add bills create/edit form and from-transaction credenza (420d52d6) by Manoel
+- feat(bills): add bills columns, installment preview, and pay credenza (a0f0875f) by Manoel
+- feat(rooms): Implement database schema and repository (853b2ce5) by Manoel
+- feat(worker): add bill recurrence queue and daily cron job (e12f5d75) by Manoel
+- feat(api): add bills oRPC router (84956469) by Manoel
+- feat(contacts): move Contatos to new ERP sidebar group (b3e97be6) by Manoel
+- ``` feat(ui): add useRowSelection hook ``` (30f28334) by Manoel
+- feat(contacts): add contacts route page with table/card views and type filter (f7a58904) by Manoel
+- feat(database): add bills repository (4e9b7fa1) by Manoel
+- feat(contacts): add contact picker to transactions form (641be84a) by Manoel
+- feat(contacts): add contacts-columns and contacts-form UI components (2a5595f9) by Manoel
+- fix(contacts): add contactId ownership validation in verifyTransactionRefs (d62828d8) by Manoel
+- fix(database): improve bills schema - add missing indexes, updatedAt, and comments (dc3db34b) by Manoel
+- feat(contacts): add contacts oRPC router, register in index, add contactId to transactions router (57bb735e) by Manoel
+- feat(database): add bills and recurrence_settings schema (d2762882) by Manoel
+- fix(contacts): merge duplicate schema imports in contacts-repository (7845a86a) by Manoel
+- feat(contacts): add contacts repository and contactId filter on transactions (a72aeb3e) by Manoel
+- feat(contacts): add Contatos to sidebar nav with alpha early access gate (f04b46e0) by Manoel
+- fix(contacts): add contactsRelations, contact_id index on transactions, fix schema.ts ordering (72406330) by Manoel
+- feat(contacts): add contacts schema with contactId FK on transactions (24597e48) by Manoel
+- feat(transactions): add Import and Export buttons to transactions page (17e39284) by Manoel
+- fix(transactions): fix OFX date parsing and duplicate detection query (cbfd41cd) by Manoel
+- feat(transactions): add TransactionImportCredenza with duplicate detection (ebd2146e) by Manoel
+- fix(types): resolve typecheck errors after credit cards module (0301a7d7) by Manoel
+- feat(transactions): add TransactionExportCredenza (0ca09d9e) by Manoel
+- feat(nav): add credit cards to sidebar (6cb031d9) by Manoel
+- feat(routes): add credit cards page (719ddbe0) by Manoel
+- feat(categories): expandable subcategory rows in table, expanded by default (13ce5d83) by Manoel
+- feat(ui): add credit cards form (f8121294) by Manoel
+- feat(ui): add credit cards columns (30a2c822) by Manoel
+- feat(orpc): add credit cards router (eddb4bb1) by Manoel
+- feat(transactions): add importBulk oRPC procedure (02c75031) by Manoel
+- feat(database): add credit cards repository (1e14d822) by Manoel
+- feat(database): add creditCardId to transactions, make bankAccountId nullable (6754614f) by Manoel
+- feat(deps): add @f-o-t/csv and @f-o-t/ofx (cfa99290) by Manoel
+- feat(database): add credit_cards schema (a9ef13a0) by Manoel
+- refactor(analytics): compact InsightEditCredenza sidebar — tighter layout, fixed 500px height (61356755) by Manoel
+- refactor(analytics): redesign InsightEditCredenza with sidebar layout (Option A) (3e02fb48) by Manoel
+- feat(analytics): add Configurar option to dashboard tile dropdown — opens InsightEditCredenza (ad85b5bf) by Manoel
+- feat(analytics): add InsightEditCredenza component for in-dashboard insight config (47036c4e) by Manoel
+- feat(analytics): wire BRL currency formatting through InsightPreview using @f-o-t/money (62cc7cb5) by Manoel
+- feat(analytics): add valueFormatter prop to bar/line charts for Y-axis and tooltip (4ffe58b7) by Manoel
+- feat(analytics): add formatAsCurrency prop to TrendsNumberCard using @f-o-t/money (bb0b1cb3) by Manoel
+- fix(analytics): saldo liquido uses net aggregation (income - expenses) (ae0bbb99) by Manoel
+- feat(analytics): implement 'net' aggregation in time series compute (61bcd655) by Manoel
+- feat(analytics): implement 'net' aggregation in KPI compute (income - expenses) (ca87c5d5) by Manoel
+- feat(analytics): add 'net' aggregation type (income - expenses) (dc6adab3) by Manoel
+- feat(view-switch): add view switch to finance routes, remove unused files (ed8ba30a) by Manoel
+- refactor(buttons): icon-outline as default for tooltip icon buttons, send button filled without tooltip (fccb502f) by Manoel
+- fix(insights): fix remaining type errors and delete obsolete analytics files (85b37e89) by Manoel
+- refactor(ui): delete TooltipIconButton — replaced by Button tooltip prop (b746ff33) by Manoel
+- refactor(teco-chat): replace TooltipIconButton with Button tooltip prop (570a5d9f) by Manoel
+- refactor(assistant-ui): replace TooltipIconButton with Button tooltip prop (0759b26a) by Manoel
+- refactor(members): use Button tooltip prop (957c5448) by Manoel
+- refactor(project-settings): use Button tooltip prop (77733014) by Manoel
+- refactor(security): use Button tooltip prop (6070a790) by Manoel
+- refactor(webhooks): use Button tooltip prop for edit button (c07c6dac) by Manoel
+- refactor(roles): use Button tooltip prop (e6d00031) by Manoel
+- feat(database): update default insights with ERP finance metrics (b2304500) by Manoel
+- feat(insights): rebuild InsightBuilder with KPI/TimeSeries/Breakdown tabs (08bff8ea) by Manoel
+- feat(insights): rebuild InsightPreview for KPI/TimeSeries/Breakdown (8c8e6dce) by Manoel
+- refactor(context-panel): use Button tooltip prop for tab buttons (8a97a9aa) by Manoel
+- refactor(context-panel): use Button tooltip prop (47f20c93) by Manoel
+- feat(insights): update router type enum to kpi/time_series/breakdown (f1c4872f) by Manoel
+- refactor(page-header): use Button tooltip prop (579e2002) by Manoel
+- feat(insights): update InsightFilterBar for ERP transaction filters (193f9114) by Manoel
+- feat(insights): add BreakdownQueryBuilder component (8b4d613d) by Manoel
+- feat(insights): add TimeSeriesQueryBuilder component (7dc7f225) by Manoel
+- feat(button): add icon-solid/icon-outline variants and tooltip prop (23700f32) by Manoel
+- feat(insights): add KpiQueryBuilder component (880a6ab3) by Manoel
+- feat(insights): update useInsightConfig hook for ERP insight types (d2049d8e) by Manoel
+- feat(analytics): wire up new compute modules in dispatcher and router (d2a421fb) by Manoel
+- fix(analytics): add limit to transaction_type case and fix total computation in breakdown query (f053ffc4) by Manoel
+- feat(analytics): add breakdown compute module (ff3eb0cd) by Manoel
+- feat(analytics): add KPI compute module for transaction aggregation (332b1aaa) by Manoel
+- feat(analytics): add time series compute module (01e173ac) by Manoel
+- feat(analytics): replace event-based types with ERP metric types (kpi/time_series/breakdown) (1ce08048) by Manoel
+- feat(tags): add table/card view switch (952e4735) by Manoel
+- feat(bank-accounts): add table/card view switch (1dbc684b) by Manoel
+- feat(transactions): add table/card view switch (63103e9b) by Manoel
+- feat(categories): add table/card view switch (6cc7b95e) by Manoel
+- feat(default-header): add viewSwitch slot to actions area (4c8261ce) by Manoel
+- feat(view-switch): add ViewSwitchDropdown component (69cc4214) by Manoel
+- fix(view-switch): guard against empty views array and stale localStorage values (d5559ca8) by Manoel
+- feat(view-switch): add useViewSwitch hook with localStorage persistence (aa669e7f) by Manoel
+- feat(sidebar): hide project/org switcher sub-menus for free plan users (37816a25) by Manoel
+- feat(onboarding): open modals from quick-start tasks instead of navigating (4cccb92f) by Manoel
+- feat(finance): use SwatchColorPicker in tags and bank-account sheets (4a64af24) by Manoel
+- feat(categories): use credenza, pass color/icon/type, remove expandable rows (1b84c045) by Manoel
+- feat(categories): show icon/color/type in columns, delete in actions (f7a0a89d) by Manoel
+- feat(categories): add color/icon/type fields, use credenza, icon picker (8c905620) by Manoel
+- feat(transactions): use credenza, date picker filters, remove expandable rows (8e037a1e) by Manoel
+- feat(transactions): add name column, move delete to actions (ff166a80) by Manoel
+- feat(transactions): use credenza, date picker, money input, name field, transfer labels (52e978a2) by Manoel
+- feat(ui): add MoneyInput BRL currency component (edcc455f) by Manoel
+- feat(ui): add SwatchColorPicker component (2d32b23d) by Manoel
+- feat(api): add color/icon/type to categories router, name to transactions router (e5c0e532) by Manoel
+- feat(db): add color/icon/type to categories, name to transactions (205cd967) by Manoel
+- chore(onboarding): delete unused project-step and products-step files (b1ffebb7) by Manoel
+- fix(onboarding): move all hooks before early return, use useEffect for edge-case navigation (96e9f058) by Manoel
+- fix(onboarding): move Stepper useMemo before early return to satisfy Rules of Hooks (29c27214) by Manoel
+- feat(onboarding): remove project and products steps from wizard (3d575bb5) by Manoel
+- fix(onboarding): use actual team slug from auth response, fix submit return value (3a8e7585) by Manoel
+- feat(onboarding): workspace step absorbs team creation and onboarding completion (ec7d8f3b) by Manoel
+- feat(onboarding): simplify products step to Personal Finance confirmation (ad253627) by Manoel
+- feat(onboarding): update router for finance module — auto-detect finance tasks (68e09805) by Manoel
+- feat(onboarding): replace CMS task definitions with finance tasks (316e754d) by Manoel
+- feat(analytics): replace CMS default dashboard with finance dashboard (59b385a8) by Manoel
+- feat(analytics): replace CMS default insights with finance insights (fd10c8d9) by Manoel
+- feat(events): replace CMS seed entries with finance events (bb050627) by Manoel
+- chore(events): delete CMS event files (abc5df9e) by Manoel
+- fix(events): update POOL_CATEGORIES for finance domain (a4c2df2a) by Manoel
+- feat(events): add finance category and export, remove CMS exports (6a47091c) by Manoel
+- feat(events): add finance event definitions (02929e4e) by Manoel
+- fix: address code quality issues in finance frontend (categories, tags, transactions) (cbe28824) by Manoel
+- fix(ui): wrap handleCreate in useCallback in tags page (cf4c21be) by Manoel
+- feat(ui): add tags list page and sheet form (6e78b3fc) by Manoel
+- feat(ui): add transactions list page, sheet form, and finance sidebar nav (0b1102f9) by Manoel
+- feat(ui): add categories list page and sheet form (b97c9b1d) by Manoel
+- fix(ui): remove redundant invalidateQueries, fix stale closure in bank-accounts columns (b401f335) by Manoel
+- feat(ui): add bank accounts list page and sheet form (b390560c) by Manoel
+- fix(api): add cross-entity ownership checks, subcategories listByCategoryId, input validation (124e5458) by Manoel
+- fix(api): add ownership checks to subcategories update and remove procedures (71ebaaa2) by Manoel
+- feat(api): add finance module oRPC routers (bank-accounts, categories, subcategories, tags, transactions) (4550b4e9) by Manoel
+- fix(db): fix repository issues (bankAccountHasTransactions, tag filter, update guards, unused import) (e3b50727) by Manoel
+- feat(db): add finance module repositories (1022cf0f) by Manoel
+- fix(db): fix relation names, add unique constraints, add updatedAt to finance schemas (6751dc0c) by Manoel
+- feat(db): add finance module schemas (bank_accounts, categories, subcategories, tags, transactions) (396d470c) by Manoel
+- chore: rename remaining Contentta → Montte in SDK library and onboarding UI (54e4a94d) by Manoel
+- chore: rename Contentta → Montte across all user-facing and functional code (896bf60d) by Manoel
+- fix: resolve broken imports after CMS cleanup (78f03692) by Manoel
+- chore: remove CMS sidebar nav groups, rename to Montte AI (318b5341) by Manoel
+- chore: remove CMS database schemas (content, writer, related-content, experiments, forms, assets) (77214212) by Manoel
+- chore: remove CMS oRPC routers and update router index (42c4d5e8) by Manoel
+- chore: remove CMS routes (content, writers, clusters, experiments, forms, assets) (5e6c7a78) by Manoel
+
+## Merged PRs
+- #825 fix(release-weekly): handle opencode action push + use gh tag creation by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/825
+- #824 fix(release-weekly): avoid VERSION env clash with opencode installer by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/824
+- #823 chore(release): drop libraries pipeline, add weekly CalVer release by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/823
+- #821 refactor(agents): split tools.ts into per-domain files [MON-557] by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/821
+- #820 chore: remove stripe and hyprpay billing integrations by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/820
+- #819 Ai services by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/819
+- #818 feat(onboarding): new-org flow + skip CNPJ by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/818
+- #817 feat: add in-app tour onboarding for services by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/817
+- #816 refactor: extract service actions menu and tabs list components by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/816
+- #815 feat(members): unified members + invitations table with inline invite by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/815
+- #814 Services by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/814
+- #813 Sidebar animation by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/813
+- #812 fix(build): route web/worker builds through nx for dep ordering by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/812
+- #811 feat: classification module migration + @core/sse + @core/ai by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/811
+- #810 feat(modules/billing): modular billing package with contracts, constants, and routers by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/810
+- #809 feat(hyprpay-sdk): add subscriptions, usage, benefits, coupons, customerPortal namespaces (v0.2.0) by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/809
+- #807 feat(services): oRPC routers for meters, benefits, coupons, service prices, subscription items by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/807
+- #806 feat(billing): DBOS durable workflows for billing lifecycle by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/806
+- #805 feat(database): services pricing paradigm — schema & data layer migration (MON-499) by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/805
+- #804 feat(database): add usage_events table and repository by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/804
+- #801 feat(contacts): detail page, neverthrow refactor, row navigation by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/801
+- #800 feat(transactions): Mark transaction as paid/unpaid by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/800
+- #799 Categories refactor by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/799
+- #798 Manoelnetocarvalho03/mon 491 refactordata table import nativo upload mapeamento preview e by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/798
+- #797 Manoelnetocarvalho03/mon 496 featweb redesign sidebar posthog layout collapsible sections by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/797
+- #796 Manoelnetocarvalho03/mon 495 featweb redesign context panel move tab icons to right side by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/796
+- #795 Manoelnetocarvalho03/mon 487 refactordata table inline editing via columnmeta by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/795
+- #794 Manoelnetocarvalho03/mon 481 feattags redesign centros de custo table native posthog by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/794
+- #793 feat(data-table): export nativo CSV e XLSX com suporte a selecionados by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/793
+- #792 feat(data-table): add DataTableBulkActions compound component [MON-484] by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/792
+- #791 Manoelnetocarvalho03/mon 483 refactordata table toolbar base busca chips de filtros by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/791
+- #790 Manoelnetocarvalho03/mon 482 refactordata table foundation datatableroot composicao by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/790
+- #789 Manoelnetocarvalho03/mon 440 featcc ai sugestao automatica de cc via tanstack ai no form by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/789
+- #788 test(tags-repository): add tests for getById method by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/788
+- #787 Manoelnetocarvalho03/mon 439 featcc settings configuracao de cc obrigatorio por espaco by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/787
+- #786 refactor: Remove transaction_tags table and relations by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/786
+- #785 feat(web): Add workflows package dependency by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/785
+- #784 refactor(data-view): extract and implement data table refactor plan by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/784
+- #781 Manoelnetocarvalho03/mon 389 refactorcategories audit ux shadcn bugs padroes e melhorias by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/781
+- #780 Full store by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/780
+- #778 refactor(sidebar): unify sidebar state into single sidebarStore (MON-260) by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/778
+- #777 refactor(store): add createPersistedStore utility and migrate sidebarNavStore by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/777
+- #776 refactor: extract product-specific components from packages/ui into apps/web blocks by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/776
+- #775 perf(store): narrow useStore selectors to prevent unnecessary re-renders by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/775
+- #774 docs(claude): audit and condense CLAUDE.md by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/774
+- #773 docs: Add rationale for using Credenza components by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/773
+- #772 docs(claude): add animation policy to CLAUDE.md by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/772
+- #771 feat(devtools): centralize and expand TanStack devtools by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/771
+- #770 refactor: Use dayjs for date formatting and manipulation by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/770
+- #769 fix(feature-previews): remove stale coming soon entries by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/769
+- #768 fix(hyprpay): correct base URL, RPC path, exclude test files from build by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/768
+- #767 fix(hyprpay): use databaseHooks for customer sync, fix Better Auth crash by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/767
+- #766 Credit card by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/766
+- #765 Manoelnetocarvalho03/mon 234 refactor substituir dialog stacks manuais por usecredenza by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/765
+- #764 Manoelnetocarvalho03/mon 246 featagents auto categorize transactions on creation via llm by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/764
+- #763 Manoelnetocarvalho03/mon 199 ai auto derivar palavras chave de categorias by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/763
+- #762 Manoelnetocarvalho03/mon 239 infraagents remove mastra migrate coreagents to vercel ai by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/762
+- #761 Manoelnetocarvalho03/mon 236 infraworker replace bullmq node cron with dbos durable by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/761
+- #760 Manoelnetocarvalho03/mon 26 contas bancarias importacao criacaoedicao e listagem by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/760
+- #759 feat(data-table): server-side manual modes, column pinning, faceted filters, typed ColumnMeta by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/759
+- #758 Manoelnetocarvalho03/mon 227 tanstack form uso no maximo potencial server validation by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/758
+- #757 Manoelnetocarvalho03/mon 223 tanstack start adocao completa de apis e padroes by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/757
+- #756 Manoelnetocarvalho03/mon 222 tanstack router v1 adocao completa de apis e padroes by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/756
+- #755 Cnpj by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/755
+- #754 Fix libraries by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/754
+- #753 Fix contentta by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/753
+- #752 feat(hyprpay): MON-327 — @montte/hyprpay SDK v0.1 customer lifecycle by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/752
+- #751 feat(cli): TanStack Intent agent skills + @tanstack/vite-config build by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/751
+- #750 feat(transactions): import wizard redesign with PM improvements by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/750
+- #749 chore(tests): remove bloat tests, scope coverage to tested layers by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/749
+- #748 feat(database): migrate from pgvector to ParadeDB by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/748
+- #747 feat(ui): Maskito input masking, credenza fixes and form bug fixes by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/747
+- #746 feat(MON-190): importação de extrato bancário (CSV/XLSX/OFX) by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/746
+- #743 fix(web): standardize empty states, Suspense fallbacks and ErrorBoundary usage by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/743
+- #742 fix(forms): MON-214 fix TanStack Form field component usage pattern by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/742
+- #740 refactor(transactions): migrate DataTable to new controlled API by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/740
+- #739 feat(onboarding): MON-191 organization presets — EMPRESARIAL categories, module config, nav integration by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/739
+- #738 refactor(finance): migrate DataTable to new controlled API by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/738
+- #737 refactor(contacts/credit-cards): migrate DataTable to new controlled API by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/737
+- #736 fix(coverage): report core/* workspace packages in Codecov patch coverage by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/736
+- #735 style: Update code style and configurations by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/735
+- #734 feat(web): migrate inventory DataTable to controlled API by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/734
+- #733 feat(analytics): migrate DataTable to new controlled API and colocate private components by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/733
+- #732 refactor(web): migrate members settings DataTable to new controlled API by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/732
+- #731 fix(feature-preview): preserve enrolled keys across page reloads by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/731
+- #730 feat(settings): add coming soon section to feature previews page by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/730
+- #729 feat(web): add useOrgSlug and useTeamSlug hooks to replace direct useParams calls by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/729
+- #728 docs: rewrite README and CONTRIBUTING — fix brand/stack, add Getting Started by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/728
+- #727 chore(web): extend vitest config from vite config, remove vite-tsconfig-paths workaround by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/727
+- #725 feat: MON-204 implement danger zone deletions, dashboard create, and auth error modal by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/725
+- #724 fix(web): migrate useQuery to useSuspenseQuery by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/724
+- #723 feat(billing): MON-185 — migrar para modelo pay-as-you-go orientado a eventos by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/723
+- #722 fix: Remove as unknown as type casts in production source files by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/722
+- #721 fix(core/agents): replace relative imports with @core/agents/* aliases by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/721
+- #720 fix(routers): replace raw ORPCError with WebAppError (MON-200) by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/720
+- #718 .github/workflows: Migrate workflows to Blacksmith runners by @app/blacksmith-sh — https://github.com/Montte-erp/montte-nx/pull/718
+- #717 fix(sign-up): full-width stepper bars, remove step label, improve password strength UI by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/717
+- #716 fix(web): Replace space-y/x-* with flex+gap-* in auth and dashboard routes by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/716
+- #715 Bank accounts by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/715
+- #714 feat(web): Add public env integration and PostHog setup by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/714

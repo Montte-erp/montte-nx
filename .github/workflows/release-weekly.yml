@@ -1,0 +1,199 @@
+name: Release Weekly
+
+on:
+   schedule:
+      - cron: "0 21 * * 5"
+   workflow_dispatch:
+      inputs:
+         dry_run:
+            description: "Generate notes only, do not create tag/release"
+            required: false
+            type: boolean
+            default: false
+
+permissions:
+   contents: write
+   pull-requests: read
+   id-token: write
+
+jobs:
+   release:
+      runs-on: blacksmith-4vcpu-ubuntu-2404
+      steps:
+         - name: Checkout
+           uses: actions/checkout@v6
+           with:
+              fetch-depth: 0
+              fetch-tags: true
+              persist-credentials: false
+
+         - name: Compute version
+           id: version
+           run: |
+              VERSION=$(date -u '+%Y.%m.%d')
+              TAG="v${VERSION}"
+              echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+              echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+              LAST_TAG=$(git tag --list 'v[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]' --sort=-version:refname | head -n1)
+              if [ -z "$LAST_TAG" ]; then
+                FIRST_COMMIT=$(git rev-list --max-parents=0 HEAD | tail -n1)
+                LAST_TAG="$FIRST_COMMIT"
+              fi
+              echo "last_tag=${LAST_TAG}" >> "$GITHUB_OUTPUT"
+
+              if git rev-parse "$TAG" >/dev/null 2>&1; then
+                echo "Tag $TAG already exists — skipping" >&2
+                echo "skip=true" >> "$GITHUB_OUTPUT"
+              else
+                echo "skip=false" >> "$GITHUB_OUTPUT"
+              fi
+
+         - name: Collect changes since last tag
+           if: steps.version.outputs.skip != 'true'
+           id: changes
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              LAST_TAG: ${{ steps.version.outputs.last_tag }}
+           run: |
+              {
+                echo "## Commits"
+                git log --pretty=format:'- %s (%h) by %an' "${LAST_TAG}..HEAD"
+                echo
+                echo
+                echo "## Merged PRs"
+                gh pr list --state merged --limit 100 --search "merged:>$(git log -1 --format=%cI ${LAST_TAG})" --json number,title,author,labels,url \
+                  --jq '.[] | "- #\(.number) \(.title) by @\(.author.login) — \(.url)"' || true
+              } > changes.md
+              cat changes.md
+
+         - name: Generate release notes via opencode
+           if: steps.version.outputs.skip != 'true'
+           continue-on-error: true
+           uses: anomalyco/opencode/github@latest
+           env:
+              OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+              CHANGES_FILE: changes.md
+              OUTPUT_FILE: RELEASE_NOTES.md
+              RELEASE_VERSION: ${{ steps.version.outputs.version }}
+           with:
+              model: opencode-go/deepseek-v4-flash
+              prompt: |
+                 Você gera release notes semanais do **Montte** (ERP brasileiro, SaaS, pt-BR). Audiência mista: usuários finais (donos de negócio, financeiro, operações) **e** time interno. Texto deve ser legível para os dois — direto, sem jargão desnecessário, sem marketing fluff.
+
+                 ## Entrada
+
+                 Arquivo `$CHANGES_FILE` contém duas seções:
+                 - `## Commits` — saída de `git log` no formato `- <subject> (<sha>) by <autor>`
+                 - `## Merged PRs` — PRs mergeados no GitHub no formato `- #<num> <título> by @<autor> — <url>`
+
+                 Os mesmos trabalhos aparecem nos dois lados (PR + commits do PR). **Use o PR como unidade canônica** quando existir; consolide os commits relacionados nele. Commits soltos sem PR viram itens próprios.
+
+                 ## Saída
+
+                 Escreva em `$OUTPUT_FILE` um Markdown com a estrutura abaixo. Seções vazias devem ser **omitidas inteiras** (não escreva "Nenhuma alteração").
+
+                 ```
+                 # Montte $RELEASE_VERSION
+
+                 <Resumo executivo: 2-4 frases em pt-BR descrevendo o tema da semana. Destaque os 1-3 pontos mais relevantes para usuários — entrega de produto, correção crítica, refatoração estrutural. Sem listar tudo. Tom de comunicado, não de bullet.>
+
+                 ## Destaques
+
+                 <Liste 3-5 itens de maior impacto, em ordem de relevância para o usuário final. Cada destaque é 1 frase explicando o **valor**, não a implementação. Exemplo: "Importação de extratos OFX agora aceita arquivos do Itaú e do Santander." e não "Adiciona parser OFX para bancos brasileiros." Inclua link do PR principal.>
+
+                 ## Mudanças que quebram compatibilidade
+
+                 <Apenas se houver. Liste cada breaking change com: o que mudou, quem é afetado, o que precisa ser feito. Detecte por: títulos com `!` (`feat!:`, `refactor!:`), texto "BREAKING CHANGE", remoção de rotas/campos/endpoints, migrations destrutivas.>
+
+                 ## Novidades
+
+                 <Tudo que é `feat:`. Agrupe por módulo/área quando 3+ itens compartilharem contexto (Faturamento, IA, Contatos, Estoque, Dashboards, Auth, Plataforma). Use `### <Área>` como subtítulo. Se for 1-2 itens, não subdivida.>
+
+                 ## Correções
+
+                 <Tudo que é `fix:`. Mesma regra de agrupamento.>
+
+                 ## Melhorias
+
+                 <`refactor:`, `perf:`, `style:` que tem efeito perceptível ou estrutural. Se for refactor puramente interno sem efeito visível, mande pra "Notas técnicas".>
+
+                 ## Notas técnicas
+
+                 <Para o time interno: refatorações grandes, mudanças de infra, atualizações de dependências relevantes, mudanças em workflows DBOS, schemas, RLS, observabilidade. Pode ser mais técnico aqui. Tom curto.>
+
+                 ## Manutenção
+
+                 <`chore:`, `docs:`, `test:`, `ci:` que não merecem destaque. 1 linha por item, agrupados se repetitivos. Se a lista ficar enorme (15+), resuma: "Atualização de dependências (X PRs)" + lista os PRs principais.>
+
+                 ---
+
+                 **Contribuíram nesta release:** @autor1, @autor2, ... (ordenado por nº de PRs, sem repetições, omita bots)
+                 ```
+
+                 ## Regras por item de lista
+
+                 - Cada item: **1 linha** começando em letra minúscula, descrevendo o que mudou em pt-BR claro.
+                 - Termine com referência: `([#PR](url))` para o PR. Se houver MON-XXX no título/corpo do commit ou PR, adicione `[MON-XXX](https://linear.app/montte/issue/MON-XXX)` antes do link do PR.
+                 - **Não inclua SHAs nem nomes de autores em itens individuais** (autores vão no rodapé).
+                 - **Não inclua** commits de merge (`Merge pull request`, `Merge branch`), commits de versão (`chore(release):`, `v1.2.3`), commits do dependabot/renovate sem efeito (use a linha de resumo).
+                 - Reescreva títulos crípticos em algo entendível. Ex.: `feat(billing): add ttp loop` → "fluxo de cobrança recorrente para clientes em trial".
+                 - **Sem emojis. Sem `simply`/`just`/`apenas`. Sem "We are excited". Sem markdown badges.** Tom: comunicado de produto sério.
+                 - Cada bullet entrega um fato. Se você não sabe o que a mudança faz pelo título, **omita** ou jogue em "Manutenção".
+
+                 ## Detecção de tipo
+
+                 Use o prefixo Conventional Commits no título do PR/commit. Se o título não tiver prefixo, infira pelo conteúdo: PR que adiciona arquivos sob `apps/web/src/routes/` é provavelmente `feat`; mudança em `*.test.ts` puro é `test`; bump de `package.json` é `chore(deps)`.
+
+                 ## Validação final antes de salvar
+
+                 - Resumo executivo está em pt-BR natural, não traduzido literal do inglês?
+                 - Destaques entregam **valor**, não implementação?
+                 - Toda referência MON-* virou link `[MON-XXX](https://linear.app/montte/issue/MON-XXX)`?
+                 - Nenhum item duplicado entre seções (PR e seus commits aparecem 1 vez só)?
+                 - Seções vazias removidas?
+                 - Rodapé de contribuidores ordenado por nº de PRs?
+
+         - name: Verify release notes
+           if: steps.version.outputs.skip != 'true'
+           run: |
+              if [ ! -s RELEASE_NOTES.md ]; then
+                echo "RELEASE_NOTES.md missing or empty — opencode step failed" >&2
+                exit 1
+              fi
+
+         - name: Create tag and GitHub release
+           if: steps.version.outputs.skip != 'true' && inputs.dry_run != true
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              TAG: ${{ steps.version.outputs.tag }}
+           run: |
+              gh release create "$TAG" \
+                --target "$GITHUB_SHA" \
+                --title "Montte ${{ steps.version.outputs.version }}" \
+                --notes-file RELEASE_NOTES.md
+
+         - name: Create Linear release
+           if: steps.version.outputs.skip != 'true' && inputs.dry_run != true
+           env:
+              LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+              VERSION: ${{ steps.version.outputs.version }}
+           run: |
+              NOTES=$(jq -Rs . < RELEASE_NOTES.md)
+              curl -sS -X POST https://api.linear.app/graphql \
+                -H "Authorization: $LINEAR_API_KEY" \
+                -H "Content-Type: application/json" \
+                -d "$(jq -n --arg version "$VERSION" --argjson notes "$NOTES" '{
+                  query: "mutation($input: ReleaseCreateInput!) { releaseCreate(input: $input) { success release { id url } } }",
+                  variables: { input: { name: ("Montte " + $version), description: $notes } }
+                }')" | tee linear-response.json
+              jq -e '.data.releaseCreate.success' linear-response.json
+
+         - name: Upload notes artifact
+           if: steps.version.outputs.skip != 'true'
+           uses: actions/upload-artifact@v4
+           with:
+              name: release-notes-${{ steps.version.outputs.version }}
+              path: |
+                 changes.md
+                 RELEASE_NOTES.md

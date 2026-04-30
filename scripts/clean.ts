@@ -23,7 +23,6 @@ const CLEAN_TARGETS = [
    "apps/*/.tanstack",
    "apps/*/.astro",
    "apps/*/.cache",
-   "libraries/*/dist",
    "packages/*/dist",
    "packages/*/.mastra",
    "packages/*/.cache",
