@@ -2,29 +2,23 @@ import { createHash } from "node:crypto";
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { fromPromise } from "neverthrow";
-import { and, eq, isNull } from "drizzle-orm";
 import { WorkflowError } from "@core/dbos/errors";
-import { categories } from "@core/database/schemas/categories";
-import { tags } from "@core/database/schemas/tags";
-import { transactions } from "@core/database/schemas/transactions";
 import {
    matchByKeywords,
    type KeywordMatchResult,
 } from "@modules/classification/utils";
-import {
-   classifyTransactionsBatch,
-   type ClassifyBatchInput,
-   type ClassifyBatchResult,
-} from "@modules/classification/ai/classify-batch";
-import { classificationSseEvents } from "@modules/classification/sse";
+import type { ClassifyBatchResult } from "@modules/classification/ai/classify-batch";
 import { CLASSIFICATION_QUEUES } from "@modules/classification/constants";
+import { registerWorkflowOnce } from "@modules/classification/workflows/context";
 import {
-   classificationDataSource,
-   getClassificationPosthog,
-   getClassificationPrompts,
-   getClassificationRedis,
-   registerWorkflowOnce,
-} from "./context";
+   emitClassificationEvents,
+   loadClassificationInputs,
+   resolveTagId,
+   runAiClassificationChunk,
+   writeClassifications,
+   type ClassificationWrite,
+   type LoadedTransaction,
+} from "@modules/classification/services/classification";
 
 const AI_CHUNK_SIZE = 20;
 
@@ -33,47 +27,11 @@ export type ClassifyTransactionsBatchInput = {
    transactionIds: string[];
 };
 
-type CategoryRow = {
-   id: string;
-   name: string;
-   keywords: string[] | null;
-   dreGroupId: string | null;
-};
-
-type LoadedInputs = {
-   transactions: {
-      id: string;
-      teamId: string;
-      name: string | null;
-      type: "income" | "expense" | "transfer";
-      contactName: string | null;
-   }[];
-   categories: CategoryRow[];
-   tagByName: Map<string, string>;
-};
-
-type ClassificationWrite = {
-   transactionId: string;
-   categoryId: string;
-   tagId: string | null;
-};
-
 function chunk<T>(items: T[], size: number): T[][] {
-   const chunks: T[][] = [];
-   for (let i = 0; i < items.length; i += size) {
-      chunks.push(items.slice(i, i + size));
-   }
-   return chunks;
-}
-
-function resolveTagId(
-   categoryId: string,
-   categoryById: Map<string, CategoryRow>,
-   tagByName: Map<string, string>,
-): string | null {
-   const category = categoryById.get(categoryId);
-   if (!category?.dreGroupId) return null;
-   return tagByName.get(category.dreGroupId) ?? null;
+   const out: T[][] = [];
+   for (let i = 0; i < items.length; i += size)
+      out.push(items.slice(i, i + size));
+   return out;
 }
 
 async function classifyTransactionsBatchWorkflowFn(
@@ -87,77 +45,10 @@ async function classifyTransactionsBatchWorkflowFn(
       return;
    }
 
-   const loadResult = await fromPromise(
-      DBOS.runStep(
-         () =>
-            classificationDataSource.runTransaction(
-               async (): Promise<LoadedInputs> => {
-                  const tx = classificationDataSource.client;
-
-                  const txRows = await tx.query.transactions.findMany({
-                     where: (
-                        f,
-                        {
-                           and: andFn,
-                           eq: eqFn,
-                           inArray: inArrayFn,
-                           isNull: isNullFn,
-                        },
-                     ) =>
-                        andFn(
-                           eqFn(f.teamId, input.teamId),
-                           inArrayFn(f.id, input.transactionIds),
-                           isNullFn(f.categoryId),
-                           isNullFn(f.suggestedCategoryId),
-                        ),
-                     with: { contact: true },
-                  });
-
-                  const catRows = await tx
-                     .select({
-                        id: categories.id,
-                        name: categories.name,
-                        keywords: categories.keywords,
-                        dreGroupId: categories.dreGroupId,
-                     })
-                     .from(categories)
-                     .where(
-                        and(
-                           eq(categories.teamId, input.teamId),
-                           eq(categories.isArchived, false),
-                        ),
-                     );
-
-                  const tagRows = await tx
-                     .select({ id: tags.id, name: tags.name })
-                     .from(tags)
-                     .where(
-                        and(
-                           eq(tags.teamId, input.teamId),
-                           eq(tags.isArchived, false),
-                        ),
-                     );
-
-                  return {
-                     transactions: txRows.map((row) => ({
-                        id: row.id,
-                        teamId: row.teamId,
-                        name: row.name,
-                        type: row.type,
-                        contactName: row.contact?.name ?? null,
-                     })),
-                     categories: catRows,
-                     tagByName: new Map(tagRows.map((t) => [t.name, t.id])),
-                  };
-               },
-               { name: "load-classification-inputs" },
-            ),
-         { name: "load-classification-inputs" },
-      ),
-      (e) =>
-         WorkflowError.database("Falha ao carregar dados de classificação.", {
-            cause: e,
-         }),
+   const loadResult = await fromPromise(loadClassificationInputs(input), (e) =>
+      WorkflowError.database("Falha ao carregar dados de classificação.", {
+         cause: e,
+      }),
    );
    if (loadResult.isErr()) throw loadResult.error;
    const loaded = loadResult.value;
@@ -170,9 +61,8 @@ async function classifyTransactionsBatchWorkflowFn(
    }
 
    const categoryById = new Map(loaded.categories.map((c) => [c.id, c]));
-
    const namedTransactions = loaded.transactions.filter(
-      (t): t is typeof t & { name: string } => t.name !== null,
+      (t): t is LoadedTransaction & { name: string } => t.name !== null,
    );
 
    const matchResults: KeywordMatchResult[] = matchByKeywords(
@@ -193,37 +83,16 @@ async function classifyTransactionsBatchWorkflowFn(
 
    const aiResults: ClassifyBatchResult[] = [];
    if (unmatched.length > 0 && loaded.categories.length > 0) {
-      const observability = {
-         posthog: getClassificationPosthog(),
-         distinctId: input.teamId,
-      };
-
       const chunks = chunk(unmatched, AI_CHUNK_SIZE);
       for (let i = 0; i < chunks.length; i += 1) {
          const chunkItems = chunks[i];
          if (!chunkItems) continue;
          const chunkResult = await fromPromise(
-            DBOS.runStep(
-               async () => {
-                  const aiInput: ClassifyBatchInput[] = chunkItems
-                     .filter((t) => t.type !== "transfer")
-                     .map((t) => ({
-                        id: t.id,
-                        name: t.name,
-                        type: t.type === "income" ? "income" : "expense",
-                        contactName: t.contactName,
-                     }));
-                  if (aiInput.length === 0) return [];
-                  const ai = await classifyTransactionsBatch(
-                     getClassificationPrompts(),
-                     aiInput,
-                     loaded.categories,
-                     observability,
-                  );
-                  if (ai.isErr()) throw ai.error;
-                  return ai.value;
-               },
-               { name: `ai-classify-chunk-${i + 1}` },
+            runAiClassificationChunk(
+               chunkItems,
+               loaded.categories,
+               input.teamId,
+               i,
             ),
             (e) =>
                WorkflowError.internal(
@@ -259,34 +128,7 @@ async function classifyTransactionsBatchWorkflowFn(
    }
 
    const writeResult = await fromPromise(
-      DBOS.runStep(
-         () =>
-            classificationDataSource.runTransaction(
-               async () => {
-                  const tx = classificationDataSource.client;
-                  for (const write of writes) {
-                     await tx
-                        .update(transactions)
-                        .set({
-                           suggestedCategoryId: write.categoryId,
-                           ...(write.tagId
-                              ? { suggestedTagId: write.tagId }
-                              : {}),
-                        })
-                        .where(
-                           and(
-                              eq(transactions.id, write.transactionId),
-                              eq(transactions.teamId, input.teamId),
-                              isNull(transactions.categoryId),
-                              isNull(transactions.suggestedCategoryId),
-                           ),
-                        );
-                  }
-               },
-               { name: "write-classifications" },
-            ),
-         { name: "write-classifications" },
-      ),
+      writeClassifications(writes, input.teamId),
       (e) =>
          WorkflowError.database("Falha ao gravar classificações.", {
             cause: e,
@@ -295,37 +137,7 @@ async function classifyTransactionsBatchWorkflowFn(
    if (writeResult.isErr()) throw writeResult.error;
 
    const emitResult = await fromPromise(
-      DBOS.runStep(
-         async () => {
-            const redis = getClassificationRedis();
-            const scope: { kind: "team"; id: string } = {
-               kind: "team",
-               id: input.teamId,
-            };
-            await Promise.all(
-               writes.map(async (write) => {
-                  const publish = await classificationSseEvents.publish(
-                     redis,
-                     scope,
-                     {
-                        type: "classification.transaction_classified",
-                        payload: {
-                           transactionId: write.transactionId,
-                           categoryId: write.categoryId,
-                           tagId: write.tagId,
-                        },
-                     },
-                  );
-                  if (publish.isErr()) {
-                     DBOS.logger.warn(
-                        `Failed to publish classification SSE event — tx=${write.transactionId} team=${input.teamId} err=${publish.error.message}`,
-                     );
-                  }
-               }),
-            );
-         },
-         { name: "emit-sse-events" },
-      ),
+      emitClassificationEvents(writes, input.teamId),
       (e) =>
          WorkflowError.internal("Falha ao emitir eventos SSE.", { cause: e }),
    );

@@ -28,6 +28,7 @@ vi.mock("@core/orpc/server", async () =>
 );
 
 import * as categoriesRouter from "../../src/router/categories";
+import * as categoriesBulkRouter from "../../src/router/categories-bulk";
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -226,7 +227,7 @@ describe("categories router", () => {
 
       const ctx = createTestContext(testDb.db, { teamId });
       const result = await call(
-         categoriesRouter.bulkArchive,
+         categoriesBulkRouter.bulkArchive,
          { ids: [a.id, b.id, c.id] },
          { context: ctx },
       );
@@ -250,7 +251,7 @@ describe("categories router", () => {
       const ctx = createTestContext(testDb.db, { teamId });
       await expect(
          call(
-            categoriesRouter.bulkArchive,
+            categoriesBulkRouter.bulkArchive,
             { ids: [a.id, b.id] },
             { context: ctx },
          ),
@@ -266,7 +267,7 @@ describe("categories router", () => {
 
       const ctx = createTestContext(testDb.db, { teamId });
       const result = await call(
-         categoriesRouter.bulkRemove,
+         categoriesBulkRouter.bulkRemove,
          { ids: [a.id, b.id] },
          { context: ctx },
       );
@@ -284,7 +285,7 @@ describe("categories router", () => {
       const ctx = createTestContext(testDb.db, { teamId });
 
       const result = await call(
-         categoriesRouter.importBatch,
+         categoriesBulkRouter.importBatch,
          {
             categories: [
                {
@@ -351,7 +352,7 @@ describe("categories router", () => {
       });
 
       const ctx = createTestContext(testDb.db, { teamId });
-      const result = await call(categoriesRouter.exportAll, undefined, {
+      const result = await call(categoriesBulkRouter.exportAll, undefined, {
          context: ctx,
       });
       expect(result).toHaveLength(2);
