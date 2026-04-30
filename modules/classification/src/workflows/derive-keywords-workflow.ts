@@ -3,9 +3,9 @@ import { fromPromise } from "neverthrow";
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { categories } from "@core/database/schemas/categories";
 import { WorkflowError } from "@core/dbos/errors";
-import { deriveKeywords } from "../ai/derive-keywords";
-import { classificationSseEvents } from "../sse";
-import { CLASSIFICATION_QUEUES } from "../constants";
+import { deriveKeywords } from "@modules/classification/ai/derive-keywords";
+import { classificationSseEvents } from "@modules/classification/sse";
+import { CLASSIFICATION_QUEUES } from "@modules/classification/constants";
 import {
    classificationDataSource,
    createEnqueuer,

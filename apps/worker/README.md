@@ -6,7 +6,6 @@ Processo worker standalone responsável por executar workflows DBOS em backgroun
 
 - Processa filas DBOS nativas (`workflow:categorize`, `workflow:derive-keywords`) — sem loop de consumo, DBOS gerencia automaticamente
 - Executa workflows de categorização de transações e derivação de keywords
-- Roda o cron de backfill de keywords (`0 3 * * *`)
 - Envia logs e telemetria para PostHog via OTel
 
 ## Separação do processo web

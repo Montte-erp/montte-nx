@@ -7,6 +7,7 @@ import * as apiKeysRouter from "./api-keys";
 import * as bankAccountsRouter from "./bank-accounts";
 import * as billingRouter from "@modules/billing/router/billing";
 import * as categoriesRouter from "@modules/classification/router/categories";
+import * as categoriesBulkRouter from "@modules/classification/router/categories-bulk";
 import * as contactSettingsRouter from "./contact-settings";
 import * as contactsRouter from "@modules/billing/router/contacts";
 import * as couponsRouter from "@modules/billing/router/coupons";
@@ -40,6 +41,7 @@ export default {
    billing: billingRouter,
    creditCards: creditCardsRouter,
    categories: categoriesRouter,
+   categoriesBulk: categoriesBulkRouter,
    contactSettings: contactSettingsRouter,
    contacts: contactsRouter,
    coupons: couponsRouter,

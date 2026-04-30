@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
    createCategorySchema,
    updateCategorySchema,
-} from "../../src/contracts/categories";
+} from "@core/database/schemas/categories";
 
 // =============================================================================
 // Helpers

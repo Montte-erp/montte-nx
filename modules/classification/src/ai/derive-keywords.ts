@@ -1,9 +1,10 @@
 import { fromPromise } from "neverthrow";
 import { chat } from "@tanstack/ai";
 import { z } from "zod";
+import { categorySchema } from "@core/database/schemas/categories";
 import { AppError } from "@core/logging/errors";
 import type { Prompts } from "@core/posthog/server";
-import { CLASSIFICATION_PROMPTS } from "../constants";
+import { CLASSIFICATION_PROMPTS } from "@modules/classification/constants";
 import { proModel } from "@core/ai/models";
 import {
    type AiObservabilityContext,
@@ -13,11 +14,9 @@ import {
 const KEYWORDS_MIN = 5;
 const KEYWORDS_MAX = 15;
 
-export const deriveKeywordsInputSchema = z.object({
-   name: z.string(),
-   description: z.string().nullish(),
-   siblingKeywords: z.array(z.string()).optional(),
-});
+export const deriveKeywordsInputSchema = categorySchema
+   .pick({ name: true, description: true })
+   .extend({ siblingKeywords: z.array(z.string()).optional() });
 
 export type DeriveKeywordsInput = z.infer<typeof deriveKeywordsInputSchema>;
 

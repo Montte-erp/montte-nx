@@ -35,7 +35,7 @@ await setupBillingWorkflows({
    resendClient,
    workerConcurrency: 10,
 });
-const classification = await setupClassificationWorkflows({
+await setupClassificationWorkflows({
    redis,
    posthog,
    prompts: promptsClient,
@@ -50,9 +50,8 @@ DBOS.setConfig({
 });
 
 DBOS.launch()
-   .then(async () => {
+   .then(() => {
       logger.info("DBOS runtime started");
-      await classification.applySchedules();
    })
    .catch((err: unknown) => {
       logger.error({ err }, "DBOS launch failed");

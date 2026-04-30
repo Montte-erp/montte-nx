@@ -6,7 +6,7 @@ import * as schema from "@core/database/schema";
 import { env } from "@core/environment/worker";
 import type { Redis } from "@core/redis/connection";
 import type { PostHog, Prompts } from "@core/posthog/server";
-import { CLASSIFICATION_QUEUES } from "../constants";
+import { CLASSIFICATION_QUEUES } from "@modules/classification/constants";
 
 export { createEnqueuer, registerWorkflowOnce } from "@core/dbos/factory";
 

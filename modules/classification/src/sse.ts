@@ -12,9 +12,6 @@ const classificationEventDefinitions = {
       categoryName: z.string(),
       count: z.number().int().nonnegative(),
    }),
-   "classification.keywords_backfilled": z.object({
-      processed: z.number().int().nonnegative(),
-   }),
 } as const;
 
 export const classificationSseEvents = defineSseEvents(

@@ -66,13 +66,6 @@ const knownEventSchema = z.discriminatedUnion("type", [
          count: z.number().int().nonnegative(),
       }),
    }),
-   z.object({
-      type: z.literal("classification.keywords_backfilled"),
-      payload: z.object({
-         entity: z.enum(["category", "tag"]),
-         processed: z.number().int().nonnegative(),
-      }),
-   }),
 ]);
 
 type KnownEvent = z.infer<typeof knownEventSchema>;
@@ -117,11 +110,6 @@ function eventToToast(event: KnownEvent): ToastSpec | null {
          return {
             kind: "success",
             message: `Palavras-chave atualizadas em "${event.payload.entityName}" (${event.payload.count}).`,
-         };
-      case "classification.keywords_backfilled":
-         return {
-            kind: "success",
-            message: `Backfill de palavras-chave concluído — ${event.payload.processed} ${event.payload.entity === "category" ? "categorias" : "centros de custo"}.`,
          };
    }
 }
