@@ -25,10 +25,9 @@ import {
 } from "@modules/agents/messages";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
-import type { RubiScopeId } from "./rubi-chat-store";
+import { useRubiChat, type RubiScopeId } from "./rubi-chat-store";
 import { RubiMascotIcon } from "./rubi-mascot-icon";
 import { ToolCallCard } from "./tool-call-card";
-import { useRubiChat } from "./use-rubi-chat";
 
 interface Scope {
    id: RubiScopeId;
