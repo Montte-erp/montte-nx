@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { and, asc, eq, ilike, inArray, sql } from "drizzle-orm";
+import { and, eq, ilike, inArray, sql } from "drizzle-orm";
 import { err, fromPromise, ok } from "neverthrow";
 import { z } from "zod";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
@@ -26,10 +26,12 @@ export const create = protectedProcedure
    .input(createCreditCardSchema)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
-         context.db
-            .insert(creditCards)
-            .values({ ...input, teamId: context.teamId })
-            .returning(),
+         context.db.transaction(async (tx) =>
+            tx
+               .insert(creditCards)
+               .values({ ...input, teamId: context.teamId })
+               .returning(),
+         ),
          () => WebAppError.internal("Falha ao criar cartão de crédito."),
       );
       if (result.isErr()) throw result.error;
@@ -52,13 +54,12 @@ export const getAll = protectedProcedure
 
       const result = await fromPromise(
          Promise.all([
-            context.db
-               .select()
-               .from(creditCards)
-               .where(where)
-               .orderBy(asc(creditCards.name))
-               .limit(pageSize)
-               .offset(offset),
+            context.db.query.creditCards.findMany({
+               where: () => where,
+               orderBy: (f, { asc }) => [asc(f.name)],
+               limit: pageSize,
+               offset,
+            }),
             context.db
                .select({ count: sql<number>`cast(count(*) as int)` })
                .from(creditCards)
@@ -90,11 +91,13 @@ export const update = protectedProcedure
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
       const result = await fromPromise(
-         context.db
-            .update(creditCards)
-            .set({ ...data, updatedAt: dayjs().toDate() })
-            .where(eq(creditCards.id, id))
-            .returning(),
+         context.db.transaction(async (tx) =>
+            tx
+               .update(creditCards)
+               .set({ ...data, updatedAt: dayjs().toDate() })
+               .where(eq(creditCards.id, id))
+               .returning(),
+         ),
          () => WebAppError.internal("Falha ao atualizar cartão de crédito."),
       );
       if (result.isErr()) throw result.error;
@@ -126,7 +129,9 @@ export const remove = protectedProcedure
       if (open.isErr()) throw open.error;
 
       const deleted = await fromPromise(
-         context.db.delete(creditCards).where(eq(creditCards.id, input.id)),
+         context.db.transaction(async (tx) =>
+            tx.delete(creditCards).where(eq(creditCards.id, input.id)),
+         ),
          () => WebAppError.internal("Falha ao excluir cartão de crédito."),
       );
       if (deleted.isErr()) throw deleted.error;
@@ -176,9 +181,9 @@ export const bulkRemove = protectedProcedure
       }
 
       const deleted = await fromPromise(
-         context.db
-            .delete(creditCards)
-            .where(inArray(creditCards.id, input.ids)),
+         context.db.transaction(async (tx) =>
+            tx.delete(creditCards).where(inArray(creditCards.id, input.ids)),
+         ),
          () => WebAppError.internal("Falha ao excluir cartões."),
       );
       if (deleted.isErr()) throw deleted.error;
@@ -251,9 +256,12 @@ export const bulkCreate = protectedProcedure
       }));
 
       const result = await fromPromise(
-         context.db.insert(creditCards).values(rows).returning({
-            id: creditCards.id,
-         }),
+         context.db.transaction(async (tx) =>
+            tx
+               .insert(creditCards)
+               .values(rows)
+               .returning({ id: creditCards.id }),
+         ),
          () => WebAppError.internal("Falha ao importar cartões."),
       );
       if (result.isErr()) throw result.error;

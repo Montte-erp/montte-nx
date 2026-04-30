@@ -15,7 +15,7 @@ Workflows can publish events (key-value pairs) with `DBOS.setEvent`. Other code 
 let progress = 0; // Global variable - not durable!
 
 async function processDataFn() {
-  progress = 50; // Not persisted, lost on restart
+   progress = 50; // Not persisted, lost on restart
 }
 const processData = DBOS.registerWorkflow(processDataFn);
 ```
@@ -24,12 +24,12 @@ const processData = DBOS.registerWorkflow(processDataFn);
 
 ```typescript
 async function processDataFn() {
-  await DBOS.setEvent("status", "processing");
-  await DBOS.runStep(stepOne, { name: "stepOne" });
-  await DBOS.setEvent("progress", 50);
-  await DBOS.runStep(stepTwo, { name: "stepTwo" });
-  await DBOS.setEvent("progress", 100);
-  await DBOS.setEvent("status", "complete");
+   await DBOS.setEvent("status", "processing");
+   await DBOS.runStep(stepOne, { name: "stepOne" });
+   await DBOS.setEvent("progress", 50);
+   await DBOS.runStep(stepTwo, { name: "stepTwo" });
+   await DBOS.setEvent("progress", 100);
+   await DBOS.setEvent("status", "complete");
 }
 const processData = DBOS.registerWorkflow(processDataFn);
 
@@ -43,9 +43,11 @@ Events are useful for interactive workflows. For example, a checkout workflow ca
 
 ```typescript
 async function checkoutWorkflowFn() {
-  const paymentURL = await DBOS.runStep(createPayment, { name: "createPayment" });
-  await DBOS.setEvent("paymentURL", paymentURL);
-  // Continue processing...
+   const paymentURL = await DBOS.runStep(createPayment, {
+      name: "createPayment",
+   });
+   await DBOS.setEvent("paymentURL", paymentURL);
+   // Continue processing...
 }
 const checkoutWorkflow = DBOS.registerWorkflow(checkoutWorkflowFn);
 

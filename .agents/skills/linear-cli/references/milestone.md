@@ -13,14 +13,14 @@ Description:
 
 Options:
 
-  -h, --help           - Show this help.                      
-  --workspace  <slug>  - Target workspace (uses credentials)  
+  -h, --help           - Show this help.
+  --workspace  <slug>  - Target workspace (uses credentials)
 
 Commands:
 
-  list                    - List milestones for a project       
-  view, v  <milestoneId>  - View milestone details              
-  create                  - Create a new project milestone      
+  list                    - List milestones for a project
+  view, v  <milestoneId>  - View milestone details
+  create                  - Create a new project milestone
   update   <id>           - Update an existing project milestone
   delete   <id>           - Delete a project milestone
 ```
@@ -40,8 +40,8 @@ Description:
 
 Options:
 
-  -h, --help                - Show this help.                                
-  --workspace  <slug>       - Target workspace (uses credentials)            
+  -h, --help                - Show this help.
+  --workspace  <slug>       - Target workspace (uses credentials)
   --project    <projectId>  - Project ID                           (required)
 ```
 
@@ -58,7 +58,7 @@ Description:
 
 Options:
 
-  -h, --help           - Show this help.                      
+  -h, --help           - Show this help.
   --workspace  <slug>  - Target workspace (uses credentials)
 ```
 
@@ -75,11 +75,11 @@ Description:
 
 Options:
 
-  -h, --help                    - Show this help.                                
-  --workspace    <slug>         - Target workspace (uses credentials)            
+  -h, --help                    - Show this help.
+  --workspace    <slug>         - Target workspace (uses credentials)
   --project      <projectId>    - Project ID                           (required)
   --name         <name>         - Milestone name                       (required)
-  --description  <description>  - Milestone description                          
+  --description  <description>  - Milestone description
   --target-date  <date>         - Target date (YYYY-MM-DD)
 ```
 
@@ -96,12 +96,12 @@ Description:
 
 Options:
 
-  -h, --help                    - Show this help.                          
-  --workspace    <slug>         - Target workspace (uses credentials)      
-  --name         <name>         - Milestone name                           
-  --description  <description>  - Milestone description                    
-  --target-date  <date>         - Target date (YYYY-MM-DD)                 
-  --sort-order   <value>        - Sort order relative to other milestones  
+  -h, --help                    - Show this help.
+  --workspace    <slug>         - Target workspace (uses credentials)
+  --name         <name>         - Milestone name
+  --description  <description>  - Milestone description
+  --target-date  <date>         - Target date (YYYY-MM-DD)
+  --sort-order   <value>        - Sort order relative to other milestones
   --project      <projectId>    - Move to a different project
 ```
 
@@ -118,7 +118,7 @@ Description:
 
 Options:
 
-  -h, --help           - Show this help.                      
-  --workspace  <slug>  - Target workspace (uses credentials)  
+  -h, --help           - Show this help.
+  --workspace  <slug>  - Target workspace (uses credentials)
   -f, --force          - Skip confirmation prompt
 ```

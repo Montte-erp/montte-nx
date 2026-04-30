@@ -22,14 +22,16 @@ export const upsertSettings = protectedProcedure
    .input(financialConfigInsertSchema)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
-         context.db
-            .insert(financialConfig)
-            .values({ teamId: context.teamId, ...input })
-            .onConflictDoUpdate({
-               target: financialConfig.teamId,
-               set: { ...input, updatedAt: dayjs().toDate() },
-            })
-            .returning(),
+         context.db.transaction(async (tx) =>
+            tx
+               .insert(financialConfig)
+               .values({ teamId: context.teamId, ...input })
+               .onConflictDoUpdate({
+                  target: financialConfig.teamId,
+                  set: { ...input, updatedAt: dayjs().toDate() },
+               })
+               .returning(),
+         ),
          () =>
             WebAppError.internal("Falha ao salvar configurações financeiras."),
       );

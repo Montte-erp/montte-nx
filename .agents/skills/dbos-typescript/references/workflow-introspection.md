@@ -22,11 +22,11 @@ await DBOS.startWorkflow(processTask)("data");
 ```typescript
 // List workflows by status
 const erroredWorkflows = await DBOS.listWorkflows({
-  status: "ERROR",
+   status: "ERROR",
 });
 
 for (const wf of erroredWorkflows) {
-  console.log(`Workflow ${wf.workflowID}: ${wf.workflowName} - ${wf.error}`);
+   console.log(`Workflow ${wf.workflowID}: ${wf.workflowName} - ${wf.error}`);
 }
 ```
 
@@ -34,11 +34,11 @@ List workflows with multiple filters:
 
 ```typescript
 const workflows = await DBOS.listWorkflows({
-  workflowName: "processOrder",
-  status: "SUCCESS",
-  limit: 100,
-  sortDesc: true,
-  loadOutput: true,
+   workflowName: "processOrder",
+   status: "SUCCESS",
+   limit: 100,
+   sortDesc: true,
+   loadOutput: true,
 });
 ```
 
@@ -46,7 +46,7 @@ List enqueued workflows:
 
 ```typescript
 const queued = await DBOS.listQueuedWorkflows({
-  queueName: "task_queue",
+   queueName: "task_queue",
 });
 ```
 
@@ -55,11 +55,11 @@ List workflow steps:
 ```typescript
 const steps = await DBOS.listWorkflowSteps(workflowID);
 if (steps) {
-  for (const step of steps) {
-    console.log(`Step ${step.functionID}: ${step.name}`);
-    if (step.error) console.log(`  Error: ${step.error}`);
-    if (step.childWorkflowID) console.log(`  Child: ${step.childWorkflowID}`);
-  }
+   for (const step of steps) {
+      console.log(`Step ${step.functionID}: ${step.name}`);
+      if (step.error) console.log(`  Error: ${step.error}`);
+      if (step.childWorkflowID) console.log(`  Child: ${step.childWorkflowID}`);
+   }
 }
 ```
 

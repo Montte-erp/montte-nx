@@ -1,9 +1,7 @@
 import dayjs from "dayjs";
-import { and, eq, or, sql } from "drizzle-orm";
+import { eq, or, sql } from "drizzle-orm";
 import { err, fromPromise, ok } from "neverthrow";
-import { add, of, subtract, toDecimal } from "@f-o-t/money";
 import { z } from "zod";
-import type { DatabaseInstance } from "@core/database/client";
 import {
    bankAccounts,
    createBankAccountSchema,
@@ -13,75 +11,20 @@ import { transactions } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import { requireBankAccount } from "@modules/finance/router/middlewares";
+import { computeBankAccountBalance } from "@modules/finance/services/bank-account-balance";
 
 const idSchema = z.object({ id: z.string().uuid() });
-
-async function computeBalance(
-   db: DatabaseInstance,
-   accountId: string,
-   initialBalance: string,
-) {
-   const currency = "BRL";
-
-   const [row] = await db
-      .select({
-         income: sql<string>`COALESCE(SUM(CASE WHEN type = 'income' THEN amount::numeric ELSE 0 END), 0)`,
-         expense: sql<string>`COALESCE(SUM(CASE WHEN type = 'expense' THEN amount::numeric ELSE 0 END), 0)`,
-         transferOut: sql<string>`COALESCE(SUM(CASE WHEN type = 'transfer' THEN amount::numeric ELSE 0 END), 0)`,
-      })
-      .from(transactions)
-      .where(eq(transactions.bankAccountId, accountId));
-
-   const [transferInRow] = await db
-      .select({
-         transferIn: sql<string>`COALESCE(SUM(amount::numeric), 0)`,
-      })
-      .from(transactions)
-      .where(
-         and(
-            eq(transactions.destinationBankAccountId, accountId),
-            eq(transactions.type, "transfer"),
-         ),
-      );
-
-   let balance = of(initialBalance, currency);
-   balance = add(balance, of(row?.income ?? "0", currency));
-   balance = subtract(balance, of(row?.expense ?? "0", currency));
-   balance = subtract(balance, of(row?.transferOut ?? "0", currency));
-   balance = add(balance, of(transferInRow?.transferIn ?? "0", currency));
-
-   const [pendingRow] = await db
-      .select({
-         pendingReceivable: sql<string>`COALESCE(SUM(CASE WHEN type = 'income' AND status = 'pending' THEN amount::numeric ELSE 0 END), 0)`,
-         pendingPayable: sql<string>`COALESCE(SUM(CASE WHEN type = 'expense' AND status = 'pending' THEN amount::numeric ELSE 0 END), 0)`,
-      })
-      .from(transactions)
-      .where(eq(transactions.bankAccountId, accountId));
-
-   let projected = balance;
-   projected = add(
-      projected,
-      of(pendingRow?.pendingReceivable ?? "0", currency),
-   );
-   projected = subtract(
-      projected,
-      of(pendingRow?.pendingPayable ?? "0", currency),
-   );
-
-   return {
-      currentBalance: toDecimal(balance),
-      projectedBalance: toDecimal(projected),
-   };
-}
 
 export const create = protectedProcedure
    .input(createBankAccountSchema)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
-         context.db
-            .insert(bankAccounts)
-            .values({ ...input, teamId: context.teamId })
-            .returning(),
+         context.db.transaction(async (tx) =>
+            tx
+               .insert(bankAccounts)
+               .values({ ...input, teamId: context.teamId })
+               .returning(),
+         ),
          () => WebAppError.internal("Falha ao criar conta bancária."),
       );
       if (result.isErr()) throw result.error;
@@ -104,7 +47,7 @@ export const getAll = protectedProcedure.handler(async ({ context }) => {
 
    return Promise.all(
       result.value.map(async (account) => {
-         const balances = await computeBalance(
+         const balances = await computeBankAccountBalance(
             context.db,
             account.id,
             account.initialBalance,
@@ -118,7 +61,7 @@ export const getById = protectedProcedure
    .input(idSchema)
    .use(requireBankAccount, (input) => input.id)
    .handler(async ({ context }) => {
-      const balances = await computeBalance(
+      const balances = await computeBankAccountBalance(
          context.db,
          context.bankAccount.id,
          context.bankAccount.initialBalance,
@@ -132,11 +75,13 @@ export const update = protectedProcedure
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
       const result = await fromPromise(
-         context.db
-            .update(bankAccounts)
-            .set({ ...data, updatedAt: dayjs().toDate() })
-            .where(eq(bankAccounts.id, id))
-            .returning(),
+         context.db.transaction(async (tx) =>
+            tx
+               .update(bankAccounts)
+               .set({ ...data, updatedAt: dayjs().toDate() })
+               .where(eq(bankAccounts.id, id))
+               .returning(),
+         ),
          () => WebAppError.internal("Falha ao atualizar conta bancária."),
       );
       if (result.isErr()) throw result.error;
@@ -176,7 +121,9 @@ export const remove = protectedProcedure
       if (usage.isErr()) throw usage.error;
 
       const deleted = await fromPromise(
-         context.db.delete(bankAccounts).where(eq(bankAccounts.id, input.id)),
+         context.db.transaction(async (tx) =>
+            tx.delete(bankAccounts).where(eq(bankAccounts.id, input.id)),
+         ),
          () => WebAppError.internal("Falha ao excluir conta bancária."),
       );
       if (deleted.isErr()) throw deleted.error;
@@ -191,12 +138,14 @@ export const bulkCreate = protectedProcedure
    )
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
-         context.db
-            .insert(bankAccounts)
-            .values(
-               input.accounts.map((a) => ({ ...a, teamId: context.teamId })),
-            )
-            .returning(),
+         context.db.transaction(async (tx) =>
+            tx
+               .insert(bankAccounts)
+               .values(
+                  input.accounts.map((a) => ({ ...a, teamId: context.teamId })),
+               )
+               .returning(),
+         ),
          () => WebAppError.internal("Falha ao importar contas bancárias."),
       );
       if (result.isErr()) throw result.error;

@@ -13,9 +13,9 @@ Set `applicationVersion` in configuration to tag workflows with a version. DBOS 
 
 ```typescript
 DBOS.setConfig({
-  name: "my-app",
-  systemDatabaseUrl: process.env.DBOS_SYSTEM_DATABASE_URL,
-  // No version set - all workflows recovered regardless of code version
+   name: "my-app",
+   systemDatabaseUrl: process.env.DBOS_SYSTEM_DATABASE_URL,
+   // No version set - all workflows recovered regardless of code version
 });
 ```
 
@@ -23,9 +23,9 @@ DBOS.setConfig({
 
 ```typescript
 DBOS.setConfig({
-  name: "my-app",
-  systemDatabaseUrl: process.env.DBOS_SYSTEM_DATABASE_URL,
-  applicationVersion: "2.0.0",
+   name: "my-app",
+   systemDatabaseUrl: process.env.DBOS_SYSTEM_DATABASE_URL,
+   applicationVersion: "2.0.0",
 });
 ```
 
@@ -38,8 +38,8 @@ Use `DBOS.getLatestApplicationVersion` to route enqueued work to the latest vers
 ```typescript
 const latestVersion = await DBOS.getLatestApplicationVersion();
 const handle = await DBOS.startWorkflow(myWorkflow, {
-  queueName: "my_queue",
-  enqueueOptions: { applicationVersion: latestVersion.versionName },
+   queueName: "my_queue",
+   enqueueOptions: { applicationVersion: latestVersion.versionName },
 })(arg1, arg2);
 ```
 
@@ -49,11 +49,11 @@ Scheduled workflows are automatically enqueued to the latest version.
 
 ```typescript
 const active = await DBOS.listWorkflows({
-  applicationVersion: "1.0.0",
-  status: ["ENQUEUED", "PENDING"],
+   applicationVersion: "1.0.0",
+   status: ["ENQUEUED", "PENDING"],
 });
 if (active.length === 0) {
-  console.log("Safe to retire version 1.0.0");
+   console.log("Safe to retire version 1.0.0");
 }
 ```
 
@@ -73,11 +73,9 @@ await DBOS.setLatestApplicationVersion("1.0.0");
 ### Forking Workflows to a New Version
 
 ```typescript
-const handle = await DBOS.forkWorkflow<string>(
-  workflowID,
-  failedStepID,
-  { applicationVersion: "2.0.0" }
-);
+const handle = await DBOS.forkWorkflow<string>(workflowID, failedStepID, {
+   applicationVersion: "2.0.0",
+});
 ```
 
 Reference: [Versioning](https://docs.dbos.dev/typescript/tutorials/upgrading-workflows#versioning)

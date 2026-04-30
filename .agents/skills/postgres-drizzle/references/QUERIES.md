@@ -10,32 +10,32 @@ Comprehensive reference for querying PostgreSQL with Drizzle ORM.
 
 ```typescript
 import {
-  eq,           // =
-  ne,           // <>
-  gt,           // >
-  gte,          // >=
-  lt,           // <
-  lte,          // <=
-  like,         // LIKE (case-sensitive)
-  ilike,        // ILIKE (case-insensitive)
-  notLike,
-  notIlike,
-  inArray,      // IN
-  notInArray,   // NOT IN
-  isNull,
-  isNotNull,
-  between,
-  notBetween,
-  and,
-  or,
-  not,
-  exists,
-  notExists,
-  arrayContains,
-  arrayContained,
-  arrayOverlaps,
-  sql,
-} from 'drizzle-orm';
+   eq, // =
+   ne, // <>
+   gt, // >
+   gte, // >=
+   lt, // <
+   lte, // <=
+   like, // LIKE (case-sensitive)
+   ilike, // ILIKE (case-insensitive)
+   notLike,
+   notIlike,
+   inArray, // IN
+   notInArray, // NOT IN
+   isNull,
+   isNotNull,
+   between,
+   notBetween,
+   and,
+   or,
+   not,
+   exists,
+   notExists,
+   arrayContains,
+   arrayContained,
+   arrayOverlaps,
+   sql,
+} from "drizzle-orm";
 ```
 
 ---
@@ -49,56 +49,50 @@ import {
 const allUsers = await db.select().from(users);
 
 // Specific columns
-const emails = await db.select({
-  id: users.id,
-  email: users.email
-}).from(users);
+const emails = await db
+   .select({
+      id: users.id,
+      email: users.email,
+   })
+   .from(users);
 
 // With alias
-const result = await db.select({
-  identifier: users.id,
-  mail: users.email,
-}).from(users);
+const result = await db
+   .select({
+      identifier: users.id,
+      mail: users.email,
+   })
+   .from(users);
 ```
 
 ### Where Clause
 
 ```typescript
 // Single condition
-const user = await db
-  .select()
-  .from(users)
-  .where(eq(users.id, userId));
+const user = await db.select().from(users).where(eq(users.id, userId));
 
 // Multiple conditions (AND)
 const activeAdmins = await db
-  .select()
-  .from(users)
-  .where(and(
-    eq(users.status, 'active'),
-    eq(users.role, 'admin'),
-  ));
+   .select()
+   .from(users)
+   .where(and(eq(users.status, "active"), eq(users.role, "admin")));
 
 // OR conditions
 const flaggedUsers = await db
-  .select()
-  .from(users)
-  .where(or(
-    eq(users.status, 'suspended'),
-    gt(users.warningCount, 3),
-  ));
+   .select()
+   .from(users)
+   .where(or(eq(users.status, "suspended"), gt(users.warningCount, 3)));
 
 // Complex nested conditions
 const result = await db
-  .select()
-  .from(users)
-  .where(and(
-    eq(users.status, 'active'),
-    or(
-      eq(users.role, 'admin'),
-      gt(users.score, 100),
-    ),
-  ));
+   .select()
+   .from(users)
+   .where(
+      and(
+         eq(users.status, "active"),
+         or(eq(users.role, "admin"), gt(users.score, 100)),
+      ),
+   );
 ```
 
 ### Comparison Operators
@@ -151,31 +145,29 @@ Build dynamic queries by passing `undefined` to skip conditions:
 
 ```typescript
 interface Filters {
-  search?: string;
-  categoryId?: string;
-  minPrice?: number;
-  maxPrice?: number;
+   search?: string;
+   categoryId?: string;
+   minPrice?: number;
+   maxPrice?: number;
 }
 
 async function getPosts(filters: Filters) {
-  return db
-    .select()
-    .from(posts)
-    .where(and(
-      eq(posts.published, true),
-      filters.search
-        ? ilike(posts.title, `%${filters.search}%`)
-        : undefined,
-      filters.categoryId
-        ? eq(posts.categoryId, filters.categoryId)
-        : undefined,
-      filters.minPrice
-        ? gte(posts.price, filters.minPrice)
-        : undefined,
-      filters.maxPrice
-        ? lte(posts.price, filters.maxPrice)
-        : undefined,
-    ));
+   return db
+      .select()
+      .from(posts)
+      .where(
+         and(
+            eq(posts.published, true),
+            filters.search
+               ? ilike(posts.title, `%${filters.search}%`)
+               : undefined,
+            filters.categoryId
+               ? eq(posts.categoryId, filters.categoryId)
+               : undefined,
+            filters.minPrice ? gte(posts.price, filters.minPrice) : undefined,
+            filters.maxPrice ? lte(posts.price, filters.maxPrice) : undefined,
+         ),
+      );
 }
 ```
 
@@ -209,20 +201,20 @@ const sorted = await db
 ```typescript
 // Basic pagination
 const page1 = await db
-  .select()
-  .from(posts)
-  .orderBy(desc(posts.createdAt))
-  .limit(20)
-  .offset(0);
+   .select()
+   .from(posts)
+   .orderBy(desc(posts.createdAt))
+   .limit(20)
+   .offset(0);
 
 // Page helper
 async function getPage(page: number, pageSize: number = 20) {
-  return db
-    .select()
-    .from(posts)
-    .orderBy(desc(posts.createdAt))
-    .limit(pageSize)
-    .offset((page - 1) * pageSize);
+   return db
+      .select()
+      .from(posts)
+      .orderBy(desc(posts.createdAt))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize);
 }
 ```
 
@@ -230,12 +222,12 @@ async function getPage(page: number, pageSize: number = 20) {
 
 ```typescript
 async function getPostsAfter(cursor?: string, limit = 20) {
-  return db
-    .select()
-    .from(posts)
-    .where(cursor ? lt(posts.id, cursor) : undefined)
-    .orderBy(desc(posts.id))
-    .limit(limit);
+   return db
+      .select()
+      .from(posts)
+      .where(cursor ? lt(posts.id, cursor) : undefined)
+      .orderBy(desc(posts.id))
+      .limit(limit);
 }
 ```
 
@@ -247,9 +239,9 @@ async function getPostsAfter(cursor?: string, limit = 20) {
 
 ```typescript
 const usersWithPosts = await db
-  .select()
-  .from(users)
-  .leftJoin(posts, eq(posts.authorId, users.id));
+   .select()
+   .from(users)
+   .leftJoin(posts, eq(posts.authorId, users.id));
 
 // Result type: { users: User, posts: Post | null }[]
 ```
@@ -258,9 +250,9 @@ const usersWithPosts = await db
 
 ```typescript
 const usersWithPosts = await db
-  .select()
-  .from(users)
-  .innerJoin(posts, eq(posts.authorId, users.id));
+   .select()
+   .from(users)
+   .innerJoin(posts, eq(posts.authorId, users.id));
 
 // Only users who have posts
 ```
@@ -269,46 +261,46 @@ const usersWithPosts = await db
 
 ```typescript
 const postsWithUsers = await db
-  .select()
-  .from(posts)
-  .rightJoin(users, eq(posts.authorId, users.id));
+   .select()
+   .from(posts)
+   .rightJoin(users, eq(posts.authorId, users.id));
 ```
 
 ### Full Join
 
 ```typescript
 const all = await db
-  .select()
-  .from(users)
-  .fullJoin(posts, eq(posts.authorId, users.id));
+   .select()
+   .from(users)
+   .fullJoin(posts, eq(posts.authorId, users.id));
 ```
 
 ### Multiple Joins
 
 ```typescript
 const fullData = await db
-  .select({
-    order: orders,
-    user: users,
-    product: products,
-  })
-  .from(orders)
-  .leftJoin(users, eq(orders.userId, users.id))
-  .leftJoin(products, eq(orders.productId, products.id));
+   .select({
+      order: orders,
+      user: users,
+      product: products,
+   })
+   .from(orders)
+   .leftJoin(users, eq(orders.userId, users.id))
+   .leftJoin(products, eq(orders.productId, products.id));
 ```
 
 ### Join with Selected Columns
 
 ```typescript
 const result = await db
-  .select({
-    userName: users.name,
-    userEmail: users.email,
-    postTitle: posts.title,
-    postDate: posts.createdAt,
-  })
-  .from(users)
-  .innerJoin(posts, eq(posts.authorId, users.id));
+   .select({
+      userName: users.name,
+      userEmail: users.email,
+      postTitle: posts.title,
+      postDate: posts.createdAt,
+   })
+   .from(users)
+   .innerJoin(posts, eq(posts.authorId, users.id));
 ```
 
 ---
@@ -318,85 +310,83 @@ const result = await db
 ### Imports
 
 ```typescript
-import { count, sum, avg, min, max, countDistinct } from 'drizzle-orm';
+import { count, sum, avg, min, max, countDistinct } from "drizzle-orm";
 ```
 
 ### Basic Aggregates
 
 ```typescript
 // Count all rows
-const [{ total }] = await db
-  .select({ total: count() })
-  .from(users);
+const [{ total }] = await db.select({ total: count() }).from(users);
 
 // Count with condition
 const [{ activeCount }] = await db
-  .select({ activeCount: count() })
-  .from(users)
-  .where(eq(users.status, 'active'));
+   .select({ activeCount: count() })
+   .from(users)
+   .where(eq(users.status, "active"));
 
 // Count distinct
 const [{ uniqueAuthors }] = await db
-  .select({ uniqueAuthors: countDistinct(posts.authorId) })
-  .from(posts);
+   .select({ uniqueAuthors: countDistinct(posts.authorId) })
+   .from(posts);
 
 // Sum
 const [{ totalRevenue }] = await db
-  .select({ totalRevenue: sum(orders.amount) })
-  .from(orders);
+   .select({ totalRevenue: sum(orders.amount) })
+   .from(orders);
 
 // Average
 const [{ avgPrice }] = await db
-  .select({ avgPrice: avg(products.price) })
-  .from(products);
+   .select({ avgPrice: avg(products.price) })
+   .from(products);
 
 // Min / Max
 const [{ cheapest, expensive }] = await db
-  .select({
-    cheapest: min(products.price),
-    expensive: max(products.price),
-  })
-  .from(products);
+   .select({
+      cheapest: min(products.price),
+      expensive: max(products.price),
+   })
+   .from(products);
 ```
 
 ### Group By
 
 ```typescript
 const postsByAuthor = await db
-  .select({
-    authorId: posts.authorId,
-    postCount: count(),
-    totalViews: sum(posts.views),
-  })
-  .from(posts)
-  .groupBy(posts.authorId);
+   .select({
+      authorId: posts.authorId,
+      postCount: count(),
+      totalViews: sum(posts.views),
+   })
+   .from(posts)
+   .groupBy(posts.authorId);
 ```
 
 ### Having
 
 ```typescript
 const prolificAuthors = await db
-  .select({
-    authorId: posts.authorId,
-    postCount: count(),
-  })
-  .from(posts)
-  .groupBy(posts.authorId)
-  .having(gt(count(), 10));
+   .select({
+      authorId: posts.authorId,
+      postCount: count(),
+   })
+   .from(posts)
+   .groupBy(posts.authorId)
+   .having(gt(count(), 10));
 ```
 
 ### Group By with Join
 
 ```typescript
 const authorStats = await db
-  .select({
-    authorName: users.name,
-    postCount: count(posts.id),
-    totalViews: sum(posts.views),
-  })
-  .from(users)
-  .leftJoin(posts, eq(posts.authorId, users.id))
-  .groupBy(users.id, users.name);
+   .select({
+      authorName: users.name,
+      postCount: count(posts.id),
+      totalViews: sum(posts.views),
+   })
+   .from(users)
+   .leftJoin(posts, eq(posts.authorId, users.id))
+   .groupBy(users.id, users.name);
 ```
 
 ---
@@ -407,21 +397,21 @@ const authorStats = await db
 
 ```typescript
 const subquery = db
-  .select({
-    authorId: posts.authorId,
-    postCount: sql<number>`count(*)`.as('post_count'),
-  })
-  .from(posts)
-  .groupBy(posts.authorId)
-  .as('author_stats');
+   .select({
+      authorId: posts.authorId,
+      postCount: sql<number>`count(*)`.as("post_count"),
+   })
+   .from(posts)
+   .groupBy(posts.authorId)
+   .as("author_stats");
 
 const usersWithStats = await db
-  .select({
-    user: users,
-    postCount: subquery.postCount,
-  })
-  .from(users)
-  .leftJoin(subquery, eq(users.id, subquery.authorId));
+   .select({
+      user: users,
+      postCount: subquery.postCount,
+   })
+   .from(users)
+   .leftJoin(subquery, eq(users.id, subquery.authorId));
 ```
 
 ### Subquery in WHERE (EXISTS)
@@ -429,37 +419,31 @@ const usersWithStats = await db
 ```typescript
 // Users who have at least one post
 const usersWithPosts = await db
-  .select()
-  .from(users)
-  .where(
-    exists(
-      db.select().from(posts).where(eq(posts.authorId, users.id))
-    )
-  );
+   .select()
+   .from(users)
+   .where(exists(db.select().from(posts).where(eq(posts.authorId, users.id))));
 
 // Users who have NO posts
 const usersWithoutPosts = await db
-  .select()
-  .from(users)
-  .where(
-    notExists(
-      db.select().from(posts).where(eq(posts.authorId, users.id))
-    )
-  );
+   .select()
+   .from(users)
+   .where(
+      notExists(db.select().from(posts).where(eq(posts.authorId, users.id))),
+   );
 ```
 
 ### Scalar Subquery
 
 ```typescript
 const postsWithAuthorCount = await db
-  .select({
-    post: posts,
-    authorPostCount: db
-      .select({ count: count() })
-      .from(posts)
-      .where(eq(posts.authorId, posts.authorId)),
-  })
-  .from(posts);
+   .select({
+      post: posts,
+      authorPostCount: db
+         .select({ count: count() })
+         .from(posts)
+         .where(eq(posts.authorId, posts.authorId)),
+   })
+   .from(posts);
 ```
 
 ---
@@ -470,25 +454,25 @@ const postsWithAuthorCount = await db
 
 ```typescript
 const [newUser] = await db
-  .insert(users)
-  .values({
-    email: 'user@example.com',
-    name: 'John Doe',
-  })
-  .returning();
+   .insert(users)
+   .values({
+      email: "user@example.com",
+      name: "John Doe",
+   })
+   .returning();
 ```
 
 ### Multiple Insert
 
 ```typescript
 const newUsers = await db
-  .insert(users)
-  .values([
-    { email: 'user1@example.com', name: 'User 1' },
-    { email: 'user2@example.com', name: 'User 2' },
-    { email: 'user3@example.com', name: 'User 3' },
-  ])
-  .returning();
+   .insert(users)
+   .values([
+      { email: "user1@example.com", name: "User 1" },
+      { email: "user2@example.com", name: "User 2" },
+      { email: "user3@example.com", name: "User 3" },
+   ])
+   .returning();
 ```
 
 ### Upsert (On Conflict)
@@ -496,39 +480,39 @@ const newUsers = await db
 ```typescript
 // Update on conflict
 await db
-  .insert(users)
-  .values({ email: 'user@example.com', name: 'John' })
-  .onConflictDoUpdate({
-    target: users.email,
-    set: {
-      name: 'John Updated',
-      updatedAt: new Date(),
-    },
-  });
+   .insert(users)
+   .values({ email: "user@example.com", name: "John" })
+   .onConflictDoUpdate({
+      target: users.email,
+      set: {
+         name: "John Updated",
+         updatedAt: new Date(),
+      },
+   });
 
 // Ignore on conflict
 await db
-  .insert(users)
-  .values({ email: 'user@example.com', name: 'John' })
-  .onConflictDoNothing();
+   .insert(users)
+   .values({ email: "user@example.com", name: "John" })
+   .onConflictDoNothing();
 
 // Composite key conflict
 await db
-  .insert(usersToGroups)
-  .values({ userId, groupId })
-  .onConflictDoNothing({
-    target: [usersToGroups.userId, usersToGroups.groupId],
-  });
+   .insert(usersToGroups)
+   .values({ userId, groupId })
+   .onConflictDoNothing({
+      target: [usersToGroups.userId, usersToGroups.groupId],
+   });
 ```
 
 ### Insert from Select
 
 ```typescript
 await db
-  .insert(archivedPosts)
-  .select()
-  .from(posts)
-  .where(lt(posts.createdAt, oneYearAgo));
+   .insert(archivedPosts)
+   .select()
+   .from(posts)
+   .where(lt(posts.createdAt, oneYearAgo));
 ```
 
 ---
@@ -538,23 +522,20 @@ await db
 ### Basic Update
 
 ```typescript
-await db
-  .update(users)
-  .set({ status: 'active' })
-  .where(eq(users.id, userId));
+await db.update(users).set({ status: "active" }).where(eq(users.id, userId));
 ```
 
 ### Update with Returning
 
 ```typescript
 const [updated] = await db
-  .update(users)
-  .set({
-    status: 'active',
-    updatedAt: new Date(),
-  })
-  .where(eq(users.id, userId))
-  .returning();
+   .update(users)
+   .set({
+      status: "active",
+      updatedAt: new Date(),
+   })
+   .where(eq(users.id, userId))
+   .returning();
 ```
 
 ### Increment/Decrement
@@ -562,26 +543,26 @@ const [updated] = await db
 ```typescript
 // Increment
 await db
-  .update(posts)
-  .set({ views: sql`${posts.views} + 1` })
-  .where(eq(posts.id, postId));
+   .update(posts)
+   .set({ views: sql`${posts.views} + 1` })
+   .where(eq(posts.id, postId));
 
 // Decrement with floor
 await db
-  .update(products)
-  .set({ stock: sql`GREATEST(${products.stock} - 1, 0)` })
-  .where(eq(products.id, productId));
+   .update(products)
+   .set({ stock: sql`GREATEST(${products.stock} - 1, 0)` })
+   .where(eq(products.id, productId));
 ```
 
 ### Conditional Update
 
 ```typescript
 await db
-  .update(users)
-  .set({
-    status: sql`CASE WHEN ${users.score} > 100 THEN 'gold' ELSE 'silver' END`,
-  })
-  .where(eq(users.role, 'member'));
+   .update(users)
+   .set({
+      status: sql`CASE WHEN ${users.score} > 100 THEN 'gold' ELSE 'silver' END`,
+   })
+   .where(eq(users.role, "member"));
 ```
 
 ---
@@ -591,27 +572,25 @@ await db
 ### Basic Delete
 
 ```typescript
-await db
-  .delete(users)
-  .where(eq(users.id, userId));
+await db.delete(users).where(eq(users.id, userId));
 ```
 
 ### Delete with Returning
 
 ```typescript
 const [deleted] = await db
-  .delete(users)
-  .where(eq(users.id, userId))
-  .returning();
+   .delete(users)
+   .where(eq(users.id, userId))
+   .returning();
 ```
 
 ### Soft Delete
 
 ```typescript
 await db
-  .update(users)
-  .set({ deletedAt: new Date() })
-  .where(eq(users.id, userId));
+   .update(users)
+   .set({ deletedAt: new Date() })
+   .where(eq(users.id, userId));
 ```
 
 ### Delete with Subquery
@@ -619,13 +598,13 @@ await db
 ```typescript
 // Delete inactive users who have no posts
 await db
-  .delete(users)
-  .where(and(
-    eq(users.status, 'inactive'),
-    notExists(
-      db.select().from(posts).where(eq(posts.authorId, users.id))
-    ),
-  ));
+   .delete(users)
+   .where(
+      and(
+         eq(users.status, "inactive"),
+         notExists(db.select().from(posts).where(eq(posts.authorId, users.id))),
+      ),
+   );
 ```
 
 ---
@@ -677,28 +656,28 @@ Improve performance by preparing queries once:
 ```typescript
 // Prepare
 const getUserById = db
-  .select()
-  .from(users)
-  .where(eq(users.id, sql.placeholder('id')))
-  .prepare('get_user_by_id');
+   .select()
+   .from(users)
+   .where(eq(users.id, sql.placeholder("id")))
+   .prepare("get_user_by_id");
 
 // Execute multiple times
-const user1 = await getUserById.execute({ id: 'uuid-1' });
-const user2 = await getUserById.execute({ id: 'uuid-2' });
+const user1 = await getUserById.execute({ id: "uuid-1" });
+const user2 = await getUserById.execute({ id: "uuid-2" });
 
 // Prepared insert
 const createUser = db
-  .insert(users)
-  .values({
-    email: sql.placeholder('email'),
-    name: sql.placeholder('name'),
-  })
-  .returning()
-  .prepare('create_user');
+   .insert(users)
+   .values({
+      email: sql.placeholder("email"),
+      name: sql.placeholder("name"),
+   })
+   .returning()
+   .prepare("create_user");
 
 const newUser = await createUser.execute({
-  email: 'user@example.com',
-  name: 'John',
+   email: "user@example.com",
+   name: "John",
 });
 ```
 
@@ -710,9 +689,9 @@ const newUser = await createUser.execute({
 
 ```typescript
 const result = await db.transaction(async (tx) => {
-  const [user] = await tx.insert(users).values({ email, name }).returning();
-  await tx.insert(profiles).values({ userId: user.id, bio: '' });
-  return user;
+   const [user] = await tx.insert(users).values({ email, name }).returning();
+   await tx.insert(profiles).values({ userId: user.id, bio: "" });
+   return user;
 });
 ```
 
@@ -755,10 +734,13 @@ await db.transaction(async (tx) => {
 ### Transaction Isolation
 
 ```typescript
-await db.transaction(async (tx) => {
-  // ...
-}, {
-  isolationLevel: 'serializable',  // read committed, repeatable read, serializable
-  accessMode: 'read write',        // read only, read write
-});
+await db.transaction(
+   async (tx) => {
+      // ...
+   },
+   {
+      isolationLevel: "serializable", // read committed, repeatable read, serializable
+      accessMode: "read write", // read only, read write
+   },
+);
 ```

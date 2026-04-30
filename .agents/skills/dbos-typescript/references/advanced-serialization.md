@@ -15,8 +15,8 @@ By default, TypeScript DBOS uses SuperJSON serialization, which only TypeScript 
 // A Python or Java client cannot read this workflow's
 // inputs, outputs, events, or streams
 async function processOrderFn(orderId: string) {
-  await DBOS.setEvent("status", { progress: 50 });
-  return { result: "done" };
+   await DBOS.setEvent("status", { progress: 50 });
+   return { result: "done" };
 }
 const processOrder = DBOS.registerWorkflow(processOrderFn);
 ```
@@ -27,12 +27,12 @@ const processOrder = DBOS.registerWorkflow(processOrderFn);
 import { DBOS } from "@dbos-inc/dbos-sdk";
 
 async function processOrderFn(orderId: string) {
-  await DBOS.setEvent("status", { progress: 50 });
-  return { result: "done" };
+   await DBOS.setEvent("status", { progress: 50 });
+   return { result: "done" };
 }
 const processOrder = DBOS.registerWorkflow(processOrderFn, {
-  name: "processOrder",
-  serializationType: "portable",
+   name: "processOrder",
+   serializationType: "portable",
 });
 ```
 
@@ -41,9 +41,9 @@ const processOrder = DBOS.registerWorkflow(processOrderFn, {
 Portable JSON supports JSON primitives, arrays, and objects. Some TypeScript types are automatically converted:
 
 | TypeScript Type | Portable Representation |
-|-----------------|------------------------|
-| `Date` | RFC 3339 UTC string |
-| `BigInt` | Numeric string |
+| --------------- | ----------------------- |
+| `Date`          | RFC 3339 UTC string     |
+| `BigInt`        | Numeric string          |
 
 ### Where to Set Serialization
 
@@ -51,8 +51,8 @@ Portable JSON supports JSON primitives, arrays, and objects. Some TypeScript typ
 
 ```typescript
 const myWorkflow = DBOS.registerWorkflow(myWorkflowFn, {
-  name: "myWorkflow",
-  serializationType: "portable",
+   name: "myWorkflow",
+   serializationType: "portable",
 });
 ```
 
@@ -60,11 +60,11 @@ Or with a decorator:
 
 ```typescript
 class Orders {
-  @DBOS.workflow({ serializationType: "portable" })
-  static async processOrder(orderId: string) {
-    await DBOS.setEvent("progress", 50);  // Portable by default
-    return { done: true };                // Portable by default
-  }
+   @DBOS.workflow({ serializationType: "portable" })
+   static async processOrder(orderId: string) {
+      await DBOS.setEvent("progress", 50); // Portable by default
+      return { done: true }; // Portable by default
+   }
 }
 ```
 
@@ -73,11 +73,11 @@ class Orders {
 ```typescript
 // Explicitly set portable on send (send is never affected by workflow default)
 await DBOS.send(
-  "workflow-123",
-  { status: "complete" },
-  "updates",
-  undefined,  // idempotencyKey
-  { serializationType: "portable" }
+   "workflow-123",
+   { status: "complete" },
+   "updates",
+   undefined, // idempotencyKey
+   { serializationType: "portable" },
 );
 
 // Override on setEvent or writeStream
@@ -92,12 +92,12 @@ import { DBOSClient } from "@dbos-inc/dbos-sdk";
 
 const client = await DBOSClient.create({ systemDatabaseUrl: dbUrl });
 const handle = await client.enqueue(
-  {
-    workflowName: "processOrder",
-    queueName: "orders",
-    serializationType: "portable",
-  },
-  "order-123",
+   {
+      workflowName: "processOrder",
+      queueName: "orders",
+      serializationType: "portable",
+   },
+   "order-123",
 );
 ```
 
@@ -105,9 +105,9 @@ const handle = await client.enqueue(
 
 ```typescript
 // On workflow registration or decorator
-serializationType: undefined   // Uses config serializer (SuperJSON by default)
-serializationType: "portable"  // Portable JSON for cross-language use
-serializationType: "native"    // Explicitly uses native TypeScript serializer
+serializationType: undefined; // Uses config serializer (SuperJSON by default)
+serializationType: "portable"; // Portable JSON for cross-language use
+serializationType: "native"; // Explicitly uses native TypeScript serializer
 ```
 
 ### Portable Errors
@@ -117,12 +117,9 @@ When a portable workflow fails, the error is serialized in a standard JSON struc
 ```typescript
 import { PortableWorkflowError } from "@dbos-inc/dbos-sdk";
 
-throw new PortableWorkflowError(
-  "Order not found",
-  "NotFoundError",
-  404,
-  { orderId: "order-123" },
-);
+throw new PortableWorkflowError("Order not found", "NotFoundError", 404, {
+   orderId: "order-123",
+});
 ```
 
 Non-portable exceptions raised in a portable workflow are automatically converted to this format on a best-effort basis.

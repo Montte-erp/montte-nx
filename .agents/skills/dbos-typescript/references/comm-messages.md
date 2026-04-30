@@ -20,30 +20,32 @@ import { Queue } from "some-external-queue";
 
 ```typescript
 async function checkoutWorkflowFn() {
-  // Wait for payment notification (timeout 120 seconds)
-  const notification = await DBOS.recv<string>("payment_status", 120);
+   // Wait for payment notification (timeout 120 seconds)
+   const notification = await DBOS.recv<string>("payment_status", 120);
 
-  if (notification && notification === "paid") {
-    await DBOS.runStep(fulfillOrder, { name: "fulfillOrder" });
-  } else {
-    await DBOS.runStep(cancelOrder, { name: "cancelOrder" });
-  }
+   if (notification && notification === "paid") {
+      await DBOS.runStep(fulfillOrder, { name: "fulfillOrder" });
+   } else {
+      await DBOS.runStep(cancelOrder, { name: "cancelOrder" });
+   }
 }
 const checkoutWorkflow = DBOS.registerWorkflow(checkoutWorkflowFn);
 
 // Send a message from a webhook handler
 async function paymentWebhook(workflowID: string, status: string) {
-  await DBOS.send(workflowID, status, "payment_status");
+   await DBOS.send(workflowID, status, "payment_status");
 }
 ```
 
 Key behaviors:
+
 - `recv` waits for and consumes the next message for the specified topic
 - Returns `null` if the wait times out (default timeout: 60 seconds)
 - Messages without a topic can only be received by `recv` without a topic
 - Messages are queued per-topic (FIFO)
 
 **Reliability guarantees:**
+
 - All messages are persisted to the database
 - Messages sent from workflows are delivered exactly-once
 - Messages sent from non-workflow code can use an idempotency key:

@@ -14,89 +14,41 @@ import {
 } from "@packages/ui/components/popover";
 import { Textarea } from "@packages/ui/components/textarea";
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import type { UIMessage } from "@tanstack/ai-react";
 import dayjs from "dayjs";
-import {
-   ArrowRight,
-   Briefcase,
-   Check,
-   ChevronDown,
-   Contact,
-   FolderTree,
-   Gauge,
-   Maximize2,
-   Sparkles,
-   Tag,
-   Wallet,
-} from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, Check, ChevronDown, Maximize2 } from "lucide-react";
 import { Streamdown } from "streamdown";
+import { QueryBoundary } from "@/components/query-boundary";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
-import { orpc } from "@/integrations/orpc/client";
+import { useRubiChat, type RubiScopeId } from "./rubi-chat-store";
 import { RubiMascotIcon } from "./rubi-mascot-icon";
 import { ToolCallCard } from "./tool-call-card";
-import { useRubiChat } from "./use-rubi-chat";
 
 interface Scope {
-   id: string;
+   id: RubiScopeId;
    label: string;
-   icon: typeof Sparkles;
+   icon: React.ComponentType<{ className?: string }>;
    skillHint?: string;
 }
 
-const SCOPES: Scope[] = [
-   { id: "auto", label: "Auto", icon: Sparkles },
-   {
-      id: "servicos",
-      label: "Serviços",
-      icon: Briefcase,
-      skillHint: "services",
-   },
-   { id: "contatos", label: "Contatos", icon: Contact },
-   { id: "categorias", label: "Centro de Custo", icon: FolderTree },
-   { id: "estoque", label: "Estoque", icon: Tag },
-   { id: "financeiro", label: "Financeiro", icon: Wallet },
-   { id: "analises", label: "Análises", icon: Gauge },
-];
-
-const SUGGESTION_IDS = [
-   "servicos",
-   "contatos",
-   "financeiro",
-   "categorias",
-   "estoque",
-   "analises",
-];
-
 export function RubiPanel() {
-   const [value, setValue] = useState("");
-   const [scopeOpen, setScopeOpen] = useState(false);
-   const [selectedScope, setSelectedScope] = useState<Scope>(SCOPES[0]!);
-   const { slug, teamSlug } = useDashboardSlugs();
-
-   const chat = useRubiChat();
-   const recentsQuery = useQuery(
-      orpc.threads.list.queryOptions({ input: { limit: 5 } }),
+   return (
+      <QueryBoundary fallback={null} errorTitle="Falha ao carregar Rubi">
+         <RubiPanelContent />
+      </QueryBoundary>
    );
+}
 
-   const hasConversation = chat.messages.length > 0;
-   const recents = recentsQuery.data?.threads ?? [];
-   const showRecents = !chat.threadId && recents.length > 0;
+function RubiPanelContent() {
+   const { slug, teamSlug } = useDashboardSlugs();
+   const chat = useRubiChat();
+
+   const showRecents = !chat.activeThreadId && chat.recents.length > 0;
 
    async function handleSend() {
-      const text = value.trim();
+      const text = chat.composerValue.trim();
       if (!text || chat.isStreaming) return;
-      setValue("");
-      await chat.sendMessage({
-         text,
-         skillHint: selectedScope.skillHint,
-      });
-   }
-
-   function pickScopeById(id: string) {
-      const next = SCOPES.find((s) => s.id === id);
-      if (next) setSelectedScope(next);
+      await chat.sendMessage();
    }
 
    return (
@@ -104,7 +56,7 @@ export function RubiPanel() {
          <ContextPanelHeader>
             <ContextPanelTitle>Montte AI</ContextPanelTitle>
             <ContextPanelHeaderActions>
-               {chat.threadId ? (
+               {chat.activeThreadId ? (
                   <Button
                      aria-label="Nova conversa"
                      size="sm"
@@ -134,7 +86,7 @@ export function RubiPanel() {
          </ContextPanelHeader>
 
          <ContextPanelContent className="flex flex-col gap-4">
-            {hasConversation ? (
+            {chat.hasConversation ? (
                <>
                   {chat.pendingApprovalIds.length >= 2 ? (
                      <div className="sticky top-0 z-10 flex items-center gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs">
@@ -178,17 +130,14 @@ export function RubiPanel() {
                      </p>
                   </div>
                   <Composer
-                     value={value}
-                     onChange={setValue}
+                     value={chat.composerValue}
+                     onChange={chat.setComposerValue}
                      onSend={handleSend}
-                     scope={selectedScope}
-                     scopes={SCOPES}
-                     scopeOpen={scopeOpen}
-                     onScopeOpenChange={setScopeOpen}
-                     onScopeSelect={(s) => {
-                        setSelectedScope(s);
-                        setScopeOpen(false);
-                     }}
+                     scope={chat.selectedScope}
+                     scopes={chat.scopes}
+                     scopeOpen={chat.scopeOpen}
+                     onScopeOpenChange={chat.setScopeOpen}
+                     onScopeSelect={chat.selectScope}
                      disabled={chat.isStreaming}
                   />
                   <div className="flex flex-col items-center gap-2">
@@ -196,9 +145,7 @@ export function RubiPanel() {
                         Tente o Montte AI para...
                      </p>
                      <div className="flex flex-wrap justify-center gap-2">
-                        {SUGGESTION_IDS.map((id) => {
-                           const scope = SCOPES.find((s) => s.id === id);
-                           if (!scope) return null;
+                        {chat.suggestions.map((scope) => {
                            const Icon = scope.icon;
                            return (
                               <Button
@@ -207,7 +154,7 @@ export function RubiPanel() {
                                  variant="outline"
                                  size="sm"
                                  className="h-7 gap-2 rounded-full px-2 text-xs font-normal"
-                                 onClick={() => pickScopeById(scope.id)}
+                                 onClick={() => chat.selectScope(scope.id)}
                               >
                                  <Icon className="size-4" />
                                  {scope.label}
@@ -219,19 +166,16 @@ export function RubiPanel() {
                </div>
             )}
 
-            {hasConversation ? (
+            {chat.hasConversation ? (
                <Composer
-                  value={value}
-                  onChange={setValue}
+                  value={chat.composerValue}
+                  onChange={chat.setComposerValue}
                   onSend={handleSend}
-                  scope={selectedScope}
-                  scopes={SCOPES}
-                  scopeOpen={scopeOpen}
-                  onScopeOpenChange={setScopeOpen}
-                  onScopeSelect={(s) => {
-                     setSelectedScope(s);
-                     setScopeOpen(false);
-                  }}
+                  scope={chat.selectedScope}
+                  scopes={chat.scopes}
+                  scopeOpen={chat.scopeOpen}
+                  onScopeOpenChange={chat.setScopeOpen}
+                  onScopeSelect={chat.selectScope}
                   disabled={chat.isStreaming}
                />
             ) : null}
@@ -245,7 +189,7 @@ export function RubiPanel() {
                   </span>
                </div>
                <ul className="flex flex-col gap-2">
-                  {recents.map((thread) => {
+                  {chat.recents.map((thread) => {
                      const days = thread.lastMessageAt
                         ? dayjs().diff(dayjs(thread.lastMessageAt), "day")
                         : dayjs().diff(dayjs(thread.createdAt), "day");
@@ -282,7 +226,7 @@ interface ComposerProps {
    scopes: Scope[];
    scopeOpen: boolean;
    onScopeOpenChange: (open: boolean) => void;
-   onScopeSelect: (scope: Scope) => void;
+   onScopeSelect: (scope: RubiScopeId) => void;
    disabled?: boolean;
 }
 
@@ -330,7 +274,7 @@ function Composer(props: ComposerProps) {
                            key={scope.id}
                            variant="ghost"
                            className="flex w-full items-center justify-start gap-2 rounded-sm px-2 py-2 text-xs"
-                           onClick={() => props.onScopeSelect(scope)}
+                           onClick={() => props.onScopeSelect(scope.id)}
                         >
                            <scope.icon className="size-4 text-muted-foreground" />
                            <span>{scope.label}</span>
@@ -384,13 +328,10 @@ function ConversationView(props: {
             if (msg.role === "system") return null;
             if (msg.role === "user") {
                const text = msg.parts
-                  .filter(
-                     (p): p is { type: "text"; content: string } =>
-                        p.type === "text" &&
-                        typeof (p as { content?: unknown }).content ===
-                           "string",
-                  )
-                  .map((p) => p.content)
+                  .flatMap((part) => {
+                     if (part.type !== "text") return [];
+                     return [part.content];
+                  })
                   .join("");
                return (
                   <MessageRow key={msg.id} role="user">
@@ -434,21 +375,17 @@ function AssistantParts(props: {
          {props.parts.map((part, idx) => {
             const key = `${part.type}-${idx}`;
             if (part.type === "text") {
-               const content = (part as { content?: string }).content ?? "";
-               if (!content) return null;
                return (
                   <Streamdown
                      key={key}
                      mode={props.animating ? "streaming" : "static"}
                      isAnimating={props.animating}
                   >
-                     {content}
+                     {part.content}
                   </Streamdown>
                );
             }
             if (part.type === "thinking") {
-               const content = (part as { content?: string }).content ?? "";
-               if (!content) return null;
                return (
                   <details
                      key={key}
@@ -458,69 +395,63 @@ function AssistantParts(props: {
                         Raciocínio
                      </summary>
                      <div className="mt-1 whitespace-pre-wrap text-muted-foreground">
-                        {content}
+                        {part.content}
                      </div>
                   </details>
                );
             }
             if (part.type === "tool-call") {
-               const tc = part as {
-                  id: string;
-                  name: string;
-                  arguments?: string;
-                  state?: string;
-                  approval?: {
-                     id: string;
-                     needsApproval: boolean;
-                     approved?: boolean;
-                  };
-                  output?: unknown;
-               };
                const needsDecision =
-                  tc.state === "approval-requested" &&
-                  tc.approval &&
-                  tc.approval.approved === undefined;
+                  part.state === "approval-requested" &&
+                  part.approval !== undefined &&
+                  part.approval.approved === undefined;
                return (
                   <div key={key} className="flex flex-col gap-2">
                      <ToolCallCard
                         toolCall={{
-                           id: tc.id,
-                           name: tc.name,
-                           args: tc.arguments ?? "",
+                           id: part.id,
+                           name: part.name,
+                           args: part.arguments ?? "",
                            state:
-                              tc.state === "input-streaming"
+                              part.state === "input-streaming"
                                  ? "streaming"
-                                 : tc.state === "approval-requested"
+                                 : part.state === "approval-requested"
                                    ? "complete"
-                                   : tc.output !== undefined
+                                   : part.output !== undefined
                                      ? "result"
                                      : "complete",
                            result:
-                              tc.output === undefined
+                              part.output === undefined
                                  ? undefined
-                                 : typeof tc.output === "string"
-                                   ? tc.output
-                                   : JSON.stringify(tc.output, null, 2),
+                                 : typeof part.output === "string"
+                                   ? part.output
+                                   : JSON.stringify(part.output, null, 2),
                         }}
                      />
                      {needsDecision ? (
                         <div className="flex items-center gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs">
                            <span className="flex-1">
                               Aprovar execução de{" "}
-                              <span className="font-mono">{tc.name}</span>?
+                              <span className="font-mono">{part.name}</span>?
                            </span>
                            <Button
                               size="sm"
                               variant="outline"
                               className="h-7 px-2 text-xs"
-                              onClick={() => props.onReject(tc.approval!.id)}
+                              onClick={() => {
+                                 if (part.approval === undefined) return;
+                                 void props.onReject(part.approval.id);
+                              }}
                            >
                               Negar
                            </Button>
                            <Button
                               size="sm"
                               className="h-7 px-2 text-xs"
-                              onClick={() => props.onApprove(tc.approval!.id)}
+                              onClick={() => {
+                                 if (part.approval === undefined) return;
+                                 void props.onApprove(part.approval.id);
+                              }}
                            >
                               Aprovar
                            </Button>

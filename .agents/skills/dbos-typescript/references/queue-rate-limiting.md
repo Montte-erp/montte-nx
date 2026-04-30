@@ -20,7 +20,7 @@ const queue = new WorkflowQueue("llm_tasks");
 
 ```typescript
 const queue = new WorkflowQueue("llm_tasks", {
-  rateLimit: { limitPerPeriod: 50, periodSec: 30 },
+   rateLimit: { limitPerPeriod: 50, periodSec: 30 },
 });
 ```
 
@@ -31,12 +31,13 @@ This queue starts at most 50 workflows per 30 seconds.
 ```typescript
 // At most 5 concurrent and 50 per 30 seconds
 const queue = new WorkflowQueue("api_tasks", {
-  workerConcurrency: 5,
-  rateLimit: { limitPerPeriod: 50, periodSec: 30 },
+   workerConcurrency: 5,
+   rateLimit: { limitPerPeriod: 50, periodSec: 30 },
 });
 ```
 
 Common use cases:
+
 - LLM API rate limiting (OpenAI, Anthropic, etc.)
 - Third-party API throttling
 - Preventing database overload

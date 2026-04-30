@@ -36,13 +36,15 @@ const queue = new WorkflowQueue("limited_tasks", { concurrency: 10 });
 const serialQueue = new WorkflowQueue("sequential_queue", { concurrency: 1 });
 
 async function processEventFn(event: string) {
-  // ...
+   // ...
 }
 const processEvent = DBOS.registerWorkflow(processEventFn);
 
 app.post("/events", async (req, res) => {
-  await DBOS.startWorkflow(processEvent, { queueName: serialQueue.name })(req.body.event);
-  res.send("Queued!");
+   await DBOS.startWorkflow(processEvent, { queueName: serialQueue.name })(
+      req.body.event,
+   );
+   res.send("Queued!");
 });
 ```
 

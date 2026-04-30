@@ -13,12 +13,12 @@ Class instance methods can be workflows and steps. Classes with workflow methods
 
 ```typescript
 class MyWorker {
-  constructor(private config: any) {}
+   constructor(private config: any) {}
 
-  @DBOS.workflow()
-  async processTask(task: string) {
-    // Recovery won't work - DBOS can't find the instance after restart
-  }
+   @DBOS.workflow()
+   async processTask(task: string) {
+      // Recovery won't work - DBOS can't find the instance after restart
+   }
 }
 ```
 
@@ -28,25 +28,25 @@ class MyWorker {
 import { DBOS, ConfiguredInstance } from "@dbos-inc/dbos-sdk";
 
 class MyWorker extends ConfiguredInstance {
-  cfg: WorkerConfig;
+   cfg: WorkerConfig;
 
-  constructor(name: string, config: WorkerConfig) {
-    super(name); // Unique name required for recovery
-    this.cfg = config;
-  }
+   constructor(name: string, config: WorkerConfig) {
+      super(name); // Unique name required for recovery
+      this.cfg = config;
+   }
 
-  override async initialize(): Promise<void> {
-    // Optional: validate config at DBOS.launch() time
-  }
+   override async initialize(): Promise<void> {
+      // Optional: validate config at DBOS.launch() time
+   }
 
-  @DBOS.workflow()
-  async processTask(task: string): Promise<void> {
-    // Can use this.cfg safely - instance is recoverable
-    const result = await DBOS.runStep(
-      () => fetch(this.cfg.apiUrl).then(r => r.text()),
-      { name: "callApi" }
-    );
-  }
+   @DBOS.workflow()
+   async processTask(task: string): Promise<void> {
+      // Can use this.cfg safely - instance is recoverable
+      const result = await DBOS.runStep(
+         () => fetch(this.cfg.apiUrl).then((r) => r.text()),
+         { name: "callApi" },
+      );
+   }
 }
 
 // Create instances BEFORE DBOS.launch()
@@ -58,6 +58,7 @@ await DBOS.launch();
 ```
 
 Key requirements:
+
 - `ConfiguredInstance` constructor requires a unique `name` per class
 - All instances must be created **before** `DBOS.launch()`
 - The `initialize()` method is called during launch for validation

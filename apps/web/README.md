@@ -25,7 +25,7 @@ await enqueueClassifyTransactionsBatchWorkflow(context.workflowClient, input);
 | UI            | `@packages/ui` (Radix + Tailwind + CVA)                        |
 | Auth          | Better Auth (`@core/authentication`)                           |
 | AI            | TanStack AI + OpenRouter                                       |
-| Jobs          | `DBOSClient` → `apps/worker` (DBOS queues nativas)            |
+| Jobs          | `DBOSClient` → `apps/worker` (DBOS queues nativas)             |
 | Testes        | Vitest + PGlite (Postgres in-memory)                           |
 
 ## Desenvolvimento local

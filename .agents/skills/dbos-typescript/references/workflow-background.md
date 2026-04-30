@@ -13,7 +13,7 @@ Use `DBOS.startWorkflow` to start a workflow in the background and get a handle 
 
 ```typescript
 async function processDataFn(data: string) {
-  // ...
+   // ...
 }
 const processData = DBOS.registerWorkflow(processDataFn);
 
@@ -25,22 +25,22 @@ processData(data);
 
 ```typescript
 async function processDataFn(data: string) {
-  return "processed: " + data;
+   return "processed: " + data;
 }
 const processData = DBOS.registerWorkflow(processDataFn);
 
 async function main() {
-  // Start workflow in background, get handle
-  const handle = await DBOS.startWorkflow(processData)("input");
+   // Start workflow in background, get handle
+   const handle = await DBOS.startWorkflow(processData)("input");
 
-  // Get the workflow ID
-  console.log(handle.workflowID);
+   // Get the workflow ID
+   console.log(handle.workflowID);
 
-  // Wait for result
-  const result = await handle.getResult();
+   // Wait for result
+   const result = await handle.getResult();
 
-  // Check status
-  const status = await handle.getStatus();
+   // Check status
+   const status = await handle.getStatus();
 }
 ```
 
@@ -57,7 +57,7 @@ Use `DBOS.waitFirst` to race multiple concurrent workflows and process results a
 
 ```typescript
 const handles = await Promise.all(
-  items.map((item) => DBOS.startWorkflow(processItem)(item))
+   items.map((item) => DBOS.startWorkflow(processItem)(item)),
 );
 
 // Wait for whichever finishes first

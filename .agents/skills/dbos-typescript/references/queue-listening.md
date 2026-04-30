@@ -20,8 +20,8 @@ const gpuQueue = new WorkflowQueue("gpu_queue");
 // Every worker processes both CPU and GPU tasks
 // GPU tasks on CPU workers will fail or be slow!
 DBOS.setConfig({
-  name: "my-app",
-  systemDatabaseUrl: process.env.DBOS_SYSTEM_DATABASE_URL,
+   name: "my-app",
+   systemDatabaseUrl: process.env.DBOS_SYSTEM_DATABASE_URL,
 });
 await DBOS.launch();
 ```
@@ -35,21 +35,21 @@ const cpuQueue = new WorkflowQueue("cpu_queue");
 const gpuQueue = new WorkflowQueue("gpu_queue");
 
 async function main() {
-  const workerType = process.env.WORKER_TYPE; // "cpu" or "gpu"
+   const workerType = process.env.WORKER_TYPE; // "cpu" or "gpu"
 
-  const config: any = {
-    name: "my-app",
-    systemDatabaseUrl: process.env.DBOS_SYSTEM_DATABASE_URL,
-  };
+   const config: any = {
+      name: "my-app",
+      systemDatabaseUrl: process.env.DBOS_SYSTEM_DATABASE_URL,
+   };
 
-  if (workerType === "gpu") {
-    config.listenQueues = [gpuQueue];
-  } else if (workerType === "cpu") {
-    config.listenQueues = [cpuQueue];
-  }
+   if (workerType === "gpu") {
+      config.listenQueues = [gpuQueue];
+   } else if (workerType === "cpu") {
+      config.listenQueues = [cpuQueue];
+   }
 
-  DBOS.setConfig(config);
-  await DBOS.launch();
+   DBOS.setConfig(config);
+   await DBOS.launch();
 }
 ```
 

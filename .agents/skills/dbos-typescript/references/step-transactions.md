@@ -16,19 +16,21 @@ import { Pool } from "pg";
 const pool = new Pool();
 
 async function myWorkflowFn() {
-  // Direct database access in workflow - not checkpointed!
-  const result = await pool.query("INSERT INTO orders ...");
+   // Direct database access in workflow - not checkpointed!
+   const result = await pool.query("INSERT INTO orders ...");
 }
 ```
 
 **Correct (using a datasource transaction):**
 
 Install a datasource package (e.g., Knex):
+
 ```
 npm i @dbos-inc/knex-datasource
 ```
 
 Configure the datasource:
+
 ```typescript
 import { KnexDataSource } from "@dbos-inc/knex-datasource";
 
@@ -37,26 +39,28 @@ const dataSource = new KnexDataSource("app-db", config);
 ```
 
 Run transactions inline with `runTransaction`:
+
 ```typescript
 async function insertOrderFn(userId: string, amount: number) {
-  const rows = await dataSource
-    .client("orders")
-    .insert({ user_id: userId, amount })
-    .returning("id");
-  return rows[0].id;
+   const rows = await dataSource
+      .client("orders")
+      .insert({ user_id: userId, amount })
+      .returning("id");
+   return rows[0].id;
 }
 
 async function myWorkflowFn(userId: string, amount: number) {
-  const orderId = await dataSource.runTransaction(
-    () => insertOrderFn(userId, amount),
-    { name: "insertOrder" }
-  );
-  return orderId;
+   const orderId = await dataSource.runTransaction(
+      () => insertOrderFn(userId, amount),
+      { name: "insertOrder" },
+   );
+   return orderId;
 }
 const myWorkflow = DBOS.registerWorkflow(myWorkflowFn);
 ```
 
 You can also pre-register a transaction function with `dataSource.registerTransaction`:
+
 ```typescript
 const insertOrder = dataSource.registerTransaction(insertOrderFn);
 ```

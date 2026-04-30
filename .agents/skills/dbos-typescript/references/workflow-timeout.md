@@ -20,17 +20,18 @@ const handle = await DBOS.startWorkflow(processTask)("data");
 
 ```typescript
 async function processTaskFn(data: string) {
-  // ...
+   // ...
 }
 const processTask = DBOS.registerWorkflow(processTaskFn);
 
 // Timeout after 5 minutes (in milliseconds)
 const handle = await DBOS.startWorkflow(processTask, {
-  timeoutMS: 5 * 60 * 1000,
+   timeoutMS: 5 * 60 * 1000,
 })("data");
 ```
 
 Key timeout behaviors:
+
 - Timeouts are **start-to-completion**: the timeout begins when the workflow starts execution, not when it's enqueued
 - Timeouts are **durable**: they persist across restarts, so workflows can have very long timeouts (hours, days, weeks)
 - Cancellation happens at the **beginning of the next step** - the current step completes first

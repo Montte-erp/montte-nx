@@ -123,12 +123,12 @@ Check:
 
 <!-- Table headers -->
 <table>
-  <thead>
-    <tr>
-      <th scope="col">Name</th>
-      <th scope="col">Price</th>
-    </tr>
-  </thead>
+   <thead>
+      <tr>
+         <th scope="col">Name</th>
+         <th scope="col">Price</th>
+      </tr>
+   </thead>
 </table>
 ```
 
@@ -227,10 +227,10 @@ Check:
 
 ```css
 @media (prefers-reduced-motion: reduce) {
-  * {
-    animation: none !important;
-    transition: none !important;
-  }
+   * {
+      animation: none !important;
+      transition: none !important;
+   }
 }
 ```
 
@@ -289,8 +289,8 @@ Check:
 
 ```css
 :focus {
-  outline: 3px solid #005fcc;
-  outline-offset: 2px;
+   outline: 3px solid #005fcc;
+   outline-offset: 2px;
 }
 ```
 
@@ -480,18 +480,18 @@ lighthouse https://example.com --only-categories=accessibility
 ```css
 /* Before: 2.5:1 contrast */
 .text {
-  color: #767676;
+   color: #767676;
 }
 
 /* After: 4.5:1 contrast */
 .text {
-  color: #595959;
+   color: #595959;
 }
 
 /* Or add background */
 .text {
-  color: #767676;
-  background: #000;
+   color: #767676;
+   background: #000;
 }
 ```
 
@@ -500,32 +500,32 @@ lighthouse https://example.com --only-categories=accessibility
 ```javascript
 // Make custom element keyboard accessible
 class AccessibleDropdown extends HTMLElement {
-  connectedCallback() {
-    this.setAttribute("tabindex", "0");
-    this.setAttribute("role", "combobox");
-    this.setAttribute("aria-expanded", "false");
+   connectedCallback() {
+      this.setAttribute("tabindex", "0");
+      this.setAttribute("role", "combobox");
+      this.setAttribute("aria-expanded", "false");
 
-    this.addEventListener("keydown", (e) => {
-      switch (e.key) {
-        case "Enter":
-        case " ":
-          this.toggle();
-          e.preventDefault();
-          break;
-        case "Escape":
-          this.close();
-          break;
-        case "ArrowDown":
-          this.focusNext();
-          e.preventDefault();
-          break;
-        case "ArrowUp":
-          this.focusPrevious();
-          e.preventDefault();
-          break;
-      }
-    });
-  }
+      this.addEventListener("keydown", (e) => {
+         switch (e.key) {
+            case "Enter":
+            case " ":
+               this.toggle();
+               e.preventDefault();
+               break;
+            case "Escape":
+               this.close();
+               break;
+            case "ArrowDown":
+               this.focusNext();
+               e.preventDefault();
+               break;
+            case "ArrowUp":
+               this.focusPrevious();
+               e.preventDefault();
+               break;
+         }
+      });
+   }
 }
 ```
 

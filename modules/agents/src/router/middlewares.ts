@@ -12,11 +12,21 @@ export const requireThread = base.middleware(
             where: (f, { eq }) => eq(f.id, id),
          }),
          () => WebAppError.internal("Falha ao verificar conversa."),
-      ).andThen((thread) =>
-         !thread || thread.teamId !== context.teamId
-            ? err(WebAppError.notFound("Conversa não encontrada."))
-            : ok(thread),
-      );
+      ).andThen((thread) => {
+         if (thread === undefined) {
+            return err(WebAppError.notFound("Conversa não encontrada."));
+         }
+         if (thread.teamId !== context.teamId) {
+            return err(WebAppError.notFound("Conversa não encontrada."));
+         }
+         if (thread.organizationId !== context.organizationId) {
+            return err(WebAppError.notFound("Conversa não encontrada."));
+         }
+         if (thread.userId !== context.userId) {
+            return err(WebAppError.notFound("Conversa não encontrada."));
+         }
+         return ok(thread);
+      });
       if (result.isErr()) throw result.error;
       return next({ context: { thread: result.value } });
    },

@@ -38,6 +38,7 @@ apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/services/
 `TourProvider` montado no layout `_dashboard.tsx` (ou layout services). Cada rota chama `useTourTrigger(tourId)` que dispara `startTour(id)` se `!completed.has(id) && !dismissed.has(id)`.
 
 Definição de tour:
+
 ```ts
 export const servicesOverviewTour: TourDefinition = {
    id: "services-overview",
@@ -73,6 +74,7 @@ export const servicesOverviewTour: TourDefinition = {
 ## Microcopy
 
 Step = título curto + 1 frase. Sem jargão:
+
 - "metered" → "preço por consumo"
 - "aggregation: sum" → "soma os valores"
 - "scope: meter" → "aplicado quando consumir esse medidor"

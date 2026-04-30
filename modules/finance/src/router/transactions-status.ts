@@ -48,18 +48,20 @@ export const markAsPaid = protectedProcedure
       const paidDate = input.paidDate ?? dayjs().format("YYYY-MM-DD");
 
       const result = await fromPromise(
-         context.db
-            .update(transactions)
-            .set({
-               status: "paid",
-               paidAt: dayjs().toDate(),
-               date: paidDate,
-               ...(input.bankAccountId !== undefined
-                  ? { bankAccountId: input.bankAccountId }
-                  : {}),
-            })
-            .where(eq(transactions.id, input.id))
-            .returning(),
+         context.db.transaction(async (tx) =>
+            tx
+               .update(transactions)
+               .set({
+                  status: "paid",
+                  paidAt: dayjs().toDate(),
+                  date: paidDate,
+                  ...(input.bankAccountId !== undefined
+                     ? { bankAccountId: input.bankAccountId }
+                     : {}),
+               })
+               .where(eq(transactions.id, input.id))
+               .returning(),
+         ),
          () => WebAppError.internal("Falha ao marcar lançamento como pago."),
       );
       if (result.isErr()) throw result.error;
@@ -78,11 +80,13 @@ export const markAsUnpaid = protectedProcedure
          );
       }
       const result = await fromPromise(
-         context.db
-            .update(transactions)
-            .set({ status: "pending", paidAt: null })
-            .where(eq(transactions.id, input.id))
-            .returning(),
+         context.db.transaction(async (tx) =>
+            tx
+               .update(transactions)
+               .set({ status: "pending", paidAt: null })
+               .where(eq(transactions.id, input.id))
+               .returning(),
+         ),
          () => WebAppError.internal("Falha ao desmarcar lançamento."),
       );
       if (result.isErr()) throw result.error;
@@ -99,11 +103,13 @@ export const cancel = protectedProcedure
          throw WebAppError.conflict("Lançamento já está cancelado.");
       }
       const result = await fromPromise(
-         context.db
-            .update(transactions)
-            .set({ status: "cancelled" })
-            .where(eq(transactions.id, input.id))
-            .returning(),
+         context.db.transaction(async (tx) =>
+            tx
+               .update(transactions)
+               .set({ status: "cancelled" })
+               .where(eq(transactions.id, input.id))
+               .returning(),
+         ),
          () => WebAppError.internal("Falha ao cancelar lançamento."),
       );
       if (result.isErr()) throw result.error;
@@ -122,14 +128,16 @@ export const reactivate = protectedProcedure
          );
       }
       const result = await fromPromise(
-         context.db
-            .update(transactions)
-            .set({
-               status: input.paid ? "paid" : "pending",
-               paidAt: input.paid ? dayjs().toDate() : null,
-            })
-            .where(eq(transactions.id, input.id))
-            .returning(),
+         context.db.transaction(async (tx) =>
+            tx
+               .update(transactions)
+               .set({
+                  status: input.paid ? "paid" : "pending",
+                  paidAt: input.paid ? dayjs().toDate() : null,
+               })
+               .where(eq(transactions.id, input.id))
+               .returning(),
+         ),
          () => WebAppError.internal("Falha ao reativar lançamento."),
       );
       if (result.isErr()) throw result.error;
@@ -163,18 +171,20 @@ export const bulkMarkAsPaid = protectedProcedure
       const paidDate = input.paidDate ?? dayjs().format("YYYY-MM-DD");
       const results = await Promise.allSettled(
          input.ids.map((id) =>
-            context.db
-               .update(transactions)
-               .set({
-                  status: "paid",
-                  paidAt: dayjs().toDate(),
-                  date: paidDate,
-                  ...(input.bankAccountId !== undefined
-                     ? { bankAccountId: input.bankAccountId }
-                     : {}),
-               })
-               .where(eq(transactions.id, id))
-               .returning(),
+            context.db.transaction(async (tx) =>
+               tx
+                  .update(transactions)
+                  .set({
+                     status: "paid",
+                     paidAt: dayjs().toDate(),
+                     date: paidDate,
+                     ...(input.bankAccountId !== undefined
+                        ? { bankAccountId: input.bankAccountId }
+                        : {}),
+                  })
+                  .where(eq(transactions.id, id))
+                  .returning(),
+            ),
          ),
       );
       return {

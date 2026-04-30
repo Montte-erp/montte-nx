@@ -195,7 +195,9 @@ export const remove = protectedProcedure
    .use(requireTransaction, (input) => input.id)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
-         context.db.delete(transactions).where(eq(transactions.id, input.id)),
+         context.db.transaction(async (tx) =>
+            tx.delete(transactions).where(eq(transactions.id, input.id)),
+         ),
          () => WebAppError.internal("Falha ao excluir lançamento."),
       );
       if (result.isErr()) throw result.error;
