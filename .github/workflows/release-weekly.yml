@@ -73,14 +73,14 @@ jobs:
               OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
               CHANGES_FILE: changes.md
               OUTPUT_FILE: RELEASE_NOTES.md
-              VERSION: ${{ steps.version.outputs.version }}
+              RELEASE_VERSION: ${{ steps.version.outputs.version }}
            with:
               model: opencode-go/deepseek-v4-flash
               prompt: |
                  Leia o arquivo $CHANGES_FILE com commits e PRs mergeados desde a última release do Montte (ERP brasileiro).
 
                  Gere release notes em **português brasileiro** no arquivo $OUTPUT_FILE com:
-                 - Título: "Montte $VERSION"
+                 - Título: "Montte $RELEASE_VERSION"
                  - Resumo curto (2-3 linhas) destacando o tema da semana
                  - Seções agrupadas por tipo de mudança, na ordem: **Novidades** (feat), **Correções** (fix), **Melhorias** (refactor/perf), **Outros** (chore/docs/test)
                  - Cada item: linha curta descrevendo a mudança em pt-BR + link do PR (se existir) + referência MON-* (se mencionada no commit/PR)
