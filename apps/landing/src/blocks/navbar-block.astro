@@ -1,48 +1,57 @@
 ---
 import { Button } from "@packages/ui/components/button";
 
-import { AstroNavigationMenu } from "../components/astro-navigation-menu";
 import { ThemeSwitcherClient } from "./theme-switcher-client";
 
 const navItems = [
    {
       title: "Produto",
-      description: "ERP, automação e operação em uma base única.",
       href: "/produto",
    },
    {
       title: "Preços",
-      description: "Planos simples para empresas em crescimento.",
       href: "/precos",
    },
    {
       title: "Docs",
-      description: "Guias para configurar e usar a Montte.",
       href: "/docs",
    },
    {
-      title: "Comunidade",
-      description: "Conteúdo, suporte e novidades do produto.",
-      href: "/comunidade",
+      title: "Contato",
+      href: "/contato",
    },
 ];
 ---
 
-<header class="shrink-0 border-b border-border bg-background p-2">
+<header class="shrink-0 border-b border-border bg-background/95 p-2 backdrop-blur">
    <nav class="flex min-h-10 items-center justify-between gap-4" aria-label="Principal">
       <div class="flex items-center gap-4">
-         <a class="inline-flex size-10 items-center justify-center rounded-md text-foreground hover:bg-accent hover:text-accent-foreground" href="/" aria-label="Montte">
-            <img class="size-8" src="/favicon.svg" alt="" />
-         </a>
+          <a class="inline-flex items-center gap-2 rounded-md text-sm font-semibold text-foreground hover:text-primary" href="/" aria-label="Montte">
+             <span class="inline-flex size-8 items-center justify-center rounded-md border border-border bg-card shadow-sm">
+                <img class="size-4" src="/favicon.svg" alt="" />
+             </span>
+             <span>Montte</span>
+          </a>
 
-         <AstroNavigationMenu items={navItems} client:load />
-      </div>
+          <div class="hidden items-center gap-2 md:flex">
+             {
+                navItems.map((item) => (
+                   <a
+                      class="rounded-md px-2 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      href={item.href}
+                   >
+                      {item.title}
+                   </a>
+                ))
+             }
+          </div>
+       </div>
 
       <div class="flex items-center gap-2">
-         <Button asChild size="sm" variant="secondary">
-            <a href="/dashboard">Dashboard</a>
-         </Button>
-         <ThemeSwitcherClient client:load />
+          <Button asChild size="sm">
+             <a href="/dashboard">Entrar</a>
+          </Button>
+          <ThemeSwitcherClient client:load />
       </div>
    </nav>
 </header>

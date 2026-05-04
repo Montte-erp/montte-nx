@@ -20,12 +20,31 @@ const { description, title } = Astro.props;
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
       <title>{title}</title>
+      <script is:inline>
+         (() => {
+            const storedTheme = localStorage.getItem("montte:theme");
+            const cookieTheme = document.cookie
+               .split("; ")
+               .find((item) => item.startsWith("theme="))
+               ?.split("=")[1];
+            const theme = storedTheme || cookieTheme || "system";
+            const resolvedTheme =
+               theme === "dark" ||
+               (theme === "system" &&
+                  window.matchMedia("(prefers-color-scheme: dark)").matches)
+                  ? "dark"
+                  : "light";
+
+            document.documentElement.classList.remove("dark", "light");
+            document.documentElement.classList.add(resolvedTheme);
+         })();
+      </script>
    </head>
    <body class="overflow-hidden">
-      <main class="flex h-dvh text-foreground">
+      <main class="flex h-dvh bg-muted text-foreground dark:bg-background">
          <ShapeGridAside client:load />
 
-         <div class="flex h-dvh w-full max-w-7xl shrink-0 flex-col bg-background">
+         <div class="flex h-dvh w-full max-w-7xl shrink-0 flex-col border-x border-border bg-background shadow-sm">
             <NavbarBlock />
             <div class="min-h-0 flex-1 overflow-y-auto">
                <slot />

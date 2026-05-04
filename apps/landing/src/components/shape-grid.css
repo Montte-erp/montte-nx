@@ -4,3 +4,27 @@
    border: none;
    display: block;
 }
+
+.shapegrid-aside {
+   background:
+      radial-gradient(
+         circle at 50% 0%,
+         rgb(255 255 255 / 0.7),
+         transparent 42%
+      ),
+      linear-gradient(180deg, rgb(222 247 238), rgb(238 246 250));
+   --shapegrid-border-color: rgb(35 82 67 / 0.24);
+   --shapegrid-hover-fill-color: rgb(35 82 67 / 0.12);
+}
+
+.dark .shapegrid-aside {
+   background:
+      radial-gradient(
+         circle at 50% 0%,
+         rgb(123 230 187 / 0.16),
+         transparent 42%
+      ),
+      linear-gradient(180deg, rgb(24 42 43), rgb(20 29 42));
+   --shapegrid-border-color: rgb(123 230 187 / 0.18);
+   --shapegrid-hover-fill-color: rgb(123 230 187 / 0.1);
+}

@@ -99,6 +99,13 @@ export function ShapeGrid({
          ctx.closePath();
       };
 
+      const getThemeColor = (name: string, fallback: string) => {
+         const value = getComputedStyle(canvas).getPropertyValue(name).trim();
+         if (!value) return fallback;
+
+         return value;
+      };
+
       const updateCellOpacities = () => {
          const targets = new Map<string, number>();
 
@@ -141,6 +148,15 @@ export function ShapeGrid({
       };
 
       const drawGrid = () => {
+         const resolvedBorderColor = getThemeColor(
+            "--shapegrid-border-color",
+            borderColor,
+         );
+         const resolvedHoverFillColor = getThemeColor(
+            "--shapegrid-hover-fill-color",
+            hoverFillColor,
+         );
+
          ctx.clearRect(0, 0, canvas.width, canvas.height);
 
          if (isHex) {
@@ -165,13 +181,13 @@ export function ShapeGrid({
                   if (alpha) {
                      ctx.globalAlpha = alpha;
                      drawHex(cx, cy, squareSize);
-                     ctx.fillStyle = hoverFillColor;
+                     ctx.fillStyle = resolvedHoverFillColor;
                      ctx.fill();
                      ctx.globalAlpha = 1;
                   }
 
                   drawHex(cx, cy, squareSize);
-                  ctx.strokeStyle = borderColor;
+                  ctx.strokeStyle = resolvedBorderColor;
                   ctx.stroke();
                }
             }
@@ -200,13 +216,13 @@ export function ShapeGrid({
                   if (alpha) {
                      ctx.globalAlpha = alpha;
                      drawTriangle(cx, cy, squareSize, flip);
-                     ctx.fillStyle = hoverFillColor;
+                     ctx.fillStyle = resolvedHoverFillColor;
                      ctx.fill();
                      ctx.globalAlpha = 1;
                   }
 
                   drawTriangle(cx, cy, squareSize, flip);
-                  ctx.strokeStyle = borderColor;
+                  ctx.strokeStyle = resolvedBorderColor;
                   ctx.stroke();
                }
             }
@@ -232,13 +248,13 @@ export function ShapeGrid({
                   if (alpha) {
                      ctx.globalAlpha = alpha;
                      drawCircle(cx, cy, squareSize);
-                     ctx.fillStyle = hoverFillColor;
+                     ctx.fillStyle = resolvedHoverFillColor;
                      ctx.fill();
                      ctx.globalAlpha = 1;
                   }
 
                   drawCircle(cx, cy, squareSize);
-                  ctx.strokeStyle = borderColor;
+                  ctx.strokeStyle = resolvedBorderColor;
                   ctx.stroke();
                   continue;
                }
@@ -248,12 +264,12 @@ export function ShapeGrid({
 
                if (alpha) {
                   ctx.globalAlpha = alpha;
-                  ctx.fillStyle = hoverFillColor;
+                  ctx.fillStyle = resolvedHoverFillColor;
                   ctx.fillRect(sx, sy, squareSize, squareSize);
                   ctx.globalAlpha = 1;
                }
 
-               ctx.strokeStyle = borderColor;
+               ctx.strokeStyle = resolvedBorderColor;
                ctx.strokeRect(sx, sy, squareSize, squareSize);
             }
          }
@@ -416,16 +432,10 @@ export function ShapeGrid({
 export function ShapeGridAside() {
    return (
       <aside
-         className="relative hidden flex-1 overflow-hidden bg-accent lg:block"
+         className="shapegrid-aside relative hidden flex-1 overflow-hidden lg:block"
          aria-hidden="true"
       >
-         <ShapeGrid
-            borderColor="rgba(35, 82, 67, 0.34)"
-            className="opacity-80"
-            hoverFillColor="rgba(35, 82, 67, 0.16)"
-            shape="square"
-            squareSize={32}
-         />
+         <ShapeGrid className="opacity-80" shape="square" squareSize={32} />
       </aside>
    );
 }
