@@ -7,7 +7,7 @@ AI-powered ERP. Nx monorepo, Bun, TanStack Start (SSR), oRPC, TanStack Query, Dr
 ## Commands
 
 ```bash
-bun dev                  # seeds event catalog (local) then starts web
+bun dev                  # seeds event catalog (local) then starts web + worker + landing
 bun dev:all              # all apps + packages
 bun run build            # Nx-cached build
 bun run typecheck
@@ -19,6 +19,8 @@ bun run db:studio:local       # or db:studio:prod
 bun run check-boundaries # enforce import layer rules
 bun run clean[:cache]
 bun run auth:generate    # regen Better Auth schema
+bun run landing:build    # build Astro landing page
+bun run landing:start    # preview landing on Railway-compatible host/port
 ```
 
 Scripts (`commander run|check`, `--env`, `--dry-run`): `scripts/seed-default-dashboard.ts`, `scripts/seed-event-catalog.ts`, `scripts/doctor.ts`.
@@ -27,7 +29,7 @@ First-time setup: `bun run setup` → `cd apps/web && docker compose up -d` → 
 
 **Gotchas:**
 
-- `bun dev` re-seeds the event catalog every start; if it fails dev won't launch. Debug: `scripts/seed-event-catalog.ts run --env local`.
+- `bun dev` re-seeds the event catalog every start, then runs `web`, `worker`, and `landing`; if seeding fails dev won't launch. Debug: `scripts/seed-event-catalog.ts run --env local`.
 - "Module has no exported member" on typecheck → stale dist. `cd core/<pkg> && bun run build`.
 - Never bump `NODE_OPTIONS` memory — fix the root cause.
 - `apps/web/src/routeTree.gen.ts` is generated — never edit.
@@ -55,10 +57,12 @@ core/         # ai, authentication, database, dbos, environment, files, logging,
               # orpc, posthog, redis, sse, transactional, utils
 modules/      # account, agents, billing, classification, finance, insights
               # — domain modules (router, services, workflows, sse per module)
-apps/         # web (TanStack Start + oRPC), worker (DBOS)
+apps/         # web (TanStack Start + oRPC), worker (DBOS), landing (Astro)
 packages/     # ui (shadcn primitives + Montte components)
 tooling/      # oxc, tsconfigs
 ```
+
+`apps/landing` is the public Astro landing page. It imports `@tooling/css/globals.css`, can server-render static shadcn components from `@packages/ui`, uses `public/favicon.svg`, and runs on port `3001` in development.
 
 Catalogs (root `package.json`): `analytics-client`, `assistant-ui`, `astro`, `auth`, `database`, `development`, `dnd`, `environment`, `files`, `fot`, `logging`, `mastra`, `orpc`, `payments`, `react`, `search-providers`, `server`, `tanstack`, `tanstack-ai`, `telemetry`, `testing`, `transactional`, `ui`, `validation`, `vite`, `workers`. Internal: `"@core/database": "workspace:*"`.
 

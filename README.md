@@ -25,7 +25,7 @@ bun install
 bun dev
 ```
 
-`bun dev` handles everything on first run — creates `apps/web/.env.local`, starts containers, pushes the DB schema, seeds the event catalog, and starts the app at `http://localhost:3000`.
+`bun dev` handles everything on first run — creates `apps/web/.env.local`, starts containers, pushes the DB schema, seeds the event catalog, and starts the dashboard at `http://localhost:3000` plus the landing page at `http://localhost:3001`.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for staging setup and all available commands.
 
@@ -101,7 +101,7 @@ Built as an **Nx** monorepo with **Bun**.
 
 | Category      | Technology                                                                                           |
 | :------------ | :--------------------------------------------------------------------------------------------------- |
-| **Frontend**  | React 19, TanStack Start (SSR), TanStack Router, TanStack Query, shadcn/ui, Tailwind CSS, TypeScript |
+| **Frontend**  | React 19, TanStack Start (SSR), Astro landing, TanStack Router, TanStack Query, shadcn/ui, Tailwind CSS, TypeScript |
 | **AI**        | TanStack AI + `@tanstack/ai-openrouter`                                                              |
 | **Backend**   | oRPC (type-safe API + OpenAPI), Drizzle ORM, PostgreSQL (ParadeDB image)                             |
 | **Auth**      | Better Auth (Magic Link, Email OTP, 2FA, Anonymous, HyprPay plugins)                                 |
@@ -120,6 +120,7 @@ Built as an **Nx** monorepo with **Bun**.
 ```
 montte-nx/
 ├── apps/
+│   ├── landing/         # Astro public landing page
 │   ├── web/             # TanStack Start (SSR) — dashboard + oRPC aggregator
 │   └── worker/          # DBOS runtime — durable workflows for all modules
 ├── core/                # Infra packages (no domain logic)

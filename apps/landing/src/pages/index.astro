@@ -1,4 +1,13 @@
 ---
+import { Badge } from "@packages/ui/components/badge";
+import {
+   Card,
+   CardContent,
+   CardDescription,
+   CardHeader,
+   CardTitle,
+} from "@packages/ui/components/card";
+
 import BaseLayout from "../layouts/base-layout.astro";
 ---
 
@@ -12,12 +21,60 @@ import BaseLayout from "../layouts/base-layout.astro";
                <a class="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-card text-primary" href="/" aria-label="Montte">
                   <img class="size-6" src="/favicon.svg" alt="" />
                </a>
+               <Badge variant="secondary">ERP com IA</Badge>
             </div>
          </header>
 
          <section class="grid min-h-[calc(100vh-4rem)] px-4 py-4" aria-label="Montte">
-            <div class="grid w-full max-w-6xl place-items-center justify-self-center">
-               <img class="w-24 max-w-full text-primary" src="/favicon.svg" alt="Montte" />
+            <div class="grid w-full max-w-3xl content-center justify-self-center">
+               <div class="flex flex-col items-center gap-4 text-center">
+                  <div class="inline-flex size-16 items-center justify-center rounded-2xl border border-border bg-card shadow-sm">
+                     <img class="size-10" src="/favicon.svg" alt="Montte" />
+                  </div>
+
+                  <div class="flex flex-col gap-4">
+                     <Badge className="self-center" variant="outline">
+                        Em breve
+                     </Badge>
+
+                     <div class="flex flex-col gap-4">
+                        <h1 class="font-serif text-4xl font-semibold tracking-tight text-foreground text-balance md:text-5xl">
+                           Gestão simples para empresas que querem operar melhor.
+                        </h1>
+                        <p class="text-base leading-7 text-muted-foreground text-pretty md:text-lg">
+                           A Montte une financeiro, clientes e operações em um ERP
+                           brasileiro com IA para reduzir trabalho manual e acelerar
+                           decisões.
+                        </p>
+                     </div>
+                  </div>
+
+                  <Card className="w-full text-left">
+                     <CardHeader>
+                        <CardTitle>Uma base única para sua operação</CardTitle>
+                        <CardDescription>
+                           Estruture os dados do negócio antes de automatizar processos
+                           com IA.
+                        </CardDescription>
+                     </CardHeader>
+                     <CardContent>
+                        <div class="grid gap-4 md:grid-cols-3">
+                           <div class="flex flex-col gap-2">
+                              <span class="text-sm font-medium text-foreground">Financeiro</span>
+                              <span class="text-sm text-muted-foreground">Contas, transações e centros de custo.</span>
+                           </div>
+                           <div class="flex flex-col gap-2">
+                              <span class="text-sm font-medium text-foreground">Clientes</span>
+                              <span class="text-sm text-muted-foreground">CRM, contatos e contratos em contexto.</span>
+                           </div>
+                           <div class="flex flex-col gap-2">
+                              <span class="text-sm font-medium text-foreground">Rubi</span>
+                              <span class="text-sm text-muted-foreground">Assistente para consultar e executar tarefas.</span>
+                           </div>
+                        </div>
+                     </CardContent>
+                  </Card>
+               </div>
             </div>
          </section>
       </div>
