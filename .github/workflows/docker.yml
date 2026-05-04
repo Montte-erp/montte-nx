@@ -32,7 +32,7 @@ jobs:
       steps:
          - uses: actions/checkout@v4
 
-         - uses: docker/setup-buildx-action@v3
+         - uses: useblacksmith/setup-docker-builder@v1
 
          - name: Build ${{ matrix.target }} image
            uses: useblacksmith/build-push-action@v2
