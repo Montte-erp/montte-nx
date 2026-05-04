@@ -1,0 +1,151 @@
+name: PR Readiness
+
+on:
+   workflow_dispatch:
+      inputs:
+         pr_number:
+            description: "Pull request number"
+            required: true
+            type: number
+   pull_request_review:
+      types: [submitted]
+
+permissions:
+   id-token: write
+   contents: read
+   pull-requests: write
+   issues: write
+   actions: read
+   checks: read
+
+jobs:
+   readiness:
+      if: |
+         github.event_name == 'workflow_dispatch' ||
+         github.event.review.user.login == 'cubic-dev-ai[bot]' ||
+         contains(github.event.review.user.login, 'cubic')
+      runs-on: blacksmith-4vcpu-ubuntu-2404
+      steps:
+         - name: Resolve PR metadata
+           id: pr
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              EVENT_NAME: ${{ github.event_name }}
+              INPUT_PR_NUMBER: ${{ inputs.pr_number }}
+              REVIEW_PR_NUMBER: ${{ github.event.pull_request.number }}
+           run: |
+              if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+                PR_NUMBER="$INPUT_PR_NUMBER"
+              else
+                PR_NUMBER="$REVIEW_PR_NUMBER"
+              fi
+
+              gh pr view "$PR_NUMBER" --json number,headRefName,headRefOid,baseRefName,headRepositoryOwner --jq '
+                "number=\(.number)\nhead_ref=\(.headRefName)\nhead_sha=\(.headRefOid)\nbase_ref=\(.baseRefName)\nhead_owner=\(.headRepositoryOwner.login)"
+              ' >> "$GITHUB_OUTPUT"
+
+         - name: Checkout PR head
+           uses: actions/checkout@v6
+           with:
+              ref: ${{ steps.pr.outputs.head_sha }}
+              fetch-depth: 0
+              persist-credentials: false
+
+         - name: Collect PR context
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              PR_NUMBER: ${{ steps.pr.outputs.number }}
+              BASE_REF: ${{ steps.pr.outputs.base_ref }}
+           run: |
+              git fetch origin "$BASE_REF" --depth=1
+
+              {
+                echo "# PR #$PR_NUMBER"
+                echo
+                echo "## PR metadata"
+                gh pr view "$PR_NUMBER" --json title,author,state,isDraft,mergeable,reviewDecision,additions,deletions,changedFiles,labels,url,body \
+                  --jq '{title, author: .author.login, state, isDraft, mergeable, reviewDecision, additions, deletions, changedFiles, labels: [.labels[].name], url, body}'
+                echo
+                echo "## Changed files"
+                gh pr diff "$PR_NUMBER" --name-only
+                echo
+                echo "## Commits"
+                git log --pretty=format:'- %s (%h) by %an' "origin/$BASE_REF..HEAD"
+                echo
+                echo
+                echo "## Current CI checks"
+                gh pr checks "$PR_NUMBER" || true
+                echo
+                echo "## Cubic reviews"
+                gh pr view "$PR_NUMBER" --json reviews \
+                  --jq '.reviews[] | select((.author.login | ascii_downcase | contains("cubic"))) | {state, submittedAt, author: .author.login, body}' || true
+                echo
+                echo "## Cubic inline comments"
+                gh api "repos/${{ github.repository }}/pulls/$PR_NUMBER/comments" --paginate \
+                  --jq '.[] | select((.user.login | ascii_downcase | contains("cubic"))) | {path, line, user: .user.login, body, html_url}' || true
+              } > pr-readiness-context.md
+
+         - name: Generate readiness report via opencode
+           uses: anomalyco/opencode/github@latest
+           env:
+              OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+              CONTEXT_FILE: pr-readiness-context.md
+              OUTPUT_FILE: PR_READINESS.md
+           with:
+              model: opencode-go/deepseek-v4-flash
+              prompt: |
+                 Você é um engenheiro senior revisando readiness de PR no Montte.
+
+                 Leia `$CONTEXT_FILE` e escreva `$OUTPUT_FILE` em Markdown pt-BR com um relatório curto, objetivo e acionável.
+
+                 Objetivo: complementar o review do Cubic, não repetir. Use os achados do Cubic como insumo, mas foque em decidir se o PR está pronto para merge.
+
+                 Estrutura obrigatória:
+
+                 ```markdown
+                 ## PR Readiness
+
+                 **Status:** pronto | atenção | bloquear
+
+                 **Resumo:** <2-3 frases sobre impacto e risco>
+
+                 ## Bloqueios
+                 <somente problemas que devem impedir merge; omita a seção se não houver>
+
+                 ## Pontos de Atenção
+                 <riscos, testes ausentes, migrações, UX, segurança, billing, DBOS, oRPC, env, release; omita se vazio>
+
+                 ## Validação Recomendada
+                 <comandos ou checks que faltam, usando comandos reais do repo quando aplicável>
+
+                 ## Cubic
+                 <resuma se o Cubic trouxe algo pendente, resolvido ou irrelevante. Não copie comentários longos.>
+                 ```
+
+                 Regras:
+                 - Seja conservador com `bloquear`: use apenas para risco real, CI vermelho, conflito, migração destrutiva sem plano, quebra de contrato, segredo, ou bug claro.
+                 - Se o Cubic não comentou nada relevante, diga isso.
+                 - Não invente detalhes que não estão no contexto.
+                 - Não inclua SHAs longos nem autores, exceto links já presentes.
+                 - Use bullets curtos, sem nested bullets.
+
+         - name: Verify readiness report
+           run: |
+              if [ ! -s PR_READINESS.md ]; then
+                echo "PR_READINESS.md missing or empty" >&2
+                exit 1
+              fi
+
+         - name: Comment readiness report
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              PR_NUMBER: ${{ steps.pr.outputs.number }}
+           run: gh pr comment "$PR_NUMBER" --body-file PR_READINESS.md
+
+         - name: Upload readiness artifacts
+           uses: actions/upload-artifact@v4
+           with:
+              name: pr-readiness-${{ steps.pr.outputs.number }}
+              path: |
+                 pr-readiness-context.md
+                 PR_READINESS.md
