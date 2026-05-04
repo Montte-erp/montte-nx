@@ -6,6 +6,18 @@
          "sourceType": "github",
          "computedHash": "1584c0740971e96f6c88cfc7b4671d9907b3d94297e4a6232941f869c73ac24a"
       },
+      "astro": {
+         "source": "astrolicious/agent-skills",
+         "sourceType": "github",
+         "skillPath": "skills/astro/SKILL.md",
+         "computedHash": "ebefe26b231d32379c14e41a46c2de7b4b0184543bedab7febdabe4fb21fba4e"
+      },
+      "astro-framework": {
+         "source": "delineas/astro-framework-agents",
+         "sourceType": "github",
+         "skillPath": "skills/astro-framework/SKILL.md",
+         "computedHash": "7d8940b3fb7dab50f8303afdb3210cc9385da3a8d243fe99efdc08ce53aed90c"
+      },
       "better-auth-best-practices": {
          "source": "better-auth/skills",
          "sourceType": "github",
