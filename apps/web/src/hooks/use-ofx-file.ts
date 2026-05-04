@@ -16,7 +16,7 @@ export function useOfxFile() {
       const txs = getTransactions(doc);
       const rows = txs.map((tx) => [
          dayjs(tx.DTPOSTED.toDate()).format("YYYY-MM-DD"),
-         String(tx.TRNAMT),
+         tx.TRNAMT.toFixed(2).replace(".", ","),
          tx.TRNTYPE,
          tx.NAME ?? tx.MEMO ?? "",
          tx.FITID ?? "",
