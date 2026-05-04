@@ -3,7 +3,9 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](CONTRIBUTING.md)
 
-**Montte** is an AI-first ERP built to solve the financial management pain points of SaaS companies and coworking spaces. It combines traditional financial controls — bank accounts, transactions, bills, credit cards, budgets — with AI-powered analytics and an intelligent assistant (Rubi) that helps you understand your finances through natural language.
+**Montte** is an open source, AI-native ERP for SaaS companies and coworking spaces in Brazil. The interface is a chat with **Rubi**, an assistant that runs your finance, CRM, services and analytics through natural language. Traditional screens are still there as a fallback — but the default is conversation.
+
+> **Status:** pre-launch private beta. Not on production yet. Expect breaking changes.
 
 ---
 
@@ -29,62 +31,67 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for staging setup and all available comma
 
 ---
 
-## Key Features
+## What Montte does today
 
-### Financial Management
+### Finance (`@modules/finance`)
 
-- **Bank Accounts**: Connect and manage multiple bank accounts in one place
-- **Transactions**: Import, categorize, and track all financial transactions with bulk operations and smart filters
-- **Bills (Contas a Pagar)**: Manage payables, create bills from transactions, and track due dates
-- **Credit Cards**: Track credit card spending and statements
-- **Categories & Tags**: Organize finances with custom categories, subcategories, and cost centers (centros de custo)
-- **Contacts**: Manage suppliers, clients, and service providers
+- **Bank accounts** — manage multiple accounts, balances tracked per account
+- **Transactions** — import (CSV/XLSX/OFX), categorize, bulk operations, smart filters; statement import auto-categorizes via AI when enabled
+- **Credit cards** — track cards, statements and totals
 
-### Budget & Goals
+### CRM & contacts (`@modules/billing`, `@modules/classification`)
 
-- **Budget Goals**: Set spending limits by category and track progress in real-time
-- **Budget Alerts**: Automated notifications when spending approaches or exceeds thresholds (powered by durable background workflows)
+- **Contacts** — clients, suppliers and service providers
+- **Categories & tags** — custom categories with subcategories; tags double as **centros de custo** (cost centers) for project-level breakdowns
 
-### Services & Inventory
+### Services & billing (`@modules/billing`)
 
-- **Services**: Manage recurring and one-time services with analytics
-- **Inventory**: Basic inventory tracking
+- **Services catalog** — recurring and one-time services with usage-based pricing
+- **Meters, prices, subscriptions, subscription items, benefits, coupons** — primitives for usage-based billing
 
-### Analytics & Dashboards
+### Analytics (`@modules/insights`)
 
-- **Custom Dashboards**: Build dashboards with flexible insight tiles
-- **Analytics Engine**: Breakdown and trend analysis across financial data
-- **Event Catalog**: Track and analyze platform events with property definitions
-- **Data Management**: Define and manage event definitions and properties
+- **Custom dashboards** — flexible insight tiles you arrange yourself
+- **Analytics engine** — breakdowns, trends, KPIs, time series across financial data
 
-### AI Assistant (Rubi)
+### Rubi — the AI layer (`@modules/agents`)
 
-- **Chat Interface**: Natural language financial assistant accessible from any screen
-- **Multi-Model Support**: Powered by TanStack AI with OpenRouter for flexible model selection
-- **Context-Aware**: Understands your financial data and provides relevant insights
+- **Chat-first UX** — Rubi is a persistent drawer available on every page; ask in Portuguese, get answers backed by your real data
+- **Tools wrap oRPC procedures** — Rubi reads and writes through the same API your dashboard uses; no parallel implementation
+- **Skills** — domain playbooks loaded on demand (`services` today; `finance`, `classification`, `contacts`, `insights`, `onboarding` shipping next)
+- **Multi-model via TanStack AI + OpenRouter** — model selection per call
 
-### Integrations & Webhooks
+### Account & teams (`@modules/account`)
 
-- **Webhooks**: Configure outgoing webhooks for real-time event notifications
-- **API Keys**: Programmatic access for external integrations
+- **Multi-tenant organizations** with team-scoped data isolation
+- **Roles**: owner, admin, member with granular permissions
+- **Email invitations** with pending invite management
+- **Onboarding** — minimal CNPJ + profile flow today; conversational chat-onboarding via Rubi shipping in v1
 
-### Team Collaboration
+### Integrations
 
-- **Multi-tenant Organizations**: Isolated workspaces for each company
-- **Teams**: Create teams within organizations with scoped access
-- **Role-Based Access**: Owner, Admin, and Member roles with granular permissions
-- **Invitations**: Invite members via email with pending invitation management
+- **Public API** — every oRPC procedure is exposed via OpenAPI at `/api/openapi/docs` (Scalar reference). Authenticate with API keys.
+- **Webhooks** — outgoing webhooks for real-time event notifications
+- **API keys** — programmatic access from Settings → Project → API Keys
 
-### Billing
-
-Usage-based billing powered by Stripe meter events. Each billable event (AI chat, transactions, webhooks, etc.) has a free tier — usage above the free tier is metered and billed automatically. Optional addon subscriptions (Boost, Scale, Enterprise) unlock additional features.
-
-### Security & Authentication
+### Auth & security (`@core/authentication`)
 
 - Email/password, Google OAuth, Magic Link, Email OTP
 - Two-factor authentication (2FA)
 - Session management with device tracking
 - Rate limiting and bot detection via Arcjet
+
+### What's NOT in the box yet
+
+These are tracked publicly on Linear and GitHub — they're real next, not today:
+
+- **Pay-as-you-go billing** — landed after the HyprPay payment layer ships
+- **NFe (Nota Fiscal Eletrônica)** — own implementation, no third-party SaaS
+- **GED** — document management with OCR + ParadeDB BM25 search
+- **E-signature** — DocuSeal self-hosted
+- **Inventory** — unified SKU / service / space model (ex-`@modules/inventory` was removed and is being redesigned)
+
+If you're seeing a feature mentioned in older docs, blog posts, or the Linear backlog that isn't here, it was either removed or hasn't shipped yet. The README is the source of truth.
 
 ---
 
@@ -95,15 +102,15 @@ Built as an **Nx** monorepo with **Bun**.
 | Category      | Technology                                                                                           |
 | :------------ | :--------------------------------------------------------------------------------------------------- |
 | **Frontend**  | React 19, TanStack Start (SSR), TanStack Router, TanStack Query, shadcn/ui, Tailwind CSS, TypeScript |
-| **AI**        | TanStack AI + OpenRouter (Agent orchestration)                                                       |
-| **Backend**   | oRPC (type-safe API), DBOS (durable workflows), Drizzle ORM, PostgreSQL                              |
-| **Auth**      | Better Auth                                                                                          |
-| **Jobs**      | DBOS (durable workflows, cron, retries), Redis (rate limiting, credit counters)                      |
+| **AI**        | TanStack AI + `@tanstack/ai-openrouter`                                                              |
+| **Backend**   | oRPC (type-safe API + OpenAPI), Drizzle ORM, PostgreSQL (ParadeDB image)                             |
+| **Auth**      | Better Auth (Magic Link, Email OTP, 2FA, Anonymous, HyprPay plugins)                                 |
+| **Workflows** | DBOS (durable workflows, queues, cron, retries) running in `apps/worker`                             |
+| **Realtime**  | `@core/sse` — scope-routed Redis pub/sub (user / team / org)                                         |
 | **Storage**   | MinIO (S3-compatible)                                                                                |
-| **Security**  | Arcjet (Rate limiting & bot detection)                                                               |
-| **Analytics** | PostHog                                                                                              |
+| **Security**  | Arcjet (rate limiting & bot detection)                                                               |
+| **Analytics** | PostHog (server + client; surveys + feature flags + early-access)                                    |
 | **Email**     | Resend (React Email templates)                                                                       |
-| **Payments**  | Stripe                                                                                               |
 | **Tooling**   | Nx, oxlint, oxfmt                                                                                    |
 
 ---
@@ -113,38 +120,66 @@ Built as an **Nx** monorepo with **Bun**.
 ```
 montte-nx/
 ├── apps/
-│   └── web/             # TanStack Start (SSR) — dashboard + oRPC routers + DBOS workflows
-├── core/
-│   ├── database/        # Drizzle ORM schemas & repositories
-│   ├── agents/          # AI agents
-│   ├── authentication/  # Better Auth setup
-│   ├── environment/     # Zod-validated env vars
+│   ├── web/             # TanStack Start (SSR) — dashboard + oRPC aggregator
+│   └── worker/          # DBOS runtime — durable workflows for all modules
+├── core/                # Infra packages (no domain logic)
+│   ├── ai/              # AI primitives (chat, middleware, schemas)
+│   ├── authentication/  # Better Auth setup (server + client)
+│   ├── database/        # Drizzle schemas + client (auth, finance, crm, platform, settings, agents)
+│   ├── dbos/            # DBOS factory + testing helpers
+│   ├── environment/     # Zod-validated env vars (web + worker)
+│   ├── files/           # MinIO file storage client
+│   ├── logging/         # Pino logger + WebAppError + OTel
+│   ├── orpc/            # oRPC server + procedures + context + telemetry
+│   ├── posthog/         # PostHog server/client + surveys/flags config
 │   ├── redis/           # Redis singleton
-│   ├── logging/         # Pino logger + error classes
-│   ├── files/           # MinIO file storage
-│   ├── posthog/         # PostHog server/client + config
-│   ├── stripe/          # Stripe singleton
-│   ├── transactional/   # Resend + email templates
+│   ├── sse/             # Agnostic SSE pub/sub over Redis
+│   ├── transactional/   # Resend + transactional email templates
 │   └── utils/           # Shared utilities
+├── modules/             # Domain modules — each owns its router, services, workflows, sse
+│   ├── account/         # Profile, org, team, sessions, API keys, onboarding, settings
+│   ├── agents/          # Rubi chat + threads + tools + skills
+│   ├── billing/         # Services catalog, meters, prices, subscriptions, benefits, coupons, usage
+│   ├── classification/  # Categories, tags, AI categorization workflows
+│   ├── finance/         # Bank accounts, transactions, credit cards
+│   └── insights/        # Dashboards, insights, analytics
 ├── packages/
-│   ├── analytics/       # Analytics engine
-│   ├── events/          # Event catalog, schemas, credits
-│   ├── notifications/   # Job notification types & schema
-│   └── ui/              # Radix + Tailwind component library
-├── libraries/
-│   ├── cli/             # @montte/cli — TanStack Intent skills + CLI tooling
-│   └── hyprpay/         # @montte/hyprpay — HyprPay SDK
+│   └── ui/              # shadcn primitives + Montte components
 └── tooling/
+    ├── boundary/        # Import boundary rules
+    ├── css/             # Tailwind config
     ├── oxc/             # oxlint + oxfmt configs
     └── typescript/      # Shared TypeScript configs
 ```
 
+The web app is the host: it imports routers from each `@modules/*` package and aggregates them in `apps/web/src/integrations/orpc/router/index.ts`. Workflows run in the separate `apps/worker` process. New domains land as a new `modules/<name>` package with its own router, services, workflows and (optionally) SSE channels.
+
 ---
 
-## Contributing
+## Public API
 
-Contributions are welcome. Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+Every oRPC procedure is exposed via OpenAPI when the app runs. Open the interactive reference at:
+
+```
+http://localhost:3000/api/openapi/docs
+```
+
+Authenticate with `x-api-key` (created in Settings → Project → API Keys) or with the session cookie when called from a logged-in browser.
+
+---
+
+## Self-host
+
+A production Dockerfile and `docker-compose.prod.yml` are coming as part of the launch (tracked in [MON-576](https://linear.app/montte/issue/MON-576)). For now `apps/web/docker-compose.yml` only spins up the local Postgres / Redis / MinIO stack for development.
+
+---
+
+## Roadmap & contributing
+
+- The roadmap and active work are public on Linear at [linear.app/montte](https://linear.app/montte).
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) before sending a PR. Code style is opinionated and enforced (oxlint + oxfmt + boundary rules).
+- Bugs and feature requests welcome as GitHub issues.
 
 ## License
 
-This project is licensed under the Apache-2.0 License. See the [LICENSE.md](LICENSE.md) file for details.
+Apache-2.0. See [LICENSE.md](LICENSE.md).
