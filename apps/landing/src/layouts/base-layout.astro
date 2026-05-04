@@ -1,8 +1,8 @@
 ---
 import "@tooling/css/globals.css";
 
-import { ShapeGridAside } from "../components/shape-grid";
 import NavbarBlock from "../blocks/navbar-block.astro";
+import FooterBlock from "../blocks/footer-block.astro";
 
 interface Props {
    description: string;
@@ -13,45 +13,45 @@ const { description, title } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="dark">
    <head>
       <meta charset="UTF-8" />
       <meta name="description" content={description} />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
       <title>{title}</title>
-      <script is:inline>
-         (() => {
-            const storedTheme = localStorage.getItem("montte:theme");
-            const cookieTheme = document.cookie
-               .split("; ")
-               .find((item) => item.startsWith("theme="))
-               ?.split("=")[1];
-            const theme = storedTheme || cookieTheme || "system";
-            const resolvedTheme =
-               theme === "dark" ||
-               (theme === "system" &&
-                  window.matchMedia("(prefers-color-scheme: dark)").matches)
-                  ? "dark"
-                  : "light";
-
-            document.documentElement.classList.remove("dark", "light");
-            document.documentElement.classList.add(resolvedTheme);
-         })();
-      </script>
    </head>
-   <body class="overflow-hidden">
-      <main class="flex h-dvh bg-muted text-foreground dark:bg-background">
-         <ShapeGridAside client:load />
-
-         <div class="flex h-dvh w-full max-w-7xl shrink-0 flex-col border-x border-border bg-background shadow-sm">
-            <NavbarBlock />
-            <div class="min-h-0 flex-1 overflow-y-auto">
-               <slot />
-            </div>
+   <body class="relative min-h-dvh bg-background text-foreground antialiased">
+      <div
+         class="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+         aria-hidden="true"
+      >
+         <div
+            class="absolute -top-40 left-1/2 size-[900px] -translate-x-1/2 rounded-full opacity-60 blur-3xl"
+            style="background: radial-gradient(circle, oklch(0.7729 0.1535 163.2231 / 0.18), transparent 60%);"
+         >
          </div>
+         <div
+            class="absolute top-[40%] left-[10%] size-[500px] rounded-full opacity-40 blur-3xl"
+            style="background: radial-gradient(circle, oklch(0.65 0.19 250 / 0.18), transparent 60%);"
+         >
+         </div>
+         <div
+            class="absolute top-[60%] right-[5%] size-[600px] rounded-full opacity-30 blur-3xl"
+            style="background: radial-gradient(circle, oklch(0.72 0.22 340 / 0.16), transparent 60%);"
+         >
+         </div>
+         <div
+            class="absolute inset-0 opacity-[0.025]"
+            style="background-image: linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px); background-size: 60px 60px;"
+         >
+         </div>
+      </div>
 
-         <ShapeGridAside client:load />
+      <NavbarBlock />
+      <main class="relative">
+         <slot />
       </main>
+      <FooterBlock />
    </body>
 </html>

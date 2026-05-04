@@ -1,34 +1,19 @@
 ---
-import { Badge } from "@packages/ui/components/badge";
-
 import BaseLayout from "../layouts/base-layout.astro";
+import HeroBlock from "../blocks/hero-block.astro";
+import ShapeCardsBlock from "../blocks/shape-cards-block.astro";
+import ProductTabsBlock from "../blocks/product-tabs-block.astro";
+import FeaturesBlock from "../blocks/features-block.astro";
+import CtaBlock from "../blocks/cta-block.astro";
 ---
 
-<BaseLayout title="Montte" description="Montte">
-   <section class="grid min-h-[calc(100vh-2.5rem)] px-4 py-4" aria-label="Montte">
-      <div class="grid w-full max-w-3xl content-center justify-self-center">
-         <div class="flex flex-col items-center gap-4 text-center">
-            <div class="inline-flex size-16 items-center justify-center rounded-2xl border border-border bg-card shadow-sm">
-               <img class="size-10" src="/favicon.svg" alt="Montte" />
-            </div>
-
-            <div class="flex flex-col gap-4">
-               <Badge className="self-center" variant="outline">
-                  Em breve
-               </Badge>
-
-               <div class="flex flex-col gap-4">
-                  <h1 class="font-serif text-4xl font-semibold tracking-tight text-foreground text-balance md:text-5xl">
-                     Gestão simples para empresas que querem operar melhor.
-                  </h1>
-                  <p class="text-base leading-7 text-muted-foreground text-pretty md:text-lg">
-                     A Montte une financeiro, clientes e operações em um ERP
-                     brasileiro com IA para reduzir trabalho manual e acelerar
-                     decisões.
-                  </p>
-               </div>
-            </div>
-         </div>
-      </div>
-   </section>
+<BaseLayout
+   title="Montte — ERP brasileiro com IA"
+   description="ERP brasileiro construído ao redor de uma agente de IA. Financeiro, contatos, serviços e cobranças que conversam entre si."
+>
+   <HeroBlock />
+   <ShapeCardsBlock />
+   <ProductTabsBlock />
+   <FeaturesBlock />
+   <CtaBlock />
 </BaseLayout>
