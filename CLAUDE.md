@@ -23,7 +23,7 @@ bun run auth:generate    # regen Better Auth schema
 
 Scripts (`commander run|check`, `--env`, `--dry-run`): `scripts/seed-default-dashboard.ts`, `scripts/seed-event-catalog.ts`, `scripts/doctor.ts`.
 
-First-time setup: `bun run setup` → `cd apps/web && docker compose up -d` → `bun run db:push && bun run seed:addons && bun run setup:stripe`.
+First-time setup: `bun run setup` → `cd apps/web && docker compose up -d` → `bun run db:push`.
 
 **Gotchas:**
 
@@ -51,10 +51,12 @@ Domain → skill map (open before coding):
 ## Monorepo
 
 ```
-core/         # agents, database, authentication, environment, redis, logging,
-              # files, posthog, stripe, transactional, utils
+core/         # ai, authentication, database, dbos, environment, files, logging,
+              # orpc, posthog, redis, sse, transactional, utils
+modules/      # account, agents, billing, classification, finance, insights
+              # — domain modules (router, services, workflows, sse per module)
 apps/         # web (TanStack Start + oRPC), worker (DBOS)
-packages/     # analytics, events, notifications, ui
+packages/     # ui (shadcn primitives + Montte components)
 tooling/      # oxc, tsconfigs
 ```
 
@@ -66,7 +68,7 @@ Add a new dep → declare in the consuming package's `package.json` with the rig
 
 ## API — oRPC (NOT tRPC)
 
-Routers in `apps/web/src/integrations/orpc/router/`. Context: `{ db, posthog?, organizationId, userId, session, auth, headers, request, stripeClient?, workflowClient }`.
+Routers live in `modules/<module>/src/router/<name>.ts` and are aggregated in `apps/web/src/integrations/orpc/router/index.ts` (only `notifications.ts` still lives at the aggregator). Context: `{ db, posthog?, organizationId, userId, session, auth, headers, request, workflowClient }`.
 
 **Rules:**
 
@@ -99,7 +101,7 @@ const itemByIdProcedure = protectedProcedure
    });
 ```
 
-Available routers: account, agent-settings, analytics, api-keys, bank-accounts, billing, bills, budget-goals, categories, contact-settings, contacts, credit-cards, dashboards, financial-settings, insights, notifications, onboarding, organization, services, services-bills, session, tags, team, transactions.
+Available routers (aggregated keys): account, agentSettings, analytics, apiKeys, bankAccounts, benefits, categories, categoriesBulk, cnpj, contactSettings, contacts, coupons, creditCards, customerPortal, dashboards, financialSettings, insights, meters, notifications, onboarding, organization, prices, rubi, services, session, subscriptionItems, subscriptions, tags, team, threads, transactions, usage.
 
 ---
 
@@ -198,7 +200,7 @@ DBOS runs in `apps/worker` — never the web process. Web enqueues via `context.
 **Workflow rules:**
 
 - Use `<module>DataSource = new DrizzleDataSource<DatabaseInstance>(...)` per module. Inside steps: `dataSource.runTransaction(async () => { const tx = <module>DataSource.client; … }, { name })`. Generic gives a typed `client` — never cast. Never use plain `db` or repositories.
-- Worker startup, in this order, per module: `await DrizzleDataSource.initializeDBOSSchema({ connectionString })` → init context store → create queues → side-effect import workflow files. All `setup<Module>Workflows(deps)` awaited before `launchDBOS()`. `initOtel()` before `launchDBOS()`. Without `initializeDBOSSchema` the `transaction_completion` table is missing and `runTransaction` throws.
+- Worker startup: `initOtel()` first, then `await setup<Module>Workflows(deps)` for every module, then `DBOS.launch()`. Each module's `setup<Module>Workflows` (in `modules/<m>/src/workflows/setup.ts`) is async and is responsible for: `await DrizzleDataSource.initializeDBOSSchema({ connectionString })` → init context store → create queues → side-effect import workflow files. The worker only wires deps and ordering. Without `initializeDBOSSchema` the `transaction_completion` table is missing and `runTransaction` throws.
 - Logging: `DBOS.logger` only (string interpolation). Never replace with `getWorkerLogger` inside workflows — loses workflow context.
 - Scheduling per-instance waits: `enqueueOptions.delaySeconds` on enqueue / self-reschedule (`DELAYED` status, no slot held). `DBOS.sleepms` may hold the slot — avoid for long waits. Reserve `@DBOS.scheduled` for fixed cron only.
 - Self-rescheduling: re-check status in tx → do work → compute next wake **inside `DBOS.runStep`** → `DBOS.startWorkflow(self, { workflowID: "<deterministic-per-period>", queueName, enqueueOptions: { delaySeconds } })`.
@@ -276,7 +278,6 @@ import { db } from "@core/database/client";
 import { auth } from "@core/authentication/server";
 import { redis } from "@core/redis/connection";
 import { posthog } from "@core/posthog/server";
-import { stripeClient } from "@core/stripe";
 import { resendClient } from "@core/transactional/utils";
 import { minioClient } from "@core/files/client";
 import { env } from "@core/environment/server";
