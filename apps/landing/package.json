@@ -28,5 +28,8 @@
    "devDependencies": {
       "@types/react": "catalog:react",
       "@types/react-dom": "catalog:react"
+   },
+   "engines": {
+      "node": ">=22.12.0"
    }
 }
