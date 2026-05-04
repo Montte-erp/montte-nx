@@ -6,9 +6,41 @@ runs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
+      - name: Cache Bun global install dir
+        uses: useblacksmith/cache@v5
+        with:
+           path: ~/.bun/install/cache
+           key: ${{ runner.os }}-bun-store-${{ hashFiles('bun.lock') }}
+           restore-keys: |
+              ${{ runner.os }}-bun-store-
+
+      - name: Cache node_modules
+        uses: useblacksmith/cache@v5
+        with:
+           path: |
+              node_modules
+              apps/*/node_modules
+              core/*/node_modules
+              modules/*/node_modules
+              packages/*/node_modules
+              tooling/*/node_modules
+           key: ${{ runner.os }}-node-modules-${{ hashFiles('bun.lock') }}
+           restore-keys: |
+              ${{ runner.os }}-node-modules-
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
         shell: bash
+
+      - name: Cache Nx
+        uses: useblacksmith/cache@v5
+        with:
+           path: .nx/cache
+           key: ${{ runner.os }}-nx-${{ github.ref_name }}-${{ github.sha }}
+           restore-keys: |
+              ${{ runner.os }}-nx-${{ github.ref_name }}-
+              ${{ runner.os }}-nx-master-
+              ${{ runner.os }}-nx-
 
       - name: Set Nx SHAs
         uses: nrwl/nx-set-shas@v4
