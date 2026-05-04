@@ -1,0 +1,96 @@
+# Self-host Montte. From repo root:
+#   cp .env.production.example .env.production
+#   # edit secrets, then:
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+#
+# First boot only — push the schema:
+#   docker compose -f docker-compose.prod.yml --env-file .env.production \
+#     run --rm web bun run --filter=@core/database db-push
+
+name: montte
+
+services:
+   postgres:
+      image: paradedb/paradedb:latest
+      command: postgres -c wal_level=logical
+      restart: unless-stopped
+      environment:
+         POSTGRES_USER: ${POSTGRES_USER:-postgres}
+         POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.production}
+         POSTGRES_DB: ${POSTGRES_DB:-montte}
+      volumes:
+         - pgdata:/var/lib/postgresql
+      healthcheck:
+         test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-montte}"]
+         interval: 10s
+         timeout: 5s
+         retries: 10
+
+   redis:
+      image: redis:7-alpine
+      restart: unless-stopped
+      command: redis-server --appendonly yes
+      volumes:
+         - redisdata:/data
+      healthcheck:
+         test: ["CMD", "redis-cli", "ping"]
+         interval: 10s
+         timeout: 5s
+         retries: 5
+
+   minio:
+      image: minio/minio:latest
+      restart: unless-stopped
+      command: server /data --console-address ":9001"
+      environment:
+         MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env.production}
+         MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env.production}
+      volumes:
+         - miniodata:/data
+      ports:
+         - "${MINIO_API_PORT:-9000}:9000"
+         - "${MINIO_CONSOLE_PORT:-9001}:9001"
+      healthcheck:
+         test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+         interval: 30s
+         timeout: 10s
+         retries: 5
+
+   web:
+      build:
+         context: .
+         dockerfile: apps/web/Dockerfile
+      image: montte/web:latest
+      restart: unless-stopped
+      depends_on:
+         postgres: { condition: service_healthy }
+         redis: { condition: service_healthy }
+         minio: { condition: service_healthy }
+      env_file: .env.production
+      environment:
+         DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-montte}
+         REDIS_URL: redis://redis:6379
+         MINIO_ENDPOINT: minio:9000
+         MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+         MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      ports:
+         - "${WEB_PORT:-3000}:3000"
+
+   worker:
+      build:
+         context: .
+         dockerfile: apps/worker/Dockerfile
+      image: montte/worker:latest
+      restart: unless-stopped
+      depends_on:
+         postgres: { condition: service_healthy }
+         redis: { condition: service_healthy }
+      env_file: .env.production
+      environment:
+         DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-montte}
+         REDIS_URL: redis://redis:6379
+
+volumes:
+   pgdata:
+   redisdata:
+   miniodata:

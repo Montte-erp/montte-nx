@@ -170,7 +170,19 @@ Authenticate with `x-api-key` (created in Settings → Project → API Keys) or 
 
 ## Self-host
 
-A production Dockerfile and `docker-compose.prod.yml` are coming as part of the launch (tracked in [MON-576](https://linear.app/montte/issue/MON-576)). For now `apps/web/docker-compose.yml` only spins up the local Postgres / Redis / MinIO stack for development.
+```bash
+cp .env.production.example .env.production
+# fill in secrets, then:
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+```
+
+The stack runs `web` (TanStack Start, port 3000), `worker` (DBOS), `postgres` (ParadeDB), `redis` and `minio`. First boot only — push the schema from a dev checkout pointed at the same `DATABASE_URL`:
+
+```bash
+DATABASE_URL=postgresql://… bun run db:push
+```
+
+Per-app Dockerfiles live at `apps/web/Dockerfile` and `apps/worker/Dockerfile` (multi-stage Bun builds, build context is the repo root).
 
 ---
 
