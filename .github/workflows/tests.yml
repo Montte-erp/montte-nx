@@ -23,6 +23,7 @@ jobs:
            run: bunx nx affected -t test --base=origin/master --head=HEAD -- --coverage --coverage.reporter=lcov
 
          - name: Upload coverage reports to Codecov
+           if: hashFiles('apps/*/coverage/lcov.info', 'core/*/coverage/lcov.info', 'packages/*/coverage/lcov.info') != ''
            uses: codecov/codecov-action@v5
            with:
               token: ${{ secrets.CODECOV_TOKEN }}
