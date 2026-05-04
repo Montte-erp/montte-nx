@@ -17,6 +17,7 @@ on:
          - "packages/**"
          - "apps/web/**"
          - "apps/worker/**"
+         - "apps/landing/package.json"
          - "tooling/**"
          - "nx.json"
          - "tsconfig.json"
