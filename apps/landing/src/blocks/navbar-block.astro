@@ -1,0 +1,48 @@
+---
+import { Button } from "@packages/ui/components/button";
+
+import { AstroNavigationMenu } from "../components/astro-navigation-menu";
+import { ThemeSwitcherClient } from "./theme-switcher-client";
+
+const navItems = [
+   {
+      title: "Produto",
+      description: "ERP, automação e operação em uma base única.",
+      href: "/produto",
+   },
+   {
+      title: "Preços",
+      description: "Planos simples para empresas em crescimento.",
+      href: "/precos",
+   },
+   {
+      title: "Docs",
+      description: "Guias para configurar e usar a Montte.",
+      href: "/docs",
+   },
+   {
+      title: "Comunidade",
+      description: "Conteúdo, suporte e novidades do produto.",
+      href: "/comunidade",
+   },
+];
+---
+
+<header class="shrink-0 border-b border-border bg-background p-2">
+   <nav class="flex min-h-10 items-center justify-between gap-4" aria-label="Principal">
+      <div class="flex items-center gap-4">
+         <a class="inline-flex size-10 items-center justify-center rounded-md text-foreground hover:bg-accent hover:text-accent-foreground" href="/" aria-label="Montte">
+            <img class="size-8" src="/favicon.svg" alt="" />
+         </a>
+
+         <AstroNavigationMenu items={navItems} client:load />
+      </div>
+
+      <div class="flex items-center gap-2">
+         <Button asChild size="sm" variant="secondary">
+            <a href="/dashboard">Dashboard</a>
+         </Button>
+         <ThemeSwitcherClient client:load />
+      </div>
+   </nav>
+</header>
