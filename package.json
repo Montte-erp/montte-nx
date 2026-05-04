@@ -13,17 +13,17 @@
             "posthog-node": "^5.29.2"
          },
          "astro": {
-            "@astrojs/check": "^0.9.9",
-            "@astrojs/mdx": "^5.0.4",
+            "@astrojs/check": "0.9.6-alpha.0",
+            "@astrojs/mdx": "11.0.0-alpha.0",
             "@astrojs/node": "^10.0.6",
-            "@astrojs/react": "^5.0.4",
-            "@astrojs/rss": "^4.0.18",
-            "@astrojs/sitemap": "^3.7.2",
+            "@astrojs/react": "6.0.0-alpha.0",
+            "@astrojs/rss": "4.0.15-alpha.0",
+            "@astrojs/sitemap": "3.6.1-alpha.1",
             "@astrojs/starlight": "0.38.4",
             "@astrojs/starlight-tailwind": "5.0.0",
             "@astrojs/ts-plugin": "^1.10.7",
             "@lucide/astro": "^1.14.0",
-            "astro": "6.2.2"
+            "astro": "7.0.0-alpha.0"
          },
          "auth": {
             "better-auth": "1.6.5",
@@ -215,7 +215,7 @@
       "db:push:prod": "bun run scripts/ensure-schemas.ts --env production && nx run core/database:db-push-prod",
       "db:studio:local": "nx run core/database:db-studio-local",
       "db:studio:prod": "nx run core/database:db-studio-prod",
-      "dev": "bun run scripts/dev-init.ts; nx run-many -t dev --parallel=3 -p web worker",
+      "dev": "bun run scripts/dev-init.ts; nx run-many -t dev --parallel=3 -p web worker landing",
       "dev:staging": "bun run scripts/check-env.ts --env staging && nx run-many -t dev:staging --parallel=3 -p web",
       "setup": "bun run scripts/setup.ts",
       "dev:all": "bun run scripts/dev-init.ts && nx run-many -t dev --parallel=6",
