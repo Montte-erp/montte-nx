@@ -1,8 +1,9 @@
 ---
-import { ArrowUpRight, Bot, Boxes, ChartColumn, CircleCheck, ShieldCheck, Sparkles } from "@lucide/astro";
+import { ArrowUpRight, Bot, Boxes, ChartColumn, ChevronDown, CircleCheck, Star, ShieldCheck, Sparkles } from "@lucide/astro";
 import { buttonVariants } from "@packages/ui/components/button";
 import { cn } from "@packages/ui/lib/utils";
 import { CtaActions } from "../components/cta-actions";
+import { DataHub } from "../components/data-hub";
 import BaseLayout from "../layouts/base-layout.astro";
 
 const features = [
@@ -23,99 +24,134 @@ const features = [
    },
 ];
 
-const metrics = [
-   { value: "1", label: "workspace para operar tudo" },
-   { value: "24/7", label: "rotinas e agentes acompanhando dados" },
-   { value: "pt-BR", label: "experiencia nativa para empresas brasileiras" },
+const navItems = ["Produto", "Recursos", "Comunidade", "Empresa"];
+const trustItems = [
+   "100% Open Source",
+   "Self-hosted",
+   "Seus dados, suas regras",
+   "Sem vendor lock-in",
 ];
 ---
 
 <BaseLayout title="Montte — ERP inteligente para empresas modernas" description="Landing page do Montte, ERP com IA, financeiro, servicos e dados em uma plataforma modular.">
-   <main class="min-h-screen overflow-hidden">
+   <main class="min-h-screen overflow-hidden bg-[oklch(0.96_0.01_85)]">
       <section class="relative px-4 py-4 sm:px-4 lg:px-4">
-         <div class="absolute inset-x-0 top-0 -z-10 h-96 bg-[radial-gradient(circle_at_center,color-mix(in_oklch,var(--primary)_20%,transparent),transparent_58%)]"></div>
+         <div class="absolute inset-x-0 top-0 -z-10 h-[32rem] bg-[radial-gradient(ellipse_at_top,color-mix(in_oklch,var(--primary)_18%,transparent),transparent_60%)]"></div>
+
          <div class="flex w-full max-w-7xl justify-self-center flex-col gap-4">
-            <header class="flex items-center justify-between rounded-full border border-border/70 bg-card/80 p-2 shadow-sm backdrop-blur">
-               <a href="/" class="flex items-center gap-2 rounded-full px-2 py-2 text-sm font-semibold text-foreground" aria-label="Montte">
-                  <span class="grid size-4 place-items-center rounded-full bg-primary text-primary-foreground">M</span>
-                  Montte
-               </a>
+            <header class="flex items-center justify-between rounded-full border border-border/60 bg-card/90 p-2 shadow-sm backdrop-blur">
+               <div class="flex items-center gap-2 pl-2">
+                  <a href="/" class="flex items-center gap-2 text-base font-semibold text-foreground" aria-label="Montte">
+                     <span class="grid size-4 place-items-center rounded-full bg-primary text-primary-foreground text-xs">M</span>
+                     Montte
+                  </a>
+                  <span class="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-medium text-primary">
+                     <Sparkles class="size-4" />
+                     Open Source
+                  </span>
+               </div>
+
                <nav class="hidden items-center gap-4 text-sm text-muted-foreground md:flex" aria-label="Principal">
-                  <a class="transition-colors hover:text-foreground" href="#produto">Produto</a>
-                  <a class="transition-colors hover:text-foreground" href="#operacao">Operacao</a>
-                  <a class="transition-colors hover:text-foreground" href="#seguranca">Seguranca</a>
+                  {navItems.map((item) => (
+                     <a class="inline-flex items-center gap-2 transition-colors hover:text-foreground" href={`#${item.toLowerCase()}`}>
+                        {item}
+                        <ChevronDown class="size-4" />
+                     </a>
+                  ))}
+                  <a class="transition-colors hover:text-foreground" href="#docs">Docs</a>
                </nav>
-               <a class={cn(buttonVariants({ variant: "outline", size: "sm" }), "rounded-full")} href="/auth/sign-in">
-                  Entrar
-               </a>
+
+               <div class="flex items-center gap-2">
+                  <a
+                     href="https://github.com/Montte-erp"
+                     target="_blank"
+                     rel="noreferrer"
+                     class="hidden items-center gap-2 rounded-full border border-border/70 bg-card px-4 py-2 text-xs font-medium text-foreground shadow-sm sm:inline-flex"
+                  >
+                     <Star class="size-4" />
+                     GitHub
+                     <span class="rounded-full bg-secondary px-2 py-0.5 text-[0.65rem] font-semibold text-secondary-foreground">2.1k</span>
+                  </a>
+                  <a class={cn(buttonVariants({ size: "sm" }), "rounded-full")} href="/auth/sign-in">
+                     Começar agora
+                  </a>
+               </div>
             </header>
 
             <div class="grid items-center gap-4 py-4 lg:grid-cols-[1.05fr_0.95fr] lg:py-4">
                <div class="flex flex-col gap-4">
                   <div class="inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
                      <Sparkles class="size-4" />
-                     ERP modular com IA aplicada ao dia a dia
+                     AI-native ERP para SaaS e coworkings
                   </div>
-                  <div class="flex flex-col gap-4">
-                     <h1 class="max-w-4xl text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-                        Controle financeiro, operacao e dados no mesmo ritmo do seu negocio.
-                     </h1>
-                     <p class="max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">
-                        O Montte conecta processos, automacoes e inteligencia artificial em uma plataforma consistente para empresas brasileiras venderem, cobrarem e analisarem melhor.
+
+                  <h1 class="max-w-3xl text-balance text-5xl font-bold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
+                     O ERP que você <span class="text-primary">conversa.</span> A <span class="text-primary">Rubi</span> que resolve.
+                  </h1>
+
+                  <div class="flex flex-col gap-2 max-w-xl">
+                     <p class="text-pretty text-lg leading-8 text-muted-foreground">
+                        Finanças, CRM, serviços e analytics — tudo em uma conversa.
+                     </p>
+                     <p class="text-pretty text-lg leading-8 text-muted-foreground">
+                        A Rubi entende, executa e entrega resultados com seus dados de verdade.
                      </p>
                   </div>
-                  <CtaActions />
-                  <div class="grid gap-2 sm:grid-cols-3">
-                     {metrics.map((metric) => (
-                        <div class="rounded-2xl border border-border/70 bg-card/70 p-4 shadow-sm backdrop-blur">
-                           <strong class="block text-2xl font-semibold text-foreground">{metric.value}</strong>
-                           <span class="text-sm text-muted-foreground">{metric.label}</span>
-                        </div>
+
+                  <CtaActions client:load />
+
+                  <ul class="flex flex-wrap items-center gap-4 pt-2 text-sm text-muted-foreground">
+                     {trustItems.map((item) => (
+                        <li class="inline-flex items-center gap-2">
+                           <CircleCheck class="size-4 text-primary" />
+                           <span class="font-medium text-foreground/80">{item}</span>
+                        </li>
                      ))}
-                  </div>
+                  </ul>
                </div>
 
-               <div class="relative rounded-[2rem] border border-border bg-card p-2 shadow-xl">
-                  <div class="absolute -right-4 -top-4 hidden rounded-2xl border border-primary/20 bg-primary p-4 text-primary-foreground shadow-lg sm:block">
-                     <CircleCheck class="size-4" />
-                  </div>
-                  <div class="rounded-[1.5rem] border border-border bg-background p-4">
-                     <div class="flex items-center justify-between border-b border-border pb-4">
-                        <div class="flex items-center gap-2">
-                           <span class="size-2 rounded-full bg-primary"></span>
-                           <span class="size-2 rounded-full bg-chart-2"></span>
-                           <span class="size-2 rounded-full bg-chart-3"></span>
-                        </div>
-                        <span class="rounded-full bg-secondary px-4 py-2 text-xs font-medium text-secondary-foreground">Visao geral</span>
+               <div class="relative">
+                  <div class="absolute -left-4 top-4 z-10 hidden max-w-xs rounded-[1.5rem] rounded-bl-sm border border-border/70 bg-card p-4 shadow-lg sm:block">
+                     <div class="flex items-center gap-2 pb-2 text-sm font-semibold text-foreground">
+                        <span aria-hidden="true">👋</span>
+                        Oi! Sou a Rubi.
                      </div>
-                     <div class="grid gap-4 py-4 sm:grid-cols-[0.9fr_1.1fr]">
-                        <div class="flex flex-col gap-4 rounded-2xl bg-secondary p-4">
-                           <span class="text-sm font-medium text-muted-foreground">Receita prevista</span>
-                           <strong class="text-4xl font-semibold text-foreground">R$ 84k</strong>
-                           <div class="h-32 rounded-2xl bg-[linear-gradient(135deg,var(--primary),color-mix(in_oklch,var(--chart-2)_72%,var(--primary)))] p-2">
-                              <div class="h-full rounded-xl border border-white/30 bg-white/15"></div>
-                           </div>
+                     <p class="text-sm leading-6 text-muted-foreground">
+                        Pergunte sobre suas finanças, clientes, serviços ou relatórios. Eu cuido do resto.
+                        <Sparkles class="ml-1 inline size-4 text-primary" />
+                     </p>
+                  </div>
+
+                  <div class="relative aspect-square overflow-hidden rounded-[2rem] border border-border/60 bg-gradient-to-br from-primary/15 via-card to-secondary shadow-xl">
+                     <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,color-mix(in_oklch,var(--primary)_20%,transparent),transparent_55%)]"></div>
+
+                     <div class="relative flex size-full items-end justify-center p-4">
+                        <div class="flex size-40 items-center justify-center rounded-full bg-primary/20 text-7xl">
+                           🤖
                         </div>
-                     <div class="flex flex-col gap-2" id="produto">
-                           {features.map((feature) => (
-                              <article class="rounded-2xl border border-border bg-card p-4 shadow-sm">
-                                 <div class="flex items-start gap-4">
-                                    <span class="rounded-xl bg-primary/10 p-2 text-primary">
-                                       <feature.icon class="size-4" />
-                                    </span>
-                                    <div class="flex flex-col gap-2">
-                                       <h2 class="font-semibold text-foreground">{feature.title}</h2>
-                                       <p class="text-sm leading-6 text-muted-foreground">{feature.description}</p>
-                                    </div>
-                                 </div>
-                              </article>
-                           ))}
+                     </div>
+
+                     <div class="absolute right-4 top-4 flex flex-col gap-2">
+                        <div class="rotate-2 rounded-xl border border-border/60 bg-card p-2 shadow-md">
+                           <p class="text-xs font-semibold text-foreground">Fluxo de caixa</p>
+                        </div>
+                        <div class="-rotate-3 rounded-xl border border-border/60 bg-card p-2 shadow-md">
+                           <p class="text-xs font-semibold text-foreground">Novos clientes</p>
+                           <p class="text-xs font-bold text-primary">+27%</p>
+                        </div>
+                        <div class="rotate-1 rounded-xl border border-border/60 bg-card p-2 shadow-md">
+                           <p class="text-xs font-semibold text-foreground">Cobranças</p>
+                           <CircleCheck class="size-4 text-primary" />
                         </div>
                      </div>
                   </div>
                </div>
             </div>
          </div>
+      </section>
+
+      <section class="px-4 py-4 sm:px-4 lg:px-4" id="central-de-dados">
+         <DataHub client:load />
       </section>
 
       <section class="px-4 py-4 sm:px-4 lg:px-4" id="operacao">
