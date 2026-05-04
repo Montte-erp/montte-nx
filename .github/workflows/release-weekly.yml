@@ -79,7 +79,9 @@ jobs:
            with:
               model: opencode-go/deepseek-v4-flash
               prompt: |
-                 Você gera release notes semanais do **Montte** (ERP brasileiro, SaaS, pt-BR). Audiência mista: usuários finais (donos de negócio, financeiro, operações) **e** time interno. Texto deve ser legível para os dois — direto, sem jargão desnecessário, sem marketing fluff.
+                 Você gera release notes semanais do **Montte** (ERP brasileiro, SaaS, pt-BR). Audiência principal: usuários finais (donos de negócio, financeiro, operações). Time interno é audiência secundária — detalhes técnicos vão em seção colapsável, nunca poluem o leitor não-técnico.
+
+                 Modelo mental: changelog estilo **Linear/Stripe** — visual, agrupado por área de produto, lead com benefício, técnico escondido em `<details>`.
 
                  ## Entrada
 
@@ -96,63 +98,110 @@ jobs:
                  ```
                  # Montte $RELEASE_VERSION
 
-                 <Resumo executivo: 2-4 frases em pt-BR descrevendo o tema da semana. Destaque os 1-3 pontos mais relevantes para usuários — entrega de produto, correção crítica, refatoração estrutural. Sem listar tudo. Tom de comunicado, não de bullet.>
+                 <Resumo executivo: 2-3 frases em pt-BR descrevendo o que essa release entrega para o usuário. Foque em 1-2 features visíveis e/ou breaking change crítico. Não mencione refactor interno aqui. Tom de comunicado de produto.>
 
-                 ## Destaques
+                 ## Em destaque
 
-                 <Liste 3-5 itens de maior impacto, em ordem de relevância para o usuário final. Cada destaque é 1 frase explicando o **valor**, não a implementação. Exemplo: "Importação de extratos OFX agora aceita arquivos do Itaú e do Santander." e não "Adiciona parser OFX para bancos brasileiros." Inclua link do PR principal.>
+                 <Liste 1-3 features de UI/UX visíveis em ordem de impacto. Cada destaque tem o formato:
 
-                 ## Mudanças que quebram compatibilidade
+                 ### <Nome curto da feature> ([#PR](url))
 
-                 <Apenas se houver. Liste cada breaking change com: o que mudou, quem é afetado, o que precisa ser feito. Detecte por: títulos com `!` (`feat!:`, `refactor!:`), texto "BREAKING CHANGE", remoção de rotas/campos/endpoints, migrations destrutivas.>
+                 <1-2 frases descrevendo o **benefício concreto ao usuário**. Exemplos bons:
+                 - "Rubi responde até 3x mais rápido. Texto aparece enquanto a IA pensa, sem espera de bloco completo."
+                 - "Importação de extratos OFX aceita Itaú e Santander direto, sem conversão."
 
-                 ## Novidades
+                 Exemplos ruins (não fazer):
+                 - "Adiciona streaming na Rubi" (descreve implementação)
+                 - "Refatora chat" (sem valor pro usuário)
 
-                 <Tudo que é `feat:`. Agrupe por módulo/área quando 3+ itens compartilharem contexto (Faturamento, IA, Contatos, Estoque, Dashboards, Auth, Plataforma). Use `### <Área>` como subtítulo. Se for 1-2 itens, não subdivida.>
+                 Para features de UI, terminar com placeholder: `![Demo](TODO: gif)`>
+
+                 ## Ação necessária
+
+                 <Apenas se houver breaking change. Para cada um:
+
+                 ### <O que mudou> ([#PR](url))
+
+                 **Quem é afetado:** <perfil de usuário ou plano>
+                 **O que fazer:** <ação concreta, com prazo se aplicável>
+                 **Documentação:** <link se existir, senão TODO>
+
+                 Detecte breaking por: títulos com `!`, texto "BREAKING CHANGE", remoção de rotas/campos/endpoints, migrations destrutivas, remoção de feature.>
+
+                 ## Novidades por área
+
+                 <Tudo que é `feat:` agrupado por **área de produto** (Rubi/IA, Faturamento, Contatos, Dashboards, Plataforma, Auth, etc). Use `### <Área>` como subtítulo. Pule áreas com 0 itens. Cada item é 1 linha começando em letra minúscula, descrevendo benefício, terminando com link do PR.>
 
                  ## Correções
 
-                 <Tudo que é `fix:`. Mesma regra de agrupamento.>
+                 <Tudo que é `fix:` com efeito visível. Mesma regra de agrupamento por área. Bugs internos sem efeito perceptível vão em Notas técnicas.>
 
                  ## Melhorias
 
-                 <`refactor:`, `perf:`, `style:` que tem efeito perceptível ou estrutural. Se for refactor puramente interno sem efeito visível, mande pra "Notas técnicas".>
+                 <`perf:` e melhorias visíveis (`refactor:`/`style:` que mudam UX). Refactor puramente interno NÃO entra aqui — vai em Notas técnicas.>
 
-                 ## Notas técnicas
+                 <details>
+                 <summary><strong>Notas técnicas</strong> (para o time)</summary>
 
-                 <Para o time interno: refatorações grandes, mudanças de infra, atualizações de dependências relevantes, mudanças em workflows DBOS, schemas, RLS, observabilidade. Pode ser mais técnico aqui. Tom curto.>
+                 <Refatorações estruturais, mudanças de infra, schemas, workflows DBOS, dependências relevantes, observabilidade. Pode usar jargão técnico. Tom curto, agrupado por subsistema. Inclui aqui: barrel files, repository layer, oRPC routers, módulos, DBOS, RLS.>
 
-                 ## Manutenção
+                 </details>
 
-                 <`chore:`, `docs:`, `test:`, `ci:` que não merecem destaque. 1 linha por item, agrupados se repetitivos. Se a lista ficar enorme (15+), resuma: "Atualização de dependências (X PRs)" + lista os PRs principais.>
+                 <details>
+                 <summary><strong>Manutenção</strong></summary>
 
-                 ---
+                 <`chore:`, `docs:`, `test:`, `ci:`. 1 linha por item. Se 15+ itens, resuma: "Atualização de dependências (X PRs)" + lista os principais.>
 
-                 **Contribuíram nesta release:** @autor1, @autor2, ... (ordenado por nº de PRs, sem repetições, omita bots)
+                 </details>
                  ```
 
                  ## Regras por item de lista
 
-                 - Cada item: **1 linha** começando em letra minúscula, descrevendo o que mudou em pt-BR claro.
-                 - Termine com referência: `([#PR](url))` para o PR. Se houver MON-XXX no título/corpo do commit ou PR, adicione `[MON-XXX](https://linear.app/montte/issue/MON-XXX)` antes do link do PR.
-                 - **Não inclua SHAs nem nomes de autores em itens individuais** (autores vão no rodapé).
-                 - **Não inclua** commits de merge (`Merge pull request`, `Merge branch`), commits de versão (`chore(release):`, `v1.2.3`), commits do dependabot/renovate sem efeito (use a linha de resumo).
-                 - Reescreva títulos crípticos em algo entendível. Ex.: `feat(billing): add ttp loop` → "fluxo de cobrança recorrente para clientes em trial".
-                 - **Sem emojis. Sem `simply`/`just`/`apenas`. Sem "We are excited". Sem markdown badges.** Tom: comunicado de produto sério.
-                 - Cada bullet entrega um fato. Se você não sabe o que a mudança faz pelo título, **omita** ou jogue em "Manutenção".
+                 - Cada item: **1 linha** começando em letra minúscula, descrevendo o **benefício ou efeito** em pt-BR claro.
+                 - **Lead com valor, não implementação.** Reescreva sempre. Exemplos:
+                   - `feat(rubi): wrap oRPC procedures` → "Rubi respeita permissões e validações da plataforma em todas as operações"
+                   - `refactor(finance): drop barrel` → mover pra Notas técnicas, não destacar
+                   - `feat(billing): add ttp loop` → "cobrança recorrente automática para clientes em trial"
+                 - **NUNCA mencione no corpo principal** (apenas em Notas técnicas): refactor, barrel, repository, router interno, schema, migração de domínio, oRPC, Drizzle, DBOS, módulo, layer, service.
+                 - Termine com referência: `([#PR](url))`. Se houver MON-XXX no título/corpo, adicione `[MON-XXX](https://linear.app/montte/issue/MON-XXX)` antes do link do PR.
+                 - **Não inclua SHAs nem nomes de autores em itens** (autores vão no rodapé).
+                 - **Não inclua** commits de merge, commits de versão, commits do dependabot/renovate sem efeito.
+                 - **Sem emojis. Sem "apenas"/"just"/"simply". Sem "estamos animados". Sem badges.**
 
                  ## Detecção de tipo
 
-                 Use o prefixo Conventional Commits no título do PR/commit. Se o título não tiver prefixo, infira pelo conteúdo: PR que adiciona arquivos sob `apps/web/src/routes/` é provavelmente `feat`; mudança em `*.test.ts` puro é `test`; bump de `package.json` é `chore(deps)`.
+                 Use o prefixo Conventional Commits no título do PR/commit. Se não tiver prefixo, infira: PR que adiciona arquivos sob `apps/web/src/routes/` é `feat`; mudança em `*.test.ts` puro é `test`; bump de `package.json` é `chore(deps)`.
+
+                 ## Decisão: destaque vs área vs notas técnicas
+
+                 Pergunta-chave: **um usuário final percebe a diferença?**
+
+                 - **Sim, e é uma feature visível em UI** → "Em destaque"
+                 - **Sim, mas é menor (campo novo, novo banco suportado, novo filtro)** → "Novidades por área"
+                 - **Não, é refactor/migração/limpeza interna** → `<details>` Notas técnicas
+                 - **Não, é doc/test/ci** → `<details>` Manutenção
+
+                 Refactor de domínio (finance/insights/account moving to @modules/) NUNCA é destaque. NUNCA é novidade. É notas técnicas.
+
+                 ## Rodapé
+
+                 ```
+                 ---
+
+                 **Contribuíram nesta release:** @autor1, @autor2 (ordenado por nº de PRs, sem bots)
+                 ```
 
                  ## Validação final antes de salvar
 
-                 - Resumo executivo está em pt-BR natural, não traduzido literal do inglês?
-                 - Destaques entregam **valor**, não implementação?
+                 - Resumo executivo fala de **valor pro usuário**, não de arquitetura?
+                 - "Em destaque" só tem features que usuário vê na tela?
+                 - Nenhuma menção a "refactor", "barrel", "repository", "módulo", "router" no corpo principal (só dentro de `<details>`)?
                  - Toda referência MON-* virou link `[MON-XXX](https://linear.app/montte/issue/MON-XXX)`?
-                 - Nenhum item duplicado entre seções (PR e seus commits aparecem 1 vez só)?
+                 - Breaking changes têm "Quem é afetado" + "O que fazer"?
+                 - Features de UI têm placeholder `![Demo](TODO: gif)`?
+                 - Notas técnicas e Manutenção estão dentro de `<details>`?
+                 - Nenhum item duplicado entre seções?
                  - Seções vazias removidas?
-                 - Rodapé de contribuidores ordenado por nº de PRs?
 
          - name: Verify release notes
            if: steps.version.outputs.skip != 'true'
