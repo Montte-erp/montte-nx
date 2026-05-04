@@ -1,0 +1,31 @@
+{
+   "name": "landing",
+   "private": true,
+   "type": "module",
+   "scripts": {
+      "dev": "astro dev --port 3001",
+      "build": "astro build",
+      "preview": "astro preview --port 3001",
+      "typecheck": "astro check",
+      "check": "oxlint astro.config.mjs src"
+   },
+   "dependencies": {
+      "@astrojs/check": "catalog:astro",
+      "@astrojs/react": "catalog:astro",
+      "@lucide/astro": "catalog:astro",
+      "@packages/ui": "workspace:*",
+      "@tailwindcss/vite": "catalog:vite",
+      "@tooling/css": "workspace:*",
+      "astro": "catalog:astro",
+      "clsx": "catalog:ui",
+      "lucide-react": "catalog:ui",
+      "react": "catalog:react",
+      "react-dom": "catalog:react",
+      "tailwindcss": "catalog:ui",
+      "typescript": "catalog:development"
+   },
+   "devDependencies": {
+      "@types/react": "catalog:react",
+      "@types/react-dom": "catalog:react"
+   }
+}

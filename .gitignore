@@ -3,6 +3,7 @@
 # Dependencies
 .trigger
 .nitro
+apps/*/.astro
 apps/worker/worker
 .claude/**
 .mastra
