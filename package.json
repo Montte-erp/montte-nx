@@ -222,6 +222,8 @@
       "doctor": "bun run scripts/doctor.ts",
       "format": "oxfmt --write .",
       "format:check": "oxfmt --check .",
+      "landing:build": "nx run landing:build",
+      "landing:start": "bun run --filter=landing start",
       "prepare": "lefthook install || true",
       "release": "nx release",
       "release:changelog": "nx release changelog",
