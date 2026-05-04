@@ -46,4 +46,6 @@ jobs:
 
          - name: Validate compose file
            if: matrix.target == 'web'
-           run: docker compose -f docker-compose.prod.yml --env-file .env.production.example config -q
+           run: |
+              cp .env.production.example .env.production
+              docker compose -f docker-compose.prod.yml --env-file .env.production config -q
