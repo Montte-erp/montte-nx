@@ -20,6 +20,7 @@
       "astro": "catalog:astro",
       "clsx": "catalog:ui",
       "lucide-react": "catalog:ui",
+      "motion": "catalog:ui",
       "react": "catalog:react",
       "react-dom": "catalog:react",
       "tailwindcss": "catalog:ui",
