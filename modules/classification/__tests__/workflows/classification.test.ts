@@ -65,6 +65,12 @@ beforeEach(async () => {
    mocks.setActiveDb(testDb.db);
 });
 
+function countSseByType(type: string): number {
+   return ssePublishSpy.mock.calls.filter(
+      (c) => (c[2] as { type: string }).type === type,
+   ).length;
+}
+
 async function getTransaction(id: string) {
    const [row] = await testDb.db
       .select()
@@ -119,7 +125,9 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(t2?.suggestedTagId).toBe(ops.id);
       expect(t3?.suggestedTagId).toBe(ops.id);
 
-      expect(ssePublishSpy).toHaveBeenCalledTimes(3);
+      expect(countSseByType("classification.transaction_classified")).toBe(3);
+      expect(countSseByType("classification.batch_started")).toBe(1);
+      expect(countSseByType("classification.batch_completed")).toBe(1);
       expect(ssePublishSpy).toHaveBeenCalledWith(
          expect.anything(),
          { kind: "team", id: teamId },
@@ -174,7 +182,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(t2?.suggestedCategoryId).toBe(misc.id);
       expect(t2?.suggestedTagId).toBeNull();
 
-      expect(ssePublishSpy).toHaveBeenCalledTimes(2);
+      expect(countSseByType("classification.transaction_classified")).toBe(2);
    });
 
    it("mixes keyword + AI — keyword writes 2, AI writes 3, all 5 go through", async () => {
@@ -229,7 +237,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(a1?.suggestedCategoryId).toBe(fuel.id);
       expect(a1?.suggestedTagId).toBe(ops.id);
 
-      expect(ssePublishSpy).toHaveBeenCalledTimes(5);
+      expect(countSseByType("classification.transaction_classified")).toBe(5);
    });
 
    it("idempotency — skips transactions that already have categoryId set", async () => {
@@ -261,7 +269,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(done?.suggestedCategoryId).toBeNull();
       expect(pending?.suggestedCategoryId).toBe(food.id);
 
-      expect(ssePublishSpy).toHaveBeenCalledTimes(1);
+      expect(countSseByType("classification.transaction_classified")).toBe(1);
    });
 
    it("chunks AI calls when unmatched > 20 — makes 2 distinct LLM calls for 25 unmatched", async () => {
@@ -357,7 +365,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
             .filter(Boolean),
       );
       expect(distinctUserMessages.size).toBe(2);
-      expect(ssePublishSpy).toHaveBeenCalledTimes(25);
+      expect(countSseByType("classification.transaction_classified")).toBe(25);
    });
 
    it("handles AI returning fewer results than requested — only returned IDs get suggestedCategoryId", async () => {
@@ -398,7 +406,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(t2?.suggestedCategoryId).toBe(food.id);
       expect(t3?.suggestedCategoryId).toBeNull();
 
-      expect(ssePublishSpy).toHaveBeenCalledTimes(2);
+      expect(countSseByType("classification.transaction_classified")).toBe(2);
       expect(posthogCaptureSpy).toBeDefined();
    });
 });

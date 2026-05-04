@@ -66,6 +66,29 @@ const knownEventSchema = z.discriminatedUnion("type", [
          count: z.number().int().nonnegative(),
       }),
    }),
+   z.object({
+      type: z.literal("classification.batch_started"),
+      payload: z.object({
+         batchId: z.string(),
+         total: z.number().int().nonnegative(),
+      }),
+   }),
+   z.object({
+      type: z.literal("classification.batch_progress"),
+      payload: z.object({
+         batchId: z.string(),
+         total: z.number().int().nonnegative(),
+         processed: z.number().int().nonnegative(),
+      }),
+   }),
+   z.object({
+      type: z.literal("classification.batch_completed"),
+      payload: z.object({
+         batchId: z.string(),
+         total: z.number().int().nonnegative(),
+         classified: z.number().int().nonnegative(),
+      }),
+   }),
 ]);
 
 type KnownEvent = z.infer<typeof knownEventSchema>;
@@ -111,6 +134,38 @@ function eventToToast(event: KnownEvent): ToastSpec | null {
             kind: "success",
             message: `Palavras-chave atualizadas em "${event.payload.entityName}" (${event.payload.count}).`,
          };
+      case "classification.batch_started":
+      case "classification.batch_progress":
+      case "classification.batch_completed":
+         return null;
+   }
+}
+
+function handleClassificationBatchEvent(event: KnownEvent) {
+   if (event.type === "classification.batch_started") {
+      toast.loading(
+         `Rubi categorizando ${event.payload.total} ${event.payload.total === 1 ? "transação" : "transações"}...`,
+         { id: `classify-${event.payload.batchId}` },
+      );
+      return;
+   }
+   if (event.type === "classification.batch_progress") {
+      toast.loading(
+         `Rubi categorizando ${event.payload.processed}/${event.payload.total} ${event.payload.total === 1 ? "transação" : "transações"}...`,
+         { id: `classify-${event.payload.batchId}` },
+      );
+      return;
+   }
+   if (event.type === "classification.batch_completed") {
+      const id = `classify-${event.payload.batchId}`;
+      if (event.payload.classified === 0) {
+         toast.dismiss(id);
+         return;
+      }
+      toast.success(
+         `Rubi categorizou ${event.payload.classified} de ${event.payload.total} ${event.payload.total === 1 ? "transação" : "transações"}.`,
+         { id },
+      );
    }
 }
 
@@ -128,6 +183,7 @@ export function useJobNotifications() {
          payload: data.payload,
       });
       if (!parsed.success) return;
+      handleClassificationBatchEvent(parsed.data);
       const spec = eventToToast(parsed.data);
       if (!spec) return;
       if (spec.kind === "success") toast.success(spec.message);

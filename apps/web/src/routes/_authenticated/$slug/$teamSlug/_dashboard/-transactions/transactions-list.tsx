@@ -51,6 +51,7 @@ import {
 } from "@/components/data-table/data-table-root";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { useCsvFile } from "@/hooks/use-csv-file";
+import { useOfxFile } from "@/hooks/use-ofx-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
@@ -75,6 +76,7 @@ export function TransactionsList() {
    const [isDraftActive, setIsDraftActive] = useState(false);
    const { parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
+   const { parse: parseOfx } = useOfxFile();
 
    const handleSearch = useCallback(
       (value: string) => {
@@ -388,9 +390,11 @@ export function TransactionsList() {
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
                [".xlsx"],
             "application/vnd.ms-excel": [".xls"],
+            "application/x-ofx": [".ofx"],
          },
          parseFile: async (file: File) => {
             const ext = file.name.split(".").pop()?.toLowerCase();
+            if (ext === "ofx") return parseOfx(file);
             if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
             return parseCsv(file);
          },
@@ -490,7 +494,7 @@ export function TransactionsList() {
             });
          },
       }),
-      [parseCsv, parseXlsx, importMutation, queryClient],
+      [parseCsv, parseXlsx, parseOfx, importMutation, queryClient],
    );
 
    const columns = useMemo(
