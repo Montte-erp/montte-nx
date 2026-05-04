@@ -1,0 +1,158 @@
+---
+import { ArrowUpRight, Bot, Boxes, ChartColumn, CircleCheck, ShieldCheck, Sparkles } from "@lucide/astro";
+import { buttonVariants } from "@packages/ui/components/button";
+import { cn } from "@packages/ui/lib/utils";
+import { CtaActions } from "../components/cta-actions";
+import BaseLayout from "../layouts/base-layout.astro";
+
+const features = [
+   {
+      icon: ChartColumn,
+      title: "Visao financeira clara",
+      description: "Fluxo de caixa, centros de custo e indicadores em uma experiencia pensada para decisoes rapidas.",
+   },
+   {
+      icon: Bot,
+      title: "Rubi como copiloto",
+      description: "Classificacao, analises e proximas acoes com IA integrada ao contexto real da operacao.",
+   },
+   {
+      icon: Boxes,
+      title: "Base modular",
+      description: "ERP que cresce por produto: financeiro, contatos, servicos, dados e automacoes no mesmo design system.",
+   },
+];
+
+const metrics = [
+   { value: "1", label: "workspace para operar tudo" },
+   { value: "24/7", label: "rotinas e agentes acompanhando dados" },
+   { value: "pt-BR", label: "experiencia nativa para empresas brasileiras" },
+];
+---
+
+<BaseLayout title="Montte — ERP inteligente para empresas modernas" description="Landing page do Montte, ERP com IA, financeiro, servicos e dados em uma plataforma modular.">
+   <main class="min-h-screen overflow-hidden">
+      <section class="relative px-4 py-4 sm:px-4 lg:px-4">
+         <div class="absolute inset-x-0 top-0 -z-10 h-96 bg-[radial-gradient(circle_at_center,color-mix(in_oklch,var(--primary)_20%,transparent),transparent_58%)]"></div>
+         <div class="flex w-full max-w-7xl justify-self-center flex-col gap-4">
+            <header class="flex items-center justify-between rounded-full border border-border/70 bg-card/80 p-2 shadow-sm backdrop-blur">
+               <a href="/" class="flex items-center gap-2 rounded-full px-2 py-2 text-sm font-semibold text-foreground" aria-label="Montte">
+                  <span class="grid size-4 place-items-center rounded-full bg-primary text-primary-foreground">M</span>
+                  Montte
+               </a>
+               <nav class="hidden items-center gap-4 text-sm text-muted-foreground md:flex" aria-label="Principal">
+                  <a class="transition-colors hover:text-foreground" href="#produto">Produto</a>
+                  <a class="transition-colors hover:text-foreground" href="#operacao">Operacao</a>
+                  <a class="transition-colors hover:text-foreground" href="#seguranca">Seguranca</a>
+               </nav>
+               <a class={cn(buttonVariants({ variant: "outline", size: "sm" }), "rounded-full")} href="/auth/sign-in">
+                  Entrar
+               </a>
+            </header>
+
+            <div class="grid items-center gap-4 py-4 lg:grid-cols-[1.05fr_0.95fr] lg:py-4">
+               <div class="flex flex-col gap-4">
+                  <div class="inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
+                     <Sparkles class="size-4" />
+                     ERP modular com IA aplicada ao dia a dia
+                  </div>
+                  <div class="flex flex-col gap-4">
+                     <h1 class="max-w-4xl text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
+                        Controle financeiro, operacao e dados no mesmo ritmo do seu negocio.
+                     </h1>
+                     <p class="max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">
+                        O Montte conecta processos, automacoes e inteligencia artificial em uma plataforma consistente para empresas brasileiras venderem, cobrarem e analisarem melhor.
+                     </p>
+                  </div>
+                  <CtaActions />
+                  <div class="grid gap-2 sm:grid-cols-3">
+                     {metrics.map((metric) => (
+                        <div class="rounded-2xl border border-border/70 bg-card/70 p-4 shadow-sm backdrop-blur">
+                           <strong class="block text-2xl font-semibold text-foreground">{metric.value}</strong>
+                           <span class="text-sm text-muted-foreground">{metric.label}</span>
+                        </div>
+                     ))}
+                  </div>
+               </div>
+
+               <div class="relative rounded-[2rem] border border-border bg-card p-2 shadow-xl">
+                  <div class="absolute -right-4 -top-4 hidden rounded-2xl border border-primary/20 bg-primary p-4 text-primary-foreground shadow-lg sm:block">
+                     <CircleCheck class="size-4" />
+                  </div>
+                  <div class="rounded-[1.5rem] border border-border bg-background p-4">
+                     <div class="flex items-center justify-between border-b border-border pb-4">
+                        <div class="flex items-center gap-2">
+                           <span class="size-2 rounded-full bg-primary"></span>
+                           <span class="size-2 rounded-full bg-chart-2"></span>
+                           <span class="size-2 rounded-full bg-chart-3"></span>
+                        </div>
+                        <span class="rounded-full bg-secondary px-4 py-2 text-xs font-medium text-secondary-foreground">Visao geral</span>
+                     </div>
+                     <div class="grid gap-4 py-4 sm:grid-cols-[0.9fr_1.1fr]">
+                        <div class="flex flex-col gap-4 rounded-2xl bg-secondary p-4">
+                           <span class="text-sm font-medium text-muted-foreground">Receita prevista</span>
+                           <strong class="text-4xl font-semibold text-foreground">R$ 84k</strong>
+                           <div class="h-32 rounded-2xl bg-[linear-gradient(135deg,var(--primary),color-mix(in_oklch,var(--chart-2)_72%,var(--primary)))] p-2">
+                              <div class="h-full rounded-xl border border-white/30 bg-white/15"></div>
+                           </div>
+                        </div>
+                     <div class="flex flex-col gap-2" id="produto">
+                           {features.map((feature) => (
+                              <article class="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                                 <div class="flex items-start gap-4">
+                                    <span class="rounded-xl bg-primary/10 p-2 text-primary">
+                                       <feature.icon class="size-4" />
+                                    </span>
+                                    <div class="flex flex-col gap-2">
+                                       <h2 class="font-semibold text-foreground">{feature.title}</h2>
+                                       <p class="text-sm leading-6 text-muted-foreground">{feature.description}</p>
+                                    </div>
+                                 </div>
+                              </article>
+                           ))}
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </section>
+
+      <section class="px-4 py-4 sm:px-4 lg:px-4" id="operacao">
+         <div class="grid w-full max-w-7xl justify-self-center gap-4 lg:grid-cols-3">
+            <div class="rounded-[2rem] border border-border bg-card p-4 shadow-sm lg:col-span-2">
+               <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                  <div class="flex flex-col gap-2">
+                     <p class="text-sm font-semibold text-primary">Operacao conectada</p>
+                     <h2 class="max-w-2xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                        Do lancamento ao insight, menos troca de ferramenta e mais contexto.
+                     </h2>
+                  </div>
+                  <a class="inline-flex items-center gap-2 text-sm font-medium text-primary" href="/auth/sign-up">
+                     Criar conta
+                     <ArrowUpRight class="size-4" />
+                  </a>
+               </div>
+               <div class="grid gap-2 py-4 sm:grid-cols-3">
+                  {features.map((feature) => (
+                     <div class="rounded-2xl bg-secondary p-4">
+                        <feature.icon class="size-4 text-primary" />
+                        <h3 class="py-2 font-semibold text-foreground">{feature.title}</h3>
+                        <p class="text-sm leading-6 text-muted-foreground">{feature.description}</p>
+                     </div>
+                  ))}
+               </div>
+            </div>
+            <div class="rounded-[2rem] border border-primary/20 bg-primary p-4 text-primary-foreground shadow-sm" id="seguranca">
+               <ShieldCheck class="size-4" />
+               <div class="flex min-h-60 flex-col justify-end gap-4">
+                  <h2 class="text-3xl font-semibold tracking-tight">Design system compartilhado.</h2>
+                  <p class="leading-7 text-primary-foreground/80">
+                     A landing ja nasce com os tokens, componentes e identidade visual usados pelo app principal.
+                  </p>
+               </div>
+            </div>
+         </div>
+      </section>
+   </main>
+</BaseLayout>
