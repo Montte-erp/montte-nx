@@ -33,6 +33,7 @@
       "dependencies": {
         "@astrojs/check": "catalog:astro",
         "@astrojs/react": "catalog:astro",
+        "@lucide/astro": "catalog:astro",
         "@packages/ui": "workspace:*",
         "@tailwindcss/vite": "catalog:vite",
         "@tooling/css": "workspace:*",
@@ -1447,6 +1448,8 @@
     "@langchain/langgraph-checkpoint": ["@langchain/langgraph-checkpoint@1.0.1", "", { "dependencies": { "uuid": "^10.0.0" }, "peerDependencies": { "@langchain/core": "^1.0.1" } }, "sha512-HM0cJLRpIsSlWBQ/xuDC67l52SqZ62Bh2Y61DX+Xorqwoh5e1KxYvfCD7GnSTbWWhjBOutvnR0vPhu4orFkZfw=="],
 
     "@langchain/langgraph-sdk": ["@langchain/langgraph-sdk@1.8.9", "", { "dependencies": { "@types/json-schema": "^7.0.15", "p-queue": "^9.0.1", "p-retry": "^7.1.1", "uuid": "^13.0.0" }, "peerDependencies": { "@langchain/core": "^1.1.16", "react": "^18 || ^19", "react-dom": "^18 || ^19", "svelte": "^4.0.0 || ^5.0.0", "vue": "^3.0.0" }, "optionalPeers": ["@langchain/core", "react", "react-dom", "svelte", "vue"] }, "sha512-vpz90auS4iFTNy2X/CFexOEoeFSvaK+MyI7iSmzYs9gGcfzwRjWUJ4MWsuc5ZNRecLStwho0PExVXRgGOXtcRw=="],
+
+    "@lucide/astro": ["@lucide/astro@1.14.0", "", { "peerDependencies": { "astro": "^4 || ^5 || ^6" } }, "sha512-RaCwEeeTQT0TOvoCu6cS0XMrjK56qrSzPVIUv1ycwqCUbfu9TjDmh7svJ/677kGhLje1IT2vxXg5nD53ta1jcg=="],
 
     "@maskito/core": ["@maskito/core@5.2.2", "", {}, "sha512-OFLK9NMQrz4eCgNgJ74S4x6IklqGQ71pcQToNGRzkIYnlEZbGpO+pzLREKLN/iKh4oBz8PI/9JnD3HtkN5Rl+w=="],
 
