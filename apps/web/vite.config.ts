@@ -37,7 +37,13 @@ const config = defineConfig({
          rollupConfig: {
             external: (id: string) =>
                id === "@dbos-inc/dbos-sdk" ||
-               id.startsWith("@dbos-inc/dbos-sdk/"),
+               id.startsWith("@dbos-inc/dbos-sdk/") ||
+               id === "katex" ||
+               id.startsWith("katex/") ||
+               id === "mermaid" ||
+               id.startsWith("mermaid/") ||
+               id === "streamdown" ||
+               id.startsWith("streamdown/"),
          },
       }),
       viteReact(),

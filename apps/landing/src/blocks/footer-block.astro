@@ -1,4 +1,6 @@
 ---
+import { Image } from "astro:assets";
+
 const groups = [
    {
       title: "Produto",
@@ -33,7 +35,7 @@ const groups = [
       <div class="flex flex-col gap-4">
          <a class="inline-flex items-center gap-2" href="/" aria-label="Montte">
             <span class="inline-flex size-7 items-center justify-center rounded-lg bg-primary/15 ring-1 ring-primary/30">
-               <img class="size-4" src="/favicon.svg" alt="" />
+                <Image class="size-4" src="/favicon.svg" alt="" width={16} height={16} />
             </span>
             <span class="text-base font-semibold tracking-tight">Montte</span>
          </a>

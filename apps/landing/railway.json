@@ -7,8 +7,6 @@
    },
    "deploy": {
       "startCommand": "bun run landing:start",
-      "healthcheckPath": "/",
-      "healthcheckTimeout": 60,
       "numReplicas": 1,
       "sleepApplication": true,
       "restartPolicyType": "ON_FAILURE",
