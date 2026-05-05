@@ -73,7 +73,7 @@ export function toggleFinanceNavPref(itemId: string) {
 export function setSectionOpen(sectionId: string, open: boolean) {
    sidebarStore.setState((state) => ({
       ...state,
-      sectionOpen: { ...state.sectionOpen, [sectionId]: open },
+      sectionOpen: { ...(state.sectionOpen ?? {}), [sectionId]: open },
    }));
 }
 
@@ -93,7 +93,7 @@ export function useIsFinanceItemWanted() {
 
 export function useIsSectionOpen(sectionId: string, defaultOpen: boolean) {
    const sectionOpen = useStore(sidebarStore, (s) => s.sectionOpen);
-   return sectionOpen[sectionId] ?? defaultOpen;
+   return sectionOpen?.[sectionId] ?? defaultOpen;
 }
 
 export function useActiveSection() {
