@@ -15,18 +15,12 @@ import {
 } from "lucide-react";
 import type { SubSidebarSection } from "./hooks/use-sidebar-store";
 
-export type NavItemAction = {
-   type: "create";
-   target: "navigate" | "sheet" | "sub-menu";
-};
-
 export type NavItemDef = {
    id: string;
    label: string;
    icon: LucideIcon;
    iconColor?: string;
    route: string;
-   quickAction?: NavItemAction;
    subPanel?: SubSidebarSection;
    earlyAccessFlag?: string;
    earlyAccessFallbackStage?:
@@ -35,7 +29,6 @@ export type NavItemDef = {
       | "concept"
       | "general-availability";
    configurable?: boolean;
-   children?: NavItemDef[];
 };
 
 export type NavGroupDef = {
@@ -84,7 +77,6 @@ export const navGroups: NavGroupDef[] = [
             icon: ArrowLeftRight,
             iconColor: "text-blue-500",
             route: "/$slug/$teamSlug/transactions",
-            quickAction: { type: "create", target: "sheet" },
             configurable: true,
          },
          {

@@ -1,6 +1,5 @@
 import { createStore, useStore } from "@tanstack/react-store";
-import { useCallback, useEffect } from "react";
-import { createPersistedStore, createStoreEffect } from "@/lib/store";
+import { createPersistedStore } from "@/lib/store";
 
 export type SubSidebarSection = "dashboards" | "insights";
 
@@ -8,7 +7,6 @@ interface SidebarPersistedState {
    isCollapsed: boolean;
    hiddenItems: string[];
    financeNavPrefs: string[];
-   pinnedItems: string[];
 }
 
 interface SidebarTransientState {
@@ -23,7 +21,6 @@ const sidebarStore = createPersistedStore<SidebarPersistedState>(
       isCollapsed: false,
       hiddenItems: [],
       financeNavPrefs: [],
-      pinnedItems: [],
    },
 );
 
@@ -33,18 +30,12 @@ const transientStore = createStore<SidebarTransientState>({
    isEditingNav: false,
 });
 
-createStoreEffect(transientStore, (next, prev) => {
-   if (
-      prev.activeSection !== null &&
-      next.activeSection === null &&
-      next.searchQuery !== ""
-   ) {
-      transientStore.setState((s) => ({ ...s, searchQuery: "" }));
-   }
-});
-
 export function setActiveSection(section: SubSidebarSection | null) {
-   transientStore.setState((state) => ({ ...state, activeSection: section }));
+   transientStore.setState((state) => ({
+      ...state,
+      activeSection: section,
+      searchQuery: section === null ? "" : state.searchQuery,
+   }));
 }
 
 export function setSearchQuery(query: string) {
@@ -55,85 +46,50 @@ export function setNavEditing(value: boolean) {
    transientStore.setState((state) => ({ ...state, isEditingNav: value }));
 }
 
-export function togglePinnedItem(itemId: string) {
+export function setCollapsed(collapsed: boolean) {
+   sidebarStore.setState((state) => ({ ...state, isCollapsed: collapsed }));
+}
+
+export function toggleHiddenItem(itemId: string) {
    sidebarStore.setState((state) => ({
       ...state,
-      pinnedItems: state.pinnedItems.includes(itemId)
-         ? state.pinnedItems.filter((id) => id !== itemId)
-         : [...state.pinnedItems, itemId],
+      hiddenItems: state.hiddenItems.includes(itemId)
+         ? state.hiddenItems.filter((id) => id !== itemId)
+         : [...state.hiddenItems, itemId],
+   }));
+}
+
+export function toggleFinanceNavPref(itemId: string) {
+   sidebarStore.setState((state) => ({
+      ...state,
+      financeNavPrefs: state.financeNavPrefs.includes(itemId)
+         ? state.financeNavPrefs.filter((id) => id !== itemId)
+         : [...state.financeNavPrefs, itemId],
    }));
 }
 
 export function useSidebarCollapsed() {
-   const isCollapsed = useStore(sidebarStore, (s) => s.isCollapsed);
-   const setCollapsed = useCallback((collapsed: boolean) => {
-      sidebarStore.setState((s) => ({ ...s, isCollapsed: collapsed }));
-   }, []);
-   return { isCollapsed, setCollapsed };
+   return useStore(sidebarStore, (s) => s.isCollapsed);
 }
 
-export function useSidebarVisibility() {
+export function useIsItemVisible() {
    const hiddenItems = useStore(sidebarStore, (s) => s.hiddenItems);
-
-   const isVisible = useCallback(
-      (itemId: string) => !hiddenItems.includes(itemId),
-      [hiddenItems],
-   );
-
-   const toggleItem = useCallback((itemId: string) => {
-      sidebarStore.setState((state) => ({
-         ...state,
-         hiddenItems: state.hiddenItems.includes(itemId)
-            ? state.hiddenItems.filter((id) => id !== itemId)
-            : [...state.hiddenItems, itemId],
-      }));
-   }, []);
-
-   return { hiddenItems, isVisible, toggleItem };
+   return (itemId: string) => !hiddenItems.includes(itemId);
 }
 
-export function useFinanceNavPreferences() {
+export function useIsFinanceItemWanted() {
    const wantedItems = useStore(sidebarStore, (s) => s.financeNavPrefs);
-
-   const isWanted = useCallback(
-      (itemId: string) => wantedItems.includes(itemId),
-      [wantedItems],
-   );
-
-   const toggleItem = useCallback((itemId: string) => {
-      sidebarStore.setState((state) => ({
-         ...state,
-         financeNavPrefs: state.financeNavPrefs.includes(itemId)
-            ? state.financeNavPrefs.filter((id) => id !== itemId)
-            : [...state.financeNavPrefs, itemId],
-      }));
-   }, []);
-
-   return { wantedItems, isWanted, toggleItem };
+   return (itemId: string) => wantedItems.includes(itemId);
 }
 
-export function useSidebarNav() {
-   const activeSection = useStore(transientStore, (s) => s.activeSection);
-   const searchQuery = useStore(transientStore, (s) => s.searchQuery);
-   const pinnedItems = useStore(sidebarStore, (s) => s.pinnedItems);
-   const isEditingNav = useStore(transientStore, (s) => s.isEditingNav);
-
-   return {
-      activeSection,
-      searchQuery,
-      pinnedItems,
-      setSearchQuery,
-      isEditingNav,
-   };
+export function useActiveSection() {
+   return useStore(transientStore, (s) => s.activeSection);
 }
 
-export function useSidebarSection(section: SubSidebarSection) {
-   useEffect(() => {
-      setActiveSection(section);
-      return () => {
-         if (transientStore.state.activeSection === section) {
-            setActiveSection(null);
-         }
-      };
-   }, [section]);
+export function useSearchQuery() {
+   return useStore(transientStore, (s) => s.searchQuery);
+}
+
+export function useIsEditingNav() {
+   return useStore(transientStore, (s) => s.isEditingNav);
 }

@@ -15,11 +15,10 @@ import {
    SidebarMenuSubItem,
 } from "@packages/ui/components/sidebar";
 import { cn } from "@packages/ui/lib/utils";
-import { Link, useLocation, useRouter } from "@tanstack/react-router";
+import { Link, useMatchRoute } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { useState } from "react";
-import { useActiveOrganization } from "@/hooks/use-active-organization";
-import { useTeamSlug } from "@/hooks/use-dashboard-slugs";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 import {
    type SettingsNavItemDef,
@@ -30,9 +29,9 @@ import {
 function matchesSearch(item: SettingsNavItemDef, query: string): boolean {
    const q = query.toLowerCase();
    if (item.title.toLowerCase().includes(q)) return true;
-   if (item.children?.some((child) => child.title.toLowerCase().includes(q)))
-      return true;
-   return false;
+   return Boolean(
+      item.children?.some((child) => child.title.toLowerCase().includes(q)),
+   );
 }
 
 function filterSection(
@@ -40,114 +39,95 @@ function filterSection(
    query: string,
 ): SettingsNavSection {
    if (!query) return section;
-   const filteredItems = section.items.filter((item) =>
-      matchesSearch(item, query),
-   );
-   return { ...section, items: filteredItems };
+   return {
+      ...section,
+      items: section.items.filter((item) => matchesSearch(item, query)),
+   };
 }
 
-function NavItem({
-   item,
-   slug,
-   teamSlug,
-   pathname,
-}: {
-   item: SettingsNavItemDef;
-   slug: string;
-   teamSlug: string;
-   pathname: string;
-}) {
+function useIsHrefActive() {
+   const matchRoute = useMatchRoute();
+   const { slug, teamSlug } = useDashboardSlugs();
+   return (href: string) =>
+      Boolean(matchRoute({ to: href, params: { slug, teamSlug } }));
+}
+
+function NavItemWithChildren({ item }: { item: SettingsNavItemDef }) {
+   const { slug, teamSlug } = useDashboardSlugs();
    const { isEnrolled, getFeatureStage } = useEarlyAccess();
-   const router = useRouter();
+   const isActive = useIsHrefActive();
    const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
-   const { pathname: resolvedHref } = router.buildLocation({
-      to: item.href,
-      params: { slug, teamSlug },
-   });
-   const isActive = pathname === resolvedHref;
 
-   // Filter children based on early access enrollment
-   const visibleChildren = item.children?.filter((child) => {
-      if (!child.earlyAccessFlag) return true;
-      return isEnrolled(child.earlyAccessFlag);
-   });
-
-   const hasChildren = visibleChildren && visibleChildren.length > 0;
-
-   const isChildActive = visibleChildren?.some(
-      (child) =>
-         pathname ===
-         router.buildLocation({ to: child.href, params: { slug, teamSlug } })
-            .pathname,
+   const visibleChildren = item.children?.filter(
+      (child) => !child.earlyAccessFlag || isEnrolled(child.earlyAccessFlag),
    );
+   if (!visibleChildren || visibleChildren.length === 0) return null;
 
-   if (hasChildren) {
-      return (
-         <Collapsible
-            onOpenChange={setIsSubmenuOpen}
-            open={isSubmenuOpen || isChildActive}
-         >
-            <SidebarMenuItem>
-               <CollapsibleTrigger asChild>
-                  <SidebarMenuButton
-                     className={cn(isChildActive && "text-primary")}
-                  >
-                     {item.icon && <item.icon className="size-4" />}
-                     <span>{item.title}</span>
-                     <ChevronRight
-                        className={cn(
-                           "ml-auto size-3.5 transition-transform",
-                           (isSubmenuOpen || isChildActive) && "rotate-90",
-                        )}
-                     />
-                  </SidebarMenuButton>
-               </CollapsibleTrigger>
-               <CollapsibleContent>
-                  <SidebarMenuSub>
-                     {visibleChildren?.map((child) => {
-                        const childActive =
-                           pathname ===
-                           router.buildLocation({
-                              to: child.href,
-                              params: { slug, teamSlug },
-                           }).pathname;
-                        const earlyStage = child.earlyAccessFlag
-                           ? getFeatureStage(child.earlyAccessFlag)
-                           : null;
-                        return (
-                           <SidebarMenuSubItem key={child.id}>
-                              <SidebarMenuSubButton
-                                 asChild
-                                 className={cn(
-                                    childActive && "bg-primary/10 text-primary",
-                                 )}
-                              >
-                                 <Link
-                                    params={{ slug, teamSlug }}
-                                    to={child.href}
-                                 >
-                                    <span>{child.title}</span>
-                                    {earlyStage &&
-                                       earlyStage !==
-                                          "general-availability" && (
-                                          <FeatureStageBadge
-                                             aria-hidden="true"
-                                             className="ml-auto text-[10px] px-1 py-0"
-                                             showIcon={false}
-                                             stage={earlyStage}
-                                          />
-                                       )}
-                                 </Link>
-                              </SidebarMenuSubButton>
-                           </SidebarMenuSubItem>
-                        );
-                     })}
-                  </SidebarMenuSub>
-               </CollapsibleContent>
-            </SidebarMenuItem>
-         </Collapsible>
-      );
-   }
+   const isChildActive = visibleChildren.some((child) => isActive(child.href));
+
+   return (
+      <Collapsible
+         onOpenChange={setIsSubmenuOpen}
+         open={isSubmenuOpen || isChildActive}
+      >
+         <SidebarMenuItem>
+            <CollapsibleTrigger asChild>
+               <SidebarMenuButton
+                  className={cn(isChildActive && "text-primary")}
+               >
+                  {item.icon && <item.icon className="size-4" />}
+                  <span>{item.title}</span>
+                  <ChevronRight
+                     className={cn(
+                        "ml-auto size-4 transition-transform",
+                        (isSubmenuOpen || isChildActive) && "rotate-90",
+                     )}
+                  />
+               </SidebarMenuButton>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+               <SidebarMenuSub>
+                  {visibleChildren.map((child) => {
+                     const earlyStage = child.earlyAccessFlag
+                        ? getFeatureStage(child.earlyAccessFlag)
+                        : null;
+                     return (
+                        <SidebarMenuSubItem key={child.id}>
+                           <SidebarMenuSubButton
+                              asChild
+                              className={cn(
+                                 isActive(child.href) &&
+                                    "bg-primary/10 text-primary",
+                              )}
+                           >
+                              <Link params={{ slug, teamSlug }} to={child.href}>
+                                 <span>{child.title}</span>
+                                 {earlyStage &&
+                                    earlyStage !== "general-availability" && (
+                                       <FeatureStageBadge
+                                          aria-hidden="true"
+                                          className="ml-auto"
+                                          showIcon={false}
+                                          stage={earlyStage}
+                                       />
+                                    )}
+                              </Link>
+                           </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                     );
+                  })}
+               </SidebarMenuSub>
+            </CollapsibleContent>
+         </SidebarMenuItem>
+      </Collapsible>
+   );
+}
+
+function NavItem({ item }: { item: SettingsNavItemDef }) {
+   const { slug, teamSlug } = useDashboardSlugs();
+   const isActive = useIsHrefActive();
+
+   if (item.children?.length) return <NavItemWithChildren item={item} />;
 
    if (item.external) {
       return (
@@ -156,7 +136,7 @@ function NavItem({
                <Link params={{ slug, teamSlug }} to={item.href}>
                   {item.icon && <item.icon className="size-4" />}
                   <span>{item.title}</span>
-                  <ExternalLink className="ml-auto size-3.5 text-muted-foreground" />
+                  <ExternalLink className="ml-auto size-4 text-muted-foreground" />
                </Link>
             </SidebarMenuButton>
          </SidebarMenuItem>
@@ -168,7 +148,7 @@ function NavItem({
          <SidebarMenuButton
             asChild
             className={cn(
-               isActive && "bg-primary/10 text-primary rounded-lg",
+               isActive(item.href) && "rounded-lg bg-primary/10 text-primary",
                item.danger && "text-destructive hover:text-destructive",
             )}
          >
@@ -183,15 +163,9 @@ function NavItem({
 
 function NavSection({
    section,
-   slug,
-   teamSlug,
-   pathname,
    forceOpen,
 }: {
    section: SettingsNavSection;
-   slug: string;
-   teamSlug: string;
-   pathname: string;
    forceOpen: boolean;
 }) {
    const [isOpen, setIsOpen] = useState(section.defaultOpen);
@@ -202,13 +176,13 @@ function NavSection({
    return (
       <Collapsible onOpenChange={setIsOpen} open={effectiveOpen}>
          <SidebarGroup className="py-0">
-            <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-2 group">
-               <span className="text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider">
+            <CollapsibleTrigger className="group flex w-full items-center justify-between px-4 py-2">
+               <span className="text-sm font-semibold uppercase tracking-wider text-sidebar-foreground/70">
                   {section.label}
                </span>
                <ChevronDown
                   className={cn(
-                     "size-3.5 text-sidebar-foreground/50 transition-transform",
+                     "size-4 text-sidebar-foreground/50 transition-transform",
                      !effectiveOpen && "-rotate-90",
                   )}
                />
@@ -217,13 +191,7 @@ function NavSection({
                <SidebarGroupContent>
                   <SidebarMenu>
                      {section.items.map((item) => (
-                        <NavItem
-                           item={item}
-                           key={item.id}
-                           pathname={pathname}
-                           slug={slug}
-                           teamSlug={teamSlug}
-                        />
+                        <NavItem item={item} key={item.id} />
                      ))}
                   </SidebarMenu>
                </SidebarGroupContent>
@@ -234,10 +202,6 @@ function NavSection({
 }
 
 export function SettingsSidebar({ search }: { search: string }) {
-   const { activeOrganization } = useActiveOrganization();
-   const teamSlug = useTeamSlug();
-   const { pathname } = useLocation();
-
    const filteredSections = settingsNavSections.map((section) =>
       filterSection(section, search),
    );
@@ -248,10 +212,7 @@ export function SettingsSidebar({ search }: { search: string }) {
             <NavSection
                forceOpen={search.length > 0}
                key={section.id}
-               pathname={pathname}
                section={section}
-               slug={activeOrganization.slug}
-               teamSlug={teamSlug}
             />
          ))}
       </>

@@ -21,12 +21,7 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import { cn } from "@packages/ui/lib/utils";
-import {
-   Link,
-   useLocation,
-   useParams,
-   useRouter,
-} from "@tanstack/react-router";
+import { Link, useMatchRoute } from "@tanstack/react-router";
 import {
    Check,
    ChevronRight,
@@ -34,224 +29,260 @@ import {
    LayoutGrid,
    Pencil,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useState } from "react";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 import {
    setActiveSection,
    setNavEditing,
-   useFinanceNavPreferences,
-   useSidebarNav,
-   useSidebarVisibility,
+   toggleFinanceNavPref,
+   toggleHiddenItem,
+   useActiveSection,
+   useIsEditingNav,
+   useIsFinanceItemWanted,
+   useIsItemVisible,
 } from "./hooks/use-sidebar-store";
 import type { SubSidebarSection } from "./hooks/use-sidebar-store";
 import type { NavGroupDef, NavItemDef } from "./sidebar-nav-items";
 import { navGroups } from "./sidebar-nav-items";
 
+function useSubPanelControls() {
+   const manager = useSidebarManager();
+   const activeSection = useActiveSection();
+
+   function toggleSection(section: SubSidebarSection) {
+      const subPanel = manager.use("sub-panel");
+      if (activeSection === section && subPanel?.open) {
+         subPanel.setOpen(false);
+         setActiveSection(null);
+         return;
+      }
+      setActiveSection(section);
+      if (subPanel && !subPanel.open) subPanel.setOpen(true);
+   }
+
+   function closeSection() {
+      const subPanel = manager.use("sub-panel");
+      if (subPanel?.open) subPanel.setOpen(false);
+      if (activeSection) setActiveSection(null);
+   }
+
+   return { activeSection, toggleSection, closeSection };
+}
+
 function NavItem({
    item,
    slug,
    teamSlug,
-   isActive,
-   onSubPanelToggle,
-   onMainItemClick,
 }: {
    item: NavItemDef;
    slug: string;
-   teamSlug?: string | null;
-   isActive: boolean;
-   onSubPanelToggle: (section: SubSidebarSection) => void;
-   onMainItemClick: () => void;
+   teamSlug: string;
 }) {
-   const Icon = item.icon;
    const { getFeatureStage } = useEarlyAccess();
+   const { activeSection, toggleSection, closeSection } = useSubPanelControls();
+   const matchRoute = useMatchRoute();
+
+   const Icon = item.icon;
    const stage = item.earlyAccessFlag
       ? getFeatureStage(item.earlyAccessFlag)
       : null;
-
-   const handleClick = useCallback(
-      (e: React.MouseEvent) => {
-         if (item.subPanel) {
-            e.preventDefault();
-            onSubPanelToggle(item.subPanel);
-         }
-      },
-      [item.subPanel, onSubPanelToggle],
+   const isRouteActive = Boolean(
+      matchRoute({ to: item.route, params: { slug, teamSlug }, fuzzy: true }),
    );
+   const isActive = item.subPanel
+      ? activeSection === item.subPanel || isRouteActive
+      : isRouteActive;
+
+   const tooltip = stage
+      ? {
+           children: (
+              <span className="flex items-center gap-2">
+                 {item.label}
+                 <FeatureStageBadge isTooltip stage={stage} />
+              </span>
+           ),
+        }
+      : item.label;
+
+   const inner = (
+      <>
+         <Icon className={cn(item.iconColor)} />
+         <span className="flex-1">{item.label}</span>
+         {stage && (
+            <FeatureStageBadge
+               className="group-data-[collapsible=icon]:hidden"
+               stage={stage}
+            />
+         )}
+         {item.subPanel && (
+            <ChevronRight className="text-muted-foreground group-data-[collapsible=icon]:hidden" />
+         )}
+      </>
+   );
+
+   if (item.subPanel) {
+      const subPanel = item.subPanel;
+      return (
+         <SidebarMenuItem
+            className="group/menu-item"
+            id={`tour-nav-item-${item.id}`}
+         >
+            <SidebarMenuButton
+               isActive={isActive}
+               onClick={() => toggleSection(subPanel)}
+               tooltip={tooltip}
+            >
+               {inner}
+            </SidebarMenuButton>
+         </SidebarMenuItem>
+      );
+   }
 
    return (
       <SidebarMenuItem
          className="group/menu-item"
          id={`tour-nav-item-${item.id}`}
       >
-         <SidebarMenuButton
-            asChild={!item.subPanel}
-            isActive={isActive}
-            onClick={item.subPanel ? handleClick : undefined}
-            tooltip={
-               stage
-                  ? {
-                       children: (
-                          <span className="flex items-center gap-1.5">
-                             {item.label}
-                             <FeatureStageBadge isTooltip stage={stage} />
-                          </span>
-                       ),
-                    }
-                  : item.label
-            }
-         >
-            {item.subPanel ? (
-               <>
-                  <Icon className={cn(item.iconColor)} />
-                  <span className="flex-1">{item.label}</span>
-                  {stage && (
-                     <FeatureStageBadge
-                        className="group-data-[collapsible=icon]:hidden"
-                        stage={stage}
-                     />
-                  )}
-                  <ChevronRight className="text-muted-foreground group-data-[collapsible=icon]:hidden" />
-               </>
-            ) : (
-               <Link
-                  onClick={onMainItemClick}
-                  params={{ slug, teamSlug: teamSlug ?? "" }}
-                  to={item.route}
-               >
-                  <Icon className={cn(item.iconColor)} />
-                  <span className="flex-1">{item.label}</span>
-                  {stage && (
-                     <FeatureStageBadge
-                        className="group-data-[collapsible=icon]:hidden"
-                        stage={stage}
-                     />
-                  )}
-               </Link>
-            )}
+         <SidebarMenuButton asChild isActive={isActive} tooltip={tooltip}>
+            <Link
+               onClick={closeSection}
+               params={{ slug, teamSlug }}
+               to={item.route}
+            >
+               {inner}
+            </Link>
          </SidebarMenuButton>
       </SidebarMenuItem>
    );
 }
 
-function useNavHandlers() {
-   const { pathname, searchStr } = useLocation();
-   const { slug, teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
-   const { activeSection } = useSidebarNav();
-   const router = useRouter();
-   const manager = useSidebarManager();
+function EditableNavItem({ item }: { item: NavItemDef }) {
+   const { isEnrolled, updateEnrollment, getFeatureStage } = useEarlyAccess();
+   const isVisible = useIsItemVisible();
+   const isWanted = useIsFinanceItemWanted();
 
-   const handleSubPanelToggle = useCallback(
-      (section: SubSidebarSection) => {
-         const subPanel = manager.use("sub-panel");
-         if (activeSection === section && subPanel?.open) {
-            subPanel.setOpen(false);
-            setActiveSection(null);
-         } else {
-            setActiveSection(section);
-            if (subPanel && !subPanel.open) {
-               subPanel.setOpen(true);
-            }
-         }
-      },
-      [manager, activeSection],
-   );
+   const Icon = item.icon;
+   const stage = item.earlyAccessFlag
+      ? getFeatureStage(item.earlyAccessFlag)
+      : null;
+   const checked = item.earlyAccessFlag
+      ? isWanted(item.id) || isEnrolled(item.earlyAccessFlag)
+      : isVisible(item.id);
 
-   const handleMainItemClick = useCallback(() => {
-      const subPanel = manager.use("sub-panel");
-      if (subPanel?.open) {
-         subPanel.setOpen(false);
+   function handleToggle() {
+      if (item.earlyAccessFlag) {
+         toggleFinanceNavPref(item.id);
+         updateEnrollment(item.earlyAccessFlag, !checked);
+         return;
       }
-      if (activeSection) {
-         setActiveSection(null);
-      }
-   }, [manager, activeSection]);
+      toggleHiddenItem(item.id);
+   }
 
-   const isItemActive = useCallback(
-      (item: NavItemDef) => {
-         const { pathname: routePath } = router.buildLocation({
-            to: item.route,
-            params: { slug, teamSlug: teamSlug ?? undefined },
-         });
-
-         if (item.subPanel) {
-            return (
-               activeSection === item.subPanel || pathname.startsWith(routePath)
-            );
-         }
-
-         return pathname.startsWith(routePath) && !searchStr;
-      },
-      [router, slug, teamSlug, pathname, searchStr, activeSection],
+   return (
+      <SidebarMenuItem>
+         <SidebarMenuButton aria-pressed={checked} onClick={handleToggle}>
+            <Checkbox
+               aria-hidden="true"
+               checked={checked}
+               className="pointer-events-none shrink-0"
+               tabIndex={-1}
+            />
+            <Icon
+               aria-hidden="true"
+               className={cn(
+                  "shrink-0",
+                  item.iconColor ?? "text-muted-foreground",
+               )}
+            />
+            <span className="flex-1 truncate">{item.label}</span>
+            {stage && <FeatureStageBadge stage={stage} />}
+         </SidebarMenuButton>
+      </SidebarMenuItem>
    );
-
-   return {
-      slug,
-      teamSlug,
-      handleSubPanelToggle,
-      handleMainItemClick,
-      isItemActive,
-   };
 }
 
-export function SidebarDefaultItems() {
-   const {
-      slug,
-      teamSlug,
-      handleSubPanelToggle,
-      handleMainItemClick,
-      isItemActive,
-   } = useNavHandlers();
-   const { pathname } = useLocation();
+function useVisibleItems(group: NavGroupDef) {
    const { isEnrolled } = useEarlyAccess();
-   const { isVisible } = useSidebarVisibility();
-   const { state: sidebarState } = useSidebar();
-   const [open, setOpen] = useState(true);
+   const isVisible = useIsItemVisible();
+   const isWanted = useIsFinanceItemWanted();
 
-   const mainGroup = navGroups.find((g) => !g.label);
-   const visibleMainItems = (mainGroup?.items ?? [])
+   return group.items
       .filter((item) => {
          if (!item.earlyAccessFlag) return true;
+         if (group.label)
+            return isWanted(item.id) || isEnrolled(item.earlyAccessFlag);
          return isEnrolled(item.earlyAccessFlag);
       })
       .filter((item) => isVisible(item.id));
+}
 
-   const resolvedSlug = slug || pathname.split("/")[1] || "";
+function useEditableItems(group: NavGroupDef) {
+   const { isEnrolled } = useEarlyAccess();
+
+   return group.items.filter(
+      (item) =>
+         item.configurable &&
+         (!item.earlyAccessFlag || isEnrolled(item.earlyAccessFlag)),
+   );
+}
+
+function NavSection({ group }: { group: NavGroupDef }) {
+   const { slug, teamSlug } = useDashboardSlugs();
+   const isEditingNav = useIsEditingNav();
+   const sidebar = useSidebar();
+   const [open, setOpen] = useState(true);
+   const visibleItems = useVisibleItems(group);
+   const editableItems = useEditableItems(group);
+
+   if (!isEditingNav && visibleItems.length === 0) return null;
+
+   const isMain = !group.label;
+   const collapsibleOpen = sidebar.state === "collapsed" || open;
 
    return (
       <Collapsible
-         className="group/projeto"
-         open={sidebarState === "collapsed" || open}
+         className={isMain ? "group/projeto" : "group/group"}
          onOpenChange={setOpen}
+         open={collapsibleOpen}
       >
-         <SidebarGroup className="py-0">
-            <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-               <CollapsibleTrigger className="flex cursor-pointer items-center gap-2 transition-colors duration-150 hover:text-foreground">
-                  <FolderOpen aria-hidden="true" className="size-4 shrink-0" />
-                  <span className="text-[11px] font-semibold uppercase tracking-wider">
-                     Projeto
-                  </span>
-                  <ChevronRight
-                     aria-hidden="true"
-                     className="size-4 transition-transform duration-200 group-data-[state=open]/projeto:rotate-90"
-                  />
-               </CollapsibleTrigger>
-            </SidebarGroupLabel>
+         <SidebarGroup className={isMain ? "py-0" : "pt-0"}>
+            {isMain ? (
+               <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+                  <CollapsibleTrigger className="flex cursor-pointer items-center gap-2 transition-colors duration-150 hover:text-foreground">
+                     <FolderOpen
+                        aria-hidden="true"
+                        className="size-4 shrink-0"
+                     />
+                     <span className="text-sm font-semibold uppercase tracking-wider">
+                        Projeto
+                     </span>
+                     <ChevronRight
+                        aria-hidden="true"
+                        className="size-4 transition-transform duration-200 group-data-[state=open]/projeto:rotate-90"
+                     />
+                  </CollapsibleTrigger>
+               </SidebarGroupLabel>
+            ) : (
+               <SidebarGroupLabel className="text-sm group-data-[collapsible=icon]:hidden">
+                  {group.label}
+               </SidebarGroupLabel>
+            )}
             <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
                <SidebarGroupContent>
                   <SidebarMenu>
-                     {visibleMainItems.map((item) => (
-                        <NavItem
-                           isActive={isItemActive(item)}
-                           item={item}
-                           key={item.id}
-                           onMainItemClick={handleMainItemClick}
-                           onSubPanelToggle={handleSubPanelToggle}
-                           slug={resolvedSlug}
-                           teamSlug={teamSlug}
-                        />
-                     ))}
+                     {isEditingNav && !isMain
+                        ? editableItems.map((item) => (
+                             <EditableNavItem item={item} key={item.id} />
+                          ))
+                        : visibleItems.map((item) => (
+                             <NavItem
+                                item={item}
+                                key={item.id}
+                                slug={slug}
+                                teamSlug={teamSlug}
+                             />
+                          ))}
                   </SidebarMenu>
                </SidebarGroupContent>
             </CollapsibleContent>
@@ -260,194 +291,75 @@ export function SidebarDefaultItems() {
    );
 }
 
-function NavGroup({
-   group,
-   slug,
-   teamSlug,
-   isItemActive,
-   onSubPanelToggle,
-   onMainItemClick,
-}: {
-   group: NavGroupDef;
-   slug: string;
-   teamSlug?: string | null;
-   isItemActive: (item: NavItemDef) => boolean;
-   onSubPanelToggle: (section: SubSidebarSection) => void;
-   onMainItemClick: () => void;
-}) {
-   const { isEnrolled, updateEnrollment, getFeatureStage } = useEarlyAccess();
-   const { isVisible, toggleItem: toggleVisibility } = useSidebarVisibility();
-   const { isWanted, toggleItem: toggleWanted } = useFinanceNavPreferences();
-   const { isEditingNav } = useSidebarNav();
-
-   const visibleItems = group.items
-      .filter((item) => {
-         if (!item.earlyAccessFlag) return true;
-         if (group.label)
-            return isWanted(item.id) || isEnrolled(item.earlyAccessFlag);
-         return isEnrolled(item.earlyAccessFlag);
-      })
-      .filter((item) => isVisible(item.id));
-
-   const editableItems = group.items.filter(
-      (item) =>
-         item.configurable &&
-         (!item.earlyAccessFlag || isEnrolled(item.earlyAccessFlag)),
-   );
-
-   if (!isEditingNav && visibleItems.length === 0) return null;
-
-   const isChecked = (item: NavItemDef): boolean => {
-      if (item.earlyAccessFlag) {
-         return isWanted(item.id) || isEnrolled(item.earlyAccessFlag);
-      }
-      return isVisible(item.id);
-   };
-
-   const handleToggle = (item: NavItemDef) => {
-      if (item.earlyAccessFlag) {
-         const newValue = !isChecked(item);
-         toggleWanted(item.id);
-         updateEnrollment(item.earlyAccessFlag, newValue);
-      } else {
-         toggleVisibility(item.id);
-      }
-   };
-
-   return (
-      <SidebarGroup className="pt-0">
-         {group.label && (
-            <SidebarGroupLabel className="text-[11px] group-data-[collapsible=icon]:hidden">
-               {group.label}
-            </SidebarGroupLabel>
-         )}
-         <SidebarGroupContent>
-            <SidebarMenu>
-               {isEditingNav
-                  ? editableItems.map((item) => {
-                       const Icon = item.icon;
-                       const checked = isChecked(item);
-                       const stage = item.earlyAccessFlag
-                          ? getFeatureStage(item.earlyAccessFlag)
-                          : null;
-                       return (
-                          <SidebarMenuItem key={item.id}>
-                             <SidebarMenuButton
-                                aria-pressed={checked}
-                                onClick={() => handleToggle(item)}
-                             >
-                                <Checkbox
-                                   aria-hidden="true"
-                                   checked={checked}
-                                   className="pointer-events-none shrink-0"
-                                   tabIndex={-1}
-                                />
-                                <Icon
-                                   aria-hidden="true"
-                                   className={cn(
-                                      "shrink-0",
-                                      item.iconColor ?? "text-muted-foreground",
-                                   )}
-                                />
-                                <span className="flex-1 truncate">
-                                   {item.label}
-                                </span>
-                                {stage && <FeatureStageBadge stage={stage} />}
-                             </SidebarMenuButton>
-                          </SidebarMenuItem>
-                       );
-                    })
-                  : visibleItems.map((item) => (
-                       <NavItem
-                          isActive={isItemActive(item)}
-                          item={item}
-                          key={item.id}
-                          onMainItemClick={onMainItemClick}
-                          onSubPanelToggle={onSubPanelToggle}
-                          slug={slug}
-                          teamSlug={teamSlug}
-                       />
-                    ))}
-            </SidebarMenu>
-         </SidebarGroupContent>
-      </SidebarGroup>
-   );
-}
-
 export function SidebarNav() {
-   const {
-      slug,
-      teamSlug,
-      handleSubPanelToggle,
-      handleMainItemClick,
-      isItemActive,
-   } = useNavHandlers();
-   const { isEditingNav } = useSidebarNav();
-   const { state: sidebarState } = useSidebar();
-   const [open, setOpen] = useState(true);
+   const isEditingNav = useIsEditingNav();
+   const sidebar = useSidebar();
+   const [modulesOpen, setModulesOpen] = useState(true);
+
+   const mainGroup = navGroups.find((g) => !g.label);
+   const moduleGroups = navGroups.filter((g) => g.label);
+   const collapsibleOpen = sidebar.state === "collapsed" || modulesOpen;
 
    return (
-      <Collapsible
-         className="group/modules"
-         open={sidebarState === "collapsed" || open}
-         onOpenChange={setOpen}
-      >
-         <SidebarGroup className="p-0">
-            <SidebarGroupLabel className="justify-between px-4 group-data-[collapsible=icon]:hidden">
-               <CollapsibleTrigger className="flex cursor-pointer items-center gap-2 transition-colors duration-150 hover:text-foreground">
-                  <LayoutGrid aria-hidden="true" className="size-4 shrink-0" />
-                  <span className="text-[11px] font-semibold uppercase tracking-wider">
-                     Módulos
-                  </span>
-                  <ChevronRight
-                     aria-hidden="true"
-                     className="size-4 transition-transform duration-200 group-data-[state=open]/modules:rotate-90"
-                  />
-               </CollapsibleTrigger>
-               <Tooltip>
-                  <TooltipTrigger asChild>
-                     <button
-                        aria-label={
-                           isEditingNav
-                              ? "Concluir edição"
-                              : "Personalizar módulos"
-                        }
-                        aria-pressed={isEditingNav}
-                        className="flex size-4 items-center justify-center rounded text-muted-foreground transition-colors duration-150 hover:bg-sidebar-accent hover:text-foreground"
-                        onClick={() => setNavEditing(!isEditingNav)}
-                        type="button"
-                     >
-                        {isEditingNav ? (
-                           <Check
-                              aria-hidden="true"
-                              className="size-4 text-primary"
-                           />
-                        ) : (
-                           <Pencil aria-hidden="true" className="size-4" />
-                        )}
-                     </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                     {isEditingNav ? "Concluir edição" : "Personalizar módulos"}
-                  </TooltipContent>
-               </Tooltip>
-            </SidebarGroupLabel>
-            <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-               {navGroups
-                  .filter((g) => g.id !== "main")
-                  .map((group) => (
-                     <NavGroup
-                        group={group}
-                        isItemActive={isItemActive}
-                        key={group.id}
-                        onMainItemClick={handleMainItemClick}
-                        onSubPanelToggle={handleSubPanelToggle}
-                        slug={slug}
-                        teamSlug={teamSlug ?? undefined}
+      <>
+         {mainGroup && <NavSection group={mainGroup} />}
+         <Collapsible
+            className="group/modules"
+            onOpenChange={setModulesOpen}
+            open={collapsibleOpen}
+         >
+            <SidebarGroup className="p-0">
+               <SidebarGroupLabel className="justify-between px-4 group-data-[collapsible=icon]:hidden">
+                  <CollapsibleTrigger className="flex cursor-pointer items-center gap-2 transition-colors duration-150 hover:text-foreground">
+                     <LayoutGrid
+                        aria-hidden="true"
+                        className="size-4 shrink-0"
                      />
+                     <span className="text-sm font-semibold uppercase tracking-wider">
+                        Módulos
+                     </span>
+                     <ChevronRight
+                        aria-hidden="true"
+                        className="size-4 transition-transform duration-200 group-data-[state=open]/modules:rotate-90"
+                     />
+                  </CollapsibleTrigger>
+                  <Tooltip>
+                     <TooltipTrigger asChild>
+                        <button
+                           aria-label={
+                              isEditingNav
+                                 ? "Concluir edição"
+                                 : "Personalizar módulos"
+                           }
+                           aria-pressed={isEditingNav}
+                           className="flex size-4 items-center justify-center rounded text-muted-foreground transition-colors duration-150 hover:bg-sidebar-accent hover:text-foreground"
+                           onClick={() => setNavEditing(!isEditingNav)}
+                           type="button"
+                        >
+                           {isEditingNav ? (
+                              <Check
+                                 aria-hidden="true"
+                                 className="size-4 text-primary"
+                              />
+                           ) : (
+                              <Pencil aria-hidden="true" className="size-4" />
+                           )}
+                        </button>
+                     </TooltipTrigger>
+                     <TooltipContent side="right">
+                        {isEditingNav
+                           ? "Concluir edição"
+                           : "Personalizar módulos"}
+                     </TooltipContent>
+                  </Tooltip>
+               </SidebarGroupLabel>
+               <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                  {moduleGroups.map((group) => (
+                     <NavSection group={group} key={group.id} />
                   ))}
-            </CollapsibleContent>
-         </SidebarGroup>
-      </Collapsible>
+               </CollapsibleContent>
+            </SidebarGroup>
+         </Collapsible>
+      </>
    );
 }

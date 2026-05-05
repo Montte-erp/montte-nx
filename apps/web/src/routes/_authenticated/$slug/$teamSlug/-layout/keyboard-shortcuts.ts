@@ -1,9 +1,9 @@
-export type ShortcutDef = {
+type ShortcutDef = {
    keys: string;
    label: string;
 };
 
-export type ShortcutGroup = {
+type ShortcutGroup = {
    id: string;
    label: string;
    shortcuts: ShortcutDef[];

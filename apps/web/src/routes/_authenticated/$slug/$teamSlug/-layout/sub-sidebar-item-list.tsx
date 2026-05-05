@@ -7,18 +7,18 @@ import {
    EmptyTitle,
 } from "@packages/ui/components/empty";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { cn } from "@packages/ui/lib/utils";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Link, useParams } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import {
    GitBranch,
    LayoutDashboard,
    Lightbulb,
+   type LucideIcon,
    Plus,
    RotateCcw,
 } from "lucide-react";
-import { Suspense, useMemo } from "react";
-import { ErrorBoundary } from "react-error-boundary";
+import { QueryBoundary } from "@/components/query-boundary";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { orpc } from "@/integrations/orpc/client";
 import type { SubSidebarSection } from "./hooks/use-sidebar-store";
 import { SubSidebarContextMenu } from "./sub-sidebar-context-menu";
@@ -29,35 +29,26 @@ interface SubSidebarItemListProps {
    onItemClick?: () => void;
 }
 
-export function SubSidebarItemList({
-   section,
-   searchQuery,
-   onItemClick,
-}: SubSidebarItemListProps) {
+const INSIGHT_ICONS: Record<string, LucideIcon> = {
+   trends: Lightbulb,
+   funnels: GitBranch,
+   retention: RotateCcw,
+};
+
+export function SubSidebarItemList(props: SubSidebarItemListProps) {
    return (
-      <ErrorBoundary
-         fallbackRender={({ error }) => (
-            <div className="flex-1 flex items-center justify-center p-4">
-               <p className="text-sm text-destructive text-center">
-                  Erro ao carregar lista: {(error as Error).message}
-               </p>
-            </div>
-         )}
+      <QueryBoundary
+         errorTitle="Erro ao carregar lista"
+         fallback={<ItemListSkeleton />}
       >
-         <Suspense fallback={<ItemListSkeleton />}>
-            <ItemListContent
-               onItemClick={onItemClick}
-               searchQuery={searchQuery}
-               section={section}
-            />
-         </Suspense>
-      </ErrorBoundary>
+         <ItemListContent {...props} />
+      </QueryBoundary>
    );
 }
 
 function ItemListSkeleton() {
    return (
-      <div className="flex-1 flex flex-col gap-1 p-2">
+      <div className="flex flex-1 flex-col gap-2 p-2">
          {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton
                className="h-8 w-full rounded-md"
@@ -81,16 +72,6 @@ function ItemListContent({
    return <InsightList onItemClick={onItemClick} searchQuery={searchQuery} />;
 }
 
-const INSIGHT_ICONS: Record<string, typeof Lightbulb> = {
-   trends: Lightbulb,
-   funnels: GitBranch,
-   retention: RotateCcw,
-};
-
-function getInsightIcon(type: string) {
-   return INSIGHT_ICONS[type] ?? Lightbulb;
-}
-
 function DashboardList({
    searchQuery,
    onItemClick,
@@ -98,68 +79,47 @@ function DashboardList({
    searchQuery: string;
    onItemClick?: () => void;
 }) {
-   const { slug, teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
-
+   const { slug, teamSlug } = useDashboardSlugs();
    const { data: dashboards } = useSuspenseQuery(
       orpc.dashboards.list.queryOptions({}),
    );
 
-   const filtered = useMemo(() => {
-      if (!searchQuery.trim()) return dashboards;
-      const query = searchQuery.toLowerCase();
-      return dashboards.filter((d) => d.name.toLowerCase().includes(query));
-   }, [dashboards, searchQuery]);
+   const query = searchQuery.trim().toLowerCase();
+   const filtered = query
+      ? dashboards.filter((d) => d.name.toLowerCase().includes(query))
+      : dashboards;
 
    if (filtered.length === 0) {
       return (
          <EmptyState
-            hasSearchQuery={searchQuery.trim().length > 0}
+            hasSearchQuery={query.length > 0}
             section="dashboards"
             slug={slug}
+            teamSlug={teamSlug}
          />
       );
    }
 
    return (
-      <div className="flex-1 overflow-y-auto p-1">
-         <ul className="flex flex-col gap-0.5">
-            {filtered.map((dashboard) => (
-               <li className="group" key={dashboard.id}>
-                  <div
-                     className={cn(
-                        "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-                        "text-foreground hover:bg-accent",
-                     )}
-                  >
-                     <Link
-                        className="flex items-center gap-2 min-w-0 flex-1"
-                        onClick={onItemClick}
-                        params={{
-                           slug,
-                           teamSlug,
-                           dashboardId: dashboard.id,
-                        }}
-                        to={
-                           "/$slug/$teamSlug/analytics/dashboards/$dashboardId"
-                        }
-                     >
-                        <LayoutDashboard className="size-4 flex-shrink-0" />
-                        <span className="truncate">{dashboard.name}</span>
-                     </Link>
-                     <SubSidebarContextMenu
-                        item={{
-                           id: dashboard.id,
-                           name: dashboard.name,
-                        }}
-                        section="dashboards"
-                     />
-                  </div>
-               </li>
-            ))}
-         </ul>
-      </div>
+      <ul className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
+         {filtered.map((dashboard) => (
+            <li className="group flex items-center gap-2" key={dashboard.id}>
+               <Link
+                  className="flex min-w-0 flex-1 items-center gap-2 rounded-md p-2 text-sm hover:bg-accent"
+                  onClick={onItemClick}
+                  params={{ slug, teamSlug, dashboardId: dashboard.id }}
+                  to="/$slug/$teamSlug/analytics/dashboards/$dashboardId"
+               >
+                  <LayoutDashboard className="size-4 shrink-0" />
+                  <span className="truncate">{dashboard.name}</span>
+               </Link>
+               <SubSidebarContextMenu
+                  item={{ id: dashboard.id, name: dashboard.name }}
+                  section="dashboards"
+               />
+            </li>
+         ))}
+      </ul>
    );
 }
 
@@ -170,69 +130,50 @@ function InsightList({
    searchQuery: string;
    onItemClick?: () => void;
 }) {
-   const { slug, teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
-
+   const { slug, teamSlug } = useDashboardSlugs();
    const { data: insights } = useSuspenseQuery(
       orpc.insights.list.queryOptions({}),
    );
 
-   const filtered = useMemo(() => {
-      if (!searchQuery.trim()) return insights;
-      const query = searchQuery.toLowerCase();
-      return insights.filter((i) => i.name.toLowerCase().includes(query));
-   }, [insights, searchQuery]);
+   const query = searchQuery.trim().toLowerCase();
+   const filtered = query
+      ? insights.filter((i) => i.name.toLowerCase().includes(query))
+      : insights;
 
    if (filtered.length === 0) {
       return (
          <EmptyState
-            hasSearchQuery={searchQuery.trim().length > 0}
+            hasSearchQuery={query.length > 0}
             section="insights"
             slug={slug}
+            teamSlug={teamSlug}
          />
       );
    }
 
    return (
-      <div className="flex-1 overflow-y-auto p-1">
-         <ul className="flex flex-col gap-0.5">
-            {filtered.map((insight) => {
-               const Icon = getInsightIcon(insight.type);
-               return (
-                  <li className="group" key={insight.id}>
-                     <div
-                        className={cn(
-                           "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-                           "text-foreground hover:bg-accent",
-                        )}
-                     >
-                        <Link
-                           className="flex items-center gap-2 min-w-0 flex-1"
-                           onClick={onItemClick}
-                           params={{
-                              slug,
-                              teamSlug,
-                              insightId: insight.id,
-                           }}
-                           to={"/$slug/$teamSlug/analytics/insights/$insightId"}
-                        >
-                           <Icon className="size-4 flex-shrink-0" />
-                           <span className="truncate">{insight.name}</span>
-                        </Link>
-                        <SubSidebarContextMenu
-                           item={{
-                              id: insight.id,
-                              name: insight.name,
-                           }}
-                           section="insights"
-                        />
-                     </div>
-                  </li>
-               );
-            })}
-         </ul>
-      </div>
+      <ul className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
+         {filtered.map((insight) => {
+            const Icon = INSIGHT_ICONS[insight.type] ?? Lightbulb;
+            return (
+               <li className="group flex items-center gap-2" key={insight.id}>
+                  <Link
+                     className="flex min-w-0 flex-1 items-center gap-2 rounded-md p-2 text-sm hover:bg-accent"
+                     onClick={onItemClick}
+                     params={{ slug, teamSlug, insightId: insight.id }}
+                     to="/$slug/$teamSlug/analytics/insights/$insightId"
+                  >
+                     <Icon className="size-4 shrink-0" />
+                     <span className="truncate">{insight.name}</span>
+                  </Link>
+                  <SubSidebarContextMenu
+                     item={{ id: insight.id, name: insight.name }}
+                     section="insights"
+                  />
+               </li>
+            );
+         })}
+      </ul>
    );
 }
 
@@ -240,21 +181,18 @@ function EmptyState({
    section,
    hasSearchQuery,
    slug,
+   teamSlug,
 }: {
    section: SubSidebarSection;
    hasSearchQuery: boolean;
    slug: string;
+   teamSlug: string;
 }) {
    const label = section === "dashboards" ? "dashboard" : "insight";
    const Icon = section === "dashboards" ? LayoutDashboard : Lightbulb;
-   const { teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
-   const teamSegment = teamSlug ? `/${teamSlug}` : "";
-   const listRoute =
-      section === "dashboards"
-         ? `/${slug}${teamSegment}/analytics/dashboards`
-         : `/${slug}${teamSegment}/analytics/insights`;
+   const title = hasSearchQuery
+      ? `Nenhum ${label} encontrado`
+      : `Nenhum ${label} ainda`;
 
    return (
       <Empty>
@@ -262,23 +200,28 @@ function EmptyState({
             <EmptyMedia variant="icon">
                <Icon />
             </EmptyMedia>
-            <EmptyTitle>
-               {hasSearchQuery
-                  ? section === "dashboards"
-                     ? "Nenhum dashboard encontrado"
-                     : "Nenhum insight encontrado"
-                  : section === "dashboards"
-                    ? "Nenhum dashboard ainda"
-                    : "Nenhum insight ainda"}
-            </EmptyTitle>
+            <EmptyTitle>{title}</EmptyTitle>
          </EmptyHeader>
          {!hasSearchQuery && (
             <EmptyContent>
-               <Button asChild variant="outline" size="sm">
-                  <Link to={listRoute}>
-                     <Plus className="size-3.5" />
-                     Novo {label}
-                  </Link>
+               <Button asChild size="sm" variant="outline">
+                  {section === "dashboards" ? (
+                     <Link
+                        params={{ slug, teamSlug }}
+                        to="/$slug/$teamSlug/analytics/dashboards"
+                     >
+                        <Plus className="size-4" />
+                        Novo dashboard
+                     </Link>
+                  ) : (
+                     <Link
+                        params={{ slug, teamSlug }}
+                        to="/$slug/$teamSlug/analytics/insights"
+                     >
+                        <Plus className="size-4" />
+                        Novo insight
+                     </Link>
+                  )}
                </Button>
             </EmptyContent>
          )}

@@ -232,15 +232,7 @@ function SidebarScopeSwitcherContent() {
 
          openCredenza({ renderChildren: () => <CreateTeamForm /> });
       },
-      [
-         openCredenza,
-         closeCredenza,
-         projectLimit,
-         projectCount,
-         teams.length,
-         slug,
-         teamSlug,
-      ],
+      [openCredenza, closeCredenza, projectLimit, projectCount, teams.length],
    );
 
    const handleNewOrganization = useCallback(

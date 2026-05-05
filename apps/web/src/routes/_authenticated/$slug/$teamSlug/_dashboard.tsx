@@ -1,17 +1,10 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { z } from "zod";
 import posthog from "posthog-js";
 import { DashboardLayout } from "./-layout/dashboard-layout";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard",
 )({
-   validateSearch: z.object({
-      sidebarTab: z
-         .enum(["navegar", "assistente"])
-         .catch("navegar")
-         .default("navegar"),
-   }),
    ssr: "data-only",
    beforeLoad: async ({ context }) => {
       const status = await context.queryClient.fetchQuery(
