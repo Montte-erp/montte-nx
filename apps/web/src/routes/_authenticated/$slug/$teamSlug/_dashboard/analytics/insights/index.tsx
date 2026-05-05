@@ -29,8 +29,8 @@ import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/components/blocks/early-access-banner";
-import { ContextPanelAction } from "@/features/context-panel/context-panel-info";
-import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
+import { ContextPanelAction } from "../../../-context-panel/context-panel-info";
+import { useContextPanelInfo } from "../../../-context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 import { InsightsTable, type InsightRow } from "./-insights/insights-table";

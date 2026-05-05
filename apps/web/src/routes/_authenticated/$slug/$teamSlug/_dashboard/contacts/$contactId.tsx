@@ -18,7 +18,7 @@ import {
    openContextPanel,
    closeContextPanel,
    useContextPanelInfo,
-} from "@/features/context-panel/use-context-panel";
+} from "../../-context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import {

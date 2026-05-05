@@ -54,7 +54,7 @@ import { DefaultHeader } from "@/components/default-header";
 import { requestTour } from "./-tour/store";
 import { TourHelpButton } from "./-tour/tour-help-button";
 import { QueryBoundary } from "@/components/query-boundary";
-import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
+import { useContextPanelInfo } from "../../-context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { createSlug } from "@core/utils/text";

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AgentPanel } from "@/features/agent-panel/agent-panel";
+import { AgentPanel } from "../-rubi-panel/agent-panel";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/chat",

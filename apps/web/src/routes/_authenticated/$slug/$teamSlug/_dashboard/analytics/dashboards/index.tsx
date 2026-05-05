@@ -23,8 +23,8 @@ import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/components/blocks/early-access-banner";
-import { ContextPanelAction } from "@/features/context-panel/context-panel-info";
-import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
+import { ContextPanelAction } from "../../../-context-panel/context-panel-info";
+import { useContextPanelInfo } from "../../../-context-panel/use-context-panel";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 import { CreateDashboardForm } from "./-dashboards/create-dashboard-form";

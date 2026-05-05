@@ -2,7 +2,7 @@ import { createStore } from "@tanstack/react-store";
 import { Info } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type React from "react";
-import { AgentMascotIcon } from "@/features/agent-panel/agent-mascot-icon";
+import { AgentMascotIcon } from "../-rubi-panel/agent-mascot-icon";
 
 export interface ContextPanelTab {
    id: string;

@@ -21,8 +21,8 @@ import {
 import { useSelector } from "@tanstack/react-store";
 import { Check, ChevronDown, Info } from "lucide-react";
 import type React from "react";
-import { AgentMascotIcon } from "@/features/agent-panel/agent-mascot-icon";
-import { AgentPanel } from "@/features/agent-panel/agent-panel";
+import { AgentMascotIcon } from "../-rubi-panel/agent-mascot-icon";
+import { AgentPanel } from "../-rubi-panel/agent-panel";
 import { ContextPanelAction } from "./context-panel-info";
 import {
    type ContextPanelTab,

@@ -36,7 +36,7 @@ import { DataTableRoot } from "@/components/data-table/data-table-root";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { QueryBoundary } from "@/components/query-boundary";
-import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
+import { useContextPanelInfo } from "../-context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 import { buildTagColumns, type TagRow } from "./-tags/tags-columns";

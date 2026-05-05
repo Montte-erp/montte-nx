@@ -17,10 +17,10 @@ import {
    useRef,
    useState,
 } from "react";
-import { ContextPanelHeaderActions } from "@/features/context-panel/context-panel-header-actions";
-import type { PanelAction } from "@/features/context-panel/context-panel-store";
-import { contextPanelStore } from "@/features/context-panel/context-panel-store";
-import { usePageActions } from "@/features/context-panel/use-context-panel";
+import { ContextPanelHeaderActions } from "../routes/_authenticated/$slug/$teamSlug/-context-panel/context-panel-header-actions";
+import type { PanelAction } from "../routes/_authenticated/$slug/$teamSlug/-context-panel/context-panel-store";
+import { contextPanelStore } from "../routes/_authenticated/$slug/$teamSlug/-context-panel/context-panel-store";
+import { usePageActions } from "../routes/_authenticated/$slug/$teamSlug/-context-panel/use-context-panel";
 
 export interface PageHeaderProps {
    title: string;

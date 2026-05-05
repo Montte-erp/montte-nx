@@ -16,7 +16,7 @@ import { useSelector } from "@tanstack/react-store";
 import { Ellipsis, ExternalLink, Keyboard, Sparkles, X } from "lucide-react";
 import { POSTHOG_SURVEYS } from "@core/posthog/config";
 import { useSurveyModal } from "@/hooks/use-survey-modal";
-import { openKeyboardShortcuts } from "@/routes/_authenticated/$slug/$teamSlug/-layout/keyboard-shortcuts-sheet";
+import { openKeyboardShortcuts } from "../-layout/keyboard-shortcuts-sheet";
 import { allTabMetasStore, contextPanelStore } from "./context-panel-store";
 import {
    closeContextPanel,
