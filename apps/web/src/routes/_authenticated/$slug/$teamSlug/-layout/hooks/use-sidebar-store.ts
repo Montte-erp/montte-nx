@@ -7,6 +7,7 @@ interface SidebarPersistedState {
    isCollapsed: boolean;
    hiddenItems: string[];
    financeNavPrefs: string[];
+   sectionOpen: Record<string, boolean>;
 }
 
 interface SidebarTransientState {
@@ -21,6 +22,7 @@ const sidebarStore = createPersistedStore<SidebarPersistedState>(
       isCollapsed: false,
       hiddenItems: [],
       financeNavPrefs: [],
+      sectionOpen: {},
    },
 );
 
@@ -68,6 +70,13 @@ export function toggleFinanceNavPref(itemId: string) {
    }));
 }
 
+export function setSectionOpen(sectionId: string, open: boolean) {
+   sidebarStore.setState((state) => ({
+      ...state,
+      sectionOpen: { ...state.sectionOpen, [sectionId]: open },
+   }));
+}
+
 export function useSidebarCollapsed() {
    return useStore(sidebarStore, (s) => s.isCollapsed);
 }
@@ -80,6 +89,11 @@ export function useIsItemVisible() {
 export function useIsFinanceItemWanted() {
    const wantedItems = useStore(sidebarStore, (s) => s.financeNavPrefs);
    return (itemId: string) => wantedItems.includes(itemId);
+}
+
+export function useIsSectionOpen(sectionId: string, defaultOpen: boolean) {
+   const sectionOpen = useStore(sidebarStore, (s) => s.sectionOpen);
+   return sectionOpen[sectionId] ?? defaultOpen;
 }
 
 export function useActiveSection() {

@@ -1,60 +1,64 @@
 import { Input } from "@packages/ui/components/input";
-import { QuickAccessCard } from "@/components/blocks/quick-access-card";
 import { useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
-import { useState } from "react";
-import { useActiveOrganization } from "@/hooks/use-active-organization";
+import { QuickAccessCard } from "@/components/blocks/quick-access-card";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useEarlyAccess } from "@/hooks/use-early-access";
+import { Route } from "@/routes/_authenticated/$slug/$teamSlug/_dashboard/settings";
 import {
    type SettingsNavItemDef,
    settingsNavSections,
 } from "./settings-nav-items";
 
 function flattenItems(items: SettingsNavItemDef[]): SettingsNavItemDef[] {
-   return items.flatMap((item) => (item.children ? item.children : [item]));
+   return items.flatMap((item) => item.children ?? [item]);
 }
 
 export function SettingsMobileNav() {
-   const { activeOrganization } = useActiveOrganization();
+   const { slug, teamSlug } = useDashboardSlugs();
    const { isEnrolled } = useEarlyAccess();
    const navigate = useNavigate();
-   const [search, setSearch] = useState("");
+   const { q } = Route.useSearch();
+   const setQ = Route.useNavigate();
 
-   const q = search.toLowerCase();
+   const query = q.toLowerCase();
 
    return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-4">
          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground pointer-events-none" />
+            <Search className="pointer-events-none absolute left-2 top-2 size-4 text-muted-foreground" />
             <Input
-               className="pl-8 h-9 text-sm"
-               onChange={(e) => setSearch(e.target.value)}
+               className="h-8 pl-8 text-sm"
+               onChange={(e) =>
+                  setQ({
+                     search: (prev) => ({ ...prev, q: e.target.value }),
+                     replace: true,
+                  })
+               }
                placeholder="Pesquisar configurações..."
-               value={search}
+               value={q}
             />
          </div>
 
          {settingsNavSections
             .filter((section) => section.id !== "organization")
             .map((section) => {
-               const allItems = flattenItems(section.items);
-               const filtered = (
-                  q
-                     ? allItems.filter((item) =>
-                          item.title.toLowerCase().includes(q),
-                       )
-                     : allItems
-               ).filter((item) => {
-                  // Filter by early access enrollment
-                  if (!item.earlyAccessFlag) return true;
-                  return isEnrolled(item.earlyAccessFlag);
-               });
+               const filtered = flattenItems(section.items)
+                  .filter(
+                     (item) =>
+                        !query || item.title.toLowerCase().includes(query),
+                  )
+                  .filter(
+                     (item) =>
+                        !item.earlyAccessFlag ||
+                        isEnrolled(item.earlyAccessFlag),
+                  );
 
                if (filtered.length === 0) return null;
 
                return (
-                  <div key={section.id}>
-                     <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">
+                  <div className="flex flex-col gap-2" key={section.id}>
+                     <h2 className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                         {section.label}
                      </h2>
                      <div className="grid gap-2">
@@ -69,7 +73,7 @@ export function SettingsMobileNav() {
                               key={item.id}
                               onClick={() =>
                                  navigate({
-                                    params: { slug: activeOrganization.slug },
+                                    params: { slug, teamSlug },
                                     to: item.href,
                                  })
                               }

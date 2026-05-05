@@ -29,18 +29,19 @@ import {
    LayoutGrid,
    Pencil,
 } from "lucide-react";
-import { useState } from "react";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 import {
    setActiveSection,
    setNavEditing,
+   setSectionOpen,
    toggleFinanceNavPref,
    toggleHiddenItem,
    useActiveSection,
    useIsEditingNav,
    useIsFinanceItemWanted,
    useIsItemVisible,
+   useIsSectionOpen,
 } from "./hooks/use-sidebar-store";
 import type { SubSidebarSection } from "./hooks/use-sidebar-store";
 import type { NavGroupDef, NavItemDef } from "./sidebar-nav-items";
@@ -231,19 +232,20 @@ function NavSection({ group }: { group: NavGroupDef }) {
    const { slug, teamSlug } = useDashboardSlugs();
    const isEditingNav = useIsEditingNav();
    const sidebar = useSidebar();
-   const [open, setOpen] = useState(true);
+   const sectionId = `nav:${group.id}`;
+   const isOpen = useIsSectionOpen(sectionId, true);
    const visibleItems = useVisibleItems(group);
    const editableItems = useEditableItems(group);
 
    if (!isEditingNav && visibleItems.length === 0) return null;
 
    const isMain = !group.label;
-   const collapsibleOpen = sidebar.state === "collapsed" || open;
+   const collapsibleOpen = sidebar.state === "collapsed" || isOpen;
 
    return (
       <Collapsible
          className={isMain ? "group/projeto" : "group/group"}
-         onOpenChange={setOpen}
+         onOpenChange={(open) => setSectionOpen(sectionId, open)}
          open={collapsibleOpen}
       >
          <SidebarGroup className={isMain ? "py-0" : "pt-0"}>
@@ -294,18 +296,18 @@ function NavSection({ group }: { group: NavGroupDef }) {
 export function SidebarNav() {
    const isEditingNav = useIsEditingNav();
    const sidebar = useSidebar();
-   const [modulesOpen, setModulesOpen] = useState(true);
+   const isOpen = useIsSectionOpen("nav:modules-header", true);
 
    const mainGroup = navGroups.find((g) => !g.label);
    const moduleGroups = navGroups.filter((g) => g.label);
-   const collapsibleOpen = sidebar.state === "collapsed" || modulesOpen;
+   const collapsibleOpen = sidebar.state === "collapsed" || isOpen;
 
    return (
       <>
          {mainGroup && <NavSection group={mainGroup} />}
          <Collapsible
             className="group/modules"
-            onOpenChange={setModulesOpen}
+            onOpenChange={(open) => setSectionOpen("nav:modules-header", open)}
             open={collapsibleOpen}
          >
             <SidebarGroup className="p-0">

@@ -1,5 +1,4 @@
 import { Button } from "@packages/ui/components/button";
-import { QueryBoundary } from "@/components/query-boundary";
 import {
    CredenzaBody,
    CredenzaDescription,
@@ -12,28 +11,13 @@ import { Input } from "@packages/ui/components/input";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
-import type { FC, FormEvent } from "react";
-import { useCallback, useTransition } from "react";
+import type { FormEvent } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { QueryBoundary } from "@/components/query-boundary";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { closeCredenza } from "@/hooks/use-credenza";
 import { authClient } from "@/integrations/better-auth/auth-client";
-
-function CreateTeamSkeleton() {
-   return (
-      <div className="flex-1 overflow-y-auto px-4 py-4">
-         <div className="grid gap-4">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-20 w-full" />
-         </div>
-      </div>
-   );
-}
 
 const createTeamSchema = z.object({
    description: z
@@ -46,58 +30,52 @@ const createTeamSchema = z.object({
    organizationId: z.string(),
 });
 
-const CreateTeamFormContent = () => {
-   const { activeOrganization } = useActiveOrganization();
-   const [isPending, startTransition] = useTransition();
-
-   const createTeam = useCallback(
-      async (data: {
-         name: string;
-         description?: string;
-         organizationId?: string;
-      }) => {
-         toast.loading("Criando espaço...");
-         const result = await authClient.organization.createTeam({
-            name: data.name,
-            organizationId: data.organizationId,
-         });
-
-         if (result.error) {
-            toast.error(result.error.message || "Erro ao criar espaço");
-            return;
-         }
-         toast.success("Espaço criado com sucesso");
-         closeCredenza();
-      },
-      [],
+function CreateTeamSkeleton() {
+   return (
+      <div className="flex-1 overflow-y-auto p-4">
+         <div className="grid gap-4">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-8 w-full" />
+         </div>
+      </div>
    );
+}
+
+function CreateTeamFormContent() {
+   const { activeOrganization } = useActiveOrganization();
 
    const form = useForm({
       defaultValues: {
          description: "",
          name: "",
-         organizationId: activeOrganization?.id ?? "",
+         organizationId: activeOrganization.id,
       },
-      onSubmit: async ({ value, formApi }) => {
-         await createTeam({
+      validators: { onBlur: createTeamSchema },
+      onSubmit: async ({ value }) => {
+         const toastId = toast.loading("Criando espaço...");
+         const result = await authClient.organization.createTeam({
             name: value.name,
-            description: value.description,
             organizationId: value.organizationId,
          });
-         formApi.reset();
-      },
-
-      validators: {
-         onBlur: createTeamSchema,
+         if (result.error) {
+            toast.error(result.error.message ?? "Erro ao criar espaço", {
+               id: toastId,
+            });
+            return;
+         }
+         toast.success("Espaço criado com sucesso", { id: toastId });
+         closeCredenza();
       },
    });
 
    const handleSubmit = (e: FormEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      startTransition(async () => {
-         await form.handleSubmit();
-      });
+      void form.handleSubmit();
    };
 
    return (
@@ -114,7 +92,6 @@ const CreateTeamFormContent = () => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
-
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
@@ -130,7 +107,6 @@ const CreateTeamFormContent = () => {
                               type="text"
                               value={field.state.value}
                            />
-
                            {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
                            )}
@@ -145,7 +121,6 @@ const CreateTeamFormContent = () => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
-
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
@@ -163,7 +138,6 @@ const CreateTeamFormContent = () => {
                               rows={3}
                               value={field.state.value}
                            />
-
                            {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
                            )}
@@ -185,24 +159,20 @@ const CreateTeamFormContent = () => {
             >
                {([canSubmit, isSubmitting]) => (
                   <Button
-                     disabled={!canSubmit || isSubmitting || isPending}
-                     onClick={() => {
-                        startTransition(async () => {
-                           await form.handleSubmit();
-                        });
-                     }}
+                     disabled={!canSubmit || isSubmitting}
+                     form="create-team-form"
                      type="submit"
                   >
-                     {isPending ? "Criando..." : "Criar espaço"}
+                     {isSubmitting ? "Criando..." : "Criar espaço"}
                   </Button>
                )}
             </form.Subscribe>
          </CredenzaFooter>
       </>
    );
-};
+}
 
-export const CreateTeamForm: FC = () => {
+export function CreateTeamForm() {
    return (
       <>
          <CredenzaHeader>
@@ -212,11 +182,11 @@ export const CreateTeamForm: FC = () => {
             </CredenzaDescription>
          </CredenzaHeader>
          <QueryBoundary
-            fallback={<CreateTeamSkeleton />}
             errorTitle="Erro ao carregar dados da organização"
+            fallback={<CreateTeamSkeleton />}
          >
             <CreateTeamFormContent />
          </QueryBoundary>
       </>
    );
-};
+}

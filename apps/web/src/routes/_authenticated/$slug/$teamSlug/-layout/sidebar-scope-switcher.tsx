@@ -26,22 +26,21 @@ import {
    SidebarMenu,
    SidebarMenuButton,
    SidebarMenuItem,
-   useSidebar,
 } from "@packages/ui/components/sidebar";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useLocation, useRouter } from "@tanstack/react-router";
 import { Check, ChevronsUpDown, Plus, Settings, UserPlus } from "lucide-react";
-import { useCallback, useTransition } from "react";
+import { useTransition } from "react";
+import { toast } from "sonner";
 import { QueryBoundary } from "@/components/query-boundary";
-import { CreateTeamForm } from "./-sidebar-scope-switcher/create-team-form";
-import { useSetActiveOrganization } from "./-sidebar-scope-switcher/use-set-active-organization";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { useCredenza } from "@/hooks/use-credenza";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
+import { CreateTeamForm } from "./-sidebar-scope-switcher/create-team-form";
 
 type Organization = {
    id: string;
@@ -69,17 +68,16 @@ const ORG_AVATAR_COLORS = [
 ];
 
 function getInitials(value: string) {
-   if (!value) return "?";
-   return value.trim().charAt(0).toUpperCase();
+   return value.trim().charAt(0).toUpperCase() || "?";
 }
 
-function getOrgColor(name: string): string {
-   if (!name) return ORG_AVATAR_COLORS[0] ?? "";
+function getOrgColor(name: string) {
+   if (!name) return ORG_AVATAR_COLORS[0]!;
    let hash = 0;
    for (const char of name) {
       hash = char.charCodeAt(0) + ((hash << 5) - hash);
    }
-   return ORG_AVATAR_COLORS[Math.abs(hash) % ORG_AVATAR_COLORS.length] ?? "";
+   return ORG_AVATAR_COLORS[Math.abs(hash) % ORG_AVATAR_COLORS.length]!;
 }
 
 function OrgAvatar({
@@ -91,12 +89,12 @@ function OrgAvatar({
    logo?: string | null;
    size?: "sm" | "md";
 }) {
-   const sizeClass = size === "md" ? "size-5 rounded-md" : "size-4 rounded-sm";
+   const sizeClass = size === "md" ? "size-8 rounded-md" : "size-4 rounded-sm";
    return (
       <Avatar className={`${sizeClass} shrink-0`}>
          <AvatarImage alt={name} src={logo ?? undefined} />
          <AvatarFallback
-            className={`${sizeClass} text-[9px] font-bold text-white ${getOrgColor(name)}`}
+            className={`${sizeClass} text-sm font-bold text-white ${getOrgColor(name)}`}
          >
             {getInitials(name)}
          </AvatarFallback>
@@ -111,8 +109,8 @@ function SidebarScopeSwitcherSkeleton() {
             <SidebarMenuButton className="pointer-events-none" size="lg">
                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-muted" />
                <div className="grid flex-1 gap-2">
-                  <Skeleton className="h-3.5 w-24" />
-                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-16" />
                </div>
             </SidebarMenuButton>
          </SidebarMenuItem>
@@ -120,128 +118,95 @@ function SidebarScopeSwitcherSkeleton() {
    );
 }
 
+function replaceSlugInPath(pathname: string, fromSlug: string, toSlug: string) {
+   const prefix = `/${fromSlug}`;
+   if (!pathname.startsWith(prefix)) return null;
+   return pathname.replace(prefix, `/${toSlug}`);
+}
+
 function SidebarScopeSwitcherContent() {
    const { activeOrganization, projectLimit, projectCount } =
       useActiveOrganization();
    const { activeTeam, teams } = useActiveTeam();
    const { openCredenza, closeCredenza } = useCredenza();
-   const { setActiveOrganization } = useSetActiveOrganization();
-   const [isPending, startTransition] = useTransition();
    const queryClient = useQueryClient();
    const router = useRouter();
    const { pathname } = useLocation();
-   const { isMobile } = useSidebar();
    const { slug, teamSlug } = useDashboardSlugs();
-   const currentSlug = slug || activeOrganization.slug;
+   const [isSwitching, startSwitching] = useTransition();
 
    const { data: organizations } = useSuspenseQuery(
       orpc.organization.getOrganizations.queryOptions({}),
    );
 
-   const organizationList = organizations ?? [];
+   function switchOrganization(org: Organization) {
+      if (org.id === activeOrganization.id || isSwitching) return;
+      const toastId = toast.loading("Switching organization...");
 
-   const handleOrganizationSwitch = useCallback(
-      (org: Organization) => {
-         if (org.id === activeOrganization.id || isPending) return;
-
-         startTransition(async () => {
-            await setActiveOrganization({
-               organizationId: org.id,
-               organizationSlug: org.slug,
-            });
-
-            const nextPath = pathname.startsWith(`/${currentSlug}`)
-               ? pathname.replace(`/${currentSlug}`, `/${org.slug}`)
-               : `/${org.slug}/${teamSlug}/home`;
-
-            router.navigate({ to: nextPath });
+      startSwitching(async () => {
+         const result = await authClient.organization.setActive({
+            organizationId: org.id,
+            organizationSlug: org.slug,
          });
-      },
-      [
-         activeOrganization.id,
-         currentSlug,
-         isPending,
-         teamSlug,
-         pathname,
-         router,
-         setActiveOrganization,
-         startTransition,
-      ],
-   );
+         if (result.error) {
+            toast.error(result.error.message, { id: toastId });
+            return;
+         }
+         toast.success("Organization switched", { id: toastId });
 
-   const handleTeamSwitch = useCallback(
-      async (team: Team) => {
-         if (team.id === activeTeam?.id) return;
+         const nextPath =
+            replaceSlugInPath(pathname, slug, org.slug) ??
+            `/${org.slug}/${teamSlug}/home`;
+         router.navigate({ to: nextPath });
+      });
+   }
 
+   function switchTeam(team: Team) {
+      if (team.id === activeTeam?.id) return;
+
+      startSwitching(async () => {
          await authClient.organization.setActiveTeam({ teamId: team.id });
-
          await queryClient.invalidateQueries({
             queryKey: orpc.session.getSession.queryKey({}),
          });
 
-         if (currentSlug) {
-            const teamParam = team.slug;
-            const prefix = `/${currentSlug}`;
-            let nextPath = `/${currentSlug}/${teamParam}/home`;
+         const teamPrefix = `/${slug}/${teamSlug}`;
+         const nextPath = pathname.startsWith(teamPrefix)
+            ? pathname.replace(teamPrefix, `/${slug}/${team.slug}`)
+            : `/${slug}/${team.slug}/home`;
+         router.navigate({ to: nextPath });
+      });
+   }
 
-            if (pathname.startsWith(`${prefix}/`)) {
-               nextPath = teamSlug
-                  ? pathname.replace(
-                       `${prefix}/${teamSlug}`,
-                       `${prefix}/${teamParam}`,
-                    )
-                  : `/${currentSlug}/${teamParam}${pathname.slice(prefix.length)}`;
-            }
-
-            router.navigate({ to: nextPath });
-         }
-      },
-      [activeTeam?.id, currentSlug, teamSlug, pathname, queryClient, router],
-   );
-
-   const handleNewProject = useCallback(
-      (e?: React.MouseEvent) => {
-         e?.stopPropagation();
-
-         if (projectLimit !== null && teams.length >= projectLimit) {
-            openCredenza({
-               renderChildren: () => (
-                  <>
-                     <CredenzaHeader>
-                        <CredenzaTitle>Limite de espaços</CredenzaTitle>
-                        <CredenzaDescription>
-                           Você está usando {projectCount} de {projectLimit}{" "}
-                           espaços
-                        </CredenzaDescription>
-                     </CredenzaHeader>
-                     <CredenzaBody className="px-4">
-                        <p className="text-sm text-muted-foreground">
-                           Você atingiu o limite de espaços do seu plano.
-                        </p>
-                     </CredenzaBody>
-                     <CredenzaFooter>
-                        <Button onClick={closeCredenza} variant="outline">
-                           Fechar
-                        </Button>
-                     </CredenzaFooter>
-                  </>
-               ),
-            });
-            return;
-         }
-
-         openCredenza({ renderChildren: () => <CreateTeamForm /> });
-      },
-      [openCredenza, closeCredenza, projectLimit, projectCount, teams.length],
-   );
-
-   const handleNewOrganization = useCallback(
-      (e?: React.MouseEvent) => {
-         e?.stopPropagation();
-         router.navigate({ to: "/onboarding", search: { new: true } });
-      },
-      [router],
-   );
+   function newProject() {
+      if (projectLimit !== null && teams.length >= projectLimit) {
+         openCredenza({
+            renderChildren: () => (
+               <>
+                  <CredenzaHeader>
+                     <CredenzaTitle>Limite de espaços</CredenzaTitle>
+                     <CredenzaDescription>
+                        Você está usando {projectCount} de {projectLimit}{" "}
+                        espaços
+                     </CredenzaDescription>
+                  </CredenzaHeader>
+                  <CredenzaBody className="px-4">
+                     <p className="text-sm text-muted-foreground">
+                        Você atingiu o limite de espaços do seu plano.
+                     </p>
+                  </CredenzaBody>
+                  <CredenzaFooter>
+                     <Button onClick={closeCredenza} variant="outline">
+                        Fechar
+                     </Button>
+                  </CredenzaFooter>
+               </>
+            ),
+         });
+         return;
+      }
+      openCredenza({ renderChildren: () => <CreateTeamForm /> });
+   }
 
    return (
       <SidebarMenu>
@@ -258,7 +223,7 @@ function SidebarScopeSwitcherContent() {
                            src={activeOrganization.logo ?? undefined}
                         />
                         <AvatarFallback
-                           className={`rounded-lg text-xs font-bold text-white ${getOrgColor(activeOrganization.name)}`}
+                           className={`rounded-lg text-sm font-bold text-white ${getOrgColor(activeOrganization.name)}`}
                         >
                            {getInitials(activeOrganization.name)}
                         </AvatarFallback>
@@ -278,131 +243,132 @@ function SidebarScopeSwitcherContent() {
                <DropdownMenuContent
                   align="start"
                   className="w-(--radix-dropdown-menu-trigger-width) min-w-72 rounded-lg"
-                  side={isMobile ? "bottom" : "bottom"}
+                  side="bottom"
                   sideOffset={4}
                >
-                  <>
-                     <DropdownMenuLabel className="py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Espaço
-                     </DropdownMenuLabel>
+                  <DropdownMenuLabel className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                     Espaço
+                  </DropdownMenuLabel>
 
-                     <DropdownMenuSub>
-                        <DropdownMenuSubTrigger className="gap-2">
-                           <span className="truncate font-medium">
-                              {activeTeam?.name ?? "Sem espaço"}
-                           </span>
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent className="min-w-52">
-                           {teams.map((team, index) => (
-                              <DropdownMenuItem
-                                 key={`team-${index + 1}`}
-                                 onSelect={() => handleTeamSwitch(team)}
-                              >
-                                 {team.id === activeTeam?.id ? (
-                                    <Check className="size-4 shrink-0" />
-                                 ) : (
-                                    <span className="size-4 shrink-0" />
-                                 )}
-                                 <span className="truncate">{team.name}</span>
-                              </DropdownMenuItem>
-                           ))}
-                           <DropdownMenuSeparator />
+                  <DropdownMenuSub>
+                     <DropdownMenuSubTrigger className="gap-2">
+                        <span className="truncate font-medium">
+                           {activeTeam?.name ?? "Sem espaço"}
+                        </span>
+                     </DropdownMenuSubTrigger>
+                     <DropdownMenuSubContent className="min-w-52">
+                        {teams.map((team) => (
                            <DropdownMenuItem
-                              onSelect={() => handleNewProject()}
+                              key={team.id}
+                              onSelect={() => switchTeam(team)}
                            >
-                              <Plus className="size-4" />
-                              <span>
-                                 {projectLimit !== null &&
-                                 projectLimit !== Number.POSITIVE_INFINITY
-                                    ? `Novo espaço (${projectCount}/${projectLimit})`
-                                    : "Novo espaço"}
-                              </span>
+                              {team.id === activeTeam?.id ? (
+                                 <Check className="size-4 shrink-0" />
+                              ) : (
+                                 <span className="size-4 shrink-0" />
+                              )}
+                              <span className="truncate">{team.name}</span>
                            </DropdownMenuItem>
-                        </DropdownMenuSubContent>
-                     </DropdownMenuSub>
-
-                     <DropdownMenuItem asChild>
-                        <Link
-                           params={{ slug, teamSlug }}
-                           to="/$slug/$teamSlug/settings/organization/members"
-                        >
-                           <UserPlus className="size-4" />
-                           Convidar membros
-                        </Link>
-                     </DropdownMenuItem>
-
-                     <DropdownMenuItem asChild>
-                        <Link
-                           params={{ slug, teamSlug }}
-                           to="/$slug/$teamSlug/settings/project/general"
-                        >
-                           <Settings className="size-4" />
-                           Configurações do espaço
-                        </Link>
-                     </DropdownMenuItem>
-
-                     <DropdownMenuSeparator />
-
-                     <DropdownMenuLabel className="py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Organização
-                     </DropdownMenuLabel>
-
-                     <DropdownMenuSub>
-                        <DropdownMenuSubTrigger className="gap-2">
-                           <OrgAvatar
-                              logo={activeOrganization.logo}
-                              name={activeOrganization.name}
-                           />
-                           <span className="truncate font-medium">
-                              {activeOrganization.name}
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={newProject}>
+                           <Plus className="size-4" />
+                           <span>
+                              {projectLimit !== null &&
+                              projectLimit !== Number.POSITIVE_INFINITY
+                                 ? `Novo espaço (${projectCount}/${projectLimit})`
+                                 : "Novo espaço"}
                            </span>
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent className="min-w-52">
-                           {organizationList.map((org, index) => (
-                              <DropdownMenuItem
-                                 key={`org-${index + 1}`}
-                                 onSelect={() => handleOrganizationSwitch(org)}
-                              >
-                                 {org.id === activeOrganization.id ? (
-                                    <Check className="size-4 shrink-0" />
-                                 ) : (
-                                    <span className="size-4 shrink-0" />
-                                 )}
-                                 <OrgAvatar
-                                    logo={org.logo}
-                                    name={org.name}
-                                    size="md"
-                                 />
-                                 <span className="truncate">{org.name}</span>
-                                 {org.role && (
-                                    <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-                                       {org.role}
-                                    </span>
-                                 )}
-                              </DropdownMenuItem>
-                           ))}
-                           <DropdownMenuSeparator />
+                        </DropdownMenuItem>
+                     </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+
+                  <DropdownMenuItem asChild>
+                     <Link
+                        params={{ slug, teamSlug }}
+                        to="/$slug/$teamSlug/settings/organization/members"
+                     >
+                        <UserPlus className="size-4" />
+                        Convidar membros
+                     </Link>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem asChild>
+                     <Link
+                        params={{ slug, teamSlug }}
+                        to="/$slug/$teamSlug/settings/project/general"
+                     >
+                        <Settings className="size-4" />
+                        Configurações do espaço
+                     </Link>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuLabel className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                     Organização
+                  </DropdownMenuLabel>
+
+                  <DropdownMenuSub>
+                     <DropdownMenuSubTrigger className="gap-2">
+                        <OrgAvatar
+                           logo={activeOrganization.logo}
+                           name={activeOrganization.name}
+                        />
+                        <span className="truncate font-medium">
+                           {activeOrganization.name}
+                        </span>
+                     </DropdownMenuSubTrigger>
+                     <DropdownMenuSubContent className="min-w-52">
+                        {organizations.map((org) => (
                            <DropdownMenuItem
-                              onSelect={() => handleNewOrganization()}
+                              key={org.id}
+                              onSelect={() => switchOrganization(org)}
                            >
-                              <Plus className="size-4" />
-                              Nova organização
+                              {org.id === activeOrganization.id ? (
+                                 <Check className="size-4 shrink-0" />
+                              ) : (
+                                 <span className="size-4 shrink-0" />
+                              )}
+                              <OrgAvatar
+                                 logo={org.logo}
+                                 name={org.name}
+                                 size="md"
+                              />
+                              <span className="truncate">{org.name}</span>
+                              {org.role && (
+                                 <span className="ml-auto shrink-0 text-sm text-muted-foreground">
+                                    {org.role}
+                                 </span>
+                              )}
                            </DropdownMenuItem>
-                        </DropdownMenuSubContent>
-                     </DropdownMenuSub>
-
-                     <DropdownMenuItem asChild>
-                        <Link
-                           params={{ slug, teamSlug }}
-                           to="/$slug/$teamSlug/settings/organization/general"
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                           onSelect={() =>
+                              router.navigate({
+                                 to: "/onboarding",
+                                 search: { new: true },
+                              })
+                           }
                         >
-                           <Settings className="size-4" />
-                           Configurações da organização
-                        </Link>
-                     </DropdownMenuItem>
+                           <Plus className="size-4" />
+                           Nova organização
+                        </DropdownMenuItem>
+                     </DropdownMenuSubContent>
+                  </DropdownMenuSub>
 
-                     <DropdownMenuSeparator />
-                  </>
+                  <DropdownMenuItem asChild>
+                     <Link
+                        params={{ slug, teamSlug }}
+                        to="/$slug/$teamSlug/settings/organization/general"
+                     >
+                        <Settings className="size-4" />
+                        Configurações da organização
+                     </Link>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
                </DropdownMenuContent>
             </DropdownMenu>
          </SidebarMenuItem>
@@ -413,8 +379,8 @@ function SidebarScopeSwitcherContent() {
 export function SidebarScopeSwitcher() {
    return (
       <QueryBoundary
-         fallback={<SidebarScopeSwitcherSkeleton />}
          errorTitle="Erro ao carregar menu"
+         fallback={<SidebarScopeSwitcherSkeleton />}
       >
          <SidebarScopeSwitcherContent />
       </QueryBoundary>

@@ -17,9 +17,12 @@ import {
 import { cn } from "@packages/ui/lib/utils";
 import { Link, useMatchRoute } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
-import { useState } from "react";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useEarlyAccess } from "@/hooks/use-early-access";
+import {
+   setSectionOpen,
+   useIsSectionOpen,
+} from "@/routes/_authenticated/$slug/$teamSlug/-layout/hooks/use-sidebar-store";
 import {
    type SettingsNavItemDef,
    type SettingsNavSection,
@@ -56,7 +59,8 @@ function NavItemWithChildren({ item }: { item: SettingsNavItemDef }) {
    const { slug, teamSlug } = useDashboardSlugs();
    const { isEnrolled, getFeatureStage } = useEarlyAccess();
    const isActive = useIsHrefActive();
-   const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
+   const sectionId = `settings:item:${item.id}`;
+   const isUserOpen = useIsSectionOpen(sectionId, false);
 
    const visibleChildren = item.children?.filter(
       (child) => !child.earlyAccessFlag || isEnrolled(child.earlyAccessFlag),
@@ -64,11 +68,12 @@ function NavItemWithChildren({ item }: { item: SettingsNavItemDef }) {
    if (!visibleChildren || visibleChildren.length === 0) return null;
 
    const isChildActive = visibleChildren.some((child) => isActive(child.href));
+   const isExpanded = isUserOpen || isChildActive;
 
    return (
       <Collapsible
-         onOpenChange={setIsSubmenuOpen}
-         open={isSubmenuOpen || isChildActive}
+         onOpenChange={(open) => setSectionOpen(sectionId, open)}
+         open={isExpanded}
       >
          <SidebarMenuItem>
             <CollapsibleTrigger asChild>
@@ -80,7 +85,7 @@ function NavItemWithChildren({ item }: { item: SettingsNavItemDef }) {
                   <ChevronRight
                      className={cn(
                         "ml-auto size-4 transition-transform",
-                        (isSubmenuOpen || isChildActive) && "rotate-90",
+                        isExpanded && "rotate-90",
                      )}
                   />
                </SidebarMenuButton>
@@ -168,13 +173,17 @@ function NavSection({
    section: SettingsNavSection;
    forceOpen: boolean;
 }) {
-   const [isOpen, setIsOpen] = useState(section.defaultOpen);
+   const sectionId = `settings:section:${section.id}`;
+   const isOpen = useIsSectionOpen(sectionId, section.defaultOpen);
    const effectiveOpen = forceOpen || isOpen;
 
    if (section.items.length === 0) return null;
 
    return (
-      <Collapsible onOpenChange={setIsOpen} open={effectiveOpen}>
+      <Collapsible
+         onOpenChange={(open) => setSectionOpen(sectionId, open)}
+         open={effectiveOpen}
+      >
          <SidebarGroup className="py-0">
             <CollapsibleTrigger className="group flex w-full items-center justify-between px-4 py-2">
                <span className="text-sm font-semibold uppercase tracking-wider text-sidebar-foreground/70">
