@@ -6,6 +6,12 @@ import {
    DropdownMenuItem,
    DropdownMenuTrigger,
 } from "@packages/ui/components/dropdown-menu";
+import { Input } from "@packages/ui/components/input";
+import {
+   Popover,
+   PopoverContent,
+   PopoverTrigger,
+} from "@packages/ui/components/popover";
 import {
    SidebarGroup,
    SidebarGroupContent,
@@ -22,11 +28,23 @@ import {
    useNavigate,
    useParams,
 } from "@tanstack/react-router";
-import { createStore, useStore } from "@tanstack/react-store";
+import { useStore, type Store } from "@tanstack/react-store";
+import { useForm } from "@tanstack/react-form";
+import { Store as createStore } from "@tanstack/store";
 import dayjs from "dayjs";
-import { MoreHorizontal, Pencil, Plus, Trash2, X } from "lucide-react";
+import {
+   Check,
+   CheckSquare2,
+   MoreHorizontal,
+   Pencil,
+   Plus,
+   Trash2,
+   X,
+} from "lucide-react";
+import { useState } from "react";
 import { fromPromise } from "neverthrow";
 import { toast } from "sonner";
+import { z } from "zod";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { orpc, type Outputs } from "@/integrations/orpc/client";
@@ -39,23 +57,19 @@ interface ThreadGroup {
    items: ThreadRow[];
 }
 
-const selectionStore = createStore<{ ids: Set<string> }>({ ids: new Set() });
+const selectionStore: Store<{ ids: string[] }> = new createStore({ ids: [] });
 
 const toggleSelected = (id: string) =>
-   selectionStore.setState((s) => {
-      const next = new Set(s.ids);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return { ids: next };
-   });
+   selectionStore.setState((s) => ({
+      ids: s.ids.includes(id) ? s.ids.filter((x) => x !== id) : [...s.ids, id],
+   }));
 
-const clearSelection = () =>
-   selectionStore.setState(() => ({ ids: new Set() }));
+const clearSelection = () => selectionStore.setState(() => ({ ids: [] }));
 
 const useIsSelected = (id: string) =>
-   useStore(selectionStore, (s) => s.ids.has(id));
+   useStore(selectionStore, (s) => s.ids.includes(id));
 
-const useSelectionCount = () => useStore(selectionStore, (s) => s.ids.size);
+const useSelectionCount = () => useStore(selectionStore, (s) => s.ids.length);
 
 const useSelectedIds = () => useStore(selectionStore, (s) => s.ids);
 
@@ -153,7 +167,7 @@ function BulkSelectionBar() {
    );
 
    const handleBulkDelete = () => {
-      const ids = Array.from(selectedIds);
+      const ids = selectedIds;
       openAlertDialog({
          title: `Excluir ${ids.length} ${ids.length === 1 ? "conversa" : "conversas"}?`,
          description:
@@ -170,7 +184,7 @@ function BulkSelectionBar() {
             const isCurrent =
                "threadId" in params &&
                typeof params.threadId === "string" &&
-               selectedIds.has(params.threadId);
+               ids.includes(params.threadId);
             clearSelection();
             if (isCurrent) {
                void navigate({
@@ -195,8 +209,8 @@ function BulkSelectionBar() {
                <X className="size-4" />
             </Button>
             <span className="flex-1 text-xs">
-               {selectedIds.size} selecionada
-               {selectedIds.size === 1 ? "" : "s"}
+               {selectedIds.length} selecionada
+               {selectedIds.length === 1 ? "" : "s"}
             </span>
             <Button
                className="h-7 gap-1 px-2 text-xs"
@@ -254,49 +268,54 @@ function ThreadItem({
    const selectionCount = useSelectionCount();
    const inSelectionMode = selectionCount > 0;
 
+   if (inSelectionMode) {
+      return (
+         <SidebarMenuItem>
+            <SidebarMenuButton
+               className={isSelected ? "bg-accent" : undefined}
+               onClick={() => toggleSelected(thread.id)}
+            >
+               <Check
+                  className={`size-4 shrink-0 ${
+                     isSelected ? "opacity-100" : "opacity-30"
+                  }`}
+               />
+               <span className="truncate">
+                  {thread.title ?? "Conversa sem título"}
+               </span>
+            </SidebarMenuButton>
+         </SidebarMenuItem>
+      );
+   }
+
    return (
       <SidebarMenuItem className="group/thread">
          <SidebarMenuButton
-            asChild={!inSelectionMode}
+            asChild
             className={isActive ? "bg-primary/10 text-primary" : undefined}
-            onClick={
-               inSelectionMode ? () => toggleSelected(thread.id) : undefined
-            }
          >
-            {inSelectionMode ? (
-               <>
-                  <Checkbox checked={isSelected} className="shrink-0" />
-                  <span className="truncate">
-                     {thread.title ?? "Conversa sem título"}
-                  </span>
-               </>
-            ) : (
-               <Link
-                  params={{ slug, teamSlug, threadId: thread.id }}
-                  to="/$slug/$teamSlug/chat/$threadId"
-               >
-                  <Checkbox
-                     checked={isSelected}
-                     className="opacity-0 transition-opacity group-hover/thread:opacity-100 shrink-0"
-                     onCheckedChange={() => toggleSelected(thread.id)}
-                     onClick={(e) => e.stopPropagation()}
-                  />
-                  <span className="truncate">
-                     {thread.title ?? "Conversa sem título"}
-                  </span>
-               </Link>
-            )}
+            <Link
+               params={{ slug, teamSlug, threadId: thread.id }}
+               to="/$slug/$teamSlug/chat/$threadId"
+            >
+               <span className="truncate">
+                  {thread.title ?? "Conversa sem título"}
+               </span>
+            </Link>
          </SidebarMenuButton>
-         {!inSelectionMode ? <ThreadActions thread={thread} /> : null}
+         <ThreadActions thread={thread} />
       </SidebarMenuItem>
    );
 }
+
+const renameSchema = z.object({ title: z.string().min(1).max(200) });
 
 function ThreadActions({ thread }: { thread: ThreadRow }) {
    const navigate = useNavigate();
    const params = useParams({ strict: false });
    const { slug, teamSlug } = useDashboardSlugs();
    const { openAlertDialog } = useAlertDialog();
+   const [renameOpen, setRenameOpen] = useState(false);
 
    const renameMutation = useMutation(
       orpc.threads.update.mutationOptions({
@@ -310,19 +329,20 @@ function ThreadActions({ thread }: { thread: ThreadRow }) {
       }),
    );
 
-   const handleRename = async () => {
-      const next = window.prompt("Renomear conversa", thread.title ?? "");
-      if (next === null) return;
-      const trimmed = next.trim();
-      if (!trimmed || trimmed === thread.title) return;
-      await fromPromise(
-         renameMutation.mutateAsync({
-            threadId: thread.id,
-            title: trimmed,
-         }),
-         () => null,
-      );
-   };
+   const renameForm = useForm({
+      defaultValues: { title: thread.title ?? "" },
+      validators: { onChange: renameSchema },
+      onSubmit: async ({ value }) => {
+         await fromPromise(
+            renameMutation.mutateAsync({
+               threadId: thread.id,
+               title: value.title.trim(),
+            }),
+            () => null,
+         );
+         setRenameOpen(false);
+      },
+   });
 
    const handleRemove = () => {
       openAlertDialog({
@@ -351,29 +371,85 @@ function ThreadActions({ thread }: { thread: ThreadRow }) {
    };
 
    return (
-      <DropdownMenu>
-         <DropdownMenuTrigger asChild>
-            <SidebarMenuAction aria-label="Ações da conversa">
-               <MoreHorizontal />
-            </SidebarMenuAction>
-         </DropdownMenuTrigger>
-         <DropdownMenuContent align="end" side="right">
-            <DropdownMenuItem onClick={handleRename}>
-               <Pencil className="size-4" />
-               Renomear
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => toggleSelected(thread.id)}>
-               <Checkbox checked={false} className="size-4" />
-               Selecionar
-            </DropdownMenuItem>
-            <DropdownMenuItem
-               className="text-destructive focus:text-destructive"
-               onClick={handleRemove}
+      <>
+         <Popover onOpenChange={setRenameOpen} open={renameOpen}>
+            <PopoverTrigger asChild>
+               <span className="hidden" />
+            </PopoverTrigger>
+            <PopoverContent
+               align="start"
+               className="w-72 p-3"
+               side="right"
+               sideOffset={8}
             >
-               <Trash2 className="size-4" />
-               Excluir
-            </DropdownMenuItem>
-         </DropdownMenuContent>
-      </DropdownMenu>
+               <form
+                  className="flex flex-col gap-3"
+                  onSubmit={(e) => {
+                     e.preventDefault();
+                     void renameForm.handleSubmit();
+                  }}
+               >
+                  <span className="text-sm font-medium">Renomear conversa</span>
+                  <renameForm.Field name="title">
+                     {(field) => (
+                        <Input
+                           autoFocus
+                           id={field.name}
+                           name={field.name}
+                           onChange={(e) => field.handleChange(e.target.value)}
+                           placeholder="Título"
+                           value={field.state.value}
+                        />
+                     )}
+                  </renameForm.Field>
+                  <div className="flex justify-end gap-2">
+                     <Button
+                        onClick={() => setRenameOpen(false)}
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                     >
+                        Cancelar
+                     </Button>
+                     <renameForm.Subscribe selector={(s) => s.canSubmit}>
+                        {(canSubmit) => (
+                           <Button
+                              disabled={!canSubmit}
+                              size="sm"
+                              type="submit"
+                           >
+                              Salvar
+                           </Button>
+                        )}
+                     </renameForm.Subscribe>
+                  </div>
+               </form>
+            </PopoverContent>
+         </Popover>
+         <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+               <SidebarMenuAction aria-label="Ações da conversa">
+                  <MoreHorizontal />
+               </SidebarMenuAction>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" side="right">
+               <DropdownMenuItem onSelect={() => setRenameOpen(true)}>
+                  <Pencil className="size-4" />
+                  Renomear
+               </DropdownMenuItem>
+               <DropdownMenuItem onSelect={() => toggleSelected(thread.id)}>
+                  <CheckSquare2 className="size-4" />
+                  Selecionar
+               </DropdownMenuItem>
+               <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onSelect={handleRemove}
+               >
+                  <Trash2 className="size-4" />
+                  Excluir
+               </DropdownMenuItem>
+            </DropdownMenuContent>
+         </DropdownMenu>
+      </>
    );
 }

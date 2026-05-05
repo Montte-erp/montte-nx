@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createStore, useStore } from "@tanstack/react-store";
 import {
    stream as aiStream,
@@ -210,6 +210,7 @@ export interface ChatSession {
 }
 
 export function useChatSession(initialMessages: UIMessage[] = []): ChatSession {
+   const queryClient = useQueryClient();
    const chat = useChat({
       connection: agentConnection,
       initialMessages,
@@ -218,6 +219,17 @@ export function useChatSession(initialMessages: UIMessage[] = []): ChatSession {
             chat.messages,
             "Falha ao salvar resposta da Montte AI.",
          );
+         void queryClient.invalidateQueries({
+            queryKey: orpc.threads.list.key(),
+         });
+         const activeThreadId = chatStore.state.activeThreadId;
+         if (activeThreadId) {
+            void queryClient.invalidateQueries({
+               queryKey: orpc.threads.getById.key({
+                  input: { threadId: activeThreadId },
+               }),
+            });
+         }
       },
       onError: () => {
          void syncAgentMessages(chat.messages);

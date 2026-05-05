@@ -196,7 +196,7 @@ export function ServicesListRenderer({
 }: {
    data: { count: number; items: ServiceRow[] };
 }) {
-   if (data.count === 0)
+   if (!data?.count || !data.items?.length)
       return (
          <p className="text-muted-foreground">Nenhum serviço encontrado.</p>
       );
@@ -304,7 +304,7 @@ export function MetersListRenderer({
 }: {
    data: { count: number; items: MeterRow[] };
 }) {
-   if (data.count === 0)
+   if (!data?.count || !data.items?.length)
       return <p className="text-muted-foreground">Nenhum medidor.</p>;
    return (
       <Table>
@@ -339,7 +339,7 @@ export function BenefitsListRenderer({
 }: {
    data: { count: number; items: BenefitRow[] };
 }) {
-   if (data.count === 0)
+   if (!data?.count || !data.items?.length)
       return <p className="text-muted-foreground">Nenhum benefício.</p>;
    return (
       <Table>
@@ -368,7 +368,7 @@ export function CouponsListRenderer({
 }: {
    data: { count: number; items: CouponRow[] };
 }) {
-   if (data.count === 0)
+   if (!data?.count || !data.items?.length)
       return <p className="text-muted-foreground">Nenhum cupom.</p>;
    return (
       <Table>

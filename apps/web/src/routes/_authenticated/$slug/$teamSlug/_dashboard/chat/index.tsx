@@ -1,8 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Composer } from "../../-montte-ai/composer";
+import {
+   resetChat,
+   useActiveThreadId,
+   useChatSession,
+} from "../../-montte-ai/chat-store";
 import { EmptyState } from "../../-montte-ai/empty-state";
-import { resetChat, useChatSession } from "../../-montte-ai/chat-store";
+import { MessageList } from "../../-montte-ai/message-list";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/chat/",
@@ -11,15 +16,41 @@ export const Route = createFileRoute(
 });
 
 function ChatIndexPage() {
+   const { slug, teamSlug } = Route.useParams();
+   const navigate = useNavigate();
    const session = useChatSession();
+   const activeThreadId = useActiveThreadId();
 
    useEffect(() => {
       resetChat();
    }, []);
 
+   useEffect(() => {
+      if (!activeThreadId) return;
+      if (session.isStreaming || session.isSubmitting) return;
+      void navigate({
+         params: { slug, teamSlug, threadId: activeThreadId },
+         replace: true,
+         to: "/$slug/$teamSlug/chat/$threadId",
+      });
+   }, [
+      activeThreadId,
+      session.isStreaming,
+      session.isSubmitting,
+      slug,
+      teamSlug,
+      navigate,
+   ]);
+
+   const hasConversation = session.messages.length > 0;
+
    return (
-      <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-6 p-6">
-         <EmptyState variant="page" />
+      <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-4 p-6">
+         {hasConversation ? (
+            <MessageList session={session} />
+         ) : (
+            <EmptyState variant="page" />
+         )}
          <Composer session={session} />
       </div>
    );
