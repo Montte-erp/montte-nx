@@ -41,6 +41,7 @@ type Tab = {
    id: string;
    label: string;
    activeClass: string;
+   contentClass: string;
    title: string;
    left: string;
    right: ReactNode;
@@ -644,6 +645,7 @@ const tabs: Tab[] = [
       label: "Tudo no mesmo lugar",
       activeClass:
          "data-[state=active]:!bg-primary data-[state=active]:!text-primary-foreground data-[state=active]:!border-transparent",
+      contentClass: "border-primary",
       title: "Seu ERP inteiro num lugar só",
       left: "Financeiro, contatos, serviços e cobrança no mesmo lugar. Adeus planilha paralela e contexto perdido entre 5 abas.",
       right: (
@@ -659,6 +661,7 @@ const tabs: Tab[] = [
       label: "Entenda seu negócio",
       activeClass:
          "data-[state=active]:!bg-chart-2 data-[state=active]:!text-background data-[state=active]:!border-transparent",
+      contentClass: "border-chart-2",
       title: "Decida com dados, não com achismo",
       left: "Receita, fluxo de caixa e inadimplência em dashboards prontos. Sem montar relatório, sem fórmula no Excel.",
       right: (
@@ -674,6 +677,7 @@ const tabs: Tab[] = [
       label: "Automatize com IA",
       activeClass:
          "data-[state=active]:!bg-chart-6 data-[state=active]:!text-background data-[state=active]:!border-transparent",
+      contentClass: "border-chart-6",
       title: "Coloque a Rubi no piloto",
       left: "A Rubi é o agente nativo do Montte. Classifica transações, sugere cobranças e executa rotinas — sempre com revisão humana.",
       right: (
@@ -689,6 +693,7 @@ const tabs: Tab[] = [
       label: "Cobre por uso",
       activeClass:
          "data-[state=active]:!bg-chart-5 data-[state=active]:!text-background data-[state=active]:!border-transparent",
+      contentClass: "border-chart-5",
       title: "Cobre exatamente o que entrega",
       left: "Modele assinatura, uso ou pacote num motor só. Meters, benefícios e cupons cobertos — sem gambiarra fiscal.",
       right: (
@@ -718,7 +723,7 @@ export function HeroPosthogTabs() {
 
          {tabs.map((tab) => (
             <TabsContent
-               className="rounded-b-md rounded-tr-md border border-border bg-card/60 p-4 text-foreground"
+               className={`rounded-b-md  border-4 bg-card p-4 text-foreground ${tab.contentClass}`}
                key={tab.id}
                value={tab.id}
             >
