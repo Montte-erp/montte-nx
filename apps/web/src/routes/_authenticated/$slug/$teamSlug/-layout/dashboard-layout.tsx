@@ -5,22 +5,17 @@ import {
    SidebarProvider,
 } from "@packages/ui/components/sidebar";
 import { cn } from "@packages/ui/lib/utils";
-import { useQueryClient } from "@tanstack/react-query";
 import { useMatches } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
 import type * as React from "react";
-import { useEffect } from "react";
 import { useJobNotifications } from "@/features/notifications/use-job-notifications";
 import { ContextPanelTabContent } from "@/features/context-panel/context-panel";
 import { contextPanelStore } from "@/features/context-panel/context-panel-store";
 import { ContextPanelRail } from "@/features/context-panel/context-panel-rail";
 import { AutoBugReporter } from "@/features/feedback/ui/auto-bug-reporter";
 import { MonthlySatisfactionSurvey } from "@/features/feedback/ui/monthly-satisfaction-survey";
-import { useActiveTeam } from "@/hooks/use-active-team";
 import { EarlyAccessProvider } from "@/hooks/use-early-access";
-import { authClient } from "@/integrations/better-auth/auth-client";
 import { setCollapsed, useSidebarCollapsed } from "./hooks/use-sidebar-store";
-import { orpc } from "@/integrations/orpc/client";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarSubPanel } from "./sidebar-sub-panel";
 
@@ -46,26 +41,8 @@ function InlineContextPanel() {
    );
 }
 
-function useEnsureActiveTeam() {
-   const { activeTeam, teams } = useActiveTeam();
-   const queryClient = useQueryClient();
-
-   useEffect(() => {
-      const firstTeamId = teams[0]?.id;
-      if (activeTeam || !firstTeamId) return;
-      void authClient.organization
-         .setActiveTeam({ teamId: firstTeamId })
-         .then(() =>
-            queryClient.invalidateQueries({
-               queryKey: orpc.session.getSession.queryKey({}),
-            }),
-         );
-   }, [activeTeam, teams, queryClient]);
-}
-
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
    useJobNotifications();
-   useEnsureActiveTeam();
 
    const isCollapsed = useSidebarCollapsed();
    const matches = useMatches();
