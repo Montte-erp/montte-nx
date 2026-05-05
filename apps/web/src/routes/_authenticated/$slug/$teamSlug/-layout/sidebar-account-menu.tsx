@@ -21,7 +21,6 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useRouter } from "@tanstack/react-router";
 import { ChevronsUpDown, LogOut, Settings } from "lucide-react";
-import { useCallback } from "react";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
@@ -55,7 +54,7 @@ function SidebarAccountMenuContent() {
    const { isMobile, setOpenMobile } = useSidebar();
    const queryClient = useQueryClient();
    const router = useRouter();
-   const handleLogout = useCallback(async () => {
+   async function handleLogout() {
       await authClient.signOut({
          fetchOptions: {
             onError: ({ error }) => {
@@ -74,9 +73,9 @@ function SidebarAccountMenuContent() {
          },
       });
       setOpenMobile(false);
-   }, [queryClient, router, setOpenMobile]);
+   }
 
-   const handleLogoutClick = useCallback(() => {
+   function handleLogoutClick() {
       openAlertDialog({
          actionLabel: "Sair",
          cancelLabel: "Cancelar",
@@ -85,7 +84,7 @@ function SidebarAccountMenuContent() {
          title: "Sair da Conta",
          variant: "destructive",
       });
-   }, [openAlertDialog, handleLogout]);
+   }
 
    return (
       <SidebarMenu>

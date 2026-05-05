@@ -1,4 +1,3 @@
-import type { InsightConfig } from "@modules/insights/types";
 import { Button } from "@packages/ui/components/button";
 import {
    DropdownMenu,
@@ -7,23 +6,12 @@ import {
    DropdownMenuSeparator,
    DropdownMenuTrigger,
 } from "@packages/ui/components/dropdown-menu";
-import {
-   Tooltip,
-   TooltipContent,
-   TooltipTrigger,
-} from "@packages/ui/components/tooltip";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-   Copy,
-   FolderInput,
-   MoreHorizontal,
-   Pencil,
-   Trash2,
-} from "lucide-react";
+import { Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
-import type { SubSidebarSection } from "../hooks/use-sidebar-store";
+import type { SubSidebarSection } from "./hooks/use-sidebar-store";
 
 interface SubSidebarContextMenuProps {
    item: { id: string; name: string };
@@ -112,8 +100,25 @@ export function SubSidebarContextMenu({
    };
 
    const handleRename = () => {
-      // Placeholder — inline rename to be implemented in a later task
       toast.info("Renomear será implementado em breve");
+   };
+
+   const isDuplicatePending =
+      section === "dashboards"
+         ? duplicateDashboardMutation.isPending
+         : duplicateInsightMutation.isPending;
+
+   const handleDuplicate = () => {
+      const newName = `${item.name} (cópia)`;
+      if (section === "dashboards") {
+         duplicateDashboardMutation.mutate({ name: newName });
+         return;
+      }
+      duplicateInsightMutation.mutate({
+         name: newName,
+         type: "kpi",
+         config: {},
+      });
    };
 
    return (
@@ -121,7 +126,7 @@ export function SubSidebarContextMenu({
          <DropdownMenuTrigger asChild>
             <Button
                aria-label="Opções"
-               className="size-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+               className="size-8 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
                variant="outline"
             >
                <MoreHorizontal className="size-4" />
@@ -132,35 +137,9 @@ export function SubSidebarContextMenu({
                <Pencil className="size-4" />
                Renomear
             </DropdownMenuItem>
-            <Tooltip>
-               <TooltipTrigger asChild>
-                  <div>
-                     <DropdownMenuItem disabled>
-                        <FolderInput className="size-4" />
-                        Mover para pasta
-                     </DropdownMenuItem>
-                  </div>
-               </TooltipTrigger>
-               <TooltipContent side="right">(em breve)</TooltipContent>
-            </Tooltip>
             <DropdownMenuItem
-               disabled={
-                  section === "dashboards"
-                     ? duplicateDashboardMutation.isPending
-                     : duplicateInsightMutation.isPending
-               }
-               onClick={() => {
-                  const newName = `${item.name} (cópia)`;
-                  if (section === "dashboards") {
-                     duplicateDashboardMutation.mutate({ name: newName });
-                  } else {
-                     duplicateInsightMutation.mutate({
-                        name: newName,
-                        type: "kpi",
-                        config: {} as InsightConfig,
-                     });
-                  }
-               }}
+               disabled={isDuplicatePending}
+               onClick={handleDuplicate}
             >
                <Copy className="size-4" />
                Duplicar

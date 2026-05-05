@@ -9,14 +9,17 @@ import {
    SidebarProvider,
 } from "@packages/ui/components/sidebar";
 import { useMediaQuery } from "foxact/use-media-query";
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useMatches } from "@tanstack/react-router";
 import { ChevronLeft, Search } from "lucide-react";
 import type * as React from "react";
-import { useState } from "react";
-import { useTeamSlug } from "@/hooks/use-dashboard-slugs";
-import { useActiveOrganization } from "@/hooks/use-active-organization";
+import { Route } from "@/routes/_authenticated/$slug/$teamSlug/_dashboard/settings";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { SettingsMobileNav } from "./settings-mobile-nav";
 import { SettingsSidebar } from "./settings-sidebar";
+
+const SETTINGS_SIDEBAR_STYLE = {
+   "--sidebar-width": "16rem",
+} as React.CSSProperties;
 
 interface SettingsLayoutProps {
    children: React.ReactNode;
@@ -24,27 +27,21 @@ interface SettingsLayoutProps {
 
 export function SettingsLayout({ children }: SettingsLayoutProps) {
    const isMobile = useMediaQuery("(max-width: 767px)", false);
-   const { pathname } = useLocation();
-   const teamSlug = useTeamSlug();
-   const { activeOrganization } = useActiveOrganization();
-   const [search, setSearch] = useState("");
+   const matches = useMatches();
+   const isIndexRoute = matches.at(-1)?.routeId.endsWith("/settings/");
+   const { slug, teamSlug } = useDashboardSlugs();
+   const { q } = Route.useSearch();
+   const navigate = Route.useNavigate();
 
-   const isIndexRoute = pathname.endsWith("/settings");
+   if (isMobile && isIndexRoute) return <SettingsMobileNav />;
 
    if (isMobile) {
-      if (isIndexRoute) {
-         return <SettingsMobileNav />;
-      }
-
       return (
          <div className="flex h-full flex-col gap-4">
             <Button asChild className="w-fit" variant="ghost">
-               <Link
-                  params={{ slug: activeOrganization.slug, teamSlug }}
-                  to="/$slug/$teamSlug/settings"
-               >
-                  <ChevronLeft className="size-4 mr-1" />
-                  Configuracoes
+               <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/settings">
+                  <ChevronLeft className="size-4" />
+                  Configurações
                </Link>
             </Button>
             <div className="flex-1">{children}</div>
@@ -54,28 +51,32 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
 
    return (
       <SidebarProvider
-         className="!absolute !inset-0  !min-h-0 !h-full border-l border-white/10 bg-sidebar shadow-xl"
-         style={
-            {
-               "--sidebar-width": "16rem",
-            } as React.CSSProperties
-         }
+         className="!absolute !inset-0 !min-h-0 !h-full border-l border-white/10 bg-sidebar shadow-xl"
+         style={SETTINGS_SIDEBAR_STYLE}
       >
          <SidebarManager name="settings">
             <Sidebar className="border-r" collapsible="none">
-               <SidebarHeader className="px-3 pt-3 pb-0">
+               <SidebarHeader className="p-4">
                   <div className="relative">
-                     <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground pointer-events-none" />
+                     <Search className="pointer-events-none absolute left-2 top-2 size-4 text-muted-foreground" />
                      <Input
-                        className="pl-8 h-9 bg-sidebar text-sm"
-                        onChange={(e) => setSearch(e.target.value)}
+                        className="h-8 bg-sidebar pl-8 text-sm"
+                        onChange={(e) =>
+                           navigate({
+                              search: (prev) => ({
+                                 ...prev,
+                                 q: e.target.value,
+                              }),
+                              replace: true,
+                           })
+                        }
                         placeholder="Pesquisar configurações..."
-                        value={search}
+                        value={q}
                      />
                   </div>
                </SidebarHeader>
                <SidebarContent>
-                  <SettingsSidebar search={search} />
+                  <SettingsSidebar search={q} />
                </SidebarContent>
             </Sidebar>
          </SidebarManager>

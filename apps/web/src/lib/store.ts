@@ -12,7 +12,9 @@ const initClientPersistence = createClientOnlyFn(
    <T>(key: string, store: ReturnType<typeof createStore<NonNullable<T>>>) => {
       const raw = localStorage.getItem(key);
       if (raw)
-         safeParse<NonNullable<T>>(raw).map((v) => store.setState(() => v));
+         safeParse<Partial<NonNullable<T>>>(raw).map((v) =>
+            store.setState((prev) => ({ ...prev, ...v })),
+         );
 
       store.subscribe(() =>
          fromThrowable(() =>
@@ -22,8 +24,8 @@ const initClientPersistence = createClientOnlyFn(
 
       window.addEventListener("storage", (e) => {
          if (e.key !== key || !e.newValue) return;
-         safeParse<NonNullable<T>>(e.newValue).map((v) =>
-            store.setState(() => v),
+         safeParse<Partial<NonNullable<T>>>(e.newValue).map((v) =>
+            store.setState((prev) => ({ ...prev, ...v })),
          );
       });
    },

@@ -1,0 +1,90 @@
+import {
+   SidebarInset,
+   SidebarManager,
+   SidebarManagerProvider,
+   SidebarProvider,
+} from "@packages/ui/components/sidebar";
+import { cn } from "@packages/ui/lib/utils";
+import { useMatches } from "@tanstack/react-router";
+import { useStore } from "@tanstack/react-store";
+import type * as React from "react";
+import { useJobNotifications } from "@/features/notifications/use-job-notifications";
+import { ContextPanelTabContent } from "@/features/context-panel/context-panel";
+import { contextPanelStore } from "@/features/context-panel/context-panel-store";
+import { ContextPanelRail } from "@/features/context-panel/context-panel-rail";
+import { AutoBugReporter } from "@/features/feedback/ui/auto-bug-reporter";
+import { MonthlySatisfactionSurvey } from "@/features/feedback/ui/monthly-satisfaction-survey";
+import { EarlyAccessProvider } from "@/hooks/use-early-access";
+import { setCollapsed, useSidebarCollapsed } from "./hooks/use-sidebar-store";
+import { AppSidebar } from "./app-sidebar";
+import { SidebarSubPanel } from "./sidebar-sub-panel";
+
+const SIDEBAR_WIDTH_STYLE = {
+   "--sidebar-width": "28rem",
+} as React.CSSProperties;
+
+function InlineContextPanel() {
+   const isOpen = useStore(contextPanelStore, (s) => s.isOpen);
+
+   return (
+      <div
+         className={cn(
+            "hidden sm:block shrink-0 overflow-hidden transition-[width] duration-200 ease-linear",
+            isOpen ? "w-[28rem]" : "w-0",
+         )}
+         {...(!isOpen && { inert: true })}
+      >
+         <div className="w-[28rem] h-full py-2 pr-2">
+            <ContextPanelTabContent />
+         </div>
+      </div>
+   );
+}
+
+export function DashboardLayout({ children }: { children: React.ReactNode }) {
+   useJobNotifications();
+
+   const isCollapsed = useSidebarCollapsed();
+   const matches = useMatches();
+   const isSettingsPage = matches.some((m) =>
+      m.routeId.includes("/_dashboard/settings"),
+   );
+
+   return (
+      <EarlyAccessProvider>
+         <SidebarManagerProvider>
+            <SidebarProvider
+               className="h-svh"
+               onOpenChange={(open) => setCollapsed(!open)}
+               open={!isCollapsed}
+            >
+               <SidebarManager name="main" style={SIDEBAR_WIDTH_STYLE}>
+                  <AppSidebar />
+               </SidebarManager>
+
+               <SidebarInset className="flex flex-col overflow-hidden bg-sidebar">
+                  <SidebarSubPanel />
+                  <div className="flex flex-1 overflow-hidden">
+                     <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-background">
+                        <main
+                           className={cn(
+                              "relative flex-1 p-4",
+                              isSettingsPage
+                                 ? "overflow-hidden"
+                                 : "overflow-y-auto",
+                           )}
+                        >
+                           {children}
+                        </main>
+                     </div>
+                  </div>
+                  <AutoBugReporter />
+                  <MonthlySatisfactionSurvey />
+               </SidebarInset>
+               <InlineContextPanel />
+               <ContextPanelRail />
+            </SidebarProvider>
+         </SidebarManagerProvider>
+      </EarlyAccessProvider>
+   );
+}
