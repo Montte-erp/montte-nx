@@ -3,7 +3,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](CONTRIBUTING.md)
 
-**Montte** is an open source, AI-native ERP for SaaS companies and coworking spaces in Brazil. The interface is a chat with **Rubi**, an assistant that runs your finance, CRM, services and analytics through natural language. Traditional screens are still there as a fallback — but the default is conversation.
+**Montte** is an open source, AI-native ERP for SaaS companies and coworking spaces in Brazil. The interface is a chat with **Montte AI**, an assistant that runs your finance, CRM, services and analytics through natural language. Traditional screens are still there as a fallback — but the default is conversation.
 
 > **Status:** pre-launch private beta. Not on production yet. Expect breaking changes.
 
@@ -54,10 +54,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for staging setup and all available comma
 - **Custom dashboards** — flexible insight tiles you arrange yourself
 - **Analytics engine** — breakdowns, trends, KPIs, time series across financial data
 
-### Rubi — the AI layer (`@modules/agents`)
+### Montte AI — the AI layer (`@modules/agents`)
 
-- **Chat-first UX** — Rubi is a persistent drawer available on every page; ask in Portuguese, get answers backed by your real data
-- **Tools wrap oRPC procedures** — Rubi reads and writes through the same API your dashboard uses; no parallel implementation
+- **Chat-first UX** — Montte AI is a persistent drawer available on every page; ask in Portuguese, get answers backed by your real data
+- **Tools wrap oRPC procedures** — Montte AI reads and writes through the same API your dashboard uses; no parallel implementation
 - **Skills** — domain playbooks loaded on demand (`services` today; `finance`, `classification`, `contacts`, `insights`, `onboarding` shipping next)
 - **Multi-model via TanStack AI + OpenRouter** — model selection per call
 
@@ -66,7 +66,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for staging setup and all available comma
 - **Multi-tenant organizations** with team-scoped data isolation
 - **Roles**: owner, admin, member with granular permissions
 - **Email invitations** with pending invite management
-- **Onboarding** — minimal CNPJ + profile flow today; conversational chat-onboarding via Rubi shipping in v1
+- **Onboarding** — minimal CNPJ + profile flow today; conversational chat-onboarding via Montte AI shipping in v1
 
 ### Integrations
 
@@ -139,7 +139,7 @@ montte-nx/
 │   └── utils/           # Shared utilities
 ├── modules/             # Domain modules — each owns its router, services, workflows, sse
 │   ├── account/         # Profile, org, team, sessions, API keys, onboarding, settings
-│   ├── agents/          # Rubi chat + threads + tools + skills
+│   ├── agents/          # Montte AI chat + threads + tools + skills
 │   ├── billing/         # Services catalog, meters, prices, subscriptions, benefits, coupons, usage
 │   ├── classification/  # Categories, tags, AI categorization workflows
 │   ├── finance/         # Bank accounts, transactions, credit cards

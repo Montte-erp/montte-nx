@@ -144,14 +144,14 @@ function eventToToast(event: KnownEvent): ToastSpec | null {
 function handleClassificationBatchEvent(event: KnownEvent) {
    if (event.type === "classification.batch_started") {
       toast.loading(
-         `Rubi categorizando ${event.payload.total} ${event.payload.total === 1 ? "transação" : "transações"}...`,
+         `Montte AI categorizando ${event.payload.total} ${event.payload.total === 1 ? "transação" : "transações"}...`,
          { id: `classify-${event.payload.batchId}` },
       );
       return;
    }
    if (event.type === "classification.batch_progress") {
       toast.loading(
-         `Rubi categorizando ${event.payload.processed}/${event.payload.total} ${event.payload.total === 1 ? "transação" : "transações"}...`,
+         `Montte AI categorizando ${event.payload.processed}/${event.payload.total} ${event.payload.total === 1 ? "transação" : "transações"}...`,
          { id: `classify-${event.payload.batchId}` },
       );
       return;
@@ -163,7 +163,7 @@ function handleClassificationBatchEvent(event: KnownEvent) {
          return;
       }
       toast.success(
-         `Rubi categorizou ${event.payload.classified} de ${event.payload.total} ${event.payload.total === 1 ? "transação" : "transações"}.`,
+         `Montte AI categorizou ${event.payload.classified} de ${event.payload.total} ${event.payload.total === 1 ? "transação" : "transações"}.`,
          { id },
       );
    }

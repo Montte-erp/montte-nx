@@ -87,7 +87,7 @@ export function BillingLayout() {
                   bg="bg-primary"
                />
                <MeterBar
-                  label="Mensagens da Rubi"
+                  label="Mensagens da Montte AI"
                   value="9.420"
                   limit="15.000"
                   unit="msg"
@@ -153,7 +153,7 @@ export function BillingLayout() {
                   value="R$ 221,04"
                />
                <InvoiceLine
-                  label="Rubi · mensagens"
+                  label="Montte AI · mensagens"
                   detail="9.420 msg · R$ 0,008"
                   value="R$ 75,36"
                />

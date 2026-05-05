@@ -91,7 +91,7 @@ function AiAgentsSettingsForm() {
    return (
       <div className="flex flex-col gap-4 max-w-lg">
          <div className="flex flex-col gap-2">
-            <h3 className="text-lg font-medium">Rubi IA</h3>
+            <h3 className="text-lg font-medium">Montte AI</h3>
             <p className="text-sm text-muted-foreground">
                Configure o comportamento da assistente de inteligência
                artificial do seu espaço.
@@ -181,7 +181,7 @@ function AiAgentsSettingsForm() {
             <div className="flex flex-col gap-2">
                <Label>Fontes de dados</Label>
                <p className="text-sm text-muted-foreground">
-                  Escolha quais dados a Rubi pode acessar ao responder.
+                  Escolha quais dados a Montte AI pode acessar ao responder.
                </p>
             </div>
 

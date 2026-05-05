@@ -21,8 +21,8 @@ import {
 import { useSelector } from "@tanstack/react-store";
 import { Check, ChevronDown, Info } from "lucide-react";
 import type React from "react";
-import { RubiMascotIcon } from "@/features/rubi-panel/rubi-mascot-icon";
-import { RubiPanel } from "@/features/rubi-panel/rubi-panel";
+import { AgentMascotIcon } from "@/features/agent-panel/agent-mascot-icon";
+import { AgentPanel } from "@/features/agent-panel/agent-panel";
 import { ContextPanelAction } from "./context-panel-info";
 import {
    type ContextPanelTab,
@@ -130,11 +130,11 @@ const INFO_TAB: ContextPanelTab = {
    order: 0,
 };
 
-const RUBI_TAB: ContextPanelTab = {
-   id: "rubi",
-   icon: RubiMascotIcon,
+const AGENT_TAB: ContextPanelTab = {
+   id: "agent",
+   icon: AgentMascotIcon,
    label: "Montte AI",
-   renderContent: () => <RubiPanel />,
+   renderContent: () => <AgentPanel />,
    order: 1,
 };
 
@@ -143,7 +143,7 @@ function resolveTab(
    dynamicTabs: ContextPanelTab[],
 ): ContextPanelTab | undefined {
    if (activeTabId === "info") return INFO_TAB;
-   if (activeTabId === "rubi") return RUBI_TAB;
+   if (activeTabId === "agent") return AGENT_TAB;
    return dynamicTabs.find((t) => t.id === activeTabId);
 }
 

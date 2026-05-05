@@ -77,7 +77,7 @@ export function AgentLayout() {
                <span className="flex size-8 items-center justify-center rounded-md bg-chart-6/15">
                   <Bot aria-hidden="true" className="size-4 text-chart-6" />
                </span>
-               Rubi · agente nativo
+               Montte AI · agente nativo
             </div>
             <span className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground">
                <span
@@ -90,14 +90,14 @@ export function AgentLayout() {
 
          <div className="flex justify-end">
             <div className="max-w-md rounded-2xl rounded-tr-sm border border-border bg-muted/60 px-4 py-2 text-sm text-foreground">
-               Rubi, classifique outubro, encontre duplicatas e dispare cobrança
-               dos atrasados.
+               Montte AI, classifique outubro, encontre duplicatas e dispare
+               cobrança dos atrasados.
             </div>
          </div>
 
          <div className="flex flex-col gap-2 rounded-2xl rounded-tl-sm border border-chart-6/40 bg-chart-6/5 px-4 py-2 text-sm text-foreground">
             <span className="flex items-center gap-2 font-bold text-chart-6">
-               <Sparkles aria-hidden="true" className="size-3" /> Rubi
+               <Sparkles aria-hidden="true" className="size-3" /> Montte AI
             </span>
             <span>
                Vou rodar em sequência. Cada passo executa em sandbox isolado e

@@ -2,7 +2,7 @@ import { toolDefinition } from "@tanstack/ai";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import type { Prompts } from "@core/posthog/server";
-import { RUBI_PROMPTS, RUBI_SKILL_IDS } from "@modules/agents/constants";
+import { AGENT_PROMPTS, AGENT_SKILL_IDS } from "@modules/agents/constants";
 
 interface SkillMeta {
    id: string;
@@ -13,11 +13,11 @@ interface SkillMeta {
 
 export const SKILLS: readonly SkillMeta[] = [
    {
-      id: RUBI_SKILL_IDS.services,
+      id: AGENT_SKILL_IDS.services,
       name: "Catálogo de Serviços",
       description:
          "Gerenciar o catálogo de serviços: criar/atualizar serviços, preços, medidores (meters) e benefícios.",
-      promptName: RUBI_PROMPTS.skillServices,
+      promptName: AGENT_PROMPTS.skillServices,
    },
 ];
 

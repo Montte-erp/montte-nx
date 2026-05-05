@@ -73,7 +73,7 @@ montte-nx/
 │   └── utils/
 ├── modules/             # domínios de negócio
 │   ├── account/         # perfil, org, times, sessões, API keys, onboarding
-│   ├── agents/          # Rubi, threads, tools e skills
+│   ├── agents/          # Montte AI, threads, tools e skills
 │   ├── billing/         # serviços, medidores, preços, assinaturas, uso
 │   ├── classification/  # categorias, tags e workflows de categorização
 │   ├── finance/         # contas, transações e cartões

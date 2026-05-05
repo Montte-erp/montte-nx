@@ -3,8 +3,8 @@ import type { OpenRouterMessageMetadataByModality } from "@tanstack/ai-openroute
 import type { PostHog, Prompts } from "@core/posthog/server";
 import { flashModel } from "@core/ai/models";
 import { createPosthogAiMiddleware } from "@core/ai/middleware";
-import { RUBI_PROMPTS } from "@modules/agents/constants";
-import { createRubiToolClient } from "@modules/agents/orpc-tool-router";
+import { AGENT_PROMPTS } from "@modules/agents/constants";
+import { createAgentToolClient } from "@modules/agents/orpc-tool-router";
 import {
    buildSkillCatalog,
    buildSkillDiscoverTool,
@@ -19,7 +19,7 @@ import { buildSetupTools } from "@modules/agents/tools/setup";
 import type { ToolDeps } from "@modules/agents/tools/types";
 import type { PageContext } from "@modules/agents/router/chat";
 
-export interface RubiChatOptions {
+export interface AgentChatOptions {
    prompts: Prompts;
    posthog: PostHog;
    userId: string;
@@ -78,9 +78,9 @@ function abortControllerFromSignal(signal: AbortSignal) {
    return controller;
 }
 
-export async function buildRubiChatArgs(options: RubiChatOptions) {
+export async function buildAgentChatArgs(options: AgentChatOptions) {
    const turnId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-   const orpcClient = createRubiToolClient(options.headers, options.request);
+   const orpcClient = createAgentToolClient(options.headers, options.request);
    const toolDeps: ToolDeps = { orpcClient };
 
    const skillDiscoverTool = buildSkillDiscoverTool(options.prompts);
@@ -93,7 +93,7 @@ export async function buildRubiChatArgs(options: RubiChatOptions) {
    });
    const domainTools = buildDomainTools(toolDeps);
 
-   const rootTemplate = await options.prompts.get(RUBI_PROMPTS.root, {
+   const rootTemplate = await options.prompts.get(AGENT_PROMPTS.root, {
       withMetadata: false,
    });
    const systemPrompt = options.prompts.compile(rootTemplate, {
@@ -115,13 +115,13 @@ export async function buildRubiChatArgs(options: RubiChatOptions) {
          createPosthogAiMiddleware({
             posthog: options.posthog,
             distinctId: options.userId,
-            promptName: RUBI_PROMPTS.root,
+            promptName: AGENT_PROMPTS.root,
             customProperties: {
-               rubi_role: "executor",
-               ...(options.threadId && { rubi_thread_id: options.threadId }),
-               rubi_turn_id: turnId,
+               agent_role: "executor",
+               ...(options.threadId && { agent_thread_id: options.threadId }),
+               agent_turn_id: turnId,
                ...(options.pageContext?.skillHint && {
-                  rubi_skill: options.pageContext.skillHint,
+                  agent_skill: options.pageContext.skillHint,
                }),
             },
          }),

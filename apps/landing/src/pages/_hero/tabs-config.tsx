@@ -16,9 +16,9 @@ export type Tab = {
    render: () => ReactNode;
 };
 
-const RubiLink = (
-   <a className="font-bold text-foreground underline" href="#rubi">
-      Rubi IA
+const AgentLink = (
+   <a className="font-bold text-foreground underline" href="#agent">
+      Montte AI
    </a>
 );
 
@@ -31,7 +31,7 @@ export const tabs: Tab[] = [
       left: "Financeiro, contatos, serviços e cobrança no mesmo lugar. Adeus planilha paralela e contexto perdido entre 5 abas.",
       right: (
          <>
-            A {RubiLink} conecta os módulos e acha qualquer dado por cliente,
+            A {AgentLink} conecta os módulos e acha qualquer dado por cliente,
             CNPJ, documento ou operação — em segundos.
          </>
       ),
@@ -45,8 +45,8 @@ export const tabs: Tab[] = [
       left: "Receita, fluxo de caixa e inadimplência em dashboards prontos. Sem montar relatório, sem fórmula no Excel.",
       right: (
          <>
-            Pergunte qualquer métrica à {RubiLink} — a resposta vem com base nos
-            seus dados, não em palpite.
+            Pergunte qualquer métrica à {AgentLink} — a resposta vem com base
+            nos seus dados, não em palpite.
          </>
       ),
       render: InsightLayout,
@@ -55,12 +55,12 @@ export const tabs: Tab[] = [
       id: "automatize",
       label: "Automatize com IA",
       color: "chart-6",
-      title: "Coloque a Rubi no piloto",
-      left: "A Rubi é o agente nativo do Montte. Classifica transações, sugere cobranças e executa rotinas — sempre com revisão humana.",
+      title: "Coloque a Montte AI no piloto",
+      left: "A Montte AI é o agente nativo do Montte. Classifica transações, sugere cobranças e executa rotinas — sempre com revisão humana.",
       right: (
          <>
-            Conecte os dados, ative os comandos e deixe a {RubiLink} no trabalho
-            repetitivo. Você decide o que importa.
+            Conecte os dados, ative os comandos e deixe a {AgentLink} no
+            trabalho repetitivo. Você decide o que importa.
          </>
       ),
       render: AgentLayout,
@@ -73,7 +73,7 @@ export const tabs: Tab[] = [
       left: "Modele assinatura, uso ou pacote num motor só. Meters, benefícios e cupons cobertos — sem gambiarra fiscal.",
       right: (
          <>
-            Receba via Abacate Pay com Pix e cartão. A {RubiLink} monitora
+            Receba via Abacate Pay com Pix e cartão. A {AgentLink} monitora
             inadimplência e sugere a próxima ação.
          </>
       ),

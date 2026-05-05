@@ -20,16 +20,16 @@ import { fromPromise } from "neverthrow";
 import { toast } from "sonner";
 import { client, orpc, type Inputs } from "@/integrations/orpc/client";
 
-type RubiSendInput = Inputs["rubi"]["send"];
-type RubiSyncMessagesInput = Inputs["threads"]["syncMessages"];
+type AgentSendInput = Inputs["agent"]["send"];
+type AgentSyncMessagesInput = Inputs["threads"]["syncMessages"];
 
-interface RubiScopeDefinition {
+interface AgentScopeDefinition {
    label: string;
    icon: LucideIcon;
    skillHint?: string;
 }
 
-const RUBI_SCOPES_BY_ID: Record<RubiScopeId, RubiScopeDefinition> = {
+const AGENT_SCOPES_BY_ID: Record<AgentScopeId, AgentScopeDefinition> = {
    auto: { label: "Auto", icon: Sparkles },
    servicos: { label: "Serviços", icon: Briefcase, skillHint: "services" },
    contatos: { label: "Contatos", icon: Contact },
@@ -39,7 +39,7 @@ const RUBI_SCOPES_BY_ID: Record<RubiScopeId, RubiScopeDefinition> = {
    analises: { label: "Análises", icon: Gauge },
 };
 
-export type RubiScopeId =
+export type AgentScopeId =
    | "auto"
    | "servicos"
    | "contatos"
@@ -48,7 +48,7 @@ export type RubiScopeId =
    | "financeiro"
    | "analises";
 
-const RUBI_SCOPE_IDS: RubiScopeId[] = [
+const AGENT_SCOPE_IDS: AgentScopeId[] = [
    "auto",
    "servicos",
    "contatos",
@@ -58,7 +58,7 @@ const RUBI_SCOPE_IDS: RubiScopeId[] = [
    "analises",
 ];
 
-const RUBI_SUGGESTION_IDS: RubiScopeId[] = [
+const AGENT_SUGGESTION_IDS: AgentScopeId[] = [
    "servicos",
    "contatos",
    "financeiro",
@@ -67,16 +67,16 @@ const RUBI_SUGGESTION_IDS: RubiScopeId[] = [
    "analises",
 ];
 
-interface RubiChatState {
-   activeThreadId: RubiSendInput["threadId"] | null;
+interface AgentChatState {
+   activeThreadId: AgentSendInput["threadId"] | null;
    composerValue: string;
    messages: UIMessage[];
-   pageContext: RubiSendInput["pageContext"];
+   pageContext: AgentSendInput["pageContext"];
    scopeOpen: boolean;
-   selectedScopeId: RubiScopeId;
+   selectedScopeId: AgentScopeId;
 }
 
-const rubiChatStore = createStore<RubiChatState>({
+const agentChatStore = createStore<AgentChatState>({
    activeThreadId: null,
    composerValue: "",
    messages: [],
@@ -85,26 +85,26 @@ const rubiChatStore = createStore<RubiChatState>({
    selectedScopeId: "auto",
 });
 
-const rubiConnection = aiStream(async function* (messages) {
-   const { activeThreadId, pageContext } = rubiChatStore.state;
+const agentConnection = aiStream(async function* (messages) {
+   const { activeThreadId, pageContext } = agentChatStore.state;
    if (activeThreadId === null) return;
 
-   const input: RubiSendInput = {
+   const input: AgentSendInput = {
       threadId: activeThreadId,
       pageContext,
       messages: messages.flatMap((message) =>
          "parts" in message ? [message] : [],
       ),
    };
-   const response = await client.rubi.send(input);
+   const response = await client.agent.send(input);
    yield* response;
 });
 
-async function syncRubiMessages(messages: UIMessage[], errorMessage?: string) {
-   const { activeThreadId } = rubiChatStore.state;
+async function syncAgentMessages(messages: UIMessage[], errorMessage?: string) {
+   const { activeThreadId } = agentChatStore.state;
    if (activeThreadId === null || messages.length === 0) return;
 
-   const input: RubiSyncMessagesInput = {
+   const input: AgentSyncMessagesInput = {
       threadId: activeThreadId,
       messages,
    };
@@ -132,9 +132,9 @@ function pendingApprovalIds(messages: UIMessage[]) {
    });
 }
 
-export function useRubiChat() {
+export function useAgentChat() {
    const state = useStore(
-      rubiChatStore,
+      agentChatStore,
       (value) => ({
          activeThreadId: value.activeThreadId,
          composerValue: value.composerValue,
@@ -149,36 +149,36 @@ export function useRubiChat() {
       orpc.threads.list.queryOptions({ input: { limit: 5 } }),
    );
    const chat = useChat({
-      connection: rubiConnection,
+      connection: agentConnection,
       initialMessages: state.messages,
       onFinish: () => {
-         rubiChatStore.setState((value) => ({
+         agentChatStore.setState((value) => ({
             ...value,
             messages: chat.messages,
          }));
-         void syncRubiMessages(
+         void syncAgentMessages(
             chat.messages,
-            "Falha ao salvar resposta da Rubi.",
+            "Falha ao salvar resposta da Montte AI.",
          );
       },
       onError: () => {
-         rubiChatStore.setState((value) => ({
+         agentChatStore.setState((value) => ({
             ...value,
             messages: chat.messages,
          }));
-         void syncRubiMessages(chat.messages);
-         toast.error("Falha no streaming da Rubi.");
+         void syncAgentMessages(chat.messages);
+         toast.error("Falha no streaming da Montte AI.");
       },
    });
    const approvalIds = pendingApprovalIds(chat.messages);
-   const selectedScope = RUBI_SCOPES_BY_ID[state.selectedScopeId];
-   const scopes = RUBI_SCOPE_IDS.map((id) => ({
+   const selectedScope = AGENT_SCOPES_BY_ID[state.selectedScopeId];
+   const scopes = AGENT_SCOPE_IDS.map((id) => ({
       id,
-      ...RUBI_SCOPES_BY_ID[id],
+      ...AGENT_SCOPES_BY_ID[id],
    }));
-   const suggestions = RUBI_SUGGESTION_IDS.map((id) => ({
+   const suggestions = AGENT_SUGGESTION_IDS.map((id) => ({
       id,
-      ...RUBI_SCOPES_BY_ID[id],
+      ...AGENT_SCOPES_BY_ID[id],
    }));
 
    return {
@@ -198,7 +198,7 @@ export function useRubiChat() {
       },
       approveTool: (id: string) =>
          chat.addToolApprovalResponse({ id, approved: true }),
-      loadThread: async (threadId: RubiSendInput["threadId"]) => {
+      loadThread: async (threadId: AgentSendInput["threadId"]) => {
          const result = await fromPromise(
             client.threads.getById({ threadId }),
             () => null,
@@ -207,7 +207,7 @@ export function useRubiChat() {
             toast.error("Falha ao carregar conversa.");
             return;
          }
-         rubiChatStore.setState((value) => ({
+         agentChatStore.setState((value) => ({
             ...value,
             activeThreadId: result.value.thread.id,
             messages: result.value.messages,
@@ -223,7 +223,7 @@ export function useRubiChat() {
       rejectTool: (id: string) =>
          chat.addToolApprovalResponse({ id, approved: false }),
       reset: () => {
-         rubiChatStore.setState(() => ({
+         agentChatStore.setState(() => ({
             activeThreadId: null,
             composerValue: "",
             messages: [],
@@ -233,24 +233,24 @@ export function useRubiChat() {
          }));
          chat.clear();
       },
-      selectScope: (selectedScopeId: RubiScopeId) => {
-         rubiChatStore.setState((value) => ({
+      selectScope: (selectedScopeId: AgentScopeId) => {
+         agentChatStore.setState((value) => ({
             ...value,
             selectedScopeId,
             scopeOpen: false,
          }));
       },
       sendMessage: async () => {
-         const { composerValue, selectedScopeId } = rubiChatStore.state;
+         const { composerValue, selectedScopeId } = agentChatStore.state;
          const text = composerValue.trim();
          if (!text || chat.isLoading) return;
-         rubiChatStore.setState((value) => ({
+         agentChatStore.setState((value) => ({
             ...value,
             composerValue: "",
          }));
          const result = await fromPromise(
             (async () => {
-               let threadId = rubiChatStore.state.activeThreadId;
+               let threadId = agentChatStore.state.activeThreadId;
                if (threadId === null) {
                   const created = await client.threads.create({
                      title: text.slice(0, 80),
@@ -258,18 +258,18 @@ export function useRubiChat() {
                   threadId = created.id;
                }
 
-               const activeScope = RUBI_SCOPES_BY_ID[selectedScopeId];
+               const activeScope = AGENT_SCOPES_BY_ID[selectedScopeId];
                const pageContext =
                   activeScope.skillHint === undefined
                      ? undefined
                      : { skillHint: activeScope.skillHint };
-               rubiChatStore.setState((state) => ({
+               agentChatStore.setState((state) => ({
                   ...state,
                   activeThreadId: threadId,
                   pageContext,
                }));
                await chat.sendMessage(text);
-               rubiChatStore.setState((value) => ({
+               agentChatStore.setState((value) => ({
                   ...value,
                   messages: chat.messages,
                }));
@@ -281,10 +281,10 @@ export function useRubiChat() {
          }
       },
       setComposerValue: (composerValue: string) => {
-         rubiChatStore.setState((value) => ({ ...value, composerValue }));
+         agentChatStore.setState((value) => ({ ...value, composerValue }));
       },
       setScopeOpen: (scopeOpen: boolean) => {
-         rubiChatStore.setState((value) => ({ ...value, scopeOpen }));
+         agentChatStore.setState((value) => ({ ...value, scopeOpen }));
       },
    };
 }

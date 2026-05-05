@@ -26,7 +26,7 @@ export const uiMessageSchema = z.custom<UIMessage>(
          .safeParse(value).success,
 );
 
-export type RubiUIMessage = z.infer<typeof uiMessageSchema>;
+export type AgentUIMessage = z.infer<typeof uiMessageSchema>;
 
 const threadIdInputSchema = z.object({ threadId: threadSchema.shape.id });
 
@@ -183,7 +183,7 @@ export const updateTitle = protectedProcedure
                   content: [
                      {
                         type: "text",
-                        content: `Gere um título curto em pt-BR para esta conversa da Rubi.
+                        content: `Gere um título curto em pt-BR para esta conversa da Montte AI.
 
 Regras:
 - Máximo 6 palavras.

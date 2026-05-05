@@ -1,6 +1,9 @@
 import type { ComponentProps } from "react";
 
-export function RubiMascotIcon({ className, ...props }: ComponentProps<"img">) {
+export function AgentMascotIcon({
+   className,
+   ...props
+}: ComponentProps<"img">) {
    return (
       <img
          alt=""
