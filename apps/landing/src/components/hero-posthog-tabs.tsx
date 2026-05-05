@@ -12,7 +12,6 @@ import {
    Banknote,
    BarChart3,
    Bot,
-   Building2,
    CheckCircle2,
    Command,
    CreditCard,
@@ -28,7 +27,6 @@ import {
    Search,
    Shield,
    Sparkles,
-   Tags,
    Ticket,
    Users,
    Wallet,
@@ -102,180 +100,178 @@ function Link({
    );
 }
 
-function HubLayout() {
+type HubPosition =
+   | "left-top"
+   | "left-middle"
+   | "left-bottom"
+   | "right-top"
+   | "right-middle"
+   | "right-bottom";
+
+function HubCard({
+   icon: Icon,
+   tone,
+   position,
+   isCenter = false,
+}: {
+   icon: Icon;
+   tone?: string;
+   position?: HubPosition;
+   isCenter?: boolean;
+}) {
+   const sizeClass = isCenter
+      ? "size-16 border-border shadow-xl"
+      : "size-12 border-border";
+   const iconSize = isCenter ? "size-8" : "size-6";
    return (
-      <div className="grid items-end gap-4 pt-4 lg:grid-cols-[200px_minmax(0,1fr)_220px]">
-         <ul className="flex list-none flex-col gap-4 p-0">
-            <Link label="Contatos" icon={Users} tone="text-primary" />
-            <Link label="Financeiro" icon={Wallet} tone="text-chart-2" />
-            <Link label="Serviços" icon={Workflow} tone="text-chart-3" />
-            <Link label="Cobranças" icon={Receipt} tone="text-chart-5" />
-            <Link
-               label="OFX, CSV e XLSX"
-               icon={FileSpreadsheet}
-               tone="text-chart-6"
-            />
-            <Link
-               label="Busca unificada"
-               icon={Search}
-               tone="text-foreground"
-            />
-         </ul>
-
-         <div className="flex flex-col items-center justify-end gap-4 pb-4">
-            <img className="size-10" src="/favicon.svg" alt="" />
-            <strong className="text-2xl font-black tracking-[-0.04em]">
-               Olá, operador!
-            </strong>
-            <div className="flex h-12 w-full max-w-[480px] items-center gap-2 rounded-xl border-2 border-border bg-background px-4 text-muted-foreground shadow-sm">
-               <Search aria-hidden="true" className="size-4" />
-               <span>Pergunte à Rubi sobre o seu negócio</span>
-            </div>
-            <div className="flex w-full max-w-[445px] items-center gap-2 rounded-b-lg border border-t-0 border-border bg-muted/60 px-4 py-2 text-xs text-muted-foreground">
-               <kbd className="inline-flex size-4 items-center justify-center rounded border border-border bg-background font-bold text-foreground shadow-xs">
-                  /
-               </kbd>
-               Comandos rápidos
-            </div>
-            <div className="flex gap-2">
-               <Button size="sm" variant="outline" type="button">
-                  <Lightbulb aria-hidden="true" />
-                  Aprender
-               </Button>
-               <Button size="sm" variant="outline" type="button">
-                  <Wand2 aria-hidden="true" />
-                  Operar
-               </Button>
-               <Button size="sm" variant="outline" type="button">
-                  <Zap aria-hidden="true" />
-                  Analisar
-               </Button>
-            </div>
+      <div
+         className={`relative flex rounded-xl border bg-background ${sizeClass}`}
+      >
+         <div className="z-20 flex flex-1 items-center justify-center">
+            <Icon aria-hidden="true" className={`${iconSize} ${tone ?? ""}`} />
          </div>
-
-         <ul className="flex list-none flex-col items-end gap-4 p-0 text-right">
-            <Link
-               label="CNPJ e CPF"
-               icon={Building2}
-               tone="text-primary"
-               align="right"
-               badge
+         {position && !isCenter ? (
+            <div
+               className={`absolute top-1/2 z-10 h-px bg-gradient-to-r to-muted-foreground/25 ${
+                  position === "left-top"
+                     ? "left-full w-[130px] origin-left rotate-[25deg]"
+                     : position === "left-middle"
+                       ? "left-full w-[120px] origin-left"
+                       : position === "left-bottom"
+                         ? "left-full w-[130px] origin-left rotate-[-25deg]"
+                         : position === "right-top"
+                           ? "right-full w-[130px] origin-right rotate-[-25deg] bg-gradient-to-l"
+                           : position === "right-middle"
+                             ? "right-full w-[120px] origin-right bg-gradient-to-l"
+                             : "right-full w-[130px] origin-right rotate-[25deg] bg-gradient-to-l"
+               }`}
             />
-            <Link
-               label="Histórico do cliente"
-               icon={ArrowLeftRight}
-               tone="text-chart-2"
-               align="right"
-            />
-            <Link
-               label="Centros de custo"
-               icon={Tags}
-               tone="text-chart-3"
-               align="right"
-            />
-            <Link
-               label="Contas e cartões"
-               icon={CreditCard}
-               tone="text-chart-5"
-               align="right"
-               badge
-            />
-            <Link
-               label="Permissões"
-               icon={Shield}
-               tone="text-chart-6"
-               align="right"
-            />
-            <Link
-               label="Times e organizações"
-               icon={Building2}
-               tone="text-foreground"
-               align="right"
-               badge
-            />
-         </ul>
+         ) : null}
       </div>
    );
 }
 
-function MetricCard({
-   icon: Icon,
-   tone,
-   bar,
-   label,
+function HubLayout() {
+   return (
+      <div className="flex flex-col items-center gap-4 pt-4">
+         <div className="relative flex w-full max-w-sm items-center justify-between">
+            <div className="flex flex-col gap-4">
+               <HubCard icon={Wallet} tone="text-primary" position="left-top" />
+               <HubCard
+                  icon={Users}
+                  tone="text-chart-2"
+                  position="left-middle"
+               />
+               <HubCard
+                  icon={Workflow}
+                  tone="text-chart-3"
+                  position="left-bottom"
+               />
+            </div>
+
+            <div
+               aria-hidden="true"
+               className="absolute inset-1/4 bg-[radial-gradient(var(--dots-color)_1px,transparent_1px)] opacity-50 [--dots-color:white] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]"
+            />
+
+            <div className="relative z-20 rounded-2xl border border-border bg-muted p-2">
+               <div className="flex size-16 items-center justify-center rounded-xl border border-border bg-background shadow-xl">
+                  <img className="size-8" src="/favicon.svg" alt="" />
+               </div>
+            </div>
+
+            <div className="flex flex-col gap-4">
+               <HubCard
+                  icon={Receipt}
+                  tone="text-chart-5"
+                  position="right-top"
+               />
+               <HubCard
+                  icon={CreditCard}
+                  tone="text-chart-6"
+                  position="right-middle"
+               />
+               <HubCard
+                  icon={FileSpreadsheet}
+                  tone="text-foreground"
+                  position="right-bottom"
+               />
+            </div>
+         </div>
+
+         <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+            <Button size="sm" variant="outline" type="button">
+               <Lightbulb aria-hidden="true" />
+               Aprender
+            </Button>
+            <Button size="sm" variant="outline" type="button">
+               <Wand2 aria-hidden="true" />
+               Operar
+            </Button>
+            <Button size="sm" variant="outline" type="button">
+               <Zap aria-hidden="true" />
+               Analisar
+            </Button>
+         </div>
+      </div>
+   );
+}
+
+function StatBlock({
    value,
+   label,
+   tone,
+   icon: Icon,
    delta,
-   bars,
 }: {
-   icon: Icon;
-   tone: string;
-   bar: string;
-   label: string;
    value: string;
+   label: string;
+   tone: string;
+   icon: Icon;
    delta: string;
-   bars: number[];
 }) {
    return (
-      <div className="flex flex-col gap-4 rounded-lg border border-border bg-background/60 p-4">
-         <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
-               <Icon aria-hidden="true" className={`size-4 ${tone}`} />
-               {label}
-            </div>
-            <span
-               className={`inline-flex items-center gap-2 text-xs font-bold ${tone}`}
-            >
-               <ArrowUpRight aria-hidden="true" className="size-3" />
-               {delta}
-            </span>
-         </div>
-         <div className="text-2xl font-black tracking-[-0.03em] text-foreground">
+      <div className="flex flex-col items-center gap-4 px-4 py-4 text-center">
+         <Icon aria-hidden="true" className={`size-8 ${tone}`} />
+         <div className={`text-5xl font-black tracking-[-0.04em] ${tone}`}>
             {value}
          </div>
-         <div className="flex h-12 items-end gap-2">
-            {bars.map((h, i) => (
-               <span
-                  key={`${label}-${i}`}
-                  className={`flex-1 rounded-sm ${bar}`}
-                  style={{ height: `${h}%` }}
-               />
-            ))}
-         </div>
+         <p className="text-sm font-bold text-foreground">{label}</p>
+         <span className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground">
+            <ArrowUpRight aria-hidden="true" className="size-3" />
+            {delta}
+         </span>
       </div>
    );
 }
 
 function InsightLayout() {
    return (
-      <div className="grid gap-4 pt-4 lg:grid-cols-3">
-         <MetricCard
-            icon={Repeat}
-            tone="text-chart-2"
-            bar="bg-chart-2/60"
-            label="Receita recorrente"
-            value="R$ 184.230"
-            delta="+12,4%"
-            bars={[40, 55, 50, 65, 70, 78, 90]}
-         />
-         <MetricCard
-            icon={LineChart}
-            tone="text-primary"
-            bar="bg-primary/60"
-            label="Fluxo de caixa"
-            value="R$ 56.890"
-            delta="+4,1%"
-            bars={[30, 45, 38, 55, 48, 62, 70]}
-         />
-         <MetricCard
-            icon={Gauge}
-            tone="text-chart-3"
-            bar="bg-chart-3/60"
-            label="Inadimplência"
-            value="2,3%"
-            delta="-0,8%"
-            bars={[55, 50, 45, 42, 38, 32, 28]}
-         />
-         <ul className="flex flex-wrap items-center gap-4 rounded-lg border border-dashed border-border/60 bg-background/40 px-4 py-2 lg:col-span-3">
+      <div className="flex flex-col gap-4 pt-4">
+         <div className="grid gap-4 divide-y divide-border lg:grid-cols-3 lg:gap-0 lg:divide-x lg:divide-y-0">
+            <StatBlock
+               value="R$ 184k"
+               label="Receita recorrente"
+               tone="text-chart-2"
+               icon={Repeat}
+               delta="+12,4% vs. mês anterior"
+            />
+            <StatBlock
+               value="R$ 56k"
+               label="Fluxo de caixa projetado"
+               tone="text-primary"
+               icon={LineChart}
+               delta="+4,1% nas próximas 4 semanas"
+            />
+            <StatBlock
+               value="2,3%"
+               label="Inadimplência"
+               tone="text-chart-3"
+               icon={Gauge}
+               delta="-0,8 pp depois da Rubi"
+            />
+         </div>
+         <ul className="flex flex-wrap items-center justify-center gap-4 rounded-lg border border-dashed border-border/60 bg-background/40 px-4 py-2">
             <Link label="Dashboards" icon={PieChart} tone="text-chart-2" />
             <Link
                label="Insights da Rubi"
@@ -572,7 +568,7 @@ const tabs: Tab[] = [
 
 export function HeroPosthogTabs() {
    return (
-      <Tabs defaultValue={tabs[0].id} className="gap-0 pt-4">
+      <Tabs defaultValue={tabs[0].id} className=" ">
          <TabsList className="grid h-auto w-full grid-cols-2 gap-0 rounded-none bg-transparent p-0 lg:grid-cols-4">
             {tabs.map((tab) => (
                <TabsTrigger
@@ -591,16 +587,7 @@ export function HeroPosthogTabs() {
                key={tab.id}
                value={tab.id}
             >
-               <div className="relative flex flex-col gap-4">
-                  <button
-                     className="absolute top-0 right-0 inline-flex size-8 items-center justify-center gap-2 rounded border border-border bg-background/80"
-                     type="button"
-                     aria-label="Pausar animação"
-                  >
-                     <span className="h-3 w-1 rounded bg-muted-foreground" />
-                     <span className="h-3 w-1 rounded bg-muted-foreground" />
-                  </button>
-
+               <div className="flex flex-col gap-4">
                   <h2 className="max-w-3xl text-2xl leading-tight font-black tracking-[-0.045em]">
                      {tab.title}
                   </h2>
