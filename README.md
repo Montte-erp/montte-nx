@@ -25,7 +25,7 @@ bun install
 bun dev
 ```
 
-`bun dev` handles everything on first run — creates `apps/web/.env.local`, starts containers, pushes the DB schema, seeds the event catalog, and starts the dashboard at `http://localhost:3000` plus the landing page at `http://localhost:3001`.
+`bun dev` handles everything on first run — creates `apps/web/.env.local` from `.env.example`, installs dependencies if missing, starts the local containers, pushes the DB schema, then runs `web` (http://localhost:3000), `worker` (DBOS), and `landing` (http://localhost:3001) in parallel.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for staging setup and all available commands.
 
@@ -76,10 +76,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for staging setup and all available comma
 
 ### Auth & security (`@core/authentication`)
 
-- Email/password, Google OAuth, Magic Link, Email OTP
+- Email/password, Magic Link, Email OTP
 - Two-factor authentication (2FA)
+- Organization + API key plugins
 - Session management with device tracking
-- Rate limiting and bot detection via Arcjet
 
 ### What's NOT in the box yet
 
@@ -104,11 +104,10 @@ Built as an **Nx** monorepo with **Bun**.
 | **Frontend**  | React 19, TanStack Start (SSR), Astro landing, TanStack Router, TanStack Query, shadcn/ui, Tailwind CSS, TypeScript |
 | **AI**        | TanStack AI + `@tanstack/ai-openrouter`                                                              |
 | **Backend**   | oRPC (type-safe API + OpenAPI), Drizzle ORM, PostgreSQL (ParadeDB image)                             |
-| **Auth**      | Better Auth (Magic Link, Email OTP, 2FA, Anonymous, HyprPay plugins)                                 |
+| **Auth**      | Better Auth (Magic Link, Email OTP, 2FA, Organization, API Key plugins)                              |
 | **Workflows** | DBOS (durable workflows, queues, cron, retries) running in `apps/worker`                             |
 | **Realtime**  | `@core/sse` — scope-routed Redis pub/sub (user / team / org)                                         |
 | **Storage**   | MinIO (S3-compatible)                                                                                |
-| **Security**  | Arcjet (rate limiting & bot detection)                                                               |
 | **Analytics** | PostHog (server + client; surveys + feature flags + early-access)                                    |
 | **Email**     | Resend (React Email templates)                                                                       |
 | **Tooling**   | Nx, oxlint, oxfmt                                                                                    |
@@ -126,7 +125,7 @@ montte-nx/
 ├── core/                # Infra packages (no domain logic)
 │   ├── ai/              # AI primitives (chat, middleware, schemas)
 │   ├── authentication/  # Better Auth setup (server + client)
-│   ├── database/        # Drizzle schemas + client (auth, finance, crm, platform, settings, agents)
+│   ├── database/        # Drizzle schemas + client (schemas: auth, finance, crm, platform, settings, agents)
 │   ├── dbos/            # DBOS factory + testing helpers
 │   ├── environment/     # Zod-validated env vars (web + worker)
 │   ├── files/           # MinIO file storage client

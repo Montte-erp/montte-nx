@@ -5,7 +5,7 @@ Montte é um ERP com IA em um monorepo Nx. O produto principal roda em `apps/web
 ## Pré-requisitos
 
 - [Bun](https://bun.sh) >= 1.x
-- [Node.js](https://nodejs.org) >= 20
+- [Node.js](https://nodejs.org) >= 22.12 (engines)
 - [Docker](https://www.docker.com) ou [Podman](https://podman.io) com Compose
 - [Git](https://git-scm.com)
 
@@ -46,7 +46,7 @@ bun run clean:cache      # limpa cache
 bun run auth:generate    # regenera schema do Better Auth
 ```
 
-Scripts de workspace usam `commander` quando aplicável. Exemplos relevantes: `scripts/seed-default-dashboard.ts`, `scripts/doctor.ts`, `scripts/clean.ts`, `scripts/dev-init.ts` e `scripts/setup.ts`.
+Scripts de workspace ficam em `scripts/`: `setup.ts`, `dev-init.ts`, `doctor.ts`, `clean.ts`, `db-push.ts`, `ensure-schemas.ts`, `check-env.ts`, `env-setup.ts`, `seed-default-dashboard.ts`, `backfill-category-icons.ts`.
 
 Se `bun dev` falhar antes de iniciar os apps, rode `bun run scripts/doctor.ts` e confira `apps/web/.env.local`.
 
@@ -109,7 +109,7 @@ Skills do repositório ficam em `.agents/skills/<nome>/SKILL.md`. Skills especí
 Mapa rápido:
 
 - oRPC handlers e erros: `neverthrow`
-- oRPC client e TanStack Query: `orpc-client`, `tanstack-query`
+- oRPC client e TanStack Query: `tanstack-query`
 - Banco, schemas e queries: `postgres-drizzle`
 - ParadeDB e busca: `paradedb-skill`
 - Redis: `redis-best-practices`
