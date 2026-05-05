@@ -103,7 +103,9 @@ export function LazyDiscoveryRenderer({ data }: { data: LazyData }) {
 interface SkillData {
    id?: string;
    name?: string;
+   skillId?: string;
    description?: string;
+   playbook?: string;
 }
 
 interface SkillArgs {
@@ -121,7 +123,7 @@ export function SkillDiscoverRenderer({
    return (
       <div className="flex flex-col gap-2">
          <div className="flex items-center gap-2">
-            <Sparkles className="size-3.5 text-purple-600 dark:text-purple-400" />
+            <Sparkles className="size-4 shrink-0 text-purple-600 dark:text-purple-400" />
             <span className="text-muted-foreground">Skill ativada</span>
             <Badge className="font-medium" variant="outline">
                {name}
@@ -129,6 +131,11 @@ export function SkillDiscoverRenderer({
          </div>
          {data.description ? (
             <p className="text-muted-foreground">{data.description}</p>
+         ) : null}
+         {data.playbook ? (
+            <div className="text-muted-foreground">
+               <Streamdown>{data.playbook}</Streamdown>
+            </div>
          ) : null}
       </div>
    );

@@ -265,11 +265,26 @@ export function ToolCallCard({ toolCall }: ToolCallCardProps) {
    const presentation = presentTool(toolCall.name);
    const Icon = presentation.icon;
    const args = parsedArgs(toolCall.args);
+   const isSkillDiscover = toolCall.name === "skill_discover";
+   const skillName =
+      isSkillDiscover &&
+      isObj(parsed?.raw) &&
+      typeof parsed.raw.name === "string"
+         ? parsed.raw.name
+         : isSkillDiscover && isObj(args) && typeof args.skillId === "string"
+           ? args.skillId
+           : null;
+   const label =
+      isSkillDiscover && isDone && !failed
+         ? `Playbook${skillName ? ` de ${skillName}` : ""} carregado`
+         : presentation.label;
    const rendered =
-      parsed && !parsed.error
+      parsed && !parsed.error && !isSkillDiscover
          ? dispatchRender(toolCall.name, parsed.raw, args)
          : null;
-   const expandable = Boolean(rendered) || Boolean(parsed?.error) || isDone;
+   const expandable = isSkillDiscover
+      ? false
+      : Boolean(rendered) || Boolean(parsed?.error) || isDone;
 
    return (
       <Collapsible
@@ -278,48 +293,46 @@ export function ToolCallCard({ toolCall }: ToolCallCardProps) {
          onOpenChange={setOpen}
          open={open}
       >
-         <CollapsibleTrigger className="flex w-full items-center gap-2 py-0.5 text-muted-foreground hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground">
-            {isRunning ? (
-               <Loader2 className="size-4 shrink-0 animate-spin" />
-            ) : (
-               <Icon
-                  className={`size-4 shrink-0 ${
-                     failed
-                        ? "text-destructive"
-                        : isDone
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : ""
-                  }`}
-               />
-            )}
+         <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 py-2 text-muted-foreground hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground">
             <span
-               className={`truncate text-left ${failed ? "text-destructive" : ""}`}
+               className={`flex min-w-0 items-center gap-2 ${failed ? "text-destructive" : ""}`}
             >
-               {presentation.label}
+               {isRunning ? (
+                  <Loader2 className="size-4 shrink-0 animate-spin" />
+               ) : (
+                  <Icon
+                     className={`size-4 shrink-0 ${
+                        failed
+                           ? "text-destructive"
+                           : isDone
+                             ? "text-emerald-600 dark:text-emerald-400"
+                             : ""
+                     }`}
+                  />
+               )}
+               <span className="truncate text-left">{label}</span>
             </span>
             {expandable ? (
-               <ChevronRight className="ml-auto size-4 shrink-0 transition-transform group-data-[state=open]/tool:rotate-90" />
+               <ChevronRight className="size-4 shrink-0 transition-transform group-data-[state=open]/tool:rotate-90" />
             ) : null}
          </CollapsibleTrigger>
-         <CollapsibleContent className="mt-2 ml-[20px] border-l border-muted-foreground/15 pl-3">
-            {rendered ? <div className="py-1">{rendered}</div> : null}
+         <CollapsibleContent className="flex flex-col gap-2 py-2">
+            {rendered ?? null}
             {parsed?.error ? (
-               <div className="py-1 text-destructive">{parsed.error}</div>
+               <div className="text-destructive">{parsed.error}</div>
             ) : null}
-            <div className="flex flex-col gap-2 py-2">
-               <Section label="args">
-                  <pre className="max-h-48 overflow-auto rounded bg-muted/40 p-2 font-mono text-[11px] leading-snug">
-                     {JSON.stringify(args, null, 2)}
+            <Section label="args">
+               <pre className="max-h-48 overflow-auto rounded bg-muted/40 p-2 font-mono text-[11px] leading-snug">
+                  {JSON.stringify(args, null, 2)}
+               </pre>
+            </Section>
+            {parsed && parsed.raw !== null ? (
+               <Section label="result">
+                  <pre className="max-h-64 overflow-auto rounded bg-muted/40 p-2 font-mono text-[11px] leading-snug">
+                     {JSON.stringify(parsed.raw, null, 2)}
                   </pre>
                </Section>
-               {parsed && parsed.raw !== null ? (
-                  <Section label="result">
-                     <pre className="max-h-64 overflow-auto rounded bg-muted/40 p-2 font-mono text-[11px] leading-snug">
-                        {JSON.stringify(parsed.raw, null, 2)}
-                     </pre>
-                  </Section>
-               ) : null}
-            </div>
+            ) : null}
          </CollapsibleContent>
       </Collapsible>
    );

@@ -30,38 +30,53 @@ function MessageItemImpl({
          .flatMap((part) => (part.type === "text" ? [part.content] : []))
          .join("");
       return (
-         <div className="border-l-2 border-blue-500/60 px-3 py-2 text-sm">
+         <div className="border-l-2 border-blue-500/60 px-4 py-2 text-sm">
             <span className="whitespace-pre-wrap font-medium">{text}</span>
          </div>
       );
    }
 
    return (
-      <div className="border-l-2 border-muted-foreground/30 px-3 py-2 text-sm">
+      <div className="text-sm">
          <div className="flex flex-col gap-2">
             {message.parts.map((part, idx) => {
                const key = `${part.type}-${idx}`;
+               const isLast = idx === message.parts.length - 1;
                if (part.type === "text") {
                   return (
-                     <Streamdown
-                        isAnimating={isStreaming}
+                     <div
+                        className="border-l-2 border-muted-foreground/30 px-4 py-2"
                         key={key}
-                        mode={isStreaming ? "streaming" : "static"}
                      >
-                        {part.content}
-                     </Streamdown>
+                        <Streamdown
+                           isAnimating={isStreaming}
+                           mode={isStreaming ? "streaming" : "static"}
+                        >
+                           {part.content}
+                        </Streamdown>
+                     </div>
                   );
                }
                if (part.type === "thinking") {
+                  const isThinking = isStreaming && isLast;
                   return (
                      <Collapsible className="group/think text-sm" key={key}>
-                        <CollapsibleTrigger className="flex w-full items-center gap-2 py-0.5 text-muted-foreground hover:text-foreground">
-                           <Brain className="size-4 shrink-0" />
-                           <span>Raciocínio</span>
-                           <ChevronRight className="ml-auto size-4 shrink-0 transition-transform group-data-[state=open]/think:rotate-90" />
+                        <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 py-2 text-muted-foreground hover:text-foreground">
+                           <span className="flex items-center gap-2">
+                              <Brain className="size-4 shrink-0" />
+                              {isThinking
+                                 ? "Raciocinando"
+                                 : "Raciocínio concluído"}
+                           </span>
+                           <ChevronRight className="size-4 shrink-0 transition-transform group-data-[state=open]/think:rotate-90" />
                         </CollapsibleTrigger>
-                        <CollapsibleContent className="mt-2 ml-[20px] whitespace-pre-wrap border-l border-muted-foreground/15 pl-3 py-1 text-muted-foreground">
-                           {part.content}
+                        <CollapsibleContent className="py-2 text-muted-foreground">
+                           <Streamdown
+                              isAnimating={isThinking}
+                              mode={isThinking ? "streaming" : "static"}
+                           >
+                              {part.content}
+                           </Streamdown>
                         </CollapsibleContent>
                      </Collapsible>
                   );
@@ -95,7 +110,7 @@ function MessageItemImpl({
                            }}
                         />
                         {needsDecision ? (
-                           <div className="flex items-center gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs">
+                           <div className="flex items-center gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 px-4 py-2 text-xs">
                               <span className="flex-1">
                                  Aprovar execução de{" "}
                                  <span className="font-mono">{part.name}</span>?
