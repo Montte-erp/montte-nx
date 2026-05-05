@@ -13,21 +13,16 @@
    "dependencies": {
       "@astrojs/check": "catalog:astro",
       "@astrojs/react": "catalog:astro",
-      "@lucide/astro": "catalog:astro",
       "@packages/ui": "workspace:*",
       "@tailwindcss/vite": "catalog:vite",
       "@tooling/css": "workspace:*",
+      "@types/react": "catalog:react",
+      "@types/react-dom": "catalog:react",
       "astro": "catalog:astro",
-      "clsx": "catalog:ui",
-      "lucide-react": "catalog:ui",
       "react": "catalog:react",
       "react-dom": "catalog:react",
       "tailwindcss": "catalog:ui",
       "typescript": "catalog:development"
-   },
-   "devDependencies": {
-      "@types/react": "catalog:react",
-      "@types/react-dom": "catalog:react"
    },
    "engines": {
       "node": ">=22.12.0"

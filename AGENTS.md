@@ -7,7 +7,7 @@ AI-powered ERP. Nx monorepo, Bun, TanStack Start (SSR), oRPC, TanStack Query, Dr
 ## Commands
 
 ```bash
-bun dev                  # seeds event catalog (local) then starts web
+bun dev                  # seeds event catalog (local) then starts web + worker + landing
 bun dev:all              # all apps + packages
 bun run build            # Nx-cached build
 bun run typecheck
@@ -19,15 +19,17 @@ bun run db:studio:local       # or db:studio:prod
 bun run check-boundaries # enforce import layer rules
 bun run clean[:cache]
 bun run auth:generate    # regen Better Auth schema
+bun run landing:build    # build Astro landing page
+bun run landing:start    # preview landing on Railway-compatible host/port
 ```
 
 Scripts (`commander run|check`, `--env`, `--dry-run`): `scripts/seed-default-dashboard.ts`, `scripts/seed-event-catalog.ts`, `scripts/doctor.ts`.
 
-First-time setup: `bun run setup` → `cd apps/web && docker compose up -d` → `bun run db:push && bun run seed:addons && bun run setup:stripe`.
+First-time setup: `bun run setup` → `cd apps/web && docker compose up -d` → `bun run db:push`.
 
 **Gotchas:**
 
-- `bun dev` re-seeds the event catalog every start; if it fails dev won't launch. Debug: `scripts/seed-event-catalog.ts run --env local`.
+- `bun dev` re-seeds the event catalog every start, then runs `web`, `worker`, and `landing`; if seeding fails dev won't launch. Debug: `scripts/seed-event-catalog.ts run --env local`.
 - "Module has no exported member" on typecheck → stale dist. `cd core/<pkg> && bun run build`.
 - Never bump `NODE_OPTIONS` memory — fix the root cause.
 - `apps/web/src/routeTree.gen.ts` is generated — never edit.
@@ -51,12 +53,16 @@ Domain → skill map (open before coding):
 ## Monorepo
 
 ```
-core/         # agents, database, authentication, environment, redis, logging,
-              # files, posthog, stripe, transactional, utils
-apps/         # web (TanStack Start + oRPC), worker (DBOS)
-packages/     # analytics, events, notifications, ui
+core/         # ai, authentication, database, dbos, environment, files, logging,
+              # orpc, posthog, redis, sse, transactional, utils
+modules/      # account, agents, billing, classification, finance, insights
+              # — domain modules (router, services, workflows, sse per module)
+apps/         # web (TanStack Start + oRPC), worker (DBOS), landing (Astro)
+packages/     # ui (shadcn primitives + Montte components)
 tooling/      # oxc, tsconfigs
 ```
+
+`apps/landing` is the public Astro landing page. It imports `@tooling/css/globals.css`, can server-render static shadcn components from `@packages/ui`, uses `public/favicon.svg`, and runs on port `3001` in development.
 
 Catalogs (root `package.json`): `analytics-client`, `assistant-ui`, `astro`, `auth`, `database`, `development`, `dnd`, `environment`, `files`, `fot`, `logging`, `mastra`, `orpc`, `payments`, `react`, `search-providers`, `server`, `tanstack`, `tanstack-ai`, `telemetry`, `testing`, `transactional`, `ui`, `validation`, `vite`, `workers`. Internal: `"@core/database": "workspace:*"`.
 
@@ -66,7 +72,7 @@ Add a new dep → declare in the consuming package's `package.json` with the rig
 
 ## API — oRPC (NOT tRPC)
 
-Routers in `apps/web/src/integrations/orpc/router/`. Context: `{ db, posthog?, organizationId, userId, session, auth, headers, request, stripeClient?, workflowClient }`.
+Routers live in `modules/<module>/src/router/<name>.ts` and are aggregated in `apps/web/src/integrations/orpc/router/index.ts` (only `notifications.ts` still lives at the aggregator). Context: `{ db, posthog?, organizationId, userId, session, auth, headers, request, workflowClient }`.
 
 **Rules:**
 
@@ -99,7 +105,7 @@ const itemByIdProcedure = protectedProcedure
    });
 ```
 
-Available routers: account, agent-settings, analytics, api-keys, bank-accounts, billing, bills, budget-goals, categories, contact-settings, contacts, credit-cards, dashboards, financial-settings, insights, notifications, onboarding, organization, services, services-bills, session, tags, team, transactions.
+Available routers (aggregated keys): account, agentSettings, analytics, apiKeys, bankAccounts, benefits, categories, categoriesBulk, cnpj, contactSettings, contacts, coupons, creditCards, customerPortal, dashboards, financialSettings, insights, meters, notifications, onboarding, organization, prices, rubi, services, session, subscriptionItems, subscriptions, tags, team, threads, transactions, usage.
 
 ---
 
@@ -198,7 +204,7 @@ DBOS runs in `apps/worker` — never the web process. Web enqueues via `context.
 **Workflow rules:**
 
 - Use `<module>DataSource = new DrizzleDataSource<DatabaseInstance>(...)` per module. Inside steps: `dataSource.runTransaction(async () => { const tx = <module>DataSource.client; … }, { name })`. Generic gives a typed `client` — never cast. Never use plain `db` or repositories.
-- Worker startup, in this order, per module: `await DrizzleDataSource.initializeDBOSSchema({ connectionString })` → init context store → create queues → side-effect import workflow files. All `setup<Module>Workflows(deps)` awaited before `launchDBOS()`. `initOtel()` before `launchDBOS()`. Without `initializeDBOSSchema` the `transaction_completion` table is missing and `runTransaction` throws.
+- Worker startup: `initOtel()` first, then `await setup<Module>Workflows(deps)` for every module, then `DBOS.launch()`. Each module's `setup<Module>Workflows` (in `modules/<m>/src/workflows/setup.ts`) is async and is responsible for: `await DrizzleDataSource.initializeDBOSSchema({ connectionString })` → init context store → create queues → side-effect import workflow files. The worker only wires deps and ordering. Without `initializeDBOSSchema` the `transaction_completion` table is missing and `runTransaction` throws.
 - Logging: `DBOS.logger` only (string interpolation). Never replace with `getWorkerLogger` inside workflows — loses workflow context.
 - Scheduling per-instance waits: `enqueueOptions.delaySeconds` on enqueue / self-reschedule (`DELAYED` status, no slot held). `DBOS.sleepms` may hold the slot — avoid for long waits. Reserve `@DBOS.scheduled` for fixed cron only.
 - Self-rescheduling: re-check status in tx → do work → compute next wake **inside `DBOS.runStep`** → `DBOS.startWorkflow(self, { workflowID: "<deterministic-per-period>", queueName, enqueueOptions: { delaySeconds } })`.
@@ -276,7 +282,6 @@ import { db } from "@core/database/client";
 import { auth } from "@core/authentication/server";
 import { redis } from "@core/redis/connection";
 import { posthog } from "@core/posthog/server";
-import { stripeClient } from "@core/stripe";
 import { resendClient } from "@core/transactional/utils";
 import { minioClient } from "@core/files/client";
 import { env } from "@core/environment/server";
@@ -400,74 +405,4 @@ skills:
   use: "@tanstack/devtools#devtools-app-setup"
 - when: "Working with .env files, dotenv config, encrypted env, variable expansion"
 use: "dotenv#dotenv"
- <!-- intent-skills:end -->
-
-## Billing Page — Early Access Feature Cards
-
-`apps/web/src/features/billing/ui/billing-overview.tsx`
-
-The billing overview renders product cards driven by two config objects. **Adding a new early access feature = one entry in the right config.**
-
-### Event-based categories (usage from API)
-
-```typescript
-// EARLY_ACCESS_CATEGORY_GATES: Record<categoryKey, { flag, fallbackStage }>
-// Category must also exist in CATEGORY_CONFIG.
-// When enrolled → card visible + stage badge shown.
-// When not enrolled → card hidden entirely.
-nfe:      { flag: "nfe", fallbackStage: "alpha" },
-document: { flag: "document-signing", fallbackStage: "alpha" },
-```
-
-### Coming soon categories (no enroll CTA)
-
-```typescript
-// COMING_SOON_CATEGORIES are rendered as "Em breve".
-// Current values:
-new Set(["nfe", "document"]);
-```
-
-### Stage resolution
-
-Stage is resolved from PostHog's early access feature config at runtime (`features.find(f => f.flagKey === key)?.stage`), falling back to `fallbackStage` in the local config. No manual sync needed — PostHog is the source of truth.
-
-### Flag keys (from billing-overview.tsx)
-
-| Feature            | Flag key           | Stage |
-| ------------------ | ------------------ | ----- |
-| NF-e               | `nfe`              | alpha |
-| Assinatura Digital | `document-signing` | alpha |
-
-### Other early-access flag keys (from sidebar-nav-items.ts + early-access.ts)
-
-| Feature    | Flag key             | Where used                            |
-| ---------- | -------------------- | ------------------------------------- |
-| Contatos   | `contacts`           | Sidebar gating, onboarding enrollment |
-| Estoque    | `inventory`          | Sidebar gating, onboarding enrollment |
-| Serviços   | `services`           | Sidebar gating, onboarding enrollment |
-| Dashboards | `advanced-analytics` | Sidebar gating, onboarding enrollment |
-| Dados      | `data-management`    | Sidebar gating, onboarding enrollment |
-
-<!-- nx configuration start-->
-<!-- Leave the start & end comments to automatically receive updates. -->
-
-## General Guidelines for working with Nx
-
-- For navigating/exploring the workspace, invoke the `nx-workspace` skill first - it has patterns for querying projects, targets, and dependencies
-- When running tasks (for example build, lint, test, e2e, etc.), always prefer running the task through `nx` (i.e. `nx run`, `nx run-many`, `nx affected`) instead of using the underlying tooling directly
-- Prefix nx commands with the workspace's package manager (e.g., `pnpm nx build`, `npm exec nx test`) - avoids using globally installed CLI
-- You have access to the Nx MCP server and its tools, use them to help the user
-- For Nx plugin best practices, check `node_modules/@nx/<plugin>/PLUGIN.md`. Not all plugins have this file - proceed without it if unavailable.
-- NEVER guess CLI flags - always check nx_docs or `--help` first when unsure
-
-## Scaffolding & Generators
-
-- For scaffolding tasks (creating apps, libs, project structure, setup), ALWAYS invoke the `nx-generate` skill FIRST before exploring or calling MCP tools
-
-## When to use nx_docs
-
-- USE for: advanced config options, unfamiliar flags, migration guides, plugin configuration, edge cases
-- DON'T USE for: basic generator syntax (`nx g @nx/react:app`), standard commands, things you already know
-- The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
-
-<!-- nx configuration end-->
+  <!-- intent-skills:end -->

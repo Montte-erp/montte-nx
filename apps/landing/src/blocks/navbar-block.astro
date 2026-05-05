@@ -1,0 +1,107 @@
+---
+const navItems = [
+   { title: "Produto", href: "#produto", hasMenu: true },
+   { title: "Preços", href: "#precos", hasMenu: true },
+   { title: "Docs", href: "#docs", hasMenu: true },
+   { title: "Comunidade", href: "#", hasMenu: true },
+   { title: "Empresa", href: "#", hasMenu: true },
+   { title: "Mais", href: "#", hasMenu: true },
+];
+---
+
+<header class="sticky top-0 z-40 w-full border-b border-border/40 bg-background/70 backdrop-blur-xl">
+   <nav
+      class="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4 sm:px-6"
+      aria-label="Principal"
+   >
+      <a
+         class="group mr-2 inline-flex items-center gap-2 text-sm font-semibold tracking-tight text-foreground"
+         href="/"
+         aria-label="Montte"
+      >
+         <span class="inline-flex size-7 items-center justify-center rounded-lg bg-primary/15 ring-1 ring-primary/30 transition-transform group-hover:rotate-12">
+            <img class="size-4" src="/favicon.svg" alt="" />
+         </span>
+         <span class="text-base">Montte</span>
+      </a>
+
+      <div class="hidden items-center md:flex">
+         {
+            navItems.map((item) => (
+               <a
+                  href={item.href}
+                  class="group inline-flex h-9 items-center gap-1 rounded-lg px-3 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent/50 hover:text-foreground"
+               >
+                  {item.title}
+                  {item.hasMenu && (
+                     <svg
+                        class="size-3 text-muted-foreground transition-transform group-hover:translate-y-0.5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                     >
+                        <path d="M6 9l6 6 6-6" />
+                     </svg>
+                  )}
+               </a>
+            ))
+         }
+      </div>
+
+      <div class="ml-auto flex items-center gap-1">
+         <a
+            class="group inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/30"
+            href="/dashboard"
+         >
+            Dashboard
+         </a>
+         <button
+            type="button"
+            aria-label="Buscar"
+            class="inline-flex size-9 items-center justify-center rounded-lg text-foreground/70 transition-colors hover:bg-accent/50 hover:text-foreground"
+         >
+            <svg
+               class="size-4"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="2"
+               stroke-linecap="round"
+               stroke-linejoin="round"
+               ><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"
+               ></path></svg
+            >
+         </button>
+         <button
+            type="button"
+            aria-label="Atalhos"
+            class="hidden h-9 items-center justify-center rounded-lg px-2 text-foreground/70 transition-colors hover:bg-accent/50 hover:text-foreground sm:inline-flex"
+         >
+            <kbd
+               class="rounded border border-border/60 bg-card px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+               >⌘K</kbd
+            >
+         </button>
+         <a
+            href="/dashboard"
+            aria-label="Conta"
+            class="inline-flex size-9 items-center justify-center rounded-lg text-foreground/70 transition-colors hover:bg-accent/50 hover:text-foreground"
+         >
+            <svg
+               class="size-4"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="2"
+               stroke-linecap="round"
+               stroke-linejoin="round"
+               ><circle cx="12" cy="8" r="4"></circle><path
+                  d="M4 21a8 8 0 0116 0"></path></svg
+            >
+         </a>
+      </div>
+   </nav>
+</header>

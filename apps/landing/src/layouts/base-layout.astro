@@ -1,6 +1,9 @@
 ---
 import "@tooling/css/globals.css";
 
+import NavbarBlock from "../blocks/navbar-block.astro";
+import FooterBlock from "../blocks/footer-block.astro";
+
 interface Props {
    description: string;
    title: string;
@@ -10,7 +13,7 @@ const { description, title } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="dark">
    <head>
       <meta charset="UTF-8" />
       <meta name="description" content={description} />
@@ -18,7 +21,37 @@ const { description, title } = Astro.props;
       <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
       <title>{title}</title>
    </head>
-   <body>
-      <slot />
+   <body class="relative min-h-dvh bg-background text-foreground antialiased">
+      <div
+         class="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+         aria-hidden="true"
+      >
+         <div
+            class="absolute -top-40 left-1/2 size-[900px] -translate-x-1/2 rounded-full opacity-60 blur-3xl"
+            style="background: radial-gradient(circle, oklch(0.7729 0.1535 163.2231 / 0.18), transparent 60%);"
+         >
+         </div>
+         <div
+            class="absolute top-[40%] left-[10%] size-[500px] rounded-full opacity-40 blur-3xl"
+            style="background: radial-gradient(circle, oklch(0.65 0.19 250 / 0.18), transparent 60%);"
+         >
+         </div>
+         <div
+            class="absolute top-[60%] right-[5%] size-[600px] rounded-full opacity-30 blur-3xl"
+            style="background: radial-gradient(circle, oklch(0.72 0.22 340 / 0.16), transparent 60%);"
+         >
+         </div>
+         <div
+            class="absolute inset-0 opacity-[0.025]"
+            style="background-image: linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px); background-size: 60px 60px;"
+         >
+         </div>
+      </div>
+
+      <NavbarBlock />
+      <main class="relative">
+         <slot />
+      </main>
+      <FooterBlock />
    </body>
 </html>
