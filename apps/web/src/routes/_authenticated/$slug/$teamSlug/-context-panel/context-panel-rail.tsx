@@ -17,7 +17,7 @@ import { Ellipsis, ExternalLink, Keyboard, Sparkles, X } from "lucide-react";
 import { POSTHOG_SURVEYS } from "@core/posthog/config";
 import { useSurveyModal } from "@/hooks/use-survey-modal";
 import { openKeyboardShortcuts } from "../-layout/keyboard-shortcuts-sheet";
-import { allTabMetasStore, contextPanelStore } from "./context-panel-store";
+import { contextPanelStore, TAB_METAS } from "./context-panel-store";
 import {
    closeContextPanel,
    openContextPanel,
@@ -74,7 +74,6 @@ function RailMenuButton() {
 }
 
 export function ContextPanelRail() {
-   const allTabMetas = useSelector(allTabMetasStore, (s) => s);
    const isOpen = useSelector(contextPanelStore, (s) => s.isOpen);
    const activeTabId = useSelector(contextPanelStore, (s) => s.activeTabId);
 
@@ -90,7 +89,7 @@ export function ContextPanelRail() {
    return (
       <div className="hidden sm:flex flex-col shrink-0 h-full pr-2 py-2">
          <div className="flex flex-col flex-1">
-            {allTabMetas.map((tab) => (
+            {TAB_METAS.map((tab) => (
                <button
                   aria-label={
                      isOpen && activeTabId === tab.id

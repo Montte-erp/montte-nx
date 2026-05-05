@@ -7,6 +7,132 @@ import {
    TableHeader,
    TableRow,
 } from "@packages/ui/components/table";
+import { Compass, Sparkles } from "lucide-react";
+import { Streamdown } from "streamdown";
+
+interface AdvisorData {
+   guidance?: string;
+   fallback?: boolean;
+   error?: string;
+}
+
+interface AdvisorArgs {
+   situation?: string;
+   question?: string;
+   options?: string[];
+}
+
+export function AdvisorRenderer({
+   data,
+   args,
+}: {
+   data: AdvisorData;
+   args: AdvisorArgs | null;
+}) {
+   if (!data.guidance) return null;
+   return (
+      <div className="flex flex-col gap-3">
+         {args?.question ? (
+            <div className="flex flex-col gap-1">
+               <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Pergunta
+               </span>
+               <span className="italic text-muted-foreground">
+                  {args.question}
+               </span>
+            </div>
+         ) : null}
+         {args?.options && args.options.length > 0 ? (
+            <div className="flex flex-col gap-1">
+               <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Opções
+               </span>
+               <ul className="flex flex-col gap-0.5 pl-4">
+                  {args.options.map((o, i) => (
+                     <li
+                        key={`opt-${i}`}
+                        className="list-disc text-muted-foreground"
+                     >
+                        {o}
+                     </li>
+                  ))}
+               </ul>
+            </div>
+         ) : null}
+         <div className="flex flex-col gap-1">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+               {data.fallback ? "Advisor indisponível" : "Conselho"}
+            </span>
+            <Streamdown>{data.guidance}</Streamdown>
+         </div>
+      </div>
+   );
+}
+
+interface LazyData {
+   tools?: Array<{ name?: string; description?: string }>;
+}
+
+export function LazyDiscoveryRenderer({ data }: { data: LazyData }) {
+   const tools = data.tools ?? [];
+   if (tools.length === 0) return null;
+   return (
+      <div className="flex flex-col gap-2">
+         <div className="flex items-center gap-2">
+            <Compass className="size-3.5 text-blue-600 dark:text-blue-400" />
+            <span className="text-muted-foreground">
+               {tools.length} ferramenta{tools.length === 1 ? "" : "s"}{" "}
+               carregada{tools.length === 1 ? "" : "s"}
+            </span>
+         </div>
+         <div className="flex flex-wrap gap-1">
+            {tools.map((t, i) => (
+               <span
+                  key={`${t.name ?? "tool"}-${i}`}
+                  className="rounded-full border bg-background px-2 py-0.5 font-mono text-[10px]"
+                  title={t.description}
+               >
+                  {t.name ?? "tool"}
+               </span>
+            ))}
+         </div>
+      </div>
+   );
+}
+
+interface SkillData {
+   id?: string;
+   name?: string;
+   description?: string;
+}
+
+interface SkillArgs {
+   skillId?: string;
+}
+
+export function SkillDiscoverRenderer({
+   data,
+   args,
+}: {
+   data: SkillData;
+   args: SkillArgs | null;
+}) {
+   const name = data.name ?? args?.skillId ?? "—";
+   return (
+      <div className="flex flex-col gap-2">
+         <div className="flex items-center gap-2">
+            <Sparkles className="size-3.5 text-purple-600 dark:text-purple-400" />
+            <span className="text-muted-foreground">Skill ativada</span>
+            <Badge className="font-medium" variant="outline">
+               {name}
+            </Badge>
+         </div>
+         {data.description ? (
+            <p className="text-muted-foreground">{data.description}</p>
+         ) : null}
+      </div>
+   );
+}
 
 interface ServiceRow {
    id: string;
@@ -59,7 +185,7 @@ interface CouponRow {
 
 function StatusBadge({ active }: { active: boolean }) {
    return (
-      <Badge variant={active ? "default" : "secondary"} className="text-[10px]">
+      <Badge className="text-[10px]" variant={active ? "default" : "secondary"}>
          {active ? "Ativo" : "Inativo"}
       </Badge>
    );
@@ -289,7 +415,7 @@ export function CreatedRenderer({
 }) {
    return (
       <div className="flex items-center gap-2">
-         <Badge variant="outline" className="text-[10px]">
+         <Badge className="text-[10px]" variant="outline">
             {label}
          </Badge>
          <span className="font-medium">{name}</span>
@@ -316,14 +442,14 @@ export function SetupServiceRenderer({
    return (
       <div className="flex flex-col gap-3">
          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-[10px]">
+            <Badge className="text-[10px]" variant="outline">
                Serviço criado
             </Badge>
             <span className="font-medium">{data.service.name}</span>
          </div>
          {data.meter ? (
             <div className="flex items-center gap-2">
-               <Badge variant="secondary" className="text-[10px]">
+               <Badge className="text-[10px]" variant="secondary">
                   Medidor
                </Badge>
                <span>{data.meter.name ?? data.meter.id}</span>
