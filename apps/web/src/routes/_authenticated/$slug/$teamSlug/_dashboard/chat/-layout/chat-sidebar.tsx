@@ -38,6 +38,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
+import { resetChat } from "../../../-montte-ai/chat-store";
 import {
    SelectionActionButton,
    useSelectionToolbar,
@@ -160,6 +161,7 @@ export function ChatSidebar({ search }: { search: string }) {
                <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                      <Link
+                        onClick={() => resetChat()}
                         params={{ slug, teamSlug }}
                         to="/$slug/$teamSlug/chat"
                      >
@@ -291,6 +293,14 @@ function ThreadItem({
          <PopoverContent
             align="start"
             className="w-72 p-3"
+            onCloseAutoFocus={(e) => e.preventDefault()}
+            onFocusOutside={(e) => e.preventDefault()}
+            onInteractOutside={(e) => {
+               const target = e.target as HTMLElement | null;
+               if (target?.closest("[data-radix-menu-content]")) {
+                  e.preventDefault();
+               }
+            }}
             onOpenAutoFocus={(e) => e.preventDefault()}
             side="right"
             sideOffset={8}

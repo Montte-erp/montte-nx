@@ -254,12 +254,6 @@ function dispatchRender(
    }
 }
 
-const TONE_CLASSES: Record<ToolPresentation["tone"], string> = {
-   neutral: "border-muted-foreground/20 bg-muted/30",
-   info: "border-blue-500/30 bg-blue-500/5",
-   magic: "border-purple-500/30 bg-purple-500/5",
-};
-
 export function ToolCallCard({ toolCall }: ToolCallCardProps) {
    const [jsonOpen, setJsonOpen] = useState(false);
    const isRunning = toolCall.state === "streaming";
@@ -273,95 +267,76 @@ export function ToolCallCard({ toolCall }: ToolCallCardProps) {
       parsed && !parsed.error
          ? dispatchRender(toolCall.name, parsed.raw, args)
          : null;
-   const tone = failed ? "neutral" : presentation.tone;
+   const hasBody = Boolean(rendered) || Boolean(parsed?.error) || jsonOpen;
 
    return (
-      <div
-         className={`overflow-hidden rounded-lg border text-xs shadow-sm ${TONE_CLASSES[tone]}`}
-      >
-         <div className="flex items-center gap-2 px-3 py-2">
-            <div
-               className={`flex size-6 shrink-0 items-center justify-center rounded-md ${
-                  failed
-                     ? "bg-destructive/15 text-destructive"
-                     : isRunning
-                       ? "bg-muted text-muted-foreground"
-                       : isDone
-                         ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                         : "bg-background text-muted-foreground"
-               }`}
+      <div className="text-xs">
+         <button
+            aria-expanded={jsonOpen}
+            className="flex w-full items-center gap-2 text-muted-foreground hover:text-foreground"
+            onClick={() => setJsonOpen((v) => !v)}
+            type="button"
+         >
+            {isRunning ? (
+               <Loader2 className="size-3.5 shrink-0 animate-spin" />
+            ) : failed ? (
+               <X className="size-3.5 shrink-0 text-destructive" />
+            ) : isDone ? (
+               <Check className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+               <Icon className="size-3.5 shrink-0" />
+            )}
+            <span
+               className={`truncate ${isRunning ? "shimmer" : ""} ${failed ? "text-destructive" : ""}`}
             >
-               {isRunning ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-               ) : failed ? (
-                  <X className="size-3.5" />
-               ) : isDone ? (
-                  <Check className="size-3.5" />
-               ) : (
-                  <Icon className="size-3.5" />
-               )}
-            </div>
-            <div className="flex flex-1 flex-col gap-0.5">
-               <span className="font-medium leading-none">
-                  {presentation.label}
-               </span>
-               {!isRunning && !failed && isDone ? (
-                  <span className="text-[10px] text-muted-foreground">
-                     concluído
-                  </span>
-               ) : isRunning ? (
-                  <span className="text-[10px] text-muted-foreground shimmer">
-                     executando…
-                  </span>
-               ) : failed ? (
-                  <span className="text-[10px] text-destructive">falhou</span>
+               {presentation.label}
+            </span>
+            <ChevronRight
+               className={`ml-auto size-3 shrink-0 transition-transform ${jsonOpen ? "rotate-90" : ""}`}
+            />
+         </button>
+
+         {hasBody ? (
+            <div className="mt-2 ml-[18px] border-l border-muted-foreground/15 pl-3">
+               {rendered ? <div className="py-1">{rendered}</div> : null}
+               {parsed?.error ? (
+                  <div className="py-1 text-destructive">{parsed.error}</div>
                ) : null}
-            </div>
-            <button
-               type="button"
-               onClick={() => setJsonOpen((v) => !v)}
-               aria-label="Ver JSON"
-               className="flex items-center gap-1 rounded-md border bg-background px-1.5 py-1 text-[10px] text-muted-foreground hover:bg-muted/60"
-            >
-               <Code2 className="size-3" />
-               <ChevronRight
-                  className={`size-3 transition-transform ${jsonOpen ? "rotate-90" : ""}`}
-               />
-            </button>
-         </div>
-
-         {rendered ? (
-            <div className="border-t bg-background/40 px-3 py-2">
-               {rendered}
-            </div>
-         ) : parsed?.error ? (
-            <div className="border-t border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive">
-               {parsed.error}
-            </div>
-         ) : null}
-
-         {jsonOpen ? (
-            <div className="grid gap-2 border-t bg-background/40 px-3 py-2">
-               <div className="flex flex-col gap-1">
-                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                     args
-                  </span>
-                  <pre className="max-h-48 overflow-auto rounded bg-muted/40 p-2 font-mono text-[11px] leading-snug">
-                     {JSON.stringify(args, null, 2)}
-                  </pre>
-               </div>
-               {parsed && parsed.raw !== null ? (
-                  <div className="flex flex-col gap-1">
-                     <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        result
-                     </span>
-                     <pre className="max-h-64 overflow-auto rounded bg-muted/40 p-2 font-mono text-[11px] leading-snug">
-                        {JSON.stringify(parsed.raw, null, 2)}
-                     </pre>
+               {jsonOpen ? (
+                  <div className="flex flex-col gap-2 py-2">
+                     <Section label="args">
+                        <pre className="max-h-48 overflow-auto rounded bg-muted/40 p-2 font-mono text-[11px] leading-snug">
+                           {JSON.stringify(args, null, 2)}
+                        </pre>
+                     </Section>
+                     {parsed && parsed.raw !== null ? (
+                        <Section label="result">
+                           <pre className="max-h-64 overflow-auto rounded bg-muted/40 p-2 font-mono text-[11px] leading-snug">
+                              {JSON.stringify(parsed.raw, null, 2)}
+                           </pre>
+                        </Section>
+                     ) : null}
                   </div>
                ) : null}
             </div>
          ) : null}
+      </div>
+   );
+}
+
+function Section({
+   label,
+   children,
+}: {
+   label: string;
+   children: React.ReactNode;
+}) {
+   return (
+      <div className="flex flex-col gap-1">
+         <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            {label}
+         </span>
+         {children}
       </div>
    );
 }

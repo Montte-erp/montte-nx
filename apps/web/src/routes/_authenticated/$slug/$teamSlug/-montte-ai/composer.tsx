@@ -35,9 +35,11 @@ export function Composer({
    const form = useForm({
       defaultValues: { message: "" },
       validators: { onChange: composerSchema },
-      onSubmit: async ({ value, formApi }) => {
-         await sendMessage(value.message);
+      onSubmit: ({ value, formApi }) => {
+         const text = value.message.trim();
+         if (!text) return;
          formApi.reset();
+         void sendMessage(text);
       },
    });
 

@@ -1,11 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Composer } from "../../-montte-ai/composer";
-import {
-   resetChat,
-   useActiveThreadId,
-   useChatSession,
-} from "../../-montte-ai/chat-store";
+import { useActiveThreadId, useChatSession } from "../../-montte-ai/chat-store";
 import { EmptyState } from "../../-montte-ai/empty-state";
 import { MessageList } from "../../-montte-ai/message-list";
 
@@ -16,14 +12,15 @@ export const Route = createFileRoute(
 });
 
 function ChatIndexPage() {
+   const activeThreadId = useActiveThreadId();
+   return <ChatRunner key={activeThreadId ?? "new"} />;
+}
+
+function ChatRunner() {
    const { slug, teamSlug } = Route.useParams();
    const navigate = useNavigate();
-   const session = useChatSession();
    const activeThreadId = useActiveThreadId();
-
-   useEffect(() => {
-      resetChat();
-   }, []);
+   const session = useChatSession();
 
    useEffect(() => {
       if (!activeThreadId) return;
