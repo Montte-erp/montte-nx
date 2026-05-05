@@ -2,7 +2,6 @@
 import "@tooling/css/globals.css";
 
 import NavbarBlock from "../blocks/navbar-block.astro";
-import FooterBlock from "../blocks/footer-block.astro";
 
 interface Props {
    description: string;
@@ -52,6 +51,5 @@ const { description, title } = Astro.props;
       <main class="relative">
          <slot />
       </main>
-      <FooterBlock />
    </body>
 </html>
