@@ -7,7 +7,7 @@ AI-powered ERP. Nx monorepo, Bun, TanStack Start (SSR), oRPC, TanStack Query, Dr
 ## Commands
 
 ```bash
-bun dev                  # seeds event catalog (local) then starts web + worker + landing
+bun dev                  # dev-init (env.local, install, containers, db:push) then web + worker + landing
 bun dev:all              # all apps + packages
 bun run build            # Nx-cached build
 bun run typecheck
@@ -23,13 +23,13 @@ bun run landing:build    # build Astro landing page
 bun run landing:start    # preview landing on Railway-compatible host/port
 ```
 
-Scripts (`commander run|check`, `--env`, `--dry-run`): `scripts/seed-default-dashboard.ts`, `scripts/seed-event-catalog.ts`, `scripts/doctor.ts`.
+Scripts: `scripts/dev-init.ts`, `scripts/setup.ts`, `scripts/doctor.ts`, `scripts/clean.ts`, `scripts/db-push.ts`, `scripts/ensure-schemas.ts`, `scripts/check-env.ts`, `scripts/env-setup.ts`, `scripts/seed-default-dashboard.ts`, `scripts/backfill-category-icons.ts`.
 
-First-time setup: `bun run setup` → `cd apps/web && docker compose up -d` → `bun run db:push`.
+First-time setup: `bun run setup` (creates `apps/web/.env.local`, starts containers, runs `db:push`). After that, `bun dev` is the daily driver.
 
 **Gotchas:**
 
-- `bun dev` re-seeds the event catalog every start, then runs `web`, `worker`, and `landing`; if seeding fails dev won't launch. Debug: `scripts/seed-event-catalog.ts run --env local`.
+- `bun dev` runs `scripts/dev-init.ts` (ensures `.env.local`, installs deps, starts local containers, `db:push`), then `nx run-many` for `web`, `worker`, `landing`. If containers fail it warns but continues — verify with `bun run doctor`.
 - "Module has no exported member" on typecheck → stale dist. `cd core/<pkg> && bun run build`.
 - Never bump `NODE_OPTIONS` memory — fix the root cause.
 - `apps/web/src/routeTree.gen.ts` is generated — never edit.
@@ -56,10 +56,10 @@ Domain → skill map (open before coding):
 core/         # ai, authentication, database, dbos, environment, files, logging,
               # orpc, posthog, redis, sse, transactional, utils
 modules/      # account, agents, billing, classification, finance, insights
-              # — domain modules (router, services, workflows, sse per module)
+              # — domain modules (router, services, workflows per module; not every module has all three)
 apps/         # web (TanStack Start + oRPC), worker (DBOS), landing (Astro)
 packages/     # ui (shadcn primitives + Montte components)
-tooling/      # oxc, tsconfigs
+tooling/      # boundary, css (Tailwind), oxc, typescript
 ```
 
 `apps/landing` is the public Astro landing page. It imports `@tooling/css/globals.css`, can server-render static shadcn components from `@packages/ui`, uses `public/favicon.svg`, and runs on port `3001` in development.
@@ -177,10 +177,12 @@ Vite plugin order is critical: `tanstackStart({ router: { autoCodeSplitting: tru
 
 Schemas in `core/database/src/schemas/`. **Always namespace** — never raw `pgTable(...)`:
 
-- `financeSchema` → transactions, bank-accounts, bills, credit-cards, financial-goals, financial-settings
-- `crmSchema` → contacts, contact-settings, tags
-- `platformSchema` → dashboards, insights, event-catalog, webhooks, subscriptions, agents
-- `auth` → Better Auth managed, **read-only** (use `additionalFields` in auth config)
+- `financeSchema` → transactions, transaction-items, bank-accounts, credit-cards, credit-card-statements, credit-card-statement-totals, categories
+- `crmSchema` → contacts, contact-settings, contact-subscriptions, services, service-prices, service-benefits, benefits, benefit-grants, meters, subscription-items, coupons, coupon-redemptions, resources, tags
+- `platformSchema` → dashboards, insights, agent-settings, invoices, usage-events
+- `settingsSchema` → financial config
+- `agentsSchema` → threads
+- `authSchema` → Better Auth managed (user, session, account, organization, team, member, invitation, twoFactor, apikey) — **read-only** (extend via `additionalFields` in auth config)
 
 Local DB image is `paradedb/paradedb` — don't swap.
 
@@ -188,7 +190,7 @@ Local DB image is `paradedb/paradedb` — don't swap.
 
 ## Auth (Better Auth)
 
-Config: `core/authentication/src/server.ts`. Plugins: Magic Link, Email OTP, 2FA, Anonymous, HyprPay.
+Config: `core/authentication/src/server.ts`. Plugins: Magic Link, Email OTP, 2FA, Organization, API Key.
 
 - Auth schema is read-only; extend via `additionalFields`.
 - Queries → oRPC (`orpc.organization.*`). Mutations → `authClient` directly (never `useMutation`).
@@ -210,7 +212,7 @@ DBOS runs in `apps/worker` — never the web process. Web enqueues via `context.
 - Self-rescheduling: re-check status in tx → do work → compute next wake **inside `DBOS.runStep`** → `DBOS.startWorkflow(self, { workflowID: "<deterministic-per-period>", queueName, enqueueOptions: { delaySeconds } })`.
 - Workflow inputs always carry both `teamId` and `organizationId` — don't look them up inside steps.
 
-Existing queues: `workflow:categorize` (10), `workflow:derive-keywords` (5), `workflow:benefit-lifecycle`, `workflow:period-end-invoice`, `workflow:trial-expiry`.
+Existing queues (modules with workflows: `billing`, `classification`): `workflow:classify`, `workflow:derive-keywords`, `workflow:benefit-lifecycle`, `workflow:period-end-invoice`, `workflow:trial-expiry`. Worker startup (`apps/worker/src/index.ts`): `initOtel` → `setupBillingWorkflows(deps)` + `setupClassificationWorkflows(deps)` → `DBOS.setConfig` → `DBOS.launch()`.
 
 **Testing:** mock `@dbos-inc/dbos-sdk` with `vi.hoisted` + `dbosSdkMockFactory` / `drizzleDataSourceMockFactory` from `@core/dbos/testing/mock-dbos` — `registerWorkflow` must return the function directly. pglite-backed `setupTestDb()` for assertions. Time-mocked: `vi.useFakeTimers()` + `vi.setSystemTime(T0)`. End-to-end real-runtime smoke: `__tests__/integration/dbos-smoke.test.ts` (pglite + `@electric-sql/pglite-socket`). Example: `__tests__/workflows/period-end-invoice.test.ts`.
 
@@ -229,22 +231,17 @@ const result = await chat({
 });
 ```
 
-Single agent `rubiAgent` via `mastra.getAgent("rubiAgent")` + `createRequestContext({ userId, teamId, organizationId, model, language: "pt-BR" })` from `@packages/agents`.
+Rubi agent lives in `modules/agents/src/rubi.ts`. Built on `@tanstack/ai` + `@tanstack/ai-openrouter`; tools wrap oRPC procedures via `createRubiToolClient` (`modules/agents/src/orpc-tool-router.ts`); skill catalog from `modules/agents/src/skills.ts`. No Mastra, no `@packages/agents`.
 
 ---
 
 ## Billing (HyprPay)
 
-100% usage-based. Customer = Better Auth organization (`externalId = organization.id`). Subscriptions support seats via item `quantity`. Stripe is legacy-only — `@core/stripe` will be removed.
+100% usage-based. Customer = Better Auth organization. Subscriptions support seats via item `quantity`.
 
 **Bill only what costs us** (AI calls, email, storage, webhook egress). UI/CRUD/listings are free.
 
-Two ingestion paths converge on `ingestUsageEvent`:
-
-1. **Workflow steps** — call `ingestUsageEvent` inside `DBOS.runStep` after the cost-incurring action succeeds.
-2. **Router-triggered costs** — `billableProcedure` + `.meta({ billableEvent })` → `onSuccess` middleware ingests one event per success.
-
-Event names live in module `constants.ts` (e.g. `CLASSIFICATION_USAGE_EVENTS`, `TRANSACTIONAL_USAGE_EVENTS`). `ingestUsageEvent` is no-op without a configured meter and never throws — failed ingestion logs only, never rolls back the work. Always pass an `idempotencyKey`.
+Routers tag cost-incurring procedures with `billableProcedure` + `.meta({ billableEvent: "<name>" })` (`core/orpc/src/server.ts` — `BillableMeta`). Pure CRUD stays on `protectedProcedure`. Workflows write usage rows directly to the `usage-events` schema; the period-end-invoice workflow aggregates them via `summarizeUsageByMeter`. HyprPay ingestion middleware is planned but not wired yet — don't reference helpers that aren't in the codebase.
 
 ---
 
@@ -405,4 +402,4 @@ skills:
   use: "@tanstack/devtools#devtools-app-setup"
 - when: "Working with .env files, dotenv config, encrypted env, variable expansion"
 use: "dotenv#dotenv"
-  <!-- intent-skills:end -->
+ <!-- intent-skills:end -->
