@@ -34,14 +34,6 @@ export interface AgentChatOptions {
    abortSignal?: AbortSignal;
 }
 
-const RENDERING_PRIMER = `## Renderização (json-render)
-
-Toda tool de leitura/escrita retorna um campo \`ui\` com um spec json-render que o cliente renderiza usando shadcn. Você nunca precisa formatar a saída em markdown — o spec já mostra a tabela/alert/card.
-
-**Não duplique a informação em texto.** Após uma tool call, escreva no máximo 1-2 frases curtas conectando o resultado à próxima ação. Nunca repita a tabela / contagem / nomes que o spec já mostra.
-
-Vocabulário disponível no catalog (quando o tool não monta o spec por você): Card, Stack, Grid, Separator, Heading, Text, Badge, Alert, Table, Accordion, Collapsible, Tabs, Progress, Skeleton, Spinner, Avatar, Image, Link, Tooltip.`;
-
 function formatPageContext(pageContext: PageContext): string {
    if (pageContext === undefined) return "Nenhum contexto de página fornecido.";
    const lines: string[] = [];
@@ -103,7 +95,7 @@ export async function buildAgentChatArgs(options: AgentChatOptions) {
 
    return {
       adapter: flashModel,
-      systemPrompts: [systemPrompt, RENDERING_PRIMER],
+      systemPrompts: [systemPrompt],
       messages: options.messages,
       tools: [skillDiscoverTool, advisorTool, ...domainTools],
       agentLoopStrategy: maxIterations(25),

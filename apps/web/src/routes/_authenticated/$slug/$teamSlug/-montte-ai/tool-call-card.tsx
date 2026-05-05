@@ -10,20 +10,20 @@ import {
    X,
 } from "lucide-react";
 import { useState } from "react";
-import { AdvisorRenderer } from "./tool-renderers/advisor";
-import { LazyDiscoveryRenderer } from "./tool-renderers/lazy";
 import {
+   AdvisorRenderer,
    BenefitsListRenderer,
    BulkCreatedServicesRenderer,
    BulkSetActiveRenderer,
    CouponsListRenderer,
    CreatedRenderer,
+   LazyDiscoveryRenderer,
    MetersListRenderer,
    ServiceDetailRenderer,
    ServicesListRenderer,
    SetupServiceRenderer,
-} from "./tool-renderers/services";
-import { SkillDiscoverRenderer } from "./tool-renderers/skill";
+   SkillDiscoverRenderer,
+} from "./tool-renderers";
 
 interface ToolCallCardProps {
    toolCall: {
