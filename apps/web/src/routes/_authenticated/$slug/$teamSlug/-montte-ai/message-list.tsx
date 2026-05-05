@@ -31,6 +31,7 @@ export function MessageList({ session }: MessageListProps) {
                   const isLive = isLast && isStreaming;
                   return (
                      <MessageItem
+                        isLast={isLast}
                         isStreaming={isLive}
                         key={message.id}
                         message={message}
@@ -40,7 +41,7 @@ export function MessageList({ session }: MessageListProps) {
                   );
                })}
                {showThinking ? (
-                  <div className="border-l-2 border-muted-foreground/30 px-3 py-2 text-sm shimmer">
+                  <div className="border-l-2 border-muted-foreground/30 px-3 py-2 text-base shimmer">
                      Montte AI está pensando…
                   </div>
                ) : null}

@@ -43,24 +43,60 @@ interface ToolPresentation {
    tone: "neutral" | "info" | "magic";
 }
 
+export const TOOL_LABELS: Record<string, string> = {
+   advisor_consult: "Consultando advisor sênior",
+   web_search: "Pesquisando na web",
+   skill_discover: "Carregando playbook",
+   __lazy__tool__discovery__: "Carregando ferramentas",
+   services_list: "Listando serviços",
+   services_get: "Detalhando serviço",
+   services_create: "Criando serviço",
+   services_update: "Atualizando serviço",
+   services_set_active: "Ativando ou arquivando serviços",
+   services_bulk_create: "Criando serviços em lote",
+   services_attach_benefit: "Vinculando benefício ao serviço",
+   services_setup: "Configurando serviço completo",
+   services_create_price: "Criando preço",
+   prices_update: "Atualizando preço",
+   prices_delete: "Removendo preço",
+   meters_list: "Listando medidores",
+   meters_create: "Criando medidor",
+   meters_update: "Atualizando medidor",
+   benefits_list: "Listando benefícios",
+   benefits_create: "Criando benefício",
+   coupons_list: "Listando cupons",
+   coupons_create: "Criando cupom",
+};
+
+export function presentToolIcon(name: string | undefined) {
+   if (name === "advisor_consult") return Lightbulb;
+   if (name === "skill_discover") return Sparkles;
+   if (name === "__lazy__tool__discovery__") return Compass;
+   return Wrench;
+}
+
 function presentTool(name: string | undefined): ToolPresentation {
-   if (!name) return { label: "ferramenta", icon: Wrench, tone: "neutral" };
+   if (!name) return { label: "Ferramenta", icon: Wrench, tone: "neutral" };
    if (name === "advisor_consult")
-      return { label: "Consultando advisor", icon: Lightbulb, tone: "magic" };
+      return {
+         label: TOOL_LABELS[name] ?? name,
+         icon: Lightbulb,
+         tone: "magic",
+      };
    if (name === "skill_discover")
-      return { label: "Carregando playbook", icon: Sparkles, tone: "info" };
+      return {
+         label: TOOL_LABELS[name] ?? name,
+         icon: Sparkles,
+         tone: "info",
+      };
    if (name === "__lazy__tool__discovery__")
       return {
-         label: "Descobrindo ferramentas",
+         label: TOOL_LABELS[name] ?? name,
          icon: Compass,
          tone: "info",
       };
-   const label = name
-      .replace(/[_-]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .replace(/^./, (c) => c.toUpperCase());
-   return { label: label || "ferramenta", icon: Wrench, tone: "neutral" };
+   const label = TOOL_LABELS[name] ?? "Ferramenta";
+   return { label, icon: Wrench, tone: "neutral" };
 }
 
 interface ParsedResult {
@@ -288,7 +324,7 @@ export function ToolCallCard({ toolCall }: ToolCallCardProps) {
 
    return (
       <Collapsible
-         className="group/tool text-sm"
+         className="group/tool text-base"
          disabled={!expandable}
          onOpenChange={setOpen}
          open={open}

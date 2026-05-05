@@ -1,12 +1,56 @@
 import type { UIMessage } from "@tanstack/ai-react";
 import { Button } from "@packages/ui/components/button";
+import {
+   Collapsible,
+   CollapsibleContent,
+   CollapsibleTrigger,
+} from "@packages/ui/components/collapsible";
+import { Brain, Check, ChevronDown, Loader2, Wrench } from "lucide-react";
 import { memo } from "react";
 import { Streamdown } from "streamdown";
-import { ToolCallCard } from "./tool-call-card";
+import { MessageFooter } from "./message-footer";
+import { TOOL_LABELS, presentToolIcon } from "./tool-call-card";
+
+type AssistantPart = UIMessage["parts"][number];
+type ToolCallPart = Extract<AssistantPart, { type: "tool-call" }>;
+type Group =
+   | { kind: "text"; key: string; content: string }
+   | { kind: "thinking"; key: string; content: string; isLast: boolean }
+   | { kind: "tools"; key: string; parts: ToolCallPart[] }
+   | { kind: "skip"; key: string };
+
+function groupParts(parts: AssistantPart[]): Group[] {
+   const groups: Group[] = [];
+   let currentTools: ToolCallPart[] | null = null;
+   parts.forEach((part, idx) => {
+      const key = `${part.type}-${idx}`;
+      const isLast = idx === parts.length - 1;
+      if (part.type === "tool-call") {
+         if (currentTools === null) {
+            currentTools = [];
+            groups.push({ kind: "tools", key, parts: currentTools });
+         }
+         currentTools.push(part);
+         return;
+      }
+      currentTools = null;
+      if (part.type === "text") {
+         groups.push({ kind: "text", key, content: part.content });
+         return;
+      }
+      if (part.type === "thinking") {
+         groups.push({ kind: "thinking", key, content: part.content, isLast });
+         return;
+      }
+      groups.push({ kind: "skip", key });
+   });
+   return groups;
+}
 
 interface MessageItemProps {
    message: UIMessage;
    isStreaming: boolean;
+   isLast: boolean;
    onApprove: (approvalId: string) => Promise<void>;
    onReject: (approvalId: string) => Promise<void>;
 }
@@ -14,6 +58,7 @@ interface MessageItemProps {
 function MessageItemImpl({
    message,
    isStreaming,
+   isLast,
    onApprove,
    onReject,
 }: MessageItemProps) {
@@ -24,103 +69,197 @@ function MessageItemImpl({
          .flatMap((part) => (part.type === "text" ? [part.content] : []))
          .join("");
       return (
-         <div className="border-l-2 border-blue-500/60 px-4 py-2 text-sm">
-            <span className="whitespace-pre-wrap font-medium">{text}</span>
+         <div className="flex justify-end">
+            <div className="max-w-[85%] rounded-2xl bg-muted px-4 py-2.5 text-base">
+               <span className="whitespace-pre-wrap">{text}</span>
+            </div>
          </div>
       );
    }
 
+   const assistantText = message.parts
+      .flatMap((part) => (part.type === "text" ? [part.content] : []))
+      .join("\n\n");
+   const allToolsResolved = message.parts.every(
+      (part) =>
+         part.type !== "tool-call" ||
+         part.output !== undefined ||
+         part.state === "approval-requested",
+   );
+   const showFooter =
+      isLast && !isStreaming && allToolsResolved && assistantText.length > 0;
+
+   const groups = groupParts(message.parts);
+
    return (
-      <div className="text-sm">
-         <div className="flex flex-col gap-2">
-            {message.parts.map((part, idx) => {
-               const key = `${part.type}-${idx}`;
-               if (part.type === "text") {
-                  return (
-                     <div
-                        className="border-l-2 border-muted-foreground/30 px-4 py-2"
-                        key={key}
-                     >
+      <div className="flex flex-col gap-3 text-base leading-relaxed">
+         {groups.map((group) => {
+            if (group.kind === "text") {
+               return (
+                  <Streamdown
+                     isAnimating={isStreaming}
+                     key={group.key}
+                     mode={isStreaming ? "streaming" : "static"}
+                  >
+                     {group.content}
+                  </Streamdown>
+               );
+            }
+            if (group.kind === "tools") {
+               return (
+                  <ToolGroup
+                     isStreaming={isStreaming}
+                     key={group.key}
+                     onApprove={onApprove}
+                     onReject={onReject}
+                     parts={group.parts}
+                  />
+               );
+            }
+            if (group.kind === "thinking") {
+               const isLive = isStreaming && group.isLast;
+               return (
+                  <Collapsible
+                     className="group/think"
+                     defaultOpen={isLive}
+                     key={group.key}
+                  >
+                     <CollapsibleTrigger className="flex w-full items-center gap-2 py-1 text-sm text-muted-foreground hover:text-foreground">
+                        <Brain className="size-4 shrink-0" />
+                        <span className="flex-1 text-left">
+                           {isLive ? "Raciocinando" : "Raciocínio concluído"}
+                        </span>
+                        <ChevronDown className="size-4 shrink-0 transition-transform group-data-[state=open]/think:rotate-180" />
+                     </CollapsibleTrigger>
+                     <CollapsibleContent className="ml-[22px] border-l border-muted-foreground/15 py-1 pl-3 text-sm text-muted-foreground">
                         <Streamdown
-                           isAnimating={isStreaming}
-                           mode={isStreaming ? "streaming" : "static"}
+                           isAnimating={isLive}
+                           mode={isLive ? "streaming" : "static"}
                         >
-                           {part.content}
+                           {group.content}
                         </Streamdown>
-                     </div>
-                  );
-               }
-               if (part.type === "thinking") return null;
-               if (part.type === "tool-call") {
-                  const needsDecision =
-                     part.state === "approval-requested" &&
-                     part.approval !== undefined &&
-                     part.approval.approved === undefined;
-                  return (
-                     <div className="flex flex-col gap-2" key={key}>
-                        <ToolCallCard
-                           toolCall={{
-                              id: part.id,
-                              name: part.name,
-                              args: part.arguments ?? "",
-                              state:
-                                 part.state === "input-streaming"
-                                    ? "streaming"
-                                    : part.state === "approval-requested"
-                                      ? "complete"
-                                      : part.output !== undefined
-                                        ? "result"
-                                        : "complete",
-                              result:
-                                 part.output === undefined
-                                    ? undefined
-                                    : typeof part.output === "string"
-                                      ? part.output
-                                      : JSON.stringify(part.output, null, 2),
-                           }}
-                        />
-                        {needsDecision ? (
-                           <div className="flex items-center gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 px-4 py-2 text-xs">
-                              <span className="flex-1">
-                                 Aprovar execução de{" "}
-                                 <span className="font-mono">{part.name}</span>?
-                              </span>
-                              <Button
-                                 className="h-7 px-2 text-xs"
-                                 onClick={() => {
-                                    if (part.approval === undefined) return;
-                                    void onReject(part.approval.id);
-                                 }}
-                                 size="sm"
-                                 variant="outline"
-                              >
-                                 Negar
-                              </Button>
-                              <Button
-                                 className="h-7 px-2 text-xs"
-                                 onClick={() => {
-                                    if (part.approval === undefined) return;
-                                    void onApprove(part.approval.id);
-                                 }}
-                                 size="sm"
-                              >
-                                 Aprovar
-                              </Button>
-                           </div>
+                     </CollapsibleContent>
+                  </Collapsible>
+               );
+            }
+            return null;
+         })}
+         {showFooter ? (
+            <MessageFooter messageId={message.id} text={assistantText} />
+         ) : null}
+      </div>
+   );
+}
+
+function ToolGroup({
+   parts,
+   onApprove,
+   onReject,
+}: {
+   parts: ToolCallPart[];
+   isStreaming: boolean;
+   onApprove: (approvalId: string) => Promise<void>;
+   onReject: (approvalId: string) => Promise<void>;
+}) {
+   const total = parts.length;
+   const anyRunning = parts.some(
+      (p) =>
+         p.state === "input-streaming" ||
+         (p.output === undefined && p.state !== "approval-requested"),
+   );
+   const needsDecision = parts.find(
+      (p) =>
+         p.state === "approval-requested" &&
+         p.approval !== undefined &&
+         p.approval.approved === undefined,
+   );
+   const headerLabel = anyRunning
+      ? `Executando ${total} ${total === 1 ? "ferramenta" : "ferramentas"}`
+      : `${total} ${total === 1 ? "ferramenta executada" : "ferramentas executadas"}`;
+
+   return (
+      <Collapsible
+         className="group/tools rounded-lg border border-muted-foreground/15 bg-muted/30"
+         defaultOpen={anyRunning || needsDecision !== undefined}
+      >
+         <CollapsibleTrigger className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+            {anyRunning ? (
+               <Loader2 className="size-4 shrink-0 animate-spin" />
+            ) : (
+               <Wrench className="size-4 shrink-0" />
+            )}
+            <span className="flex-1 text-left">{headerLabel}</span>
+            {!anyRunning ? (
+               <Check className="size-3.5 shrink-0 text-emerald-500" />
+            ) : null}
+            <ChevronDown className="size-4 shrink-0 transition-transform group-data-[state=open]/tools:rotate-180" />
+         </CollapsibleTrigger>
+         <CollapsibleContent className="flex flex-col gap-1.5 border-t border-muted-foreground/10 px-3 py-2">
+            {parts.map((part) => {
+               const isRunning =
+                  part.state === "input-streaming" ||
+                  (part.output === undefined &&
+                     part.state !== "approval-requested");
+               const partNeedsDecision =
+                  part.state === "approval-requested" &&
+                  part.approval !== undefined &&
+                  part.approval.approved === undefined;
+               const Icon = presentToolIcon(part.name);
+               const label = TOOL_LABELS[part.name] ?? "Executando ferramenta";
+               return (
+                  <div className="flex flex-col gap-2" key={part.id}>
+                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        {isRunning ? (
+                           <Loader2 className="size-4 shrink-0 animate-spin" />
+                        ) : (
+                           <Icon className="size-4 shrink-0" />
+                        )}
+                        <span>{label}</span>
+                        {!isRunning && !partNeedsDecision ? (
+                           <Check className="size-3.5 shrink-0 text-emerald-500" />
                         ) : null}
                      </div>
-                  );
-               }
-               return null;
+                     {partNeedsDecision ? (
+                        <div className="flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/5 px-4 py-2.5 text-sm">
+                           <span className="flex-1">
+                              Aprovar{" "}
+                              <span className="font-medium">{label}</span>?
+                           </span>
+                           <Button
+                              className="h-8 px-3 text-sm"
+                              onClick={() => {
+                                 if (part.approval === undefined) return;
+                                 void onReject(part.approval.id);
+                              }}
+                              size="sm"
+                              variant="outline"
+                           >
+                              Negar
+                           </Button>
+                           <Button
+                              className="h-8 px-3 text-sm"
+                              onClick={() => {
+                                 if (part.approval === undefined) return;
+                                 void onApprove(part.approval.id);
+                              }}
+                              size="sm"
+                           >
+                              Aprovar
+                           </Button>
+                        </div>
+                     ) : null}
+                  </div>
+               );
             })}
-         </div>
-      </div>
+         </CollapsibleContent>
+      </Collapsible>
    );
 }
 
 export const MessageItem = memo(MessageItemImpl, (prev, next) => {
    if (prev.message.id !== next.message.id) return false;
    if (prev.isStreaming !== next.isStreaming) return false;
+   if (prev.isLast !== next.isLast) return false;
    if (prev.message.parts.length !== next.message.parts.length) return false;
    if (prev.message.parts.at(-1) !== next.message.parts.at(-1)) return false;
    if (prev.onApprove !== next.onApprove) return false;

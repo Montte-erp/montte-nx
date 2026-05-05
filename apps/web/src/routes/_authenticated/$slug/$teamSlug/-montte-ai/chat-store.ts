@@ -5,6 +5,7 @@ import {
    useChat,
    type UIMessage,
 } from "@tanstack/ai-react";
+import { useRef } from "react";
 import {
    Briefcase,
    Contact,
@@ -83,6 +84,7 @@ interface ChatState {
    seedMessages: UIMessage[];
    pageContext: AgentSendInput["pageContext"];
    scopeOpen: boolean;
+   traceIdsByMessageId: Record<string, string>;
 }
 
 export const chatStore = createStore<ChatState>({
@@ -90,7 +92,11 @@ export const chatStore = createStore<ChatState>({
    seedMessages: [],
    pageContext: undefined,
    scopeOpen: false,
+   traceIdsByMessageId: {},
 });
+
+export const useTraceIdForMessage = (messageId: string) =>
+   useStore(chatStore, (s) => s.traceIdsByMessageId[messageId]);
 
 const scopeStore = createPersistedStore<{ id: AgentScopeId }>(
    "montte:chat:scope",
@@ -113,6 +119,7 @@ export const resetChat = () => {
       seedMessages: [],
       pageContext: undefined,
       scopeOpen: false,
+      traceIdsByMessageId: {},
    }));
 };
 
@@ -212,10 +219,31 @@ export interface ChatSession {
 
 export function useChatSession(initialMessages: UIMessage[] = []): ChatSession {
    const queryClient = useQueryClient();
+   const pendingTraceIdRef = useRef<string | null>(null);
    const chat = useChat({
       connection: agentConnection,
       initialMessages,
-      onFinish: () => {
+      onChunk: (chunk) => {
+         if (chunk.type === "RUN_STARTED" && "runId" in chunk) {
+            const runId = (chunk as { runId?: unknown }).runId;
+            if (typeof runId === "string") pendingTraceIdRef.current = runId;
+         }
+      },
+      onFinish: (message) => {
+         if (
+            message.role === "assistant" &&
+            pendingTraceIdRef.current !== null
+         ) {
+            const traceId = pendingTraceIdRef.current;
+            chatStore.setState((s) => ({
+               ...s,
+               traceIdsByMessageId: {
+                  ...s.traceIdsByMessageId,
+                  [message.id]: traceId,
+               },
+            }));
+            pendingTraceIdRef.current = null;
+         }
          void syncAgentMessages(
             chat.messages,
             "Falha ao salvar resposta da Montte AI.",

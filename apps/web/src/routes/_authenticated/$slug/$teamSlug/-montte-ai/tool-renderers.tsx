@@ -9,6 +9,7 @@ import {
 } from "@packages/ui/components/table";
 import { Compass, Sparkles } from "lucide-react";
 import { Streamdown } from "streamdown";
+import { TOOL_LABELS } from "./tool-call-card";
 
 interface AdvisorData {
    guidance?: string;
@@ -89,10 +90,10 @@ export function LazyDiscoveryRenderer({ data }: { data: LazyData }) {
             {tools.map((t, i) => (
                <span
                   key={`${t.name ?? "tool"}-${i}`}
-                  className="rounded-full border bg-background px-2 py-0.5 font-mono text-[10px]"
+                  className="rounded-full border bg-background px-2 py-0.5 text-[11px]"
                   title={t.description}
                >
-                  {t.name ?? "tool"}
+                  {(t.name && TOOL_LABELS[t.name]) ?? "Ferramenta"}
                </span>
             ))}
          </div>
@@ -124,7 +125,7 @@ export function SkillDiscoverRenderer({
       <div className="flex flex-col gap-2">
          <div className="flex items-center gap-2">
             <Sparkles className="size-4 shrink-0 text-purple-600 dark:text-purple-400" />
-            <span className="text-muted-foreground">Skill ativada</span>
+            <span className="text-muted-foreground">Playbook ativado</span>
             <Badge className="font-medium" variant="outline">
                {name}
             </Badge>

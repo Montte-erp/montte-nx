@@ -1,5 +1,6 @@
 import { maxIterations, type ConstrainedModelMessage } from "@tanstack/ai";
 import type { OpenRouterMessageMetadataByModality } from "@tanstack/ai-openrouter";
+import { webSearchTool } from "@tanstack/ai-openrouter/tools";
 import type { PostHog, Prompts } from "@core/posthog/server";
 import { flashModel } from "@core/ai/models";
 import { createPosthogAiMiddleware } from "@core/ai/middleware";
@@ -97,7 +98,15 @@ export async function buildAgentChatArgs(options: AgentChatOptions) {
       adapter: flashModel,
       systemPrompts: [systemPrompt],
       messages: options.messages,
-      tools: [skillDiscoverTool, advisorTool, ...domainTools],
+      tools: [
+         skillDiscoverTool,
+         advisorTool,
+         webSearchTool({ maxResults: 5 }),
+         ...domainTools,
+      ],
+      modelOptions: {
+         reasoning: { effort: "low" as const },
+      },
       agentLoopStrategy: maxIterations(25),
       ...(options.threadId && { conversationId: options.threadId }),
       abortController: options.abortSignal

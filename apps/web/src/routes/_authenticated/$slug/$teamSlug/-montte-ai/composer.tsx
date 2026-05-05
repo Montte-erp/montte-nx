@@ -57,7 +57,7 @@ export function Composer({
                   <Textarea
                      aria-invalid={field.state.meta.errors.length > 0}
                      aria-label="Mensagem para a Montte AI"
-                     className="min-h-[80px] resize-none border-0 bg-transparent px-4 py-2 text-sm shadow-none focus-visible:ring-0 focus-visible:border-transparent"
+                     className="min-h-[80px] resize-none border-0 bg-transparent px-4 py-2 text-base shadow-none focus-visible:ring-0 focus-visible:border-transparent"
                      disabled={isStreaming}
                      id={field.name}
                      name={field.name}

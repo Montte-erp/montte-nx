@@ -48,6 +48,10 @@ export const POSTHOG_SURVEYS = {
       id: "019d3c06-06d2-0000-4ed8-26677cdabed3",
       flagKey: null,
    },
+   aiAgentFeedback: {
+      id: "019dfa7d-1a4d-0000-1d38-7d7ee1abd648",
+      flagKey: null,
+   },
 } as const satisfies Record<string, PostHogSurveyEntry>;
 
 export type PostHogSurveyKey = keyof typeof POSTHOG_SURVEYS;
