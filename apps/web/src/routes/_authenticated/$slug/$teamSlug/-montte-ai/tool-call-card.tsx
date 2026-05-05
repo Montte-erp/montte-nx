@@ -1,13 +1,15 @@
 import {
-   Check,
+   Collapsible,
+   CollapsibleContent,
+   CollapsibleTrigger,
+} from "@packages/ui/components/collapsible";
+import {
    ChevronRight,
-   Code2,
    Compass,
    Lightbulb,
    Loader2,
    Sparkles,
    Wrench,
-   X,
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -255,7 +257,7 @@ function dispatchRender(
 }
 
 export function ToolCallCard({ toolCall }: ToolCallCardProps) {
-   const [jsonOpen, setJsonOpen] = useState(false);
+   const [open, setOpen] = useState(false);
    const isRunning = toolCall.state === "streaming";
    const isDone = toolCall.state === "result";
    const parsed = isDone ? parseResult(toolCall.result) : null;
@@ -267,60 +269,59 @@ export function ToolCallCard({ toolCall }: ToolCallCardProps) {
       parsed && !parsed.error
          ? dispatchRender(toolCall.name, parsed.raw, args)
          : null;
-   const hasBody = Boolean(rendered) || Boolean(parsed?.error) || jsonOpen;
+   const expandable = Boolean(rendered) || Boolean(parsed?.error) || isDone;
 
    return (
-      <div className="text-xs">
-         <button
-            aria-expanded={jsonOpen}
-            className="flex w-full items-center gap-2 text-muted-foreground hover:text-foreground"
-            onClick={() => setJsonOpen((v) => !v)}
-            type="button"
-         >
+      <Collapsible
+         className="group/tool text-sm"
+         disabled={!expandable}
+         onOpenChange={setOpen}
+         open={open}
+      >
+         <CollapsibleTrigger className="flex w-full items-center gap-2 py-0.5 text-muted-foreground hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground">
             {isRunning ? (
-               <Loader2 className="size-3.5 shrink-0 animate-spin" />
-            ) : failed ? (
-               <X className="size-3.5 shrink-0 text-destructive" />
-            ) : isDone ? (
-               <Check className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+               <Loader2 className="size-4 shrink-0 animate-spin" />
             ) : (
-               <Icon className="size-3.5 shrink-0" />
+               <Icon
+                  className={`size-4 shrink-0 ${
+                     failed
+                        ? "text-destructive"
+                        : isDone
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : ""
+                  }`}
+               />
             )}
             <span
-               className={`truncate ${isRunning ? "shimmer" : ""} ${failed ? "text-destructive" : ""}`}
+               className={`truncate text-left ${failed ? "text-destructive" : ""}`}
             >
                {presentation.label}
             </span>
-            <ChevronRight
-               className={`ml-auto size-3 shrink-0 transition-transform ${jsonOpen ? "rotate-90" : ""}`}
-            />
-         </button>
-
-         {hasBody ? (
-            <div className="mt-2 ml-[18px] border-l border-muted-foreground/15 pl-3">
-               {rendered ? <div className="py-1">{rendered}</div> : null}
-               {parsed?.error ? (
-                  <div className="py-1 text-destructive">{parsed.error}</div>
-               ) : null}
-               {jsonOpen ? (
-                  <div className="flex flex-col gap-2 py-2">
-                     <Section label="args">
-                        <pre className="max-h-48 overflow-auto rounded bg-muted/40 p-2 font-mono text-[11px] leading-snug">
-                           {JSON.stringify(args, null, 2)}
-                        </pre>
-                     </Section>
-                     {parsed && parsed.raw !== null ? (
-                        <Section label="result">
-                           <pre className="max-h-64 overflow-auto rounded bg-muted/40 p-2 font-mono text-[11px] leading-snug">
-                              {JSON.stringify(parsed.raw, null, 2)}
-                           </pre>
-                        </Section>
-                     ) : null}
-                  </div>
+            {expandable ? (
+               <ChevronRight className="ml-auto size-4 shrink-0 transition-transform group-data-[state=open]/tool:rotate-90" />
+            ) : null}
+         </CollapsibleTrigger>
+         <CollapsibleContent className="mt-2 ml-[20px] border-l border-muted-foreground/15 pl-3">
+            {rendered ? <div className="py-1">{rendered}</div> : null}
+            {parsed?.error ? (
+               <div className="py-1 text-destructive">{parsed.error}</div>
+            ) : null}
+            <div className="flex flex-col gap-2 py-2">
+               <Section label="args">
+                  <pre className="max-h-48 overflow-auto rounded bg-muted/40 p-2 font-mono text-[11px] leading-snug">
+                     {JSON.stringify(args, null, 2)}
+                  </pre>
+               </Section>
+               {parsed && parsed.raw !== null ? (
+                  <Section label="result">
+                     <pre className="max-h-64 overflow-auto rounded bg-muted/40 p-2 font-mono text-[11px] leading-snug">
+                        {JSON.stringify(parsed.raw, null, 2)}
+                     </pre>
+                  </Section>
                ) : null}
             </div>
-         ) : null}
-      </div>
+         </CollapsibleContent>
+      </Collapsible>
    );
 }
 

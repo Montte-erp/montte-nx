@@ -72,7 +72,7 @@ function ThreadRunner({
    const session = useChatSession(initialMessages);
 
    return (
-      <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-4 p-6">
+      <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-4 p-6">
          <MessageList session={session} />
          <Composer session={session} />
       </div>

@@ -1,6 +1,7 @@
 import { toolDefinition } from "@tanstack/ai";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
+import { WebAppError } from "@core/logging/errors";
 import type { Prompts } from "@core/posthog/server";
 import { AGENT_PROMPTS, AGENT_SKILL_IDS } from "@modules/agents/constants";
 
@@ -46,12 +47,11 @@ export function buildSkillDiscoverTool(prompts: Prompts) {
       const templateResult = await fromPromise(
          prompts.get(skill.promptName, {
             withMetadata: false,
-            fallback: `Playbook da skill ${skill.name} indisponível no momento.`,
          }),
          () => `Falha ao carregar playbook da skill ${skill.name}.`,
       );
       if (templateResult.isErr())
-         return { skillId, name: skill.name, error: templateResult.error };
+         throw WebAppError.internal(templateResult.error);
       return {
          skillId,
          name: skill.name,

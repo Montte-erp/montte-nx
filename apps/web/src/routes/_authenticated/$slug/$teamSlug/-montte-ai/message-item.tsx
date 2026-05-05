@@ -1,5 +1,11 @@
 import type { UIMessage } from "@tanstack/ai-react";
 import { Button } from "@packages/ui/components/button";
+import {
+   Collapsible,
+   CollapsibleContent,
+   CollapsibleTrigger,
+} from "@packages/ui/components/collapsible";
+import { Brain, ChevronRight } from "lucide-react";
 import { memo } from "react";
 import { Streamdown } from "streamdown";
 import { ToolCallCard } from "./tool-call-card";
@@ -48,17 +54,16 @@ function MessageItemImpl({
                }
                if (part.type === "thinking") {
                   return (
-                     <details
-                        className="rounded-md border border-muted-foreground/20 bg-muted/30 px-2 py-1 text-xs"
-                        key={key}
-                     >
-                        <summary className="cursor-pointer text-muted-foreground">
-                           Raciocínio
-                        </summary>
-                        <div className="mt-1 whitespace-pre-wrap text-muted-foreground">
+                     <Collapsible className="group/think text-sm" key={key}>
+                        <CollapsibleTrigger className="flex w-full items-center gap-2 py-0.5 text-muted-foreground hover:text-foreground">
+                           <Brain className="size-4 shrink-0" />
+                           <span>Raciocínio</span>
+                           <ChevronRight className="ml-auto size-4 shrink-0 transition-transform group-data-[state=open]/think:rotate-90" />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="mt-2 ml-[20px] whitespace-pre-wrap border-l border-muted-foreground/15 pl-3 py-1 text-muted-foreground">
                            {part.content}
-                        </div>
-                     </details>
+                        </CollapsibleContent>
+                     </Collapsible>
                   );
                }
                if (part.type === "tool-call") {

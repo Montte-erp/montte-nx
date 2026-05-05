@@ -42,7 +42,7 @@ function ChatRunner() {
    const hasConversation = session.messages.length > 0;
 
    return (
-      <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-4 p-6">
+      <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-4 p-6">
          {hasConversation ? (
             <MessageList session={session} />
          ) : (
