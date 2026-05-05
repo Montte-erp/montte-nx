@@ -617,7 +617,7 @@ function BillingLayout() {
                      aria-hidden="true"
                      className="size-3 text-chart-2"
                   />
-                  Asaas · Stripe · Mercado Pago
+                  Abacate Pay
                </span>
                <span className="inline-flex items-center gap-2">
                   <ArrowDownToLine
@@ -693,7 +693,7 @@ const tabs: Tab[] = [
       left: "Modele assinatura, uso ou pacote num motor só. Meters, benefícios e cupons cobertos — sem gambiarra fiscal.",
       right: (
          <>
-            Receba via Asaas, Stripe ou Mercado Pago. A {RubiLink} monitora
+            Receba via Abacate Pay com Pix e cartão. A {RubiLink} monitora
             inadimplência e sugere a próxima ação.
          </>
       ),
