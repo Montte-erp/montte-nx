@@ -30,6 +30,7 @@ jobs:
            id: pr
            env:
               GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
               EVENT_NAME: ${{ github.event_name }}
               INPUT_PR_NUMBER: ${{ inputs.pr_number }}
               REVIEW_PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -40,7 +41,7 @@ jobs:
                 PR_NUMBER="$REVIEW_PR_NUMBER"
               fi
 
-              gh pr view "$PR_NUMBER" --json number,headRefName,headRefOid,baseRefName,headRepositoryOwner --jq '
+              gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json number,headRefName,headRefOid,baseRefName,headRepositoryOwner --jq '
                 "number=\(.number)\nhead_ref=\(.headRefName)\nhead_sha=\(.headRefOid)\nbase_ref=\(.baseRefName)\nhead_owner=\(.headRepositoryOwner.login)"
               ' >> "$GITHUB_OUTPUT"
 
@@ -54,6 +55,7 @@ jobs:
          - name: Collect PR context
            env:
               GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
               PR_NUMBER: ${{ steps.pr.outputs.number }}
               BASE_REF: ${{ steps.pr.outputs.base_ref }}
            run: |
@@ -63,21 +65,21 @@ jobs:
                 echo "# PR #$PR_NUMBER"
                 echo
                 echo "## PR metadata"
-                gh pr view "$PR_NUMBER" --json title,author,state,isDraft,mergeable,reviewDecision,additions,deletions,changedFiles,labels,url,body \
+                gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json title,author,state,isDraft,mergeable,reviewDecision,additions,deletions,changedFiles,labels,url,body \
                   --jq '{title, author: .author.login, state, isDraft, mergeable, reviewDecision, additions, deletions, changedFiles, labels: [.labels[].name], url, body}'
                 echo
                 echo "## Changed files"
-                gh pr diff "$PR_NUMBER" --name-only
+                gh pr diff "$PR_NUMBER" --repo "$GH_REPO" --name-only
                 echo
                 echo "## Commits"
                 git log --pretty=format:'- %s (%h) by %an' "origin/$BASE_REF..HEAD"
                 echo
                 echo
                 echo "## Current CI checks"
-                gh pr checks "$PR_NUMBER" || true
+                gh pr checks "$PR_NUMBER" --repo "$GH_REPO" || true
                 echo
                 echo "## Cubic reviews"
-                gh pr view "$PR_NUMBER" --json reviews \
+                gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json reviews \
                   --jq '.reviews[] | select((.author.login | ascii_downcase | contains("cubic"))) | {state, submittedAt, author: .author.login, body}' || true
                 echo
                 echo "## Cubic inline comments"
@@ -139,8 +141,9 @@ jobs:
          - name: Comment readiness report
            env:
               GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
               PR_NUMBER: ${{ steps.pr.outputs.number }}
-           run: gh pr comment "$PR_NUMBER" --body-file PR_READINESS.md
+           run: gh pr comment "$PR_NUMBER" --repo "$GH_REPO" --body-file PR_READINESS.md
 
          - name: Upload readiness artifacts
            uses: actions/upload-artifact@v4
