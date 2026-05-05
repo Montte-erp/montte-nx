@@ -16,7 +16,6 @@ import {
    Command,
    CreditCard,
    FileSpreadsheet,
-   FolderTree,
    Gauge,
    Lightbulb,
    LineChart,
@@ -298,26 +297,55 @@ function InsightLayout() {
    );
 }
 
-function ActionLine({
+function ToolStep({
    icon: Icon,
    tone,
-   text,
+   bg,
+   label,
+   detail,
    status,
 }: {
    icon: Icon;
    tone: string;
-   text: string;
-   status: string;
+   bg: string;
+   label: string;
+   detail: string;
+   status: "done" | "running" | "queued";
 }) {
+   const statusLabel =
+      status === "done"
+         ? "Concluído"
+         : status === "running"
+           ? "Executando"
+           : "Na fila";
    return (
-      <li className="flex items-center justify-between gap-4 rounded-md border border-border/60 bg-background/60 px-4 py-2 text-sm">
-         <span className="flex items-center gap-2 text-foreground">
+      <li className="flex items-center gap-4 rounded-md border border-border/60 bg-background/60 px-4 py-2">
+         <span
+            className={`flex size-8 items-center justify-center rounded-md ${bg}`}
+         >
             <Icon aria-hidden="true" className={`size-4 ${tone}`} />
-            {text}
          </span>
+         <div className="flex flex-1 flex-col">
+            <span className="text-sm font-bold text-foreground">{label}</span>
+            <span className="text-xs text-muted-foreground">{detail}</span>
+         </div>
          <span className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground">
-            <CheckCircle2 aria-hidden="true" className="size-3 text-primary" />
-            {status}
+            {status === "done" ? (
+               <CheckCircle2
+                  aria-hidden="true"
+                  className="size-3 text-primary"
+               />
+            ) : (
+               <span
+                  aria-hidden="true"
+                  className={`size-2 rounded-full ${
+                     status === "running"
+                        ? "animate-pulse bg-chart-6"
+                        : "bg-muted-foreground/40"
+                  }`}
+               />
+            )}
+            {statusLabel}
          </span>
       </li>
    );
@@ -325,25 +353,80 @@ function ActionLine({
 
 function AgentLayout() {
    return (
-      <div className="grid gap-4 pt-4 lg:grid-cols-[1fr_1.2fr]">
-         <div className="flex flex-col gap-4 rounded-lg border border-border bg-background/60 p-4">
+      <div className="flex flex-col gap-4 rounded-lg border border-border bg-background/60 p-4">
+         <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
-               <Bot aria-hidden="true" className="size-4 text-chart-6" />
+               <span className="flex size-8 items-center justify-center rounded-md bg-chart-6/15">
+                  <Bot aria-hidden="true" className="size-4 text-chart-6" />
+               </span>
                Rubi · agente nativo
             </div>
-            <div className="rounded-md bg-muted/40 px-4 py-2 text-sm text-foreground">
-               <span className="font-bold">Você:</span> classifique outubro e
-               sinalize duplicatas
+            <span className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground">
+               <span
+                  aria-hidden="true"
+                  className="size-2 animate-pulse rounded-full bg-chart-6"
+               />
+               5 ferramentas · 1 workflow durável
+            </span>
+         </div>
+
+         <div className="flex justify-end">
+            <div className="max-w-md rounded-2xl rounded-tr-sm border border-border bg-muted/60 px-4 py-2 text-sm text-foreground">
+               Rubi, classifique outubro, encontre duplicatas e dispare cobrança
+               dos atrasados.
             </div>
-            <div className="flex flex-col gap-2 rounded-md border border-chart-6/40 bg-chart-6/5 px-4 py-2 text-sm text-foreground">
-               <span className="flex items-center gap-2 font-bold text-chart-6">
-                  <Sparkles aria-hidden="true" className="size-3" /> Rubi
-               </span>
-               <span>
-                  142 transações classificadas · 3 duplicatas detectadas · 1
-                  inconsistência aguarda revisão.
-               </span>
-            </div>
+         </div>
+
+         <div className="flex flex-col gap-2 rounded-2xl rounded-tl-sm border border-chart-6/40 bg-chart-6/5 px-4 py-2 text-sm text-foreground">
+            <span className="flex items-center gap-2 font-bold text-chart-6">
+               <Sparkles aria-hidden="true" className="size-3" /> Rubi
+            </span>
+            <span>
+               Vou rodar em sequência. Cada passo executa em sandbox isolado e
+               espera sua aprovação antes de afetar o ERP.
+            </span>
+         </div>
+
+         <ul className="flex list-none flex-col gap-2 p-0">
+            <ToolStep
+               icon={Wand2}
+               tone="text-primary"
+               bg="bg-primary/15"
+               label="categorize.transactions"
+               detail="142 transações · regras + IA"
+               status="done"
+            />
+            <ToolStep
+               icon={Search}
+               tone="text-chart-2"
+               bg="bg-chart-2/15"
+               label="detect.duplicates"
+               detail="3 lançamentos suspeitos"
+               status="done"
+            />
+            <ToolStep
+               icon={ArrowLeftRight}
+               tone="text-chart-3"
+               bg="bg-chart-3/15"
+               label="reconcile.ofx"
+               detail="OFX Itaú · 28 conciliações"
+               status="running"
+            />
+            <ToolStep
+               icon={Workflow}
+               tone="text-chart-5"
+               bg="bg-chart-5/15"
+               label="dunning.cycle"
+               detail="cobrança trimestral · 12 contatos"
+               status="queued"
+            />
+         </ul>
+
+         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border pt-4">
+            <span className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground">
+               <Shield aria-hidden="true" className="size-3 text-foreground" />
+               Sandbox isolado · revisão humana antes de aplicar
+            </span>
             <div className="flex gap-2">
                <Button size="sm" variant="outline" type="button">
                   <Command aria-hidden="true" />
@@ -351,148 +434,200 @@ function AgentLayout() {
                </Button>
                <Button size="sm" variant="outline" type="button">
                   <ListChecks aria-hidden="true" />
-                  Revisar
+                  Revisar tudo
                </Button>
             </div>
          </div>
-
-         <ul className="flex list-none flex-col gap-2 p-0">
-            <ActionLine
-               icon={Wand2}
-               tone="text-primary"
-               text="Categorização automática · 142 transações"
-               status="Concluído"
-            />
-            <ActionLine
-               icon={Search}
-               tone="text-chart-2"
-               text="Detecção de duplicatas · 3 encontradas"
-               status="Revisar"
-            />
-            <ActionLine
-               icon={ArrowLeftRight}
-               tone="text-chart-3"
-               text="Reconciliação assistida · OFX Itaú"
-               status="Em andamento"
-            />
-            <ActionLine
-               icon={Workflow}
-               tone="text-chart-5"
-               text="Workflow durável · cobrança trimestral"
-               status="Agendado"
-            />
-            <ActionLine
-               icon={Shield}
-               tone="text-foreground"
-               text="Sandbox seguro · execução isolada"
-               status="Ativo"
-            />
-         </ul>
       </div>
    );
 }
 
-function BillingColumn({
-   title,
-   items,
+function MeterBar({
+   label,
+   value,
+   limit,
+   unit,
+   percent,
+   tone,
+   bg,
 }: {
-   title: string;
-   items: { label: string; icon: Icon; tone: string }[];
+   label: string;
+   value: string;
+   limit: string;
+   unit: string;
+   percent: number;
+   tone: string;
+   bg: string;
 }) {
    return (
-      <div className="flex flex-col gap-4">
-         <h3 className="border-b border-border pb-2 text-sm font-bold text-muted-foreground">
-            {title}
-         </h3>
-         <ul className="flex list-none flex-col gap-4 p-0">
-            {items.map(({ label, icon: Icon, tone }) => (
-               <li
-                  className="flex items-center gap-2 text-sm font-bold text-foreground"
-                  key={label}
-               >
-                  <Icon aria-hidden="true" className={`size-4 ${tone}`} />
-                  <a
-                     className="underline underline-offset-2 hover:text-muted-foreground"
-                     href="#produto"
-                  >
-                     {label}
-                  </a>
-               </li>
-            ))}
-         </ul>
+      <div className="flex flex-col gap-2">
+         <div className="flex items-center justify-between text-xs font-bold">
+            <span className="text-foreground">{label}</span>
+            <span className="text-muted-foreground">
+               <span className={tone}>{value}</span> / {limit} {unit}
+            </span>
+         </div>
+         <div className="h-2 overflow-hidden rounded-full bg-muted">
+            <span
+               className={`block h-full rounded-full ${bg}`}
+               style={{ width: `${percent}%` }}
+            />
+         </div>
       </div>
+   );
+}
+
+function InvoiceLine({
+   label,
+   detail,
+   value,
+}: {
+   label: string;
+   detail: string;
+   value: string;
+}) {
+   return (
+      <li className="flex items-center justify-between gap-4 border-b border-dashed border-border/60 py-2 text-sm">
+         <div className="flex flex-col">
+            <span className="font-bold text-foreground">{label}</span>
+            <span className="text-xs text-muted-foreground">{detail}</span>
+         </div>
+         <span className="font-bold text-foreground">{value}</span>
+      </li>
    );
 }
 
 function BillingLayout() {
    return (
-      <div className="grid gap-4 pt-4 lg:grid-cols-3">
-         <BillingColumn
-            title="Modelos de preço"
-            items={[
-               {
-                  label: "Assinaturas recorrentes",
-                  icon: Repeat,
-                  tone: "text-chart-5",
-               },
-               { label: "Cobrança por uso", icon: Gauge, tone: "text-primary" },
-               {
-                  label: "Pacotes e add-ons",
-                  icon: Sparkles,
-                  tone: "text-chart-3",
-               },
-               {
-                  label: "Cupons e descontos",
-                  icon: Ticket,
-                  tone: "text-chart-2",
-               },
-               {
-                  label: "Catálogo de serviços",
-                  icon: FolderTree,
-                  tone: "text-foreground",
-               },
-            ]}
-         />
-         <BillingColumn
-            title="Recebimento"
-            items={[
-               { label: "Asaas", icon: CreditCard, tone: "text-chart-5" },
-               { label: "Stripe", icon: CreditCard, tone: "text-chart-2" },
-               {
-                  label: "Mercado Pago",
-                  icon: CreditCard,
-                  tone: "text-chart-3",
-               },
-               { label: "Pix e boleto", icon: Receipt, tone: "text-primary" },
-               {
-                  label: "Portal do cliente",
-                  icon: Users,
-                  tone: "text-foreground",
-               },
-            ]}
-         />
-         <BillingColumn
-            title="Operação"
-            items={[
-               {
-                  label: "Régua de cobrança",
-                  icon: ListChecks,
-                  tone: "text-chart-5",
-               },
-               { label: "Inadimplência", icon: Zap, tone: "text-chart-3" },
-               {
-                  label: "Notas e recibos",
-                  icon: FileSpreadsheet,
-                  tone: "text-chart-2",
-               },
-               { label: "Auditoria", icon: Shield, tone: "text-primary" },
-               {
-                  label: "Exportação contábil",
-                  icon: ArrowDownToLine,
-                  tone: "text-foreground",
-               },
-            ]}
-         />
+      <div className="grid gap-4 pt-4 lg:grid-cols-[1.1fr_1fr]">
+         <div className="flex flex-col gap-4 rounded-lg border border-border bg-background/60 p-4">
+            <div className="flex items-center justify-between">
+               <span className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground">
+                  <Gauge aria-hidden="true" className="size-4 text-primary" />
+                  Uso · ciclo de outubro
+               </span>
+               <span className="text-xs font-bold text-muted-foreground">
+                  18 dias restantes
+               </span>
+            </div>
+
+            <div className="flex flex-col gap-4">
+               <MeterBar
+                  label="Cobranças emitidas"
+                  value="1.842"
+                  limit="3.000"
+                  unit="op"
+                  percent={61}
+                  tone="text-primary"
+                  bg="bg-primary"
+               />
+               <MeterBar
+                  label="Mensagens da Rubi"
+                  value="9.420"
+                  limit="15.000"
+                  unit="msg"
+                  percent={63}
+                  tone="text-chart-6"
+                  bg="bg-chart-6"
+               />
+               <MeterBar
+                  label="Notas e recibos"
+                  value="312"
+                  limit="500"
+                  unit="docs"
+                  percent={62}
+                  tone="text-chart-3"
+                  bg="bg-chart-3"
+               />
+               <MeterBar
+                  label="Pix e boletos"
+                  value="754"
+                  limit="2.000"
+                  unit="op"
+                  percent={38}
+                  tone="text-chart-2"
+                  bg="bg-chart-2"
+               />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border pt-4 text-xs font-bold text-muted-foreground">
+               <span className="inline-flex items-center gap-2">
+                  <Sparkles
+                     aria-hidden="true"
+                     className="size-3 text-chart-3"
+                  />
+                  Add-on contratado · +500 docs
+               </span>
+               <span className="inline-flex items-center gap-2">
+                  <Ticket aria-hidden="true" className="size-3 text-chart-5" />
+                  Cupom LANÇAMENTO · -15%
+               </span>
+            </div>
+         </div>
+
+         <div className="flex flex-col gap-4 rounded-lg border border-border bg-background/60 p-4">
+            <div className="flex items-center justify-between">
+               <span className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground">
+                  <Receipt aria-hidden="true" className="size-4 text-chart-5" />
+                  Próxima fatura
+               </span>
+               <span className="text-xs font-bold text-muted-foreground">
+                  31/10
+               </span>
+            </div>
+
+            <ul className="flex list-none flex-col p-0">
+               <InvoiceLine
+                  label="Plataforma"
+                  detail="assinatura mensal"
+                  value="R$ 199,00"
+               />
+               <InvoiceLine
+                  label="Cobranças emitidas"
+                  detail="1.842 op · R$ 0,12"
+                  value="R$ 221,04"
+               />
+               <InvoiceLine
+                  label="Rubi · mensagens"
+                  detail="9.420 msg · R$ 0,008"
+                  value="R$ 75,36"
+               />
+               <InvoiceLine
+                  label="Add-on · +500 docs"
+                  detail="pacote único"
+                  value="R$ 49,00"
+               />
+               <InvoiceLine
+                  label="Cupom LANÇAMENTO"
+                  detail="-15% sobre o subtotal"
+                  value="−R$ 81,66"
+               />
+            </ul>
+
+            <div className="flex items-center justify-between rounded-md bg-muted/60 px-4 py-2">
+               <span className="text-sm font-bold text-foreground">Total</span>
+               <span className="text-2xl font-black tracking-[-0.03em] text-foreground">
+                  R$ 462,74
+               </span>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-4 text-xs font-bold text-muted-foreground">
+               <span className="inline-flex items-center gap-2">
+                  <CreditCard
+                     aria-hidden="true"
+                     className="size-3 text-chart-2"
+                  />
+                  Asaas · Stripe · Mercado Pago
+               </span>
+               <span className="inline-flex items-center gap-2">
+                  <ArrowDownToLine
+                     aria-hidden="true"
+                     className="size-3 text-foreground"
+                  />
+                  Exportação contábil
+               </span>
+            </div>
+         </div>
       </div>
    );
 }
