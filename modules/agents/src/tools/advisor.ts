@@ -38,7 +38,7 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
             .optional()
             .describe("Opções que você está considerando, se houver."),
       }),
-   }).server(async ({ situation, question, options }, context) => {
+   }).server(async ({ situation, question, options }) => {
       const templateResult = await fromPromise(
          deps.prompts.get(AGENT_PROMPTS.advisor, {
             withMetadata: false,
@@ -63,66 +63,37 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
          ADVISOR_TIMEOUT_MS,
       );
 
-      context?.emitCustomEvent("advisor_stream_start", { content: "" });
-
       const result = await fromPromise(
-         (async () => {
-            let guidance = "";
-            const stream = chat({
-               adapter: proModel,
-               systemPrompts: [systemPrompt],
-               messages: [
-                  {
-                     role: "user",
-                     content: [{ type: "text", content: userContent }],
+         chat({
+            adapter: proModel,
+            systemPrompts: [systemPrompt],
+            messages: [
+               {
+                  role: "user",
+                  content: [{ type: "text", content: userContent }],
+               },
+            ],
+            stream: false,
+            abortController: advisorController,
+            middleware: [
+               createPosthogAiMiddleware({
+                  posthog: deps.posthog,
+                  distinctId: deps.distinctId,
+                  promptName: AGENT_PROMPTS.advisor,
+                  customProperties: {
+                     agent_role: "advisor",
+                     ...(deps.threadId && { agent_thread_id: deps.threadId }),
+                     ...(deps.turnId && { agent_turn_id: deps.turnId }),
                   },
-               ],
-               abortController: advisorController,
-               middleware: [
-                  createPosthogAiMiddleware({
-                     posthog: deps.posthog,
-                     distinctId: deps.distinctId,
-                     promptName: AGENT_PROMPTS.advisor,
-                     customProperties: {
-                        agent_role: "advisor",
-                        ...(deps.threadId && {
-                           agent_thread_id: deps.threadId,
-                        }),
-                        ...(deps.turnId && { agent_turn_id: deps.turnId }),
-                     },
-                  }),
-               ],
-            });
-
-            for await (const chunk of stream) {
-               if (chunk.type === "TEXT_MESSAGE_CONTENT") {
-                  guidance = chunk.content ?? `${guidance}${chunk.delta}`;
-                  context?.emitCustomEvent("advisor_stream_delta", {
-                     content: guidance,
-                     delta: chunk.delta,
-                  });
-               }
-               if (chunk.type === "RUN_ERROR") {
-                  throw WebAppError.internal(chunk.message);
-               }
-            }
-
-            context?.emitCustomEvent("advisor_stream_end", {
-               content: guidance,
-            });
-            return guidance;
-         })(),
-         (error) =>
-            error instanceof WebAppError
-               ? error
-               : WebAppError.internal("Advisor falhou ao responder.", {
-                    cause: error,
-                 }),
+               }),
+            ],
+         }),
+         () => "Advisor falhou ao responder.",
       );
       clearTimeout(timeout);
 
       if (result.isErr()) {
-         throw result.error;
+         throw WebAppError.internal(result.error);
       }
       if (!result.value)
          throw WebAppError.internal("Advisor não retornou conteúdo.");

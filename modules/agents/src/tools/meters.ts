@@ -19,7 +19,10 @@ export function buildMetersTools({ orpcClient }: ToolDeps) {
             "Lista medidores (meters). Medidores rastreiam uso (eventos) e alimentam preços por consumo e benefícios com créditos.",
          inputSchema: listInput,
          lazy: true,
-      }).server((input) => orpcClient.meters.getMeters(input)),
+      }).server(async (input) => {
+         const items = await orpcClient.meters.getMeters(input);
+         return { count: items.length, items };
+      }),
 
       toolDefinition({
          name: "meters_create",
@@ -28,7 +31,10 @@ export function buildMetersTools({ orpcClient }: ToolDeps) {
          inputSchema: createMeterSchema,
          needsApproval: true,
          lazy: true,
-      }).server((input) => orpcClient.meters.createMeter(input)),
+      }).server(async (input) => {
+         const meter = await orpcClient.meters.createMeter(input);
+         return { meter };
+      }),
 
       toolDefinition({
          name: "meters_update",
@@ -36,6 +42,9 @@ export function buildMetersTools({ orpcClient }: ToolDeps) {
          inputSchema: updateInput,
          needsApproval: true,
          lazy: true,
-      }).server((input) => orpcClient.meters.updateMeterById(input)),
+      }).server(async (input) => {
+         const meter = await orpcClient.meters.updateMeterById(input);
+         return { meter };
+      }),
    ];
 }

@@ -14,6 +14,7 @@ import { getRequest } from "@tanstack/react-start/server";
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
 import { GlobalCommandDialog } from "@/hooks/use-command-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";
+import { GlobalSheet } from "@/hooks/use-sheet";
 import { GlobalSelectionToolbar } from "@/hooks/use-selection-toolbar";
 import { GlobalSurveyModal } from "@/hooks/use-survey-modal";
 import { PostHogWrapper } from "@/integrations/posthog/client";
@@ -97,6 +98,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   <GlobalAlertDialog />
                   <ClientOnly>
                      <GlobalCredenza />
+                     <GlobalSheet />
                      <GlobalCommandDialog />
                      <GlobalSelectionToolbar />
                   </ClientOnly>

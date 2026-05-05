@@ -12,11 +12,6 @@ export const Route = createFileRoute(
 });
 
 function ChatIndexPage() {
-   const activeThreadId = useActiveThreadId();
-   return <ChatRunner key={activeThreadId ?? "new"} />;
-}
-
-function ChatRunner() {
    const { slug, teamSlug } = Route.useParams();
    const navigate = useNavigate();
    const activeThreadId = useActiveThreadId();

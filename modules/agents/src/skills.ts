@@ -32,7 +32,7 @@ export function buildSkillDiscoverTool(prompts: Prompts) {
    const skillIds = SKILLS.map((s) => s.id);
    return toolDefinition({
       name: "skill_discover",
-      description: `Descobre o playbook detalhado de uma skill. CHAME ESTA FERRAMENTA antes de usar qualquer ferramenta de domínio. Skills disponíveis: [${skillIds.join(", ")}].`,
+      description: `Descobre o playbook detalhado de uma skill para pedidos operacionais do domínio. Use antes de ferramentas de domínio quando o usuário pedir análise, consulta ou ação. Não use em saudações, conversa social ou perguntas gerais sem intenção operacional. Skills disponíveis: [${skillIds.join(", ")}].`,
       inputSchema: z.object({
          skillId: z
             .string()

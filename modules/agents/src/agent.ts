@@ -39,7 +39,7 @@ function formatPageContext(pageContext: PageContext): string {
    const lines: string[] = [];
    if (pageContext.skillHint)
       lines.push(
-         `Skill sugerida pelo usuário: \`${pageContext.skillHint}\`. Chame skill_discover com esse skillId antes de responder, a menos que o pedido claramente esteja fora do domínio dela.`,
+         `Foco selecionado na interface: \`${pageContext.skillHint}\`. Use esse foco como contexto leve. Não chame skill_discover nem ferramentas apenas por causa deste foco; faça isso somente quando a mensagem pedir análise, consulta ou ação nesse domínio. Para saudações e conversa social, responda normalmente sem ferramentas.`,
       );
    if (pageContext.route) lines.push(`Rota: ${pageContext.route}`);
    if (pageContext.title) lines.push(`Título: ${pageContext.title}`);

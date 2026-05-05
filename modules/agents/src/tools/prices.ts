@@ -21,7 +21,10 @@ export function buildPricesTools({ orpcClient }: ToolDeps) {
          inputSchema: createInput,
          needsApproval: true,
          lazy: true,
-      }).server((input) => orpcClient.prices.create(input)),
+      }).server(async (input) => {
+         const price = await orpcClient.prices.create(input);
+         return { price };
+      }),
 
       toolDefinition({
          name: "prices_update",
@@ -29,7 +32,10 @@ export function buildPricesTools({ orpcClient }: ToolDeps) {
          inputSchema: updateInput,
          needsApproval: true,
          lazy: true,
-      }).server((input) => orpcClient.prices.update(input)),
+      }).server(async (input) => {
+         const price = await orpcClient.prices.update(input);
+         return { price };
+      }),
 
       toolDefinition({
          name: "prices_delete",

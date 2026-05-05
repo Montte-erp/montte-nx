@@ -13,7 +13,10 @@ export function buildBenefitsTools({ orpcClient }: ToolDeps) {
             "Lista benefícios. Benefícios entregam valor (créditos em medidor, acesso, custom) e podem ser anexados a serviços.",
          inputSchema: listInput,
          lazy: true,
-      }).server((input) => orpcClient.benefits.getBenefits(input)),
+      }).server(async (input) => {
+         const items = await orpcClient.benefits.getBenefits(input);
+         return { count: items.length, items };
+      }),
 
       toolDefinition({
          name: "benefits_create",
@@ -22,6 +25,9 @@ export function buildBenefitsTools({ orpcClient }: ToolDeps) {
          inputSchema: createBenefitSchema,
          needsApproval: true,
          lazy: true,
-      }).server((input) => orpcClient.benefits.createBenefit(input)),
+      }).server(async (input) => {
+         const benefit = await orpcClient.benefits.createBenefit(input);
+         return { benefit };
+      }),
    ];
 }

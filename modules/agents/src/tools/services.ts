@@ -32,7 +32,10 @@ export function buildServicesTools({ orpcClient }: ToolDeps) {
             "Lista os serviços do catálogo da equipe. Use para encontrar serviços existentes antes de criar duplicados.",
          inputSchema: listInput,
          lazy: true,
-      }).server((input) => orpcClient.services.getAll(input)),
+      }).server(async (input) => {
+         const items = await orpcClient.services.getAll(input);
+         return { count: items.length, items };
+      }),
 
       toolDefinition({
          name: "services_get",
@@ -45,7 +48,7 @@ export function buildServicesTools({ orpcClient }: ToolDeps) {
             orpcClient.prices.list({ serviceId: id }),
             orpcClient.benefits.getServiceBenefits({ serviceId: id }),
          ]);
-         return { service, prices, benefits };
+         return { found: true, service, prices, benefits };
       }),
 
       toolDefinition({
@@ -55,7 +58,10 @@ export function buildServicesTools({ orpcClient }: ToolDeps) {
          inputSchema: createServiceSchema,
          needsApproval: true,
          lazy: true,
-      }).server((input) => orpcClient.services.create(input)),
+      }).server(async (input) => {
+         const service = await orpcClient.services.create(input);
+         return { service };
+      }),
 
       toolDefinition({
          name: "services_update",
@@ -63,7 +69,10 @@ export function buildServicesTools({ orpcClient }: ToolDeps) {
          inputSchema: updateServiceInput,
          needsApproval: true,
          lazy: true,
-      }).server((input) => orpcClient.services.update(input)),
+      }).server(async (input) => {
+         const service = await orpcClient.services.update(input);
+         return { service };
+      }),
 
       toolDefinition({
          name: "services_set_active",
@@ -72,7 +81,14 @@ export function buildServicesTools({ orpcClient }: ToolDeps) {
          inputSchema: setActiveInput,
          needsApproval: true,
          lazy: true,
-      }).server((input) => orpcClient.services.bulkSetActive(input)),
+      }).server(async (input) => {
+         const result = await orpcClient.services.bulkSetActive(input);
+         return {
+            count: result.updated,
+            isActive: input.isActive,
+            services: result.services,
+         };
+      }),
 
       toolDefinition({
          name: "services_bulk_create",
@@ -81,7 +97,10 @@ export function buildServicesTools({ orpcClient }: ToolDeps) {
          inputSchema: bulkCreateInput,
          needsApproval: true,
          lazy: true,
-      }).server((input) => orpcClient.services.bulkCreate(input)),
+      }).server(async (input) => {
+         const services = await orpcClient.services.bulkCreate(input);
+         return { count: services.length, services };
+      }),
 
       toolDefinition({
          name: "services_attach_benefit",

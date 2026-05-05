@@ -1,11 +1,5 @@
 import type { UIMessage } from "@tanstack/ai-react";
 import { Button } from "@packages/ui/components/button";
-import {
-   Collapsible,
-   CollapsibleContent,
-   CollapsibleTrigger,
-} from "@packages/ui/components/collapsible";
-import { Brain, ChevronRight } from "lucide-react";
 import { memo } from "react";
 import { Streamdown } from "streamdown";
 import { ToolCallCard } from "./tool-call-card";
@@ -41,7 +35,6 @@ function MessageItemImpl({
          <div className="flex flex-col gap-2">
             {message.parts.map((part, idx) => {
                const key = `${part.type}-${idx}`;
-               const isLast = idx === message.parts.length - 1;
                if (part.type === "text") {
                   return (
                      <div
@@ -57,30 +50,7 @@ function MessageItemImpl({
                      </div>
                   );
                }
-               if (part.type === "thinking") {
-                  const isThinking = isStreaming && isLast;
-                  return (
-                     <Collapsible className="group/think text-sm" key={key}>
-                        <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 py-2 text-muted-foreground hover:text-foreground">
-                           <span className="flex items-center gap-2">
-                              <Brain className="size-4 shrink-0" />
-                              {isThinking
-                                 ? "Raciocinando"
-                                 : "Raciocínio concluído"}
-                           </span>
-                           <ChevronRight className="size-4 shrink-0 transition-transform group-data-[state=open]/think:rotate-90" />
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="py-2 text-muted-foreground">
-                           <Streamdown
-                              isAnimating={isThinking}
-                              mode={isThinking ? "streaming" : "static"}
-                           >
-                              {part.content}
-                           </Streamdown>
-                        </CollapsibleContent>
-                     </Collapsible>
-                  );
-               }
+               if (part.type === "thinking") return null;
                if (part.type === "tool-call") {
                   const needsDecision =
                      part.state === "approval-requested" &&

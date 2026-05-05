@@ -1,9 +1,10 @@
 import { Button } from "@packages/ui/components/button";
-import {
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
 import { SearchInput } from "@packages/ui/components/search-input";
+import {
+   SheetDescription,
+   SheetHeader,
+   SheetTitle,
+} from "@packages/ui/components/sheet";
 import {
    Sidebar,
    SidebarContent,
@@ -17,7 +18,7 @@ import { useDebouncedCallback } from "@tanstack/react-pacer";
 import { useMediaQuery } from "foxact/use-media-query";
 import { Menu } from "lucide-react";
 import type * as React from "react";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useSheet } from "@/hooks/use-sheet";
 import { Route } from "@/routes/_authenticated/$slug/$teamSlug/_dashboard/chat";
 import { ChatSidebar } from "./chat-sidebar";
 
@@ -63,16 +64,17 @@ function ChatLayoutDesktop({ children }: ChatLayoutProps) {
 }
 
 function ChatLayoutMobile({ children }: ChatLayoutProps) {
-   const { openCredenza } = useCredenza();
+   const { openSheet } = useSheet();
 
    return (
       <div className="flex h-full flex-col gap-4">
          <Button
             className="w-fit gap-2"
             onClick={() =>
-               openCredenza({
+               openSheet({
                   renderChildren: () => <MobileSidebarBody />,
-                  className: "p-0",
+                  className: "w-80 sm:max-w-80 p-0",
+                  side: "left",
                })
             }
             variant="ghost"
@@ -88,15 +90,23 @@ function ChatLayoutMobile({ children }: ChatLayoutProps) {
 function MobileSidebarBody() {
    const { q } = Route.useSearch();
    return (
-      <>
-         <CredenzaHeader className="p-4">
-            <CredenzaTitle>Conversas</CredenzaTitle>
+      <SidebarProvider
+         className="flex h-full min-h-0 flex-col"
+         style={CHAT_SIDEBAR_STYLE}
+      >
+         <SheetHeader className="gap-2 p-4">
+            <SheetTitle>Conversas</SheetTitle>
+            <SheetDescription>
+               Histórico de conversas com a Montte AI.
+            </SheetDescription>
+         </SheetHeader>
+         <div className="px-4 pb-2">
             <ChatSearchField />
-         </CredenzaHeader>
-         <div className="overflow-y-auto px-2 pb-4">
+         </div>
+         <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-4">
             <ChatSidebar search={q} />
          </div>
-      </>
+      </SidebarProvider>
    );
 }
 

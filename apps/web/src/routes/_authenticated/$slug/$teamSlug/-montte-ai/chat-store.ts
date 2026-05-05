@@ -85,71 +85,12 @@ interface ChatState {
    scopeOpen: boolean;
 }
 
-interface AdvisorToolStream {
-   content: string;
-   isStreaming: boolean;
-}
-
-interface AdvisorToolStreamState {
-   streams: Record<string, AdvisorToolStream>;
-}
-
 export const chatStore = createStore<ChatState>({
    activeThreadId: null,
    seedMessages: [],
    pageContext: undefined,
    scopeOpen: false,
 });
-
-const advisorToolStreamStore = createStore<AdvisorToolStreamState>({
-   streams: {},
-});
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-   return typeof value === "object" && value !== null;
-}
-
-function updateAdvisorToolStream(toolCallId: string, entry: AdvisorToolStream) {
-   advisorToolStreamStore.setState((s) => ({
-      streams: {
-         ...s.streams,
-         [toolCallId]: entry,
-      },
-   }));
-}
-
-function handleAgentCustomEvent(
-   eventType: string,
-   data: unknown,
-   context: { toolCallId?: string },
-) {
-   if (!context.toolCallId || !isRecord(data)) return;
-   const content = typeof data.content === "string" ? data.content : "";
-
-   if (eventType === "advisor_stream_start") {
-      updateAdvisorToolStream(context.toolCallId, {
-         content,
-         isStreaming: true,
-      });
-   }
-
-   if (eventType === "advisor_stream_delta") {
-      updateAdvisorToolStream(context.toolCallId, {
-         content,
-         isStreaming: true,
-      });
-   }
-
-   if (eventType === "advisor_stream_end") {
-      updateAdvisorToolStream(context.toolCallId, {
-         content,
-         isStreaming: false,
-      });
-   }
-}
-
-export const useAdvisorToolStream = (toolCallId: string) =>
-   useStore(advisorToolStreamStore, (s) => s.streams[toolCallId] ?? null);
 
 const scopeStore = createPersistedStore<{ id: AgentScopeId }>(
    "montte:chat:scope",
@@ -167,7 +108,6 @@ export const setActiveThread = (
    }));
 
 export const resetChat = () => {
-   advisorToolStreamStore.setState(() => ({ streams: {} }));
    chatStore.setState(() => ({
       activeThreadId: null,
       seedMessages: [],
@@ -275,7 +215,6 @@ export function useChatSession(initialMessages: UIMessage[] = []): ChatSession {
    const chat = useChat({
       connection: agentConnection,
       initialMessages,
-      onCustomEvent: handleAgentCustomEvent,
       onFinish: () => {
          void syncAgentMessages(
             chat.messages,

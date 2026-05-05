@@ -15,9 +15,11 @@ export function buildCouponsTools({ orpcClient }: ToolDeps) {
          lazy: true,
       }).server(async ({ isActive }) => {
          const rows = await orpcClient.coupons.list();
-         return isActive === undefined
-            ? rows
-            : rows.filter((c) => c.isActive === isActive);
+         const items =
+            isActive === undefined
+               ? rows
+               : rows.filter((c) => c.isActive === isActive);
+         return { count: items.length, items };
       }),
 
       toolDefinition({
@@ -27,6 +29,9 @@ export function buildCouponsTools({ orpcClient }: ToolDeps) {
          inputSchema: createCouponSchema,
          needsApproval: true,
          lazy: true,
-      }).server((input) => orpcClient.coupons.create(input)),
+      }).server(async (input) => {
+         const coupon = await orpcClient.coupons.create(input);
+         return { coupon };
+      }),
    ];
 }
