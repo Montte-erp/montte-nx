@@ -42,13 +42,10 @@ import {
    useFinanceNavPreferences,
    useSidebarNav,
    useSidebarVisibility,
-} from "@/layout/dashboard/hooks/use-sidebar-store";
-import type { SubSidebarSection } from "@/layout/dashboard/hooks/use-sidebar-store";
-import type {
-   NavGroupDef,
-   NavItemDef,
-} from "@/layout/dashboard/ui/sidebar-nav-items";
-import { navGroups } from "@/layout/dashboard/ui/sidebar-nav-items";
+} from "./hooks/use-sidebar-store";
+import type { SubSidebarSection } from "./hooks/use-sidebar-store";
+import type { NavGroupDef, NavItemDef } from "./sidebar-nav-items";
+import { navGroups } from "./sidebar-nav-items";
 
 function NavItem({
    item,

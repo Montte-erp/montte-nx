@@ -20,7 +20,7 @@ import {
 import { Suspense, useMemo } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { orpc } from "@/integrations/orpc/client";
-import type { SubSidebarSection } from "../hooks/use-sidebar-store";
+import type { SubSidebarSection } from "./hooks/use-sidebar-store";
 import { SubSidebarContextMenu } from "./sub-sidebar-context-menu";
 
 interface SubSidebarItemListProps {

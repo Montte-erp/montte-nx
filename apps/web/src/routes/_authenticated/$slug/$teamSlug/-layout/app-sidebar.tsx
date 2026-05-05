@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import type * as React from "react";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
-import { useSidebarTabs } from "@/layout/dashboard/hooks/use-sidebar-tabs";
+import { useSidebarTabs } from "./hooks/use-sidebar-tabs";
 import { EarlyAccessSidebarBanner } from "./early-access-sidebar-banner";
 import { openKeyboardShortcuts } from "./keyboard-shortcuts-sheet";
 import { SidebarAccountMenu } from "./sidebar-account-menu";

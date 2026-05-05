@@ -4,8 +4,8 @@ import { useCallback } from "react";
 import { openCommandDialog } from "@/hooks/use-command-dialog";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
-import { useSidebarVisibility } from "@/layout/dashboard/hooks/use-sidebar-store";
-import { navGroups } from "@/layout/dashboard/ui/sidebar-nav-items";
+import { useSidebarVisibility } from "./hooks/use-sidebar-store";
+import { navGroups } from "./sidebar-nav-items";
 
 export function useSidebarCommandDialog() {
    const navigate = useNavigate();

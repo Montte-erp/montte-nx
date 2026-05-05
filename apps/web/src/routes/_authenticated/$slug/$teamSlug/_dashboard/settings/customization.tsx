@@ -17,7 +17,7 @@ import { Activity, Moon } from "lucide-react";
 import { usePostHog } from "posthog-js/react";
 import { useCallback, useState } from "react";
 import type { FallbackProps } from "react-error-boundary";
-import { ThemeSwitcher } from "@/layout/dashboard/ui/theme-switcher";
+import { ThemeSwitcher } from "../../-layout/theme-switcher";
 import { QueryBoundary } from "@/components/query-boundary";
 
 export const Route = createFileRoute(

@@ -13,7 +13,7 @@ import {
    Tags,
    Users,
 } from "lucide-react";
-import type { SubSidebarSection } from "../hooks/use-sidebar-store";
+import type { SubSidebarSection } from "./hooks/use-sidebar-store";
 
 export type NavItemAction = {
    type: "create";

@@ -22,7 +22,7 @@ import { useActiveTeam } from "@/hooks/use-active-team";
 import { EarlyAccessProvider } from "@/hooks/use-early-access";
 import { useLastOrganization } from "@/hooks/use-last-organization";
 import { authClient } from "@/integrations/better-auth/auth-client";
-import { useSidebarCollapsed } from "@/layout/dashboard/hooks/use-sidebar-store";
+import { useSidebarCollapsed } from "./hooks/use-sidebar-store";
 import { orpc } from "@/integrations/orpc/client";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarSubPanel } from "./sidebar-sub-panel";

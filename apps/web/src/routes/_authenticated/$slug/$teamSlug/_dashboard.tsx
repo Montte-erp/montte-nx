@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 import posthog from "posthog-js";
-import { DashboardLayout } from "@/layout/dashboard/ui/dashboard-layout";
+import { DashboardLayout } from "./-layout/dashboard-layout";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard",
