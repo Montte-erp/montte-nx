@@ -5,7 +5,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { z } from "zod";
-import { DefaultHeader } from "@/components/default-header";
+import { DefaultHeader } from "../../-layout/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import {

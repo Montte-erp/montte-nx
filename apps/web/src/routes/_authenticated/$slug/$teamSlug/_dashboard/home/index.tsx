@@ -2,7 +2,7 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { QueryBoundary } from "@/components/query-boundary";
-import { DashboardView } from "@/features/analytics/ui/dashboard-view";
+import { DashboardView } from "../-analytics/dashboard-view";
 import { QuickStartChecklist } from "./-home/quick-start-checklist";
 import { orpc } from "@/integrations/orpc/client";
 

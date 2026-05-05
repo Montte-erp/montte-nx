@@ -7,7 +7,7 @@ import {
    DropdownMenuTrigger,
 } from "@packages/ui/components/dropdown-menu";
 import { Copy, Ellipsis, Loader2, Save, Trash2 } from "lucide-react";
-import { PageHeader } from "@/components/page-header";
+import { PageHeader } from "../../../../-layout/page-header";
 
 interface InsightHeaderProps {
    name: string;

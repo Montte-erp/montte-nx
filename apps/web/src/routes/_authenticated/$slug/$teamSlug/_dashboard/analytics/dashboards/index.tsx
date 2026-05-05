@@ -18,7 +18,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Home, LayoutDashboard, Plus } from "lucide-react";
 import { Suspense, useCallback, useMemo } from "react";
-import { PageHeader } from "@/components/page-header";
+import { PageHeader } from "../../../-layout/page-header";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,

@@ -18,7 +18,7 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useInsightConfig } from "@/features/analytics/hooks/use-insight-config";
-import { InsightBuilder } from "@/features/analytics/ui/insight-builder";
+import { InsightBuilder } from "./-builder/insight-builder";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,

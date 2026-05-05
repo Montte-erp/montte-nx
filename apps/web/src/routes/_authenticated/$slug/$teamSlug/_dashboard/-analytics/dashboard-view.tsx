@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { PageHeader } from "@/components/page-header";
+import { PageHeader } from "../../-layout/page-header";
 import { DashboardFilterPopover } from "@/features/analytics/ui/dashboard-filter-popover";
 import { EditableDashboardGrid } from "@/features/analytics/ui/editable-dashboard-grid";
 import { orpc } from "@/integrations/orpc/client";

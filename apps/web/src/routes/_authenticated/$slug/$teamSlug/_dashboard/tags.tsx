@@ -25,7 +25,7 @@ import { useCallback, useMemo, useState } from "react";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { z } from "zod";
 import { toast } from "sonner";
-import { DefaultHeader } from "@/components/default-header";
+import { DefaultHeader } from "../-layout/default-header";
 import {
    DataTableBulkActions,
    SelectionActionButton,

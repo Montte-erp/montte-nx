@@ -1,7 +1,7 @@
 import { Button } from "@packages/ui/components/button";
 import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
-import type { PanelAction } from "../routes/_authenticated/$slug/$teamSlug/-context-panel/context-panel-store";
+import type { PanelAction } from "../-context-panel/context-panel-store";
 import { PageHeader } from "./page-header";
 
 interface DefaultHeaderProps {

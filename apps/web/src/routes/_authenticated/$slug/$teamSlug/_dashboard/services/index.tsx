@@ -2,7 +2,7 @@ import { Tabs, TabsList, TabsTrigger } from "@packages/ui/components/tabs";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { z } from "zod";
-import { DefaultHeader } from "@/components/default-header";
+import { DefaultHeader } from "../../-layout/default-header";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { QueryBoundary } from "@/components/query-boundary";
 import { orpc } from "@/integrations/orpc/client";

@@ -12,7 +12,7 @@ import {
    Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { DefaultHeader } from "@/components/default-header";
+import { DefaultHeader } from "../../-layout/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
 import {
    openContextPanel,

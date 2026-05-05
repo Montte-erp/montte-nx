@@ -35,7 +35,7 @@ import {
 } from "@/components/data-table/data-table-root";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import { DefaultHeader } from "@/components/default-header";
+import { DefaultHeader } from "../../-layout/default-header";
 import { requestTour } from "./-tour/store";
 import { TourHelpButton } from "./-tour/tour-help-button";
 import { QueryBoundary } from "@/components/query-boundary";

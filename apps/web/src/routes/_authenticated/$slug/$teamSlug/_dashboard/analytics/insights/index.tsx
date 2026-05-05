@@ -23,7 +23,7 @@ import { Loader2, Plus, TrendingUp } from "lucide-react";
 import { useCallback, useTransition } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { PageHeader } from "@/components/page-header";
+import { PageHeader } from "../../../-layout/page-header";
 import { DEFAULT_KPI_CONFIG } from "@/features/analytics/hooks/use-insight-config";
 import {
    EarlyAccessBanner,

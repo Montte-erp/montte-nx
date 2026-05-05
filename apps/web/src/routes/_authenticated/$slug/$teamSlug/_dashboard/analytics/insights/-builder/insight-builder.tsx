@@ -13,17 +13,17 @@ import type React from "react";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import type { InsightType } from "@/features/analytics/hooks/use-insight-config";
-import { BreakdownQueryBuilder } from "./breakdown-query-builder";
-import { InsightFilterBar } from "./insight-filter-bar";
+import { BreakdownQueryBuilder } from "@/features/analytics/ui/breakdown-query-builder";
+import { InsightFilterBar } from "@/features/analytics/ui/insight-filter-bar";
 import { InsightHeader } from "./insight-header";
 import {
    InsightErrorState,
    InsightLoadingState,
    InsightPreview,
-} from "./insight-preview";
-import { InsightStatusLine } from "./insight-status-line";
-import { KpiQueryBuilder } from "./kpi-query-builder";
-import { TimeSeriesQueryBuilder } from "./time-series-query-builder";
+} from "@/features/analytics/ui/insight-preview";
+import { InsightStatusLine } from "@/features/analytics/ui/insight-status-line";
+import { KpiQueryBuilder } from "@/features/analytics/ui/kpi-query-builder";
+import { TimeSeriesQueryBuilder } from "@/features/analytics/ui/time-series-query-builder";
 
 const INSIGHT_TABS: {
    value: InsightType;

@@ -23,7 +23,7 @@ import { fromPromise } from "neverthrow";
 import { useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { DefaultHeader } from "@/components/default-header";
+import { DefaultHeader } from "../-layout/default-header";
 import {
    DataTableBulkActions,
    SelectionActionButton,

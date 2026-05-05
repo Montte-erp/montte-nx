@@ -14,7 +14,7 @@ import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { QueryBoundary } from "@/components/query-boundary";
-import { DefaultHeader } from "@/components/default-header";
+import { DefaultHeader } from "../-layout/default-header";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
 import {
