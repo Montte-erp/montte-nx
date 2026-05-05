@@ -105,7 +105,7 @@ const itemByIdProcedure = protectedProcedure
    });
 ```
 
-Available routers (aggregated keys): account, agentSettings, analytics, apiKeys, bankAccounts, benefits, categories, categoriesBulk, cnpj, contactSettings, contacts, coupons, creditCards, customerPortal, dashboards, financialSettings, insights, meters, notifications, onboarding, organization, prices, rubi, services, session, subscriptionItems, subscriptions, tags, team, threads, transactions, usage.
+Available routers (aggregated keys): account, agentSettings, analytics, apiKeys, bankAccounts, benefits, categories, categoriesBulk, cnpj, contactSettings, contacts, coupons, creditCards, customerPortal, dashboards, financialSettings, insights, meters, notifications, onboarding, organization, prices, agent, services, session, subscriptionItems, subscriptions, tags, team, threads, transactions, usage.
 
 ---
 
@@ -231,7 +231,7 @@ const result = await chat({
 });
 ```
 
-Rubi agent lives in `modules/agents/src/rubi.ts`. Built on `@tanstack/ai` + `@tanstack/ai-openrouter`; tools wrap oRPC procedures via `createRubiToolClient` (`modules/agents/src/orpc-tool-router.ts`); skill catalog from `modules/agents/src/skills.ts`. No Mastra, no `@packages/agents`.
+Montte AI agent lives in `modules/agents/src/agent.ts`. Built on `@tanstack/ai` + `@tanstack/ai-openrouter`; tools wrap oRPC procedures via `createAgentToolClient` (`modules/agents/src/orpc-tool-router.ts`); skill catalog from `modules/agents/src/skills.ts`. No Mastra, no `@packages/agents`.
 
 ---
 
@@ -388,7 +388,7 @@ If no mapping fits, run `npx @tanstack/intent@latest list` for less common local
 
 skills:
 
-- when: "Working on the Rubi AI agent — chat endpoints, tools, middleware, structured outputs, adapter configuration, debug logging"
+- when: "Working on the Montte AI agent — chat endpoints, tools, middleware, structured outputs, adapter configuration, debug logging"
   use: "@tanstack/ai#ai-core"
 - when: "Writing or debugging fixtures for AI / OpenRouter HTTP responses in classification or agent tests"
   use: "@copilotkit/aimock#write-fixtures"

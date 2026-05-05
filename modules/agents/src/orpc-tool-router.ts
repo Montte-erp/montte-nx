@@ -5,7 +5,7 @@ import * as metersRouter from "@modules/billing/router/meters";
 import * as pricesRouter from "@modules/billing/router/prices";
 import * as servicesRouter from "@modules/billing/router/services";
 
-export const rubiToolRouter = {
+export const agentToolRouter = {
    benefits: benefitsRouter,
    coupons: couponsRouter,
    meters: metersRouter,
@@ -13,12 +13,12 @@ export const rubiToolRouter = {
    services: servicesRouter,
 };
 
-export type RubiToolRouter = typeof rubiToolRouter;
+export type AgentToolRouter = typeof agentToolRouter;
 
-export function createRubiToolClient(headers: Headers, request: Request) {
-   return createRouterClient(rubiToolRouter, {
+export function createAgentToolClient(headers: Headers, request: Request) {
+   return createRouterClient(agentToolRouter, {
       context: { headers, request },
    });
 }
 
-export type RubiToolClient = ReturnType<typeof createRubiToolClient>;
+export type AgentToolClient = ReturnType<typeof createAgentToolClient>;

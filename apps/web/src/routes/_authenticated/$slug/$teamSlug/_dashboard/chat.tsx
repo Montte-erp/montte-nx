@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { RubiPanel } from "@/features/rubi-panel/rubi-panel";
+import { AgentPanel } from "@/features/agent-panel/agent-panel";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/chat",
@@ -13,7 +13,7 @@ export const Route = createFileRoute(
 function ChatPage() {
    return (
       <div className="mx-auto flex h-full w-full max-w-5xl flex-col">
-         <RubiPanel />
+         <AgentPanel />
       </div>
    );
 }

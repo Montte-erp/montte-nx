@@ -94,8 +94,8 @@ export function createPosthogAiMiddleware(
          event: "$ai_generation",
          properties: {
             ...baseProps(ctx),
-            rubi_tool_calls: toolCalls,
-            rubi_tool_call_count: toolCalls.length,
+            agent_tool_calls: toolCalls,
+            agent_tool_call_count: toolCalls.length,
             ...extra,
          },
       });

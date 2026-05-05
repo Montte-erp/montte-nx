@@ -1,5 +1,5 @@
-import type { RubiToolClient } from "@modules/agents/orpc-tool-router";
+import type { AgentToolClient } from "@modules/agents/orpc-tool-router";
 
 export interface ToolDeps {
-   orpcClient: RubiToolClient;
+   orpcClient: AgentToolClient;
 }

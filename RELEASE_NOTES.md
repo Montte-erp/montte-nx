@@ -1,10 +1,10 @@
 # Montte 2026.05.01
 
-Semana de reestruturação interna: migramos três domínios (financeiro, insights e conta) para uma nova arquitetura de módulos, eliminamos pacotes legados de eventos e analytics, e simplificamos a engine de classificação e faturamento. O chat com a Rubi, agente de IA da plataforma, ganhou respostas em streaming — mais rápidas e fluidas. A funcionalidade de Estoque foi removida.
+Semana de reestruturação interna: migramos três domínios (financeiro, insights e conta) para uma nova arquitetura de módulos, eliminamos pacotes legados de eventos e analytics, e simplificamos a engine de classificação e faturamento. O chat com a Montte AI, agente de IA da plataforma, ganhou respostas em streaming — mais rápidas e fluidas. A funcionalidade de Estoque foi removida.
 
 ## Destaques
 
-- Chat com a Rubi agora com respostas em streaming, tornando a interação mais rápida e fluida ([#829](https://github.com/Montte-erp/montte-nx/pull/829))
+- Chat com a Montte AI agora com respostas em streaming, tornando a interação mais rápida e fluida ([#829](https://github.com/Montte-erp/montte-nx/pull/829))
 - Remoção da funcionalidade de Estoque, que estava em acesso antecipado ([#831](https://github.com/Montte-erp/montte-nx/pull/831))
 - Reorganização interna dos módulos de financeiro, insights e conta — base estrutural para maior estabilidade em entregas futuras
 
@@ -18,7 +18,7 @@ Semana de reestruturação interna: migramos três domínios (financeiro, insigh
 
 ## Melhorias
 
-- ferramentas do agente Rubi agora utilizam procedimentos oRPC em vez de queries diretas ao banco, garantindo consistência com regras de autorização e validação ([MON-560](https://linear.app/montte/issue/MON-560)) ([#833](https://github.com/Montte-erp/montte-nx/pull/833))
+- ferramentas da Montte AI agora utilizam procedimentos oRPC em vez de queries diretas ao banco, garantindo consistência com regras de autorização e validação ([MON-560](https://linear.app/montte/issue/MON-560)) ([#833](https://github.com/Montte-erp/montte-nx/pull/833))
 
 ## Notas técnicas
 

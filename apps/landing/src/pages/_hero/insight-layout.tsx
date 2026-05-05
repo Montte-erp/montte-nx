@@ -86,13 +86,13 @@ export function InsightLayout() {
                label="Inadimplência"
                tone="text-chart-3"
                icon={Gauge}
-               delta="-0,8 pp depois da Rubi"
+               delta="-0,8 pp depois da Montte AI"
             />
          </div>
          <ul className="flex flex-wrap items-center justify-center gap-4 rounded-lg border border-dashed border-border/60 bg-background/40 p-4">
             <Link label="Dashboards" icon={PieChart} tone="text-chart-2" />
             <Link
-               label="Insights da Rubi"
+               label="Insights da Montte AI"
                icon={Lightbulb}
                tone="text-primary"
             />

@@ -2,7 +2,7 @@ import { createStore } from "@tanstack/react-store";
 import { Info } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type React from "react";
-import { RubiMascotIcon } from "@/features/rubi-panel/rubi-mascot-icon";
+import { AgentMascotIcon } from "@/features/agent-panel/agent-mascot-icon";
 
 export interface ContextPanelTab {
    id: string;
@@ -53,9 +53,9 @@ const INFO_TAB_META: ContextPanelTabMeta = {
    order: 0,
 };
 
-const RUBI_TAB_META: ContextPanelTabMeta = {
-   id: "rubi",
-   icon: RubiMascotIcon,
+const AGENT_TAB_META: ContextPanelTabMeta = {
+   id: "agent",
+   icon: AgentMascotIcon,
    label: "Montte AI",
    order: 1,
 };
@@ -79,7 +79,7 @@ export const allTabMetasStore = createStore(() => {
    }));
    return [
       INFO_TAB_META,
-      RUBI_TAB_META,
+      AGENT_TAB_META,
       ...dynamicMetas.sort((a, b) => (a.order ?? 99) - (b.order ?? 99)),
    ];
 });

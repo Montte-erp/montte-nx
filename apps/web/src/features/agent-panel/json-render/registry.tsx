@@ -1,8 +1,8 @@
 import { defineRegistry } from "@json-render/react";
 import { shadcnComponents } from "@json-render/shadcn";
-import { rubiCatalog } from "./catalog";
+import { agentCatalog } from "./catalog";
 
-export const { registry: rubiRegistry } = defineRegistry(rubiCatalog, {
+export const { registry: agentRegistry } = defineRegistry(agentCatalog, {
    components: {
       Card: shadcnComponents.Card,
       Stack: shadcnComponents.Stack,

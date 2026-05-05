@@ -20,28 +20,28 @@ import { ArrowRight, Check, ChevronDown, Maximize2 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
-import { useRubiChat, type RubiScopeId } from "./rubi-chat-store";
-import { RubiMascotIcon } from "./rubi-mascot-icon";
+import { useAgentChat, type AgentScopeId } from "./agent-chat-store";
+import { AgentMascotIcon } from "./agent-mascot-icon";
 import { ToolCallCard } from "./tool-call-card";
 
 interface Scope {
-   id: RubiScopeId;
+   id: AgentScopeId;
    label: string;
    icon: React.ComponentType<{ className?: string }>;
    skillHint?: string;
 }
 
-export function RubiPanel() {
+export function AgentPanel() {
    return (
-      <QueryBoundary fallback={null} errorTitle="Falha ao carregar Rubi">
-         <RubiPanelContent />
+      <QueryBoundary fallback={null} errorTitle="Falha ao carregar Montte AI">
+         <AgentPanelContent />
       </QueryBoundary>
    );
 }
 
-function RubiPanelContent() {
+function AgentPanelContent() {
    const { slug, teamSlug } = useDashboardSlugs();
-   const chat = useRubiChat();
+   const chat = useAgentChat();
 
    const showRecents = !chat.activeThreadId && chat.recents.length > 0;
 
@@ -120,7 +120,7 @@ function RubiPanelContent() {
                </>
             ) : (
                <div className="flex flex-1 flex-col items-center justify-center gap-4">
-                  <RubiMascotIcon className="size-12" />
+                  <AgentMascotIcon className="size-12" />
                   <div className="flex flex-col items-center gap-2 text-center">
                      <h1 className="text-lg font-semibold">
                         Como posso te ajudar?
@@ -226,7 +226,7 @@ interface ComposerProps {
    scopes: Scope[];
    scopeOpen: boolean;
    onScopeOpenChange: (open: boolean) => void;
-   onScopeSelect: (scope: RubiScopeId) => void;
+   onScopeSelect: (scope: AgentScopeId) => void;
    disabled?: boolean;
 }
 
@@ -234,7 +234,7 @@ function Composer(props: ComposerProps) {
    return (
       <div className="w-full rounded-xl border bg-background">
          <Textarea
-            aria-label="Mensagem para o Montte AI"
+            aria-label="Mensagem para a Montte AI"
             className="min-h-[80px] resize-none border-0 bg-transparent px-4 py-2 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             placeholder="Faça uma pergunta ou / para comandos"
             value={props.value}
@@ -357,7 +357,7 @@ function ConversationView(props: {
          lastIndex >= 0 &&
          props.messages[lastIndex]?.role === "user" ? (
             <div className="border-l-2 border-muted-foreground/30 px-3 py-2 text-sm shimmer">
-               Rubi está pensando…
+               Montte AI está pensando…
             </div>
          ) : null}
       </div>

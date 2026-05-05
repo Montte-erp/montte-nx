@@ -4,7 +4,7 @@ import { fromPromise } from "neverthrow";
 import { proModel } from "@core/ai/models";
 import { createPosthogAiMiddleware } from "@core/ai/middleware";
 import type { PostHog, Prompts } from "@core/posthog/server";
-import { RUBI_PROMPTS } from "@modules/agents/constants";
+import { AGENT_PROMPTS } from "@modules/agents/constants";
 
 export interface AdvisorToolDeps {
    prompts: Prompts;
@@ -14,7 +14,7 @@ export interface AdvisorToolDeps {
    turnId?: string;
 }
 
-const ADVISOR_FALLBACK_PROMPT = `Você é o consultor sênior do Rubi. Você NÃO tem ferramentas e NÃO fala com o usuário.
+const ADVISOR_FALLBACK_PROMPT = `Você é o consultor sênior do Montte AI. Você NÃO tem ferramentas e NÃO fala com o usuário.
 Recebe uma situação curada do executor e retorna uma decisão clara em pt-BR.
 
 Formato da resposta:
@@ -55,7 +55,7 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
       }),
    }).server(async ({ situation, question, options }) => {
       const templateResult = await fromPromise(
-         deps.prompts.get(RUBI_PROMPTS.advisor, {
+         deps.prompts.get(AGENT_PROMPTS.advisor, {
             withMetadata: false,
             fallback: ADVISOR_FALLBACK_PROMPT,
          }),
@@ -94,11 +94,11 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
                createPosthogAiMiddleware({
                   posthog: deps.posthog,
                   distinctId: deps.distinctId,
-                  promptName: RUBI_PROMPTS.advisor,
+                  promptName: AGENT_PROMPTS.advisor,
                   customProperties: {
-                     rubi_role: "advisor",
-                     ...(deps.threadId && { rubi_thread_id: deps.threadId }),
-                     ...(deps.turnId && { rubi_turn_id: deps.turnId }),
+                     agent_role: "advisor",
+                     ...(deps.threadId && { agent_thread_id: deps.threadId }),
+                     ...(deps.turnId && { agent_turn_id: deps.turnId }),
                   },
                }),
             ],

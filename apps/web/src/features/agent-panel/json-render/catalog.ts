@@ -2,7 +2,7 @@ import { defineCatalog } from "@json-render/core";
 import { schema } from "@json-render/react/schema";
 import { shadcnComponentDefinitions } from "@json-render/shadcn/catalog";
 
-export const rubiCatalog = defineCatalog(schema, {
+export const agentCatalog = defineCatalog(schema, {
    components: {
       Card: shadcnComponentDefinitions.Card,
       Stack: shadcnComponentDefinitions.Stack,
@@ -27,4 +27,4 @@ export const rubiCatalog = defineCatalog(schema, {
    actions: {},
 });
 
-export type RubiCatalog = typeof rubiCatalog;
+export type AgentCatalog = typeof agentCatalog;
