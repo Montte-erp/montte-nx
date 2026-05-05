@@ -13,7 +13,6 @@ import {
    SidebarMenuButton,
    SidebarMenuItem,
    useSidebar,
-   useSidebarManager,
 } from "@packages/ui/components/sidebar";
 import {
    Tooltip,
@@ -32,44 +31,17 @@ import {
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 import {
-   setActiveSection,
    setNavEditing,
    setSectionOpen,
    toggleFinanceNavPref,
    toggleHiddenItem,
-   useActiveSection,
    useIsEditingNav,
    useIsFinanceItemWanted,
    useIsItemVisible,
    useIsSectionOpen,
 } from "./hooks/use-sidebar-store";
-import type { SubSidebarSection } from "./hooks/use-sidebar-store";
 import type { NavGroupDef, NavItemDef } from "./sidebar-nav-items";
 import { navGroups } from "./sidebar-nav-items";
-
-function useSubPanelControls() {
-   const manager = useSidebarManager();
-   const activeSection = useActiveSection();
-
-   function toggleSection(section: SubSidebarSection) {
-      const subPanel = manager.use("sub-panel");
-      if (activeSection === section && subPanel?.open) {
-         subPanel.setOpen(false);
-         setActiveSection(null);
-         return;
-      }
-      setActiveSection(section);
-      if (subPanel && !subPanel.open) subPanel.setOpen(true);
-   }
-
-   function closeSection() {
-      const subPanel = manager.use("sub-panel");
-      if (subPanel?.open) subPanel.setOpen(false);
-      if (activeSection) setActiveSection(null);
-   }
-
-   return { activeSection, toggleSection, closeSection };
-}
 
 function NavItem({
    item,
@@ -81,19 +53,15 @@ function NavItem({
    teamSlug: string;
 }) {
    const { getFeatureStage } = useEarlyAccess();
-   const { activeSection, toggleSection, closeSection } = useSubPanelControls();
    const matchRoute = useMatchRoute();
 
    const Icon = item.icon;
    const stage = item.earlyAccessFlag
       ? getFeatureStage(item.earlyAccessFlag)
       : null;
-   const isRouteActive = Boolean(
+   const isActive = Boolean(
       matchRoute({ to: item.route, params: { slug, teamSlug }, fuzzy: true }),
    );
-   const isActive = item.subPanel
-      ? activeSection === item.subPanel || isRouteActive
-      : isRouteActive;
 
    const tooltip = stage
       ? {
@@ -106,52 +74,21 @@ function NavItem({
         }
       : item.label;
 
-   const inner = (
-      <>
-         <Icon className={cn(item.iconColor)} />
-         <span className="flex-1">{item.label}</span>
-         {stage && (
-            <FeatureStageBadge
-               className="group-data-[collapsible=icon]:hidden"
-               stage={stage}
-            />
-         )}
-         {item.subPanel && (
-            <ChevronRight className="text-muted-foreground group-data-[collapsible=icon]:hidden" />
-         )}
-      </>
-   );
-
-   if (item.subPanel) {
-      const subPanel = item.subPanel;
-      return (
-         <SidebarMenuItem
-            className="group/menu-item"
-            id={`tour-nav-item-${item.id}`}
-         >
-            <SidebarMenuButton
-               isActive={isActive}
-               onClick={() => toggleSection(subPanel)}
-               tooltip={tooltip}
-            >
-               {inner}
-            </SidebarMenuButton>
-         </SidebarMenuItem>
-      );
-   }
-
    return (
       <SidebarMenuItem
          className="group/menu-item"
          id={`tour-nav-item-${item.id}`}
       >
          <SidebarMenuButton asChild isActive={isActive} tooltip={tooltip}>
-            <Link
-               onClick={closeSection}
-               params={{ slug, teamSlug }}
-               to={item.route}
-            >
-               {inner}
+            <Link params={{ slug, teamSlug }} to={item.route}>
+               <Icon className={cn(item.iconColor)} />
+               <span className="flex-1">{item.label}</span>
+               {stage && (
+                  <FeatureStageBadge
+                     className="group-data-[collapsible=icon]:hidden"
+                     stage={stage}
+                  />
+               )}
             </Link>
          </SidebarMenuButton>
       </SidebarMenuItem>

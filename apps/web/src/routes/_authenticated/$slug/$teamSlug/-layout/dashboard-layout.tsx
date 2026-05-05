@@ -17,7 +17,6 @@ import { MonthlySatisfactionSurvey } from "@/features/feedback/ui/monthly-satisf
 import { EarlyAccessProvider } from "@/hooks/use-early-access";
 import { setCollapsed, useSidebarCollapsed } from "./hooks/use-sidebar-store";
 import { AppSidebar } from "./app-sidebar";
-import { SidebarSubPanel } from "./sidebar-sub-panel";
 
 const SIDEBAR_WIDTH_STYLE = {
    "--sidebar-width": "28rem",
@@ -63,7 +62,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                </SidebarManager>
 
                <SidebarInset className="flex flex-col overflow-hidden bg-sidebar">
-                  <SidebarSubPanel />
                   <div className="flex flex-1 overflow-hidden">
                      <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-background">
                         <main

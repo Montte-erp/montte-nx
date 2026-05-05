@@ -1,8 +1,6 @@
 import { createStore, useStore } from "@tanstack/react-store";
 import { createPersistedStore } from "@/lib/store";
 
-export type SubSidebarSection = "dashboards" | "insights";
-
 interface SidebarPersistedState {
    isCollapsed: boolean;
    hiddenItems: string[];
@@ -11,8 +9,6 @@ interface SidebarPersistedState {
 }
 
 interface SidebarTransientState {
-   activeSection: SubSidebarSection | null;
-   searchQuery: string;
    isEditingNav: boolean;
 }
 
@@ -27,22 +23,8 @@ const sidebarStore = createPersistedStore<SidebarPersistedState>(
 );
 
 const transientStore = createStore<SidebarTransientState>({
-   activeSection: null,
-   searchQuery: "",
    isEditingNav: false,
 });
-
-export function setActiveSection(section: SubSidebarSection | null) {
-   transientStore.setState((state) => ({
-      ...state,
-      activeSection: section,
-      searchQuery: section === null ? "" : state.searchQuery,
-   }));
-}
-
-export function setSearchQuery(query: string) {
-   transientStore.setState((state) => ({ ...state, searchQuery: query }));
-}
 
 export function setNavEditing(value: boolean) {
    transientStore.setState((state) => ({ ...state, isEditingNav: value }));
@@ -94,14 +76,6 @@ export function useIsFinanceItemWanted() {
 export function useIsSectionOpen(sectionId: string, defaultOpen: boolean) {
    const sectionOpen = useStore(sidebarStore, (s) => s.sectionOpen);
    return sectionOpen?.[sectionId] ?? defaultOpen;
-}
-
-export function useActiveSection() {
-   return useStore(transientStore, (s) => s.activeSection);
-}
-
-export function useSearchQuery() {
-   return useStore(transientStore, (s) => s.searchQuery);
 }
 
 export function useIsEditingNav() {
