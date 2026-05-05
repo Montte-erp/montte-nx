@@ -7,8 +7,8 @@ on:
             description: "Pull request number"
             required: true
             type: number
-   pull_request_review:
-      types: [submitted]
+   issue_comment:
+      types: [created]
 
 permissions:
    id-token: write
@@ -22,8 +22,9 @@ jobs:
    readiness:
       if: |
          github.event_name == 'workflow_dispatch' ||
-         github.event.review.user.login == 'cubic-dev-ai[bot]' ||
-         contains(github.event.review.user.login, 'cubic')
+         (github.event.issue.pull_request != null &&
+          (contains(github.event.comment.user.login, 'cubic') ||
+           contains(github.event.comment.body, '/readiness')))
       runs-on: blacksmith-4vcpu-ubuntu-2404
       steps:
          - name: Resolve PR metadata
@@ -33,12 +34,12 @@ jobs:
               GH_REPO: ${{ github.repository }}
               EVENT_NAME: ${{ github.event_name }}
               INPUT_PR_NUMBER: ${{ inputs.pr_number }}
-              REVIEW_PR_NUMBER: ${{ github.event.pull_request.number }}
+              ISSUE_PR_NUMBER: ${{ github.event.issue.number }}
            run: |
               if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
                 PR_NUMBER="$INPUT_PR_NUMBER"
               else
-                PR_NUMBER="$REVIEW_PR_NUMBER"
+                PR_NUMBER="$ISSUE_PR_NUMBER"
               fi
 
               gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json number,headRefName,headRefOid,baseRefName,headRepositoryOwner --jq '
@@ -75,16 +76,20 @@ jobs:
                 git log --pretty=format:'- %s (%h) by %an' "origin/$BASE_REF..HEAD"
                 echo
                 echo
-                echo "## Current CI checks"
+                echo "## CI checks"
                 gh pr checks "$PR_NUMBER" --repo "$GH_REPO" || true
                 echo
-                echo "## Cubic reviews"
+                echo "## All reviews"
                 gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json reviews \
-                  --jq '.reviews[] | select((.author.login | ascii_downcase | contains("cubic"))) | {state, submittedAt, author: .author.login, body}' || true
+                  --jq '.reviews[] | {state, submittedAt, author: .author.login, body}'
                 echo
-                echo "## Cubic inline comments"
-                gh api "repos/${{ github.repository }}/pulls/$PR_NUMBER/comments" --paginate \
-                  --jq '.[] | select((.user.login | ascii_downcase | contains("cubic"))) | {path, line, user: .user.login, body, html_url}' || true
+                echo "## All inline review comments"
+                gh api "repos/$GH_REPO/pulls/$PR_NUMBER/comments" --paginate \
+                  --jq '.[] | {path, line, user: .user.login, createdAt: .created_at, body, html_url}'
+                echo
+                echo "## All general PR comments"
+                gh api "repos/$GH_REPO/issues/$PR_NUMBER/comments" --paginate \
+                  --jq '.[] | {user: .user.login, createdAt: .created_at, body, html_url}'
               } > pr-readiness-context.md
 
          - name: Generate readiness report via opencode
@@ -96,40 +101,48 @@ jobs:
            with:
               model: opencode-go/deepseek-v4-flash
               prompt: |
-                 Você é um engenheiro senior revisando readiness de PR no Montte.
+                 Você é um engenheiro senior fazendo um resumão consolidado de PR no monorepo Montte.
 
-                 Leia `$CONTEXT_FILE` e escreva `$OUTPUT_FILE` em Markdown pt-BR com um relatório curto, objetivo e acionável.
+                 Leia `$CONTEXT_FILE` (metadata, arquivos, commits, CI checks, todos os reviews, todos os inline comments, todos os general comments) e escreva `$OUTPUT_FILE` em Markdown pt-BR.
 
-                 Objetivo: complementar o review do Cubic, não repetir. Use os achados do Cubic como insumo, mas foque em decidir se o PR está pronto para merge.
+                 Objetivo: agregar TUDO que foi comentado no PR até agora — Cubic, humanos, bots — em um resumão único, sem repetir comentários longos. Decidir se o PR está pronto pra merge.
 
                  Estrutura obrigatória:
 
                  ```markdown
-                 ## PR Readiness
+                 ## 📋 Resumão do PR
 
                  **Status:** pronto | atenção | bloquear
+                 **CI:** verde | falhando (lista jobs falhando)
+                 **Reviews:** <quem revisou e veredito>
 
-                 **Resumo:** <2-3 frases sobre impacto e risco>
+                 ## 🎯 O que esse PR faz
+                 <2-3 frases sobre impacto>
 
-                 ## Bloqueios
-                 <somente problemas que devem impedir merge; omita a seção se não houver>
+                 ## 🚧 Bloqueios
+                 <só problemas que impedem merge; omita se não houver>
 
-                 ## Pontos de Atenção
-                 <riscos, testes ausentes, migrações, UX, segurança, billing, DBOS, oRPC, env, release; omita se vazio>
+                 ## 💬 O que foi discutido
+                 <consolide TODOS os pontos levantados nos comentários (Cubic + humanos + bots): inline + reviews + general. Agrupe por tema. Marque resolvido vs pendente quando dá pra inferir>
 
-                 ## Validação Recomendada
-                 <comandos ou checks que faltam, usando comandos reais do repo quando aplicável>
+                 ## ⚠️ Pontos de Atenção
+                 <riscos: testes, migrações, UX, segurança, billing, DBOS, oRPC, env, release; omita se vazio>
 
-                 ## Cubic
-                 <resuma se o Cubic trouxe algo pendente, resolvido ou irrelevante. Não copie comentários longos.>
+                 ## ✅ Validação Recomendada
+                 <comandos reais do repo: `bun run typecheck`, `bun run test`, `bun run check`, `bun run check-boundaries`, `bun run build`>
+
+                 ## 🤖 Cubic
+                 <resuma achados do Cubic: pendentes, resolvidos, irrelevantes>
                  ```
 
                  Regras:
-                 - Seja conservador com `bloquear`: use apenas para risco real, CI vermelho, conflito, migração destrutiva sem plano, quebra de contrato, segredo, ou bug claro.
-                 - Se o Cubic não comentou nada relevante, diga isso.
-                 - Não invente detalhes que não estão no contexto.
-                 - Não inclua SHAs longos nem autores, exceto links já presentes.
-                 - Use bullets curtos, sem nested bullets.
+                 - Conservador com `bloquear`: só pra CI vermelho (não-flake), conflito, migração destrutiva sem plano, quebra de contrato, segredo, bug claro.
+                 - Distinguir flake de infra (502 do GHA cache, opencode quota) vs falha real.
+                 - Não inventar detalhes fora do contexto.
+                 - Não copiar comentários longos — sintetiza.
+                 - Não inclua SHAs longos nem autores além de links já presentes.
+                 - Bullets curtos, sem nested.
+                 - pt-BR.
 
          - name: Verify readiness report
            run: |
