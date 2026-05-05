@@ -13,6 +13,7 @@ import { Maximize2 } from "lucide-react";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import {
+   chatStore,
    resetChat,
    useActiveThreadId,
    useChatSession,
@@ -32,9 +33,18 @@ export function AgentPanel() {
 }
 
 function AgentPanelContent() {
-   const { slug, teamSlug } = useDashboardSlugs();
    const activeThreadId = useActiveThreadId();
-   const session = useChatSession();
+   return (
+      <PanelRunner
+         activeThreadId={activeThreadId}
+         key={activeThreadId ?? "new"}
+      />
+   );
+}
+
+function PanelRunner({ activeThreadId }: { activeThreadId: string | null }) {
+   const { slug, teamSlug } = useDashboardSlugs();
+   const session = useChatSession(chatStore.state.seedMessages);
    const recents = useRecentThreads();
 
    const hasConversation = session.messages.length > 0;

@@ -23,6 +23,8 @@ import { ChatSidebar } from "./chat-sidebar";
 
 const CHAT_SIDEBAR_STYLE = {
    "--sidebar-width": "16rem",
+   "--sidebar": "var(--muted)",
+   "--sidebar-foreground": "var(--muted-foreground)",
 } as React.CSSProperties;
 
 interface ChatLayoutProps {

@@ -1,7 +1,7 @@
 import { chat } from "@tanstack/ai";
 import type { UIMessage } from "@tanstack/ai";
 import dayjs from "dayjs";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { err, fromPromise, ok, safeTry } from "neverthrow";
 import { z } from "zod";
 import {
@@ -145,6 +145,32 @@ export const remove = protectedProcedure
       );
       if (result.isErr()) throw result.error;
       return { ok: true };
+   });
+
+export const removeBulk = protectedProcedure
+   .input(
+      z.object({
+         threadIds: z.array(threadSchema.shape.id).min(1).max(100),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      const result = await fromPromise(
+         context.db.transaction((tx) =>
+            tx
+               .delete(threads)
+               .where(
+                  and(
+                     eq(threads.teamId, context.teamId),
+                     eq(threads.userId, context.userId),
+                     inArray(threads.id, input.threadIds),
+                  ),
+               )
+               .returning({ id: threads.id }),
+         ),
+         () => WebAppError.internal("Falha ao excluir conversas."),
+      );
+      if (result.isErr()) throw result.error;
+      return { count: result.value.length };
    });
 
 export const syncMessages = protectedProcedure

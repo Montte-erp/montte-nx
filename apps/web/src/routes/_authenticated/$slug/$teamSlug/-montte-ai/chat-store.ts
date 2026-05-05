@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createStore, shallow, useStore } from "@tanstack/react-store";
+import { createStore, useStore } from "@tanstack/react-store";
 import {
    stream as aiStream,
    useChat,
@@ -209,12 +209,10 @@ export interface ChatSession {
    rejectAll: () => Promise<void>;
 }
 
-export function useChatSession(): ChatSession {
-   const seedMessages = useStore(chatStore, (s) => s.seedMessages, shallow);
-
+export function useChatSession(initialMessages: UIMessage[] = []): ChatSession {
    const chat = useChat({
       connection: agentConnection,
-      initialMessages: seedMessages,
+      initialMessages,
       onFinish: () => {
          void syncAgentMessages(
             chat.messages,

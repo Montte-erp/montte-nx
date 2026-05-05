@@ -48,6 +48,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
    const isSettingsPage = matches.some((m) =>
       m.routeId.includes("/_dashboard/settings"),
    );
+   const isChatPage = matches.some((m) =>
+      m.routeId.includes("/_dashboard/chat"),
+   );
 
    return (
       <EarlyAccessProvider>
@@ -55,7 +58,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <SidebarProvider
                className="h-svh"
                onOpenChange={(open) => setCollapsed(!open)}
-               open={!isCollapsed}
+               open={!isCollapsed && !isChatPage}
             >
                <SidebarManager name="main" style={SIDEBAR_WIDTH_STYLE}>
                   <AppSidebar />
@@ -67,7 +70,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         <main
                            className={cn(
                               "relative flex-1 p-4",
-                              isSettingsPage
+                              isSettingsPage || isChatPage
                                  ? "overflow-hidden"
                                  : "overflow-y-auto",
                            )}
@@ -79,8 +82,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   <AutoBugReporter />
                   <MonthlySatisfactionSurvey />
                </SidebarInset>
-               <InlineContextPanel />
-               <ContextPanelRail />
+               {!isChatPage ? (
+                  <>
+                     <InlineContextPanel />
+                     <ContextPanelRail />
+                  </>
+               ) : null}
             </SidebarProvider>
          </SidebarManagerProvider>
       </EarlyAccessProvider>
