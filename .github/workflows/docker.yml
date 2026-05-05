@@ -42,8 +42,6 @@ jobs:
               file: apps/${{ matrix.target }}/Dockerfile
               push: false
               load: false
-              cache-from: type=gha,scope=docker-${{ matrix.target }}
-              cache-to: type=gha,scope=docker-${{ matrix.target }},mode=max
 
          - name: Validate compose file
            if: matrix.target == 'web'
