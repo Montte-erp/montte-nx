@@ -1,9 +1,10 @@
 import { chat } from "@tanstack/ai";
 import type { UIMessage } from "@tanstack/ai";
 import dayjs from "dayjs";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { err, fromPromise, ok, safeTry } from "neverthrow";
 import { z } from "zod";
+import { messages } from "@core/database/schemas/messages";
 import {
    insertThreadSchema,
    threads,
@@ -75,10 +76,23 @@ export const list = protectedProcedure
 export const getById = protectedProcedure
    .input(threadIdInputSchema)
    .use(requireThread, (input) => input.threadId)
-   .handler(async ({ context }) => ({
-      thread: context.thread,
-      messages: context.thread.messages,
-   }));
+   .handler(async ({ context, input }) => {
+      const rows = await context.db
+         .select({
+            id: messages.id,
+            role: messages.role,
+            parts: messages.parts,
+         })
+         .from(messages)
+         .where(eq(messages.threadId, input.threadId))
+         .orderBy(asc(messages.position));
+      const uiMessages: UIMessage[] = rows.map((row) => ({
+         id: row.id,
+         role: row.role as UIMessage["role"],
+         parts: row.parts,
+      }));
+      return { thread: context.thread, messages: uiMessages };
+   });
 
 export const create = protectedProcedure
    .input(createThreadInputSchema)
@@ -175,17 +189,25 @@ export const syncMessages = protectedProcedure
    .input(syncMessagesInputSchema)
    .use(requireThread, (input) => input.threadId)
    .handler(async ({ context, input }) => {
+      const rows = input.messages.map((m, position) => ({
+         id: m.id,
+         threadId: input.threadId,
+         role: m.role,
+         parts: m.parts,
+         position,
+      }));
       const result = await safeTry(async function* () {
          yield* fromPromise(
-            context.db.transaction((tx) =>
-               tx
+            context.db.transaction(async (tx) => {
+               await tx
+                  .delete(messages)
+                  .where(eq(messages.threadId, input.threadId));
+               if (rows.length > 0) await tx.insert(messages).values(rows);
+               await tx
                   .update(threads)
-                  .set({
-                     messages: input.messages,
-                     lastMessageAt: dayjs().toDate(),
-                  })
-                  .where(eq(threads.id, input.threadId)),
-            ),
+                  .set({ lastMessageAt: dayjs().toDate() })
+                  .where(eq(threads.id, input.threadId));
+            }),
             () => WebAppError.internal("Falha ao sincronizar mensagens."),
          );
          return ok({ ok: true });
@@ -198,6 +220,13 @@ export const updateTitle = protectedProcedure
    .input(threadIdInputSchema)
    .use(requireThread, (input) => input.threadId)
    .handler(async ({ context, input }) => {
+      const recent = await context.db
+         .select({ role: messages.role, parts: messages.parts })
+         .from(messages)
+         .where(eq(messages.threadId, input.threadId))
+         .orderBy(asc(messages.position))
+         .limit(4);
+
       const result = await fromPromise(
          chat({
             adapter: flashModel,
@@ -216,7 +245,7 @@ Regras:
 - Foque no pedido principal do usuário.
 
 Mensagens:
-${JSON.stringify(context.thread.messages)}`,
+${JSON.stringify(recent)}`,
                      },
                   ],
                },

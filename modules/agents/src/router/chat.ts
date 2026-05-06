@@ -1,5 +1,5 @@
 import { eventIterator } from "@orpc/server";
-import { chat, type StreamChunk, type UIMessage } from "@tanstack/ai";
+import { chat, type StreamChunk } from "@tanstack/ai";
 import { z } from "zod";
 import { getLogger } from "@core/logging/root";
 import { protectedProcedure } from "@core/orpc/server";
@@ -22,7 +22,7 @@ const chatInputSchema = z.object({
    threadId: z.string().uuid(),
    turnId: z.string().optional(),
    pageContext: pageContextSchema,
-   messages: z.array(uiMessageSchema).optional(),
+   messages: z.array(uiMessageSchema),
 });
 
 export type ChatInput = z.infer<typeof chatInputSchema>;
@@ -38,8 +38,6 @@ export const send = protectedProcedure
          "agent chat send start",
       );
 
-      const uiMessages: UIMessage[] = input.messages ?? context.thread.messages;
-
       const args = await buildAgentChatArgs({
          prompts: context.posthogPrompts,
          posthog: context.posthog,
@@ -47,7 +45,7 @@ export const send = protectedProcedure
          headers: context.headers,
          request: context.request,
          threadId: input.threadId,
-         messages: uiMessages,
+         messages: input.messages,
          pageContext: input.pageContext,
          abortSignal: signal,
       });
