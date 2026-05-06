@@ -7,14 +7,22 @@ import {
    ContextPanelHeaderActions,
    ContextPanelTitle,
 } from "@packages/ui/components/context-panel";
+import { Skeleton } from "@packages/ui/components/skeleton";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { Maximize2 } from "lucide-react";
+import { useEffect } from "react";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import {
+   SelectionActionButton,
+   useSelectionToolbar,
+} from "@/hooks/use-selection-toolbar";
+import {
    resetChat,
    setActiveThread,
+   togglePanel,
    useActiveThreadId,
    useChatSession,
    useRecentThreads,
@@ -22,12 +30,32 @@ import {
 import { Composer } from "./composer";
 import { EmptyState } from "./empty-state";
 import { MessageList } from "./message-list";
+import { useAgentLive } from "./use-agent-live";
 
 export function AgentPanel() {
+   useHotkey("Mod+J", togglePanel);
+   useHotkey("Mod+Shift+J", () => {
+      resetChat();
+      togglePanel();
+   });
    return (
-      <QueryBoundary fallback={null} errorTitle="Falha ao carregar Montte AI">
+      <QueryBoundary
+         fallback={<PanelSkeleton />}
+         errorTitle="Falha ao carregar Montte AI"
+      >
          <AgentPanelContent />
       </QueryBoundary>
+   );
+}
+
+function PanelSkeleton() {
+   return (
+      <div className="flex flex-col gap-4 p-4">
+         <Skeleton className="h-6 w-32" />
+         <Skeleton className="h-16 w-full" />
+         <Skeleton className="h-24 w-3/4" />
+         <Skeleton className="h-20 w-full" />
+      </div>
    );
 }
 
@@ -36,6 +64,10 @@ function AgentPanelContent() {
    const { slug, teamSlug } = useDashboardSlugs();
    const session = useChatSession();
    const recents = useRecentThreads();
+
+   useApprovalSelectionBar();
+   useStreamShortcuts();
+   useAgentLive();
 
    const hasConversation = session.messages.length > 0;
    const showRecents = !activeThreadId && recents.length > 0;
@@ -80,29 +112,6 @@ function AgentPanelContent() {
          <ContextPanelContent className="flex flex-col gap-4">
             {hasConversation ? (
                <>
-                  {session.pendingApprovalIds.length >= 2 ? (
-                     <div className="sticky top-0 z-10 flex items-center gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs">
-                        <span className="flex-1">
-                           {session.pendingApprovalIds.length} ações aguardando
-                           aprovação
-                        </span>
-                        <Button
-                           className="h-7 px-2 text-xs"
-                           onClick={() => session.rejectAll()}
-                           size="sm"
-                           variant="outline"
-                        >
-                           Negar tudo
-                        </Button>
-                        <Button
-                           className="h-7 px-2 text-xs"
-                           onClick={() => session.approveAll()}
-                           size="sm"
-                        >
-                           Aprovar tudo ({session.pendingApprovalIds.length})
-                        </Button>
-                     </div>
-                  ) : null}
                   <MessageList />
                   <Composer />
                </>
@@ -149,4 +158,52 @@ function AgentPanelContent() {
          ) : null}
       </ContextPanel>
    );
+}
+
+function useApprovalSelectionBar() {
+   const session = useChatSession();
+   const ids = session.pendingApprovalIds;
+
+   const toolbar = useSelectionToolbar(({ selectedIndices, clear }) => (
+      <>
+         <SelectionActionButton
+            onClick={async () => {
+               for (const i of selectedIndices) {
+                  const id = ids[i];
+                  if (id !== undefined) await session.rejectTool(id);
+               }
+               clear();
+            }}
+         >
+            Negar
+         </SelectionActionButton>
+         <SelectionActionButton
+            onClick={async () => {
+               for (const i of selectedIndices) {
+                  const id = ids[i];
+                  if (id !== undefined) await session.approveTool(id);
+               }
+               clear();
+            }}
+         >
+            Aprovar ({selectedIndices.size})
+         </SelectionActionButton>
+      </>
+   ));
+
+   useEffect(() => {
+      if (ids.length >= 2) {
+         toolbar.replace(new Set(ids.map((_, i) => i)));
+         return;
+      }
+      toolbar.clear();
+      // oxlint-disable-next-line react-hooks/exhaustive-deps
+   }, [ids.length]);
+}
+
+function useStreamShortcuts() {
+   const session = useChatSession();
+   useHotkey("Escape", () => {
+      if (session.isStreaming) session.stop();
+   });
 }

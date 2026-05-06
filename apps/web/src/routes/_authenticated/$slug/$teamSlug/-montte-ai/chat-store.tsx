@@ -5,7 +5,7 @@ import {
    useChat,
    type UIMessage,
 } from "@tanstack/ai-react";
-import { createContext, Suspense, useContext, useRef } from "react";
+import { createContext, Suspense, useContext } from "react";
 import {
    Briefcase,
    Contact,
@@ -20,8 +20,10 @@ import { fromPromise } from "neverthrow";
 import { toast } from "sonner";
 import { createPersistedStore } from "@/lib/store";
 import { client, orpc, type Inputs } from "@/integrations/orpc/client";
+import type { MessageMetadata } from "@core/database/schemas/messages";
 
 type AgentSendInput = Inputs["agent"]["send"];
+type PageContext = AgentSendInput["pageContext"];
 
 export type AgentScopeId =
    | "auto"
@@ -74,14 +76,12 @@ export const SCOPE_SUGGESTIONS: AgentScope[] = (
 
 interface ChatState {
    activeThreadId: string | null;
-   pageContext: AgentSendInput["pageContext"];
-   scopeOpen: boolean;
+   panelOpen: boolean;
 }
 
 const chatStore = createStore<ChatState>({
    activeThreadId: null,
-   pageContext: undefined,
-   scopeOpen: false,
+   panelOpen: false,
 });
 
 const scopeStore = createPersistedStore<{ id: AgentScopeId }>(
@@ -89,75 +89,42 @@ const scopeStore = createPersistedStore<{ id: AgentScopeId }>(
    { id: "auto" },
 );
 
+type RequestOverride = {
+   regenerate?: boolean;
+   replaceFromMessageId?: string;
+};
+
+let pendingOverride: RequestOverride | null = null;
+
 export const setActiveThread = (threadId: string | null) =>
    chatStore.setState((s) => ({ ...s, activeThreadId: threadId }));
 
 export const resetChat = () =>
-   chatStore.setState(() => ({
-      activeThreadId: null,
-      pageContext: undefined,
-      scopeOpen: false,
-   }));
+   chatStore.setState((s) => ({ ...s, activeThreadId: null }));
 
-export const setPageContext = (pageContext: AgentSendInput["pageContext"]) =>
-   chatStore.setState((s) => ({ ...s, pageContext }));
+export const togglePanel = () =>
+   chatStore.setState((s) => ({ ...s, panelOpen: !s.panelOpen }));
 
-export const setScopeOpen = (scopeOpen: boolean) =>
-   chatStore.setState((s) => ({ ...s, scopeOpen }));
+export const setPanelOpen = (panelOpen: boolean) =>
+   chatStore.setState((s) => ({ ...s, panelOpen }));
 
 export const selectScope = (id: AgentScopeId) => {
    scopeStore.setState(() => ({ id }));
-   setScopeOpen(false);
 };
 
 export const useActiveThreadId = () =>
    useStore(chatStore, (s) => s.activeThreadId);
 
-export const useScopeOpen = () => useStore(chatStore, (s) => s.scopeOpen);
+export const usePanelOpen = () => useStore(chatStore, (s) => s.panelOpen);
 
 export const useSelectedScope = (): AgentScope => {
    const id = useStore(scopeStore, (s) => s.id);
    return { id, ...SCOPE_BY_ID[id] };
 };
 
-const agentConnection = aiStream(async function* (messages) {
-   const { activeThreadId, pageContext } = chatStore.state;
-   if (activeThreadId === null) return;
-
-   const response = await client.agent.send({
-      threadId: activeThreadId,
-      pageContext,
-      messages: messages.flatMap((m) => ("parts" in m ? [m] : [])),
-   });
-   yield* response;
-});
-
-async function syncMessages(messages: UIMessage[], silent = false) {
-   const { activeThreadId } = chatStore.state;
-   if (activeThreadId === null || messages.length === 0) return;
-
-   const result = await fromPromise(
-      client.threads.syncMessages({ threadId: activeThreadId, messages }),
-      () => null,
-   );
-   if (result.isErr()) {
-      if (!silent) toast.error("Falha ao salvar resposta da Montte AI.");
-      return;
-   }
-   void client.threads.updateTitle({ threadId: activeThreadId });
-}
-
-function pendingApprovalIds(messages: UIMessage[]) {
-   return messages.flatMap((message) => {
-      if (message.role !== "assistant") return [];
-      return message.parts.flatMap((part) => {
-         if (part.type !== "tool-call") return [];
-         if (part.state !== "approval-requested") return [];
-         if (part.approval === undefined) return [];
-         if (part.approval.approved !== undefined) return [];
-         return [part.approval.id];
-      });
-   });
+function pickPageContext(): PageContext {
+   const skillHint = SCOPE_BY_ID[scopeStore.state.id].skillHint;
+   return skillHint ? { skillHint } : undefined;
 }
 
 function lastUserText(messages: UIMessage[]): string | null {
@@ -172,6 +139,31 @@ function lastUserText(messages: UIMessage[]): string | null {
    return null;
 }
 
+const agentConnection = aiStream(async function* (messagesArg) {
+   const { activeThreadId } = chatStore.state;
+   if (activeThreadId === null) return;
+
+   const uiMessages = messagesArg.flatMap((m) => ("parts" in m ? [m] : []));
+
+   const override = pendingOverride;
+   pendingOverride = null;
+
+   const text = override?.regenerate
+      ? undefined
+      : (lastUserText(uiMessages) ?? undefined);
+
+   const response = await client.agent.send({
+      threadId: activeThreadId,
+      ...(text !== undefined && { text }),
+      ...(override?.replaceFromMessageId && {
+         replaceFromMessageId: override.replaceFromMessageId,
+      }),
+      ...(override?.regenerate && { regenerate: true }),
+      pageContext: pickPageContext(),
+   });
+   yield* response;
+});
+
 export interface ChatSession {
    messages: UIMessage[];
    status: "ready" | "submitted" | "streaming" | "error";
@@ -179,7 +171,7 @@ export interface ChatSession {
    isStreaming: boolean;
    isSubmitting: boolean;
    pendingApprovalIds: string[];
-   traceIdFor: (messageId: string) => string | undefined;
+   metadataFor: (messageId: string) => MessageMetadata | null | undefined;
    sendMessage: (text: string) => Promise<void>;
    stop: () => void;
    regenerate: () => Promise<void>;
@@ -234,7 +226,7 @@ function SessionInner({
 }
 
 function NoThreadSession({ children }: { children: React.ReactNode }) {
-   const session = useSessionImpl([]);
+   const session = useSessionImpl([], {});
    return (
       <ChatSessionContext.Provider value={session}>
          {children}
@@ -252,7 +244,7 @@ function ThreadSession({
    const { data } = useSuspenseQuery(
       orpc.threads.getById.queryOptions({ input: { threadId } }),
    );
-   const session = useSessionImpl(data.messages);
+   const session = useSessionImpl(data.messages, data.messageMetadata);
    return (
       <ChatSessionContext.Provider value={session}>
          {children}
@@ -260,29 +252,29 @@ function ThreadSession({
    );
 }
 
-function useSessionImpl(initialMessages: UIMessage[]): ChatSession {
+function pendingApprovalIds(messages: UIMessage[]): string[] {
+   return messages.flatMap((message) => {
+      if (message.role !== "assistant") return [];
+      return message.parts.flatMap((part) => {
+         if (part.type !== "tool-call") return [];
+         if (part.state !== "approval-requested") return [];
+         if (part.approval === undefined) return [];
+         if (part.approval.approved !== undefined) return [];
+         return [part.approval.id];
+      });
+   });
+}
+
+function useSessionImpl(
+   initialMessages: UIMessage[],
+   initialMetadata: Record<string, MessageMetadata | null>,
+): ChatSession {
    const queryClient = useQueryClient();
-   const pendingTraceIdRef = useRef<string | null>(null);
-   const traceIdsRef = useRef<Map<string, string>>(new Map());
 
    const chat = useChat({
       connection: agentConnection,
       initialMessages,
-      onChunk: (chunk) => {
-         if (chunk.type === "RUN_STARTED" && "runId" in chunk) {
-            const runId = (chunk as { runId?: unknown }).runId;
-            if (typeof runId === "string") pendingTraceIdRef.current = runId;
-         }
-      },
-      onFinish: (message) => {
-         if (
-            message.role === "assistant" &&
-            pendingTraceIdRef.current !== null
-         ) {
-            traceIdsRef.current.set(message.id, pendingTraceIdRef.current);
-            pendingTraceIdRef.current = null;
-         }
-         void syncMessages(chat.messages);
+      onFinish: () => {
          void queryClient.invalidateQueries({
             queryKey: orpc.threads.list.key(),
          });
@@ -294,7 +286,6 @@ function useSessionImpl(initialMessages: UIMessage[]): ChatSession {
          }
       },
       onError: () => {
-         void syncMessages(chat.messages, true);
          toast.error("Falha no streaming da Montte AI.");
       },
    });
@@ -315,12 +306,7 @@ function useSessionImpl(initialMessages: UIMessage[]): ChatSession {
          return null;
       }
       const threadId = result.value.id;
-      const skillHint = SCOPE_BY_ID[scopeStore.state.id].skillHint;
-      chatStore.setState((s) => ({
-         ...s,
-         activeThreadId: threadId,
-         pageContext: skillHint ? { skillHint } : s.pageContext,
-      }));
+      chatStore.setState((s) => ({ ...s, activeThreadId: threadId }));
       return threadId;
    };
 
@@ -331,7 +317,7 @@ function useSessionImpl(initialMessages: UIMessage[]): ChatSession {
       isStreaming: status === "streaming",
       isSubmitting: status === "submitted",
       pendingApprovalIds: approvalIds,
-      traceIdFor: (id) => traceIdsRef.current.get(id),
+      metadataFor: (id) => initialMetadata[id],
       stop: () => chat.stop(),
       approveTool: (id) => chat.addToolApprovalResponse({ id, approved: true }),
       rejectTool: (id) => chat.addToolApprovalResponse({ id, approved: false }),
@@ -350,12 +336,11 @@ function useSessionImpl(initialMessages: UIMessage[]): ChatSession {
          if (!trimmed || status === "streaming") return;
          const threadId = await ensureThread(trimmed);
          if (threadId === null) return;
+         pendingOverride = null;
          await chat.sendMessage(trimmed);
       },
       regenerate: async () => {
          if (status === "streaming") return;
-         const last = lastUserText(chat.messages);
-         if (last === null) return;
          const lastUserIdx = (() => {
             for (let i = chat.messages.length - 1; i >= 0; i--) {
                if (chat.messages[i]?.role === "user") return i;
@@ -363,8 +348,11 @@ function useSessionImpl(initialMessages: UIMessage[]): ChatSession {
             return -1;
          })();
          if (lastUserIdx < 0) return;
-         chat.setMessages(chat.messages.slice(0, lastUserIdx));
-         await chat.sendMessage(last);
+         const lastText = lastUserText(chat.messages);
+         if (lastText === null) return;
+         chat.setMessages(chat.messages.slice(0, lastUserIdx + 1));
+         pendingOverride = { regenerate: true };
+         await chat.sendMessage(lastText);
       },
       editAndResend: async (messageId, text) => {
          if (status === "streaming") return;
@@ -373,6 +361,7 @@ function useSessionImpl(initialMessages: UIMessage[]): ChatSession {
          const idx = chat.messages.findIndex((m) => m.id === messageId);
          if (idx < 0) return;
          chat.setMessages(chat.messages.slice(0, idx));
+         pendingOverride = { replaceFromMessageId: messageId };
          await chat.sendMessage(trimmed);
       },
    };

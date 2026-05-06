@@ -1,11 +1,20 @@
 import { boolean, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { platformSchema } from "@core/database/schemas/schemas";
 
+export const reasoningEffortEnum = platformSchema.enum("reasoning_effort", [
+   "low",
+   "medium",
+   "high",
+]);
+
 export const agentSettings = platformSchema.table("agent_settings", {
    teamId: uuid("team_id").primaryKey(),
    modelId: text("model_id")
       .notNull()
       .default("openrouter/moonshotai/kimi-k2.5"),
+   reasoningEffort: reasoningEffortEnum("reasoning_effort")
+      .notNull()
+      .default("low"),
    language: varchar("language", { length: 10 }).notNull().default("pt-BR"),
    tone: varchar("tone", { length: 50 }).notNull().default("formal"),
    dataSourceTransactions: boolean("data_source_transactions")

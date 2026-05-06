@@ -1,4 +1,4 @@
-import type { UIMessage } from "@tanstack/ai-react";
+import type { ToolCallPart, UIMessage } from "@tanstack/ai";
 import { Button } from "@packages/ui/components/button";
 import {
    Collapsible,
@@ -8,59 +8,28 @@ import {
 import { Brain, Check, ChevronDown, Loader2, Wrench } from "lucide-react";
 import { memo } from "react";
 import { Streamdown } from "streamdown";
+import type { MessageMetadata } from "@core/database/schemas/messages";
 import { MessageFooter } from "./message-footer";
 import { TOOL_LABELS, presentToolIcon } from "./tool-meta";
 
-type AssistantPart = UIMessage["parts"][number];
-type ToolCallPart = Extract<AssistantPart, { type: "tool-call" }>;
-type Group =
-   | { kind: "text"; key: string; content: string }
-   | { kind: "thinking"; key: string; content: string; isLast: boolean }
-   | { kind: "tools"; key: string; parts: ToolCallPart[] }
-   | { kind: "skip"; key: string };
-
-function groupParts(parts: AssistantPart[]): Group[] {
-   const groups: Group[] = [];
-   let currentTools: ToolCallPart[] | null = null;
-   parts.forEach((part, idx) => {
-      const key = `${part.type}-${idx}`;
-      const isLast = idx === parts.length - 1;
-      if (part.type === "tool-call") {
-         if (currentTools === null) {
-            currentTools = [];
-            groups.push({ kind: "tools", key, parts: currentTools });
-         }
-         currentTools.push(part);
-         return;
-      }
-      currentTools = null;
-      if (part.type === "text") {
-         groups.push({ kind: "text", key, content: part.content });
-         return;
-      }
-      if (part.type === "thinking") {
-         groups.push({ kind: "thinking", key, content: part.content, isLast });
-         return;
-      }
-      groups.push({ kind: "skip", key });
-   });
-   return groups;
-}
-
 interface MessageItemProps {
    message: UIMessage;
+   metadata?: MessageMetadata | null;
    isStreaming: boolean;
    isLast: boolean;
    onApprove: (approvalId: string) => Promise<void>;
    onReject: (approvalId: string) => Promise<void>;
+   onSendFollowUp?: (text: string) => Promise<void>;
 }
 
 function MessageItemImpl({
    message,
+   metadata,
    isStreaming,
    isLast,
    onApprove,
    onReject,
+   onSendFollowUp,
 }: MessageItemProps) {
    if (message.role === "system") return null;
 
@@ -89,64 +58,123 @@ function MessageItemImpl({
    const showFooter =
       isLast && !isStreaming && allToolsResolved && assistantText.length > 0;
 
-   const groups = groupParts(message.parts);
+   const followUps = isLast && !isStreaming ? metadata?.followUps : undefined;
 
    return (
       <div className="flex flex-col gap-3 text-base leading-relaxed">
-         {groups.map((group) => {
-            if (group.kind === "text") {
-               return (
-                  <Streamdown
-                     isAnimating={isStreaming}
-                     key={group.key}
-                     mode={isStreaming ? "streaming" : "static"}
-                  >
-                     {group.content}
-                  </Streamdown>
-               );
-            }
-            if (group.kind === "tools") {
-               return (
-                  <ToolGroup
-                     isStreaming={isStreaming}
-                     key={group.key}
-                     onApprove={onApprove}
-                     onReject={onReject}
-                     parts={group.parts}
-                  />
-               );
-            }
-            if (group.kind === "thinking") {
-               const isLive = isStreaming && group.isLast;
-               return (
-                  <Collapsible
-                     className="group/think"
-                     defaultOpen={isLive}
-                     key={group.key}
-                  >
-                     <CollapsibleTrigger className="flex w-full items-center gap-2 py-1 text-sm text-muted-foreground hover:text-foreground">
-                        <Brain className="size-4 shrink-0" />
-                        <span className="flex-1 text-left">
-                           {isLive ? "Raciocinando" : "Raciocínio concluído"}
-                        </span>
-                        <ChevronDown className="size-4 shrink-0 transition-transform group-data-[state=open]/think:rotate-180" />
-                     </CollapsibleTrigger>
-                     <CollapsibleContent className="ml-[22px] border-l border-muted-foreground/15 py-1 pl-3 text-sm text-muted-foreground">
-                        <Streamdown
-                           isAnimating={isLive}
-                           mode={isLive ? "streaming" : "static"}
-                        >
-                           {group.content}
-                        </Streamdown>
-                     </CollapsibleContent>
-                  </Collapsible>
-               );
-            }
-            return null;
+         {renderParts(message.parts, {
+            isStreaming,
+            onApprove,
+            onReject,
          })}
          {showFooter ? (
-            <MessageFooter messageId={message.id} text={assistantText} />
+            <MessageFooter
+               messageId={message.id}
+               text={assistantText}
+               traceId={metadata?.traceId}
+            />
          ) : null}
+         {followUps && followUps.length > 0 && onSendFollowUp ? (
+            <FollowUpChips
+               followUps={followUps}
+               onSendFollowUp={onSendFollowUp}
+            />
+         ) : null}
+      </div>
+   );
+}
+
+interface RenderContext {
+   isStreaming: boolean;
+   onApprove: (approvalId: string) => Promise<void>;
+   onReject: (approvalId: string) => Promise<void>;
+}
+
+function renderParts(parts: UIMessage["parts"], ctx: RenderContext) {
+   const out: React.ReactNode[] = [];
+   let toolBuffer: ToolCallPart[] = [];
+
+   const flushTools = (key: string) => {
+      if (toolBuffer.length === 0) return;
+      out.push(
+         <ToolGroup
+            isStreaming={ctx.isStreaming}
+            key={`tools-${key}`}
+            onApprove={ctx.onApprove}
+            onReject={ctx.onReject}
+            parts={toolBuffer}
+         />,
+      );
+      toolBuffer = [];
+   };
+
+   parts.forEach((part, idx) => {
+      const key = `${part.type}-${idx}`;
+      if (part.type === "tool-call") {
+         toolBuffer.push(part);
+         return;
+      }
+      flushTools(`${idx}-pre`);
+      if (part.type === "text") {
+         out.push(
+            <Streamdown
+               isAnimating={ctx.isStreaming}
+               key={key}
+               mode={ctx.isStreaming ? "streaming" : "static"}
+            >
+               {part.content}
+            </Streamdown>,
+         );
+         return;
+      }
+      if (part.type === "thinking") {
+         const isLive = ctx.isStreaming && idx === parts.length - 1;
+         out.push(
+            <Collapsible className="group/think" defaultOpen={isLive} key={key}>
+               <CollapsibleTrigger className="flex w-full items-center gap-2 py-1 text-sm text-muted-foreground hover:text-foreground">
+                  <Brain className="size-4 shrink-0" />
+                  <span className="flex-1 text-left">
+                     {isLive ? "Raciocinando" : "Raciocínio concluído"}
+                  </span>
+                  <ChevronDown className="size-4 shrink-0 transition-transform group-data-[state=open]/think:rotate-180" />
+               </CollapsibleTrigger>
+               <CollapsibleContent className="ml-[22px] border-l border-muted-foreground/15 py-1 pl-3 text-sm text-muted-foreground">
+                  <Streamdown
+                     isAnimating={isLive}
+                     mode={isLive ? "streaming" : "static"}
+                  >
+                     {part.content}
+                  </Streamdown>
+               </CollapsibleContent>
+            </Collapsible>,
+         );
+      }
+   });
+   flushTools("end");
+   return out;
+}
+
+function FollowUpChips({
+   followUps,
+   onSendFollowUp,
+}: {
+   followUps: string[];
+   onSendFollowUp: (text: string) => Promise<void>;
+}) {
+   return (
+      <div className="flex flex-wrap gap-2">
+         {followUps.map((text) => (
+            <Button
+               className="h-auto whitespace-normal rounded-full border-dashed px-3 py-1.5 text-left text-xs"
+               key={text}
+               onClick={() => void onSendFollowUp(text)}
+               size="sm"
+               type="button"
+               variant="outline"
+            >
+               {text}
+            </Button>
+         ))}
       </div>
    );
 }
@@ -262,7 +290,9 @@ export const MessageItem = memo(MessageItemImpl, (prev, next) => {
    if (prev.isLast !== next.isLast) return false;
    if (prev.message.parts.length !== next.message.parts.length) return false;
    if (prev.message.parts.at(-1) !== next.message.parts.at(-1)) return false;
+   if (prev.metadata !== next.metadata) return false;
    if (prev.onApprove !== next.onApprove) return false;
    if (prev.onReject !== next.onReject) return false;
+   if (prev.onSendFollowUp !== next.onSendFollowUp) return false;
    return true;
 });

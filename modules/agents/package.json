@@ -7,6 +7,7 @@
    "exports": {
       "./router/*": "./src/router/*.ts",
       "./tools/*": "./src/tools/*.ts",
+      "./workflows/*": "./src/workflows/*.ts",
       "./*": "./src/*.ts"
    },
    "scripts": {
@@ -19,14 +20,21 @@
    "dependencies": {
       "@core/ai": "workspace:*",
       "@core/database": "workspace:*",
+      "@core/dbos": "workspace:*",
       "@core/environment": "workspace:*",
       "@core/logging": "workspace:*",
       "@core/orpc": "workspace:*",
       "@core/posthog": "workspace:*",
+      "@core/redis": "workspace:*",
+      "@core/sse": "workspace:*",
+      "@dbos-inc/dbos-sdk": "catalog:workers",
+      "@dbos-inc/drizzle-datasource": "catalog:workers",
       "@modules/billing": "workspace:*",
       "@orpc/server": "catalog:orpc",
       "@tanstack/ai": "catalog:tanstack-ai",
       "@tanstack/ai-openrouter": "catalog:tanstack-ai",
+      "@tanstack/store": "catalog:tanstack",
+      "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",
       "neverthrow": "catalog:validation",
       "zod": "catalog:validation"

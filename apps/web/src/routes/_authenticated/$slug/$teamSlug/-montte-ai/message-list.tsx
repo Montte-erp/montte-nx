@@ -15,6 +15,8 @@ export function MessageList() {
       approveTool,
       rejectTool,
       regenerate,
+      metadataFor,
+      sendMessage,
    } = session;
    const lastIndex = messages.length - 1;
    const last = messages.at(-1);
@@ -36,8 +38,10 @@ export function MessageList() {
                         isStreaming={isLive}
                         key={message.id}
                         message={message}
+                        metadata={metadataFor(message.id)}
                         onApprove={approveTool}
                         onReject={rejectTool}
+                        onSendFollowUp={sendMessage}
                      />
                   );
                })}

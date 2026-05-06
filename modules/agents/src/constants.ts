@@ -12,3 +12,9 @@ export const AGENT_SKILL_IDS = {
 
 export type AgentSkillId =
    (typeof AGENT_SKILL_IDS)[keyof typeof AGENT_SKILL_IDS];
+
+export const AGENT_QUEUES = {
+   generateTitle: "agent-title",
+} as const;
+
+export type AgentQueueName = (typeof AGENT_QUEUES)[keyof typeof AGENT_QUEUES];

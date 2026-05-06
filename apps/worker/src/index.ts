@@ -6,6 +6,7 @@ import { createDb } from "@core/database/client";
 import { createRedis } from "@core/redis/connection";
 import { createPostHog, createPromptsClient } from "@core/posthog/server";
 import { createResendClient } from "@core/transactional/utils";
+import { setupAgentsWorkflows } from "@modules/agents/workflows/setup";
 import { setupBillingWorkflows } from "@modules/billing/workflows/setup";
 import { setupClassificationWorkflows } from "@modules/classification/workflows/setup";
 
@@ -41,6 +42,7 @@ await setupClassificationWorkflows({
    prompts: promptsClient,
    workerConcurrency: 10,
 });
+await setupAgentsWorkflows({ redis, workerConcurrency: 10 });
 
 DBOS.setConfig({
    name: "montte-worker",

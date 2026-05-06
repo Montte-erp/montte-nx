@@ -32,6 +32,7 @@ export interface AgentChatOptions {
    threadId?: string;
    messages: UIMessage[];
    pageContext: PageContext;
+   reasoningEffort?: "low" | "medium" | "high";
    abortSignal?: AbortSignal;
 }
 
@@ -105,7 +106,7 @@ export async function buildAgentChatArgs(options: AgentChatOptions) {
          ...domainTools,
       ],
       modelOptions: {
-         reasoning: { effort: "low" as const },
+         reasoning: { effort: options.reasoningEffort ?? "low" },
       },
       agentLoopStrategy: maxIterations(25),
       ...(options.threadId && { conversationId: options.threadId }),

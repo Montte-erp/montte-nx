@@ -2,26 +2,30 @@ import { Button } from "@packages/ui/components/button";
 import { useThumbSurvey } from "posthog-js/react/surveys";
 import { Check, Copy, ThumbsDown, ThumbsUp } from "lucide-react";
 import { useClipboard } from "foxact/use-clipboard";
+import { toast } from "sonner";
 import { POSTHOG_SURVEYS } from "@core/posthog/config";
-import { useChatSession } from "./chat-store";
 
 interface MessageFooterProps {
    messageId: string;
    text: string;
+   traceId?: string;
 }
 
-export function MessageFooter({ messageId, text }: MessageFooterProps) {
-   const traceId = useChatSession().traceIdFor(messageId);
+export function MessageFooter({ text, traceId }: MessageFooterProps) {
    const { copy, copied } = useClipboard({ timeout: 1500 });
    const surveyId = POSTHOG_SURVEYS.aiAgentFeedback.id;
-   const surveyReady = traceId !== undefined;
+
+   const onCopy = async () => {
+      await copy(text);
+      toast.success("Copiado");
+   };
 
    return (
       <div className="flex items-center gap-1 pt-1">
          <Button
             aria-label="Copiar resposta"
             className="size-8 text-muted-foreground hover:text-foreground"
-            onClick={() => void copy(text)}
+            onClick={() => void onCopy()}
             size="icon"
             variant="ghost"
          >
@@ -31,7 +35,7 @@ export function MessageFooter({ messageId, text }: MessageFooterProps) {
                <Copy className="size-4" />
             )}
          </Button>
-         {surveyReady ? (
+         {traceId !== undefined ? (
             <FeedbackButtons surveyId={surveyId} traceId={traceId} />
          ) : null}
       </div>
@@ -49,12 +53,22 @@ function FeedbackButtons({
       surveyId,
       properties: { $ai_trace_id: traceId },
    });
+   const answered = response !== undefined;
+   const onRespond = (kind: "up" | "down") => {
+      respond(kind);
+      if (kind === "up") {
+         toast.success("Obrigado pelo feedback");
+      } else {
+         toast("Feedback registrado", { description: "Vamos melhorar." });
+      }
+   };
    return (
       <>
          <Button
             aria-label="Resposta útil"
             className="size-8 text-muted-foreground hover:text-foreground"
-            onClick={() => respond("up")}
+            disabled={answered}
+            onClick={() => onRespond("up")}
             size="icon"
             variant="ghost"
          >
@@ -67,7 +81,8 @@ function FeedbackButtons({
          <Button
             aria-label="Resposta ruim"
             className="size-8 text-muted-foreground hover:text-foreground"
-            onClick={() => respond("down")}
+            disabled={answered}
+            onClick={() => onRespond("down")}
             size="icon"
             variant="ghost"
          >
