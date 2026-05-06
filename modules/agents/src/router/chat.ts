@@ -1,5 +1,5 @@
 import { eventIterator } from "@orpc/server";
-import { chat, type StreamChunk } from "@tanstack/ai";
+import { chat, StreamProcessor, type StreamChunk } from "@tanstack/ai";
 import type { UIMessage } from "@tanstack/ai";
 import { and, asc, eq, gte, sql } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
@@ -17,7 +17,6 @@ import { WebAppError } from "@core/logging/errors";
 import { getLogger } from "@core/logging/root";
 import { protectedProcedure } from "@core/orpc/server";
 import { buildAgentChatArgs } from "@modules/agents/agent";
-import { createPartsAccumulator } from "@modules/agents/parts-accumulator";
 import { generateFollowUps } from "@modules/agents/follow-ups";
 import { requireThread } from "@modules/agents/router/middlewares";
 import {
@@ -96,14 +95,20 @@ async function* streamAgentTurn(
       abortSignal: signal,
    });
 
-   const accumulator = createPartsAccumulator();
+   const processor = new StreamProcessor();
+   processor.setMessages(history);
+   processor.prepareAssistantMessage();
+   let traceId: string | undefined;
 
    for await (const event of chat(chatArgs)) {
-      accumulator.consume(event);
+      if (event.type === "RUN_STARTED") traceId = event.runId;
+      processor.processChunk(event);
       yield event;
    }
 
-   const assistantParts = accumulator.parts;
+   const allMessages = processor.getMessages();
+   const assistant = allMessages.findLast((m) => m.role === "assistant");
+   const assistantParts = assistant?.parts ?? [];
    if (assistantParts.length === 0) {
       logger.warn({ threadId }, "agent chat produced no assistant parts");
       return;
@@ -115,7 +120,7 @@ async function* streamAgentTurn(
    });
 
    const metadata: MessageMetadata = messageMetadataSchema.parse({
-      ...(accumulator.traceId && { traceId: accumulator.traceId }),
+      ...(traceId && { traceId }),
       ...(followUps.length > 0 && { followUps }),
    });
 
