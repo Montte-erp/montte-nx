@@ -106,12 +106,37 @@ export const createBenefitSchema = createInsertSchema(benefits)
    })
    .extend({
       name: nameSchema,
-      type: z.enum(benefitTypeEnum.enumValues),
-      meterId: z.string().uuid().nullable().optional(),
-      creditAmount: z.number().int().min(1).nullable().optional(),
-      description: z.string().max(500).nullable().optional(),
-      unitCost: unitCostSchema.optional().default("0"),
-      rollover: z.boolean().optional().default(false),
+      type: z.enum(benefitTypeEnum.enumValues).describe("Tipo do benefício."),
+      meterId: z
+         .string()
+         .uuid()
+         .nullable()
+         .optional()
+         .describe("ID do medidor consumido por benefícios de crédito."),
+      creditAmount: z
+         .number()
+         .int()
+         .min(1)
+         .nullable()
+         .optional()
+         .describe("Quantidade de créditos concedida ao cliente."),
+      description: z
+         .string()
+         .max(500)
+         .nullable()
+         .optional()
+         .describe("Descrição curta do benefício."),
+      unitCost: unitCostSchema
+         .optional()
+         .default("0")
+         .describe("Custo interno unitário do benefício."),
+      rollover: z
+         .boolean()
+         .optional()
+         .default(false)
+         .describe(
+            "Indica se créditos não usados acumulam para o próximo ciclo.",
+         ),
    });
 
 export const updateBenefitSchema = z.object({

@@ -28,16 +28,18 @@ export function buildSkillCatalog(): string {
    );
 }
 
+const skillDiscoverInputSchema = z.object({
+   skillId: z
+      .literal(AGENT_SKILL_IDS.services)
+      .describe("Identificador da skill que deve ser carregada."),
+});
+
 export function buildSkillDiscoverTool(prompts: Prompts) {
    const skillIds = SKILLS.map((s) => s.id);
    return toolDefinition({
       name: "skill_discover",
       description: `Descobre o playbook detalhado de uma skill para pedidos operacionais do domínio. Use antes de ferramentas de domínio quando o usuário pedir análise, consulta ou ação. Não use em saudações, conversa social ou perguntas gerais sem intenção operacional. Skills disponíveis: [${skillIds.join(", ")}].`,
-      inputSchema: z.object({
-         skillId: z
-            .string()
-            .describe(`Identificador da skill. Um de: ${skillIds.join(", ")}.`),
-      }),
+      inputSchema: skillDiscoverInputSchema,
    }).server(async ({ skillId }) => {
       const skill = SKILLS.find((s) => s.id === skillId);
       if (!skill)

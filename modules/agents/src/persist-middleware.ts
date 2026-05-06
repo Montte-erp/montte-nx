@@ -17,6 +17,9 @@ import { enqueueGenerateThreadTitle } from "@modules/agents/workflows/generate-t
 import { enqueueRefreshSuggestions } from "@modules/agents/workflows/refresh-suggestions-workflow";
 
 const logger = getLogger().child({ module: "agents.persist-middleware" });
+const MIN_TITLE_MESSAGE_COUNT = 2;
+const MIN_SUGGESTION_MESSAGE_COUNT = 4;
+const SUGGESTION_MESSAGE_INTERVAL = 4;
 
 export interface PersistMiddlewareDeps {
    db: DatabaseInstance;
@@ -58,6 +61,7 @@ export function createPersistMiddleware(
             );
             return;
          }
+         const messageCount = processor.getMessages().length;
 
          const inserted = await deps.db.transaction(async (tx) => {
             const rows: { id: string }[] = [];
@@ -83,15 +87,21 @@ export function createPersistMiddleware(
             return rows;
          });
 
-         await enqueueRefreshSuggestions(deps.workflowClient, {
-            threadId: deps.threadId,
-            teamId: deps.teamId,
-            organizationId: deps.organizationId,
-         }).catch((err: unknown) =>
-            logger.error({ err }, "failed enqueue refresh-suggestions"),
-         );
+         if (
+            messageCount >= MIN_SUGGESTION_MESSAGE_COUNT &&
+            messageCount % SUGGESTION_MESSAGE_INTERVAL === 0
+         ) {
+            await enqueueRefreshSuggestions(deps.workflowClient, {
+               threadId: deps.threadId,
+               teamId: deps.teamId,
+               organizationId: deps.organizationId,
+               messageCount,
+            }).catch((err: unknown) =>
+               logger.error({ err }, "failed enqueue refresh-suggestions"),
+            );
+         }
 
-         if (!deps.threadHasTitle) {
+         if (!deps.threadHasTitle && messageCount >= MIN_TITLE_MESSAGE_COUNT) {
             await enqueueGenerateThreadTitle(deps.workflowClient, {
                threadId: deps.threadId,
                teamId: deps.teamId,

@@ -1,5 +1,4 @@
 import * as accountRouter from "@modules/account/router/profile";
-import * as agentRouter from "@modules/agents/router/chat";
 import * as threadsRouter from "@modules/agents/router/threads";
 import * as agentSettingsRouter from "@modules/account/router/agent-settings";
 import * as analyticsRouter from "@modules/insights/router/analytics";
@@ -43,6 +42,21 @@ const transactionsRouter = {
    ...transactionsSuggestions,
 };
 
+const servicesProcedures = {
+   bulkCreate: servicesRouter.bulkCreate,
+   bulkRemove: servicesRouter.bulkRemove,
+   bulkSetActive: servicesRouter.bulkSetActive,
+   create: servicesRouter.create,
+   exportAll: servicesRouter.exportAll,
+   getAll: servicesRouter.getAll,
+   getAllStats: servicesRouter.getAllStats,
+   getById: servicesRouter.getById,
+   getSubscribers: servicesRouter.getSubscribers,
+   remove: servicesRouter.remove,
+   setup: servicesRouter.setup,
+   update: servicesRouter.update,
+};
+
 export default {
    account: accountRouter,
    agentSettings: agentSettingsRouter,
@@ -63,7 +77,7 @@ export default {
    notifications: notificationsRouter,
    onboarding: onboardingRouter,
    prices: pricesRouter,
-   services: servicesRouter,
+   services: servicesProcedures,
    subscriptionItems: subscriptionItemsRouter,
    subscriptions: subscriptionsRouter,
    meters: metersRouter,
@@ -74,7 +88,6 @@ export default {
    team: teamRouter,
    transactions: transactionsRouter,
    organization: organizationRouter,
-   agent: agentRouter,
    threads: {
       create: threadsRouter.create,
       getById: threadsRouter.getById,

@@ -17,27 +17,34 @@ export interface AdvisorToolDeps {
 
 const ADVISOR_TIMEOUT_MS = 45_000;
 
+const advisorConsultInputSchema = z.object({
+   situation: z
+      .string()
+      .trim()
+      .min(20)
+      .max(4_000)
+      .describe(
+         "Resumo da situação atual: pedido do usuário, ações já tentadas e ponto travado.",
+      ),
+   question: z
+      .string()
+      .trim()
+      .min(5)
+      .max(1_000)
+      .describe("Decisão específica que precisa do advisor."),
+   options: z
+      .array(z.string().trim().min(1).max(500))
+      .max(5)
+      .optional()
+      .describe("Opções consideradas, quando existirem."),
+});
+
 export function buildAdvisorTool(deps: AdvisorToolDeps) {
    return toolDefinition({
       name: "advisor_consult",
       description:
          "Consulte o advisor sênior antes de tomar decisões ambíguas: tabela/dado confuso, conflito service vs benefit vs meter, mesma operação falhou 2x, ou pedido fora de skill conhecida. NÃO consulte para CRUD trivial, listagem ou input claro. Budget: até 3 consultas por turno.",
-      inputSchema: z.object({
-         situation: z
-            .string()
-            .min(20)
-            .describe(
-               "Resumo da situação atual (o que o usuário pediu, o que você já fez/tentou, qual o ponto travado).",
-            ),
-         question: z
-            .string()
-            .min(5)
-            .describe("A decisão específica que você precisa do advisor."),
-         options: z
-            .array(z.string())
-            .optional()
-            .describe("Opções que você está considerando, se houver."),
-      }),
+      inputSchema: advisorConsultInputSchema,
    }).server(async ({ situation, question, options }) => {
       const templateResult = await fromPromise(
          deps.prompts.get(AGENT_PROMPTS.advisor, {

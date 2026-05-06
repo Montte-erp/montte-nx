@@ -10,7 +10,13 @@ export const agentToolRouter = {
    coupons: couponsRouter,
    meters: metersRouter,
    prices: pricesRouter,
-   services: servicesRouter,
+   services: {
+      bulkSetActive: servicesRouter.bulkSetActive,
+      getAll: servicesRouter.getAll,
+      getById: servicesRouter.getById,
+      setup: servicesRouter.setup,
+      update: servicesRouter.update,
+   },
 };
 
 export type AgentToolRouter = typeof agentToolRouter;

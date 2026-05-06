@@ -1,7 +1,9 @@
 export const AGENT_PROMPTS = {
-   root: "montte-rubi-root",
-   advisor: "montte-rubi-advisor",
-   skillServices: "montte-rubi-skill-services",
+   root: "montte-ai-root",
+   advisor: "montte-ai-advisor",
+   skillServices: "montte-ai-skill-services",
+   generateTitle: "montte-ai-generate-title",
+   refreshSuggestions: "montte-ai-refresh-suggestions",
 } as const;
 
 export type AgentPromptKey = keyof typeof AGENT_PROMPTS;

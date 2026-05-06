@@ -1,6 +1,6 @@
 import "@/polyfill";
 
-import { chat, toHttpResponse, type UIMessage } from "@tanstack/ai";
+import { toHttpResponse, type UIMessage } from "@tanstack/ai";
 import { and, asc, eq, gte, sql } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { createFileRoute } from "@tanstack/react-router";
@@ -11,7 +11,7 @@ import {
 } from "@core/database/schemas/messages";
 import { getLogger } from "@core/logging/root";
 import { buildWebContext } from "@core/orpc/server";
-import { buildAgentChatArgs } from "@modules/agents/agent";
+import { createAgentChat } from "@modules/agents/agent";
 import { createPersistMiddleware } from "@modules/agents/persist-middleware";
 
 const logger = getLogger().child({ module: "api.chat" });
@@ -23,6 +23,16 @@ const bodySchema = z.object({
    regenerate: z.boolean().optional(),
    pageContext: messagePageContextSchema.optional(),
 });
+
+const defaultChatSettings = {
+   reasoningEffort: "high",
+} satisfies { reasoningEffort: "high" | "xhigh" };
+
+const chatSettingsSchema = z
+   .object({
+      reasoningEffort: z.enum(["high", "xhigh"]).default("high"),
+   })
+   .default(() => defaultChatSettings);
 
 async function handlePost({ request }: { request: Request }) {
    const ctx = await buildWebContext(request);
@@ -134,6 +144,7 @@ async function handlePost({ request }: { request: Request }) {
    const settings = await ctx.db.query.agentSettings.findFirst({
       where: (f, { eq: eqFn }) => eqFn(f.teamId, ctx.teamId),
    });
+   const chatSettings = chatSettingsSchema.parse(settings);
 
    const abortController = new AbortController();
    request.signal.addEventListener("abort", () => abortController.abort(), {
@@ -151,7 +162,7 @@ async function handlePost({ request }: { request: Request }) {
       history,
    });
 
-   const chatArgs = await buildAgentChatArgs({
+   const stream = await createAgentChat({
       prompts: ctx.posthogPrompts,
       posthog: ctx.posthog,
       userId: ctx.userId,
@@ -160,12 +171,12 @@ async function handlePost({ request }: { request: Request }) {
       threadId: input.threadId,
       messages: history,
       pageContext: input.pageContext,
-      reasoningEffort: settings?.reasoningEffort ?? "low",
+      reasoningEffort: chatSettings.reasoningEffort,
       abortSignal: abortController.signal,
       extraMiddleware: [persistMiddleware],
    });
 
-   return toHttpResponse(chat(chatArgs), {
+   return toHttpResponse(stream, {
       abortController,
       headers: { "Content-Type": "application/x-ndjson" },
    });

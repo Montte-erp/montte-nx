@@ -1,10 +1,10 @@
 import {
+   chat,
    convertMessagesToModelMessages,
    maxIterations,
    type ChatMiddleware,
    type UIMessage,
 } from "@tanstack/ai";
-import { webSearchTool } from "@tanstack/ai-openrouter/tools";
 import type { PostHog, Prompts } from "@core/posthog/server";
 import { flashModel } from "@core/ai/models";
 import { createPosthogAiMiddleware } from "@core/ai/middleware";
@@ -15,13 +15,8 @@ import {
    buildSkillDiscoverTool,
 } from "@modules/agents/skills";
 import { buildAdvisorTool } from "@modules/agents/tools/advisor";
-import { buildBenefitsTools } from "@modules/agents/tools/benefits";
-import { buildCouponsTools } from "@modules/agents/tools/coupons";
-import { buildMetersTools } from "@modules/agents/tools/meters";
-import { buildPricesTools } from "@modules/agents/tools/prices";
 import { buildServicesTools } from "@modules/agents/tools/services";
-import { buildSetupTools } from "@modules/agents/tools/setup";
-import type { ToolDeps } from "@modules/agents/tools/types";
+import { buildWebSearchTool } from "@modules/agents/tools/web-search";
 
 export interface AgentChatOptions {
    prompts: Prompts;
@@ -32,35 +27,28 @@ export interface AgentChatOptions {
    threadId?: string;
    messages: UIMessage[];
    pageContext?: PageContext;
-   reasoningEffort?: "low" | "medium" | "high";
+   reasoningEffort?: "high" | "xhigh";
    abortSignal?: AbortSignal;
    extraMiddleware?: ChatMiddleware[];
 }
 
+const RENDERING_PRIMER = `## Renderização (json-render)
+
+Toda tool de leitura/escrita retorna um campo \`ui\` com um spec json-render que o cliente renderiza usando shadcn. Você nunca precisa formatar a saída em markdown — o spec já mostra a tabela/alert/card.
+
+Não duplique a informação em texto. Após uma tool call, escreva no máximo 1-2 frases curtas conectando o resultado à próxima ação. Nunca repita tabela, contagem ou nomes que o spec já mostra.
+
+Vocabulário disponível no catalog: Card, Stack, Grid, Separator, Heading, Text, Badge, Alert, Table, Accordion, Collapsible, Tabs, Progress, Skeleton, Spinner, Avatar, Image, Link, Tooltip.`;
+
 function formatPageContext(pageContext: PageContext | undefined): string {
    if (pageContext === undefined) return "Nenhum contexto de página fornecido.";
    const lines: string[] = [];
-   if (pageContext.skillHint)
-      lines.push(
-         `Foco selecionado na interface: \`${pageContext.skillHint}\`. Use esse foco como contexto leve. Não chame skill_discover nem ferramentas apenas por causa deste foco; faça isso somente quando a mensagem pedir análise, consulta ou ação nesse domínio. Para saudações e conversa social, responda normalmente sem ferramentas.`,
-      );
    if (pageContext.route) lines.push(`Rota: ${pageContext.route}`);
    if (pageContext.title) lines.push(`Título: ${pageContext.title}`);
    if (pageContext.summary) lines.push(`Resumo: ${pageContext.summary}`);
    return lines.length === 0
       ? "Nenhum contexto de página fornecido."
       : lines.join("\n");
-}
-
-function buildDomainTools(deps: ToolDeps) {
-   return [
-      ...buildSetupTools(deps),
-      ...buildServicesTools(deps),
-      ...buildPricesTools(deps),
-      ...buildMetersTools(deps),
-      ...buildBenefitsTools(deps),
-      ...buildCouponsTools(deps),
-   ];
 }
 
 function abortControllerFromSignal(signal: AbortSignal) {
@@ -73,20 +61,21 @@ function abortControllerFromSignal(signal: AbortSignal) {
    return controller;
 }
 
-export async function buildAgentChatArgs(options: AgentChatOptions) {
+async function buildAgentChatArgs(options: AgentChatOptions) {
    const turnId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
    const orpcClient = createAgentToolClient(options.headers, options.request);
-   const toolDeps: ToolDeps = { orpcClient };
-
-   const skillDiscoverTool = buildSkillDiscoverTool(options.prompts);
-   const advisorTool = buildAdvisorTool({
-      prompts: options.prompts,
-      posthog: options.posthog,
-      distinctId: options.userId,
-      threadId: options.threadId,
-      turnId,
-   });
-   const domainTools = buildDomainTools(toolDeps);
+   const tools = [
+      buildSkillDiscoverTool(options.prompts),
+      buildAdvisorTool({
+         prompts: options.prompts,
+         posthog: options.posthog,
+         distinctId: options.userId,
+         threadId: options.threadId,
+         turnId,
+      }),
+      ...buildServicesTools({ orpcClient }),
+      buildWebSearchTool(),
+   ];
 
    const rootTemplate = await options.prompts.get(AGENT_PROMPTS.root, {
       withMetadata: false,
@@ -98,18 +87,14 @@ export async function buildAgentChatArgs(options: AgentChatOptions) {
 
    return {
       adapter: flashModel,
-      systemPrompts: [systemPrompt],
+      systemPrompts: [systemPrompt, RENDERING_PRIMER],
       messages: convertMessagesToModelMessages(options.messages),
-      tools: [
-         skillDiscoverTool,
-         advisorTool,
-         webSearchTool({ maxResults: 5 }),
-         ...domainTools,
-      ],
+      tools,
       modelOptions: {
-         reasoning: { effort: options.reasoningEffort ?? "low" },
+         reasoning: { effort: options.reasoningEffort ?? "high" },
+         parallelToolCalls: false,
       },
-      agentLoopStrategy: maxIterations(25),
+      agentLoopStrategy: maxIterations(8),
       ...(options.threadId && { conversationId: options.threadId }),
       abortController: options.abortSignal
          ? abortControllerFromSignal(options.abortSignal)
@@ -131,4 +116,8 @@ export async function buildAgentChatArgs(options: AgentChatOptions) {
          ...(options.extraMiddleware ?? []),
       ],
    };
+}
+
+export async function createAgentChat(options: AgentChatOptions) {
+   return chat(await buildAgentChatArgs(options));
 }

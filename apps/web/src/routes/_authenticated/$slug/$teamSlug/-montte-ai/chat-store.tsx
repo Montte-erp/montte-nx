@@ -123,6 +123,7 @@ export interface ChatSession {
    isSubmitting: boolean;
    pendingApprovalIds: string[];
    metadataFor: (messageId: string) => ChatMessageMetadata | undefined;
+   startNewConversation: () => void;
    sendMessage: (text: string) => Promise<void>;
    stop: () => void;
    regenerateFrom: (userMessageId: string) => Promise<void>;
@@ -163,6 +164,26 @@ function textContent(message: Pick<UIMessage, "parts">): string {
       .join("");
 }
 
+function hasPendingToolWork(messages: UIMessage[]): boolean {
+   return messages.some((message) => {
+      if (message.role !== "assistant") return false;
+      const resultIds = new Set(
+         message.parts.flatMap((part) =>
+            part.type === "tool-result" ? [part.toolCallId] : [],
+         ),
+      );
+      return message.parts.some((part) => {
+         if (part.type !== "tool-call") return false;
+         if (
+            part.state === "approval-requested" &&
+            part.approval?.approved === undefined
+         )
+            return true;
+         return part.output === undefined && !resultIds.has(part.id);
+      });
+   });
+}
+
 export function ChatSessionProvider({
    children,
 }: {
@@ -181,6 +202,7 @@ export function ChatSessionProvider({
          const id = chatStore.state.activeThreadId;
          if (!id) return;
          await refreshChatData(queryClient, id);
+         runtime.clearOverlay();
       },
    });
    const chat = runtime.chat;
@@ -213,7 +235,11 @@ export function ChatSessionProvider({
          overlaySnapshotRef.current = chat.messages;
       }
       const overlaySource =
-         chat.messages.length > 0 ? chat.messages : overlaySnapshotRef.current;
+         threadId === null
+            ? chat.messages
+            : chat.messages.length > 0
+              ? chat.messages
+              : overlaySnapshotRef.current;
       const overlay = overlaySource.filter((m) => {
          if (dbIds.has(m.id)) return false;
          if (lastDbMessage?.role !== m.role) return true;
@@ -232,6 +258,12 @@ export function ChatSessionProvider({
       ];
       const approvalIds = pendingApprovalIds(messages);
       const metadataMap = new Map(dbMessages.map((m) => [m.id, m.metadata]));
+      const activeTurn =
+         chat.isLoading ||
+         chat.sessionGenerating ||
+         status === "submitted" ||
+         status === "streaming" ||
+         hasPendingToolWork(chat.messages);
 
       const ensureThread = async (): Promise<string | null> => {
          const existing = chatStore.state.activeThreadId;
@@ -257,10 +289,15 @@ export function ChatSessionProvider({
          suggestions: thread?.suggestions ?? [],
          status,
          error: chat.error ?? null,
-         isStreaming: status === "streaming",
+         isStreaming: activeTurn,
          isSubmitting: status === "submitted",
          pendingApprovalIds: approvalIds,
          metadataFor: (id) => metadataMap.get(id),
+         startNewConversation: () => {
+            overlaySnapshotRef.current = [];
+            runtime.clearOverlay();
+            setActiveThread(null);
+         },
          stop: () => chat.stop(),
          approveTool: (id) =>
             chat.addToolApprovalResponse({ id, approved: true }),
@@ -278,14 +315,14 @@ export function ChatSessionProvider({
          },
          sendMessage: async (text) => {
             const trimmed = text.trim();
-            if (!trimmed || status === "streaming") return;
+            if (!trimmed || activeTurn) return;
             const id = await ensureThread();
             if (id === null) return;
             runtime.prepareTurn({ text: trimmed });
             await chat.sendMessage(trimmed);
          },
          regenerateFrom: async (userMessageId) => {
-            if (status === "streaming") return;
+            if (activeTurn) return;
             const idx = messages.findIndex((m) => m.id === userMessageId);
             if (idx < 0) return;
             runtime.setOverlay(messages.slice(0, idx + 1));
@@ -293,7 +330,7 @@ export function ChatSessionProvider({
             await chat.reload();
          },
          editAndResend: async (userMessageId, text) => {
-            if (status === "streaming") return;
+            if (activeTurn) return;
             const trimmed = text.trim();
             if (!trimmed) return;
             const idx = messages.findIndex((m) => m.id === userMessageId);
@@ -320,7 +357,7 @@ export function ChatSessionProvider({
             await refreshChatData(queryClient, id);
          },
       };
-   }, [chat, status, dbMessages, queryClient, runtime, thread]);
+   }, [chat, status, dbMessages, queryClient, runtime, thread, threadId]);
 
    return (
       <ChatSessionContext.Provider value={session}>

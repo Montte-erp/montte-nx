@@ -16,11 +16,6 @@ import {
    Trash2,
    Wrench,
    X,
-   Compass,
-   Lightbulb,
-   Search,
-   Sparkles,
-   type LucideIcon,
 } from "lucide-react";
 import { memo, useState } from "react";
 import { Streamdown } from "streamdown";
@@ -32,36 +27,15 @@ type ChatMessageMetadata = ChatMessage["metadata"];
 
 const TOOL_LABELS: Record<string, string> = {
    advisor_consult: "Consultando advisor sênior",
-   web_search: "Pesquisando na web",
    skill_discover: "Carregando playbook",
    __lazy__tool__discovery__: "Carregando ferramentas",
-   services_list: "Listando serviços",
-   services_get: "Detalhando serviço",
-   services_create: "Criando serviço",
-   services_update: "Atualizando serviço",
+   catalog_search: "Consultando catálogo",
+   service_details: "Detalhando serviço",
+   service_setup: "Configurando serviço completo",
+   service_update: "Atualizando serviço",
    services_set_active: "Ativando ou arquivando serviços",
-   services_bulk_create: "Criando serviços em lote",
-   services_attach_benefit: "Vinculando benefício ao serviço",
-   services_setup: "Configurando serviço completo",
-   services_create_price: "Criando preço",
-   prices_update: "Atualizando preço",
-   prices_delete: "Removendo preço",
-   meters_list: "Listando medidores",
-   meters_create: "Criando medidor",
-   meters_update: "Atualizando medidor",
-   benefits_list: "Listando benefícios",
-   benefits_create: "Criando benefício",
-   coupons_list: "Listando cupons",
-   coupons_create: "Criando cupom",
+   web_search: "Pesquisando na web",
 };
-
-function presentToolIcon(name: string | undefined): LucideIcon {
-   if (name === "advisor_consult") return Lightbulb;
-   if (name === "skill_discover") return Sparkles;
-   if (name === "__lazy__tool__discovery__") return Compass;
-   if (name === "web_search") return Search;
-   return Wrench;
-}
 
 interface MessageItemProps {
    message: UIMessage;
@@ -95,8 +69,12 @@ function MessageItemImpl({
          part.output !== undefined ||
          part.state === "approval-requested",
    );
+   const hasToolCalls = message.parts.some((part) => part.type === "tool-call");
    const showFooter =
-      !isStreaming && allToolsResolved && assistantText.length > 0;
+      !isStreaming &&
+      !hasToolCalls &&
+      allToolsResolved &&
+      assistantText.length > 0;
 
    return (
       <div className="group/msg flex flex-col gap-3 text-base leading-relaxed">
@@ -258,14 +236,19 @@ function renderParts(parts: UIMessage["parts"], ctx: RenderContext) {
       flushTools(`${idx}-pre`);
       if (part.type === "text") {
          out.push(
-            <Streamdown isAnimating key={key} animated>
+            <Streamdown isAnimating key={key}>
                {part.content}
             </Streamdown>,
          );
          return;
       }
       if (part.type === "thinking") {
-         const isLive = ctx.isStreaming && idx === parts.length - 1;
+         const hasFinalText = parts
+            .slice(idx + 1)
+            .some(
+               (next) => next.type === "text" && next.content.trim().length > 0,
+            );
+         const isLive = ctx.isStreaming && !hasFinalText;
          out.push(
             <Collapsible className="group/think" defaultOpen={isLive} key={key}>
                <CollapsibleTrigger className="flex w-full items-center gap-2 py-1 text-sm text-muted-foreground hover:text-foreground">
@@ -275,11 +258,8 @@ function renderParts(parts: UIMessage["parts"], ctx: RenderContext) {
                   </span>
                   <ChevronDown className="size-4 shrink-0 transition-transform group-data-[state=open]/think:rotate-180" />
                </CollapsibleTrigger>
-               <CollapsibleContent className="ml-[22px] border-l border-muted-foreground/15 py-1 pl-3 text-sm text-muted-foreground">
-                  <Streamdown
-                     caret="circle"
-                     mode={isLive ? "streaming" : "static"}
-                  >
+               <CollapsibleContent className="rounded-lg bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                  <Streamdown mode={isLive ? "streaming" : "static"}>
                      {part.content}
                   </Streamdown>
                </CollapsibleContent>
@@ -340,19 +320,10 @@ function ToolGroup({
                   part.state === "input-streaming" ||
                   (part.output === undefined &&
                      part.state !== "approval-requested");
-               if (part.name === "web_search")
-                  return (
-                     <WebSearchToolCard
-                        isRunning={isRunning}
-                        key={part.id}
-                        part={part}
-                     />
-                  );
                const partNeedsDecision =
                   part.state === "approval-requested" &&
                   part.approval !== undefined &&
                   part.approval.approved === undefined;
-               const Icon = presentToolIcon(part.name);
                const label = TOOL_LABELS[part.name] ?? "Executando ferramenta";
                return (
                   <div className="flex flex-col gap-2" key={part.id}>
@@ -360,7 +331,7 @@ function ToolGroup({
                         {isRunning ? (
                            <Loader2 className="size-4 shrink-0 animate-spin" />
                         ) : (
-                           <Icon className="size-4 shrink-0" />
+                           <Wrench className="size-4 shrink-0" />
                         )}
                         <span>{label}</span>
                         {!isRunning && !partNeedsDecision ? (
@@ -401,42 +372,6 @@ function ToolGroup({
             })}
          </CollapsibleContent>
       </Collapsible>
-   );
-}
-
-function WebSearchToolCard({
-   part,
-   isRunning,
-}: {
-   part: ToolCallPart;
-   isRunning: boolean;
-}) {
-   const status = isRunning ? "Pesquisando" : "Pesquisa concluída";
-
-   return (
-      <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2">
-         <div className="flex items-center gap-2 text-sm">
-            {isRunning ? (
-               <Loader2 className="size-4 shrink-0 animate-spin text-primary" />
-            ) : (
-               <Search className="size-4 shrink-0 text-primary" />
-            )}
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-               <span className="font-medium text-foreground">
-                  OpenRouter Web Search
-               </span>
-               <span className="text-muted-foreground">{status}</span>
-            </div>
-            {!isRunning ? (
-               <Check className="size-4 shrink-0 text-emerald-500" />
-            ) : null}
-         </div>
-         {part.arguments ? (
-            <pre className="overflow-x-auto pt-2 text-xs text-muted-foreground">
-               {part.arguments}
-            </pre>
-         ) : null}
-      </div>
    );
 }
 

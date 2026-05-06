@@ -5,6 +5,7 @@ import type { DatabaseInstance } from "@core/database/client";
 import * as schema from "@core/database/schema";
 import { env } from "@core/environment/worker";
 import type { Redis } from "@core/redis/connection";
+import type { PostHog, Prompts } from "@core/posthog/server";
 import { AGENT_QUEUES } from "../constants";
 
 export { createEnqueuer, registerWorkflowOnce } from "@core/dbos/factory";
@@ -16,13 +17,39 @@ export const agentsDataSource = new DrizzleDataSource<DatabaseInstance>(
 );
 
 type AgentsWorkflowContext = {
+   posthog: PostHog | null;
+   prompts: Prompts | null;
    redis: Redis | null;
 };
 
-const store = createStore<AgentsWorkflowContext>({ redis: null });
+const store = createStore<AgentsWorkflowContext>({
+   posthog: null,
+   prompts: null,
+   redis: null,
+});
 
-export function initAgentsWorkflowContext(redis: Redis) {
-   store.setState(() => ({ redis }));
+export function initAgentsWorkflowContext(deps: {
+   posthog: PostHog;
+   prompts: Prompts;
+   redis: Redis;
+}) {
+   store.setState(() => ({
+      posthog: deps.posthog,
+      prompts: deps.prompts,
+      redis: deps.redis,
+   }));
+}
+
+export function getAgentsPosthog(): PostHog {
+   const { posthog } = store.state;
+   if (!posthog) throw new Error("Agents workflow context not initialized");
+   return posthog;
+}
+
+export function getAgentsPrompts(): Prompts {
+   const { prompts } = store.state;
+   if (!prompts) throw new Error("Agents workflow context not initialized");
+   return prompts;
 }
 
 export function getAgentsRedis(): Redis {

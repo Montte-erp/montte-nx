@@ -1,46 +1,96 @@
 import { toolDefinition } from "@tanstack/ai";
 import { z } from "zod";
 import {
-   createServiceSchema,
-   updateServiceSchema,
-} from "@core/database/schemas/services";
-import type { ToolDeps } from "@modules/agents/tools/types";
+   bulkSetActiveInputSchema,
+   idInputSchema,
+   setupInputSchema,
+   updateServiceInputSchema,
+} from "@modules/billing/router/services";
+import type { AgentToolClient } from "@modules/agents/orpc-tool-router";
 
-const idInput = z.object({ id: z.string().uuid() });
-const updateServiceInput = idInput.merge(updateServiceSchema);
-const setActiveInput = z.object({
-   ids: z.array(z.string().uuid()).min(1),
-   isActive: z.boolean(),
-});
-const bulkCreateInput = z.object({
-   items: z.array(createServiceSchema).min(1),
-});
-const attachBenefitInput = z.object({
-   serviceId: z.string().uuid(),
-   benefitId: z.string().uuid(),
-});
-const listInput = z.object({
-   search: z.string().optional(),
-   isActive: z.boolean().optional(),
+interface ServicesToolsDeps {
+   orpcClient: AgentToolClient;
+}
+
+const catalogSearchInputSchema = z.object({
+   kind: z
+      .enum(["services", "meters", "benefits", "coupons"])
+      .describe("Tipo de recurso do catálogo que deve ser consultado."),
+   search: z
+      .string()
+      .min(1)
+      .optional()
+      .describe("Filtro textual opcional por nome/código."),
+   isActive: z
+      .boolean()
+      .optional()
+      .describe("Filtra recursos ativos ou arquivados quando aplicável."),
 });
 
-export function buildServicesTools({ orpcClient }: ToolDeps) {
+export function buildServicesTools({ orpcClient }: ServicesToolsDeps) {
    return [
       toolDefinition({
-         name: "services_list",
+         name: "catalog_search",
          description:
-            "Lista os serviços do catálogo da equipe. Use para encontrar serviços existentes antes de criar duplicados.",
-         inputSchema: listInput,
+            "Consulta o catálogo comercial. Use kind=services/meters/benefits/coupons para listar recursos antes de configurar ou alterar serviços.",
+         inputSchema: catalogSearchInputSchema,
          lazy: true,
       }).server(async (input) => {
-         const items = await orpcClient.services.getAll(input);
-         return { count: items.length, items };
+         if (input.kind === "services") {
+            const items = await orpcClient.services.getAll({
+               search: input.search,
+               isActive: input.isActive,
+            });
+            return { kind: input.kind, count: items.length, items };
+         }
+
+         if (input.kind === "meters") {
+            const rows = await orpcClient.meters.getMeters({
+               search: input.search,
+            });
+            const items =
+               input.isActive === undefined
+                  ? rows
+                  : rows.filter((item) => item.isActive === input.isActive);
+            return { kind: input.kind, count: items.length, items };
+         }
+
+         if (input.kind === "benefits") {
+            const rows = await orpcClient.benefits.getBenefits({
+               search: input.search,
+            });
+            const items =
+               input.isActive === undefined
+                  ? rows
+                  : rows.filter((item) => item.isActive === input.isActive);
+            return { kind: input.kind, count: items.length, items };
+         }
+
+         const rows = await orpcClient.coupons.list();
+         const activeItems =
+            input.isActive === undefined
+               ? rows
+               : rows.filter((item) => item.isActive === input.isActive);
+         if (input.search === undefined) {
+            return {
+               kind: input.kind,
+               count: activeItems.length,
+               items: activeItems,
+            };
+         }
+
+         const search = input.search.toLowerCase();
+         const items = activeItems.filter((item) =>
+            item.code.toLowerCase().includes(search),
+         );
+         return { kind: input.kind, count: items.length, items };
       }),
 
       toolDefinition({
-         name: "services_get",
-         description: "Retorna um serviço com preços e benefícios anexados.",
-         inputSchema: idInput,
+         name: "service_details",
+         description:
+            "Retorna um serviço com seus preços e benefícios anexados. Use quando o usuário pedir detalhes ou antes de alterar um serviço existente.",
+         inputSchema: idInputSchema,
          lazy: true,
       }).server(async ({ id }) => {
          const [service, prices, benefits] = await Promise.all([
@@ -48,25 +98,23 @@ export function buildServicesTools({ orpcClient }: ToolDeps) {
             orpcClient.prices.list({ serviceId: id }),
             orpcClient.benefits.getServiceBenefits({ serviceId: id }),
          ]);
-         return { found: true, service, prices, benefits };
+         return { service, prices, benefits };
       }),
 
       toolDefinition({
-         name: "services_create",
+         name: "service_setup",
          description:
-            "Cria um serviço sem preço/medidor/benefício. Use services_setup quando o serviço precisar de preço ou benefícios — evita múltiplas aprovações.",
-         inputSchema: createServiceSchema,
+            "Configura um serviço completo em uma única aprovação: cria o serviço, cria ou anexa medidor, cria preços e cria ou anexa benefícios. Prefira este tool para novos serviços.",
+         inputSchema: setupInputSchema,
          needsApproval: true,
          lazy: true,
-      }).server(async (input) => {
-         const service = await orpcClient.services.create(input);
-         return { service };
-      }),
+      }).server((input) => orpcClient.services.setup(input)),
 
       toolDefinition({
-         name: "services_update",
-         description: "Atualiza um serviço existente.",
-         inputSchema: updateServiceInput,
+         name: "service_update",
+         description:
+            "Atualiza os campos básicos de um serviço existente. Para criar serviço novo, use service_setup.",
+         inputSchema: updateServiceInputSchema,
          needsApproval: true,
          lazy: true,
       }).server(async (input) => {
@@ -77,8 +125,8 @@ export function buildServicesTools({ orpcClient }: ToolDeps) {
       toolDefinition({
          name: "services_set_active",
          description:
-            "Ativa ou arquiva múltiplos serviços de uma vez. Use isActive=false para arquivar.",
-         inputSchema: setActiveInput,
+            "Ativa ou arquiva serviços em lote. Use isActive=false para arquivar.",
+         inputSchema: bulkSetActiveInputSchema,
          needsApproval: true,
          lazy: true,
       }).server(async (input) => {
@@ -89,26 +137,5 @@ export function buildServicesTools({ orpcClient }: ToolDeps) {
             services: result.services,
          };
       }),
-
-      toolDefinition({
-         name: "services_bulk_create",
-         description:
-            "Cria múltiplos serviços (catálogo inicial) — sem preços/medidores/benefícios. Use só quando importar lista de nomes; para configuração rica use services_setup por serviço.",
-         inputSchema: bulkCreateInput,
-         needsApproval: true,
-         lazy: true,
-      }).server(async (input) => {
-         const services = await orpcClient.services.bulkCreate(input);
-         return { count: services.length, services };
-      }),
-
-      toolDefinition({
-         name: "services_attach_benefit",
-         description:
-            "Anexa um benefício existente a um serviço já existente. Para criar benefício junto com serviço prefira services_setup.",
-         inputSchema: attachBenefitInput,
-         needsApproval: true,
-         lazy: true,
-      }).server((input) => orpcClient.benefits.attachBenefit(input)),
    ];
 }

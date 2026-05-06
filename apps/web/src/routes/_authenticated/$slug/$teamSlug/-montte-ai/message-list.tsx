@@ -1,5 +1,5 @@
 import { Button } from "@packages/ui/components/button";
-import { ArrowDown, RefreshCw } from "lucide-react";
+import { ArrowDown, Brain, Loader2, RefreshCw } from "lucide-react";
 import { useChatSession } from "./chat-store";
 import { MessageItem } from "./message-item";
 import { useStickToBottom } from "./use-stick-to-bottom";
@@ -57,8 +57,10 @@ export function MessageList() {
                   );
                })}
                {showThinking ? (
-                  <div className="border-l-2 border-muted-foreground/30 px-3 py-2 text-base shimmer">
-                     Montte AI está pensando…
+                  <div className="flex items-center gap-2 rounded-lg bg-muted/30 px-3 py-2 text-sm text-muted-foreground shimmer">
+                     <Brain className="size-4" />
+                     <span className="flex-1">Montte AI está pensando</span>
+                     <Loader2 className="size-4 animate-spin" />
                   </div>
                ) : null}
                {showError ? (

@@ -6,6 +6,19 @@ import { agentSettings } from "@core/database/schemas/agents";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 
+const settingsOutput = z.object({
+   teamId: z.string().uuid(),
+   modelId: z.string().default("openrouter/moonshotai/kimi-k2.5"),
+   reasoningEffort: z.enum(["high", "xhigh"]).default("high"),
+   language: z.string().default("pt-BR"),
+   tone: z.string().default("formal"),
+   dataSourceTransactions: z.boolean().default(true),
+   dataSourceContacts: z.boolean().default(true),
+   dataSourceServices: z.boolean().default(true),
+   createdAt: z.date().default(() => dayjs().toDate()),
+   updatedAt: z.date().default(() => dayjs().toDate()),
+});
+
 const upsertInput = createInsertSchema(agentSettings)
    .omit({ teamId: true, createdAt: true, updatedAt: true })
    .extend({ modelId: z.string().startsWith("openrouter/").optional() })
@@ -19,7 +32,10 @@ export const getSettings = protectedProcedure.handler(async ({ context }) => {
       () => WebAppError.internal("Falha ao buscar configurações."),
    );
    if (result.isErr()) throw result.error;
-   return result.value ?? null;
+   return settingsOutput.parse({
+      teamId: context.teamId,
+      ...result.value,
+   });
 });
 
 export const upsertSettings = protectedProcedure

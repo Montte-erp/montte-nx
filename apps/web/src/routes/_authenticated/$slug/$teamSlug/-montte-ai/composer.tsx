@@ -30,12 +30,16 @@ import {
 const composerSchema = z.object({ message: z.string().min(1) });
 
 const EFFORTS = [
-   { id: "low", label: "Rápido" },
-   { id: "medium", label: "Equilibrado" },
    { id: "high", label: "Profundo" },
+   { id: "xhigh", label: "Máximo" },
 ] as const;
 
 type Effort = (typeof EFFORTS)[number]["id"];
+
+const EFFORT_LABELS = {
+   high: "Profundo",
+   xhigh: "Máximo",
+} satisfies Record<Effort, string>;
 
 interface ComposerProps {
    className?: string;
@@ -214,9 +218,8 @@ function EffortPicker() {
       orpc.agentSettings.upsertSettings.mutationOptions(),
    );
 
-   const current: Effort = settings?.reasoningEffort ?? "low";
-   const currentLabel =
-      EFFORTS.find((e) => e.id === current)?.label ?? "Rápido";
+   const current = settings.reasoningEffort;
+   const currentLabel = EFFORT_LABELS[current];
 
    return (
       <Popover onOpenChange={setOpen} open={open}>

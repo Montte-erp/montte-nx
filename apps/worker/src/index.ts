@@ -42,7 +42,12 @@ await setupClassificationWorkflows({
    prompts: promptsClient,
    workerConcurrency: 10,
 });
-await setupAgentsWorkflows({ redis, workerConcurrency: 10 });
+await setupAgentsWorkflows({
+   redis,
+   posthog,
+   prompts: promptsClient,
+   workerConcurrency: 10,
+});
 
 DBOS.setConfig({
    name: "montte-worker",

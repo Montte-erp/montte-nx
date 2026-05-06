@@ -22,8 +22,9 @@ import {
    SidebarMenuButton,
    SidebarMenuItem,
 } from "@packages/ui/components/sidebar";
+import { useLiveQuery } from "@tanstack/react-db";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
    Link,
    useMatchRoute,
@@ -38,14 +39,18 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
-import { setActiveThread } from "../../../-montte-ai/chat-store";
+import {
+   getThreadsCollection,
+   type ChatThreadListItem,
+} from "../../../-montte-ai/chat-data";
+import { useChatSession } from "../../../-montte-ai/chat-store";
 import {
    SelectionActionButton,
    useSelectionToolbar,
 } from "@/hooks/use-selection-toolbar";
-import { orpc, type Outputs } from "@/integrations/orpc/client";
+import { orpc } from "@/integrations/orpc/client";
 
-type ThreadRow = Outputs["threads"]["list"]["threads"][number];
+type ThreadRow = ChatThreadListItem;
 
 interface ThreadGroup {
    id: "today" | "yesterday" | "week" | "older";
@@ -95,11 +100,18 @@ export function ChatSidebar({ search }: { search: string }) {
    const navigate = useNavigate();
    const params = useParams({ strict: false });
    const { openAlertDialog } = useAlertDialog();
+   const queryClient = useQueryClient();
+   const { startNewConversation } = useChatSession();
 
-   const { data } = useSuspenseQuery(
-      orpc.threads.list.queryOptions({ input: { limit: 50 } }),
+   const { data = [] } = useLiveQuery(
+      (q) =>
+         q
+            .from({ t: getThreadsCollection(queryClient) })
+            .orderBy(({ t }) => t.lastMessageAt, "desc")
+            .limit(50),
+      [queryClient],
    );
-   const filtered = filterThreads(data.threads, search);
+   const filtered = filterThreads(data, search);
    const groups = groupByRecency(filtered);
 
    const removeBulkMutation = useMutation(
@@ -159,15 +171,17 @@ export function ChatSidebar({ search }: { search: string }) {
          <SidebarGroup>
             <SidebarMenu>
                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                     <Link
-                        onClick={() => setActiveThread(null)}
-                        params={{ slug, teamSlug }}
-                        to="/$slug/$teamSlug/chat"
-                     >
-                        <Plus className="size-4" />
-                        <span>Nova conversa</span>
-                     </Link>
+                  <SidebarMenuButton
+                     onClick={() => {
+                        startNewConversation();
+                        void navigate({
+                           params: { slug, teamSlug },
+                           to: "/$slug/$teamSlug/chat",
+                        });
+                     }}
+                  >
+                     <Plus className="size-4" />
+                     <span>Nova conversa</span>
                   </SidebarMenuButton>
                </SidebarMenuItem>
             </SidebarMenu>
