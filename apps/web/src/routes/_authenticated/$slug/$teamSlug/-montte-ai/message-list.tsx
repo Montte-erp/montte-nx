@@ -144,7 +144,7 @@ function UserMessage({ compact }: { compact: boolean }) {
       <MessagePrimitive.Root className="group/user flex flex-col items-end gap-2">
          <div
             className={cn(
-               "max-w-[85%] rounded-lg bg-muted p-2",
+               "w-full rounded-lg bg-accent p-2 text-foreground",
                compact ? "text-sm" : "text-base",
             )}
          >
@@ -237,9 +237,9 @@ function ChainOfThoughtGroup({
    return (
       <Collapsible
          aria-busy={running}
-         className="group/cot w-full overflow-hidden rounded-lg border border-muted-foreground/15 bg-muted/20 text-sm text-muted-foreground"
+         className="group/cot w-full overflow-hidden rounded-lg text-sm text-muted-foreground"
       >
-         <CollapsibleTrigger className="flex w-full items-center gap-2 border-b border-muted-foreground/10 p-2 text-left text-foreground/90 hover:bg-muted/30">
+         <CollapsibleTrigger className="flex w-full items-center gap-2 p-2 text-left text-foreground/90 hover:bg-muted/30">
             <ChevronDown className="size-4 shrink-0 transition-transform group-data-[state=closed]/cot:-rotate-90" />
             <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
                <Brain className="size-3" />
@@ -268,7 +268,7 @@ function ReasoningGroup({
    return (
       <div
          aria-busy={running}
-         className="flex gap-2 rounded-lg p-2 text-muted-foreground"
+         className="flex gap-2 rounded-lg p-2 text-muted-foreground hover:bg-muted/30"
       >
          <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-muted">
             <Brain className="size-3" />
