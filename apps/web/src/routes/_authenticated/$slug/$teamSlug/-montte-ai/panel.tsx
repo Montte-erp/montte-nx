@@ -70,7 +70,7 @@ function AgentPanelContent() {
    const showRecents = !activeThreadId && recents.length > 0;
 
    return (
-      <ContextPanel>
+      <ContextPanel className="overflow-hidden">
          <ContextPanelHeader>
             <ContextPanelTitle>Montte AI</ContextPanelTitle>
             <ContextPanelHeaderActions>
@@ -106,16 +106,24 @@ function AgentPanelContent() {
             </ContextPanelHeaderActions>
          </ContextPanelHeader>
 
-         <ContextPanelContent className="flex flex-col gap-4">
+         <ContextPanelContent className="overflow-hidden">
             {hasConversation ? (
                <>
-                  <MessageList />
-                  <Composer />
+                  <div className="flex min-h-0 flex-1 flex-col">
+                     <MessageList />
+                  </div>
+                  <div className="shrink-0">
+                     <Composer />
+                  </div>
                </>
             ) : (
                <>
-                  <EmptyState variant="panel" />
-                  <Composer />
+                  <div className="flex min-h-0 flex-1 flex-col">
+                     <EmptyState variant="panel" />
+                  </div>
+                  <div className="shrink-0">
+                     <Composer />
+                  </div>
                </>
             )}
          </ContextPanelContent>

@@ -16,7 +16,6 @@ import {
 } from "@modules/agents/skills";
 import { buildAdvisorTool } from "@modules/agents/tools/advisor";
 import { buildServicesTools } from "@modules/agents/tools/services";
-import { buildWebSearchTool } from "@modules/agents/tools/web-search";
 
 export interface AgentChatOptions {
    prompts: Prompts;
@@ -74,7 +73,6 @@ async function buildAgentChatArgs(options: AgentChatOptions) {
          turnId,
       }),
       ...buildServicesTools({ orpcClient }),
-      buildWebSearchTool(),
    ];
 
    const rootTemplate = await options.prompts.get(AGENT_PROMPTS.root, {
@@ -115,6 +113,7 @@ async function buildAgentChatArgs(options: AgentChatOptions) {
          }),
          ...(options.extraMiddleware ?? []),
       ],
+      debug: true,
    };
 }
 

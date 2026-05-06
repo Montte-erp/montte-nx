@@ -30,11 +30,31 @@ const TOOL_LABELS: Record<string, string> = {
    skill_discover: "Carregando playbook",
    __lazy__tool__discovery__: "Carregando ferramentas",
    catalog_search: "Consultando catálogo",
+   benefit_create: "Criando benefício",
+   benefit_details: "Detalhando benefício",
+   benefit_remove: "Removendo benefício",
+   benefit_update: "Atualizando benefício",
+   benefits_set_active: "Ativando ou arquivando benefícios",
+   coupon_create: "Criando cupom",
+   coupon_deactivate: "Desativando cupom",
+   coupon_details: "Detalhando cupom",
+   coupon_update: "Atualizando cupom",
+   coupons_set_active: "Ativando ou arquivando cupons",
+   meter_create: "Criando medidor",
+   meter_details: "Detalhando medidor",
+   meter_remove: "Removendo medidor",
+   meter_update: "Atualizando medidor",
+   meters_set_active: "Ativando ou arquivando medidores",
+   price_create: "Criando preço",
+   price_remove: "Removendo preço",
+   price_update: "Atualizando preço",
+   service_benefit_attach: "Anexando benefício",
+   service_benefit_create_attach: "Criando e anexando benefício",
+   service_benefit_detach: "Removendo benefício do serviço",
    service_details: "Detalhando serviço",
    service_setup: "Configurando serviço completo",
    service_update: "Atualizando serviço",
    services_set_active: "Ativando ou arquivando serviços",
-   web_search: "Pesquisando na web",
 };
 
 interface MessageItemProps {
@@ -84,7 +104,7 @@ function MessageItemImpl({
             onReject,
          })}
          {showFooter ? (
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1">
                <MessageFooter
                   messageId={message.id}
                   text={assistantText}

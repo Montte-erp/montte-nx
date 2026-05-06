@@ -164,6 +164,10 @@ function textContent(message: Pick<UIMessage, "parts">): string {
       .join("");
 }
 
+function messageSignature(message: Pick<UIMessage, "role" | "parts">): string {
+   return `${message.role}:${textContent(message)}`;
+}
+
 function hasPendingToolWork(messages: UIMessage[]): boolean {
    return messages.some((message) => {
       if (message.role !== "assistant") return false;
@@ -230,7 +234,7 @@ export function ChatSessionProvider({
 
    const session = useMemo<ChatSession>(() => {
       const dbIds = new Set(dbMessages.map((m) => m.id));
-      const lastDbMessage = dbMessages.at(-1);
+      const dbSignatures = new Set(dbMessages.map(messageSignature));
       if (chat.messages.length > 0) {
          overlaySnapshotRef.current = chat.messages;
       }
@@ -242,8 +246,7 @@ export function ChatSessionProvider({
               : overlaySnapshotRef.current;
       const overlay = overlaySource.filter((m) => {
          if (dbIds.has(m.id)) return false;
-         if (lastDbMessage?.role !== m.role) return true;
-         return textContent(m) !== textContent(lastDbMessage);
+         return !dbSignatures.has(messageSignature(m));
       });
       if (overlay.length === 0 && overlaySnapshotRef.current.length > 0) {
          overlaySnapshotRef.current = [];
@@ -318,6 +321,7 @@ export function ChatSessionProvider({
             if (!trimmed || activeTurn) return;
             const id = await ensureThread();
             if (id === null) return;
+            runtime.setOverlay(messages);
             runtime.prepareTurn({ text: trimmed });
             await chat.sendMessage(trimmed);
          },
