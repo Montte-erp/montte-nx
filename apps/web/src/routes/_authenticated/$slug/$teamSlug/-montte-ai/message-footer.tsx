@@ -3,7 +3,7 @@ import { useThumbSurvey } from "posthog-js/react/surveys";
 import { Check, Copy, ThumbsDown, ThumbsUp } from "lucide-react";
 import { useClipboard } from "foxact/use-clipboard";
 import { POSTHOG_SURVEYS } from "@core/posthog/config";
-import { useTraceIdForMessage } from "./chat-store";
+import { useChatSession } from "./chat-store";
 
 interface MessageFooterProps {
    messageId: string;

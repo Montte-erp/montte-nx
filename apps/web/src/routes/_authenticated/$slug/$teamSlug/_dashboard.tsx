@@ -4,6 +4,7 @@ import { createClientOnlyFn } from "@tanstack/react-start";
 import posthog from "posthog-js";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import type { orpc as orpcClient } from "@/integrations/orpc/client";
+import { ChatSessionProvider } from "./-montte-ai/chat-store";
 import { DashboardLayout } from "./-layout/dashboard-layout";
 
 interface OnEnterContext {
@@ -65,8 +66,10 @@ export const Route = createFileRoute(
 
 function DashboardLayoutRoute() {
    return (
-      <DashboardLayout>
-         <Outlet />
-      </DashboardLayout>
+      <ChatSessionProvider>
+         <DashboardLayout>
+            <Outlet />
+         </DashboardLayout>
+      </ChatSessionProvider>
    );
 }

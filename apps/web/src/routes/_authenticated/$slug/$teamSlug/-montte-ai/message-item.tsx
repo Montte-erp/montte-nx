@@ -9,7 +9,7 @@ import { Brain, Check, ChevronDown, Loader2, Wrench } from "lucide-react";
 import { memo } from "react";
 import { Streamdown } from "streamdown";
 import { MessageFooter } from "./message-footer";
-import { TOOL_LABELS, presentToolIcon } from "./tool-call-card";
+import { TOOL_LABELS, presentToolIcon } from "./tool-meta";
 
 type AssistantPart = UIMessage["parts"][number];
 type ToolCallPart = Extract<AssistantPart, { type: "tool-call" }>;

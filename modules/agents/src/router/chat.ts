@@ -1,22 +1,11 @@
 import { eventIterator } from "@orpc/server";
-import {
-   chat,
-   type ConstrainedModelMessage,
-   type StreamChunk,
-} from "@tanstack/ai";
-import type { OpenRouterMessageMetadataByModality } from "@tanstack/ai-openrouter";
+import { chat, type StreamChunk, type UIMessage } from "@tanstack/ai";
 import { z } from "zod";
 import { getLogger } from "@core/logging/root";
 import { protectedProcedure } from "@core/orpc/server";
-import {
-   buildAgentChatArgs,
-   type AgentChatOptions,
-} from "@modules/agents/agent";
+import { buildAgentChatArgs } from "@modules/agents/agent";
 import { requireThread } from "@modules/agents/router/middlewares";
-import {
-   uiMessageSchema,
-   type AgentUIMessage,
-} from "@modules/agents/router/threads";
+import { uiMessageSchema } from "@modules/agents/router/threads";
 
 const logger = getLogger().child({ module: "agents.chat" });
 
@@ -36,85 +25,20 @@ const chatInputSchema = z.object({
    messages: z.array(uiMessageSchema).optional(),
 });
 
-const streamChunkShapeSchema = z.object({ type: z.string() }).passthrough();
-const chatStreamEventSchema = z.custom<StreamChunk>(
-   (value) => streamChunkShapeSchema.safeParse(value).success,
-);
-
 export type ChatInput = z.infer<typeof chatInputSchema>;
-export type ChatStreamEvent = z.infer<typeof chatStreamEventSchema>;
 export type PageContext = z.infer<typeof pageContextSchema>;
-type AgentModelMessage = ConstrainedModelMessage<{
-   inputModalities: readonly ["text"];
-   messageMetadataByModality: OpenRouterMessageMetadataByModality;
-}>;
-
-function messagesForModel(messages: AgentUIMessage[]): AgentModelMessage[] {
-   return messages.flatMap((message) => {
-      if (message.role === "system") return [];
-      const content = message.parts
-         .flatMap((part) => {
-            if (part.type !== "text") return [];
-            return [part.content];
-         })
-         .join("");
-      if (content.length === 0) return [];
-      return [{ role: message.role, content }];
-   });
-}
-
-export const stream = protectedProcedure
-   .input(chatInputSchema)
-   .use(requireThread, (input) => input.threadId)
-   .output(eventIterator(chatStreamEventSchema))
-   .handler(async function* ({ context, input, signal }) {
-      logger.info(
-         { userId: context.userId, threadId: input.threadId },
-         "agent chat stream start",
-      );
-
-      let messages: AgentChatOptions["messages"] = messagesForModel(
-         context.thread.messages,
-      );
-      if (input.messages !== undefined) {
-         messages = messagesForModel(input.messages);
-      }
-
-      const args = await buildAgentChatArgs({
-         prompts: context.posthogPrompts,
-         posthog: context.posthog,
-         userId: context.userId,
-         headers: context.headers,
-         request: context.request,
-         threadId: input.threadId,
-         messages,
-         pageContext: input.pageContext,
-         abortSignal: signal,
-      });
-
-      for await (const event of chat(args)) {
-         yield event;
-      }
-
-      logger.info({ userId: context.userId }, "agent chat stream end");
-   });
 
 export const send = protectedProcedure
    .input(chatInputSchema)
    .use(requireThread, (input) => input.threadId)
-   .output(eventIterator(chatStreamEventSchema))
+   .output(eventIterator(z.custom<StreamChunk>()))
    .handler(async function* ({ context, input, signal }) {
       logger.info(
          { userId: context.userId, threadId: input.threadId },
          "agent chat send start",
       );
 
-      let messages: AgentChatOptions["messages"] = messagesForModel(
-         context.thread.messages,
-      );
-      if (input.messages !== undefined) {
-         messages = messagesForModel(input.messages);
-      }
+      const uiMessages: UIMessage[] = input.messages ?? context.thread.messages;
 
       const args = await buildAgentChatArgs({
          prompts: context.posthogPrompts,
@@ -123,7 +47,7 @@ export const send = protectedProcedure
          headers: context.headers,
          request: context.request,
          threadId: input.threadId,
-         messages,
+         messages: uiMessages,
          pageContext: input.pageContext,
          abortSignal: signal,
       });
@@ -131,6 +55,7 @@ export const send = protectedProcedure
       for await (const event of chat(args)) {
          yield event;
       }
+
       logger.info({ userId: context.userId }, "agent chat send end");
    });
 

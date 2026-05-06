@@ -5,7 +5,7 @@ import {
    useChat,
    type UIMessage,
 } from "@tanstack/ai-react";
-import { useRef } from "react";
+import { createContext, Suspense, useContext, useRef } from "react";
 import {
    Briefcase,
    Contact,
@@ -22,7 +22,6 @@ import { createPersistedStore } from "@/lib/store";
 import { client, orpc, type Inputs } from "@/integrations/orpc/client";
 
 type AgentSendInput = Inputs["agent"]["send"];
-type AgentSyncMessagesInput = Inputs["threads"]["syncMessages"];
 
 export type AgentScopeId =
    | "auto"
@@ -50,78 +49,55 @@ const SCOPE_BY_ID: Record<AgentScopeId, Omit<AgentScope, "id">> = {
    analises: { label: "Análises", icon: Gauge },
 };
 
-const SCOPE_IDS: AgentScopeId[] = [
-   "auto",
-   "servicos",
-   "contatos",
-   "categorias",
-   "estoque",
-   "financeiro",
-   "analises",
-];
+export const SCOPES: AgentScope[] = (
+   [
+      "auto",
+      "servicos",
+      "contatos",
+      "categorias",
+      "estoque",
+      "financeiro",
+      "analises",
+   ] as AgentScopeId[]
+).map((id) => ({ id, ...SCOPE_BY_ID[id] }));
 
-const SUGGESTION_IDS: AgentScopeId[] = [
-   "servicos",
-   "contatos",
-   "financeiro",
-   "categorias",
-   "estoque",
-   "analises",
-];
-
-export const SCOPES: AgentScope[] = SCOPE_IDS.map((id) => ({
-   id,
-   ...SCOPE_BY_ID[id],
-}));
-
-export const SCOPE_SUGGESTIONS: AgentScope[] = SUGGESTION_IDS.map((id) => ({
-   id,
-   ...SCOPE_BY_ID[id],
-}));
+export const SCOPE_SUGGESTIONS: AgentScope[] = (
+   [
+      "servicos",
+      "contatos",
+      "financeiro",
+      "categorias",
+      "estoque",
+      "analises",
+   ] as AgentScopeId[]
+).map((id) => ({ id, ...SCOPE_BY_ID[id] }));
 
 interface ChatState {
-   activeThreadId: AgentSendInput["threadId"] | null;
-   seedMessages: UIMessage[];
+   activeThreadId: string | null;
    pageContext: AgentSendInput["pageContext"];
    scopeOpen: boolean;
-   traceIdsByMessageId: Record<string, string>;
 }
 
-export const chatStore = createStore<ChatState>({
+const chatStore = createStore<ChatState>({
    activeThreadId: null,
-   seedMessages: [],
    pageContext: undefined,
    scopeOpen: false,
-   traceIdsByMessageId: {},
 });
-
-export const useTraceIdForMessage = (messageId: string) =>
-   useStore(chatStore, (s) => s.traceIdsByMessageId[messageId]);
 
 const scopeStore = createPersistedStore<{ id: AgentScopeId }>(
    "montte:chat:scope",
    { id: "auto" },
 );
 
-export const setActiveThread = (
-   threadId: AgentSendInput["threadId"],
-   messages: UIMessage[],
-) =>
-   chatStore.setState((s) => ({
-      ...s,
-      activeThreadId: threadId,
-      seedMessages: messages,
-   }));
+export const setActiveThread = (threadId: string | null) =>
+   chatStore.setState((s) => ({ ...s, activeThreadId: threadId }));
 
-export const resetChat = () => {
+export const resetChat = () =>
    chatStore.setState(() => ({
       activeThreadId: null,
-      seedMessages: [],
       pageContext: undefined,
       scopeOpen: false,
-      traceIdsByMessageId: {},
    }));
-};
 
 export const setPageContext = (pageContext: AgentSendInput["pageContext"]) =>
    chatStore.setState((s) => ({ ...s, pageContext }));
@@ -132,18 +108,6 @@ export const setScopeOpen = (scopeOpen: boolean) =>
 export const selectScope = (id: AgentScopeId) => {
    scopeStore.setState(() => ({ id }));
    setScopeOpen(false);
-};
-
-export const loadThread = async (threadId: AgentSendInput["threadId"]) => {
-   const result = await fromPromise(
-      client.threads.getById({ threadId }),
-      () => null,
-   );
-   if (result.isErr()) {
-      toast.error("Falha ao carregar conversa.");
-      return;
-   }
-   setActiveThread(result.value.thread.id, result.value.messages);
 };
 
 export const useActiveThreadId = () =>
@@ -160,34 +124,26 @@ const agentConnection = aiStream(async function* (messages) {
    const { activeThreadId, pageContext } = chatStore.state;
    if (activeThreadId === null) return;
 
-   const input: AgentSendInput = {
+   const response = await client.agent.send({
       threadId: activeThreadId,
       pageContext,
-      messages: messages.flatMap((message) =>
-         "parts" in message ? [message] : [],
-      ),
-   };
-   const response = await client.agent.send(input);
+      messages: messages.flatMap((m) => ("parts" in m ? [m] : [])),
+   });
    yield* response;
 });
 
-async function syncAgentMessages(messages: UIMessage[], errorMessage?: string) {
+async function syncMessages(messages: UIMessage[], silent = false) {
    const { activeThreadId } = chatStore.state;
    if (activeThreadId === null || messages.length === 0) return;
 
-   const input: AgentSyncMessagesInput = {
-      threadId: activeThreadId,
-      messages,
-   };
    const result = await fromPromise(
-      client.threads.syncMessages(input),
+      client.threads.syncMessages({ threadId: activeThreadId, messages }),
       () => null,
    );
-   if (result.isErr() && errorMessage !== undefined) {
-      toast.error(errorMessage);
+   if (result.isErr()) {
+      if (!silent) toast.error("Falha ao salvar resposta da Montte AI.");
       return;
    }
-   if (result.isErr()) return;
    void client.threads.updateTitle({ threadId: activeThreadId });
 }
 
@@ -204,22 +160,111 @@ function pendingApprovalIds(messages: UIMessage[]) {
    });
 }
 
+function lastUserText(messages: UIMessage[]): string | null {
+   for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m && m.role === "user") {
+         return m.parts
+            .flatMap((p) => (p.type === "text" ? [p.content] : []))
+            .join("");
+      }
+   }
+   return null;
+}
+
 export interface ChatSession {
    messages: UIMessage[];
    status: "ready" | "submitted" | "streaming" | "error";
+   error: Error | null;
    isStreaming: boolean;
    isSubmitting: boolean;
    pendingApprovalIds: string[];
+   traceIdFor: (messageId: string) => string | undefined;
    sendMessage: (text: string) => Promise<void>;
+   stop: () => void;
+   regenerate: () => Promise<void>;
+   editAndResend: (messageId: string, text: string) => Promise<void>;
    approveTool: (approvalId: string) => Promise<void>;
    rejectTool: (approvalId: string) => Promise<void>;
    approveAll: () => Promise<void>;
    rejectAll: () => Promise<void>;
 }
 
-export function useChatSession(initialMessages: UIMessage[] = []): ChatSession {
+const ChatSessionContext = createContext<ChatSession | null>(null);
+
+export function useChatSession(): ChatSession {
+   const ctx = useContext(ChatSessionContext);
+   if (ctx === null) {
+      throw new Error("useChatSession must be inside <ChatSessionProvider>");
+   }
+   return ctx;
+}
+
+export function ChatSessionProvider({
+   children,
+}: {
+   children: React.ReactNode;
+}) {
+   const activeThreadId = useActiveThreadId();
+   return (
+      <SessionInner
+         activeThreadId={activeThreadId}
+         key={activeThreadId ?? "new"}
+      >
+         {children}
+      </SessionInner>
+   );
+}
+
+function SessionInner({
+   activeThreadId,
+   children,
+}: {
+   activeThreadId: string | null;
+   children: React.ReactNode;
+}) {
+   if (activeThreadId === null) {
+      return <NoThreadSession>{children}</NoThreadSession>;
+   }
+   return (
+      <Suspense fallback={<NoThreadSession>{children}</NoThreadSession>}>
+         <ThreadSession threadId={activeThreadId}>{children}</ThreadSession>
+      </Suspense>
+   );
+}
+
+function NoThreadSession({ children }: { children: React.ReactNode }) {
+   const session = useSessionImpl([]);
+   return (
+      <ChatSessionContext.Provider value={session}>
+         {children}
+      </ChatSessionContext.Provider>
+   );
+}
+
+function ThreadSession({
+   threadId,
+   children,
+}: {
+   threadId: string;
+   children: React.ReactNode;
+}) {
+   const { data } = useSuspenseQuery(
+      orpc.threads.getById.queryOptions({ input: { threadId } }),
+   );
+   const session = useSessionImpl(data.messages);
+   return (
+      <ChatSessionContext.Provider value={session}>
+         {children}
+      </ChatSessionContext.Provider>
+   );
+}
+
+function useSessionImpl(initialMessages: UIMessage[]): ChatSession {
    const queryClient = useQueryClient();
    const pendingTraceIdRef = useRef<string | null>(null);
+   const traceIdsRef = useRef<Map<string, string>>(new Map());
+
    const chat = useChat({
       connection: agentConnection,
       initialMessages,
@@ -234,34 +279,22 @@ export function useChatSession(initialMessages: UIMessage[] = []): ChatSession {
             message.role === "assistant" &&
             pendingTraceIdRef.current !== null
          ) {
-            const traceId = pendingTraceIdRef.current;
-            chatStore.setState((s) => ({
-               ...s,
-               traceIdsByMessageId: {
-                  ...s.traceIdsByMessageId,
-                  [message.id]: traceId,
-               },
-            }));
+            traceIdsRef.current.set(message.id, pendingTraceIdRef.current);
             pendingTraceIdRef.current = null;
          }
-         void syncAgentMessages(
-            chat.messages,
-            "Falha ao salvar resposta da Montte AI.",
-         );
+         void syncMessages(chat.messages);
          void queryClient.invalidateQueries({
             queryKey: orpc.threads.list.key(),
          });
-         const activeThreadId = chatStore.state.activeThreadId;
-         if (activeThreadId) {
+         const id = chatStore.state.activeThreadId;
+         if (id) {
             void queryClient.invalidateQueries({
-               queryKey: orpc.threads.getById.key({
-                  input: { threadId: activeThreadId },
-               }),
+               queryKey: orpc.threads.getById.key({ input: { threadId: id } }),
             });
          }
       },
       onError: () => {
-         void syncAgentMessages(chat.messages);
+         void syncMessages(chat.messages, true);
          toast.error("Falha no streaming da Montte AI.");
       },
    });
@@ -269,12 +302,37 @@ export function useChatSession(initialMessages: UIMessage[] = []): ChatSession {
    const status = chat.status;
    const approvalIds = pendingApprovalIds(chat.messages);
 
+   const ensureThread = async (firstText: string): Promise<string | null> => {
+      const existing = chatStore.state.activeThreadId;
+      if (existing !== null) return existing;
+
+      const result = await fromPromise(
+         client.threads.create({ title: firstText.slice(0, 80) }),
+         () => null,
+      );
+      if (result.isErr()) {
+         toast.error("Falha ao criar conversa.");
+         return null;
+      }
+      const threadId = result.value.id;
+      const skillHint = SCOPE_BY_ID[scopeStore.state.id].skillHint;
+      chatStore.setState((s) => ({
+         ...s,
+         activeThreadId: threadId,
+         pageContext: skillHint ? { skillHint } : s.pageContext,
+      }));
+      return threadId;
+   };
+
    return {
       messages: chat.messages,
       status,
+      error: chat.error ?? null,
       isStreaming: status === "streaming",
       isSubmitting: status === "submitted",
       pendingApprovalIds: approvalIds,
+      traceIdFor: (id) => traceIdsRef.current.get(id),
+      stop: () => chat.stop(),
       approveTool: (id) => chat.addToolApprovalResponse({ id, approved: true }),
       rejectTool: (id) => chat.addToolApprovalResponse({ id, approved: false }),
       approveAll: async () => {
@@ -290,29 +348,32 @@ export function useChatSession(initialMessages: UIMessage[] = []): ChatSession {
       sendMessage: async (text: string) => {
          const trimmed = text.trim();
          if (!trimmed || status === "streaming") return;
-
-         const result = await fromPromise(
-            (async () => {
-               let threadId = chatStore.state.activeThreadId;
-               if (threadId === null) {
-                  const created = await client.threads.create({
-                     title: trimmed.slice(0, 80),
-                  });
-                  threadId = created.id;
-               }
-               const skillHint = SCOPE_BY_ID[scopeStore.state.id].skillHint;
-               chatStore.setState((s) => ({
-                  ...s,
-                  activeThreadId: threadId,
-                  pageContext: skillHint ? { skillHint } : s.pageContext,
-               }));
-               await chat.sendMessage(trimmed);
-            })(),
-            () => null,
-         );
-         if (result.isErr()) {
-            toast.error("Falha ao enviar mensagem.");
-         }
+         const threadId = await ensureThread(trimmed);
+         if (threadId === null) return;
+         await chat.sendMessage(trimmed);
+      },
+      regenerate: async () => {
+         if (status === "streaming") return;
+         const last = lastUserText(chat.messages);
+         if (last === null) return;
+         const lastUserIdx = (() => {
+            for (let i = chat.messages.length - 1; i >= 0; i--) {
+               if (chat.messages[i]?.role === "user") return i;
+            }
+            return -1;
+         })();
+         if (lastUserIdx < 0) return;
+         chat.setMessages(chat.messages.slice(0, lastUserIdx));
+         await chat.sendMessage(last);
+      },
+      editAndResend: async (messageId, text) => {
+         if (status === "streaming") return;
+         const trimmed = text.trim();
+         if (!trimmed) return;
+         const idx = chat.messages.findIndex((m) => m.id === messageId);
+         if (idx < 0) return;
+         chat.setMessages(chat.messages.slice(0, idx));
+         await chat.sendMessage(trimmed);
       },
    };
 }

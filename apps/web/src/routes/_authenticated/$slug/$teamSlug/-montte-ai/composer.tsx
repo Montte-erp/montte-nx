@@ -6,7 +6,7 @@ import {
 } from "@packages/ui/components/popover";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
-import { ArrowRight, Check, ChevronDown } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Square } from "lucide-react";
 import { z } from "zod";
 import {
    SCOPES,
@@ -20,17 +20,16 @@ import {
 const composerSchema = z.object({ message: z.string().min(1) });
 
 interface ComposerProps {
-   session: ReturnType<typeof useChatSession>;
    className?: string;
    placeholder?: string;
 }
 
 export function Composer({
-   session,
    className,
    placeholder = "Faça uma pergunta ou / para comandos",
 }: ComposerProps) {
-   const { sendMessage, isStreaming } = session;
+   const { sendMessage, stop, isStreaming, isSubmitting } = useChatSession();
+   const busy = isStreaming || isSubmitting;
 
    const form = useForm({
       defaultValues: { message: "" },
@@ -58,15 +57,15 @@ export function Composer({
                      aria-invalid={field.state.meta.errors.length > 0}
                      aria-label="Mensagem para a Montte AI"
                      className="min-h-[80px] resize-none border-0 bg-transparent px-4 py-2 text-base shadow-none focus-visible:ring-0 focus-visible:border-transparent"
-                     disabled={isStreaming}
                      id={field.name}
                      name={field.name}
                      onChange={(e) => field.handleChange(e.target.value)}
                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                           e.preventDefault();
-                           void form.handleSubmit();
-                        }
+                        if (e.key !== "Enter") return;
+                        if (e.shiftKey) return;
+                        e.preventDefault();
+                        if (busy) return;
+                        void form.handleSubmit();
                      }}
                      placeholder={placeholder}
                      value={field.state.value}
@@ -75,19 +74,32 @@ export function Composer({
             </form.Field>
             <div className="flex items-center justify-between gap-2 px-2 pb-2">
                <ScopePicker />
-               <form.Subscribe selector={(s) => s.canSubmit}>
-                  {(canSubmit) => (
-                     <Button
-                        aria-label="Enviar"
-                        className="size-8 rounded-md"
-                        disabled={!canSubmit || isStreaming}
-                        size="icon"
-                        type="submit"
-                     >
-                        <ArrowRight />
-                     </Button>
-                  )}
-               </form.Subscribe>
+               {busy ? (
+                  <Button
+                     aria-label="Parar"
+                     className="size-8 rounded-md"
+                     onClick={stop}
+                     size="icon"
+                     type="button"
+                     variant="secondary"
+                  >
+                     <Square className="size-4 fill-current" />
+                  </Button>
+               ) : (
+                  <form.Subscribe selector={(s) => s.canSubmit}>
+                     {(canSubmit) => (
+                        <Button
+                           aria-label="Enviar"
+                           className="size-8 rounded-md"
+                           disabled={!canSubmit}
+                           size="icon"
+                           type="submit"
+                        >
+                           <ArrowRight />
+                        </Button>
+                     )}
+                  </form.Subscribe>
+               )}
             </div>
          </div>
       </form>

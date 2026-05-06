@@ -1,5 +1,8 @@
-import { maxIterations, type ConstrainedModelMessage } from "@tanstack/ai";
-import type { OpenRouterMessageMetadataByModality } from "@tanstack/ai-openrouter";
+import {
+   convertMessagesToModelMessages,
+   maxIterations,
+   type UIMessage,
+} from "@tanstack/ai";
 import { webSearchTool } from "@tanstack/ai-openrouter/tools";
 import type { PostHog, Prompts } from "@core/posthog/server";
 import { flashModel } from "@core/ai/models";
@@ -27,10 +30,7 @@ export interface AgentChatOptions {
    headers: Headers;
    request: Request;
    threadId?: string;
-   messages: ConstrainedModelMessage<{
-      inputModalities: readonly ["text"];
-      messageMetadataByModality: OpenRouterMessageMetadataByModality;
-   }>[];
+   messages: UIMessage[];
    pageContext: PageContext;
    abortSignal?: AbortSignal;
 }
@@ -97,7 +97,7 @@ export async function buildAgentChatArgs(options: AgentChatOptions) {
    return {
       adapter: flashModel,
       systemPrompts: [systemPrompt],
-      messages: options.messages,
+      messages: convertMessagesToModelMessages(options.messages),
       tools: [
          skillDiscoverTool,
          advisorTool,

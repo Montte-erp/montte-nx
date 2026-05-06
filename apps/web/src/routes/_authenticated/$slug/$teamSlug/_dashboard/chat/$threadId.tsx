@@ -1,10 +1,8 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
-import type { UIMessage } from "@tanstack/ai-react";
 import { Button } from "@packages/ui/components/button";
 import { orpc } from "@/integrations/orpc/client";
-import { setActiveThread, useChatSession } from "../../-montte-ai/chat-store";
+import { setActiveThread } from "../../-montte-ai/chat-store";
 import { Composer } from "../../-montte-ai/composer";
 import { MessageList } from "../../-montte-ai/message-list";
 
@@ -46,35 +44,14 @@ export const Route = createFileRoute(
 
 function ChatThreadPage() {
    const { threadId } = Route.useParams();
-   const { data } = useSuspenseQuery(
-      orpc.threads.getById.queryOptions({ input: { threadId } }),
-   );
-   return (
-      <ThreadRunner
-         initialMessages={data.messages}
-         key={data.thread.id}
-         threadId={data.thread.id}
-      />
-   );
-}
-
-function ThreadRunner({
-   initialMessages,
-   threadId,
-}: {
-   initialMessages: UIMessage[];
-   threadId: string;
-}) {
    useIsomorphicLayoutEffect(() => {
-      setActiveThread(threadId, initialMessages);
+      setActiveThread(threadId);
    }, [threadId]);
-
-   const session = useChatSession(initialMessages);
 
    return (
       <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-4 p-6">
-         <MessageList session={session} />
-         <Composer session={session} />
+         <MessageList />
+         <Composer />
       </div>
    );
 }

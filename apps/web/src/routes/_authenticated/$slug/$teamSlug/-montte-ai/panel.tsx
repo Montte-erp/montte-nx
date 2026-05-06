@@ -13,12 +13,11 @@ import { Maximize2 } from "lucide-react";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import {
-   chatStore,
    resetChat,
+   setActiveThread,
    useActiveThreadId,
    useChatSession,
    useRecentThreads,
-   loadThread,
 } from "./chat-store";
 import { Composer } from "./composer";
 import { EmptyState } from "./empty-state";
@@ -34,17 +33,8 @@ export function AgentPanel() {
 
 function AgentPanelContent() {
    const activeThreadId = useActiveThreadId();
-   return (
-      <PanelRunner
-         activeThreadId={activeThreadId}
-         key={activeThreadId ?? "new"}
-      />
-   );
-}
-
-function PanelRunner({ activeThreadId }: { activeThreadId: string | null }) {
    const { slug, teamSlug } = useDashboardSlugs();
-   const session = useChatSession(chatStore.state.seedMessages);
+   const session = useChatSession();
    const recents = useRecentThreads();
 
    const hasConversation = session.messages.length > 0;
@@ -113,13 +103,13 @@ function PanelRunner({ activeThreadId }: { activeThreadId: string | null }) {
                         </Button>
                      </div>
                   ) : null}
-                  <MessageList session={session} />
-                  <Composer session={session} />
+                  <MessageList />
+                  <Composer />
                </>
             ) : (
                <>
                   <EmptyState variant="panel" />
-                  <Composer session={session} />
+                  <Composer />
                </>
             )}
          </ContextPanelContent>
@@ -143,7 +133,7 @@ function PanelRunner({ activeThreadId }: { activeThreadId: string | null }) {
                         >
                            <button
                               className="flex-1 truncate text-left text-foreground hover:underline"
-                              onClick={() => void loadThread(thread.id)}
+                              onClick={() => setActiveThread(thread.id)}
                               type="button"
                            >
                               {thread.title ?? "Conversa sem título"}

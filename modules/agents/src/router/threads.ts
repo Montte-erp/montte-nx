@@ -26,8 +26,6 @@ export const uiMessageSchema = z.custom<UIMessage>(
          .safeParse(value).success,
 );
 
-export type AgentUIMessage = z.infer<typeof uiMessageSchema>;
-
 const threadIdInputSchema = z.object({ threadId: threadSchema.shape.id });
 
 const createThreadInputSchema = insertThreadSchema
