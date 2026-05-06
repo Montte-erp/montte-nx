@@ -95,6 +95,7 @@ export default {
       remove: threadsRouter.remove,
       removeBulk: threadsRouter.removeBulk,
       removeMessage: threadsRouter.removeMessage,
+      saveAssistantMessage: threadsRouter.saveAssistantMessage,
       update: threadsRouter.update,
    },
 };

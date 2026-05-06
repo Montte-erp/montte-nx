@@ -80,6 +80,8 @@ type AssistantPartForGrouping = {
    text?: string;
 };
 
+type MessageActionRole = "assistant" | "user" | "system";
+
 const isEmptyTextPart = (part: AssistantPartForGrouping) =>
    part.type === "text" && (part.text ?? "").trim().length === 0;
 
@@ -136,6 +138,8 @@ function ThinkingIndicator() {
 }
 
 function UserMessage({ compact }: { compact: boolean }) {
+   const messageId = useAuiState((s) => s.message.id);
+
    return (
       <MessagePrimitive.Root className="group/user flex flex-col items-end gap-2">
          <div
@@ -151,7 +155,7 @@ function UserMessage({ compact }: { compact: boolean }) {
                }}
             </MessagePrimitive.Parts>
          </div>
-         <MessageActions align="end" />
+         <MessageActions align="end" messageId={messageId} role="user" />
       </MessagePrimitive.Root>
    );
 }
@@ -204,7 +208,13 @@ function AssistantMessage({ compact }: { compact: boolean }) {
                return null;
             }}
          </MessagePrimitive.GroupedParts>
-         {isLastAssistantMessage ? <MessageActions align="start" /> : null}
+         {isLastAssistantMessage ? (
+            <MessageActions
+               align="start"
+               messageId={messageId}
+               role="assistant"
+            />
+         ) : null}
       </MessagePrimitive.Root>
    );
 }
@@ -228,7 +238,6 @@ function ChainOfThoughtGroup({
       <Collapsible
          aria-busy={running}
          className="group/cot w-full overflow-hidden rounded-lg border border-muted-foreground/15 bg-muted/20 text-sm text-muted-foreground"
-         defaultOpen
       >
          <CollapsibleTrigger className="flex w-full items-center gap-2 border-b border-muted-foreground/10 p-2 text-left text-foreground/90 hover:bg-muted/30">
             <ChevronDown className="size-4 shrink-0 transition-transform group-data-[state=closed]/cot:-rotate-90" />
@@ -302,8 +311,7 @@ function ToolPart({
       approvalId !== undefined &&
       approvalApproved === undefined;
    const running =
-      part.status.type === "running" ||
-      (part.result === undefined && toolState !== "approval-requested");
+      toolState === "awaiting-input" || toolState === "input-streaming";
    const label = TOOL_LABELS[part.toolName] ?? "Executando ferramenta";
 
    return (
@@ -323,11 +331,7 @@ function ToolPart({
                   <Check className="size-3" />
                )}
             </span>
-            {running ? (
-               <Loader2 className="size-4 shrink-0 animate-spin" />
-            ) : (
-               <Wrench className="size-4 shrink-0" />
-            )}
+            <Wrench className="size-4 shrink-0" />
             <span className="truncate">{label}</span>
          </div>
          {needsDecision ? (
@@ -356,9 +360,15 @@ function ToolPart({
    );
 }
 
-function MessageActions({ align }: { align: "start" | "end" }) {
-   const role = useAuiState((s) => s.message.role);
-   const messageId = useAuiState((s) => s.message.id);
+function MessageActions({
+   align,
+   messageId,
+   role,
+}: {
+   align: "start" | "end";
+   messageId: string;
+   role: MessageActionRole;
+}) {
    const { deleteMessage, isRunning } = useMontteAssistant();
 
    if (role === "system") return null;

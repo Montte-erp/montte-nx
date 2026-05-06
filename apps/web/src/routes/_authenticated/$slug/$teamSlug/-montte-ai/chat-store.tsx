@@ -218,21 +218,25 @@ function mergeStreamingMessage(
    if (next.role !== "assistant") return next;
 
    const previousThinking = previous.parts.filter(isNonEmptyThinkingPart);
+   let changed = false;
    const nextParts = next.parts.map((part, index) => {
       if (part.type !== "thinking") return part;
       const previousPart = previous.parts[index];
-      if (
+      const shouldKeepPrevious =
          previousPart?.type === "thinking" &&
-         previousPart.content.length > part.content.length
-      )
+         previousPart.content.length > part.content.length;
+      if (shouldKeepPrevious) {
+         changed = true;
          return previousPart;
+      }
       return part;
    });
 
    if (nextParts.some(isNonEmptyThinkingPart)) {
+      if (!changed) return next;
       return { ...next, parts: nextParts };
    }
-   if (previousThinking.length === 0) return { ...next, parts: nextParts };
+   if (previousThinking.length === 0) return next;
 
    const firstTextIndex = nextParts.findIndex((part) => part.type === "text");
    const insertAt = firstTextIndex === -1 ? nextParts.length : firstTextIndex;
@@ -262,10 +266,27 @@ function mergeStreamingMessages(
    );
 }
 
-function convertMessage(
-   message: UIMessage,
-   runningMessageId: string | null,
-): ThreadMessageLike {
+function collapseAdjacentAssistantMessages(messages: UIMessage[]): UIMessage[] {
+   const collapsed: UIMessage[] = [];
+   for (const message of messages) {
+      const previous = collapsed.at(-1);
+      if (previous?.role === "assistant" && message.role === "assistant") {
+         collapsed[collapsed.length - 1] = {
+            ...previous,
+            parts: [...previous.parts, ...message.parts],
+         };
+         continue;
+      }
+      collapsed.push(message);
+   }
+   return collapsed;
+}
+
+function lastAssistantMessage(messages: UIMessage[]): UIMessage | null {
+   return messages.findLast((message) => message.role === "assistant") ?? null;
+}
+
+function convertMessage(message: UIMessage): ThreadMessageLike {
    const toolResults = new Map<string, { content: string; error?: string }>();
    for (const part of message.parts) {
       if (part.type !== "tool-result") continue;
@@ -312,12 +333,6 @@ function convertMessage(
       role: message.role,
       content,
       createdAt: message.createdAt,
-      ...(message.role === "assistant" && {
-         status:
-            runningMessageId === message.id
-               ? { type: "running" }
-               : { type: "complete", reason: "stop" },
-      }),
    };
 }
 
@@ -359,24 +374,29 @@ export function ChatSessionProvider({
    const chat = useChat({
       connection,
       initialMessages: [],
-      onFinish: () => {
+      onFinish: (message) => {
          const id = chatStore.state.activeThreadId;
          if (!id) return;
-         void fromPromise(client.threads.getById({ threadId: id }), () => null)
-            .then((result) => {
-               if (result.isErr()) return;
-               const messages = result.value.messages.map(toUiMessage);
-               const snapshotKey = `${id}:${messages
-                  .map((message) => message.id)
-                  .join(":")}`;
-               loadedSnapshotKey.current = snapshotKey;
-               chat.setMessages(messages);
-               writeThreadSnapshot(queryClient, {
-                  ...result.value.thread,
-                  suggestions: result.value.thread.suggestions ?? [],
-               });
-            })
-            .then(() => refreshChatData(queryClient));
+         const sourceMessages = chat.messages.some(
+            (item) => item.id === message.id,
+         )
+            ? chat.messages
+            : [...chat.messages, message];
+         const assistantMessage = lastAssistantMessage(
+            collapseAdjacentAssistantMessages(sourceMessages),
+         );
+         if (assistantMessage === null) return;
+         if (assistantMessage.parts.length === 0) return;
+         void fromPromise(
+            client.threads.saveAssistantMessage({
+               threadId: id,
+               parts: assistantMessage.parts,
+            }),
+            () => null,
+         ).then((result) => {
+            if (result.isErr())
+               toast.error("Falha ao salvar resposta da Montte AI.");
+         });
       },
       onError: () => toast.error("Falha no streaming da Montte AI."),
    });
@@ -413,6 +433,7 @@ export function ChatSessionProvider({
       const data = threadQuery.data;
       if (data === undefined) return;
       const messages = data.messages.map(toUiMessage);
+      if (chat.messages.length > messages.length) return;
       const snapshotKey = `${threadId}:${messages
          .map((message) => message.id)
          .join(":")}`;
@@ -438,10 +459,10 @@ export function ChatSessionProvider({
          chat.messages,
          activeTurn,
       );
-      visibleMessages.current = merged;
-      return merged;
+      const collapsed = collapseAdjacentAssistantMessages(merged);
+      visibleMessages.current = collapsed;
+      return collapsed;
    }, [activeTurn, chat.messages]);
-   const runningMessageId = activeTurn ? (messages.at(-1)?.id ?? null) : null;
    const approvalIds = useMemo(() => pendingApprovalIds(messages), [messages]);
 
    const ensureThread = useCallback(async (): Promise<string | null> => {
@@ -500,7 +521,7 @@ export function ChatSessionProvider({
       suggestions: (threadQuery.data?.thread?.suggestions ?? []).map(
          (prompt) => ({ prompt }),
       ),
-      convertMessage: (message) => convertMessage(message, runningMessageId),
+      convertMessage,
       onNew,
       onEdit,
       onReload,
