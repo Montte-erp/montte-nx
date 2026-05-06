@@ -110,7 +110,7 @@ function AgentPanelContent() {
             {hasConversation ? (
                <>
                   <div className="flex min-h-0 flex-1 flex-col">
-                     <MessageList />
+                     <MessageList compact />
                   </div>
                   <div className="shrink-0">
                      <Composer />

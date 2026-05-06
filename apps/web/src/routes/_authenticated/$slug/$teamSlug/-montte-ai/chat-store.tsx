@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createStore, useStore } from "@tanstack/react-store";
 import { useLiveQuery } from "@tanstack/react-db";
 import type { UIMessage } from "@tanstack/ai-react";
-import { createContext, useContext, useMemo, useRef } from "react";
+import { createContext, useContext, useMemo } from "react";
 import {
    Briefcase,
    Contact,
@@ -158,16 +158,6 @@ function pendingApprovalIds(messages: UIMessage[]): string[] {
    });
 }
 
-function textContent(message: Pick<UIMessage, "parts">): string {
-   return message.parts
-      .flatMap((part) => (part.type === "text" ? [part.content] : []))
-      .join("");
-}
-
-function messageSignature(message: Pick<UIMessage, "role" | "parts">): string {
-   return `${message.role}:${textContent(message)}`;
-}
-
 function hasPendingToolWork(messages: UIMessage[]): boolean {
    return messages.some((message) => {
       if (message.role !== "assistant") return false;
@@ -188,6 +178,38 @@ function hasPendingToolWork(messages: UIMessage[]): boolean {
    });
 }
 
+function toUiMessage(message: ChatMessage): UIMessage {
+   return {
+      id: message.id,
+      role: message.role,
+      parts: message.parts,
+   };
+}
+
+function visibleMessages({
+   activeTurn,
+   persisted,
+   live,
+}: {
+   activeTurn: boolean;
+   persisted: UIMessage[];
+   live: UIMessage[];
+}): UIMessage[] {
+   if (!activeTurn || live.length === 0) return persisted;
+
+   const firstLive = live[0];
+   const firstPersisted = persisted[0];
+   if (firstLive !== undefined && firstLive.id === firstPersisted?.id) {
+      return live;
+   }
+
+   const persistedIds = new Set(persisted.map((message) => message.id));
+   return [
+      ...persisted,
+      ...live.filter((message) => !persistedIds.has(message.id)),
+   ];
+}
+
 export function ChatSessionProvider({
    children,
 }: {
@@ -195,7 +217,6 @@ export function ChatSessionProvider({
 }) {
    const queryClient = useQueryClient();
    const threadId = useActiveThreadId();
-   const overlaySnapshotRef = useRef<UIMessage[]>([]);
 
    useAgentLive();
 
@@ -206,7 +227,7 @@ export function ChatSessionProvider({
          const id = chatStore.state.activeThreadId;
          if (!id) return;
          await refreshChatData(queryClient, id);
-         runtime.clearOverlay();
+         chat.setMessages([]);
       },
    });
    const chat = runtime.chat;
@@ -231,42 +252,22 @@ export function ChatSessionProvider({
    const thread = threadRows[0];
 
    const status = chat.status;
+   const activeTurn =
+      chat.isLoading ||
+      chat.sessionGenerating ||
+      status === "submitted" ||
+      status === "streaming" ||
+      hasPendingToolWork(chat.messages);
 
    const session = useMemo<ChatSession>(() => {
-      const dbIds = new Set(dbMessages.map((m) => m.id));
-      const dbSignatures = new Set(dbMessages.map(messageSignature));
-      if (chat.messages.length > 0) {
-         overlaySnapshotRef.current = chat.messages;
-      }
-      const overlaySource =
-         threadId === null
-            ? chat.messages
-            : chat.messages.length > 0
-              ? chat.messages
-              : overlaySnapshotRef.current;
-      const overlay = overlaySource.filter((m) => {
-         if (dbIds.has(m.id)) return false;
-         return !dbSignatures.has(messageSignature(m));
+      const persistedMessages = dbMessages.map(toUiMessage);
+      const messages = visibleMessages({
+         activeTurn,
+         persisted: persistedMessages,
+         live: chat.messages,
       });
-      if (overlay.length === 0 && overlaySnapshotRef.current.length > 0) {
-         overlaySnapshotRef.current = [];
-      }
-      const messages: UIMessage[] = [
-         ...dbMessages.map((m) => ({
-            id: m.id,
-            role: m.role,
-            parts: m.parts,
-         })),
-         ...overlay,
-      ];
-      const approvalIds = pendingApprovalIds(messages);
       const metadataMap = new Map(dbMessages.map((m) => [m.id, m.metadata]));
-      const activeTurn =
-         chat.isLoading ||
-         chat.sessionGenerating ||
-         status === "submitted" ||
-         status === "streaming" ||
-         hasPendingToolWork(chat.messages);
+      const approvalIds = pendingApprovalIds(messages);
 
       const ensureThread = async (): Promise<string | null> => {
          const existing = chatStore.state.activeThreadId;
@@ -297,8 +298,7 @@ export function ChatSessionProvider({
          pendingApprovalIds: approvalIds,
          metadataFor: (id) => metadataMap.get(id),
          startNewConversation: () => {
-            overlaySnapshotRef.current = [];
-            runtime.clearOverlay();
+            chat.setMessages([]);
             setActiveThread(null);
          },
          stop: () => chat.stop(),
@@ -321,7 +321,6 @@ export function ChatSessionProvider({
             if (!trimmed || activeTurn) return;
             const id = await ensureThread();
             if (id === null) return;
-            runtime.setOverlay(messages);
             runtime.prepareTurn({ text: trimmed });
             await chat.sendMessage(trimmed);
          },
@@ -329,7 +328,7 @@ export function ChatSessionProvider({
             if (activeTurn) return;
             const idx = messages.findIndex((m) => m.id === userMessageId);
             if (idx < 0) return;
-            runtime.setOverlay(messages.slice(0, idx + 1));
+            chat.setMessages(messages.slice(0, idx + 1));
             runtime.prepareTurn({ regenerate: true });
             await chat.reload();
          },
@@ -339,7 +338,7 @@ export function ChatSessionProvider({
             if (!trimmed) return;
             const idx = messages.findIndex((m) => m.id === userMessageId);
             if (idx < 0) return;
-            runtime.setOverlay(messages.slice(0, idx));
+            chat.setMessages(messages.slice(0, idx));
             runtime.prepareTurn({
                text: trimmed,
                replaceFromMessageId: userMessageId,
@@ -361,7 +360,16 @@ export function ChatSessionProvider({
             await refreshChatData(queryClient, id);
          },
       };
-   }, [chat, status, dbMessages, queryClient, runtime, thread, threadId]);
+   }, [
+      activeTurn,
+      chat,
+      status,
+      dbMessages,
+      queryClient,
+      runtime,
+      thread,
+      threadId,
+   ]);
 
    return (
       <ChatSessionContext.Provider value={session}>

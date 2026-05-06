@@ -1,4 +1,4 @@
-import { fetchHttpStream, useChat, type UIMessage } from "@tanstack/ai-react";
+import { fetchHttpStream, useChat } from "@tanstack/ai-react";
 import { useMemo, useRef } from "react";
 import { toast } from "sonner";
 import type { Outputs } from "@/integrations/orpc/client";
@@ -59,7 +59,5 @@ export function useChatRuntime(options: ChatRuntimeOptions) {
       prepareTurn: (turn: ChatTurnRequest) => {
          pendingTurn.current = turn;
       },
-      clearOverlay: () => chat.setMessages([]),
-      setOverlay: (messages: UIMessage[]) => chat.setMessages(messages),
    };
 }

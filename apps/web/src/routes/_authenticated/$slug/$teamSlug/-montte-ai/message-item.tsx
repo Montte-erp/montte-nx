@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { memo, useState } from "react";
 import { Streamdown } from "streamdown";
+import { cn } from "@packages/ui/lib/utils";
 import { useChatSession } from "./chat-store";
 import type { ChatMessage } from "./chat-data";
 import { MessageFooter } from "./message-footer";
@@ -60,6 +61,7 @@ const TOOL_LABELS: Record<string, string> = {
 interface MessageItemProps {
    message: UIMessage;
    metadata?: ChatMessageMetadata;
+   compact?: boolean;
    isStreaming: boolean;
    isLast: boolean;
    onApprove: (approvalId: string) => Promise<void>;
@@ -69,6 +71,7 @@ interface MessageItemProps {
 function MessageItemImpl({
    message,
    metadata,
+   compact = false,
    isStreaming,
    isLast,
    onApprove,
@@ -77,7 +80,7 @@ function MessageItemImpl({
    if (message.role === "system") return null;
 
    if (message.role === "user") {
-      return <UserBubble message={message} />;
+      return <UserBubble compact={compact} message={message} />;
    }
 
    const assistantText = message.parts
@@ -97,7 +100,12 @@ function MessageItemImpl({
       assistantText.length > 0;
 
    return (
-      <div className="group/msg flex flex-col gap-3 text-base leading-relaxed">
+      <div
+         className={cn(
+            "group/msg flex flex-col gap-3 leading-relaxed",
+            compact ? "text-sm" : "text-base",
+         )}
+      >
          {renderParts(message.parts, {
             isStreaming,
             onApprove,
@@ -122,7 +130,13 @@ function MessageItemImpl({
    );
 }
 
-function UserBubble({ message }: { message: UIMessage }) {
+function UserBubble({
+   message,
+   compact,
+}: {
+   message: UIMessage;
+   compact: boolean;
+}) {
    const { editAndResend, regenerateFrom, isStreaming } = useChatSession();
    const [editing, setEditing] = useState(false);
    const text = message.parts
@@ -135,7 +149,10 @@ function UserBubble({ message }: { message: UIMessage }) {
          <div className="flex flex-col items-end gap-2">
             <Textarea
                aria-label="Editar mensagem"
-               className="max-w-[85%] resize-none rounded-2xl text-base"
+               className={cn(
+                  "max-w-[85%] resize-none rounded-2xl",
+                  compact ? "text-sm" : "text-base",
+               )}
                onChange={(e) => setDraft(e.target.value)}
                value={draft}
             />
@@ -168,7 +185,12 @@ function UserBubble({ message }: { message: UIMessage }) {
 
    return (
       <div className="group/user flex flex-col items-end gap-1">
-         <div className="max-w-[85%] rounded-2xl bg-muted px-4 py-2.5 text-base">
+         <div
+            className={cn(
+               "max-w-[85%] rounded-2xl bg-muted px-4 py-2.5",
+               compact ? "text-sm" : "text-base",
+            )}
+         >
             <span className="whitespace-pre-wrap">{text}</span>
          </div>
          {!isStreaming ? (
@@ -397,6 +419,7 @@ function ToolGroup({
 
 export const MessageItem = memo(MessageItemImpl, (prev, next) => {
    if (prev.message.id !== next.message.id) return false;
+   if (prev.compact !== next.compact) return false;
    if (prev.isStreaming !== next.isStreaming) return false;
    if (prev.isLast !== next.isLast) return false;
    if (prev.message.parts.length !== next.message.parts.length) return false;

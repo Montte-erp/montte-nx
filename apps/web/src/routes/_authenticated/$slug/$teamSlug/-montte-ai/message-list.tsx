@@ -4,7 +4,7 @@ import { useChatSession } from "./chat-store";
 import { MessageItem } from "./message-item";
 import { useStickToBottom } from "./use-stick-to-bottom";
 
-export function MessageList() {
+export function MessageList({ compact = false }: { compact?: boolean }) {
    const { ref, onScroll, scrollToBottom, atBottom } = useStickToBottom();
    const session = useChatSession();
    const {
@@ -40,12 +40,13 @@ export function MessageList() {
    return (
       <div className="relative flex flex-1 min-h-0 flex-col">
          <div className="flex-1 overflow-y-auto" onScroll={onScroll} ref={ref}>
-            <div className="flex flex-col gap-3">
+            <div className="flex min-h-full flex-col justify-end gap-3">
                {messages.map((message, idx) => {
                   const isLast = idx === lastIndex;
                   const isLive = isLast && isStreaming;
                   return (
                      <MessageItem
+                        compact={compact}
                         isLast={isLast}
                         isStreaming={isLive}
                         key={message.id}
