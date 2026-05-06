@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { orpc } from "@/integrations/orpc/client";
+import { refreshThreadCollections } from "./chat-store";
 
 const agentEventSchema = z.discriminatedUnion("type", [
    z.object({
@@ -21,6 +22,13 @@ const agentEventSchema = z.discriminatedUnion("type", [
          threadId: z.string().uuid(),
          messageId: z.string().uuid(),
          role: z.enum(["user", "assistant", "system"]),
+      }),
+   }),
+   z.object({
+      type: z.literal("agent.thread.suggestions_updated"),
+      payload: z.object({
+         threadId: z.string().uuid(),
+         suggestions: z.array(z.string()),
       }),
    }),
 ]);
@@ -47,12 +55,11 @@ export function useAgentLive() {
             queryKey: orpc.threads.list.key(),
          });
       }
-      if (event.type === "agent.message.persisted") {
-         void queryClient.invalidateQueries({
-            queryKey: orpc.threads.getById.key({
-               input: { threadId: event.payload.threadId },
-            }),
-         });
+      if (
+         event.type === "agent.message.persisted" ||
+         event.type === "agent.thread.suggestions_updated"
+      ) {
+         refreshThreadCollections(event.payload.threadId);
       }
    }, [data, queryClient]);
 }

@@ -13,7 +13,6 @@ interface MessageFooterProps {
 
 export function MessageFooter({ text, traceId }: MessageFooterProps) {
    const { copy, copied } = useClipboard({ timeout: 1500 });
-   const surveyId = POSTHOG_SURVEYS.aiAgentFeedback.id;
 
    const onCopy = async () => {
       await copy(text);
@@ -35,26 +34,19 @@ export function MessageFooter({ text, traceId }: MessageFooterProps) {
                <Copy className="size-4" />
             )}
          </Button>
-         {traceId !== undefined ? (
-            <FeedbackButtons surveyId={surveyId} traceId={traceId} />
-         ) : null}
+         <FeedbackButtons traceId={traceId} />
       </div>
    );
 }
 
-function FeedbackButtons({
-   surveyId,
-   traceId,
-}: {
-   surveyId: string;
-   traceId: string;
-}) {
+function FeedbackButtons({ traceId }: { traceId?: string }) {
    const { respond, response } = useThumbSurvey({
-      surveyId,
-      properties: { $ai_trace_id: traceId },
+      surveyId: POSTHOG_SURVEYS.aiAgentFeedback.id,
+      properties: traceId ? { $ai_trace_id: traceId } : {},
    });
-   const answered = response !== undefined;
+   const answered = response === "up" || response === "down";
    const onRespond = (kind: "up" | "down") => {
+      if (answered) return;
       respond(kind);
       if (kind === "up") {
          toast.success("Obrigado pelo feedback");

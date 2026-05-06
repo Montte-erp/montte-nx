@@ -1,11 +1,12 @@
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createStore, useStore } from "@tanstack/react-store";
+import { useLiveQuery } from "@tanstack/react-db";
 import {
-   stream as aiStream,
+   fetchServerSentEvents,
    useChat,
    type UIMessage,
 } from "@tanstack/ai-react";
-import { createContext, Suspense, useContext } from "react";
+import { createContext, useContext, useMemo } from "react";
 import {
    Briefcase,
    Contact,
@@ -19,11 +20,14 @@ import {
 import { fromPromise } from "neverthrow";
 import { toast } from "sonner";
 import { createPersistedStore } from "@/lib/store";
-import { client, orpc, type Inputs } from "@/integrations/orpc/client";
+import { client, orpc } from "@/integrations/orpc/client";
 import type { MessageMetadata } from "@core/database/schemas/messages";
-
-type AgentSendInput = Inputs["agent"]["send"];
-type PageContext = AgentSendInput["pageContext"];
+import type { PageContext } from "@modules/agents/constants";
+import {
+   getMessagesCollection,
+   getThreadCollection,
+   refreshThreadCollections,
+} from "./chat-collections";
 
 export type AgentScopeId =
    | "auto"
@@ -51,27 +55,23 @@ const SCOPE_BY_ID: Record<AgentScopeId, Omit<AgentScope, "id">> = {
    analises: { label: "Análises", icon: Gauge },
 };
 
-export const SCOPES: AgentScope[] = (
-   [
-      "auto",
-      "servicos",
-      "contatos",
-      "categorias",
-      "estoque",
-      "financeiro",
-      "analises",
-   ] as AgentScopeId[]
-).map((id) => ({ id, ...SCOPE_BY_ID[id] }));
+const SCOPE_ORDER: AgentScopeId[] = [
+   "auto",
+   "servicos",
+   "contatos",
+   "categorias",
+   "estoque",
+   "financeiro",
+   "analises",
+];
 
-export const SCOPE_SUGGESTIONS: AgentScope[] = (
-   [
-      "servicos",
-      "contatos",
-      "financeiro",
-      "categorias",
-      "estoque",
-      "analises",
-   ] as AgentScopeId[]
+export const SCOPES: AgentScope[] = SCOPE_ORDER.map((id) => ({
+   id,
+   ...SCOPE_BY_ID[id],
+}));
+
+export const SCOPE_SUGGESTIONS: AgentScope[] = SCOPE_ORDER.filter(
+   (id) => id !== "auto",
 ).map((id) => ({ id, ...SCOPE_BY_ID[id] }));
 
 interface ChatState {
@@ -89,12 +89,13 @@ const scopeStore = createPersistedStore<{ id: AgentScopeId }>(
    { id: "auto" },
 );
 
-type RequestOverride = {
+type PendingSend = {
+   text?: string;
    regenerate?: boolean;
    replaceFromMessageId?: string;
 };
 
-let pendingOverride: RequestOverride | null = null;
+let pendingSend: PendingSend | null = null;
 
 export const setActiveThread = (threadId: string | null) =>
    chatStore.setState((s) => ({ ...s, activeThreadId: threadId }));
@@ -108,9 +109,8 @@ export const togglePanel = () =>
 export const setPanelOpen = (panelOpen: boolean) =>
    chatStore.setState((s) => ({ ...s, panelOpen }));
 
-export const selectScope = (id: AgentScopeId) => {
+export const selectScope = (id: AgentScopeId) =>
    scopeStore.setState(() => ({ id }));
-};
 
 export const useActiveThreadId = () =>
    useStore(chatStore, (s) => s.activeThreadId);
@@ -122,50 +122,32 @@ export const useSelectedScope = (): AgentScope => {
    return { id, ...SCOPE_BY_ID[id] };
 };
 
-function pickPageContext(): PageContext {
+function pickPageContext(): PageContext | undefined {
    const skillHint = SCOPE_BY_ID[scopeStore.state.id].skillHint;
    return skillHint ? { skillHint } : undefined;
 }
 
-function lastUserText(messages: UIMessage[]): string | null {
-   for (let i = messages.length - 1; i >= 0; i--) {
-      const m = messages[i];
-      if (m && m.role === "user") {
-         return m.parts
-            .flatMap((p) => (p.type === "text" ? [p.content] : []))
-            .join("");
-      }
-   }
-   return null;
-}
-
-const agentConnection = aiStream(async function* (messagesArg) {
+const agentConnection = fetchServerSentEvents("/api/chat", () => {
+   const send = pendingSend;
+   pendingSend = null;
    const { activeThreadId } = chatStore.state;
-   if (activeThreadId === null) return;
-
-   const uiMessages = messagesArg.flatMap((m) => ("parts" in m ? [m] : []));
-
-   const override = pendingOverride;
-   pendingOverride = null;
-
-   const text = override?.regenerate
-      ? undefined
-      : (lastUserText(uiMessages) ?? undefined);
-
-   const response = await client.agent.send({
-      threadId: activeThreadId,
-      ...(text !== undefined && { text }),
-      ...(override?.replaceFromMessageId && {
-         replaceFromMessageId: override.replaceFromMessageId,
-      }),
-      ...(override?.regenerate && { regenerate: true }),
-      pageContext: pickPageContext(),
-   });
-   yield* response;
+   return {
+      credentials: "include",
+      body: {
+         threadId: activeThreadId ?? "",
+         ...(send?.text !== undefined && { text: send.text }),
+         ...(send?.regenerate && { regenerate: true }),
+         ...(send?.replaceFromMessageId && {
+            replaceFromMessageId: send.replaceFromMessageId,
+         }),
+         pageContext: pickPageContext(),
+      },
+   };
 });
 
 export interface ChatSession {
    messages: UIMessage[];
+   suggestions: string[];
    status: "ready" | "submitted" | "streaming" | "error";
    error: Error | null;
    isStreaming: boolean;
@@ -174,8 +156,9 @@ export interface ChatSession {
    metadataFor: (messageId: string) => MessageMetadata | null | undefined;
    sendMessage: (text: string) => Promise<void>;
    stop: () => void;
-   regenerate: () => Promise<void>;
-   editAndResend: (messageId: string, text: string) => Promise<void>;
+   regenerateFrom: (userMessageId: string) => Promise<void>;
+   editAndResend: (userMessageId: string, text: string) => Promise<void>;
+   deleteMessage: (messageId: string) => Promise<void>;
    approveTool: (approvalId: string) => Promise<void>;
    rejectTool: (approvalId: string) => Promise<void>;
    approveAll: () => Promise<void>;
@@ -192,66 +175,6 @@ export function useChatSession(): ChatSession {
    return ctx;
 }
 
-export function ChatSessionProvider({
-   children,
-}: {
-   children: React.ReactNode;
-}) {
-   const activeThreadId = useActiveThreadId();
-   return (
-      <SessionInner
-         activeThreadId={activeThreadId}
-         key={activeThreadId ?? "new"}
-      >
-         {children}
-      </SessionInner>
-   );
-}
-
-function SessionInner({
-   activeThreadId,
-   children,
-}: {
-   activeThreadId: string | null;
-   children: React.ReactNode;
-}) {
-   if (activeThreadId === null) {
-      return <NoThreadSession>{children}</NoThreadSession>;
-   }
-   return (
-      <Suspense fallback={<NoThreadSession>{children}</NoThreadSession>}>
-         <ThreadSession threadId={activeThreadId}>{children}</ThreadSession>
-      </Suspense>
-   );
-}
-
-function NoThreadSession({ children }: { children: React.ReactNode }) {
-   const session = useSessionImpl([], {});
-   return (
-      <ChatSessionContext.Provider value={session}>
-         {children}
-      </ChatSessionContext.Provider>
-   );
-}
-
-function ThreadSession({
-   threadId,
-   children,
-}: {
-   threadId: string;
-   children: React.ReactNode;
-}) {
-   const { data } = useSuspenseQuery(
-      orpc.threads.getById.queryOptions({ input: { threadId } }),
-   );
-   const session = useSessionImpl(data.messages, data.messageMetadata);
-   return (
-      <ChatSessionContext.Provider value={session}>
-         {children}
-      </ChatSessionContext.Provider>
-   );
-}
-
 function pendingApprovalIds(messages: UIMessage[]): string[] {
    return messages.flatMap((message) => {
       if (message.role !== "assistant") return [];
@@ -265,106 +188,158 @@ function pendingApprovalIds(messages: UIMessage[]): string[] {
    });
 }
 
-function useSessionImpl(
-   initialMessages: UIMessage[],
-   initialMetadata: Record<string, MessageMetadata | null>,
-): ChatSession {
+export function ChatSessionProvider({
+   children,
+}: {
+   children: React.ReactNode;
+}) {
    const queryClient = useQueryClient();
+   const threadId = useActiveThreadId();
 
    const chat = useChat({
       connection: agentConnection,
-      initialMessages,
-      onFinish: () => {
-         void queryClient.invalidateQueries({
-            queryKey: orpc.threads.list.key(),
-         });
+      initialMessages: [],
+      onFinish: async () => {
          const id = chatStore.state.activeThreadId;
-         if (id) {
-            void queryClient.invalidateQueries({
-               queryKey: orpc.threads.getById.key({ input: { threadId: id } }),
-            });
-         }
+         if (!id) return;
+         await Promise.all([
+            getMessagesCollection(id, queryClient).utils.refetch(),
+            getThreadCollection(id, queryClient).utils.refetch(),
+            queryClient.invalidateQueries({
+               queryKey: orpc.threads.list.key(),
+            }),
+         ]);
+         chat.setMessages([]);
       },
-      onError: () => {
-         toast.error("Falha no streaming da Montte AI.");
-      },
+      onError: () => toast.error("Falha no streaming da Montte AI."),
    });
 
+   const { data: dbMessages = [] } = useLiveQuery(
+      (q) =>
+         threadId
+            ? q
+                 .from({ m: getMessagesCollection(threadId, queryClient) })
+                 .orderBy(({ m }) => m.createdAt, "asc")
+            : null,
+      [threadId, queryClient],
+   );
+
+   const { data: threadRows = [] } = useLiveQuery(
+      (q) =>
+         threadId
+            ? q.from({ t: getThreadCollection(threadId, queryClient) })
+            : null,
+      [threadId, queryClient],
+   );
+   const thread = threadRows[0];
+
    const status = chat.status;
-   const approvalIds = pendingApprovalIds(chat.messages);
 
-   const ensureThread = async (firstText: string): Promise<string | null> => {
-      const existing = chatStore.state.activeThreadId;
-      if (existing !== null) return existing;
+   const session = useMemo<ChatSession>(() => {
+      const dbIds = new Set(dbMessages.map((m) => m.id));
+      const overlay = chat.messages.filter((m) => !dbIds.has(m.id));
+      const messages: UIMessage[] = [
+         ...dbMessages.map((m) => ({
+            id: m.id,
+            role: m.role,
+            parts: m.parts,
+         })),
+         ...overlay,
+      ];
+      const approvalIds = pendingApprovalIds(messages);
+      const metadataMap = new Map(dbMessages.map((m) => [m.id, m.metadata]));
 
-      const result = await fromPromise(
-         client.threads.create({ title: firstText.slice(0, 80) }),
-         () => null,
-      );
-      if (result.isErr()) {
-         toast.error("Falha ao criar conversa.");
-         return null;
-      }
-      const threadId = result.value.id;
-      chatStore.setState((s) => ({ ...s, activeThreadId: threadId }));
-      return threadId;
-   };
-
-   return {
-      messages: chat.messages,
-      status,
-      error: chat.error ?? null,
-      isStreaming: status === "streaming",
-      isSubmitting: status === "submitted",
-      pendingApprovalIds: approvalIds,
-      metadataFor: (id) => initialMetadata[id],
-      stop: () => chat.stop(),
-      approveTool: (id) => chat.addToolApprovalResponse({ id, approved: true }),
-      rejectTool: (id) => chat.addToolApprovalResponse({ id, approved: false }),
-      approveAll: async () => {
-         for (const id of approvalIds) {
-            await chat.addToolApprovalResponse({ id, approved: true });
+      const ensureThread = async (
+         firstText: string,
+      ): Promise<string | null> => {
+         const existing = chatStore.state.activeThreadId;
+         if (existing !== null) return existing;
+         const result = await fromPromise(
+            client.threads.create({ title: firstText.slice(0, 80) }),
+            () => null,
+         );
+         if (result.isErr()) {
+            toast.error("Falha ao criar conversa.");
+            return null;
          }
-      },
-      rejectAll: async () => {
-         for (const id of approvalIds) {
-            await chat.addToolApprovalResponse({ id, approved: false });
-         }
-      },
-      sendMessage: async (text: string) => {
-         const trimmed = text.trim();
-         if (!trimmed || status === "streaming") return;
-         const threadId = await ensureThread(trimmed);
-         if (threadId === null) return;
-         pendingOverride = null;
-         await chat.sendMessage(trimmed);
-      },
-      regenerate: async () => {
-         if (status === "streaming") return;
-         const lastUserIdx = (() => {
-            for (let i = chat.messages.length - 1; i >= 0; i--) {
-               if (chat.messages[i]?.role === "user") return i;
+         setActiveThread(result.value.id);
+         return result.value.id;
+      };
+
+      return {
+         messages,
+         suggestions: thread?.suggestions ?? [],
+         status,
+         error: chat.error ?? null,
+         isStreaming: status === "streaming",
+         isSubmitting: status === "submitted",
+         pendingApprovalIds: approvalIds,
+         metadataFor: (id) => metadataMap.get(id),
+         stop: () => chat.stop(),
+         approveTool: (id) =>
+            chat.addToolApprovalResponse({ id, approved: true }),
+         rejectTool: (id) =>
+            chat.addToolApprovalResponse({ id, approved: false }),
+         approveAll: async () => {
+            for (const id of approvalIds) {
+               await chat.addToolApprovalResponse({ id, approved: true });
             }
-            return -1;
-         })();
-         if (lastUserIdx < 0) return;
-         const lastText = lastUserText(chat.messages);
-         if (lastText === null) return;
-         chat.setMessages(chat.messages.slice(0, lastUserIdx + 1));
-         pendingOverride = { regenerate: true };
-         await chat.sendMessage(lastText);
-      },
-      editAndResend: async (messageId, text) => {
-         if (status === "streaming") return;
-         const trimmed = text.trim();
-         if (!trimmed) return;
-         const idx = chat.messages.findIndex((m) => m.id === messageId);
-         if (idx < 0) return;
-         chat.setMessages(chat.messages.slice(0, idx));
-         pendingOverride = { replaceFromMessageId: messageId };
-         await chat.sendMessage(trimmed);
-      },
-   };
+         },
+         rejectAll: async () => {
+            for (const id of approvalIds) {
+               await chat.addToolApprovalResponse({ id, approved: false });
+            }
+         },
+         sendMessage: async (text) => {
+            const trimmed = text.trim();
+            if (!trimmed || status === "streaming") return;
+            const id = await ensureThread(trimmed);
+            if (id === null) return;
+            pendingSend = { text: trimmed };
+            await chat.sendMessage(trimmed);
+         },
+         regenerateFrom: async (userMessageId) => {
+            if (status === "streaming") return;
+            const idx = messages.findIndex((m) => m.id === userMessageId);
+            if (idx < 0) return;
+            chat.setMessages(messages.slice(0, idx + 1));
+            pendingSend = { regenerate: true };
+            await chat.reload();
+         },
+         editAndResend: async (userMessageId, text) => {
+            if (status === "streaming") return;
+            const trimmed = text.trim();
+            if (!trimmed) return;
+            const idx = messages.findIndex((m) => m.id === userMessageId);
+            if (idx < 0) return;
+            chat.setMessages(messages.slice(0, idx));
+            pendingSend = {
+               text: trimmed,
+               replaceFromMessageId: userMessageId,
+            };
+            await chat.sendMessage(trimmed);
+         },
+         deleteMessage: async (messageId) => {
+            const id = chatStore.state.activeThreadId;
+            if (!id) return;
+            const result = await fromPromise(
+               client.threads.removeMessage({ threadId: id, messageId }),
+               () => null,
+            );
+            if (result.isErr()) {
+               toast.error("Falha ao excluir mensagem.");
+               return;
+            }
+            refreshThreadCollections(id);
+         },
+      };
+   }, [chat, status, dbMessages, thread]);
+
+   return (
+      <ChatSessionContext.Provider value={session}>
+         {children}
+      </ChatSessionContext.Provider>
+   );
 }
 
 export function useRecentThreads() {
@@ -373,3 +348,5 @@ export function useRecentThreads() {
    );
    return query.data.threads;
 }
+
+export { refreshThreadCollections };

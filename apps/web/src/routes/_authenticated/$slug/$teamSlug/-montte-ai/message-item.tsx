@@ -5,10 +5,22 @@ import {
    CollapsibleContent,
    CollapsibleTrigger,
 } from "@packages/ui/components/collapsible";
-import { Brain, Check, ChevronDown, Loader2, Wrench } from "lucide-react";
-import { memo } from "react";
+import { Textarea } from "@packages/ui/components/textarea";
+import {
+   Brain,
+   Check,
+   ChevronDown,
+   Loader2,
+   Pencil,
+   RefreshCw,
+   Trash2,
+   Wrench,
+   X,
+} from "lucide-react";
+import { memo, useState } from "react";
 import { Streamdown } from "streamdown";
 import type { MessageMetadata } from "@core/database/schemas/messages";
+import { useChatSession } from "./chat-store";
 import { MessageFooter } from "./message-footer";
 import { TOOL_LABELS, presentToolIcon } from "./tool-meta";
 
@@ -19,7 +31,6 @@ interface MessageItemProps {
    isLast: boolean;
    onApprove: (approvalId: string) => Promise<void>;
    onReject: (approvalId: string) => Promise<void>;
-   onSendFollowUp?: (text: string) => Promise<void>;
 }
 
 function MessageItemImpl({
@@ -29,21 +40,11 @@ function MessageItemImpl({
    isLast,
    onApprove,
    onReject,
-   onSendFollowUp,
 }: MessageItemProps) {
    if (message.role === "system") return null;
 
    if (message.role === "user") {
-      const text = message.parts
-         .flatMap((part) => (part.type === "text" ? [part.content] : []))
-         .join("");
-      return (
-         <div className="flex justify-end">
-            <div className="max-w-[85%] rounded-2xl bg-muted px-4 py-2.5 text-base">
-               <span className="whitespace-pre-wrap">{text}</span>
-            </div>
-         </div>
-      );
+      return <UserBubble message={message} />;
    }
 
    const assistantText = message.parts
@@ -56,31 +57,132 @@ function MessageItemImpl({
          part.state === "approval-requested",
    );
    const showFooter =
-      isLast && !isStreaming && allToolsResolved && assistantText.length > 0;
-
-   const followUps = isLast && !isStreaming ? metadata?.followUps : undefined;
+      !isStreaming && allToolsResolved && assistantText.length > 0;
 
    return (
-      <div className="flex flex-col gap-3 text-base leading-relaxed">
+      <div className="group/msg flex flex-col gap-3 text-base leading-relaxed">
          {renderParts(message.parts, {
             isStreaming,
             onApprove,
             onReject,
          })}
          {showFooter ? (
-            <MessageFooter
-               messageId={message.id}
-               text={assistantText}
-               traceId={metadata?.traceId}
-            />
-         ) : null}
-         {followUps && followUps.length > 0 && onSendFollowUp ? (
-            <FollowUpChips
-               followUps={followUps}
-               onSendFollowUp={onSendFollowUp}
-            />
+            <div className="flex items-center justify-between gap-2">
+               <MessageFooter
+                  messageId={message.id}
+                  text={assistantText}
+                  traceId={metadata?.traceId}
+               />
+               {isLast ? null : (
+                  <DeleteButton
+                     messageId={message.id}
+                     label="Excluir resposta"
+                  />
+               )}
+            </div>
          ) : null}
       </div>
+   );
+}
+
+function UserBubble({ message }: { message: UIMessage }) {
+   const { editAndResend, regenerateFrom, isStreaming } = useChatSession();
+   const [editing, setEditing] = useState(false);
+   const text = message.parts
+      .flatMap((part) => (part.type === "text" ? [part.content] : []))
+      .join("");
+   const [draft, setDraft] = useState(text);
+
+   if (editing) {
+      return (
+         <div className="flex flex-col items-end gap-2">
+            <Textarea
+               aria-label="Editar mensagem"
+               className="max-w-[85%] resize-none rounded-2xl text-base"
+               onChange={(e) => setDraft(e.target.value)}
+               value={draft}
+            />
+            <div className="flex items-center gap-2">
+               <Button
+                  onClick={() => {
+                     setEditing(false);
+                     setDraft(text);
+                  }}
+                  size="sm"
+                  variant="ghost"
+               >
+                  <X className="size-4" />
+                  Cancelar
+               </Button>
+               <Button
+                  disabled={!draft.trim() || draft.trim() === text}
+                  onClick={() => {
+                     setEditing(false);
+                     void editAndResend(message.id, draft);
+                  }}
+                  size="sm"
+               >
+                  Enviar
+               </Button>
+            </div>
+         </div>
+      );
+   }
+
+   return (
+      <div className="group/user flex flex-col items-end gap-1">
+         <div className="max-w-[85%] rounded-2xl bg-muted px-4 py-2.5 text-base">
+            <span className="whitespace-pre-wrap">{text}</span>
+         </div>
+         <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover/user:opacity-100">
+            <Button
+               aria-label="Editar"
+               className="size-7 text-muted-foreground hover:text-foreground"
+               disabled={isStreaming}
+               onClick={() => {
+                  setDraft(text);
+                  setEditing(true);
+               }}
+               size="icon"
+               variant="ghost"
+            >
+               <Pencil className="size-3.5" />
+            </Button>
+            <Button
+               aria-label="Regenerar resposta"
+               className="size-7 text-muted-foreground hover:text-foreground"
+               disabled={isStreaming}
+               onClick={() => void regenerateFrom(message.id)}
+               size="icon"
+               variant="ghost"
+            >
+               <RefreshCw className="size-3.5" />
+            </Button>
+            <DeleteButton messageId={message.id} label="Excluir mensagem" />
+         </div>
+      </div>
+   );
+}
+
+function DeleteButton({
+   messageId,
+   label,
+}: {
+   messageId: string;
+   label: string;
+}) {
+   const { deleteMessage, isStreaming } = useChatSession();
+   return (
+      <Button
+         aria-label={label}
+         className="size-7 text-muted-foreground hover:text-destructive"
+         disabled={isStreaming}
+         onClick={() => void deleteMessage(messageId)}
+         size="icon"
+         variant="ghost"
+      >
+         <Trash2 className="size-3.5" />
+      </Button>
    );
 }
 
@@ -152,31 +254,6 @@ function renderParts(parts: UIMessage["parts"], ctx: RenderContext) {
    });
    flushTools("end");
    return out;
-}
-
-function FollowUpChips({
-   followUps,
-   onSendFollowUp,
-}: {
-   followUps: string[];
-   onSendFollowUp: (text: string) => Promise<void>;
-}) {
-   return (
-      <div className="flex flex-wrap gap-2">
-         {followUps.map((text) => (
-            <Button
-               className="h-auto whitespace-normal rounded-full border-dashed px-3 py-1.5 text-left text-xs"
-               key={text}
-               onClick={() => void onSendFollowUp(text)}
-               size="sm"
-               type="button"
-               variant="outline"
-            >
-               {text}
-            </Button>
-         ))}
-      </div>
-   );
 }
 
 function ToolGroup({
@@ -293,6 +370,5 @@ export const MessageItem = memo(MessageItemImpl, (prev, next) => {
    if (prev.metadata !== next.metadata) return false;
    if (prev.onApprove !== next.onApprove) return false;
    if (prev.onReject !== next.onReject) return false;
-   if (prev.onSendFollowUp !== next.onSendFollowUp) return false;
    return true;
 });

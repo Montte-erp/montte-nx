@@ -14,7 +14,6 @@ export const messageRoleEnum = agentsSchema.enum("message_role", [
 
 export const messageMetadataSchema = z.object({
    traceId: z.string().optional(),
-   followUps: z.array(z.string()).max(3).optional(),
    pageContext: z
       .object({
          route: z.string().optional(),

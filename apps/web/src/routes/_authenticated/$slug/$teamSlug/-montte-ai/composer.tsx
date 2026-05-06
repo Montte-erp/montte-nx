@@ -46,7 +46,8 @@ export function Composer({
    className,
    placeholder = "Faça uma pergunta ou / para comandos",
 }: ComposerProps) {
-   const { sendMessage, stop, isStreaming, isSubmitting } = useChatSession();
+   const { sendMessage, stop, isStreaming, isSubmitting, suggestions } =
+      useChatSession();
    const busy = isStreaming || isSubmitting;
    const [expanded, setExpanded] = useState(false);
 
@@ -61,14 +62,32 @@ export function Composer({
       },
    });
 
+   const showSuggestions = !busy && suggestions.length > 0;
+
    return (
       <form
-         className={className}
+         className={cn("flex flex-col gap-2", className)}
          onSubmit={(e) => {
             e.preventDefault();
             void form.handleSubmit();
          }}
       >
+         {showSuggestions ? (
+            <div className="flex flex-wrap gap-2">
+               {suggestions.map((text) => (
+                  <Button
+                     className="h-auto whitespace-normal rounded-full border-dashed px-3 py-1.5 text-left text-xs"
+                     key={text}
+                     onClick={() => void sendMessage(text)}
+                     size="sm"
+                     type="button"
+                     variant="outline"
+                  >
+                     {text}
+                  </Button>
+               ))}
+            </div>
+         ) : null}
          <div className="relative w-full rounded-xl border bg-background">
             <Button
                aria-label={expanded ? "Recolher" : "Expandir"}

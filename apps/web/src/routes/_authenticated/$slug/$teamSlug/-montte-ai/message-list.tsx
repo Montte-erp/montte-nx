@@ -14,13 +14,13 @@ export function MessageList() {
       error,
       approveTool,
       rejectTool,
-      regenerate,
+      regenerateFrom,
       metadataFor,
-      sendMessage,
    } = session;
    const lastIndex = messages.length - 1;
    const last = messages.at(-1);
    const showThinking = isSubmitting || (isStreaming && last?.role === "user");
+   const lastUserId = messages.findLast((m) => m.role === "user")?.id;
 
    const showError =
       error !== null && !isStreaming && !isSubmitting && messages.length > 0;
@@ -41,7 +41,6 @@ export function MessageList() {
                         metadata={metadataFor(message.id)}
                         onApprove={approveTool}
                         onReject={rejectTool}
-                        onSendFollowUp={sendMessage}
                      />
                   );
                })}
@@ -57,7 +56,10 @@ export function MessageList() {
                      </span>
                      <Button
                         className="h-7 px-2 text-xs"
-                        onClick={() => void regenerate()}
+                        disabled={!lastUserId}
+                        onClick={() =>
+                           lastUserId && void regenerateFrom(lastUserId)
+                        }
                         size="sm"
                         variant="outline"
                      >

@@ -1,4 +1,3 @@
-import type { UIMessage } from "@tanstack/ai";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { err, fromPromise, ok } from "neverthrow";
 import { z } from "zod";
@@ -63,22 +62,21 @@ export const getById = protectedProcedure
             role: messages.role,
             parts: messages.parts,
             metadata: messages.metadata,
+            createdAt: messages.createdAt,
          })
          .from(messages)
          .where(eq(messages.threadId, input.threadId))
          .orderBy(asc(messages.createdAt));
-      const uiMessages: UIMessage[] = rows.map((row) => ({
-         id: row.id,
-         role: row.role as UIMessage["role"],
-         parts: row.parts,
-      }));
-      const messageMetadata = Object.fromEntries(
-         rows.map((r) => [r.id, r.metadata]),
-      );
       return {
          thread: context.thread,
-         messages: uiMessages,
-         messageMetadata,
+         messages: rows.map((row) => ({
+            id: row.id,
+            role: row.role,
+            parts: row.parts,
+            metadata: row.metadata,
+            threadId: input.threadId,
+            createdAt: row.createdAt.toISOString(),
+         })),
       };
    });
 
@@ -142,6 +140,32 @@ export const remove = protectedProcedure
             tx.delete(threads).where(eq(threads.id, input.threadId)),
          ),
          () => WebAppError.internal("Falha ao excluir conversa."),
+      );
+      if (result.isErr()) throw result.error;
+      return { ok: true };
+   });
+
+export const removeMessage = protectedProcedure
+   .input(
+      z.object({
+         threadId: z.string().uuid(),
+         messageId: z.string().uuid(),
+      }),
+   )
+   .use(requireThread, (input) => input.threadId)
+   .handler(async ({ context, input }) => {
+      const result = await fromPromise(
+         context.db.transaction((tx) =>
+            tx
+               .delete(messages)
+               .where(
+                  and(
+                     eq(messages.id, input.messageId),
+                     eq(messages.threadId, input.threadId),
+                  ),
+               ),
+         ),
+         () => WebAppError.internal("Falha ao excluir mensagem."),
       );
       if (result.isErr()) throw result.error;
       return { ok: true };

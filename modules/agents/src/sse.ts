@@ -14,6 +14,10 @@ const agentEventDefinitions = {
       messageId: z.string().uuid(),
       role: z.enum(["user", "assistant", "system"]),
    }),
+   "agent.thread.suggestions_updated": z.object({
+      threadId: z.string().uuid(),
+      suggestions: z.array(z.string()),
+   }),
 } as const;
 
 export const agentsSseEvents = defineSseEvents(agentEventDefinitions);

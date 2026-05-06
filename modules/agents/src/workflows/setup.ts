@@ -1,4 +1,5 @@
 import "./generate-title-workflow";
+import "./refresh-suggestions-workflow";
 import { DrizzleDataSource } from "@dbos-inc/drizzle-datasource";
 import { env } from "@core/environment/worker";
 import type { Redis } from "@core/redis/connection";

@@ -1,13 +1,14 @@
 import {
    convertMessagesToModelMessages,
    maxIterations,
+   type ChatMiddleware,
    type UIMessage,
 } from "@tanstack/ai";
 import { webSearchTool } from "@tanstack/ai-openrouter/tools";
 import type { PostHog, Prompts } from "@core/posthog/server";
 import { flashModel } from "@core/ai/models";
 import { createPosthogAiMiddleware } from "@core/ai/middleware";
-import { AGENT_PROMPTS } from "@modules/agents/constants";
+import { AGENT_PROMPTS, type PageContext } from "@modules/agents/constants";
 import { createAgentToolClient } from "@modules/agents/orpc-tool-router";
 import {
    buildSkillCatalog,
@@ -21,7 +22,6 @@ import { buildPricesTools } from "@modules/agents/tools/prices";
 import { buildServicesTools } from "@modules/agents/tools/services";
 import { buildSetupTools } from "@modules/agents/tools/setup";
 import type { ToolDeps } from "@modules/agents/tools/types";
-import type { PageContext } from "@modules/agents/router/chat";
 
 export interface AgentChatOptions {
    prompts: Prompts;
@@ -31,12 +31,13 @@ export interface AgentChatOptions {
    request: Request;
    threadId?: string;
    messages: UIMessage[];
-   pageContext: PageContext;
+   pageContext?: PageContext;
    reasoningEffort?: "low" | "medium" | "high";
    abortSignal?: AbortSignal;
+   extraMiddleware?: ChatMiddleware[];
 }
 
-function formatPageContext(pageContext: PageContext): string {
+function formatPageContext(pageContext: PageContext | undefined): string {
    if (pageContext === undefined) return "Nenhum contexto de página fornecido.";
    const lines: string[] = [];
    if (pageContext.skillHint)
@@ -127,6 +128,7 @@ export async function buildAgentChatArgs(options: AgentChatOptions) {
                }),
             },
          }),
+         ...(options.extraMiddleware ?? []),
       ],
    };
 }

@@ -81,6 +81,7 @@ export default {
       list: threadsRouter.list,
       remove: threadsRouter.remove,
       removeBulk: threadsRouter.removeBulk,
+      removeMessage: threadsRouter.removeMessage,
       update: threadsRouter.update,
    },
 };
