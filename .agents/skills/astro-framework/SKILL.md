@@ -3,10 +3,10 @@ name: astro-framework
 description: Astro framework specialist for building fast, content-driven websites with islands architecture. Use when creating Astro components, configuring hydration (client:load/idle/visible/media), using server:defer (server islands), Content Layer API (glob/file loaders, live loaders), sessions, astro:env, i18n routing, actions, SSR adapters, view transitions, or integrating React/Vue/Svelte/Solid. Not for full-SPA frameworks (Next.js, Remix, SvelteKit).
 license: MIT
 metadata:
-  author: delineas
-  version: "2.0.0"
-  category: framework
-  tags: astro, islands, ssr, ssg, content-collections, content-layer, view-transitions, server-islands, sessions, i18n, actions, astro-env
+   author: delineas
+   version: "2.0.0"
+   category: framework
+   tags: astro, islands, ssr, ssg, content-collections, content-layer, view-transitions, server-islands, sessions, i18n, actions, astro-env
 ---
 
 # Astro Framework Specialist
@@ -20,6 +20,7 @@ You are a senior frontend engineer with extensive Astro experience. You speciali
 ## When to Use This Skill
 
 Activate this skill when:
+
 - Building content-driven websites (blogs, docs, marketing sites)
 - Implementing islands architecture with selective hydration
 - Using server islands (`server:defer`) for deferred server rendering
@@ -67,6 +68,7 @@ server (rarely needed)
 ```
 
 **Signs you picked wrong:**
+
 - Builds >10 min with `getStaticPaths` → switch to `hybrid`
 - Using `prerender = false` on >50% of pages → switch to `server`
 - Whole app is `server` but only 2 pages read cookies → switch to `hybrid`
@@ -107,6 +109,7 @@ Does the component need data from the server on EACH request?
 ### When NOT to Use Astro
 
 Astro excels at content-heavy sites with islands of interactivity. Consider other frameworks when:
+
 - The app is a full SPA with client-side routing and heavy state (→ Next.js, SvelteKit, Remix)
 - Real-time collaborative features are core (→ Next.js + WebSockets)
 - Every page is behind auth with no public content (→ SPA framework)
@@ -127,23 +130,23 @@ Remote data that must be fresh per-request → Live Loader (Astro 6+)
 
 Load detailed guidance based on your current task:
 
-| Topic | Reference | When to Load |
-|-------|-----------|--------------|
-| Components | [references/components.md](references/components.md) | Writing Astro components, Props, slots, expressions |
-| Client Directives | [references/client-directives.md](references/client-directives.md) | Hydration strategies, `client:load`, `client:visible`, `client:idle` |
-| Content Collections | [references/content-collections.md](references/content-collections.md) | Content Layer API, loaders, schemas, `getCollection`, `getEntry`, live loaders |
-| Routing | [references/routing.md](references/routing.md) | Pages, dynamic routes, endpoints, redirects |
-| SSR & Adapters | [references/ssr-adapters.md](references/ssr-adapters.md) | On-demand rendering, adapters, server islands, sessions |
-| Server Islands | [references/server-islands.md](references/server-islands.md) | `server:defer`, fallback content, deferred rendering |
-| Sessions | [references/sessions.md](references/sessions.md) | `Astro.session`, server-side state, shopping carts |
-| View Transitions | [references/view-transitions.md](references/view-transitions.md) | ClientRouter, animations, transition directives |
-| Actions | [references/actions.md](references/actions.md) | Form handling, `defineAction`, validation |
-| Middleware | [references/middleware.md](references/middleware.md) | `onRequest`, sequence, `context.locals` |
-| Styling | [references/styling.md](references/styling.md) | Scoped CSS, global styles, `class:list` |
-| Images | [references/images.md](references/images.md) | `<Image />`, `<Picture />`, optimization |
-| Configuration | [references/configuration.md](references/configuration.md) | `astro.config.mjs`, TypeScript, env variables |
-| Environment Variables | [references/environment-variables.md](references/environment-variables.md) | `astro:env`, `envField`, type-safe env schema |
-| i18n Routing | [references/i18n-routing.md](references/i18n-routing.md) | Multilingual sites, locales, `astro:i18n` helpers |
+| Topic                 | Reference                                                                  | When to Load                                                                   |
+| --------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Components            | [references/components.md](references/components.md)                       | Writing Astro components, Props, slots, expressions                            |
+| Client Directives     | [references/client-directives.md](references/client-directives.md)         | Hydration strategies, `client:load`, `client:visible`, `client:idle`           |
+| Content Collections   | [references/content-collections.md](references/content-collections.md)     | Content Layer API, loaders, schemas, `getCollection`, `getEntry`, live loaders |
+| Routing               | [references/routing.md](references/routing.md)                             | Pages, dynamic routes, endpoints, redirects                                    |
+| SSR & Adapters        | [references/ssr-adapters.md](references/ssr-adapters.md)                   | On-demand rendering, adapters, server islands, sessions                        |
+| Server Islands        | [references/server-islands.md](references/server-islands.md)               | `server:defer`, fallback content, deferred rendering                           |
+| Sessions              | [references/sessions.md](references/sessions.md)                           | `Astro.session`, server-side state, shopping carts                             |
+| View Transitions      | [references/view-transitions.md](references/view-transitions.md)           | ClientRouter, animations, transition directives                                |
+| Actions               | [references/actions.md](references/actions.md)                             | Form handling, `defineAction`, validation                                      |
+| Middleware            | [references/middleware.md](references/middleware.md)                       | `onRequest`, sequence, `context.locals`                                        |
+| Styling               | [references/styling.md](references/styling.md)                             | Scoped CSS, global styles, `class:list`                                        |
+| Images                | [references/images.md](references/images.md)                               | `<Image />`, `<Picture />`, optimization                                       |
+| Configuration         | [references/configuration.md](references/configuration.md)                 | `astro.config.mjs`, TypeScript, env variables                                  |
+| Environment Variables | [references/environment-variables.md](references/environment-variables.md) | `astro:env`, `envField`, type-safe env schema                                  |
+| i18n Routing          | [references/i18n-routing.md](references/i18n-routing.md)                   | Multilingual sites, locales, `astro:i18n` helpers                              |
 
 ## Guidelines by Context
 
@@ -232,18 +235,18 @@ const data = await fetch('https://api.example.com/data');
 
 ```typescript
 // src/content.config.ts
-import { defineCollection } from 'astro:content';
-import { glob } from 'astro/loaders';
-import { z } from 'astro/zod';
+import { defineCollection } from "astro:content";
+import { glob } from "astro/loaders";
+import { z } from "astro/zod";
 
 const blog = defineCollection({
-  loader: glob({ base: './src/content/blog', pattern: '**/*.{md,mdx}' }),
-  schema: z.object({
-    title: z.string(),
-    date: z.coerce.date(),
-    draft: z.boolean().default(false),
-    tags: z.array(z.string()).optional(),
-  }),
+   loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
+   schema: z.object({
+      title: z.string(),
+      date: z.coerce.date(),
+      draft: z.boolean().default(false),
+      tags: z.array(z.string()).optional(),
+   }),
 });
 
 export const collections = { blog };

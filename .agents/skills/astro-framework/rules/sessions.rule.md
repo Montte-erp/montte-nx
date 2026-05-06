@@ -1,10 +1,10 @@
 ---
 description: Rules for server-side sessions
 globs:
-  - "src/pages/**/*"
-  - "src/actions/**/*"
-  - "src/middleware.ts"
-  - "astro.config.mjs"
+   - "src/pages/**/*"
+   - "src/actions/**/*"
+   - "src/middleware.ts"
+   - "astro.config.mjs"
 ---
 
 # Sessions Rules

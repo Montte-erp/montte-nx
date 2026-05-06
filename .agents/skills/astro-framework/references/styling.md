@@ -33,7 +33,7 @@ Astro adds unique class attributes to scope styles:
 ```html
 <!-- Output -->
 <div class="container astro-J7PV25F6">
-  <h1 class="astro-J7PV25F6">Hello World</h1>
+   <h1 class="astro-J7PV25F6">Hello World</h1>
 </div>
 ```
 
@@ -98,13 +98,13 @@ import '../styles/global.css';
 ```css
 /* src/styles/global.css */
 :root {
-  --color-primary: #3b82f6;
-  --color-text: #1f2937;
+   --color-primary: #3b82f6;
+   --color-text: #1f2937;
 }
 
 body {
-  color: var(--color-text);
-  line-height: 1.5;
+   color: var(--color-text);
+   line-height: 1.5;
 }
 ```
 
@@ -336,12 +336,12 @@ import styles from './Button.module.css';
 ```css
 /* Button.module.css */
 .button {
-  padding: 0.5rem 1rem;
-  background: blue;
+   padding: 0.5rem 1rem;
+   background: blue;
 }
 
 .icon {
-  margin-right: 0.5rem;
+   margin-right: 0.5rem;
 }
 ```
 
@@ -352,10 +352,10 @@ Create `postcss.config.mjs`:
 ```javascript
 // postcss.config.mjs
 export default {
-  plugins: {
-    autoprefixer: {},
-    'postcss-nesting': {},
-  },
+   plugins: {
+      autoprefixer: {},
+      "postcss-nesting": {},
+   },
 };
 ```
 

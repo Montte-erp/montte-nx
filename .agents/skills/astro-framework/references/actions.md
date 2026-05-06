@@ -8,10 +8,10 @@ Actions are defined in `src/actions/index.ts`:
 
 ```typescript
 // src/actions/index.ts
-import { defineAction, z } from 'astro:actions';
+import { defineAction, z } from "astro:actions";
 
 export const server = {
-  // Actions go here
+   // Actions go here
 };
 ```
 
@@ -21,20 +21,20 @@ export const server = {
 
 ```typescript
 // src/actions/index.ts
-import { defineAction, z } from 'astro:actions';
+import { defineAction, z } from "astro:actions";
 
 export const server = {
-  subscribe: defineAction({
-    input: z.object({
-      email: z.string().email(),
-      name: z.string().min(2),
-    }),
-    handler: async ({ email, name }) => {
-      // Save to database, send email, etc.
-      await db.subscribers.create({ email, name });
-      return { success: true, message: 'Subscribed!' };
-    },
-  }),
+   subscribe: defineAction({
+      input: z.object({
+         email: z.string().email(),
+         name: z.string().min(2),
+      }),
+      handler: async ({ email, name }) => {
+         // Save to database, send email, etc.
+         await db.subscribers.create({ email, name });
+         return { success: true, message: "Subscribed!" };
+      },
+   }),
 };
 ```
 
@@ -42,31 +42,31 @@ export const server = {
 
 ```typescript
 export const server = {
-  // Accepts form data
-  submitForm: defineAction({
-    accept: 'form', // Parses FormData
-    input: z.object({
-      email: z.string().email(),
-      message: z.string(),
-    }),
-    handler: async ({ email, message }) => {
-      await sendEmail(email, message);
-      return { sent: true };
-    },
-  }),
+   // Accepts form data
+   submitForm: defineAction({
+      accept: "form", // Parses FormData
+      input: z.object({
+         email: z.string().email(),
+         message: z.string(),
+      }),
+      handler: async ({ email, message }) => {
+         await sendEmail(email, message);
+         return { sent: true };
+      },
+   }),
 
-  // Accepts JSON (default)
-  createPost: defineAction({
-    accept: 'json', // Default
-    input: z.object({
-      title: z.string(),
-      content: z.string(),
-    }),
-    handler: async ({ title, content }) => {
-      const post = await db.posts.create({ title, content });
-      return post;
-    },
-  }),
+   // Accepts JSON (default)
+   createPost: defineAction({
+      accept: "json", // Default
+      input: z.object({
+         title: z.string(),
+         content: z.string(),
+      }),
+      handler: async ({ title, content }) => {
+         const post = await db.posts.create({ title, content });
+         return post;
+      },
+   }),
 };
 ```
 
@@ -74,12 +74,12 @@ export const server = {
 
 ```typescript
 export const server = {
-  getCurrentUser: defineAction({
-    handler: async (_, context) => {
-      const user = context.locals.user;
-      return user || null;
-    },
-  }),
+   getCurrentUser: defineAction({
+      handler: async (_, context) => {
+         const user = context.locals.user;
+         return user || null;
+      },
+   }),
 };
 ```
 
@@ -184,32 +184,33 @@ if (result?.error) {
 ### Error Handling
 
 ```typescript
-import { defineAction, z, ActionError } from 'astro:actions';
+import { defineAction, z, ActionError } from "astro:actions";
 
 export const server = {
-  createUser: defineAction({
-    input: z.object({
-      email: z.string().email(),
-    }),
-    handler: async ({ email }) => {
-      const existing = await db.users.findByEmail(email);
+   createUser: defineAction({
+      input: z.object({
+         email: z.string().email(),
+      }),
+      handler: async ({ email }) => {
+         const existing = await db.users.findByEmail(email);
 
-      if (existing) {
-        throw new ActionError({
-          code: 'CONFLICT',
-          message: 'User already exists',
-        });
-      }
+         if (existing) {
+            throw new ActionError({
+               code: "CONFLICT",
+               message: "User already exists",
+            });
+         }
 
-      return await db.users.create({ email });
-    },
-  }),
+         return await db.users.create({ email });
+      },
+   }),
 };
 ```
 
 ### Error Codes
 
 Available error codes:
+
 - `BAD_REQUEST` - Invalid input
 - `UNAUTHORIZED` - Authentication required
 - `FORBIDDEN` - Permission denied
@@ -233,28 +234,30 @@ if (result?.error?.code === 'CONFLICT') {
 ### Zod Schema Validation
 
 ```typescript
-import { defineAction, z } from 'astro:actions';
+import { defineAction, z } from "astro:actions";
 
 export const server = {
-  updateProfile: defineAction({
-    input: z.object({
-      username: z.string()
-        .min(3, 'Username must be at least 3 characters')
-        .max(20, 'Username must be at most 20 characters')
-        .regex(/^[a-z0-9_]+$/, 'Only lowercase letters, numbers, and underscores'),
+   updateProfile: defineAction({
+      input: z.object({
+         username: z
+            .string()
+            .min(3, "Username must be at least 3 characters")
+            .max(20, "Username must be at most 20 characters")
+            .regex(
+               /^[a-z0-9_]+$/,
+               "Only lowercase letters, numbers, and underscores",
+            ),
 
-      bio: z.string().max(500).optional(),
+         bio: z.string().max(500).optional(),
 
-      birthdate: z.coerce.date()
-        .min(new Date('1900-01-01'))
-        .max(new Date()),
+         birthdate: z.coerce.date().min(new Date("1900-01-01")).max(new Date()),
 
-      tags: z.array(z.string()).max(5).default([]),
-    }),
-    handler: async (data) => {
-      return await db.profiles.update(data);
-    },
-  }),
+         tags: z.array(z.string()).max(5).default([]),
+      }),
+      handler: async (data) => {
+         return await db.profiles.update(data);
+      },
+   }),
 };
 ```
 
@@ -279,31 +282,31 @@ const fieldErrors = result?.error?.fields;
 ## Context Access
 
 ```typescript
-import { defineAction, z } from 'astro:actions';
+import { defineAction, z } from "astro:actions";
 
 export const server = {
-  protectedAction: defineAction({
-    input: z.object({ data: z.string() }),
-    handler: async ({ data }, context) => {
-      // Access request
-      const ip = context.request.headers.get('x-forwarded-for');
+   protectedAction: defineAction({
+      input: z.object({ data: z.string() }),
+      handler: async ({ data }, context) => {
+         // Access request
+         const ip = context.request.headers.get("x-forwarded-for");
 
-      // Access cookies
-      const token = context.cookies.get('session')?.value;
+         // Access cookies
+         const token = context.cookies.get("session")?.value;
 
-      // Access locals (from middleware)
-      const user = context.locals.user;
+         // Access locals (from middleware)
+         const user = context.locals.user;
 
-      if (!user) {
-        throw new ActionError({
-          code: 'UNAUTHORIZED',
-          message: 'Must be logged in',
-        });
-      }
+         if (!user) {
+            throw new ActionError({
+               code: "UNAUTHORIZED",
+               message: "Must be logged in",
+            });
+         }
 
-      return { processed: true };
-    },
-  }),
+         return { processed: true };
+      },
+   }),
 };
 ```
 
@@ -311,18 +314,18 @@ export const server = {
 
 ```typescript
 export const server = {
-  uploadImage: defineAction({
-    accept: 'form',
-    input: z.object({
-      image: z.instanceof(File),
-      description: z.string().optional(),
-    }),
-    handler: async ({ image, description }) => {
-      const buffer = await image.arrayBuffer();
-      const path = await saveFile(buffer, image.name);
-      return { url: path };
-    },
-  }),
+   uploadImage: defineAction({
+      accept: "form",
+      input: z.object({
+         image: z.instanceof(File),
+         description: z.string().optional(),
+      }),
+      handler: async ({ image, description }) => {
+         const buffer = await image.arrayBuffer();
+         const path = await saveFile(buffer, image.name);
+         return { url: path };
+      },
+   }),
 };
 ```
 
@@ -337,31 +340,31 @@ export const server = {
 ## Redirect After Action
 
 ```typescript
-import { defineAction, z, ActionError } from 'astro:actions';
+import { defineAction, z, ActionError } from "astro:actions";
 
 export const server = {
-  login: defineAction({
-    accept: 'form',
-    input: z.object({
-      email: z.string().email(),
-      password: z.string(),
-    }),
-    handler: async ({ email, password }, context) => {
-      const user = await authenticate(email, password);
+   login: defineAction({
+      accept: "form",
+      input: z.object({
+         email: z.string().email(),
+         password: z.string(),
+      }),
+      handler: async ({ email, password }, context) => {
+         const user = await authenticate(email, password);
 
-      if (!user) {
-        throw new ActionError({
-          code: 'UNAUTHORIZED',
-          message: 'Invalid credentials',
-        });
-      }
+         if (!user) {
+            throw new ActionError({
+               code: "UNAUTHORIZED",
+               message: "Invalid credentials",
+            });
+         }
 
-      context.cookies.set('session', user.token, { httpOnly: true });
+         context.cookies.set("session", user.token, { httpOnly: true });
 
-      // Return redirect URL for client to handle
-      return { redirect: '/dashboard' };
-    },
-  }),
+         // Return redirect URL for client to handle
+         return { redirect: "/dashboard" };
+      },
+   }),
 };
 ```
 

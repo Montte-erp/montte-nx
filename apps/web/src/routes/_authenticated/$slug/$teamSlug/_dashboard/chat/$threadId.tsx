@@ -1,14 +1,23 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { Button } from "@packages/ui/components/button";
-import { orpc } from "@/integrations/orpc/client";
+import {
+   getMessagesCollection,
+   getThreadDetailCollection,
+} from "../../-montte-ai/chat-data";
 import { setActiveThread } from "../../-montte-ai/chat-store";
 import { Composer } from "../../-montte-ai/composer";
 import { MessageList } from "../../-montte-ai/message-list";
+import {
+   ChatThreadBody,
+   ChatThreadFooter,
+   ChatThreadRoot,
+} from "../../-montte-ai/thread-primitives";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/chat/$threadId",
 )({
+   ssr: false,
    beforeLoad: ({ params }) => {
       if (!params.threadId || params.threadId === "new") {
          throw redirect({
@@ -17,12 +26,15 @@ export const Route = createFileRoute(
          });
       }
    },
-   loader: ({ context, params }) =>
-      context.queryClient.prefetchQuery(
-         orpc.threads.getById.queryOptions({
-            input: { threadId: params.threadId },
-         }),
-      ),
+   loader: async ({ context, params }) => {
+      await Promise.all([
+         getMessagesCollection(params.threadId, context.queryClient).preload(),
+         getThreadDetailCollection(
+            params.threadId,
+            context.queryClient,
+         ).preload(),
+      ]);
+   },
    pendingMs: 300,
    pendingComponent: () => (
       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
@@ -49,9 +61,13 @@ function ChatThreadPage() {
    }, [threadId]);
 
    return (
-      <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-4 p-6">
-         <MessageList />
-         <Composer />
-      </div>
+      <ChatThreadRoot>
+         <ChatThreadBody>
+            <MessageList />
+         </ChatThreadBody>
+         <ChatThreadFooter>
+            <Composer />
+         </ChatThreadFooter>
+      </ChatThreadRoot>
    );
 }

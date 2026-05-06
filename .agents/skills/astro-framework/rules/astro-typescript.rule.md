@@ -1,10 +1,10 @@
 ---
 description: Rules for TypeScript configuration in Astro projects
 globs:
-  - "tsconfig.json"
-  - "src/env.d.ts"
-  - "**/*.ts"
-  - "**/*.astro"
+   - "tsconfig.json"
+   - "src/env.d.ts"
+   - "**/*.ts"
+   - "**/*.astro"
 ---
 
 # Astro TypeScript Rules
@@ -13,16 +13,16 @@ globs:
 
 ```json
 {
-  "extends": "astro/tsconfigs/strict",
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"],
-      "@components/*": ["src/components/*"],
-      "@layouts/*": ["src/layouts/*"],
-      "@content/*": ["src/content/*"]
-    }
-  }
+   "extends": "astro/tsconfigs/strict",
+   "compilerOptions": {
+      "baseUrl": ".",
+      "paths": {
+         "@/*": ["src/*"],
+         "@components/*": ["src/components/*"],
+         "@layouts/*": ["src/layouts/*"],
+         "@content/*": ["src/content/*"]
+      }
+   }
 }
 ```
 
@@ -68,13 +68,13 @@ const {
 /// <reference types="astro/client" />
 
 interface ImportMetaEnv {
-  readonly PUBLIC_API_URL: string;
-  readonly DATABASE_URL: string;
-  readonly SECRET_KEY: string;
+   readonly PUBLIC_API_URL: string;
+   readonly DATABASE_URL: string;
+   readonly SECRET_KEY: string;
 }
 
 interface ImportMeta {
-  readonly env: ImportMetaEnv;
+   readonly env: ImportMetaEnv;
 }
 ```
 
@@ -83,15 +83,15 @@ interface ImportMeta {
 ```typescript
 // src/env.d.ts
 declare namespace App {
-  interface Locals {
-    user: {
-      id: string;
-      email: string;
-      name: string;
-    } | null;
-    theme: 'light' | 'dark';
-    requestId: string;
-  }
+   interface Locals {
+      user: {
+         id: string;
+         email: string;
+         name: string;
+      } | null;
+      theme: "light" | "dark";
+      requestId: string;
+   }
 }
 ```
 
@@ -99,14 +99,14 @@ declare namespace App {
 
 ```typescript
 // src/content/config.ts
-import { defineCollection, z, reference } from 'astro:content';
+import { defineCollection, z, reference } from "astro:content";
 
 const blog = defineCollection({
-  type: 'content',
-  schema: z.object({
-    title: z.string(),
-    author: reference('authors'),
-  }),
+   type: "content",
+   schema: z.object({
+      title: z.string(),
+      author: reference("authors"),
+   }),
 });
 
 // Types are auto-generated:
@@ -118,14 +118,14 @@ const blog = defineCollection({
 
 ```typescript
 // src/pages/api/example.ts
-import type { APIRoute, APIContext } from 'astro';
+import type { APIRoute, APIContext } from "astro";
 
 export const GET: APIRoute = async (context: APIContext) => {
-  const { params, request, cookies, locals, url } = context;
+   const { params, request, cookies, locals, url } = context;
 
-  return new Response(JSON.stringify({ ok: true }), {
-    headers: { 'Content-Type': 'application/json' },
-  });
+   return new Response(JSON.stringify({ ok: true }), {
+      headers: { "Content-Type": "application/json" },
+   });
 };
 ```
 

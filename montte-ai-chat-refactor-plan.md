@@ -116,22 +116,26 @@ bun run db:push
 ### F1a — DBOS workflow `generate-thread-title`
 
 **Arquivos novos:**
+
 - `modules/agents/src/workflows/generate-title.ts`
 - `modules/agents/src/workflows/setup.ts`
 
 **Workflow:**
+
 1. Step `runTransaction` — load 4 últimas msgs do thread.
 2. Step — `chat({ adapter: flashModel, stream: false, ...prompt pt-BR título 6 palavras })`.
 3. Step `runTransaction` — `UPDATE threads SET title WHERE id AND title IS NULL`.
 4. Step — publish SSE `agent.thread.title-updated`.
 
 **Setup:**
+
 - `await DrizzleDataSource.initializeDBOSSchema(...)` para `agentsDataSource`.
 - Init context store.
 - Queue `workflow:agent-title` concurrency 5.
 - Side-effect import dos arquivos workflow.
 
 **Wire:**
+
 - `apps/worker/src/index.ts`: chamar `setupAgentsWorkflows(deps)` antes de `DBOS.launch()`.
 
 **WorkflowID determinístico:** `agents:title:${threadId}` — idempotente.
@@ -139,6 +143,7 @@ bun run db:push
 ### F1b — `chat.ts` refactor (server source-of-truth)
 
 **Input:**
+
 ```ts
 {
   threadId: z.string().uuid(),
@@ -154,19 +159,22 @@ bun run db:push
 ```typescript
 export const send = protectedProcedure
    .input(sendInputSchema)
-   .use(requireThread, (input) => input.threadId)  // + advisory lock
+   .use(requireThread, (input) => input.threadId) // + advisory lock
    .output(eventIterator(z.custom<StreamChunk>()))
    .handler(async function* ({ context, input, signal }) {
       // 1. INSERT user msg em tx
       const userMsg = await context.db.transaction(async (tx) => {
-         const [row] = await tx.insert(messages).values({
-            threadId: input.threadId,
-            role: "user",
-            parts: [{ type: "text", content: input.text }],
-            metadata: input.pageContext
-               ? { pageContext: input.pageContext }
-               : undefined,
-         }).returning();
+         const [row] = await tx
+            .insert(messages)
+            .values({
+               threadId: input.threadId,
+               role: "user",
+               parts: [{ type: "text", content: input.text }],
+               metadata: input.pageContext
+                  ? { pageContext: input.pageContext }
+                  : undefined,
+            })
+            .returning();
          return row;
       });
 
@@ -212,13 +220,14 @@ export const send = protectedProcedure
             parts: assistantParts,
             metadata: messageMetadataSchema.parse({ traceId, followUps }),
          });
-         await tx.update(threads)
+         await tx
+            .update(threads)
             .set({ lastMessageAt: dayjs().toDate() })
             .where(eq(threads.id, input.threadId));
       });
 
       // 7. Enqueue title workflow
-      const thread = context.thread;  // do middleware
+      const thread = context.thread; // do middleware
       if (thread.title === null) {
          await context.workflowClient.enqueue(generateThreadTitleWorkflow, {
             workflowID: `agents:title:${input.threadId}`,
@@ -240,6 +249,7 @@ export const send = protectedProcedure
 ```
 
 **Limpeza em `threads.ts`:**
+
 - Deletar `syncMessages` procedure.
 - Deletar `updateTitle` procedure.
 - Deletar `uiMessageSchema` + `syncMessagesInputSchema`.
@@ -250,6 +260,7 @@ export const send = protectedProcedure
 **Arquivo novo:** `modules/agents/src/router/agent.ts`.
 
 **Procedures:**
+
 - `agent.regenerate({ threadId })` — tx delete últimas msgs do bloco assistant final + reusa fluxo F1b.
 - `agent.editAndResend({ messageId, text })` — tx trunca msgs com `createdAt >= target.createdAt` + INSERT novo user + reusa fluxo F1b.
 
@@ -264,13 +275,17 @@ const result = await chat({
    adapter: flashModel,
    stream: false,
    outputSchema: z.array(z.string()).max(3),
-   messages: [{
-      role: "user",
-      content: [{
-         type: "text",
-         content: `Baseado nestas mensagens, sugira até 3 perguntas curtas em pt-BR que o usuário poderia fazer em seguida. ${JSON.stringify({ history: history.slice(-2), assistantParts })}`,
-      }],
-   }],
+   messages: [
+      {
+         role: "user",
+         content: [
+            {
+               type: "text",
+               content: `Baseado nestas mensagens, sugira até 3 perguntas curtas em pt-BR que o usuário poderia fazer em seguida. ${JSON.stringify({ history: history.slice(-2), assistantParts })}`,
+            },
+         ],
+      },
+   ],
 });
 ```
 
@@ -334,6 +349,7 @@ export function ChatSessionProvider({ children }) {
 ```
 
 **Drop:**
+
 - `syncMessages`, `traceIdsRef`, `pendingTraceIdRef`
 - Helpers `pendingApprovalIds`, `lastUserText` (inline com `findLast`)
 - `regenerate`/`editAndResend` locais → `useMutation(orpc.agent.*.mutationOptions())`
@@ -366,7 +382,11 @@ const [expanded, setExpanded] = useState(false);
       type="button"
       variant="ghost"
    >
-      {expanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+      {expanded ? (
+         <Minimize2 className="size-4" />
+      ) : (
+         <Maximize2 className="size-4" />
+      )}
    </Button>
    <form.Field name="message">
       {(field) => (
@@ -380,10 +400,11 @@ const [expanded, setExpanded] = useState(false);
       )}
    </form.Field>
    {/* footer: ScopePicker + EffortPicker + send/stop */}
-</div>
+</div>;
 ```
 
 **EffortPicker** (item 13):
+
 - Popover next ao ScopePicker
 - Opções: low / medium / high
 - Mutation `orpc.agentSettings.update({ reasoningEffort })`
@@ -395,6 +416,7 @@ Server (F1b) lê `agentSettings.reasoningEffort` e passa em `modelOptions.reason
 **Lib:** `tinykeys` (catalog ui).
 
 **Bindings globais (registrar em `panel.tsx` ou root layout):**
+
 - `Cmd+J` toggle `panelOpen` no chatStore
 - `Cmd+Shift+J` resetChat + open
 - `Esc` durante stream → `session.stop()`
@@ -439,6 +461,7 @@ function useApprovalSelectionBar() {
 `ToolGroup` em `message-item.tsx` recebe toolbar + globalIdx → checkbox por approval card.
 
 **Atalhos** quando `selectedIndices.size > 0`:
+
 - `A` aprova selecionados
 - `R` rejeita
 - `Esc` limpa
@@ -457,13 +480,15 @@ function useApprovalSelectionBar() {
 `message-footer.tsx` já usa `useThumbSurvey` + `useClipboard`. Adicionar feedback visível:
 
 **Copy:**
+
 - Toast `toast.success("Copiado")` no `onClick` após `copy(text)` resolver. Mantém ícone `Check` 1.5s (já existe).
 
 **Thumbs up/down:**
+
 - State visual já existe (`response === "up"|"down"` muda cor).
 - Toast no `respond`:
-  - `up` → `toast.success("Obrigado pelo feedback")`
-  - `down` → `toast("Feedback registrado", { description: "Vamos melhorar." })`
+   - `up` → `toast.success("Obrigado pelo feedback")`
+   - `down` → `toast("Feedback registrado", { description: "Vamos melhorar." })`
 - Disable buttons após responder (idempotência visual): `disabled={response !== undefined}`.
 - Ler `traceId` de `message.metadata?.traceId` (não mais via `useChatSession().traceIdFor`).
 
@@ -474,6 +499,7 @@ Props mudam para `{ messageId, text, traceId }` — passados direto pelo `Messag
 ## F3 — SSE client subscriptions
 
 **`useQuery + experimental_liveOptions`** em:
+
 - `threads.list` — consome `agent.thread.title-updated` + `agent.thread.created`
 - `threads.getById` — consome `agent.message.persisted` (thread atual)
 
@@ -490,6 +516,7 @@ bun run check-boundaries
 ```
 
 **Smoke E2E manual:**
+
 1. Nova thread → send → stream renderiza → DB persist (verificar via `db:studio`)
 2. Title workflow async (verificar SSE update na sidebar)
 3. Follow-ups chips aparecem após resposta

@@ -132,23 +132,25 @@ if (!product) {
 
 ```typescript
 // src/pages/api/posts.json.ts
-import type { APIRoute } from 'astro';
-import { getCollection } from 'astro:content';
+import type { APIRoute } from "astro";
+import { getCollection } from "astro:content";
 
 export const GET: APIRoute = async () => {
-  const posts = await getCollection('blog');
-  return new Response(
-    JSON.stringify(posts.map(p => ({
-      title: p.data.title,
-      slug: p.slug,
-    }))),
-    {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
+   const posts = await getCollection("blog");
+   return new Response(
+      JSON.stringify(
+         posts.map((p) => ({
+            title: p.data.title,
+            slug: p.slug,
+         })),
+      ),
+      {
+         status: 200,
+         headers: {
+            "Content-Type": "application/json",
+         },
       },
-    }
-  );
+   );
 };
 ```
 
@@ -156,26 +158,22 @@ export const GET: APIRoute = async () => {
 
 ```typescript
 // src/pages/api/submit.ts
-import type { APIRoute } from 'astro';
+import type { APIRoute } from "astro";
 
 export const POST: APIRoute = async ({ request }) => {
-  const formData = await request.formData();
-  const email = formData.get('email');
+   const formData = await request.formData();
+   const email = formData.get("email");
 
-  // Validate and process
-  if (!email) {
-    return new Response(
-      JSON.stringify({ error: 'Email required' }),
-      { status: 400 }
-    );
-  }
+   // Validate and process
+   if (!email) {
+      return new Response(JSON.stringify({ error: "Email required" }), {
+         status: 400,
+      });
+   }
 
-  // Save to database, send email, etc.
+   // Save to database, send email, etc.
 
-  return new Response(
-    JSON.stringify({ success: true }),
-    { status: 200 }
-  );
+   return new Response(JSON.stringify({ success: true }), { status: 200 });
 };
 ```
 
@@ -183,23 +181,23 @@ export const POST: APIRoute = async ({ request }) => {
 
 ```typescript
 // src/pages/api/users/[id].ts
-import type { APIRoute } from 'astro';
+import type { APIRoute } from "astro";
 
 export const GET: APIRoute = async ({ params }) => {
-  const { id } = params;
-  const user = await fetchUser(id);
+   const { id } = params;
+   const user = await fetchUser(id);
 
-  if (!user) {
-    return new Response(null, { status: 404 });
-  }
+   if (!user) {
+      return new Response(null, { status: 404 });
+   }
 
-  return new Response(JSON.stringify(user));
+   return new Response(JSON.stringify(user));
 };
 
 export const DELETE: APIRoute = async ({ params }) => {
-  const { id } = params;
-  await deleteUser(id);
-  return new Response(null, { status: 204 });
+   const { id } = params;
+   await deleteUser(id);
+   return new Response(null, { status: 204 });
 };
 ```
 
@@ -210,11 +208,11 @@ export const DELETE: APIRoute = async ({ params }) => {
 ```javascript
 // astro.config.mjs
 export default defineConfig({
-  redirects: {
-    '/old-page': '/new-page',
-    '/blog/[...slug]': '/articles/[...slug]',
-    '/external': 'https://example.com',
-  },
+   redirects: {
+      "/old-page": "/new-page",
+      "/blog/[...slug]": "/articles/[...slug]",
+      "/external": "https://example.com",
+   },
 });
 ```
 
@@ -298,13 +296,13 @@ const { page } = Astro.props;
 ```javascript
 // astro.config.mjs
 export default defineConfig({
-  i18n: {
-    defaultLocale: 'en',
-    locales: ['en', 'es', 'fr'],
-    routing: {
-      prefixDefaultLocale: false, // /about vs /en/about
-    },
-  },
+   i18n: {
+      defaultLocale: "en",
+      locales: ["en", "es", "fr"],
+      routing: {
+         prefixDefaultLocale: false, // /about vs /en/about
+      },
+   },
 });
 ```
 

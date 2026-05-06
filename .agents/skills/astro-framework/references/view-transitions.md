@@ -24,6 +24,7 @@ import { ClientRouter } from 'astro:transitions';
 ## How It Works
 
 With `<ClientRouter />` enabled:
+
 1. User clicks a link
 2. Astro intercepts the navigation
 3. New page content is fetched
@@ -183,18 +184,18 @@ import { slide } from 'astro:transitions';
 ```typescript
 // src/transitions/custom.ts
 export const customSlide = {
-  old: {
-    name: 'slideOut',
-    duration: '0.3s',
-    easing: 'ease-in',
-    fillMode: 'forwards',
-  },
-  new: {
-    name: 'slideIn',
-    duration: '0.3s',
-    easing: 'ease-out',
-    fillMode: 'backwards',
-  },
+   old: {
+      name: "slideOut",
+      duration: "0.3s",
+      easing: "ease-in",
+      fillMode: "forwards",
+   },
+   new: {
+      name: "slideIn",
+      duration: "0.3s",
+      easing: "ease-out",
+      fillMode: "backwards",
+   },
 };
 ```
 
@@ -300,6 +301,7 @@ Forms work with view transitions:
 ## Fallback Behavior
 
 Browsers without View Transitions API get:
+
 - Full page navigation (no JavaScript errors)
 - Graceful degradation
 
@@ -327,10 +329,10 @@ Check support:
 ```javascript
 // astro.config.mjs
 export default defineConfig({
-  prefetch: {
-    prefetchAll: true, // Prefetch all links on hover
-    defaultStrategy: 'viewport', // or 'hover', 'load'
-  },
+   prefetch: {
+      prefetchAll: true, // Prefetch all links on hover
+      defaultStrategy: "viewport", // or 'hover', 'load'
+   },
 });
 ```
 

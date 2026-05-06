@@ -9,7 +9,7 @@ Astro supports on-demand server rendering with various deployment adapters.
 ```javascript
 // astro.config.mjs
 export default defineConfig({
-  output: 'static', // Default - all pages prerendered
+   output: "static", // Default - all pages prerendered
 });
 ```
 
@@ -19,13 +19,13 @@ All pages built at build time. No server required.
 
 ```javascript
 // astro.config.mjs
-import node from '@astrojs/node';
+import node from "@astrojs/node";
 
 export default defineConfig({
-  output: 'server', // All pages rendered on-demand
-  adapter: node({
-    mode: 'standalone',
-  }),
+   output: "server", // All pages rendered on-demand
+   adapter: node({
+      mode: "standalone",
+   }),
 });
 ```
 
@@ -35,11 +35,11 @@ All pages rendered per-request. Requires an adapter.
 
 ```javascript
 // astro.config.mjs
-import vercel from '@astrojs/vercel';
+import vercel from "@astrojs/vercel";
 
 export default defineConfig({
-  output: 'hybrid', // Static by default, opt-in to SSR
-  adapter: vercel(),
+   output: "hybrid", // Static by default, opt-in to SSR
+   adapter: vercel(),
 });
 ```
 
@@ -81,13 +81,13 @@ npx astro add node
 
 ```javascript
 // astro.config.mjs
-import node from '@astrojs/node';
+import node from "@astrojs/node";
 
 export default defineConfig({
-  output: 'server',
-  adapter: node({
-    mode: 'standalone', // or 'middleware'
-  }),
+   output: "server",
+   adapter: node({
+      mode: "standalone", // or 'middleware'
+   }),
 });
 ```
 
@@ -99,14 +99,14 @@ npx astro add vercel
 
 ```javascript
 // astro.config.mjs
-import vercel from '@astrojs/vercel';
+import vercel from "@astrojs/vercel";
 
 export default defineConfig({
-  output: 'server',
-  adapter: vercel({
-    webAnalytics: { enabled: true },
-    imageService: true,
-  }),
+   output: "server",
+   adapter: vercel({
+      webAnalytics: { enabled: true },
+      imageService: true,
+   }),
 });
 ```
 
@@ -118,13 +118,13 @@ npx astro add netlify
 
 ```javascript
 // astro.config.mjs
-import netlify from '@astrojs/netlify';
+import netlify from "@astrojs/netlify";
 
 export default defineConfig({
-  output: 'server',
-  adapter: netlify({
-    edgeMiddleware: true, // Use Edge Functions
-  }),
+   output: "server",
+   adapter: netlify({
+      edgeMiddleware: true, // Use Edge Functions
+   }),
 });
 ```
 
@@ -136,17 +136,17 @@ npx astro add cloudflare
 
 ```javascript
 // astro.config.mjs
-import cloudflare from '@astrojs/cloudflare';
+import cloudflare from "@astrojs/cloudflare";
 
 export default defineConfig({
-  output: 'server',
-  adapter: cloudflare({
-    mode: 'directory', // or 'advanced'
-    routes: {
-      strategy: 'include',
-      include: ['/api/*'],
-    },
-  }),
+   output: "server",
+   adapter: cloudflare({
+      mode: "directory", // or 'advanced'
+      routes: {
+         strategy: "include",
+         include: ["/api/*"],
+      },
+   }),
 });
 ```
 
@@ -158,11 +158,11 @@ npx astro add deno
 
 ```javascript
 // astro.config.mjs
-import deno from '@astrojs/deno';
+import deno from "@astrojs/deno";
 
 export default defineConfig({
-  output: 'server',
-  adapter: deno(),
+   output: "server",
+   adapter: deno(),
 });
 ```
 
@@ -252,6 +252,7 @@ import ProductReviews from '../components/ProductReviews.astro';
 ```
 
 Key points:
+
 - Requires an adapter (same as SSR)
 - Props must be serializable (no functions)
 - Use `Referer` header to access page URL inside island
@@ -263,13 +264,13 @@ Server-side session storage for on-demand rendered pages (Astro 5.7+):
 
 ```javascript
 // astro.config.mjs
-import { defineConfig, sessionDrivers } from 'astro/config';
+import { defineConfig, sessionDrivers } from "astro/config";
 
 export default defineConfig({
-  adapter: node({ mode: 'standalone' }),
-  session: {
-    driver: sessionDrivers.redis({ url: process.env.REDIS_URL }),
-  },
+   adapter: node({ mode: "standalone" }),
+   session: {
+      driver: sessionDrivers.redis({ url: process.env.REDIS_URL }),
+   },
 });
 ```
 
@@ -289,34 +290,34 @@ See [references/sessions.md](sessions.md) for full details.
 
 ```typescript
 // src/pages/api/users/[id].ts
-import type { APIRoute } from 'astro';
+import type { APIRoute } from "astro";
 
 export const GET: APIRoute = async ({ params, request }) => {
-  const { id } = params;
-  const user = await db.users.findById(id);
+   const { id } = params;
+   const user = await db.users.findById(id);
 
-  if (!user) {
-    return new Response(null, { status: 404 });
-  }
+   if (!user) {
+      return new Response(null, { status: 404 });
+   }
 
-  return new Response(JSON.stringify(user), {
-    headers: { 'Content-Type': 'application/json' },
-  });
+   return new Response(JSON.stringify(user), {
+      headers: { "Content-Type": "application/json" },
+   });
 };
 
 export const PUT: APIRoute = async ({ params, request }) => {
-  const { id } = params;
-  const data = await request.json();
+   const { id } = params;
+   const data = await request.json();
 
-  await db.users.update(id, data);
+   await db.users.update(id, data);
 
-  return new Response(null, { status: 204 });
+   return new Response(null, { status: 204 });
 };
 
 export const DELETE: APIRoute = async ({ params }) => {
-  const { id } = params;
-  await db.users.delete(id);
-  return new Response(null, { status: 204 });
+   const { id } = params;
+   await db.users.delete(id);
+   return new Response(null, { status: 204 });
 };
 ```
 
@@ -324,27 +325,27 @@ export const DELETE: APIRoute = async ({ params }) => {
 
 ```typescript
 // src/pages/api/stream.ts
-import type { APIRoute } from 'astro';
+import type { APIRoute } from "astro";
 
 export const GET: APIRoute = async () => {
-  const encoder = new TextEncoder();
+   const encoder = new TextEncoder();
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      for (let i = 0; i < 10; i++) {
-        controller.enqueue(encoder.encode(`data: ${i}\n\n`));
-        await new Promise(r => setTimeout(r, 1000));
-      }
-      controller.close();
-    },
-  });
+   const stream = new ReadableStream({
+      async start(controller) {
+         for (let i = 0; i < 10; i++) {
+            controller.enqueue(encoder.encode(`data: ${i}\n\n`));
+            await new Promise((r) => setTimeout(r, 1000));
+         }
+         controller.close();
+      },
+   });
 
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-    },
-  });
+   return new Response(stream, {
+      headers: {
+         "Content-Type": "text/event-stream",
+         "Cache-Control": "no-cache",
+      },
+   });
 };
 ```
 
@@ -355,9 +356,9 @@ Access shared data across middleware and pages:
 ```typescript
 // src/middleware.ts
 export const onRequest = async ({ locals, request }, next) => {
-  const token = request.headers.get('authorization');
-  locals.user = await validateToken(token);
-  return next();
+   const token = request.headers.get("authorization");
+   locals.user = await validateToken(token);
+   return next();
 };
 ```
 

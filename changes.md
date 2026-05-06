@@ -1,4 +1,5 @@
 ## Commits
+
 - Merge pull request #834 from Montte-erp/manoelnetocarvalho03/mon-566-migrate-insights-kill (61b7a395) by Manoel Neto
 - refactor: kill @packages/events and @packages/analytics (a00ebfd8) by Manoel
 - Merge pull request #833 from Montte-erp/manoelnetocarvalho03/mon-560-rubi-tools-replace-duplicated-db-logic-with-orpc-server-side (2aaea445) by Manoel Neto
@@ -41,6 +42,7 @@
 - refactor(billing): extract pricing router from services (e3959f46) by Manoel
 
 ## Merged PRs
+
 - #834 refactor(insights): migrate domain to @modules/insights, kill repos by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/834
 - #833 refactor(agents): rubi tools wrap oRPC procedures (MON-560) by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/833
 - #832 refactor(finance): migrate domain to @modules/finance, kill repos by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/832

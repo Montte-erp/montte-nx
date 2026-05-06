@@ -46,6 +46,7 @@ Use the named `"fallback"` slot to show placeholder content while the island loa
 ```
 
 Good fallback patterns:
+
 - Generic placeholder (e.g., generic avatar instead of user's avatar)
 - Loading skeleton/spinner
 - Placeholder UI with approximate dimensions (prevents layout shift)
@@ -118,6 +119,7 @@ Astro.response.headers.set('Cache-Control', 'max-age=3600');
 ## Use Cases
 
 Server islands are ideal for:
+
 - **Personalized content** on otherwise static pages (user avatars, greeting bars)
 - **Dynamic data** that changes frequently (product prices, stock status, reviews)
 - **Authenticated sections** (user dashboards widgets on a public page)
@@ -152,6 +154,7 @@ import AddToCart from '../components/AddToCart.jsx';
 ### Common Mistakes
 
 **Passing large objects as props:**
+
 ```astro
 <!-- BAD: entire product object gets URL-encoded -->
 <PriceStock server:defer product={fullProductObject} />

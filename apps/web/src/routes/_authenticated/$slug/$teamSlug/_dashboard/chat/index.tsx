@@ -4,6 +4,11 @@ import { Composer } from "../../-montte-ai/composer";
 import { useActiveThreadId, useChatSession } from "../../-montte-ai/chat-store";
 import { EmptyState } from "../../-montte-ai/empty-state";
 import { MessageList } from "../../-montte-ai/message-list";
+import {
+   ChatThreadBody,
+   ChatThreadFooter,
+   ChatThreadRoot,
+} from "../../-montte-ai/thread-primitives";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/chat/",
@@ -30,9 +35,13 @@ function ChatIndexPage() {
    const hasConversation = messages.length > 0;
 
    return (
-      <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-4 p-6">
-         {hasConversation ? <MessageList /> : <EmptyState variant="page" />}
-         <Composer />
-      </div>
+      <ChatThreadRoot>
+         <ChatThreadBody>
+            {hasConversation ? <MessageList /> : <EmptyState variant="page" />}
+         </ChatThreadBody>
+         <ChatThreadFooter>
+            <Composer />
+         </ChatThreadFooter>
+      </ChatThreadRoot>
    );
 }

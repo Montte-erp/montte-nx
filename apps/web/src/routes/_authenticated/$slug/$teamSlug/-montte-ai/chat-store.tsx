@@ -1,11 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { createStore, useStore } from "@tanstack/react-store";
 import { useLiveQuery } from "@tanstack/react-db";
-import {
-   fetchServerSentEvents,
-   useChat,
-   type UIMessage,
-} from "@tanstack/ai-react";
+import type { UIMessage } from "@tanstack/ai-react";
 import { createContext, useContext, useMemo, useRef } from "react";
 import {
    Briefcase,
@@ -30,6 +26,7 @@ import {
    writeThreadSnapshot,
 } from "./chat-data";
 import { useAgentLive } from "./use-agent-live";
+import { useChatRuntime } from "./chat-runtime";
 import type { ChatMessageMetadata, ChatPageContext } from "./chat-types";
 
 export type AgentScopeId =
@@ -91,12 +88,6 @@ const scopeStore = createPersistedStore<{ id: AgentScopeId }>(
    "montte:chat:scope",
    { id: "auto" },
 );
-
-type PendingSend = {
-   text?: string;
-   regenerate?: boolean;
-   replaceFromMessageId?: string;
-};
 
 export const setActiveThread = (threadId: string | null) =>
    chatStore.setState((s) => ({ ...s, activeThreadId: threadId }));
@@ -178,46 +169,23 @@ export function ChatSessionProvider({
 }) {
    const queryClient = useQueryClient();
    const threadId = useActiveThreadId();
-   const pendingSend = useRef<PendingSend | null>(null);
+   const clearOverlayRef = useRef<(() => void) | null>(null);
 
    useAgentLive();
 
-   const agentConnection = useMemo(
-      () =>
-         fetchServerSentEvents("/api/chat", () => {
-            const send = pendingSend.current;
-            pendingSend.current = null;
-            const { activeThreadId } = chatStore.state;
-            return {
-               credentials: "include",
-               body: {
-                  threadId: activeThreadId ?? "",
-                  ...(send?.text !== undefined && { text: send.text }),
-                  ...(send?.regenerate && { regenerate: true }),
-                  ...(send?.replaceFromMessageId && {
-                     replaceFromMessageId: send.replaceFromMessageId,
-                  }),
-                  pageContext: pickPageContext(),
-               },
-            };
-         }),
-      [],
-   );
-
-   const chat = useChat({
-      connection: agentConnection,
-      initialMessages: [],
+   const runtime = useChatRuntime({
+      getThreadId: () => chatStore.state.activeThreadId,
+      getPageContext: pickPageContext,
       onFinish: async () => {
          const id = chatStore.state.activeThreadId;
          if (!id) return;
-         await Promise.all([
-            getMessagesCollection(id, queryClient).utils.refetch(),
-         ]);
+         await getMessagesCollection(id, queryClient).utils.refetch();
          refreshChatData(queryClient, id);
-         chat.setMessages([]);
+         clearOverlayRef.current?.();
       },
-      onError: () => toast.error("Falha no streaming da Montte AI."),
    });
+   clearOverlayRef.current = runtime.clearOverlay;
+   const chat = runtime.chat;
 
    const { data: dbMessages = [] } = useLiveQuery(
       (q) =>
@@ -254,9 +222,7 @@ export function ChatSessionProvider({
       const approvalIds = pendingApprovalIds(messages);
       const metadataMap = new Map(dbMessages.map((m) => [m.id, m.metadata]));
 
-      const ensureThread = async (
-         firstText: string,
-      ): Promise<string | null> => {
+      const ensureThread = async (): Promise<string | null> => {
          const existing = chatStore.state.activeThreadId;
          if (existing !== null) return existing;
          const result = await fromPromise(
@@ -302,17 +268,17 @@ export function ChatSessionProvider({
          sendMessage: async (text) => {
             const trimmed = text.trim();
             if (!trimmed || status === "streaming") return;
-            const id = await ensureThread(trimmed);
+            const id = await ensureThread();
             if (id === null) return;
-            pendingSend.current = { text: trimmed };
+            runtime.prepareTurn({ text: trimmed });
             await chat.sendMessage(trimmed);
          },
          regenerateFrom: async (userMessageId) => {
             if (status === "streaming") return;
             const idx = messages.findIndex((m) => m.id === userMessageId);
             if (idx < 0) return;
-            chat.setMessages(messages.slice(0, idx + 1));
-            pendingSend.current = { regenerate: true };
+            runtime.setOverlay(messages.slice(0, idx + 1));
+            runtime.prepareTurn({ regenerate: true });
             await chat.reload();
          },
          editAndResend: async (userMessageId, text) => {
@@ -321,11 +287,11 @@ export function ChatSessionProvider({
             if (!trimmed) return;
             const idx = messages.findIndex((m) => m.id === userMessageId);
             if (idx < 0) return;
-            chat.setMessages(messages.slice(0, idx));
-            pendingSend.current = {
+            runtime.setOverlay(messages.slice(0, idx));
+            runtime.prepareTurn({
                text: trimmed,
                replaceFromMessageId: userMessageId,
-            };
+            });
             await chat.sendMessage(trimmed);
          },
          deleteMessage: async (messageId) => {
@@ -343,7 +309,7 @@ export function ChatSessionProvider({
             refreshChatData(queryClient, id);
          },
       };
-   }, [chat, status, dbMessages, queryClient, thread]);
+   }, [chat, status, dbMessages, queryClient, runtime, thread]);
 
    return (
       <ChatSessionContext.Provider value={session}>

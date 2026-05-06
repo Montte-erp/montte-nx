@@ -55,27 +55,25 @@ async function handlePost({ request }: { request: Request }) {
       "agent chat send start",
    );
 
-   await ctx.db.execute(
-      sql`select pg_advisory_xact_lock(hashtext(${input.threadId}))`,
-   );
+   const historyRows = await ctx.db.transaction(async (tx) => {
+      await tx.execute(
+         sql`select pg_advisory_xact_lock(hashtext(${input.threadId}))`,
+      );
 
-   if (input.regenerate) {
-      const userRows = await ctx.db
-         .select({ createdAt: messages.createdAt })
-         .from(messages)
-         .where(
-            and(
-               eq(messages.threadId, input.threadId),
-               eq(messages.role, "user"),
-            ),
-         )
-         .orderBy(asc(messages.createdAt));
-      const lastUser = userRows.at(-1);
-      if (!lastUser) {
-         return new Response("Nenhuma mensagem de usuário.", { status: 400 });
-      }
-      await ctx.db.transaction((tx) =>
-         tx
+      if (input.regenerate) {
+         const userRows = await tx
+            .select({ createdAt: messages.createdAt })
+            .from(messages)
+            .where(
+               and(
+                  eq(messages.threadId, input.threadId),
+                  eq(messages.role, "user"),
+               ),
+            )
+            .orderBy(asc(messages.createdAt));
+         const lastUser = userRows.at(-1);
+         if (!lastUser) return null;
+         await tx
             .delete(messages)
             .where(
                and(
@@ -83,56 +81,54 @@ async function handlePost({ request }: { request: Request }) {
                   gte(messages.createdAt, lastUser.createdAt),
                   eq(messages.role, "assistant"),
                ),
-            ),
-      );
-   } else if (input.replaceFromMessageId) {
-      const target = await ctx.db
-         .select({ createdAt: messages.createdAt })
-         .from(messages)
-         .where(
-            and(
-               eq(messages.id, input.replaceFromMessageId),
-               eq(messages.threadId, input.threadId),
-            ),
-         )
-         .limit(1);
-      const row = target[0];
-      if (!row)
-         return new Response("Mensagem não encontrada.", { status: 404 });
-      await ctx.db.transaction((tx) =>
-         tx
+            );
+      } else if (input.replaceFromMessageId) {
+         const target = await tx
+            .select({ createdAt: messages.createdAt })
+            .from(messages)
+            .where(
+               and(
+                  eq(messages.id, input.replaceFromMessageId),
+                  eq(messages.threadId, input.threadId),
+               ),
+            )
+            .limit(1);
+         const row = target[0];
+         if (!row) return null;
+         await tx
             .delete(messages)
             .where(
                and(
                   eq(messages.threadId, input.threadId),
                   gte(messages.createdAt, row.createdAt),
                ),
-            ),
-      );
-   }
+            );
+      }
 
-   if (input.text !== undefined) {
-      await ctx.db.transaction(async (tx) => {
+      if (input.text !== undefined) {
          await tx.insert(messages).values({
             threadId: input.threadId,
             role: "user",
-            parts: [{ type: "text", content: input.text! }],
+            parts: [{ type: "text", content: input.text }],
             metadata: input.pageContext
                ? { pageContext: input.pageContext }
                : null,
          });
-      });
-   }
+      }
 
-   const historyRows = await ctx.db
-      .select({
-         id: messages.id,
-         role: messages.role,
-         parts: messages.parts,
-      })
-      .from(messages)
-      .where(eq(messages.threadId, input.threadId))
-      .orderBy(asc(messages.createdAt));
+      return tx
+         .select({
+            id: messages.id,
+            role: messages.role,
+            parts: messages.parts,
+         })
+         .from(messages)
+         .where(eq(messages.threadId, input.threadId))
+         .orderBy(asc(messages.createdAt));
+   });
+   if (historyRows === null) {
+      return new Response("Mensagem não encontrada.", { status: 404 });
+   }
    const history: UIMessage[] = historyRows.map((row) => ({
       id: row.id,
       role: row.role,

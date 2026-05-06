@@ -1,7 +1,7 @@
 ---
 description: Rules for Astro routing and pages
 globs:
-  - "src/pages/**/*"
+   - "src/pages/**/*"
 ---
 
 # Astro Routing Rules
@@ -81,28 +81,28 @@ const { path } = Astro.params;
 
 ```typescript
 // src/pages/api/posts.ts
-import type { APIRoute } from 'astro';
+import type { APIRoute } from "astro";
 
 export const GET: APIRoute = async ({ params, request }) => {
-  const data = await fetchPosts();
+   const data = await fetchPosts();
 
-  return new Response(JSON.stringify(data), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
+   return new Response(JSON.stringify(data), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+   });
 };
 
 export const POST: APIRoute = async ({ request }) => {
-  const body = await request.json();
+   const body = await request.json();
 
-  if (!body.title) {
-    return new Response(JSON.stringify({ error: 'Title required' }), {
-      status: 400,
-    });
-  }
+   if (!body.title) {
+      return new Response(JSON.stringify({ error: "Title required" }), {
+         status: 400,
+      });
+   }
 
-  const post = await createPost(body);
-  return new Response(JSON.stringify(post), { status: 201 });
+   const post = await createPost(body);
+   return new Response(JSON.stringify(post), { status: 201 });
 };
 ```
 
@@ -134,9 +134,9 @@ const { page } = Astro.props;
 ```javascript
 // astro.config.mjs
 export default defineConfig({
-  redirects: {
-    '/old': '/new',
-    '/blog/[...slug]': '/posts/[...slug]',
-  },
+   redirects: {
+      "/old": "/new",
+      "/blog/[...slug]": "/posts/[...slug]",
+   },
 });
 ```

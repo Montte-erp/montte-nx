@@ -4,7 +4,7 @@ import type { QueryClient } from "@tanstack/query-core";
 import type { UIMessage } from "@tanstack/ai";
 import { z } from "zod";
 import { client } from "@/integrations/orpc/client";
-import type { ChatMessage, ChatThread } from "./chat-types";
+import type { ChatThread } from "./chat-types";
 
 const dateLikeSchema = z.custom<Date | string | null>();
 const messagePartsSchema = z.custom<UIMessage["parts"]>();
@@ -167,23 +167,20 @@ export function writeThreadTitle(
    threadId: string,
    title: string,
 ) {
-   getThreadsCollection(queryClient).utils.writeUpdate({ id: threadId, title });
-   threadDetailCollections
-      .get(threadId)
-      ?.utils.writeUpdate({ id: threadId, title });
+   const threads = getThreadsCollection(queryClient);
+   if (threads.has(threadId))
+      threads.utils.writeUpdate({ id: threadId, title });
+   const detail = threadDetailCollections.get(threadId);
+   if (detail?.has(threadId)) detail.utils.writeUpdate({ id: threadId, title });
 }
 
 export function writeThreadSuggestions(
    threadId: string,
    suggestions: string[],
 ) {
-   threadDetailCollections
-      .get(threadId)
-      ?.utils.writeUpdate({ id: threadId, suggestions });
-}
-
-export function writePersistedMessage(threadId: string, message: ChatMessage) {
-   messagesCollections.get(threadId)?.utils.writeUpsert(message);
+   const detail = threadDetailCollections.get(threadId);
+   if (detail?.has(threadId))
+      detail.utils.writeUpdate({ id: threadId, suggestions });
 }
 
 export function removeMessageFromChatData(threadId: string, messageId: string) {

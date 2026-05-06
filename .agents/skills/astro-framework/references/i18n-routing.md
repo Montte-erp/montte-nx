@@ -6,13 +6,13 @@ Astro's built-in i18n routing helps you build multilingual sites with URL-based 
 
 ```javascript
 // astro.config.mjs
-import { defineConfig } from 'astro/config';
+import { defineConfig } from "astro/config";
 
 export default defineConfig({
-  i18n: {
-    defaultLocale: 'en',
-    locales: ['en', 'es', 'fr', 'de'],
-  },
+   i18n: {
+      defaultLocale: "en",
+      locales: ["en", "es", "fr", "de"],
+   },
 });
 ```
 
@@ -82,14 +82,14 @@ Then implement your own middleware using helpers from `astro:i18n`:
 
 ```typescript
 // src/middleware.ts
-import { defineMiddleware } from 'astro:middleware';
-import { redirectToDefaultLocale } from 'astro:i18n';
+import { defineMiddleware } from "astro:middleware";
+import { redirectToDefaultLocale } from "astro:i18n";
 
 export const onRequest = defineMiddleware(async (ctx, next) => {
-  if (ctx.url.startsWith('/about')) {
-    return next();
-  }
-  return redirectToDefaultLocale(302);
+   if (ctx.url.startsWith("/about")) {
+      return next();
+   }
+   return redirectToDefaultLocale(302);
 });
 ```
 

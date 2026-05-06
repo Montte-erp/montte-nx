@@ -10,16 +10,16 @@ Sessions require a storage driver. Some adapters (Node, Cloudflare, Netlify) con
 
 ```javascript
 // astro.config.mjs
-import { defineConfig, sessionDrivers } from 'astro/config';
-import vercel from '@astrojs/vercel';
+import { defineConfig, sessionDrivers } from "astro/config";
+import vercel from "@astrojs/vercel";
 
 export default defineConfig({
-  adapter: vercel(),
-  session: {
-    driver: sessionDrivers.redis({
-      url: process.env.REDIS_URL,
-    }),
-  },
+   adapter: vercel(),
+   session: {
+      driver: sessionDrivers.redis({
+         url: process.env.REDIS_URL,
+      }),
+   },
 });
 ```
 
@@ -44,46 +44,46 @@ const cart = await Astro.session?.get('cart');
 ```typescript
 // src/pages/api/addToCart.ts
 export async function POST(context: APIContext) {
-  const cart = await context.session?.get('cart') || [];
-  const data = await context.request.json<{ item: string }>();
+   const cart = (await context.session?.get("cart")) || [];
+   const data = await context.request.json<{ item: string }>();
 
-  if (!data?.item) {
-    return new Response('Item is required', { status: 400 });
-  }
+   if (!data?.item) {
+      return new Response("Item is required", { status: 400 });
+   }
 
-  cart.push(data.item);
-  await context.session?.set('cart', cart);
-  return Response.json(cart);
+   cart.push(data.item);
+   await context.session?.set("cart", cart);
+   return Response.json(cart);
 }
 ```
 
 ### In Actions
 
 ```typescript
-import { defineAction } from 'astro:actions';
-import { z } from 'astro/zod';
+import { defineAction } from "astro:actions";
+import { z } from "astro/zod";
 
 export const server = {
-  addToCart: defineAction({
-    input: z.object({ productId: z.string() }),
-    handler: async (input, context) => {
-      const cart = await context.session?.get('cart') || [];
-      cart.push(input.productId);
-      await context.session?.set('cart', cart);
-      return cart;
-    },
-  }),
+   addToCart: defineAction({
+      input: z.object({ productId: z.string() }),
+      handler: async (input, context) => {
+         const cart = (await context.session?.get("cart")) || [];
+         cart.push(input.productId);
+         await context.session?.set("cart", cart);
+         return cart;
+      },
+   }),
 };
 ```
 
 ### In Middleware
 
 ```typescript
-import { defineMiddleware } from 'astro:middleware';
+import { defineMiddleware } from "astro:middleware";
 
 export const onRequest = defineMiddleware(async (context, next) => {
-  context.session?.set('lastVisit', new Date());
-  return next();
+   context.session?.set("lastVisit", new Date());
+   return next();
 });
 ```
 
@@ -91,12 +91,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
 ## Session API
 
-| Method | Description |
-|--------|-------------|
-| `session.get(key)` | Get a value by key |
-| `session.set(key, value)` | Set a value |
-| `session.regenerate()` | Create a new session ID (use after login) |
-| `session.destroy()` | Delete the entire session (use on logout) |
+| Method                    | Description                               |
+| ------------------------- | ----------------------------------------- |
+| `session.get(key)`        | Get a value by key                        |
+| `session.set(key, value)` | Set a value                               |
+| `session.regenerate()`    | Create a new session ID (use after login) |
+| `session.destroy()`       | Delete the entire session (use on logout) |
 
 ## Type Safety
 
@@ -104,14 +104,14 @@ Define session data types in `src/env.d.ts`:
 
 ```typescript
 declare namespace App {
-  interface SessionData {
-    user: {
-      id: string;
-      name: string;
-    };
-    cart: string[];
-    lastVisit: Date;
-  }
+   interface SessionData {
+      user: {
+         id: string;
+         name: string;
+      };
+      cart: string[];
+      lastVisit: Date;
+   }
 }
 ```
 

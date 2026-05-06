@@ -1,7 +1,7 @@
 ---
 description: Rules for writing Astro components
 globs:
-  - "**/*.astro"
+   - "**/*.astro"
 ---
 
 # Astro Component Rules
