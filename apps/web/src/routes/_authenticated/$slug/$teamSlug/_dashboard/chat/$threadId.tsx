@@ -8,11 +8,6 @@ import {
 import { setActiveThread } from "../../-montte-ai/chat-store";
 import { Composer } from "../../-montte-ai/composer";
 import { MessageList } from "../../-montte-ai/message-list";
-import {
-   ChatThreadBody,
-   ChatThreadFooter,
-   ChatThreadRoot,
-} from "../../-montte-ai/thread-primitives";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/chat/$threadId",
@@ -61,13 +56,13 @@ function ChatThreadPage() {
    }, [threadId]);
 
    return (
-      <ChatThreadRoot>
-         <ChatThreadBody>
+      <div className="flex h-full w-full max-w-5xl flex-col gap-4 self-center p-4">
+         <div className="flex min-h-0 flex-1 flex-col">
             <MessageList />
-         </ChatThreadBody>
-         <ChatThreadFooter>
+         </div>
+         <div className="shrink-0">
             <Composer />
-         </ChatThreadFooter>
-      </ChatThreadRoot>
+         </div>
+      </div>
    );
 }

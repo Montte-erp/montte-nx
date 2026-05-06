@@ -12,16 +12,16 @@ export const messageRoleEnum = agentsSchema.enum("message_role", [
    "assistant",
 ]);
 
+export const messagePageContextSchema = z.object({
+   route: z.string().optional(),
+   title: z.string().optional(),
+   summary: z.string().optional(),
+   skillHint: z.string().optional(),
+});
+
 export const messageMetadataSchema = z.object({
    traceId: z.string().optional(),
-   pageContext: z
-      .object({
-         route: z.string().optional(),
-         title: z.string().optional(),
-         summary: z.string().optional(),
-         skillHint: z.string().optional(),
-      })
-      .optional(),
+   pageContext: messagePageContextSchema.optional(),
 });
 export type MessageMetadata = z.infer<typeof messageMetadataSchema>;
 

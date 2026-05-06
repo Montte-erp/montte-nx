@@ -5,7 +5,10 @@ import { and, asc, eq, gte, sql } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { messages } from "@core/database/schemas/messages";
+import {
+   messagePageContextSchema,
+   messages,
+} from "@core/database/schemas/messages";
 import { getLogger } from "@core/logging/root";
 import { buildWebContext } from "@core/orpc/server";
 import { buildAgentChatArgs } from "@modules/agents/agent";
@@ -18,14 +21,7 @@ const bodySchema = z.object({
    text: z.string().min(1).max(50_000).optional(),
    replaceFromMessageId: z.string().uuid().optional(),
    regenerate: z.boolean().optional(),
-   pageContext: z
-      .object({
-         route: z.string().optional(),
-         title: z.string().optional(),
-         summary: z.string().optional(),
-         skillHint: z.string().optional(),
-      })
-      .optional(),
+   pageContext: messagePageContextSchema.optional(),
 });
 
 async function handlePost({ request }: { request: Request }) {

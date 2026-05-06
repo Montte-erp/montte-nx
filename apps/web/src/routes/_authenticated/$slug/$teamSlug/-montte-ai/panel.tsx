@@ -20,7 +20,6 @@ import {
    useSelectionToolbar,
 } from "@/hooks/use-selection-toolbar";
 import {
-   resetChat,
    setActiveThread,
    togglePanel,
    useActiveThreadId,
@@ -34,7 +33,7 @@ import { MessageList } from "./message-list";
 export function AgentPanel() {
    useHotkey("Mod+J", togglePanel);
    useHotkey("Mod+Shift+J", () => {
-      resetChat();
+      setActiveThread(null);
       togglePanel();
    });
    return (
@@ -79,7 +78,7 @@ function AgentPanelContent() {
                   <Button
                      aria-label="Nova conversa"
                      className="h-7 px-2 text-xs"
-                     onClick={resetChat}
+                     onClick={() => setActiveThread(null)}
                      size="sm"
                      variant="ghost"
                   >

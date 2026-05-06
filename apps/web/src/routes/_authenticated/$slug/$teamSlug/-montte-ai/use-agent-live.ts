@@ -9,13 +9,13 @@ import {
 
 function stringField(payload: unknown, key: string): string | null {
    if (typeof payload !== "object" || payload === null) return null;
-   const value = Object.getOwnPropertyDescriptor(payload, key)?.value;
+   const value = Object.entries(payload).find(([name]) => name === key)?.[1];
    return typeof value === "string" ? value : null;
 }
 
 function stringArrayField(payload: unknown, key: string): string[] | null {
    if (typeof payload !== "object" || payload === null) return null;
-   const value = Object.getOwnPropertyDescriptor(payload, key)?.value;
+   const value = Object.entries(payload).find(([name]) => name === key)?.[1];
    if (!Array.isArray(value)) return null;
    if (!value.every((item) => typeof item === "string")) return null;
    return value;
@@ -42,7 +42,7 @@ export function useAgentLive() {
       if (data.type === "agent.thread.suggestions_updated") {
          const suggestions = stringArrayField(data.payload, "suggestions");
          if (suggestions === null) return;
-         writeThreadSuggestions(threadId, suggestions);
+         writeThreadSuggestions(queryClient, threadId, suggestions);
          return;
       }
 

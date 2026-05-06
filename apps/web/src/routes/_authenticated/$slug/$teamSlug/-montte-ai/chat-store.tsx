@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { createPersistedStore } from "@/lib/store";
 import { client } from "@/integrations/orpc/client";
 import {
+   type ChatMessage,
    getMessagesCollection,
    getThreadDetailCollection,
    getThreadsCollection,
@@ -27,7 +28,11 @@ import {
 } from "./chat-data";
 import { useAgentLive } from "./use-agent-live";
 import { useChatRuntime } from "./chat-runtime";
-import type { ChatMessageMetadata, ChatPageContext } from "./chat-types";
+
+type ChatMessageMetadata = ChatMessage["metadata"];
+type ChatPageContext = NonNullable<
+   NonNullable<ChatMessageMetadata>["pageContext"]
+>;
 
 export type AgentScopeId =
    | "auto"
@@ -45,34 +50,30 @@ export interface AgentScope {
    skillHint?: string;
 }
 
-const SCOPE_BY_ID: Record<AgentScopeId, Omit<AgentScope, "id">> = {
-   auto: { label: "Auto", icon: Sparkles },
-   servicos: { label: "Serviços", icon: Briefcase, skillHint: "services" },
-   contatos: { label: "Contatos", icon: Contact },
-   categorias: { label: "Centro de Custo", icon: FolderTree },
-   estoque: { label: "Estoque", icon: Tag },
-   financeiro: { label: "Financeiro", icon: Wallet },
-   analises: { label: "Análises", icon: Gauge },
-};
+const AUTO_SCOPE: AgentScope = { id: "auto", label: "Auto", icon: Sparkles };
 
-const SCOPE_ORDER: AgentScopeId[] = [
-   "auto",
-   "servicos",
-   "contatos",
-   "categorias",
-   "estoque",
-   "financeiro",
-   "analises",
+export const SCOPES: AgentScope[] = [
+   AUTO_SCOPE,
+   {
+      id: "servicos",
+      label: "Serviços",
+      icon: Briefcase,
+      skillHint: "services",
+   },
+   { id: "contatos", label: "Contatos", icon: Contact },
+   { id: "categorias", label: "Centro de Custo", icon: FolderTree },
+   { id: "estoque", label: "Estoque", icon: Tag },
+   { id: "financeiro", label: "Financeiro", icon: Wallet },
+   { id: "analises", label: "Análises", icon: Gauge },
 ];
 
-export const SCOPES: AgentScope[] = SCOPE_ORDER.map((id) => ({
-   id,
-   ...SCOPE_BY_ID[id],
-}));
+export const SCOPE_SUGGESTIONS: AgentScope[] = SCOPES.filter(
+   (scope) => scope.id !== "auto",
+);
 
-export const SCOPE_SUGGESTIONS: AgentScope[] = SCOPE_ORDER.filter(
-   (id) => id !== "auto",
-).map((id) => ({ id, ...SCOPE_BY_ID[id] }));
+function getScope(id: AgentScopeId): AgentScope {
+   return SCOPES.find((scope) => scope.id === id) ?? AUTO_SCOPE;
+}
 
 interface ChatState {
    activeThreadId: string | null;
@@ -92,14 +93,8 @@ const scopeStore = createPersistedStore<{ id: AgentScopeId }>(
 export const setActiveThread = (threadId: string | null) =>
    chatStore.setState((s) => ({ ...s, activeThreadId: threadId }));
 
-export const resetChat = () =>
-   chatStore.setState((s) => ({ ...s, activeThreadId: null }));
-
 export const togglePanel = () =>
    chatStore.setState((s) => ({ ...s, panelOpen: !s.panelOpen }));
-
-export const setPanelOpen = (panelOpen: boolean) =>
-   chatStore.setState((s) => ({ ...s, panelOpen }));
 
 export const selectScope = (id: AgentScopeId) =>
    scopeStore.setState(() => ({ id }));
@@ -111,11 +106,11 @@ export const usePanelOpen = () => useStore(chatStore, (s) => s.panelOpen);
 
 export const useSelectedScope = (): AgentScope => {
    const id = useStore(scopeStore, (s) => s.id);
-   return { id, ...SCOPE_BY_ID[id] };
+   return getScope(id);
 };
 
 function pickPageContext(): ChatPageContext | undefined {
-   const skillHint = SCOPE_BY_ID[scopeStore.state.id].skillHint;
+   const skillHint = getScope(scopeStore.state.id).skillHint;
    return skillHint ? { skillHint } : undefined;
 }
 
@@ -235,7 +230,7 @@ export function ChatSessionProvider({
          }
          writeThreadSnapshot(queryClient, {
             ...result.value,
-            suggestions: result.value.suggestions ?? [],
+            suggestions: result.value.suggestions,
          });
          setActiveThread(result.value.id);
          return result.value.id;
@@ -305,7 +300,7 @@ export function ChatSessionProvider({
                toast.error("Falha ao excluir mensagem.");
                return;
             }
-            removeMessageFromChatData(id, messageId);
+            removeMessageFromChatData(queryClient, id, messageId);
             refreshChatData(queryClient, id);
          },
       };

@@ -38,7 +38,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
-import { resetChat } from "../../../-montte-ai/chat-store";
+import { setActiveThread } from "../../../-montte-ai/chat-store";
 import {
    SelectionActionButton,
    useSelectionToolbar,
@@ -161,7 +161,7 @@ export function ChatSidebar({ search }: { search: string }) {
                <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                      <Link
-                        onClick={() => resetChat()}
+                        onClick={() => setActiveThread(null)}
                         params={{ slug, teamSlug }}
                         to="/$slug/$teamSlug/chat"
                      >

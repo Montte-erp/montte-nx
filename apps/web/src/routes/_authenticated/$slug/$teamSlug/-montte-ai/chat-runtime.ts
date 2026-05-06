@@ -5,7 +5,13 @@ import {
 } from "@tanstack/ai-react";
 import { useMemo, useRef } from "react";
 import { toast } from "sonner";
-import type { ChatPageContext } from "./chat-types";
+import type { Outputs } from "@/integrations/orpc/client";
+
+type ChatMessageMetadata =
+   Outputs["threads"]["getById"]["messages"][number]["metadata"];
+type ChatPageContext = NonNullable<
+   NonNullable<ChatMessageMetadata>["pageContext"]
+>;
 
 export type ChatTurnRequest = {
    text?: string;
