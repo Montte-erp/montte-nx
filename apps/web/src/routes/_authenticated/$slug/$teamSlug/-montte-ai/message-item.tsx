@@ -19,14 +19,14 @@ import {
 } from "lucide-react";
 import { memo, useState } from "react";
 import { Streamdown } from "streamdown";
-import type { MessageMetadata } from "@core/database/schemas/messages";
 import { useChatSession } from "./chat-store";
+import type { ChatMessageMetadata } from "./chat-types";
 import { MessageFooter } from "./message-footer";
 import { TOOL_LABELS, presentToolIcon } from "./tool-meta";
 
 interface MessageItemProps {
    message: UIMessage;
-   metadata?: MessageMetadata | null;
+   metadata?: ChatMessageMetadata;
    isStreaming: boolean;
    isLast: boolean;
    onApprove: (approvalId: string) => Promise<void>;

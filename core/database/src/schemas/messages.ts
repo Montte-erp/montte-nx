@@ -18,6 +18,7 @@ export const messageMetadataSchema = z.object({
       .object({
          route: z.string().optional(),
          title: z.string().optional(),
+         summary: z.string().optional(),
          skillHint: z.string().optional(),
       })
       .optional(),

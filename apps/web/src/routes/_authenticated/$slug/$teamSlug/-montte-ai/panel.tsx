@@ -30,7 +30,6 @@ import {
 import { Composer } from "./composer";
 import { EmptyState } from "./empty-state";
 import { MessageList } from "./message-list";
-import { useAgentLive } from "./use-agent-live";
 
 export function AgentPanel() {
    useHotkey("Mod+J", togglePanel);
@@ -67,7 +66,6 @@ function AgentPanelContent() {
 
    useApprovalSelectionBar();
    useStreamShortcuts();
-   useAgentLive();
 
    const hasConversation = session.messages.length > 0;
    const showRecents = !activeThreadId && recents.length > 0;

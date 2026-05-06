@@ -1,37 +1,25 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { z } from "zod";
 import { orpc } from "@/integrations/orpc/client";
-import { refreshThreadCollections } from "./chat-store";
+import {
+   refreshChatData,
+   writeThreadSuggestions,
+   writeThreadTitle,
+} from "./chat-data";
 
-const agentEventSchema = z.discriminatedUnion("type", [
-   z.object({
-      type: z.literal("agent.thread.title_updated"),
-      payload: z.object({
-         threadId: z.string().uuid(),
-         title: z.string(),
-      }),
-   }),
-   z.object({
-      type: z.literal("agent.thread.created"),
-      payload: z.object({ threadId: z.string().uuid() }),
-   }),
-   z.object({
-      type: z.literal("agent.message.persisted"),
-      payload: z.object({
-         threadId: z.string().uuid(),
-         messageId: z.string().uuid(),
-         role: z.enum(["user", "assistant", "system"]),
-      }),
-   }),
-   z.object({
-      type: z.literal("agent.thread.suggestions_updated"),
-      payload: z.object({
-         threadId: z.string().uuid(),
-         suggestions: z.array(z.string()),
-      }),
-   }),
-]);
+function stringField(payload: unknown, key: string): string | null {
+   if (typeof payload !== "object" || payload === null) return null;
+   const value = Object.getOwnPropertyDescriptor(payload, key)?.value;
+   return typeof value === "string" ? value : null;
+}
+
+function stringArrayField(payload: unknown, key: string): string[] | null {
+   if (typeof payload !== "object" || payload === null) return null;
+   const value = Object.getOwnPropertyDescriptor(payload, key)?.value;
+   if (!Array.isArray(value)) return null;
+   if (!value.every((item) => typeof item === "string")) return null;
+   return value;
+}
 
 export function useAgentLive() {
    const queryClient = useQueryClient();
@@ -41,25 +29,29 @@ export function useAgentLive() {
 
    useEffect(() => {
       if (!data) return;
-      const parsed = agentEventSchema.safeParse({
-         type: data.type,
-         payload: data.payload,
-      });
-      if (!parsed.success) return;
-      const event = parsed.data;
-      if (
-         event.type === "agent.thread.title_updated" ||
-         event.type === "agent.thread.created"
-      ) {
-         void queryClient.invalidateQueries({
-            queryKey: orpc.threads.list.key(),
-         });
+      const threadId = stringField(data.payload, "threadId");
+      if (threadId === null) return;
+
+      if (data.type === "agent.thread.title_updated") {
+         const title = stringField(data.payload, "title");
+         if (title === null) return;
+         writeThreadTitle(queryClient, threadId, title);
+         return;
       }
-      if (
-         event.type === "agent.message.persisted" ||
-         event.type === "agent.thread.suggestions_updated"
-      ) {
-         refreshThreadCollections(event.payload.threadId);
+
+      if (data.type === "agent.thread.suggestions_updated") {
+         const suggestions = stringArrayField(data.payload, "suggestions");
+         if (suggestions === null) return;
+         writeThreadSuggestions(threadId, suggestions);
+         return;
       }
+
+      if (data.type === "agent.thread.created") {
+         refreshChatData(queryClient);
+         return;
+      }
+
+      if (data.type === "agent.message.persisted")
+         refreshChatData(queryClient, threadId);
    }, [data, queryClient]);
 }
