@@ -23,7 +23,7 @@ import {
    setActiveThread,
    togglePanel,
    useActiveThreadId,
-   useChatSession,
+   useMontteAssistant,
    useRecentThreads,
 } from "./chat-store";
 import { Composer } from "./composer";
@@ -60,13 +60,13 @@ function PanelSkeleton() {
 function AgentPanelContent() {
    const activeThreadId = useActiveThreadId();
    const { slug, teamSlug } = useDashboardSlugs();
-   const session = useChatSession();
+   const session = useMontteAssistant();
    const recents = useRecentThreads();
 
    useApprovalSelectionBar();
    useStreamShortcuts();
 
-   const hasConversation = session.messages.length > 0;
+   const hasConversation = session.messageCount > 0;
    const showRecents = !activeThreadId && recents.length > 0;
 
    return (
@@ -166,7 +166,7 @@ function AgentPanelContent() {
 }
 
 function useApprovalSelectionBar() {
-   const session = useChatSession();
+   const session = useMontteAssistant();
    const ids = session.pendingApprovalIds;
 
    const toolbar = useSelectionToolbar(({ selectedIndices, clear }) => (
@@ -207,8 +207,8 @@ function useApprovalSelectionBar() {
 }
 
 function useStreamShortcuts() {
-   const session = useChatSession();
+   const session = useMontteAssistant();
    useHotkey("Escape", () => {
-      if (session.isStreaming) session.stop();
+      if (session.isRunning) session.stop();
    });
 }

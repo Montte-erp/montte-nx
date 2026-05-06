@@ -1,8 +1,23 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { createStore, useStore } from "@tanstack/react-store";
+import {
+   AssistantRuntimeProvider,
+   type AppendMessage,
+   type ThreadMessageLike,
+   useExternalStoreRuntime,
+} from "@assistant-ui/react";
+import { fetchHttpStream, useChat } from "@tanstack/ai-react";
 import { useLiveQuery } from "@tanstack/react-db";
+import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createStore, useStore } from "@tanstack/react-store";
 import type { UIMessage } from "@tanstack/ai-react";
-import { createContext, useContext, useMemo } from "react";
+import {
+   createContext,
+   useCallback,
+   useContext,
+   useEffect,
+   useMemo,
+   useRef,
+} from "react";
+import { usePostHog } from "posthog-js/react";
 import {
    Briefcase,
    Contact,
@@ -13,26 +28,25 @@ import {
    Wallet,
    type LucideIcon,
 } from "lucide-react";
+import dayjs from "dayjs";
 import { fromPromise } from "neverthrow";
 import { toast } from "sonner";
 import { createPersistedStore } from "@/lib/store";
 import { client } from "@/integrations/orpc/client";
 import {
    type ChatMessage,
-   getMessagesCollection,
-   getThreadDetailCollection,
    getThreadsCollection,
    refreshChatData,
    removeMessageFromChatData,
    writeThreadSnapshot,
 } from "./chat-data";
 import { useAgentLive } from "./use-agent-live";
-import { useChatRuntime } from "./chat-runtime";
 
 type ChatMessageMetadata = ChatMessage["metadata"];
 type ChatPageContext = NonNullable<
    NonNullable<ChatMessageMetadata>["pageContext"]
 >;
+type UiMessagePart = UIMessage["parts"][number];
 
 export type AgentScopeId =
    | "auto"
@@ -71,10 +85,6 @@ export const SCOPE_SUGGESTIONS: AgentScope[] = SCOPES.filter(
    (scope) => scope.id !== "auto",
 );
 
-function getScope(id: AgentScopeId): AgentScope {
-   return SCOPES.find((scope) => scope.id === id) ?? AUTO_SCOPE;
-}
-
 interface ChatState {
    activeThreadId: string | null;
    panelOpen: boolean;
@@ -106,43 +116,61 @@ export const usePanelOpen = () => useStore(chatStore, (s) => s.panelOpen);
 
 export const useSelectedScope = (): AgentScope => {
    const id = useStore(scopeStore, (s) => s.id);
-   return getScope(id);
+   return SCOPES.find((scope) => scope.id === id) ?? AUTO_SCOPE;
 };
 
 function pickPageContext(): ChatPageContext | undefined {
-   const skillHint = getScope(scopeStore.state.id).skillHint;
-   return skillHint ? { skillHint } : undefined;
+   const scope = SCOPES.find((item) => item.id === scopeStore.state.id);
+   return scope?.skillHint ? { skillHint: scope.skillHint } : undefined;
 }
 
-export interface ChatSession {
-   messages: UIMessage[];
-   suggestions: string[];
-   status: "ready" | "submitted" | "streaming" | "error";
-   error: Error | null;
-   isStreaming: boolean;
-   isSubmitting: boolean;
+export type ChatTurnRequest = {
+   text?: string;
+   regenerate?: boolean;
+   replaceFromMessageId?: string;
+};
+
+interface MontteAssistantContextValue {
+   messageCount: number;
+   isRunning: boolean;
    pendingApprovalIds: string[];
-   metadataFor: (messageId: string) => ChatMessageMetadata | undefined;
    startNewConversation: () => void;
-   sendMessage: (text: string) => Promise<void>;
    stop: () => void;
-   regenerateFrom: (userMessageId: string) => Promise<void>;
-   editAndResend: (userMessageId: string, text: string) => Promise<void>;
    deleteMessage: (messageId: string) => Promise<void>;
    approveTool: (approvalId: string) => Promise<void>;
    rejectTool: (approvalId: string) => Promise<void>;
-   approveAll: () => Promise<void>;
-   rejectAll: () => Promise<void>;
 }
 
-const ChatSessionContext = createContext<ChatSession | null>(null);
+const MontteAssistantContext =
+   createContext<MontteAssistantContextValue | null>(null);
 
-export function useChatSession(): ChatSession {
-   const ctx = useContext(ChatSessionContext);
+export function useMontteAssistant() {
+   const ctx = useContext(MontteAssistantContext);
    if (ctx === null) {
-      throw new Error("useChatSession must be inside <ChatSessionProvider>");
+      throw new Error(
+         "useMontteAssistant must be inside <ChatSessionProvider>",
+      );
    }
    return ctx;
+}
+
+function toUiMessage(message: ChatMessage): UIMessage {
+   return {
+      id: message.id,
+      role: message.role,
+      parts: message.parts,
+      createdAt: dayjs(message.createdAt).toDate(),
+   };
+}
+
+function messageText(message: AppendMessage): string {
+   return message.content
+      .flatMap((part) => {
+         if (part.type !== "text") return [];
+         return [part.text];
+      })
+      .join("\n\n")
+      .trim();
 }
 
 function pendingApprovalIds(messages: UIMessage[]): string[] {
@@ -178,36 +206,119 @@ function hasPendingToolWork(messages: UIMessage[]): boolean {
    });
 }
 
-function toUiMessage(message: ChatMessage): UIMessage {
+function isNonEmptyThinkingPart(part: UiMessagePart): boolean {
+   return part.type === "thinking" && part.content.trim().length > 0;
+}
+
+function mergeStreamingMessage(
+   previous: UIMessage | undefined,
+   next: UIMessage,
+): UIMessage {
+   if (previous === undefined) return next;
+   if (next.role !== "assistant") return next;
+
+   const previousThinking = previous.parts.filter(isNonEmptyThinkingPart);
+   const nextParts = next.parts.map((part, index) => {
+      if (part.type !== "thinking") return part;
+      const previousPart = previous.parts[index];
+      if (
+         previousPart?.type === "thinking" &&
+         previousPart.content.length > part.content.length
+      )
+         return previousPart;
+      return part;
+   });
+
+   if (nextParts.some(isNonEmptyThinkingPart)) {
+      return { ...next, parts: nextParts };
+   }
+   if (previousThinking.length === 0) return { ...next, parts: nextParts };
+
+   const firstTextIndex = nextParts.findIndex((part) => part.type === "text");
+   const insertAt = firstTextIndex === -1 ? nextParts.length : firstTextIndex;
+
    return {
-      id: message.id,
-      role: message.role,
-      parts: message.parts,
+      ...next,
+      parts: [
+         ...nextParts.slice(0, insertAt),
+         ...previousThinking,
+         ...nextParts.slice(insertAt),
+      ],
    };
 }
 
-function visibleMessages({
-   activeTurn,
-   persisted,
-   live,
-}: {
-   activeTurn: boolean;
-   persisted: UIMessage[];
-   live: UIMessage[];
-}): UIMessage[] {
-   if (!activeTurn || live.length === 0) return persisted;
+function mergeStreamingMessages(
+   previousMessages: UIMessage[],
+   nextMessages: UIMessage[],
+   activeTurn: boolean,
+): UIMessage[] {
+   if (!activeTurn) return nextMessages;
 
-   const firstLive = live[0];
-   const firstPersisted = persisted[0];
-   if (firstLive !== undefined && firstLive.id === firstPersisted?.id) {
-      return live;
+   const previousById = new Map(
+      previousMessages.map((message) => [message.id, message]),
+   );
+   return nextMessages.map((message) =>
+      mergeStreamingMessage(previousById.get(message.id), message),
+   );
+}
+
+function convertMessage(
+   message: UIMessage,
+   runningMessageId: string | null,
+): ThreadMessageLike {
+   const toolResults = new Map<string, { content: string; error?: string }>();
+   for (const part of message.parts) {
+      if (part.type !== "tool-result") continue;
+      toolResults.set(part.toolCallId, {
+         content: part.content,
+         ...(part.error && { error: part.error }),
+      });
    }
 
-   const persistedIds = new Set(persisted.map((message) => message.id));
-   return [
-      ...persisted,
-      ...live.filter((message) => !persistedIds.has(message.id)),
-   ];
+   type ThreadMessageContentPart = Exclude<
+      ThreadMessageLike["content"],
+      string
+   >[number];
+   const content: ThreadMessageContentPart[] = [];
+   for (const part of message.parts) {
+      if (part.type === "text") {
+         content.push({ type: "text", text: part.content });
+         continue;
+      }
+      if (part.type === "thinking") {
+         if (part.content.trim().length === 0) continue;
+         content.push({ type: "reasoning", text: part.content });
+         continue;
+      }
+      if (part.type !== "tool-call") continue;
+      const result = toolResults.get(part.id);
+      content.push({
+         type: "tool-call",
+         toolCallId: part.id,
+         toolName: part.name,
+         argsText: part.arguments,
+         result: part.output ?? result?.content,
+         isError: result?.error !== undefined,
+         artifact: {
+            state: part.state,
+            approvalId: part.approval?.id,
+            approvalApproved: part.approval?.approved,
+         },
+      });
+   }
+
+   return {
+      id: message.id,
+      role: message.role,
+      content,
+      createdAt: message.createdAt,
+      ...(message.role === "assistant" && {
+         status:
+            runningMessageId === message.id
+               ? { type: "running" }
+               : { type: "complete", reason: "stop" },
+      }),
+   };
 }
 
 export function ChatSessionProvider({
@@ -216,40 +327,71 @@ export function ChatSessionProvider({
    children: React.ReactNode;
 }) {
    const queryClient = useQueryClient();
+   const posthog = usePostHog();
    const threadId = useActiveThreadId();
+   const pendingTurn = useRef<ChatTurnRequest | null>(null);
+   const loadedSnapshotKey = useRef<string | null>(null);
+   const visibleMessages = useRef<UIMessage[]>([]);
 
    useAgentLive();
 
-   const runtime = useChatRuntime({
-      getThreadId: () => chatStore.state.activeThreadId,
-      getPageContext: pickPageContext,
-      onFinish: async () => {
+   const connection = useMemo(
+      () =>
+         fetchHttpStream("/api/chat", () => {
+            const turn = pendingTurn.current;
+            pendingTurn.current = null;
+            return {
+               credentials: "include",
+               body: {
+                  threadId: chatStore.state.activeThreadId ?? "",
+                  ...(turn?.text !== undefined && { text: turn.text }),
+                  ...(turn?.regenerate && { regenerate: true }),
+                  ...(turn?.replaceFromMessageId && {
+                     replaceFromMessageId: turn.replaceFromMessageId,
+                  }),
+                  pageContext: pickPageContext(),
+               },
+            };
+         }),
+      [],
+   );
+
+   const chat = useChat({
+      connection,
+      initialMessages: [],
+      onFinish: () => {
          const id = chatStore.state.activeThreadId;
          if (!id) return;
-         await refreshChatData(queryClient, id);
-         chat.setMessages([]);
+         void fromPromise(client.threads.getById({ threadId: id }), () => null)
+            .then((result) => {
+               if (result.isErr()) return;
+               const messages = result.value.messages.map(toUiMessage);
+               const snapshotKey = `${id}:${messages
+                  .map((message) => message.id)
+                  .join(":")}`;
+               loadedSnapshotKey.current = snapshotKey;
+               chat.setMessages(messages);
+               writeThreadSnapshot(queryClient, {
+                  ...result.value.thread,
+                  suggestions: result.value.thread.suggestions ?? [],
+               });
+            })
+            .then(() => refreshChatData(queryClient));
       },
+      onError: () => toast.error("Falha no streaming da Montte AI."),
    });
-   const chat = runtime.chat;
 
-   const { data: dbMessages = [] } = useLiveQuery(
-      (q) =>
-         threadId
-            ? q
-                 .from({ m: getMessagesCollection(threadId, queryClient) })
-                 .orderBy(({ m }) => m.createdAt, "asc")
-            : null,
-      [threadId, queryClient],
+   const threadQuery = useQuery(
+      threadId === null
+         ? {
+              queryKey: ["chat-thread-runtime", null],
+              queryFn: skipToken,
+           }
+         : {
+              queryKey: ["chat-thread-runtime", threadId],
+              queryFn: () => client.threads.getById({ threadId }),
+           },
    );
-
-   const { data: threadRows = [] } = useLiveQuery(
-      (q) =>
-         threadId
-            ? q.from({ t: getThreadDetailCollection(threadId, queryClient) })
-            : null,
-      [threadId, queryClient],
-   );
-   const thread = threadRows[0];
 
    const status = chat.status;
    const activeTurn =
@@ -259,92 +401,138 @@ export function ChatSessionProvider({
       status === "streaming" ||
       hasPendingToolWork(chat.messages);
 
-   const session = useMemo<ChatSession>(() => {
-      const persistedMessages = dbMessages.map(toUiMessage);
-      const messages = visibleMessages({
-         activeTurn,
-         persisted: persistedMessages,
-         live: chat.messages,
+   useEffect(() => {
+      if (threadId === null) {
+         if (loadedSnapshotKey.current === null && chat.messages.length === 0)
+            return;
+         loadedSnapshotKey.current = null;
+         chat.setMessages([]);
+         return;
+      }
+      if (activeTurn) return;
+      const data = threadQuery.data;
+      if (data === undefined) return;
+      const messages = data.messages.map(toUiMessage);
+      const snapshotKey = `${threadId}:${messages
+         .map((message) => message.id)
+         .join(":")}`;
+      if (loadedSnapshotKey.current === snapshotKey) return;
+      loadedSnapshotKey.current = snapshotKey;
+      chat.setMessages(messages);
+      writeThreadSnapshot(queryClient, {
+         ...data.thread,
+         suggestions: data.thread.suggestions ?? [],
       });
-      const metadataMap = new Map(dbMessages.map((m) => [m.id, m.metadata]));
-      const approvalIds = pendingApprovalIds(messages);
+   }, [
+      activeTurn,
+      chat,
+      chat.messages.length,
+      queryClient,
+      threadId,
+      threadQuery.data,
+   ]);
 
-      const ensureThread = async (): Promise<string | null> => {
-         const existing = chatStore.state.activeThreadId;
-         if (existing !== null) return existing;
-         const result = await fromPromise(
-            client.threads.create({}),
-            () => null,
-         );
-         if (result.isErr()) {
-            toast.error("Falha ao criar conversa.");
-            return null;
-         }
-         writeThreadSnapshot(queryClient, {
-            ...result.value,
-            suggestions: result.value.suggestions,
-         });
-         setActiveThread(result.value.id);
-         return result.value.id;
-      };
+   const messages = useMemo(() => {
+      const merged = mergeStreamingMessages(
+         visibleMessages.current,
+         chat.messages,
+         activeTurn,
+      );
+      visibleMessages.current = merged;
+      return merged;
+   }, [activeTurn, chat.messages]);
+   const runningMessageId = activeTurn ? (messages.at(-1)?.id ?? null) : null;
+   const approvalIds = useMemo(() => pendingApprovalIds(messages), [messages]);
 
-      return {
-         messages,
-         suggestions: thread?.suggestions ?? [],
-         status,
-         error: chat.error ?? null,
-         isStreaming: activeTurn,
-         isSubmitting: status === "submitted",
+   const ensureThread = useCallback(async (): Promise<string | null> => {
+      const existing = chatStore.state.activeThreadId;
+      if (existing !== null) return existing;
+      const result = await fromPromise(client.threads.create({}), () => null);
+      if (result.isErr()) {
+         toast.error("Falha ao criar conversa.");
+         return null;
+      }
+      writeThreadSnapshot(queryClient, {
+         ...result.value,
+         suggestions: result.value.suggestions,
+      });
+      setActiveThread(result.value.id);
+      return result.value.id;
+   }, [queryClient]);
+
+   const onNew = useCallback(
+      async (message: AppendMessage) => {
+         const text = messageText(message);
+         if (!text || activeTurn) return;
+         const id = await ensureThread();
+         if (id === null) return;
+         pendingTurn.current = { text };
+         await chat.sendMessage(text);
+      },
+      [activeTurn, chat, ensureThread],
+   );
+
+   const onEdit = useCallback(
+      async (message: AppendMessage) => {
+         const text = messageText(message);
+         if (!text || activeTurn) return;
+         const id = await ensureThread();
+         if (id === null) return;
+         pendingTurn.current = {
+            text,
+            replaceFromMessageId: message.sourceId ?? message.parentId ?? "",
+         };
+         await chat.sendMessage(text);
+      },
+      [activeTurn, chat, ensureThread],
+   );
+
+   const onReload = useCallback(async () => {
+      if (activeTurn) return;
+      pendingTurn.current = { regenerate: true };
+      await chat.reload();
+   }, [activeTurn, chat]);
+
+   const runtime = useExternalStoreRuntime<UIMessage>({
+      messages,
+      isRunning: activeTurn,
+      isDisabled: false,
+      suggestions: (threadQuery.data?.thread?.suggestions ?? []).map(
+         (prompt) => ({ prompt }),
+      ),
+      convertMessage: (message) => convertMessage(message, runningMessageId),
+      onNew,
+      onEdit,
+      onReload,
+      onCancel: async () => chat.stop(),
+      adapters: {
+         feedback: {
+            submit: ({ message, type }) => {
+               posthog.capture("ai_agent_message_feedback", {
+                  feedback_type: type,
+                  message_id: message.id,
+                  message_role: message.role,
+                  thread_id: chatStore.state.activeThreadId,
+                  content_part_count:
+                     typeof message.content === "string"
+                        ? 1
+                        : message.content.length,
+               });
+            },
+         },
+      },
+   });
+
+   const context = useMemo<MontteAssistantContextValue>(
+      () => ({
+         messageCount: messages.length,
+         isRunning: activeTurn,
          pendingApprovalIds: approvalIds,
-         metadataFor: (id) => metadataMap.get(id),
          startNewConversation: () => {
             chat.setMessages([]);
             setActiveThread(null);
          },
          stop: () => chat.stop(),
-         approveTool: (id) =>
-            chat.addToolApprovalResponse({ id, approved: true }),
-         rejectTool: (id) =>
-            chat.addToolApprovalResponse({ id, approved: false }),
-         approveAll: async () => {
-            for (const id of approvalIds) {
-               await chat.addToolApprovalResponse({ id, approved: true });
-            }
-         },
-         rejectAll: async () => {
-            for (const id of approvalIds) {
-               await chat.addToolApprovalResponse({ id, approved: false });
-            }
-         },
-         sendMessage: async (text) => {
-            const trimmed = text.trim();
-            if (!trimmed || activeTurn) return;
-            const id = await ensureThread();
-            if (id === null) return;
-            runtime.prepareTurn({ text: trimmed });
-            await chat.sendMessage(trimmed);
-         },
-         regenerateFrom: async (userMessageId) => {
-            if (activeTurn) return;
-            const idx = messages.findIndex((m) => m.id === userMessageId);
-            if (idx < 0) return;
-            chat.setMessages(messages.slice(0, idx + 1));
-            runtime.prepareTurn({ regenerate: true });
-            await chat.reload();
-         },
-         editAndResend: async (userMessageId, text) => {
-            if (activeTurn) return;
-            const trimmed = text.trim();
-            if (!trimmed) return;
-            const idx = messages.findIndex((m) => m.id === userMessageId);
-            if (idx < 0) return;
-            chat.setMessages(messages.slice(0, idx));
-            runtime.prepareTurn({
-               text: trimmed,
-               replaceFromMessageId: userMessageId,
-            });
-            await chat.sendMessage(trimmed);
-         },
          deleteMessage: async (messageId) => {
             const id = chatStore.state.activeThreadId;
             if (!id) return;
@@ -359,22 +547,20 @@ export function ChatSessionProvider({
             removeMessageFromChatData(queryClient, id, messageId);
             await refreshChatData(queryClient, id);
          },
-      };
-   }, [
-      activeTurn,
-      chat,
-      status,
-      dbMessages,
-      queryClient,
-      runtime,
-      thread,
-      threadId,
-   ]);
+         approveTool: (id) =>
+            chat.addToolApprovalResponse({ id, approved: true }),
+         rejectTool: (id) =>
+            chat.addToolApprovalResponse({ id, approved: false }),
+      }),
+      [activeTurn, approvalIds, chat, messages.length, queryClient],
+   );
 
    return (
-      <ChatSessionContext.Provider value={session}>
-         {children}
-      </ChatSessionContext.Provider>
+      <AssistantRuntimeProvider runtime={runtime}>
+         <MontteAssistantContext.Provider value={context}>
+            {children}
+         </MontteAssistantContext.Provider>
+      </AssistantRuntimeProvider>
    );
 }
 

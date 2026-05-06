@@ -43,7 +43,7 @@ import {
    getThreadsCollection,
    type ChatThreadListItem,
 } from "../../../-montte-ai/chat-data";
-import { useChatSession } from "../../../-montte-ai/chat-store";
+import { useMontteAssistant } from "../../../-montte-ai/chat-store";
 import {
    SelectionActionButton,
    useSelectionToolbar,
@@ -101,7 +101,7 @@ export function ChatSidebar({ search }: { search: string }) {
    const params = useParams({ strict: false });
    const { openAlertDialog } = useAlertDialog();
    const queryClient = useQueryClient();
-   const { startNewConversation } = useChatSession();
+   const { startNewConversation } = useMontteAssistant();
 
    const { data = [] } = useLiveQuery(
       (q) =>
