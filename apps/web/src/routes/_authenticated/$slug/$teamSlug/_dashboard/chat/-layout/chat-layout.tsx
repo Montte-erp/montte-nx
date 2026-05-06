@@ -57,7 +57,7 @@ function ChatLayoutDesktop({ children }: ChatLayoutProps) {
             </Sidebar>
          </SidebarManager>
          <SidebarInset className="flex-1 overflow-hidden">
-            <main className="h-full">{children}</main>
+            <main className="flex h-full justify-center">{children}</main>
          </SidebarInset>
       </SidebarProvider>
    );

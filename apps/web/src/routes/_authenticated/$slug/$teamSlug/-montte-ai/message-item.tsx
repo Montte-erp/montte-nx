@@ -18,6 +18,7 @@ import {
    X,
    Compass,
    Lightbulb,
+   Search,
    Sparkles,
    type LucideIcon,
 } from "lucide-react";
@@ -58,6 +59,7 @@ function presentToolIcon(name: string | undefined): LucideIcon {
    if (name === "advisor_consult") return Lightbulb;
    if (name === "skill_discover") return Sparkles;
    if (name === "__lazy__tool__discovery__") return Compass;
+   if (name === "web_search") return Search;
    return Wrench;
 }
 
@@ -171,32 +173,32 @@ function UserBubble({ message }: { message: UIMessage }) {
          <div className="max-w-[85%] rounded-2xl bg-muted px-4 py-2.5 text-base">
             <span className="whitespace-pre-wrap">{text}</span>
          </div>
-         <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover/user:opacity-100">
-            <Button
-               aria-label="Editar"
-               className="size-7 text-muted-foreground hover:text-foreground"
-               disabled={isStreaming}
-               onClick={() => {
-                  setDraft(text);
-                  setEditing(true);
-               }}
-               size="icon"
-               variant="ghost"
-            >
-               <Pencil className="size-3.5" />
-            </Button>
-            <Button
-               aria-label="Regenerar resposta"
-               className="size-7 text-muted-foreground hover:text-foreground"
-               disabled={isStreaming}
-               onClick={() => void regenerateFrom(message.id)}
-               size="icon"
-               variant="ghost"
-            >
-               <RefreshCw className="size-3.5" />
-            </Button>
-            <DeleteButton messageId={message.id} label="Excluir mensagem" />
-         </div>
+         {!isStreaming ? (
+            <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover/user:opacity-100">
+               <Button
+                  aria-label="Editar"
+                  className="size-7 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                     setDraft(text);
+                     setEditing(true);
+                  }}
+                  size="icon"
+                  variant="ghost"
+               >
+                  <Pencil className="size-3.5" />
+               </Button>
+               <Button
+                  aria-label="Regenerar resposta"
+                  className="size-7 text-muted-foreground hover:text-foreground"
+                  onClick={() => void regenerateFrom(message.id)}
+                  size="icon"
+                  variant="ghost"
+               >
+                  <RefreshCw className="size-3.5" />
+               </Button>
+               <DeleteButton messageId={message.id} label="Excluir mensagem" />
+            </div>
+         ) : null}
       </div>
    );
 }
@@ -256,11 +258,7 @@ function renderParts(parts: UIMessage["parts"], ctx: RenderContext) {
       flushTools(`${idx}-pre`);
       if (part.type === "text") {
          out.push(
-            <Streamdown
-               isAnimating={ctx.isStreaming}
-               key={key}
-               mode={ctx.isStreaming ? "streaming" : "static"}
-            >
+            <Streamdown isAnimating key={key} animated>
                {part.content}
             </Streamdown>,
          );
@@ -279,7 +277,7 @@ function renderParts(parts: UIMessage["parts"], ctx: RenderContext) {
                </CollapsibleTrigger>
                <CollapsibleContent className="ml-[22px] border-l border-muted-foreground/15 py-1 pl-3 text-sm text-muted-foreground">
                   <Streamdown
-                     isAnimating={isLive}
+                     caret="circle"
                      mode={isLive ? "streaming" : "static"}
                   >
                      {part.content}
@@ -342,6 +340,14 @@ function ToolGroup({
                   part.state === "input-streaming" ||
                   (part.output === undefined &&
                      part.state !== "approval-requested");
+               if (part.name === "web_search")
+                  return (
+                     <WebSearchToolCard
+                        isRunning={isRunning}
+                        key={part.id}
+                        part={part}
+                     />
+                  );
                const partNeedsDecision =
                   part.state === "approval-requested" &&
                   part.approval !== undefined &&
@@ -395,6 +401,42 @@ function ToolGroup({
             })}
          </CollapsibleContent>
       </Collapsible>
+   );
+}
+
+function WebSearchToolCard({
+   part,
+   isRunning,
+}: {
+   part: ToolCallPart;
+   isRunning: boolean;
+}) {
+   const status = isRunning ? "Pesquisando" : "Pesquisa concluída";
+
+   return (
+      <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2">
+         <div className="flex items-center gap-2 text-sm">
+            {isRunning ? (
+               <Loader2 className="size-4 shrink-0 animate-spin text-primary" />
+            ) : (
+               <Search className="size-4 shrink-0 text-primary" />
+            )}
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+               <span className="font-medium text-foreground">
+                  OpenRouter Web Search
+               </span>
+               <span className="text-muted-foreground">{status}</span>
+            </div>
+            {!isRunning ? (
+               <Check className="size-4 shrink-0 text-emerald-500" />
+            ) : null}
+         </div>
+         {part.arguments ? (
+            <pre className="overflow-x-auto pt-2 text-xs text-muted-foreground">
+               {part.arguments}
+            </pre>
+         ) : null}
+      </div>
    );
 }
 

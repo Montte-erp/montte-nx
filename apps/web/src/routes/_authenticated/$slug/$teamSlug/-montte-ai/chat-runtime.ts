@@ -1,8 +1,4 @@
-import {
-   fetchServerSentEvents,
-   useChat,
-   type UIMessage,
-} from "@tanstack/ai-react";
+import { fetchHttpStream, useChat, type UIMessage } from "@tanstack/ai-react";
 import { useMemo, useRef } from "react";
 import { toast } from "sonner";
 import type { Outputs } from "@/integrations/orpc/client";
@@ -32,7 +28,7 @@ export function useChatRuntime(options: ChatRuntimeOptions) {
 
    const connection = useMemo(
       () =>
-         fetchServerSentEvents("/api/chat", () => {
+         fetchHttpStream("/api/chat", () => {
             const turn = pendingTurn.current;
             pendingTurn.current = null;
             return {

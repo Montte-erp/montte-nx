@@ -47,11 +47,11 @@ export function useAgentLive() {
       }
 
       if (data.type === "agent.thread.created") {
-         refreshChatData(queryClient);
+         void refreshChatData(queryClient);
          return;
       }
 
       if (data.type === "agent.message.persisted")
-         refreshChatData(queryClient, threadId);
+         void refreshChatData(queryClient, threadId);
    }, [data, queryClient]);
 }

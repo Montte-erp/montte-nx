@@ -232,16 +232,19 @@ export function removeMessageFromChatData(
       ?.utils.writeDelete(messageId);
 }
 
-export function refreshChatData(queryClient: QueryClient, threadId?: string) {
+export async function refreshChatData(
+   queryClient: QueryClient,
+   threadId?: string,
+) {
    void getThreadsCollection(queryClient).utils.refetch();
    if (!threadId) return;
-   void getCollectionMap(threadBundleCollections, queryClient)
+   await getCollectionMap(threadBundleCollections, queryClient)
       .get(threadId)
       ?.utils.refetch();
-   void getCollectionMap(messagesCollections, queryClient)
+   await getCollectionMap(messagesCollections, queryClient)
       .get(threadId)
       ?.utils.refetch();
-   void getCollectionMap(threadDetailCollections, queryClient)
+   await getCollectionMap(threadDetailCollections, queryClient)
       .get(threadId)
       ?.utils.refetch();
 }

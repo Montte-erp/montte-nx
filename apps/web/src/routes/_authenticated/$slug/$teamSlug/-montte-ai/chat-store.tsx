@@ -157,6 +157,12 @@ function pendingApprovalIds(messages: UIMessage[]): string[] {
    });
 }
 
+function textContent(message: Pick<UIMessage, "parts">): string {
+   return message.parts
+      .flatMap((part) => (part.type === "text" ? [part.content] : []))
+      .join("");
+}
+
 export function ChatSessionProvider({
    children,
 }: {
@@ -164,7 +170,7 @@ export function ChatSessionProvider({
 }) {
    const queryClient = useQueryClient();
    const threadId = useActiveThreadId();
-   const clearOverlayRef = useRef<(() => void) | null>(null);
+   const overlaySnapshotRef = useRef<UIMessage[]>([]);
 
    useAgentLive();
 
@@ -174,12 +180,9 @@ export function ChatSessionProvider({
       onFinish: async () => {
          const id = chatStore.state.activeThreadId;
          if (!id) return;
-         await getMessagesCollection(id, queryClient).utils.refetch();
-         refreshChatData(queryClient, id);
-         clearOverlayRef.current?.();
+         await refreshChatData(queryClient, id);
       },
    });
-   clearOverlayRef.current = runtime.clearOverlay;
    const chat = runtime.chat;
 
    const { data: dbMessages = [] } = useLiveQuery(
@@ -205,7 +208,20 @@ export function ChatSessionProvider({
 
    const session = useMemo<ChatSession>(() => {
       const dbIds = new Set(dbMessages.map((m) => m.id));
-      const overlay = chat.messages.filter((m) => !dbIds.has(m.id));
+      const lastDbMessage = dbMessages.at(-1);
+      if (chat.messages.length > 0) {
+         overlaySnapshotRef.current = chat.messages;
+      }
+      const overlaySource =
+         chat.messages.length > 0 ? chat.messages : overlaySnapshotRef.current;
+      const overlay = overlaySource.filter((m) => {
+         if (dbIds.has(m.id)) return false;
+         if (lastDbMessage?.role !== m.role) return true;
+         return textContent(m) !== textContent(lastDbMessage);
+      });
+      if (overlay.length === 0 && overlaySnapshotRef.current.length > 0) {
+         overlaySnapshotRef.current = [];
+      }
       const messages: UIMessage[] = [
          ...dbMessages.map((m) => ({
             id: m.id,
@@ -301,7 +317,7 @@ export function ChatSessionProvider({
                return;
             }
             removeMessageFromChatData(queryClient, id, messageId);
-            refreshChatData(queryClient, id);
+            await refreshChatData(queryClient, id);
          },
       };
    }, [chat, status, dbMessages, queryClient, runtime, thread]);

@@ -19,7 +19,19 @@ export function MessageList() {
    } = session;
    const lastIndex = messages.length - 1;
    const last = messages.at(-1);
-   const showThinking = isSubmitting || (isStreaming && last?.role === "user");
+   const lastHasVisibleParts =
+      last?.role === "assistant" &&
+      last.parts.some(
+         (part) =>
+            part.type === "tool-call" ||
+            part.type === "thinking" ||
+            (part.type === "text" && part.content.trim().length > 0),
+      );
+   const showThinking =
+      isSubmitting ||
+      (isStreaming &&
+         (last?.role === "user" ||
+            (last?.role === "assistant" && !lastHasVisibleParts)));
    const lastUserId = messages.findLast((m) => m.role === "user")?.id;
 
    const showError =

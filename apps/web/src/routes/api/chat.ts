@@ -1,6 +1,6 @@
 import "@/polyfill";
 
-import { chat, toServerSentEventsResponse, type UIMessage } from "@tanstack/ai";
+import { chat, toHttpResponse, type UIMessage } from "@tanstack/ai";
 import { and, asc, eq, gte, sql } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { createFileRoute } from "@tanstack/react-router";
@@ -165,7 +165,10 @@ async function handlePost({ request }: { request: Request }) {
       extraMiddleware: [persistMiddleware],
    });
 
-   return toServerSentEventsResponse(chat(chatArgs), { abortController });
+   return toHttpResponse(chat(chatArgs), {
+      abortController,
+      headers: { "Content-Type": "application/x-ndjson" },
+   });
 }
 
 export const Route = createFileRoute("/api/chat")({

@@ -94,7 +94,7 @@
       "react-dom": "catalog:react",
       "react-dropzone": "^15.0.0",
       "recharts": "catalog:ui",
-      "streamdown": "^1.6.0",
+      "streamdown": "^1.6.11",
       "tailwind-merge": "catalog:ui",
       "tailwindcss": "catalog:ui",
       "xlsx": "^0.18.5",
