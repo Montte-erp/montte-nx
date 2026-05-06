@@ -30,10 +30,78 @@ const listThreadsInputSchema = z
    .object({ limit: z.number().int().min(1).max(100).default(50) })
    .default({ limit: 50 });
 
+const contentPartSourceSchema = z.discriminatedUnion("type", [
+   z.object({
+      type: z.literal("data"),
+      value: z.string(),
+      mimeType: z.string(),
+   }),
+   z.object({
+      type: z.literal("url"),
+      value: z.string(),
+      mimeType: z.string().optional(),
+   }),
+]);
+
+const messagePartSchema = z.discriminatedUnion("type", [
+   z.object({ type: z.literal("text"), content: z.string() }),
+   z.object({
+      type: z.literal("image"),
+      source: contentPartSourceSchema,
+      metadata: z.unknown().optional(),
+   }),
+   z.object({
+      type: z.literal("audio"),
+      source: contentPartSourceSchema,
+      metadata: z.unknown().optional(),
+   }),
+   z.object({
+      type: z.literal("video"),
+      source: contentPartSourceSchema,
+      metadata: z.unknown().optional(),
+   }),
+   z.object({
+      type: z.literal("document"),
+      source: contentPartSourceSchema,
+      metadata: z.unknown().optional(),
+   }),
+   z.object({ type: z.literal("thinking"), content: z.string() }),
+   z.object({
+      type: z.literal("tool-call"),
+      id: z.string().min(1),
+      name: z.string().min(1),
+      arguments: z.string(),
+      state: z.enum([
+         "awaiting-input",
+         "input-streaming",
+         "input-complete",
+         "approval-requested",
+         "approval-responded",
+      ]),
+      approval: z
+         .object({
+            id: z.string().min(1),
+            needsApproval: z.boolean(),
+            approved: z.boolean().optional(),
+         })
+         .optional(),
+      output: z.unknown().optional(),
+   }),
+   z.object({
+      type: z.literal("tool-result"),
+      toolCallId: z.string().min(1),
+      content: z.string(),
+      state: z.enum(["streaming", "complete", "error"]),
+      error: z.string().optional(),
+   }),
+]);
+
+const messagePartsSchema = z
+   .array(messagePartSchema)
+   .min(1) satisfies z.ZodType<UIMessage["parts"]>;
+
 const saveAssistantMessageInputSchema = threadIdInputSchema.extend({
-   parts: z.custom<UIMessage["parts"]>(
-      (value) => Array.isArray(value) && value.length > 0,
-   ),
+   parts: messagePartsSchema,
 });
 
 export const list = protectedProcedure

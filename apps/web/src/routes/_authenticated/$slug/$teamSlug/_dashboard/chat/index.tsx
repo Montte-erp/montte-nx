@@ -3,7 +3,8 @@ import { useEffect } from "react";
 import { Composer } from "../../-montte-ai/composer";
 import {
    useActiveThreadId,
-   useMontteAssistant,
+   useMontteIsRunning,
+   useMontteMessageCount,
 } from "../../-montte-ai/chat-store";
 import { EmptyState } from "../../-montte-ai/empty-state";
 import { MessageList } from "../../-montte-ai/message-list";
@@ -20,7 +21,8 @@ function ChatIndexPage() {
    const { slug, teamSlug } = useDashboardSlugs();
    const navigate = useNavigate();
    const activeThreadId = useActiveThreadId();
-   const { messageCount, isRunning } = useMontteAssistant();
+   const messageCount = useMontteMessageCount();
+   const isRunning = useMontteIsRunning();
 
    useEffect(() => {
       if (!activeThreadId) return;

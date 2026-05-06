@@ -5,10 +5,12 @@ import {
    PopoverContent,
    PopoverTrigger,
 } from "@packages/ui/components/popover";
+import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { ArrowRight, Brain, Check, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@packages/ui/lib/utils";
+import { QueryBoundary } from "@/components/query-boundary";
 import { orpc } from "@/integrations/orpc/client";
 import { SCOPES, selectScope, useSelectedScope } from "./chat-store";
 
@@ -148,6 +150,18 @@ function ScopePicker() {
 }
 
 function EffortPicker() {
+   return (
+      <QueryBoundary fallback={<Skel />} errorTitle="Agent settings">
+         <EffortPickerContent />
+      </QueryBoundary>
+   );
+}
+
+function Skel() {
+   return <Skeleton className="h-7 w-24 rounded-full" />;
+}
+
+function EffortPickerContent() {
    const [open, setOpen] = useState(false);
    const { data: settings } = useSuspenseQuery(
       orpc.agentSettings.getSettings.queryOptions(),

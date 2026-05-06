@@ -23,7 +23,10 @@ import {
    setActiveThread,
    togglePanel,
    useActiveThreadId,
-   useMontteAssistant,
+   useMontteActions,
+   useMontteIsRunning,
+   useMontteMessageCount,
+   useMonttePendingApprovals,
    useRecentThreads,
 } from "./chat-store";
 import { Composer } from "./composer";
@@ -60,13 +63,13 @@ function PanelSkeleton() {
 function AgentPanelContent() {
    const activeThreadId = useActiveThreadId();
    const { slug, teamSlug } = useDashboardSlugs();
-   const session = useMontteAssistant();
+   const messageCount = useMontteMessageCount();
    const recents = useRecentThreads();
 
    useApprovalSelectionBar();
    useStreamShortcuts();
 
-   const hasConversation = session.messageCount > 0;
+   const hasConversation = messageCount > 0;
    const showRecents = !activeThreadId && recents.length > 0;
 
    return (
@@ -166,8 +169,8 @@ function AgentPanelContent() {
 }
 
 function useApprovalSelectionBar() {
-   const session = useMontteAssistant();
-   const ids = session.pendingApprovalIds;
+   const { approveTool, rejectTool } = useMontteActions();
+   const ids = useMonttePendingApprovals();
 
    const toolbar = useSelectionToolbar(({ selectedIndices, clear }) => (
       <>
@@ -175,7 +178,7 @@ function useApprovalSelectionBar() {
             onClick={async () => {
                for (const i of selectedIndices) {
                   const id = ids[i];
-                  if (id !== undefined) await session.rejectTool(id);
+                  if (id !== undefined) await rejectTool(id);
                }
                clear();
             }}
@@ -186,7 +189,7 @@ function useApprovalSelectionBar() {
             onClick={async () => {
                for (const i of selectedIndices) {
                   const id = ids[i];
-                  if (id !== undefined) await session.approveTool(id);
+                  if (id !== undefined) await approveTool(id);
                }
                clear();
             }}
@@ -207,8 +210,9 @@ function useApprovalSelectionBar() {
 }
 
 function useStreamShortcuts() {
-   const session = useMontteAssistant();
+   const { stop } = useMontteActions();
+   const isRunning = useMontteIsRunning();
    useHotkey("Escape", () => {
-      if (session.isRunning) session.stop();
+      if (isRunning) stop();
    });
 }

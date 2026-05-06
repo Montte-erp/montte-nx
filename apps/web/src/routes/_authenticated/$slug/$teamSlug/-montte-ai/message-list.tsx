@@ -30,7 +30,7 @@ import {
 import type { ReactNode } from "react";
 import { z } from "zod";
 import { EditComposer } from "./composer";
-import { useMontteAssistant } from "./chat-store";
+import { useMontteActions, useMontteIsRunning } from "./chat-store";
 
 const TOOL_LABELS: Record<string, string> = {
    advisor_consult: "Consultando advisor sênior",
@@ -172,7 +172,7 @@ function AssistantMessage({ compact }: { compact: boolean }) {
    return (
       <MessagePrimitive.Root
          className={cn(
-            "group/msg flex flex-col gap-3 leading-relaxed",
+            "group/msg flex flex-col gap-2 leading-relaxed",
             compact ? "text-sm" : "text-base",
          )}
       >
@@ -295,7 +295,7 @@ function ToolPart({
       artifact?: unknown;
    };
 }) {
-   const { approveTool, rejectTool } = useMontteAssistant();
+   const { approveTool, rejectTool } = useMontteActions();
    const artifactResult = toolArtifactSchema.safeParse(part.artifact);
    const toolState = artifactResult.success
       ? artifactResult.data.state
@@ -369,7 +369,8 @@ function MessageActions({
    messageId: string;
    role: MessageActionRole;
 }) {
-   const { deleteMessage, isRunning } = useMontteAssistant();
+   const { deleteMessage } = useMontteActions();
+   const isRunning = useMontteIsRunning();
 
    if (role === "system") return null;
    if (isRunning) return null;
@@ -404,36 +405,40 @@ function MessageActions({
                </Button>
             </ActionBarPrimitive.Edit>
          ) : null}
-         <ActionBarPrimitive.FeedbackPositive asChild>
-            <Button
-               aria-label="Gostei da mensagem"
-               className="size-7 text-muted-foreground hover:text-emerald-500 data-[submitted=true]:text-emerald-500"
-               size="icon"
-               variant="ghost"
-            >
-               <ThumbsUp className="size-3.5" />
-            </Button>
-         </ActionBarPrimitive.FeedbackPositive>
-         <ActionBarPrimitive.FeedbackNegative asChild>
-            <Button
-               aria-label="Não gostei da mensagem"
-               className="size-7 text-muted-foreground hover:text-destructive data-[submitted=true]:text-destructive"
-               size="icon"
-               variant="ghost"
-            >
-               <ThumbsDown className="size-3.5" />
-            </Button>
-         </ActionBarPrimitive.FeedbackNegative>
-         <ActionBarPrimitive.Reload asChild>
-            <Button
-               aria-label="Regenerar resposta"
-               className="size-7 text-muted-foreground hover:text-foreground"
-               size="icon"
-               variant="ghost"
-            >
-               <RefreshCw className="size-3.5" />
-            </Button>
-         </ActionBarPrimitive.Reload>
+         {role === "assistant" ? (
+            <>
+               <ActionBarPrimitive.FeedbackPositive asChild>
+                  <Button
+                     aria-label="Gostei da mensagem"
+                     className="size-7 text-muted-foreground hover:text-emerald-500 data-[submitted=true]:text-emerald-500"
+                     size="icon"
+                     variant="ghost"
+                  >
+                     <ThumbsUp className="size-3.5" />
+                  </Button>
+               </ActionBarPrimitive.FeedbackPositive>
+               <ActionBarPrimitive.FeedbackNegative asChild>
+                  <Button
+                     aria-label="Não gostei da mensagem"
+                     className="size-7 text-muted-foreground hover:text-destructive data-[submitted=true]:text-destructive"
+                     size="icon"
+                     variant="ghost"
+                  >
+                     <ThumbsDown className="size-3.5" />
+                  </Button>
+               </ActionBarPrimitive.FeedbackNegative>
+               <ActionBarPrimitive.Reload asChild>
+                  <Button
+                     aria-label="Regenerar resposta"
+                     className="size-7 text-muted-foreground hover:text-foreground"
+                     size="icon"
+                     variant="ghost"
+                  >
+                     <RefreshCw className="size-3.5" />
+                  </Button>
+               </ActionBarPrimitive.Reload>
+            </>
+         ) : null}
          <Button
             aria-label="Excluir mensagem"
             className="size-7 text-muted-foreground hover:text-destructive"

@@ -7,16 +7,10 @@ import {
 import { fetchHttpStream, useChat } from "@tanstack/ai-react";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useQueryClient } from "@tanstack/react-query";
-import { createStore, useStore } from "@tanstack/react-store";
+import { createStore } from "@tanstack/store";
+import { shallow, useStore } from "@tanstack/react-store";
 import type { UIMessage } from "@tanstack/ai-react";
-import {
-   createContext,
-   useCallback,
-   useContext,
-   useEffect,
-   useMemo,
-   useRef,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { usePostHog } from "posthog-js/react";
 import {
    Briefcase,
@@ -35,8 +29,7 @@ import { createPersistedStore } from "@/lib/store";
 import { client } from "@/integrations/orpc/client";
 import {
    type ChatMessage,
-   getMessagesCollection,
-   getThreadDetailCollection,
+   getThreadCollection,
    getThreadsCollection,
    refreshChatData,
 } from "./chat-data";
@@ -130,10 +123,7 @@ export type ChatTurnRequest = {
    replaceFromMessageId?: string;
 };
 
-interface MontteAssistantContextValue {
-   messageCount: number;
-   isRunning: boolean;
-   pendingApprovalIds: string[];
+interface MontteAssistantActions {
    startNewConversation: () => void;
    stop: () => void;
    deleteMessage: (messageId: string) => Promise<void>;
@@ -141,18 +131,48 @@ interface MontteAssistantContextValue {
    rejectTool: (approvalId: string) => Promise<void>;
 }
 
-const MontteAssistantContext =
-   createContext<MontteAssistantContextValue | null>(null);
-
-export function useMontteAssistant() {
-   const ctx = useContext(MontteAssistantContext);
-   if (ctx === null) {
-      throw new Error(
-         "useMontteAssistant must be inside <ChatSessionProvider>",
-      );
-   }
-   return ctx;
+interface MontteAssistantState extends MontteAssistantActions {
+   messageCount: number;
+   isRunning: boolean;
+   pendingApprovalIds: string[];
 }
+
+const initialMontteAssistantActions: MontteAssistantActions = {
+   startNewConversation: () => {},
+   stop: () => {},
+   deleteMessage: async () => {},
+   approveTool: async () => {},
+   rejectTool: async () => {},
+};
+
+const montteAssistantStore = createStore<MontteAssistantState>({
+   messageCount: 0,
+   isRunning: false,
+   pendingApprovalIds: [],
+   ...initialMontteAssistantActions,
+});
+
+export const useMontteMessageCount = () =>
+   useStore(montteAssistantStore, (s) => s.messageCount);
+
+export const useMontteIsRunning = () =>
+   useStore(montteAssistantStore, (s) => s.isRunning);
+
+export const useMonttePendingApprovals = () =>
+   useStore(montteAssistantStore, (s) => s.pendingApprovalIds);
+
+export const useMontteActions = () =>
+   useStore(
+      montteAssistantStore,
+      (s) => ({
+         startNewConversation: s.startNewConversation,
+         stop: s.stop,
+         deleteMessage: s.deleteMessage,
+         approveTool: s.approveTool,
+         rejectTool: s.rejectTool,
+      }),
+      shallow,
+   );
 
 function toUiMessage(message: ChatMessage): UIMessage {
    return {
@@ -402,25 +422,14 @@ export function ChatSessionProvider({
       onError: () => toast.error("Falha no streaming da Montte AI."),
    });
 
-   const { data: storedMessages } = useLiveQuery(
+   const { data: threadBundles } = useLiveQuery(
       (q) => {
          if (threadId === null) return undefined;
-         return q
-            .from({ message: getMessagesCollection(threadId, queryClient) })
-            .orderBy(({ message }) => message.createdAt, "asc");
+         return q.from({ bundle: getThreadCollection(threadId, queryClient) });
       },
       [queryClient, threadId],
    );
-   const { data: threadDetails = [] } = useLiveQuery(
-      (q) => {
-         if (threadId === null) return undefined;
-         return q.from({
-            thread: getThreadDetailCollection(threadId, queryClient),
-         });
-      },
-      [queryClient, threadId],
-   );
-   const threadDetail = threadDetails[0];
+   const threadBundle = threadBundles?.[0];
 
    const status = chat.status;
    const activeTurn =
@@ -439,15 +448,23 @@ export function ChatSessionProvider({
          return;
       }
       if (activeTurn) return;
-      if (storedMessages === undefined) return;
-      const messages = storedMessages.map(toUiMessage);
+      if (threadBundles === undefined) return;
+      if (threadBundle === undefined) return;
+      const messages = threadBundle.messages.map(toUiMessage);
       const snapshotKey = `${threadId}:${messages
          .map((message) => message.id)
          .join(":")}`;
       if (loadedSnapshotKey.current === snapshotKey) return;
       loadedSnapshotKey.current = snapshotKey;
       chat.setMessages(messages);
-   }, [activeTurn, chat, chat.messages.length, storedMessages, threadId]);
+   }, [
+      activeTurn,
+      chat,
+      chat.messages.length,
+      threadBundle,
+      threadBundles,
+      threadId,
+   ]);
 
    const messages = useMemo(() => {
       const merged = mergeStreamingMessages(
@@ -507,11 +524,45 @@ export function ChatSessionProvider({
       await chat.reload();
    }, [activeTurn, chat]);
 
+   const startNewConversation = useCallback(() => {
+      chat.setMessages([]);
+      setActiveThread(null);
+   }, [chat]);
+
+   const stop = useCallback(() => chat.stop(), [chat]);
+
+   const deleteMessage = useCallback(
+      async (messageId: string) => {
+         const id = chatStore.state.activeThreadId;
+         if (!id) return;
+         const result = await fromPromise(
+            client.threads.removeMessage({ threadId: id, messageId }),
+            () => null,
+         );
+         if (result.isErr()) {
+            toast.error("Falha ao excluir mensagem.");
+            return;
+         }
+         await refreshChatData(queryClient, id);
+      },
+      [queryClient],
+   );
+
+   const approveTool = useCallback(
+      (id: string) => chat.addToolApprovalResponse({ id, approved: true }),
+      [chat],
+   );
+
+   const rejectTool = useCallback(
+      (id: string) => chat.addToolApprovalResponse({ id, approved: false }),
+      [chat],
+   );
+
    const runtime = useExternalStoreRuntime<UIMessage>({
       messages,
       isRunning: activeTurn,
       isDisabled: false,
-      suggestions: (threadDetail?.suggestions ?? []).map((prompt) => ({
+      suggestions: (threadBundle?.thread.suggestions ?? []).map((prompt) => ({
          prompt,
       })),
       convertMessage,
@@ -522,10 +573,11 @@ export function ChatSessionProvider({
       adapters: {
          feedback: {
             submit: ({ message, type }) => {
+               if (message.role !== "assistant") return;
                posthog.capture("ai_agent_message_feedback", {
                   feedback_type: type,
                   message_id: message.id,
-                  message_role: message.role,
+                  message_role: "assistant",
                   thread_id: chatStore.state.activeThreadId,
                   content_part_count:
                      typeof message.content === "string"
@@ -537,42 +589,32 @@ export function ChatSessionProvider({
       },
    });
 
-   const context = useMemo<MontteAssistantContextValue>(
-      () => ({
+   useEffect(() => {
+      montteAssistantStore.setState((s) => ({
+         ...s,
          messageCount: messages.length,
          isRunning: activeTurn,
          pendingApprovalIds: approvalIds,
-         startNewConversation: () => {
-            chat.setMessages([]);
-            setActiveThread(null);
-         },
-         stop: () => chat.stop(),
-         deleteMessage: async (messageId) => {
-            const id = chatStore.state.activeThreadId;
-            if (!id) return;
-            const result = await fromPromise(
-               client.threads.removeMessage({ threadId: id, messageId }),
-               () => null,
-            );
-            if (result.isErr()) {
-               toast.error("Falha ao excluir mensagem.");
-               return;
-            }
-            await refreshChatData(queryClient, id);
-         },
-         approveTool: (id) =>
-            chat.addToolApprovalResponse({ id, approved: true }),
-         rejectTool: (id) =>
-            chat.addToolApprovalResponse({ id, approved: false }),
-      }),
-      [activeTurn, approvalIds, chat, messages.length, queryClient],
-   );
+         startNewConversation,
+         stop,
+         deleteMessage,
+         approveTool,
+         rejectTool,
+      }));
+   }, [
+      activeTurn,
+      approvalIds,
+      approveTool,
+      deleteMessage,
+      messages.length,
+      rejectTool,
+      startNewConversation,
+      stop,
+   ]);
 
    return (
       <AssistantRuntimeProvider runtime={runtime}>
-         <MontteAssistantContext.Provider value={context}>
-            {children}
-         </MontteAssistantContext.Provider>
+         {children}
       </AssistantRuntimeProvider>
    );
 }
