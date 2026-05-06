@@ -2,6 +2,7 @@ import { chat, toolDefinition } from "@tanstack/ai";
 import { z } from "zod";
 import { fromPromise } from "neverthrow";
 import { proModel } from "@core/ai/models";
+import { WebAppError } from "@core/logging/errors";
 import { createPosthogAiMiddleware } from "@core/ai/middleware";
 import type { PostHog, Prompts } from "@core/posthog/server";
 import { AGENT_PROMPTS } from "@modules/agents/constants";
@@ -14,56 +15,47 @@ export interface AdvisorToolDeps {
    turnId?: string;
 }
 
-const ADVISOR_FALLBACK_PROMPT = `Você é o consultor sênior do Montte AI. Você NÃO tem ferramentas e NÃO fala com o usuário.
-Recebe uma situação curada do executor e retorna uma decisão clara em pt-BR.
-
-Formato da resposta:
-1. Decisão recomendada (1 linha objetiva)
-2. Justificativa (2-3 linhas)
-3. Próximos passos concretos (lista curta)
-
-Princípios de modelagem do catálogo (use quando relevante):
-- Desconto recorrente (%) sempre vira **benefit**, nunca serviço duplicado.
-- Preço com unidade temporal (hora/turno/dia/mês) exige **meter** existente antes do price.
-- "Plano" recorrente (mensal/semestral/anual) é serviço com 3 preços, um por período.
-- Ambíguo ou faltando dado → recomende perguntar ao usuário, nunca invente valor.
-
-Sem rodeios. Não escreva "como advisor, eu...". Direto à decisão.`;
-
 const ADVISOR_TIMEOUT_MS = 45_000;
+
+const advisorConsultInputSchema = z.object({
+   situation: z
+      .string()
+      .trim()
+      .min(20)
+      .max(4_000)
+      .describe(
+         "Resumo da situação atual: pedido do usuário, ações já tentadas e ponto travado.",
+      ),
+   question: z
+      .string()
+      .trim()
+      .min(5)
+      .max(1_000)
+      .describe("Decisão específica que precisa do advisor."),
+   options: z
+      .array(z.string().trim().min(1).max(500))
+      .max(5)
+      .optional()
+      .describe("Opções consideradas, quando existirem."),
+});
 
 export function buildAdvisorTool(deps: AdvisorToolDeps) {
    return toolDefinition({
       name: "advisor_consult",
       description:
          "Consulte o advisor sênior antes de tomar decisões ambíguas: tabela/dado confuso, conflito service vs benefit vs meter, mesma operação falhou 2x, ou pedido fora de skill conhecida. NÃO consulte para CRUD trivial, listagem ou input claro. Budget: até 3 consultas por turno.",
-      inputSchema: z.object({
-         situation: z
-            .string()
-            .min(20)
-            .describe(
-               "Resumo da situação atual (o que o usuário pediu, o que você já fez/tentou, qual o ponto travado).",
-            ),
-         question: z
-            .string()
-            .min(5)
-            .describe("A decisão específica que você precisa do advisor."),
-         options: z
-            .array(z.string())
-            .optional()
-            .describe("Opções que você está considerando, se houver."),
-      }),
+      inputSchema: advisorConsultInputSchema,
    }).server(async ({ situation, question, options }) => {
       const templateResult = await fromPromise(
          deps.prompts.get(AGENT_PROMPTS.advisor, {
             withMetadata: false,
-            fallback: ADVISOR_FALLBACK_PROMPT,
          }),
          () => "Falha ao carregar prompt do advisor.",
       );
-      const systemPrompt = templateResult.isOk()
-         ? deps.prompts.compile(templateResult.value, {})
-         : ADVISOR_FALLBACK_PROMPT;
+      if (templateResult.isErr())
+         throw WebAppError.internal(templateResult.error);
+
+      const systemPrompt = deps.prompts.compile(templateResult.value, {});
 
       const optionsBlock =
          options && options.length > 0
@@ -108,13 +100,10 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
       clearTimeout(timeout);
 
       if (result.isErr()) {
-         return {
-            guidance:
-               "Advisor indisponível no momento. Prossiga com seu melhor julgamento, ou peça esclarecimento ao usuário se o ponto travado for de dado.",
-            fallback: true,
-            error: result.error,
-         };
+         throw WebAppError.internal(result.error);
       }
+      if (!result.value)
+         throw WebAppError.internal("Advisor não retornou conteúdo.");
       return {
          guidance: result.value,
          fallback: false,

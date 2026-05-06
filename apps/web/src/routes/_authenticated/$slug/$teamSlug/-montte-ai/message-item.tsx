@@ -1,0 +1,431 @@
+import type { ToolCallPart, UIMessage } from "@tanstack/ai";
+import { Button } from "@packages/ui/components/button";
+import {
+   Collapsible,
+   CollapsibleContent,
+   CollapsibleTrigger,
+} from "@packages/ui/components/collapsible";
+import { Textarea } from "@packages/ui/components/textarea";
+import {
+   Brain,
+   Check,
+   ChevronDown,
+   Loader2,
+   Pencil,
+   RefreshCw,
+   Trash2,
+   Wrench,
+   X,
+} from "lucide-react";
+import { memo, useState } from "react";
+import { Streamdown } from "streamdown";
+import { cn } from "@packages/ui/lib/utils";
+import { useChatSession } from "./chat-store";
+import type { ChatMessage } from "./chat-data";
+import { MessageFooter } from "./message-footer";
+
+type ChatMessageMetadata = ChatMessage["metadata"];
+
+const TOOL_LABELS: Record<string, string> = {
+   advisor_consult: "Consultando advisor sênior",
+   skill_discover: "Carregando playbook",
+   __lazy__tool__discovery__: "Carregando ferramentas",
+   catalog_search: "Consultando catálogo",
+   benefit_create: "Criando benefício",
+   benefit_details: "Detalhando benefício",
+   benefit_remove: "Removendo benefício",
+   benefit_update: "Atualizando benefício",
+   benefits_set_active: "Ativando ou arquivando benefícios",
+   coupon_create: "Criando cupom",
+   coupon_deactivate: "Desativando cupom",
+   coupon_details: "Detalhando cupom",
+   coupon_update: "Atualizando cupom",
+   coupons_set_active: "Ativando ou arquivando cupons",
+   meter_create: "Criando medidor",
+   meter_details: "Detalhando medidor",
+   meter_remove: "Removendo medidor",
+   meter_update: "Atualizando medidor",
+   meters_set_active: "Ativando ou arquivando medidores",
+   price_create: "Criando preço",
+   price_remove: "Removendo preço",
+   price_update: "Atualizando preço",
+   service_benefit_attach: "Anexando benefício",
+   service_benefit_create_attach: "Criando e anexando benefício",
+   service_benefit_detach: "Removendo benefício do serviço",
+   service_details: "Detalhando serviço",
+   service_setup: "Configurando serviço completo",
+   service_update: "Atualizando serviço",
+   services_set_active: "Ativando ou arquivando serviços",
+};
+
+interface MessageItemProps {
+   message: UIMessage;
+   metadata?: ChatMessageMetadata;
+   compact?: boolean;
+   isStreaming: boolean;
+   isLast: boolean;
+   onApprove: (approvalId: string) => Promise<void>;
+   onReject: (approvalId: string) => Promise<void>;
+}
+
+function MessageItemImpl({
+   message,
+   metadata,
+   compact = false,
+   isStreaming,
+   isLast,
+   onApprove,
+   onReject,
+}: MessageItemProps) {
+   if (message.role === "system") return null;
+
+   if (message.role === "user") {
+      return <UserBubble compact={compact} message={message} />;
+   }
+
+   const assistantText = message.parts
+      .flatMap((part) => (part.type === "text" ? [part.content] : []))
+      .join("\n\n");
+   const allToolsResolved = message.parts.every(
+      (part) =>
+         part.type !== "tool-call" ||
+         part.output !== undefined ||
+         part.state === "approval-requested",
+   );
+   const hasToolCalls = message.parts.some((part) => part.type === "tool-call");
+   const showFooter =
+      !isStreaming &&
+      !hasToolCalls &&
+      allToolsResolved &&
+      assistantText.length > 0;
+
+   return (
+      <div
+         className={cn(
+            "group/msg flex flex-col gap-3 leading-relaxed",
+            compact ? "text-sm" : "text-base",
+         )}
+      >
+         {renderParts(message.parts, {
+            isStreaming,
+            onApprove,
+            onReject,
+         })}
+         {showFooter ? (
+            <div className="flex items-center gap-1">
+               <MessageFooter
+                  messageId={message.id}
+                  text={assistantText}
+                  traceId={metadata?.traceId}
+               />
+               {isLast ? null : (
+                  <DeleteButton
+                     messageId={message.id}
+                     label="Excluir resposta"
+                  />
+               )}
+            </div>
+         ) : null}
+      </div>
+   );
+}
+
+function UserBubble({
+   message,
+   compact,
+}: {
+   message: UIMessage;
+   compact: boolean;
+}) {
+   const { editAndResend, regenerateFrom, isStreaming } = useChatSession();
+   const [editing, setEditing] = useState(false);
+   const text = message.parts
+      .flatMap((part) => (part.type === "text" ? [part.content] : []))
+      .join("");
+   const [draft, setDraft] = useState(text);
+
+   if (editing) {
+      return (
+         <div className="flex flex-col items-end gap-2">
+            <Textarea
+               aria-label="Editar mensagem"
+               className={cn(
+                  "max-w-[85%] resize-none rounded-2xl",
+                  compact ? "text-sm" : "text-base",
+               )}
+               onChange={(e) => setDraft(e.target.value)}
+               value={draft}
+            />
+            <div className="flex items-center gap-2">
+               <Button
+                  onClick={() => {
+                     setEditing(false);
+                     setDraft(text);
+                  }}
+                  size="sm"
+                  variant="ghost"
+               >
+                  <X className="size-4" />
+                  Cancelar
+               </Button>
+               <Button
+                  disabled={!draft.trim() || draft.trim() === text}
+                  onClick={() => {
+                     setEditing(false);
+                     void editAndResend(message.id, draft);
+                  }}
+                  size="sm"
+               >
+                  Enviar
+               </Button>
+            </div>
+         </div>
+      );
+   }
+
+   return (
+      <div className="group/user flex flex-col items-end gap-1">
+         <div
+            className={cn(
+               "max-w-[85%] rounded-2xl bg-muted px-4 py-2.5",
+               compact ? "text-sm" : "text-base",
+            )}
+         >
+            <span className="whitespace-pre-wrap">{text}</span>
+         </div>
+         {!isStreaming ? (
+            <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover/user:opacity-100">
+               <Button
+                  aria-label="Editar"
+                  className="size-7 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                     setDraft(text);
+                     setEditing(true);
+                  }}
+                  size="icon"
+                  variant="ghost"
+               >
+                  <Pencil className="size-3.5" />
+               </Button>
+               <Button
+                  aria-label="Regenerar resposta"
+                  className="size-7 text-muted-foreground hover:text-foreground"
+                  onClick={() => void regenerateFrom(message.id)}
+                  size="icon"
+                  variant="ghost"
+               >
+                  <RefreshCw className="size-3.5" />
+               </Button>
+               <DeleteButton messageId={message.id} label="Excluir mensagem" />
+            </div>
+         ) : null}
+      </div>
+   );
+}
+
+function DeleteButton({
+   messageId,
+   label,
+}: {
+   messageId: string;
+   label: string;
+}) {
+   const { deleteMessage, isStreaming } = useChatSession();
+   return (
+      <Button
+         aria-label={label}
+         className="size-7 text-muted-foreground hover:text-destructive"
+         disabled={isStreaming}
+         onClick={() => void deleteMessage(messageId)}
+         size="icon"
+         variant="ghost"
+      >
+         <Trash2 className="size-3.5" />
+      </Button>
+   );
+}
+
+interface RenderContext {
+   isStreaming: boolean;
+   onApprove: (approvalId: string) => Promise<void>;
+   onReject: (approvalId: string) => Promise<void>;
+}
+
+function renderParts(parts: UIMessage["parts"], ctx: RenderContext) {
+   const out: React.ReactNode[] = [];
+   let toolBuffer: ToolCallPart[] = [];
+
+   const flushTools = (key: string) => {
+      if (toolBuffer.length === 0) return;
+      out.push(
+         <ToolGroup
+            isStreaming={ctx.isStreaming}
+            key={`tools-${key}`}
+            onApprove={ctx.onApprove}
+            onReject={ctx.onReject}
+            parts={toolBuffer}
+         />,
+      );
+      toolBuffer = [];
+   };
+
+   parts.forEach((part, idx) => {
+      const key = `${part.type}-${idx}`;
+      if (part.type === "tool-call") {
+         toolBuffer.push(part);
+         return;
+      }
+      flushTools(`${idx}-pre`);
+      if (part.type === "text") {
+         out.push(
+            <Streamdown isAnimating key={key}>
+               {part.content}
+            </Streamdown>,
+         );
+         return;
+      }
+      if (part.type === "thinking") {
+         const hasFinalText = parts
+            .slice(idx + 1)
+            .some(
+               (next) => next.type === "text" && next.content.trim().length > 0,
+            );
+         const isLive = ctx.isStreaming && !hasFinalText;
+         out.push(
+            <Collapsible className="group/think" defaultOpen={isLive} key={key}>
+               <CollapsibleTrigger className="flex w-full items-center gap-2 py-1 text-sm text-muted-foreground hover:text-foreground">
+                  <Brain className="size-4 shrink-0" />
+                  <span className="flex-1 text-left">
+                     {isLive ? "Raciocinando" : "Raciocínio concluído"}
+                  </span>
+                  <ChevronDown className="size-4 shrink-0 transition-transform group-data-[state=open]/think:rotate-180" />
+               </CollapsibleTrigger>
+               <CollapsibleContent className="rounded-lg bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                  <Streamdown mode={isLive ? "streaming" : "static"}>
+                     {part.content}
+                  </Streamdown>
+               </CollapsibleContent>
+            </Collapsible>,
+         );
+      }
+   });
+   flushTools("end");
+   return out;
+}
+
+function ToolGroup({
+   parts,
+   onApprove,
+   onReject,
+}: {
+   parts: ToolCallPart[];
+   isStreaming: boolean;
+   onApprove: (approvalId: string) => Promise<void>;
+   onReject: (approvalId: string) => Promise<void>;
+}) {
+   const total = parts.length;
+   const anyRunning = parts.some(
+      (p) =>
+         p.state === "input-streaming" ||
+         (p.output === undefined && p.state !== "approval-requested"),
+   );
+   const needsDecision = parts.find(
+      (p) =>
+         p.state === "approval-requested" &&
+         p.approval !== undefined &&
+         p.approval.approved === undefined,
+   );
+   const headerLabel = anyRunning
+      ? `Executando ${total} ${total === 1 ? "ferramenta" : "ferramentas"}`
+      : `${total} ${total === 1 ? "ferramenta executada" : "ferramentas executadas"}`;
+
+   return (
+      <Collapsible
+         className="group/tools rounded-lg border border-muted-foreground/15 bg-muted/30"
+         defaultOpen={anyRunning || needsDecision !== undefined}
+      >
+         <CollapsibleTrigger className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+            {anyRunning ? (
+               <Loader2 className="size-4 shrink-0 animate-spin" />
+            ) : (
+               <Wrench className="size-4 shrink-0" />
+            )}
+            <span className="flex-1 text-left">{headerLabel}</span>
+            {!anyRunning ? (
+               <Check className="size-3.5 shrink-0 text-emerald-500" />
+            ) : null}
+            <ChevronDown className="size-4 shrink-0 transition-transform group-data-[state=open]/tools:rotate-180" />
+         </CollapsibleTrigger>
+         <CollapsibleContent className="flex flex-col gap-1.5 border-t border-muted-foreground/10 px-3 py-2">
+            {parts.map((part) => {
+               const isRunning =
+                  part.state === "input-streaming" ||
+                  (part.output === undefined &&
+                     part.state !== "approval-requested");
+               const partNeedsDecision =
+                  part.state === "approval-requested" &&
+                  part.approval !== undefined &&
+                  part.approval.approved === undefined;
+               const label = TOOL_LABELS[part.name] ?? "Executando ferramenta";
+               return (
+                  <div className="flex flex-col gap-2" key={part.id}>
+                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        {isRunning ? (
+                           <Loader2 className="size-4 shrink-0 animate-spin" />
+                        ) : (
+                           <Wrench className="size-4 shrink-0" />
+                        )}
+                        <span>{label}</span>
+                        {!isRunning && !partNeedsDecision ? (
+                           <Check className="size-3.5 shrink-0 text-emerald-500" />
+                        ) : null}
+                     </div>
+                     {partNeedsDecision ? (
+                        <div className="flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/5 px-4 py-2.5 text-sm">
+                           <span className="flex-1">
+                              Aprovar{" "}
+                              <span className="font-medium">{label}</span>?
+                           </span>
+                           <Button
+                              className="h-8 px-3 text-sm"
+                              onClick={() => {
+                                 if (part.approval === undefined) return;
+                                 void onReject(part.approval.id);
+                              }}
+                              size="sm"
+                              variant="outline"
+                           >
+                              Negar
+                           </Button>
+                           <Button
+                              className="h-8 px-3 text-sm"
+                              onClick={() => {
+                                 if (part.approval === undefined) return;
+                                 void onApprove(part.approval.id);
+                              }}
+                              size="sm"
+                           >
+                              Aprovar
+                           </Button>
+                        </div>
+                     ) : null}
+                  </div>
+               );
+            })}
+         </CollapsibleContent>
+      </Collapsible>
+   );
+}
+
+export const MessageItem = memo(MessageItemImpl, (prev, next) => {
+   if (prev.message.id !== next.message.id) return false;
+   if (prev.compact !== next.compact) return false;
+   if (prev.isStreaming !== next.isStreaming) return false;
+   if (prev.isLast !== next.isLast) return false;
+   if (prev.message.parts.length !== next.message.parts.length) return false;
+   if (prev.message.parts.at(-1) !== next.message.parts.at(-1)) return false;
+   if (prev.metadata !== next.metadata) return false;
+   if (prev.onApprove !== next.onApprove) return false;
+   if (prev.onReject !== next.onReject) return false;
+   return true;
+});

@@ -1,5 +1,5 @@
 import { Button } from "@packages/ui/components/button";
-import { Input } from "@packages/ui/components/input";
+import { SearchInput } from "@packages/ui/components/search-input";
 import {
    Sidebar,
    SidebarContent,
@@ -10,7 +10,7 @@ import {
 } from "@packages/ui/components/sidebar";
 import { useMediaQuery } from "foxact/use-media-query";
 import { Link, useMatches } from "@tanstack/react-router";
-import { ChevronLeft, Search } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import type * as React from "react";
 import { Route } from "@/routes/_authenticated/$slug/$teamSlug/_dashboard/settings";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
@@ -57,23 +57,19 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
          <SidebarManager name="settings">
             <Sidebar className="border-r" collapsible="none">
                <SidebarHeader className="p-4">
-                  <div className="relative">
-                     <Search className="pointer-events-none absolute left-2 top-2 size-4 text-muted-foreground" />
-                     <Input
-                        className="h-8 bg-sidebar pl-8 text-sm"
-                        onChange={(e) =>
-                           navigate({
-                              search: (prev) => ({
-                                 ...prev,
-                                 q: e.target.value,
-                              }),
-                              replace: true,
-                           })
-                        }
-                        placeholder="Pesquisar configurações..."
-                        value={q}
-                     />
-                  </div>
+                  <SearchInput
+                     onChange={(e) =>
+                        navigate({
+                           search: (prev) => ({
+                              ...prev,
+                              q: e.target.value,
+                           }),
+                           replace: true,
+                        })
+                     }
+                     placeholder="Pesquisar configurações..."
+                     value={q}
+                  />
                </SidebarHeader>
                <SidebarContent>
                   <SettingsSidebar search={q} />

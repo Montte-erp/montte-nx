@@ -12,13 +12,13 @@ import {
    Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { DefaultHeader } from "@/components/default-header";
+import { DefaultHeader } from "../../-layout/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
 import {
    openContextPanel,
    closeContextPanel,
    useContextPanelInfo,
-} from "@/features/context-panel/use-context-panel";
+} from "../../-context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import {

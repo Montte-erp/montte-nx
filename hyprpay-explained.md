@@ -15,12 +15,12 @@ Análogo melhor: **Better Auth para pagamento**. Better Auth não decide schema 
 ```ts
 // app define gateway no config — swap sem mudar código de negócio
 export const billing = hyprpay({
-  database: drizzleAdapter(db, { schema: "billing" }), // schema configurável
-  getSession,
-  gateway: asaas({ apiKey: env.ASAAS_KEY }),
-  // troca pra Stripe sem tocar resto:
-  // gateway: stripe({ apiKey: env.STRIPE_KEY }),
-  plugins: [usage(), seats(), benefits()],
+   database: drizzleAdapter(db, { schema: "billing" }), // schema configurável
+   getSession,
+   gateway: asaas({ apiKey: env.ASAAS_KEY }),
+   // troca pra Stripe sem tocar resto:
+   // gateway: stripe({ apiKey: env.STRIPE_KEY }),
+   plugins: [usage(), seats(), benefits()],
 });
 ```
 
@@ -35,11 +35,11 @@ Slots do core: `database`, `getSession`, `gateway`, `plugins`. Fim.
 ```ts
 // retry/replay = plugin que usa infra do app
 plugins: [
-  webhooks({
-    scheduler: dbosScheduler(workflowClient), // app injeta DBOS
-    mailer: resendMailer(resend),             // app injeta Resend
-  }),
-]
+   webhooks({
+      scheduler: dbosScheduler(workflowClient), // app injeta DBOS
+      mailer: resendMailer(resend), // app injeta Resend
+   }),
+];
 ```
 
 Razão: forçar email/queue baked-in mata liberdade. Dev já tem stack próprio.
@@ -59,23 +59,26 @@ Codex acertou shape de API. Refinamento — `customerExternalId` é sempre `orga
 ```ts
 // uso (ingest evento imutável)
 await billing.usage.ingest({
-  event: "ai.tokens",
-  customerExternalId: organization.id,
-  quantity: 1200,
-  cost: { amount: 12, currency: "BRL" },
-  idempotencyKey,
+   event: "ai.tokens",
+   customerExternalId: organization.id,
+   quantity: 1200,
+   cost: { amount: 12, currency: "BRL" },
+   idempotencyKey,
 });
 
 // ação cobrável (wrap)
 await billing.billable.run({
-  event: "classification.run",
-  customerExternalId: organization.id,
-  run: () => classifyTransaction(input),
-  usage: (r) => ({ quantity: r.usage.totalTokens }),
+   event: "classification.run",
+   customerExternalId: organization.id,
+   run: () => classifyTransaction(input),
+   usage: (r) => ({ quantity: r.usage.totalTokens }),
 });
 
 // entitlement (benefit/feature flag)
-const ok = await billing.entitlements.has(organization.id, "analises-avancadas");
+const ok = await billing.entitlements.has(
+   organization.id,
+   "analises-avancadas",
+);
 
 // customer state (single API — codex acertou)
 const state = await billing.customer.state(organization.id);
@@ -89,11 +92,11 @@ const state = await billing.customer.state(organization.id);
 ```ts
 // HyprPay define interface; cada gateway implementa
 interface GatewayAdapter {
-  createCheckoutSession(input): Promise<CheckoutSession>;
-  createSubscription(input): Promise<Subscription>;
-  cancelSubscription(id): Promise<void>;
-  refund(chargeId, amount): Promise<Refund>;
-  parseWebhook(req): Promise<NormalizedEvent>; // normaliza pra forma única
+   createCheckoutSession(input): Promise<CheckoutSession>;
+   createSubscription(input): Promise<Subscription>;
+   cancelSubscription(id): Promise<void>;
+   refund(chargeId, amount): Promise<Refund>;
+   parseWebhook(req): Promise<NormalizedEvent>; // normaliza pra forma única
 }
 
 // adapter Asaas converte Asaas-shape → HyprPay-shape
@@ -112,8 +115,8 @@ Plugin shape codex acertou:
 
 ```ts
 hyprpay({
-  // ...
-  plugins: [montteAnalytics({ apiKey, endpoint })],
+   // ...
+   plugins: [montteAnalytics({ apiKey, endpoint })],
 });
 ```
 
@@ -131,13 +134,13 @@ Eventos enviados ao Montte:
 
 ## TL;DR pra codex
 
-| Codex pensou                                       | Realidade                                                       |
-| -------------------------------------------------- | --------------------------------------------------------------- |
-| HyprPay é dono do domínio (products/subs/prices)   | HyprPay normaliza gateway; domínio vive no app                  |
-| Webhook retry/replay/audit = core                  | = plugin (app injeta scheduler/mailer)                          |
-| "Better Auth de billing" genérico                  | Better Auth + **gateway-agnostic** é o ponto                    |
-| Schema fixo                                        | Schema name configurável                                        |
-| Built-in email/workflow                            | Zero engines built-in — composição via plugin                   |
+| Codex pensou                                     | Realidade                                      |
+| ------------------------------------------------ | ---------------------------------------------- |
+| HyprPay é dono do domínio (products/subs/prices) | HyprPay normaliza gateway; domínio vive no app |
+| Webhook retry/replay/audit = core                | = plugin (app injeta scheduler/mailer)         |
+| "Better Auth de billing" genérico                | Better Auth + **gateway-agnostic** é o ponto   |
+| Schema fixo                                      | Schema name configurável                       |
+| Built-in email/workflow                          | Zero engines built-in — composição via plugin  |
 
 **Resumo numa frase:** HyprPay é o better-auth de billing com adapter de gateway swappable; domínio mora no app; engines (email/queue/workflow) vêm de plugins que o app injeta.
 

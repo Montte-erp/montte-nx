@@ -26,6 +26,7 @@ Hydrate immediately when the page loads. Use for above-the-fold interactive cont
 ```
 
 **Use when:**
+
 - Component is immediately visible
 - User interaction expected right away
 - Critical interactive functionality
@@ -40,6 +41,7 @@ Hydrate when the browser is idle (using `requestIdleCallback`). Good for lower-p
 ```
 
 **Use when:**
+
 - Component is visible but not immediately needed
 - User likely to interact after initial page load
 - Want to prioritize above-the-fold content
@@ -55,6 +57,7 @@ Hydrate when the component enters the viewport. Uses Intersection Observer.
 ```
 
 **Use when:**
+
 - Component is below the fold
 - Heavy components that shouldn't block initial load
 - Lazy-loaded features
@@ -85,6 +88,7 @@ Hydrate only when a media query matches. Perfect for responsive components.
 ```
 
 **Use when:**
+
 - Component only needed at certain viewport sizes
 - Device-specific functionality
 - Accessibility considerations
@@ -103,6 +107,7 @@ Skip server rendering entirely. Component only renders on the client.
 ```
 
 **Use when:**
+
 - Component uses browser-only APIs (window, document, localStorage)
 - Component has SSR incompatibilities
 - Third-party component doesn't support SSR
@@ -129,13 +134,13 @@ import SvelteButton from './SvelteButton.svelte';
 
 Choose the right directive based on priority:
 
-| Priority | Directive | JavaScript Load | Use Case |
-|----------|-----------|-----------------|----------|
-| 1 (Highest) | `client:load` | Immediate | Critical interactivity |
-| 2 | `client:idle` | When idle | Important but not urgent |
-| 3 | `client:visible` | When visible | Below-the-fold content |
-| 4 | `client:media` | When matches | Responsive components |
-| Special | `client:only` | Client only | Browser-only APIs |
+| Priority    | Directive        | JavaScript Load | Use Case                 |
+| ----------- | ---------------- | --------------- | ------------------------ |
+| 1 (Highest) | `client:load`    | Immediate       | Critical interactivity   |
+| 2           | `client:idle`    | When idle       | Important but not urgent |
+| 3           | `client:visible` | When visible    | Below-the-fold content   |
+| 4           | `client:media`   | When matches    | Responsive components    |
+| Special     | `client:only`    | Client only     | Browser-only APIs        |
 
 ## Common Patterns
 
@@ -238,6 +243,7 @@ If a React component's bundle exceeds ~50KB, consider splitting:
 ### When `client:only` Is Actually Needed
 
 `client:only` skips SSR entirely — no HTML on first paint. This hurts SEO and perceived performance. Use it **only** when:
+
 - The component crashes during SSR (e.g., reads `window.innerWidth` at module scope)
 - A third-party library has no SSR support and no workaround
 - The component is purely decorative and non-essential (e.g., a confetti animation)
@@ -260,18 +266,18 @@ Check which components are hydrated:
 
 ```javascript
 // In browser console
-document.querySelectorAll('[data-astro-cid]').forEach(el => {
-  console.log(el, el.dataset);
+document.querySelectorAll("[data-astro-cid]").forEach((el) => {
+   console.log(el, el.dataset);
 });
 ```
 
 ## Performance Impact
 
-| Directive | Initial Load | TTI Impact | Bundle Size |
-|-----------|--------------|------------|-------------|
-| None | Fastest | None | 0 KB |
-| `client:visible` | Fast | Low | Deferred |
-| `client:idle` | Fast | Low | Deferred |
-| `client:media` | Fast | Conditional | Conditional |
-| `client:load` | Slower | High | Immediate |
-| `client:only` | Slowest | High | Immediate + no SSR |
+| Directive        | Initial Load | TTI Impact  | Bundle Size        |
+| ---------------- | ------------ | ----------- | ------------------ |
+| None             | Fastest      | None        | 0 KB               |
+| `client:visible` | Fast         | Low         | Deferred           |
+| `client:idle`    | Fast         | Low         | Deferred           |
+| `client:media`   | Fast         | Conditional | Conditional        |
+| `client:load`    | Slower       | High        | Immediate          |
+| `client:only`    | Slowest      | High        | Immediate + no SSR |

@@ -65,7 +65,8 @@ export type NewMeter = typeof meters.$inferInsert;
 const nameSchema = z
    .string()
    .min(2, "Nome deve ter no mínimo 2 caracteres.")
-   .max(120, "Nome deve ter no máximo 120 caracteres.");
+   .max(120, "Nome deve ter no máximo 120 caracteres.")
+   .describe("Nome exibido para o medidor.");
 
 const unitCostSchema = z
    .string()
@@ -85,11 +86,28 @@ const baseSchema = createInsertSchema(meters).pick({
 
 export const createMeterSchema = baseSchema.extend({
    name: nameSchema,
-   eventName: z.string().min(1, "Nome do evento é obrigatório."),
-   aggregation: z.enum(meterAggregationEnum.enumValues).default("sum"),
-   aggregationProperty: z.string().nullable().optional(),
-   filters: z.record(z.string(), z.unknown()).optional().default({}),
-   unitCost: unitCostSchema.optional().default("0"),
+   eventName: z
+      .string()
+      .min(1, "Nome do evento é obrigatório.")
+      .describe("Nome técnico do evento de uso registrado."),
+   aggregation: z
+      .enum(meterAggregationEnum.enumValues)
+      .default("sum")
+      .describe("Como os eventos de uso serão agregados."),
+   aggregationProperty: z
+      .string()
+      .nullable()
+      .optional()
+      .describe("Propriedade numérica usada na agregação quando aplicável."),
+   filters: z
+      .record(z.string(), z.unknown())
+      .optional()
+      .default({})
+      .describe("Filtros adicionais aplicados aos eventos do medidor."),
+   unitCost: unitCostSchema
+      .optional()
+      .default("0")
+      .describe("Custo interno unitário desse evento de uso."),
 });
 
 export const updateMeterSchema = z.object({

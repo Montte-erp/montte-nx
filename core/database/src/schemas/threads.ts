@@ -1,7 +1,6 @@
 import { sql } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { index, jsonb, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import type { UIMessage } from "@tanstack/ai";
 import { agentsSchema } from "@core/database/schemas/schemas";
 
 export const threads = agentsSchema.table(
@@ -14,7 +13,10 @@ export const threads = agentsSchema.table(
       organizationId: text("organization_id").notNull(),
       userId: text("user_id").notNull(),
       title: text("title"),
-      messages: jsonb("messages").$type<UIMessage[]>().notNull().default([]),
+      suggestions: jsonb("suggestions").$type<string[]>().notNull().default([]),
+      suggestionsUpdatedAt: timestamp("suggestions_updated_at", {
+         withTimezone: true,
+      }),
       lastMessageAt: timestamp("last_message_at", { withTimezone: true }),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()

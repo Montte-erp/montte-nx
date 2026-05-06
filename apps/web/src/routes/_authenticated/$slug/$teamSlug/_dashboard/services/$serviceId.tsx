@@ -5,14 +5,14 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { z } from "zod";
-import { DefaultHeader } from "@/components/default-header";
+import { DefaultHeader } from "../../-layout/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import {
    closeContextPanel,
    openContextPanel,
    useContextPanelInfo,
-} from "@/features/context-panel/use-context-panel";
+} from "../../-context-panel/use-context-panel";
 import { orpc } from "@/integrations/orpc/client";
 import { ServiceBenefitsTab } from "./-services/service-benefits-tab";
 import { ServiceHeaderActions } from "./-services/service-header-actions";

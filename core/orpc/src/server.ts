@@ -52,6 +52,31 @@ const minioClient = createMinioClient({
 
 const otelLogger = logs.getLogger("montte-web-orpc");
 
+export async function buildWebContext(
+   request: Request,
+): Promise<ORPCContextWithOrganization | null> {
+   const session = await auth.api.getSession({ headers: request.headers });
+   if (!session?.user) return null;
+   const organizationId = session.session.activeOrganizationId;
+   const teamId = session.session.activeTeamId;
+   if (!organizationId || !teamId) return null;
+   return {
+      headers: request.headers,
+      request,
+      auth,
+      db,
+      session,
+      userId: session.user.id,
+      organizationId,
+      teamId,
+      posthog,
+      posthogPrompts,
+      redis,
+      workflowClient: await workflowClient,
+      minioClient,
+   };
+}
+
 export type BillableMeta = { billableEvent?: string };
 
 const base = os.$context<ORPCContext>().$meta<BillableMeta>({});

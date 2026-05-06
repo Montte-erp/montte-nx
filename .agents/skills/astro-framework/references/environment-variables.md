@@ -10,47 +10,47 @@ The `astro:env` API provides a type-safe schema for environment variables with v
 
 ```javascript
 // astro.config.mjs
-import { defineConfig, envField } from 'astro/config';
+import { defineConfig, envField } from "astro/config";
 
 export default defineConfig({
-  env: {
-    schema: {
-      // Public client variable — available everywhere
-      API_URL: envField.string({
-        context: 'client',
-        access: 'public',
-        optional: true,
-      }),
+   env: {
+      schema: {
+         // Public client variable — available everywhere
+         API_URL: envField.string({
+            context: "client",
+            access: "public",
+            optional: true,
+         }),
 
-      // Public server variable — server bundle only
-      PORT: envField.number({
-        context: 'server',
-        access: 'public',
-        default: 4321,
-      }),
+         // Public server variable — server bundle only
+         PORT: envField.number({
+            context: "server",
+            access: "public",
+            default: 4321,
+         }),
 
-      // Secret server variable — not in bundle, runtime only
-      API_SECRET: envField.string({
-        context: 'server',
-        access: 'secret',
-      }),
+         // Secret server variable — not in bundle, runtime only
+         API_SECRET: envField.string({
+            context: "server",
+            access: "secret",
+         }),
 
-      // Boolean variable
-      FEATURE_FLAG: envField.boolean({
-        context: 'client',
-        access: 'public',
-        default: false,
-      }),
+         // Boolean variable
+         FEATURE_FLAG: envField.boolean({
+            context: "client",
+            access: "public",
+            default: false,
+         }),
 
-      // Enum variable
-      LOG_LEVEL: envField.enum({
-        context: 'server',
-        access: 'public',
-        values: ['debug', 'info', 'warn', 'error'],
-        default: 'info',
-      }),
-    },
-  },
+         // Enum variable
+         LOG_LEVEL: envField.enum({
+            context: "server",
+            access: "public",
+            values: ["debug", "info", "warn", "error"],
+            default: "info",
+         }),
+      },
+   },
 });
 ```
 
@@ -80,21 +80,21 @@ const data = await fetch(`${API_URL}/users`, {
 
 There are three kinds, determined by `context` + `access`:
 
-| Kind | Context | Access | Available In | In Bundle? |
-|------|---------|--------|-------------|-----------|
-| Public client | `client` | `public` | Client + Server | Yes |
-| Public server | `server` | `public` | Server only | Yes |
-| Secret server | `server` | `secret` | Server only | No |
+| Kind          | Context  | Access   | Available In    | In Bundle? |
+| ------------- | -------- | -------- | --------------- | ---------- |
+| Public client | `client` | `public` | Client + Server | Yes        |
+| Public server | `server` | `public` | Server only     | Yes        |
+| Secret server | `server` | `secret` | Server only     | No         |
 
 **Secret client variables are not supported** — there's no safe way to send secrets to the client.
 
 ## Data Types
 
 ```javascript
-envField.string({ context: 'server', access: 'public' })
-envField.number({ context: 'server', access: 'public' })
-envField.boolean({ context: 'client', access: 'public' })
-envField.enum({ context: 'server', access: 'public', values: ['a', 'b'] })
+envField.string({ context: "server", access: "public" });
+envField.number({ context: "server", access: "public" });
+envField.boolean({ context: "client", access: "public" });
+envField.enum({ context: "server", access: "public", values: ["a", "b"] });
 ```
 
 Common options: `default`, `optional`, `min`, `max`, `length`, `url`, `includes`, `startsWith`, `endsWith`.
@@ -104,10 +104,10 @@ Common options: `default`, `optional`, `min`, `max`, `length`, `url`, `includes`
 For programmatic access to secrets (e.g., keys that depend on dynamic data):
 
 ```typescript
-import { getSecret } from 'astro:env/server';
+import { getSecret } from "astro:env/server";
 
 // Returns string | undefined
-const apiKey = getSecret('DYNAMIC_API_KEY');
+const apiKey = getSecret("DYNAMIC_API_KEY");
 ```
 
 Use `getSecret()` instead of `process.env` — its implementation is provided by your adapter, so you won't need to update calls if you switch adapters.

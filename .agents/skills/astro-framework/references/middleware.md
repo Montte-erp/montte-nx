@@ -8,19 +8,19 @@ Create `src/middleware.ts` (or `.js`):
 
 ```typescript
 // src/middleware.ts
-import { defineMiddleware } from 'astro:middleware';
+import { defineMiddleware } from "astro:middleware";
 
 export const onRequest = defineMiddleware(async (context, next) => {
-  // Run before the page renders
-  console.log('Request to:', context.url.pathname);
+   // Run before the page renders
+   console.log("Request to:", context.url.pathname);
 
-  // Call next() to continue to the page/endpoint
-  const response = await next();
+   // Call next() to continue to the page/endpoint
+   const response = await next();
 
-  // Run after the page renders
-  console.log('Response status:', response.status);
+   // Run after the page renders
+   console.log("Response status:", response.status);
 
-  return response;
+   return response;
 });
 ```
 
@@ -28,34 +28,34 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
 ```typescript
 export const onRequest = defineMiddleware(async (context, next) => {
-  // Request info
-  const url = context.url;           // URL object
-  const pathname = url.pathname;      // /about
-  const params = context.params;      // { slug: 'hello' } for dynamic routes
-  const request = context.request;    // Request object
+   // Request info
+   const url = context.url; // URL object
+   const pathname = url.pathname; // /about
+   const params = context.params; // { slug: 'hello' } for dynamic routes
+   const request = context.request; // Request object
 
-  // Cookies
-  const token = context.cookies.get('session')?.value;
-  context.cookies.set('visited', 'true', { path: '/' });
+   // Cookies
+   const token = context.cookies.get("session")?.value;
+   context.cookies.set("visited", "true", { path: "/" });
 
-  // Locals - share data with pages
-  context.locals.user = await getUser(token);
+   // Locals - share data with pages
+   context.locals.user = await getUser(token);
 
-  // Site info
-  const site = context.site;          // From astro.config
-  const generator = context.generator; // "Astro vX.X.X"
+   // Site info
+   const site = context.site; // From astro.config
+   const generator = context.generator; // "Astro vX.X.X"
 
-  // Redirect
-  if (!context.locals.user && pathname.startsWith('/dashboard')) {
-    return context.redirect('/login');
-  }
+   // Redirect
+   if (!context.locals.user && pathname.startsWith("/dashboard")) {
+      return context.redirect("/login");
+   }
 
-  // Rewrite
-  if (pathname === '/old-page') {
-    return context.rewrite('/new-page');
-  }
+   // Rewrite
+   if (pathname === "/old-page") {
+      return context.rewrite("/new-page");
+   }
 
-  return next();
+   return next();
 });
 ```
 
@@ -63,34 +63,38 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
 ```typescript
 // src/middleware.ts
-import { defineMiddleware } from 'astro:middleware';
-import { verifyToken } from './lib/auth';
+import { defineMiddleware } from "astro:middleware";
+import { verifyToken } from "./lib/auth";
 
-const protectedRoutes = ['/dashboard', '/settings', '/api/user'];
+const protectedRoutes = ["/dashboard", "/settings", "/api/user"];
 
-export const onRequest = defineMiddleware(async ({ cookies, url, locals, redirect }, next) => {
-  const isProtected = protectedRoutes.some(route =>
-    url.pathname.startsWith(route)
-  );
+export const onRequest = defineMiddleware(
+   async ({ cookies, url, locals, redirect }, next) => {
+      const isProtected = protectedRoutes.some((route) =>
+         url.pathname.startsWith(route),
+      );
 
-  if (isProtected) {
-    const token = cookies.get('auth_token')?.value;
+      if (isProtected) {
+         const token = cookies.get("auth_token")?.value;
 
-    if (!token) {
-      return redirect('/login?redirect=' + encodeURIComponent(url.pathname));
-    }
+         if (!token) {
+            return redirect(
+               "/login?redirect=" + encodeURIComponent(url.pathname),
+            );
+         }
 
-    try {
-      const user = await verifyToken(token);
-      locals.user = user;
-    } catch {
-      cookies.delete('auth_token');
-      return redirect('/login');
-    }
-  }
+         try {
+            const user = await verifyToken(token);
+            locals.user = user;
+         } catch {
+            cookies.delete("auth_token");
+            return redirect("/login");
+         }
+      }
 
-  return next();
-});
+      return next();
+   },
+);
 ```
 
 ## Using Locals
@@ -100,13 +104,13 @@ export const onRequest = defineMiddleware(async ({ cookies, url, locals, redirec
 ```typescript
 // src/middleware.ts
 export const onRequest = defineMiddleware(async ({ locals, cookies }, next) => {
-  const token = cookies.get('session')?.value;
+   const token = cookies.get("session")?.value;
 
-  locals.user = token ? await getUserFromToken(token) : null;
-  locals.theme = cookies.get('theme')?.value || 'light';
-  locals.requestTime = Date.now();
+   locals.user = token ? await getUserFromToken(token) : null;
+   locals.theme = cookies.get("theme")?.value || "light";
+   locals.requestTime = Date.now();
 
-  return next();
+   return next();
 });
 ```
 
@@ -130,16 +134,16 @@ if (!user) {
 
 ```typescript
 // src/pages/api/profile.ts
-import type { APIRoute } from 'astro';
+import type { APIRoute } from "astro";
 
 export const GET: APIRoute = async ({ locals }) => {
-  const { user } = locals;
+   const { user } = locals;
 
-  if (!user) {
-    return new Response(null, { status: 401 });
-  }
+   if (!user) {
+      return new Response(null, { status: 401 });
+   }
 
-  return new Response(JSON.stringify(user));
+   return new Response(JSON.stringify(user));
 };
 ```
 
@@ -150,15 +154,15 @@ export const GET: APIRoute = async ({ locals }) => {
 /// <reference types="astro/client" />
 
 declare namespace App {
-  interface Locals {
-    user: {
-      id: string;
-      email: string;
-      name: string;
-    } | null;
-    theme: 'light' | 'dark';
-    requestTime: number;
-  }
+   interface Locals {
+      user: {
+         id: string;
+         email: string;
+         name: string;
+      } | null;
+      theme: "light" | "dark";
+      requestTime: number;
+   }
 }
 ```
 
@@ -168,27 +172,27 @@ Use `sequence()` to run multiple middleware functions:
 
 ```typescript
 // src/middleware.ts
-import { sequence } from 'astro:middleware';
+import { sequence } from "astro:middleware";
 
 const logging = defineMiddleware(async (context, next) => {
-  console.log(`[${new Date().toISOString()}] ${context.url.pathname}`);
-  return next();
+   console.log(`[${new Date().toISOString()}] ${context.url.pathname}`);
+   return next();
 });
 
 const auth = defineMiddleware(async ({ cookies, locals }, next) => {
-  const token = cookies.get('session')?.value;
-  locals.user = token ? await verifyToken(token) : null;
-  return next();
+   const token = cookies.get("session")?.value;
+   locals.user = token ? await verifyToken(token) : null;
+   return next();
 });
 
 const rateLimit = defineMiddleware(async ({ request, redirect }, next) => {
-  const ip = request.headers.get('x-forwarded-for');
+   const ip = request.headers.get("x-forwarded-for");
 
-  if (await isRateLimited(ip)) {
-    return new Response('Too Many Requests', { status: 429 });
-  }
+   if (await isRateLimited(ip)) {
+      return new Response("Too Many Requests", { status: 429 });
+   }
 
-  return next();
+   return next();
 });
 
 // Executes in order: logging → rateLimit → auth
@@ -201,14 +205,14 @@ export const onRequest = sequence(logging, rateLimit, auth);
 
 ```typescript
 export const onRequest = defineMiddleware(async (context, next) => {
-  const response = await next();
+   const response = await next();
 
-  // Add security headers
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('X-XSS-Protection', '1; mode=block');
+   // Add security headers
+   response.headers.set("X-Content-Type-Options", "nosniff");
+   response.headers.set("X-Frame-Options", "DENY");
+   response.headers.set("X-XSS-Protection", "1; mode=block");
 
-  return response;
+   return response;
 });
 ```
 
@@ -216,21 +220,24 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
 ```typescript
 export const onRequest = defineMiddleware(async (context, next) => {
-  const response = await next();
+   const response = await next();
 
-  // Only modify HTML responses
-  const contentType = response.headers.get('content-type');
-  if (!contentType?.includes('text/html')) {
-    return response;
-  }
+   // Only modify HTML responses
+   const contentType = response.headers.get("content-type");
+   if (!contentType?.includes("text/html")) {
+      return response;
+   }
 
-  const html = await response.text();
-  const modified = html.replace('</body>', '<script>/* injected */</script></body>');
+   const html = await response.text();
+   const modified = html.replace(
+      "</body>",
+      "<script>/* injected */</script></body>",
+   );
 
-  return new Response(modified, {
-    status: response.status,
-    headers: response.headers,
-  });
+   return new Response(modified, {
+      status: response.status,
+      headers: response.headers,
+   });
 });
 ```
 
@@ -240,17 +247,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
 ```typescript
 export const onRequest = defineMiddleware(async ({ url, redirect }, next) => {
-  // Redirect old URLs
-  if (url.pathname === '/old-blog') {
-    return redirect('/blog', 301); // Permanent redirect
-  }
+   // Redirect old URLs
+   if (url.pathname === "/old-blog") {
+      return redirect("/blog", 301); // Permanent redirect
+   }
 
-  // Temporary redirect
-  if (url.pathname === '/maintenance') {
-    return redirect('/coming-soon', 302);
-  }
+   // Temporary redirect
+   if (url.pathname === "/maintenance") {
+      return redirect("/coming-soon", 302);
+   }
 
-  return next();
+   return next();
 });
 ```
 
@@ -260,19 +267,19 @@ Serve different content for a URL without changing the URL:
 
 ```typescript
 export const onRequest = defineMiddleware(async ({ url, rewrite }, next) => {
-  // A/B testing
-  if (url.pathname === '/landing') {
-    const variant = Math.random() > 0.5 ? 'a' : 'b';
-    return rewrite(`/landing-${variant}`);
-  }
+   // A/B testing
+   if (url.pathname === "/landing") {
+      const variant = Math.random() > 0.5 ? "a" : "b";
+      return rewrite(`/landing-${variant}`);
+   }
 
-  // Serve localized content
-  const locale = getLocaleFromHeaders();
-  if (url.pathname === '/about' && locale === 'es') {
-    return rewrite('/es/about');
-  }
+   // Serve localized content
+   const locale = getLocaleFromHeaders();
+   if (url.pathname === "/about" && locale === "es") {
+      return rewrite("/es/about");
+   }
 
-  return next();
+   return next();
 });
 ```
 
@@ -280,19 +287,19 @@ export const onRequest = defineMiddleware(async ({ url, rewrite }, next) => {
 
 ```typescript
 export const onRequest = defineMiddleware(async (context, next) => {
-  try {
-    return await next();
-  } catch (error) {
-    console.error('Middleware error:', error);
+   try {
+      return await next();
+   } catch (error) {
+      console.error("Middleware error:", error);
 
-    // Return error page
-    return new Response('Internal Server Error', {
-      status: 500,
-      headers: {
-        'Content-Type': 'text/plain',
-      },
-    });
-  }
+      // Return error page
+      return new Response("Internal Server Error", {
+         status: 500,
+         headers: {
+            "Content-Type": "text/plain",
+         },
+      });
+   }
 });
 ```
 
@@ -302,23 +309,23 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
 ```typescript
 export const onRequest = defineMiddleware(async ({ request, url }, next) => {
-  // Handle preflight
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
-    });
-  }
+   // Handle preflight
+   if (request.method === "OPTIONS") {
+      return new Response(null, {
+         headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+         },
+      });
+   }
 
-  const response = await next();
+   const response = await next();
 
-  // Add CORS headers to response
-  response.headers.set('Access-Control-Allow-Origin', '*');
+   // Add CORS headers to response
+   response.headers.set("Access-Control-Allow-Origin", "*");
 
-  return response;
+   return response;
 });
 ```
 
@@ -326,16 +333,16 @@ export const onRequest = defineMiddleware(async ({ request, url }, next) => {
 
 ```typescript
 export const onRequest = defineMiddleware(async ({ url }, next) => {
-  const start = performance.now();
+   const start = performance.now();
 
-  const response = await next();
+   const response = await next();
 
-  const duration = performance.now() - start;
-  response.headers.set('X-Response-Time', `${duration.toFixed(2)}ms`);
+   const duration = performance.now() - start;
+   response.headers.set("X-Response-Time", `${duration.toFixed(2)}ms`);
 
-  console.log(`${url.pathname}: ${duration.toFixed(2)}ms`);
+   console.log(`${url.pathname}: ${duration.toFixed(2)}ms`);
 
-  return response;
+   return response;
 });
 ```
 

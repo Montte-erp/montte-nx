@@ -59,7 +59,7 @@ import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
-import { ContextPanelMeta } from "@/features/context-panel/context-panel-info";
+import { ContextPanelMeta } from "../../-context-panel/context-panel-info";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 
 type Contact = Outputs["contacts"]["getById"];

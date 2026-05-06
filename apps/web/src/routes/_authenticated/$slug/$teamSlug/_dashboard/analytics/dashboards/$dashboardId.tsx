@@ -3,7 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { LayoutDashboard } from "lucide-react";
 import { Suspense } from "react";
-import { DashboardView } from "@/features/analytics/ui/dashboard-view";
+import { DashboardView } from "../../-analytics/dashboard-view";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,

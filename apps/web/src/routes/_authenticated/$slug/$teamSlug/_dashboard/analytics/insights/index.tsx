@@ -23,14 +23,14 @@ import { Loader2, Plus, TrendingUp } from "lucide-react";
 import { useCallback, useTransition } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { PageHeader } from "@/components/page-header";
+import { PageHeader } from "../../../-layout/page-header";
 import { DEFAULT_KPI_CONFIG } from "@/features/analytics/hooks/use-insight-config";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/components/blocks/early-access-banner";
-import { ContextPanelAction } from "@/features/context-panel/context-panel-info";
-import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
+import { ContextPanelAction } from "../../../-context-panel/context-panel-info";
+import { useContextPanelInfo } from "../../../-context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 import { InsightsTable, type InsightRow } from "./-insights/insights-table";

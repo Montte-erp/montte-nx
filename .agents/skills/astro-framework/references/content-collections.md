@@ -25,41 +25,43 @@ src/
 
 ```typescript
 // src/content.config.ts
-import { defineCollection } from 'astro:content';
-import { glob, file } from 'astro/loaders';
-import { z } from 'astro/zod';
+import { defineCollection } from "astro:content";
+import { glob, file } from "astro/loaders";
+import { z } from "astro/zod";
 
 const blogCollection = defineCollection({
-  loader: glob({ base: './src/content/blog', pattern: '**/*.{md,mdx}' }),
-  schema: z.object({
-    title: z.string(),
-    description: z.string(),
-    pubDate: z.coerce.date(),
-    updatedDate: z.coerce.date().optional(),
-    heroImage: z.string().optional(),
-    tags: z.array(z.string()).default([]),
-    draft: z.boolean().default(false),
-    author: z.string(),
-  }),
+   loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
+   schema: z.object({
+      title: z.string(),
+      description: z.string(),
+      pubDate: z.coerce.date(),
+      updatedDate: z.coerce.date().optional(),
+      heroImage: z.string().optional(),
+      tags: z.array(z.string()).default([]),
+      draft: z.boolean().default(false),
+      author: z.string(),
+   }),
 });
 
 const authorsCollection = defineCollection({
-  loader: file('src/data/authors.json'),
-  schema: z.object({
-    name: z.string(),
-    email: z.string().email(),
-    bio: z.string(),
-    avatar: z.string().url(),
-    social: z.object({
-      twitter: z.string().optional(),
-      github: z.string().optional(),
-    }).optional(),
-  }),
+   loader: file("src/data/authors.json"),
+   schema: z.object({
+      name: z.string(),
+      email: z.string().email(),
+      bio: z.string(),
+      avatar: z.string().url(),
+      social: z
+         .object({
+            twitter: z.string().optional(),
+            github: z.string().optional(),
+         })
+         .optional(),
+   }),
 });
 
 export const collections = {
-  blog: blogCollection,
-  authors: authorsCollection,
+   blog: blogCollection,
+   authors: authorsCollection,
 };
 ```
 
@@ -67,22 +69,22 @@ export const collections = {
 
 ```typescript
 // src/content/config.ts (legacy path)
-import { defineCollection, z } from 'astro:content';
+import { defineCollection, z } from "astro:content";
 
 const blogCollection = defineCollection({
-  type: 'content', // Markdown/MDX files
-  schema: z.object({
-    title: z.string(),
-    pubDate: z.coerce.date(),
-  }),
+   type: "content", // Markdown/MDX files
+   schema: z.object({
+      title: z.string(),
+      pubDate: z.coerce.date(),
+   }),
 });
 
 const authorsCollection = defineCollection({
-  type: 'data', // JSON/YAML files
-  schema: z.object({
-    name: z.string(),
-    email: z.string().email(),
-  }),
+   type: "data", // JSON/YAML files
+   schema: z.object({
+      name: z.string(),
+      email: z.string().email(),
+   }),
 });
 
 export const collections = { blog: blogCollection, authors: authorsCollection };
@@ -95,14 +97,14 @@ export const collections = { blog: blogCollection, authors: authorsCollection };
 Loads entries from directories of Markdown, MDX, JSON, YAML, or TOML files:
 
 ```typescript
-import { glob } from 'astro/loaders';
+import { glob } from "astro/loaders";
 
 const blog = defineCollection({
-  loader: glob({
-    base: './src/content/blog',
-    pattern: '**/*.{md,mdx}',
-  }),
-  schema: z.object({ title: z.string() }),
+   loader: glob({
+      base: "./src/content/blog",
+      pattern: "**/*.{md,mdx}",
+   }),
+   schema: z.object({ title: z.string() }),
 });
 ```
 
@@ -113,11 +115,11 @@ Options: `pattern`, `base`, `generateId()` (custom ID generation), `retainBody` 
 Loads entries from a single JSON, YAML, or TOML file:
 
 ```typescript
-import { file } from 'astro/loaders';
+import { file } from "astro/loaders";
 
 const authors = defineCollection({
-  loader: file('src/data/authors.json'),
-  schema: z.object({ name: z.string() }),
+   loader: file("src/data/authors.json"),
+   schema: z.object({ name: z.string() }),
 });
 ```
 
@@ -129,15 +131,15 @@ Load from any source (APIs, databases, CMSes):
 
 ```typescript
 const products = defineCollection({
-  loader: async () => {
-    const response = await fetch('https://api.example.com/products');
-    const data = await response.json();
-    return data.map((product: any) => ({
-      id: product.id,
-      ...product,
-    }));
-  },
-  schema: z.object({ name: z.string(), price: z.number() }),
+   loader: async () => {
+      const response = await fetch("https://api.example.com/products");
+      const data = await response.json();
+      return data.map((product: any) => ({
+         id: product.id,
+         ...product,
+      }));
+   },
+   schema: z.object({ name: z.string(), price: z.number() }),
 });
 ```
 
@@ -146,23 +148,23 @@ const products = defineCollection({
 For full control with incremental updates, caching, and file watching:
 
 ```typescript
-import type { Loader } from 'astro/loaders';
+import type { Loader } from "astro/loaders";
 
 function myLoader(options: { url: string }): Loader {
-  return {
-    name: 'my-loader',
-    load: async ({ store, meta, logger }) => {
-      const lastModified = meta.get('lastModified');
-      const data = await fetchData(options.url, lastModified);
+   return {
+      name: "my-loader",
+      load: async ({ store, meta, logger }) => {
+         const lastModified = meta.get("lastModified");
+         const data = await fetchData(options.url, lastModified);
 
-      store.clear();
-      for (const item of data) {
-        store.set({ id: item.id, data: item });
-      }
+         store.clear();
+         for (const item of data) {
+            store.set({ id: item.id, data: item });
+         }
 
-      meta.set('lastModified', new Date().toISOString());
-    },
-  };
+         meta.set("lastModified", new Date().toISOString());
+      },
+   };
 }
 ```
 
@@ -171,23 +173,23 @@ function myLoader(options: { url: string }): Loader {
 Live loaders fetch data fresh on every request — no data store to update. Use for real-time data:
 
 ```typescript
-import type { LiveLoader } from 'astro/loaders';
+import type { LiveLoader } from "astro/loaders";
 
 function productLoader(config: { apiKey: string }): LiveLoader<Product> {
-  return {
-    name: 'product-loader',
-    loadCollection: async ({ filter }) => {
-      const data = await fetchProducts(config.apiKey, filter);
-      return {
-        entries: data.map(p => ({ id: p.sku, data: p })),
-      };
-    },
-    loadEntry: async ({ filter }) => {
-      const product = await fetchProduct(config.apiKey, filter.id);
-      if (!product) return undefined;
-      return { id: product.sku, data: product };
-    },
-  };
+   return {
+      name: "product-loader",
+      loadCollection: async ({ filter }) => {
+         const data = await fetchProducts(config.apiKey, filter);
+         return {
+            entries: data.map((p) => ({ id: p.sku, data: p })),
+         };
+      },
+      loadEntry: async ({ filter }) => {
+         const product = await fetchProduct(config.apiKey, filter.id);
+         if (!product) return undefined;
+         return { id: product.sku, data: product };
+      },
+   };
 }
 ```
 
@@ -227,10 +229,10 @@ For JSON or YAML data files:
 ```json
 // src/content/authors/john.json
 {
-  "name": "John Doe",
-  "email": "john@example.com",
-  "bio": "A passionate writer",
-  "avatar": "https://example.com/avatar.jpg"
+   "name": "John Doe",
+   "email": "john@example.com",
+   "bio": "A passionate writer",
+   "avatar": "https://example.com/avatar.jpg"
 }
 ```
 
@@ -239,49 +241,49 @@ For JSON or YAML data files:
 ### Common Field Types
 
 ```typescript
-import { z } from 'astro/zod'; // Astro 5+
+import { z } from "astro/zod"; // Astro 5+
 // import { z } from 'astro:content'; // Legacy (Astro 4)
 
 const schema = z.object({
-  // Strings
-  title: z.string(),
-  slug: z.string().regex(/^[a-z0-9-]+$/),
+   // Strings
+   title: z.string(),
+   slug: z.string().regex(/^[a-z0-9-]+$/),
 
-  // Numbers
-  order: z.number().int().positive(),
-  rating: z.number().min(0).max(5),
+   // Numbers
+   order: z.number().int().positive(),
+   rating: z.number().min(0).max(5),
 
-  // Booleans
-  featured: z.boolean().default(false),
+   // Booleans
+   featured: z.boolean().default(false),
 
-  // Dates
-  pubDate: z.coerce.date(), // Converts strings to Date
+   // Dates
+   pubDate: z.coerce.date(), // Converts strings to Date
 
-  // Arrays
-  tags: z.array(z.string()),
-  categories: z.array(z.enum(['tech', 'life', 'travel'])),
+   // Arrays
+   tags: z.array(z.string()),
+   categories: z.array(z.enum(["tech", "life", "travel"])),
 
-  // Objects
-  author: z.object({
-    name: z.string(),
-    email: z.string().email(),
-  }),
+   // Objects
+   author: z.object({
+      name: z.string(),
+      email: z.string().email(),
+   }),
 
-  // Enums
-  status: z.enum(['draft', 'published', 'archived']),
+   // Enums
+   status: z.enum(["draft", "published", "archived"]),
 
-  // Optional fields
-  description: z.string().optional(),
-  image: z.string().url().optional(),
+   // Optional fields
+   description: z.string().optional(),
+   image: z.string().url().optional(),
 
-  // Default values
-  views: z.number().default(0),
+   // Default values
+   views: z.number().default(0),
 
-  // Unions
-  media: z.union([
-    z.object({ type: z.literal('image'), src: z.string() }),
-    z.object({ type: z.literal('video'), url: z.string() }),
-  ]),
+   // Unions
+   media: z.union([
+      z.object({ type: z.literal("image"), src: z.string() }),
+      z.object({ type: z.literal("video"), url: z.string() }),
+   ]),
 });
 ```
 
@@ -289,33 +291,34 @@ const schema = z.object({
 
 ```typescript
 // Astro 5+ with loader
-import { defineCollection } from 'astro:content';
-import { glob } from 'astro/loaders';
-import { z } from 'astro/zod';
+import { defineCollection } from "astro:content";
+import { glob } from "astro/loaders";
+import { z } from "astro/zod";
 
 const blog = defineCollection({
-  loader: glob({ base: './src/content/blog', pattern: '**/*.md' }),
-  schema: ({ image }) => z.object({
-    title: z.string(),
-    cover: image(), // Validates and optimizes images
-    coverAlt: z.string(),
-  }),
+   loader: glob({ base: "./src/content/blog", pattern: "**/*.md" }),
+   schema: ({ image }) =>
+      z.object({
+         title: z.string(),
+         cover: image(), // Validates and optimizes images
+         coverAlt: z.string(),
+      }),
 });
 ```
 
 ### Reference Other Collections
 
 ```typescript
-import { defineCollection, reference } from 'astro:content';
-import { z } from 'astro/zod';
+import { defineCollection, reference } from "astro:content";
+import { z } from "astro/zod";
 
 const blog = defineCollection({
-  loader: glob({ base: './src/content/blog', pattern: '**/*.md' }),
-  schema: z.object({
-    title: z.string(),
-    author: reference('authors'), // References authors collection
-    relatedPosts: z.array(reference('blog')).optional(),
-  }),
+   loader: glob({ base: "./src/content/blog", pattern: "**/*.md" }),
+   schema: z.object({
+      title: z.string(),
+      author: reference("authors"), // References authors collection
+      relatedPosts: z.array(reference("blog")).optional(),
+   }),
 });
 ```
 
@@ -474,12 +477,12 @@ For sites with >1000 content entries where you only need frontmatter data (e.g.,
 
 ```typescript
 const blog = defineCollection({
-  loader: glob({
-    base: './src/content/blog',
-    pattern: '**/*.md',
-    retainBody: false, // Significantly reduces data store size
-  }),
-  schema: z.object({ title: z.string(), pubDate: z.coerce.date() }),
+   loader: glob({
+      base: "./src/content/blog",
+      pattern: "**/*.md",
+      retainBody: false, // Significantly reduces data store size
+   }),
+   schema: z.object({ title: z.string(), pubDate: z.coerce.date() }),
 });
 ```
 
@@ -487,13 +490,13 @@ Only use `retainBody: false` for collections where you don't call `render()`. If
 
 ### Migration Pitfalls (Astro 4 → 5)
 
-| What changed | Old (Astro 4) | New (Astro 5+) |
-|---|---|---|
-| Config file | `src/content/config.ts` | `src/content.config.ts` |
-| Collection type | `type: 'content'` / `type: 'data'` | `loader: glob(...)` / `loader: file(...)` |
-| Zod import | `import { z } from 'astro:content'` | `import { z } from 'astro/zod'` |
-| Rendering | `const { Content } = await entry.render()` | `import { render } from 'astro:content'; await render(entry)` |
-| Route param | `post.slug` | `post.id` |
+| What changed    | Old (Astro 4)                              | New (Astro 5+)                                                |
+| --------------- | ------------------------------------------ | ------------------------------------------------------------- |
+| Config file     | `src/content/config.ts`                    | `src/content.config.ts`                                       |
+| Collection type | `type: 'content'` / `type: 'data'`         | `loader: glob(...)` / `loader: file(...)`                     |
+| Zod import      | `import { z } from 'astro:content'`        | `import { z } from 'astro/zod'`                               |
+| Rendering       | `const { Content } = await entry.render()` | `import { render } from 'astro:content'; await render(entry)` |
+| Route param     | `post.slug`                                | `post.id`                                                     |
 
 **The most common migration bug:** importing `z` from `astro:content` instead of `astro/zod`. This still compiles but can cause subtle type mismatches with the new Content Layer API.
 

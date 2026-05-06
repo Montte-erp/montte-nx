@@ -1,7 +1,7 @@
 import {
    ContextPanelDivider,
    ContextPanelMeta,
-} from "@/features/context-panel/context-panel-info";
+} from "../../../-context-panel/context-panel-info";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
    formatCostBRL,

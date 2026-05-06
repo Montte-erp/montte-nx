@@ -18,7 +18,7 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useInsightConfig } from "@/features/analytics/hooks/use-insight-config";
-import { InsightBuilder } from "@/features/analytics/ui/insight-builder";
+import { InsightBuilder } from "./-builder/insight-builder";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
@@ -27,8 +27,8 @@ import {
    ContextPanelAction,
    ContextPanelDivider,
    ContextPanelMeta,
-} from "@/features/context-panel/context-panel-info";
-import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
+} from "../../../-context-panel/context-panel-info";
+import { useContextPanelInfo } from "../../../-context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 

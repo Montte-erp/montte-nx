@@ -6,27 +6,28 @@
 
 ## Quick Reference Card
 
-| Topic | Rule of Thumb |
-|-------|---------------|
-| **Components** | Define `interface Props`; frontmatter = server only; use `class:list` for conditional classes |
-| **Hydration** | Default: no directive (zero JS). Question every `client:` |
-| **Server Islands** | `server:defer` for personalized/dynamic server content on cached pages |
-| **Content Collections** | Content Layer API with loaders in `src/content.config.ts` (NOT `src/content/config.ts`) |
-| **Rendering content** | `import { render } from 'astro:content'` then `const { Content } = await render(entry)` |
-| **Routing** | File-based; `getStaticPaths()` required for dynamic routes in static mode |
-| **Output modes** | `static` (default), `server` (all SSR), `hybrid` (static default, opt-in SSR) |
-| **Sessions** | `Astro.session?.get/set`; always use optional chaining; SSR only |
-| **Env vars** | `astro:env` schema with `envField` for type safety; import from `astro:env/client` or `astro:env/server` |
-| **Images** | Import local images; use `<Image>` / `<Picture>` from `astro:assets`; always set alt text |
-| **i18n** | Use `getRelativeLocaleUrl()` for links, never hardcode locale prefixes |
-| **TypeScript** | Extend `astro/tsconfigs/strict`; define path aliases; type `App.Locals` in `src/env.d.ts` |
-| **API routes** | Export named handlers (`GET`, `POST`, etc.) typed as `APIRoute` |
+| Topic                   | Rule of Thumb                                                                                            |
+| ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Components**          | Define `interface Props`; frontmatter = server only; use `class:list` for conditional classes            |
+| **Hydration**           | Default: no directive (zero JS). Question every `client:`                                                |
+| **Server Islands**      | `server:defer` for personalized/dynamic server content on cached pages                                   |
+| **Content Collections** | Content Layer API with loaders in `src/content.config.ts` (NOT `src/content/config.ts`)                  |
+| **Rendering content**   | `import { render } from 'astro:content'` then `const { Content } = await render(entry)`                  |
+| **Routing**             | File-based; `getStaticPaths()` required for dynamic routes in static mode                                |
+| **Output modes**        | `static` (default), `server` (all SSR), `hybrid` (static default, opt-in SSR)                            |
+| **Sessions**            | `Astro.session?.get/set`; always use optional chaining; SSR only                                         |
+| **Env vars**            | `astro:env` schema with `envField` for type safety; import from `astro:env/client` or `astro:env/server` |
+| **Images**              | Import local images; use `<Image>` / `<Picture>` from `astro:assets`; always set alt text                |
+| **i18n**                | Use `getRelativeLocaleUrl()` for links, never hardcode locale prefixes                                   |
+| **TypeScript**          | Extend `astro/tsconfigs/strict`; define path aliases; type `App.Locals` in `src/env.d.ts`                |
+| **API routes**          | Export named handlers (`GET`, `POST`, etc.) typed as `APIRoute`                                          |
 
 ---
 
 ## Decision Trees
 
 ### Output Mode
+
 ```
 All static? ──> output: 'static' (default, no adapter)
 All dynamic? ──> output: 'server' + adapter
@@ -36,6 +37,7 @@ Mix? ──> output: 'hybrid' + adapter
 ```
 
 ### Hydration Directive
+
 ```
 Needs interactivity?
 ├─ No ──> No directive (zero JS)
@@ -47,6 +49,7 @@ Needs interactivity?
 ```
 
 ### Server Island vs Client Island
+
 ```
 Needs server data (cookies, DB, personalization)? ──> server:defer + slot="fallback"
 Needs browser interactivity? ──> client:* directive

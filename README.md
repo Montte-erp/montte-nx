@@ -99,18 +99,18 @@ If you're seeing a feature mentioned in older docs, blog posts, or the Linear ba
 
 Built as an **Nx** monorepo with **Bun**.
 
-| Category      | Technology                                                                                           |
-| :------------ | :--------------------------------------------------------------------------------------------------- |
+| Category      | Technology                                                                                                          |
+| :------------ | :------------------------------------------------------------------------------------------------------------------ |
 | **Frontend**  | React 19, TanStack Start (SSR), Astro landing, TanStack Router, TanStack Query, shadcn/ui, Tailwind CSS, TypeScript |
-| **AI**        | TanStack AI + `@tanstack/ai-openrouter`                                                              |
-| **Backend**   | oRPC (type-safe API + OpenAPI), Drizzle ORM, PostgreSQL (ParadeDB image)                             |
-| **Auth**      | Better Auth (Magic Link, Email OTP, 2FA, Organization, API Key plugins)                              |
-| **Workflows** | DBOS (durable workflows, queues, cron, retries) running in `apps/worker`                             |
-| **Realtime**  | `@core/sse` — scope-routed Redis pub/sub (user / team / org)                                         |
-| **Storage**   | MinIO (S3-compatible)                                                                                |
-| **Analytics** | PostHog (server + client; surveys + feature flags + early-access)                                    |
-| **Email**     | Resend (React Email templates)                                                                       |
-| **Tooling**   | Nx, oxlint, oxfmt                                                                                    |
+| **AI**        | TanStack AI + `@tanstack/ai-openrouter`                                                                             |
+| **Backend**   | oRPC (type-safe API + OpenAPI), Drizzle ORM, PostgreSQL (ParadeDB image)                                            |
+| **Auth**      | Better Auth (Magic Link, Email OTP, 2FA, Organization, API Key plugins)                                             |
+| **Workflows** | DBOS (durable workflows, queues, cron, retries) running in `apps/worker`                                            |
+| **Realtime**  | `@core/sse` — scope-routed Redis pub/sub (user / team / org)                                                        |
+| **Storage**   | MinIO (S3-compatible)                                                                                               |
+| **Analytics** | PostHog (server + client; surveys + feature flags + early-access)                                                   |
+| **Email**     | Resend (React Email templates)                                                                                      |
+| **Tooling**   | Nx, oxlint, oxfmt                                                                                                   |
 
 ---
 

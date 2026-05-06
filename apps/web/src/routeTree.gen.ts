@@ -20,6 +20,7 @@ import { Route as AuthEmailVerificationRouteImport } from './routes/auth/email-v
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as ApiPingRouteImport } from './routes/api/ping'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedSlugRouteImport } from './routes/_authenticated/$slug'
 import { Route as AuthSignInIndexRouteImport } from './routes/auth/sign-in/index'
@@ -44,6 +45,7 @@ import { Route as AuthenticatedSlugTeamSlugDashboardSettingsIndexRouteImport } f
 import { Route as AuthenticatedSlugTeamSlugDashboardServicesIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/services/index'
 import { Route as AuthenticatedSlugTeamSlugDashboardHomeIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/home/index'
 import { Route as AuthenticatedSlugTeamSlugDashboardContactsIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/contacts/index'
+import { Route as AuthenticatedSlugTeamSlugDashboardChatIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/chat/index'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsSecurityRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/security'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProfileRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/profile'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews'
@@ -54,6 +56,7 @@ import { Route as AuthenticatedSlugTeamSlugDashboardServicesCouponsRouteImport }
 import { Route as AuthenticatedSlugTeamSlugDashboardServicesBenefitsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/services/benefits'
 import { Route as AuthenticatedSlugTeamSlugDashboardServicesServiceIdRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/services/$serviceId'
 import { Route as AuthenticatedSlugTeamSlugDashboardContactsContactIdRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/contacts/$contactId'
+import { Route as AuthenticatedSlugTeamSlugDashboardChatThreadIdRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/chat/$threadId'
 import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/index'
 import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/index'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations'
@@ -121,6 +124,11 @@ const ApiPingRoute = ApiPingRouteImport.update({
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatRoute = ApiChatRouteImport.update({
+  id: '/api/chat',
+  path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
@@ -258,6 +266,12 @@ const AuthenticatedSlugTeamSlugDashboardContactsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedSlugTeamSlugDashboardContactsRoute,
   } as any)
+const AuthenticatedSlugTeamSlugDashboardChatIndexRoute =
+  AuthenticatedSlugTeamSlugDashboardChatIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardChatRoute,
+  } as any)
 const AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute =
   AuthenticatedSlugTeamSlugDashboardSettingsSecurityRouteImport.update({
     id: '/security',
@@ -317,6 +331,12 @@ const AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute =
     id: '/$contactId',
     path: '/$contactId',
     getParentRoute: () => AuthenticatedSlugTeamSlugDashboardContactsRoute,
+  } as any)
+const AuthenticatedSlugTeamSlugDashboardChatThreadIdRoute =
+  AuthenticatedSlugTeamSlugDashboardChatThreadIdRouteImport.update({
+    id: '/$threadId',
+    path: '/$threadId',
+    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardChatRoute,
   } as any)
 const AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute =
   AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRouteImport.update({
@@ -428,6 +448,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteWithChildren
   '/$slug': typeof AuthenticatedSlugRouteWithChildren
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
   '/api/ping': typeof ApiPingRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -446,13 +467,14 @@ export interface FileRoutesByFullPath {
   '/callback/organization/invitation/$invitationId': typeof CallbackOrganizationInvitationInvitationIdRoute
   '/$slug/$teamSlug/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
   '/$slug/$teamSlug/categories': typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
-  '/$slug/$teamSlug/chat': typeof AuthenticatedSlugTeamSlugDashboardChatRoute
+  '/$slug/$teamSlug/chat': typeof AuthenticatedSlugTeamSlugDashboardChatRouteWithChildren
   '/$slug/$teamSlug/contacts': typeof AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren
   '/$slug/$teamSlug/credit-cards': typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
   '/$slug/$teamSlug/services': typeof AuthenticatedSlugTeamSlugDashboardServicesRouteWithChildren
   '/$slug/$teamSlug/settings': typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren
   '/$slug/$teamSlug/tags': typeof AuthenticatedSlugTeamSlugDashboardTagsRoute
   '/$slug/$teamSlug/transactions': typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute
+  '/$slug/$teamSlug/chat/$threadId': typeof AuthenticatedSlugTeamSlugDashboardChatThreadIdRoute
   '/$slug/$teamSlug/contacts/$contactId': typeof AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute
   '/$slug/$teamSlug/services/$serviceId': typeof AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute
   '/$slug/$teamSlug/services/benefits': typeof AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute
@@ -463,6 +485,7 @@ export interface FileRoutesByFullPath {
   '/$slug/$teamSlug/settings/feature-previews': typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute
   '/$slug/$teamSlug/settings/profile': typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute
   '/$slug/$teamSlug/settings/security': typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute
+  '/$slug/$teamSlug/chat/': typeof AuthenticatedSlugTeamSlugDashboardChatIndexRoute
   '/$slug/$teamSlug/contacts/': typeof AuthenticatedSlugTeamSlugDashboardContactsIndexRoute
   '/$slug/$teamSlug/home/': typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRoute
   '/$slug/$teamSlug/services/': typeof AuthenticatedSlugTeamSlugDashboardServicesIndexRoute
@@ -487,6 +510,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
   '/$slug': typeof AuthenticatedSlugRouteWithChildren
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
   '/api/ping': typeof ApiPingRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -504,10 +528,10 @@ export interface FileRoutesByTo {
   '/callback/organization/invitation/$invitationId': typeof CallbackOrganizationInvitationInvitationIdRoute
   '/$slug/$teamSlug/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
   '/$slug/$teamSlug/categories': typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
-  '/$slug/$teamSlug/chat': typeof AuthenticatedSlugTeamSlugDashboardChatRoute
   '/$slug/$teamSlug/credit-cards': typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
   '/$slug/$teamSlug/tags': typeof AuthenticatedSlugTeamSlugDashboardTagsRoute
   '/$slug/$teamSlug/transactions': typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute
+  '/$slug/$teamSlug/chat/$threadId': typeof AuthenticatedSlugTeamSlugDashboardChatThreadIdRoute
   '/$slug/$teamSlug/contacts/$contactId': typeof AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute
   '/$slug/$teamSlug/services/$serviceId': typeof AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute
   '/$slug/$teamSlug/services/benefits': typeof AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute
@@ -518,6 +542,7 @@ export interface FileRoutesByTo {
   '/$slug/$teamSlug/settings/feature-previews': typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute
   '/$slug/$teamSlug/settings/profile': typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute
   '/$slug/$teamSlug/settings/security': typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute
+  '/$slug/$teamSlug/chat': typeof AuthenticatedSlugTeamSlugDashboardChatIndexRoute
   '/$slug/$teamSlug/contacts': typeof AuthenticatedSlugTeamSlugDashboardContactsIndexRoute
   '/$slug/$teamSlug/home': typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRoute
   '/$slug/$teamSlug/services': typeof AuthenticatedSlugTeamSlugDashboardServicesIndexRoute
@@ -544,6 +569,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteWithChildren
   '/_authenticated/$slug': typeof AuthenticatedSlugRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
   '/api/ping': typeof ApiPingRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -563,13 +589,14 @@ export interface FileRoutesById {
   '/callback/organization/invitation/$invitationId': typeof CallbackOrganizationInvitationInvitationIdRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/categories': typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/chat': typeof AuthenticatedSlugTeamSlugDashboardChatRoute
+  '/_authenticated/$slug/$teamSlug/_dashboard/chat': typeof AuthenticatedSlugTeamSlugDashboardChatRouteWithChildren
   '/_authenticated/$slug/$teamSlug/_dashboard/contacts': typeof AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren
   '/_authenticated/$slug/$teamSlug/_dashboard/credit-cards': typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/services': typeof AuthenticatedSlugTeamSlugDashboardServicesRouteWithChildren
   '/_authenticated/$slug/$teamSlug/_dashboard/settings': typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren
   '/_authenticated/$slug/$teamSlug/_dashboard/tags': typeof AuthenticatedSlugTeamSlugDashboardTagsRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/transactions': typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute
+  '/_authenticated/$slug/$teamSlug/_dashboard/chat/$threadId': typeof AuthenticatedSlugTeamSlugDashboardChatThreadIdRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/contacts/$contactId': typeof AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/services/$serviceId': typeof AuthenticatedSlugTeamSlugDashboardServicesServiceIdRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/services/benefits': typeof AuthenticatedSlugTeamSlugDashboardServicesBenefitsRoute
@@ -580,6 +607,7 @@ export interface FileRoutesById {
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews': typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/profile': typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/security': typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute
+  '/_authenticated/$slug/$teamSlug/_dashboard/chat/': typeof AuthenticatedSlugTeamSlugDashboardChatIndexRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/contacts/': typeof AuthenticatedSlugTeamSlugDashboardContactsIndexRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/home/': typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/services/': typeof AuthenticatedSlugTeamSlugDashboardServicesIndexRoute
@@ -606,6 +634,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/$slug'
     | '/onboarding'
+    | '/api/chat'
     | '/api/health'
     | '/api/ping'
     | '/auth/callback'
@@ -631,6 +660,7 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/settings'
     | '/$slug/$teamSlug/tags'
     | '/$slug/$teamSlug/transactions'
+    | '/$slug/$teamSlug/chat/$threadId'
     | '/$slug/$teamSlug/contacts/$contactId'
     | '/$slug/$teamSlug/services/$serviceId'
     | '/$slug/$teamSlug/services/benefits'
@@ -641,6 +671,7 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/settings/feature-previews'
     | '/$slug/$teamSlug/settings/profile'
     | '/$slug/$teamSlug/settings/security'
+    | '/$slug/$teamSlug/chat/'
     | '/$slug/$teamSlug/contacts/'
     | '/$slug/$teamSlug/home/'
     | '/$slug/$teamSlug/services/'
@@ -665,6 +696,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/$slug'
     | '/onboarding'
+    | '/api/chat'
     | '/api/health'
     | '/api/ping'
     | '/auth/callback'
@@ -682,10 +714,10 @@ export interface FileRouteTypes {
     | '/callback/organization/invitation/$invitationId'
     | '/$slug/$teamSlug/bank-accounts'
     | '/$slug/$teamSlug/categories'
-    | '/$slug/$teamSlug/chat'
     | '/$slug/$teamSlug/credit-cards'
     | '/$slug/$teamSlug/tags'
     | '/$slug/$teamSlug/transactions'
+    | '/$slug/$teamSlug/chat/$threadId'
     | '/$slug/$teamSlug/contacts/$contactId'
     | '/$slug/$teamSlug/services/$serviceId'
     | '/$slug/$teamSlug/services/benefits'
@@ -696,6 +728,7 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/settings/feature-previews'
     | '/$slug/$teamSlug/settings/profile'
     | '/$slug/$teamSlug/settings/security'
+    | '/$slug/$teamSlug/chat'
     | '/$slug/$teamSlug/contacts'
     | '/$slug/$teamSlug/home'
     | '/$slug/$teamSlug/services'
@@ -721,6 +754,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/$slug'
     | '/_authenticated/onboarding'
+    | '/api/chat'
     | '/api/health'
     | '/api/ping'
     | '/auth/callback'
@@ -747,6 +781,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings'
     | '/_authenticated/$slug/$teamSlug/_dashboard/tags'
     | '/_authenticated/$slug/$teamSlug/_dashboard/transactions'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/chat/$threadId'
     | '/_authenticated/$slug/$teamSlug/_dashboard/contacts/$contactId'
     | '/_authenticated/$slug/$teamSlug/_dashboard/services/$serviceId'
     | '/_authenticated/$slug/$teamSlug/_dashboard/services/benefits'
@@ -757,6 +792,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/profile'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/security'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/chat/'
     | '/_authenticated/$slug/$teamSlug/_dashboard/contacts/'
     | '/_authenticated/$slug/$teamSlug/_dashboard/home/'
     | '/_authenticated/$slug/$teamSlug/_dashboard/services/'
@@ -781,6 +817,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  ApiChatRoute: typeof ApiChatRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiPingRoute: typeof ApiPingRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -867,6 +904,13 @@ declare module '@tanstack/react-router' {
       path: '/api/health'
       fullPath: '/api/health'
       preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat': {
+      id: '/api/chat'
+      path: '/api/chat'
+      fullPath: '/api/chat'
+      preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/onboarding': {
@@ -1037,6 +1081,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsIndexRouteImport
       parentRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsRoute
     }
+    '/_authenticated/$slug/$teamSlug/_dashboard/chat/': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/chat/'
+      path: '/'
+      fullPath: '/$slug/$teamSlug/chat/'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardChatIndexRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardChatRoute
+    }
     '/_authenticated/$slug/$teamSlug/_dashboard/settings/security': {
       id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/security'
       path: '/security'
@@ -1106,6 +1157,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$slug/$teamSlug/contacts/$contactId'
       preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsContactIdRouteImport
       parentRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsRoute
+    }
+    '/_authenticated/$slug/$teamSlug/_dashboard/chat/$threadId': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/chat/$threadId'
+      path: '/$threadId'
+      fullPath: '/$slug/$teamSlug/chat/$threadId'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardChatThreadIdRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardChatRoute
     }
     '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/': {
       id: '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/'
@@ -1207,6 +1265,24 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthenticatedSlugTeamSlugDashboardChatRouteChildren {
+  AuthenticatedSlugTeamSlugDashboardChatThreadIdRoute: typeof AuthenticatedSlugTeamSlugDashboardChatThreadIdRoute
+  AuthenticatedSlugTeamSlugDashboardChatIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardChatIndexRoute
+}
+
+const AuthenticatedSlugTeamSlugDashboardChatRouteChildren: AuthenticatedSlugTeamSlugDashboardChatRouteChildren =
+  {
+    AuthenticatedSlugTeamSlugDashboardChatThreadIdRoute:
+      AuthenticatedSlugTeamSlugDashboardChatThreadIdRoute,
+    AuthenticatedSlugTeamSlugDashboardChatIndexRoute:
+      AuthenticatedSlugTeamSlugDashboardChatIndexRoute,
+  }
+
+const AuthenticatedSlugTeamSlugDashboardChatRouteWithChildren =
+  AuthenticatedSlugTeamSlugDashboardChatRoute._addFileChildren(
+    AuthenticatedSlugTeamSlugDashboardChatRouteChildren,
+  )
 
 interface AuthenticatedSlugTeamSlugDashboardContactsRouteChildren {
   AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsContactIdRoute
@@ -1316,7 +1392,7 @@ const AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren =
 interface AuthenticatedSlugTeamSlugDashboardRouteChildren {
   AuthenticatedSlugTeamSlugDashboardBankAccountsRoute: typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
   AuthenticatedSlugTeamSlugDashboardCategoriesRoute: typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
-  AuthenticatedSlugTeamSlugDashboardChatRoute: typeof AuthenticatedSlugTeamSlugDashboardChatRoute
+  AuthenticatedSlugTeamSlugDashboardChatRoute: typeof AuthenticatedSlugTeamSlugDashboardChatRouteWithChildren
   AuthenticatedSlugTeamSlugDashboardContactsRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren
   AuthenticatedSlugTeamSlugDashboardCreditCardsRoute: typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
   AuthenticatedSlugTeamSlugDashboardServicesRoute: typeof AuthenticatedSlugTeamSlugDashboardServicesRouteWithChildren
@@ -1337,7 +1413,7 @@ const AuthenticatedSlugTeamSlugDashboardRouteChildren: AuthenticatedSlugTeamSlug
     AuthenticatedSlugTeamSlugDashboardCategoriesRoute:
       AuthenticatedSlugTeamSlugDashboardCategoriesRoute,
     AuthenticatedSlugTeamSlugDashboardChatRoute:
-      AuthenticatedSlugTeamSlugDashboardChatRoute,
+      AuthenticatedSlugTeamSlugDashboardChatRouteWithChildren,
     AuthenticatedSlugTeamSlugDashboardContactsRoute:
       AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren,
     AuthenticatedSlugTeamSlugDashboardCreditCardsRoute:
@@ -1445,6 +1521,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  ApiChatRoute: ApiChatRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiPingRoute: ApiPingRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

@@ -1,8 +1,8 @@
 ---
 description: Rules for server islands with deferred rendering
 globs:
-  - "**/*.astro"
-  - "astro.config.mjs"
+   - "**/*.astro"
+   - "astro.config.mjs"
 ---
 
 # Server Islands Rules

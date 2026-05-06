@@ -24,7 +24,7 @@ import { toast } from "@packages/ui/components/sonner";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
 import { DataTableRoot } from "@/components/data-table/data-table-root";
-import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
+import { useContextPanelInfo } from "../../../-context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 import { BenefitAttachPopover } from "./benefit-attach-popover";

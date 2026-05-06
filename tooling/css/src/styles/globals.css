@@ -4,6 +4,7 @@
 @import "tw-shimmer";
 @plugin "@tailwindcss/typography";
 @plugin "tailwind-scrollbar-hide";
+@source "../../../../node_modules/streamdown/dist/*.js";
 @source "../../../../apps/**/*.{astro,ts,tsx}";
 @source "../../../../packages/**/*.{ts,tsx}";
 
@@ -217,99 +218,4 @@
       font-style: normal;
       overscroll-behavior-y: contain;
    }
-}
-
-@keyframes marquee-horizontal {
-   from {
-      transform: translateX(0);
-   }
-   to {
-      transform: translateX(calc(-100% - var(--marquee-gap, 1rem)));
-   }
-}
-
-.animate-marquee-horizontal {
-   animation: marquee-horizontal var(--marquee-duration, 20s) linear infinite;
-   animation-delay: var(--marquee-delay, 0s);
-}
-
-html:active-view-transition-type(slide-left) {
-   &::view-transition-old(main-content) {
-      animation: 300ms cubic-bezier(0.4, 0, 0.2, 1) both slide-out-left;
-   }
-   &::view-transition-new(main-content) {
-      animation: 300ms cubic-bezier(0.4, 0, 0.2, 1) both slide-in-left;
-   }
-}
-
-@keyframes slide-out-left {
-   from {
-      transform: translateX(0);
-   }
-   to {
-      transform: translateX(-100%);
-   }
-}
-
-@keyframes slide-in-left {
-   from {
-      transform: translateX(100%);
-   }
-   to {
-      transform: translateX(0);
-   }
-}
-
-html:active-view-transition-type(slide-right) {
-   &::view-transition-old(main-content) {
-      animation: 300ms cubic-bezier(0.4, 0, 0.2, 1) both slide-out-right;
-   }
-   &::view-transition-new(main-content) {
-      animation: 300ms cubic-bezier(0.4, 0, 0.2, 1) both slide-in-right;
-   }
-}
-
-@keyframes slide-out-right {
-   from {
-      transform: translateX(0);
-   }
-   to {
-      transform: translateX(100%);
-   }
-}
-
-@keyframes slide-in-right {
-   from {
-      transform: translateX(-100%);
-   }
-   to {
-      transform: translateX(0);
-   }
-}
-
-.ghost-text {
-   opacity: 0.5 !important;
-   color: var(--muted-foreground) !important;
-   pointer-events: none !important;
-   user-select: none !important;
-   -webkit-user-select: none !important;
-   cursor: default !important;
-}
-
-.ghost-text::selection {
-   background: transparent !important;
-}
-
-@keyframes ai-insert-flash {
-   0% {
-      background-color: hsl(142 76% 36% / 0.25);
-   }
-   100% {
-      background-color: transparent;
-   }
-}
-
-.ai-inserted {
-   animation: ai-insert-flash 1.5s ease-out forwards;
-   border-radius: 2px;
 }

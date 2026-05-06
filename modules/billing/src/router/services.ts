@@ -30,38 +30,69 @@ import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import { requireService } from "@modules/billing/router/middlewares";
 
-const idInputSchema = z.object({ id: z.string().uuid() });
-const serviceIdInputSchema = z.object({ serviceId: z.string().uuid() });
+export const idInputSchema = z.object({
+   id: z.string().uuid().describe("ID do serviço."),
+});
+
+const serviceIdInputSchema = z.object({
+   serviceId: z.string().uuid().describe("ID do serviço."),
+});
+
 const bulkIdsInputSchema = z.object({
-   ids: z.array(z.string().uuid()).min(1),
+   ids: z
+      .array(z.string().uuid())
+      .min(1)
+      .describe("IDs dos serviços que serão alterados."),
 });
-const bulkSetActiveInputSchema = z.object({
-   ids: z.array(z.string().uuid()).min(1),
-   isActive: z.boolean(),
+
+export const bulkSetActiveInputSchema = z.object({
+   ids: z
+      .array(z.string().uuid())
+      .min(1)
+      .describe("IDs dos serviços que serão alterados."),
+   isActive: z.boolean().describe("true para ativar; false para arquivar."),
 });
+
 const bulkCreateServicesInputSchema = z.object({
-   items: z.array(createServiceSchema).min(1),
+   items: z
+      .array(createServiceSchema)
+      .min(1)
+      .describe("Serviços que serão criados em lote."),
 });
-const updateServiceInputSchema = idInputSchema.merge(updateServiceSchema);
+
+export const updateServiceInputSchema =
+   idInputSchema.merge(updateServiceSchema);
+
 const listServicesInputSchema = z
    .object({
-      search: z.string().optional(),
-      categoryId: z.string().uuid().optional(),
-      isActive: z.boolean().optional(),
+      search: z.string().optional().describe("Filtro textual por nome."),
+      categoryId: z
+         .string()
+         .uuid()
+         .optional()
+         .describe("ID da categoria financeira."),
+      isActive: z.boolean().optional().describe("Filtra serviços ativos."),
    })
    .optional();
-const setupInputSchema = z.object({
-   service: createServiceSchema,
+
+export const setupInputSchema = z.object({
+   service: createServiceSchema.describe("Dados básicos do serviço."),
    meter: z
       .union([z.object({ id: z.string().uuid() }), createMeterSchema])
+      .describe("Medidor existente ou novo medidor a criar.")
       .optional(),
-   prices: z.array(createPriceSchema).optional().default([]),
+   prices: z
+      .array(createPriceSchema)
+      .optional()
+      .default([])
+      .describe("Preços que serão criados para o serviço."),
    benefits: z
       .array(
          z.union([z.object({ id: z.string().uuid() }), createBenefitSchema]),
       )
       .optional()
-      .default([]),
+      .default([])
+      .describe("Benefícios existentes ou novos benefícios a anexar."),
 });
 
 export const getAll = protectedProcedure

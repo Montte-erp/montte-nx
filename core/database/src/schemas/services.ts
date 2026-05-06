@@ -126,13 +126,15 @@ export type NewResource = typeof resources.$inferInsert;
 const nameSchema = z
    .string()
    .min(2, "Nome deve ter no mínimo 2 caracteres.")
-   .max(120, "Nome deve ter no máximo 120 caracteres.");
+   .max(120, "Nome deve ter no máximo 120 caracteres.")
+   .describe("Nome exibido para o cliente.");
 
 const priceSchema = z
    .string()
    .refine((v) => !Number.isNaN(Number(v)) && Number(v) >= 0, {
       message: "Preço deve ser um número válido maior ou igual a zero.",
-   });
+   })
+   .describe("Valor decimal em BRL, usando ponto como separador.");
 
 const baseServiceSchema = createInsertSchema(services).pick({
    name: true,
@@ -144,20 +146,53 @@ const baseServiceSchema = createInsertSchema(services).pick({
 
 export const createServiceSchema = baseServiceSchema.extend({
    name: nameSchema,
-   description: z.string().max(500).nullable().optional(),
-   categoryId: z.string().uuid().nullable().optional(),
-   tagId: z.string().uuid().nullable().optional(),
-   costPrice: priceSchema.default("0"),
+   description: z
+      .string()
+      .max(500)
+      .nullable()
+      .optional()
+      .describe("Descrição curta do serviço."),
+   categoryId: z
+      .string()
+      .uuid()
+      .nullable()
+      .optional()
+      .describe("ID da categoria financeira vinculada ao serviço."),
+   tagId: z
+      .string()
+      .uuid()
+      .nullable()
+      .optional()
+      .describe("ID do Centro de Custo vinculado ao serviço."),
+   costPrice: priceSchema.default("0").describe("Custo interno do serviço."),
 });
 
 export const updateServiceSchema = baseServiceSchema
    .extend({
       name: nameSchema.optional(),
-      description: z.string().max(500).nullable().optional(),
-      categoryId: z.string().uuid().nullable().optional(),
-      tagId: z.string().uuid().nullable().optional(),
-      costPrice: priceSchema.optional(),
-      isActive: z.boolean().optional(),
+      description: z
+         .string()
+         .max(500)
+         .nullable()
+         .optional()
+         .describe("Descrição curta do serviço."),
+      categoryId: z
+         .string()
+         .uuid()
+         .nullable()
+         .optional()
+         .describe("ID da categoria financeira vinculada ao serviço."),
+      tagId: z
+         .string()
+         .uuid()
+         .nullable()
+         .optional()
+         .describe("ID do Centro de Custo vinculado ao serviço."),
+      costPrice: priceSchema.optional().describe("Custo interno do serviço."),
+      isActive: z
+         .boolean()
+         .optional()
+         .describe("Indica se o serviço está ativo."),
    })
    .partial();
 
@@ -175,25 +210,68 @@ const basePriceSchema = createInsertSchema(servicePrices).pick({
 
 export const createPriceSchema = basePriceSchema.extend({
    name: nameSchema,
-   type: z.enum(pricingTypeEnum.enumValues).default("flat"),
-   basePrice: priceSchema,
-   interval: z.enum(billingCycleEnum.enumValues),
-   meterId: z.string().uuid().nullable().optional(),
-   priceCap: priceSchema.nullable().optional(),
-   minPrice: priceSchema.nullable().optional(),
-   trialDays: z.number().int().min(0).nullable().optional(),
-   autoEnroll: z.boolean().default(false),
+   type: z
+      .enum(pricingTypeEnum.enumValues)
+      .default("flat")
+      .describe("Modelo de cobrança do preço."),
+   basePrice: priceSchema.describe("Preço base cobrado do cliente."),
+   interval: z.enum(billingCycleEnum.enumValues).describe("Ciclo de cobrança."),
+   meterId: z
+      .string()
+      .uuid()
+      .nullable()
+      .optional()
+      .describe("ID do medidor usado em preços por consumo."),
+   priceCap: priceSchema
+      .nullable()
+      .optional()
+      .describe("Teto de cobrança para preço por consumo."),
+   minPrice: priceSchema
+      .nullable()
+      .optional()
+      .describe("Cobrança mínima para preço por consumo."),
+   trialDays: z
+      .number()
+      .int()
+      .min(0)
+      .nullable()
+      .optional()
+      .describe("Quantidade de dias grátis antes da cobrança."),
+   autoEnroll: z
+      .boolean()
+      .default(false)
+      .describe("Inscreve automaticamente novos clientes elegíveis."),
 });
 
 export const updatePriceSchema = basePriceSchema
    .extend({
       name: nameSchema.optional(),
-      basePrice: priceSchema.optional(),
-      interval: z.enum(billingCycleEnum.enumValues).optional(),
-      isActive: z.boolean().optional(),
-      priceCap: priceSchema.nullable().optional(),
-      minPrice: priceSchema.nullable().optional(),
-      trialDays: z.number().int().min(0).nullable().optional(),
+      basePrice: priceSchema
+         .optional()
+         .describe("Preço base cobrado do cliente."),
+      interval: z
+         .enum(billingCycleEnum.enumValues)
+         .optional()
+         .describe("Ciclo de cobrança."),
+      isActive: z
+         .boolean()
+         .optional()
+         .describe("Indica se o preço está ativo."),
+      priceCap: priceSchema
+         .nullable()
+         .optional()
+         .describe("Teto de cobrança para preço por consumo."),
+      minPrice: priceSchema
+         .nullable()
+         .optional()
+         .describe("Cobrança mínima para preço por consumo."),
+      trialDays: z
+         .number()
+         .int()
+         .min(0)
+         .nullable()
+         .optional()
+         .describe("Quantidade de dias grátis antes da cobrança."),
    })
    .partial();
 

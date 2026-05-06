@@ -1,0 +1,101 @@
+import { Button } from "@packages/ui/components/button";
+import { ArrowDown, Brain, Loader2, RefreshCw } from "lucide-react";
+import { useChatSession } from "./chat-store";
+import { MessageItem } from "./message-item";
+import { useStickToBottom } from "./use-stick-to-bottom";
+
+export function MessageList({ compact = false }: { compact?: boolean }) {
+   const { ref, onScroll, scrollToBottom, atBottom } = useStickToBottom();
+   const session = useChatSession();
+   const {
+      messages,
+      isStreaming,
+      isSubmitting,
+      error,
+      approveTool,
+      rejectTool,
+      regenerateFrom,
+      metadataFor,
+   } = session;
+   const lastIndex = messages.length - 1;
+   const last = messages.at(-1);
+   const lastHasVisibleParts =
+      last?.role === "assistant" &&
+      last.parts.some(
+         (part) =>
+            part.type === "tool-call" ||
+            part.type === "thinking" ||
+            (part.type === "text" && part.content.trim().length > 0),
+      );
+   const showThinking =
+      isSubmitting ||
+      (isStreaming &&
+         (last?.role === "user" ||
+            (last?.role === "assistant" && !lastHasVisibleParts)));
+   const lastUserId = messages.findLast((m) => m.role === "user")?.id;
+
+   const showError =
+      error !== null && !isStreaming && !isSubmitting && messages.length > 0;
+
+   return (
+      <div className="relative flex flex-1 min-h-0 flex-col">
+         <div className="flex-1 overflow-y-auto" onScroll={onScroll} ref={ref}>
+            <div className="flex min-h-full flex-col justify-end gap-3">
+               {messages.map((message, idx) => {
+                  const isLast = idx === lastIndex;
+                  const isLive = isLast && isStreaming;
+                  return (
+                     <MessageItem
+                        compact={compact}
+                        isLast={isLast}
+                        isStreaming={isLive}
+                        key={message.id}
+                        message={message}
+                        metadata={metadataFor(message.id)}
+                        onApprove={approveTool}
+                        onReject={rejectTool}
+                     />
+                  );
+               })}
+               {showThinking ? (
+                  <div className="flex items-center gap-2 rounded-lg bg-muted/30 px-3 py-2 text-sm text-muted-foreground shimmer">
+                     <Brain className="size-4" />
+                     <span className="flex-1">Montte AI está pensando</span>
+                     <Loader2 className="size-4 animate-spin" />
+                  </div>
+               ) : null}
+               {showError ? (
+                  <div className="flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm">
+                     <span className="flex-1 text-destructive">
+                        Falha ao gerar resposta.
+                     </span>
+                     <Button
+                        className="h-7 px-2 text-xs"
+                        disabled={!lastUserId}
+                        onClick={() =>
+                           lastUserId && void regenerateFrom(lastUserId)
+                        }
+                        size="sm"
+                        variant="outline"
+                     >
+                        <RefreshCw className="size-3" />
+                        Tentar novamente
+                     </Button>
+                  </div>
+               ) : null}
+            </div>
+         </div>
+         {!atBottom ? (
+            <Button
+               aria-label="Ir para o fim"
+               className="absolute bottom-2 right-2 size-8 rounded-full shadow"
+               onClick={scrollToBottom}
+               size="icon"
+               variant="secondary"
+            >
+               <ArrowDown className="size-4" />
+            </Button>
+         ) : null}
+      </div>
+   );
+}

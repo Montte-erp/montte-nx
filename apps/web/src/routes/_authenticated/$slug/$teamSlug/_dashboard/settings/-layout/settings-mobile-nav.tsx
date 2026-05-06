@@ -1,6 +1,5 @@
-import { Input } from "@packages/ui/components/input";
+import { SearchInput } from "@packages/ui/components/search-input";
 import { useNavigate } from "@tanstack/react-router";
-import { Search } from "lucide-react";
 import { QuickAccessCard } from "@/components/blocks/quick-access-card";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useEarlyAccess } from "@/hooks/use-early-access";
@@ -25,20 +24,16 @@ export function SettingsMobileNav() {
 
    return (
       <div className="flex flex-col gap-4">
-         <div className="relative">
-            <Search className="pointer-events-none absolute left-2 top-2 size-4 text-muted-foreground" />
-            <Input
-               className="h-8 pl-8 text-sm"
-               onChange={(e) =>
-                  setQ({
-                     search: (prev) => ({ ...prev, q: e.target.value }),
-                     replace: true,
-                  })
-               }
-               placeholder="Pesquisar configurações..."
-               value={q}
-            />
-         </div>
+         <SearchInput
+            onChange={(e) =>
+               setQ({
+                  search: (prev) => ({ ...prev, q: e.target.value }),
+                  replace: true,
+               })
+            }
+            placeholder="Pesquisar configurações..."
+            value={q}
+         />
 
          {settingsNavSections
             .filter((section) => section.id !== "organization")

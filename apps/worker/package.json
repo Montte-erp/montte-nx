@@ -16,6 +16,7 @@
       "@core/redis": "workspace:*",
       "@core/transactional": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers",
+      "@modules/agents": "workspace:*",
       "@modules/billing": "workspace:*",
       "@modules/classification": "workspace:*"
    },

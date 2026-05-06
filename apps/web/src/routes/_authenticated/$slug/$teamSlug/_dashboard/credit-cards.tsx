@@ -12,7 +12,7 @@ import { CreditCard, Plus, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { DefaultHeader } from "@/components/default-header";
+import { DefaultHeader } from "../-layout/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
 import {
    DataTableBulkActions,

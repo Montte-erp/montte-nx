@@ -6,6 +6,7 @@ import { createDb } from "@core/database/client";
 import { createRedis } from "@core/redis/connection";
 import { createPostHog, createPromptsClient } from "@core/posthog/server";
 import { createResendClient } from "@core/transactional/utils";
+import { setupAgentsWorkflows } from "@modules/agents/workflows/setup";
 import { setupBillingWorkflows } from "@modules/billing/workflows/setup";
 import { setupClassificationWorkflows } from "@modules/classification/workflows/setup";
 
@@ -36,6 +37,12 @@ await setupBillingWorkflows({
    workerConcurrency: 10,
 });
 await setupClassificationWorkflows({
+   redis,
+   posthog,
+   prompts: promptsClient,
+   workerConcurrency: 10,
+});
+await setupAgentsWorkflows({
    redis,
    posthog,
    prompts: promptsClient,

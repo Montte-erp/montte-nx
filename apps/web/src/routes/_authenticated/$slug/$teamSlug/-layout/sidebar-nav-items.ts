@@ -13,15 +13,12 @@ import {
    Tags,
    Users,
 } from "lucide-react";
-import type { SubSidebarSection } from "./hooks/use-sidebar-store";
-
 export type NavItemDef = {
    id: string;
    label: string;
    icon: LucideIcon;
    iconColor?: string;
    route: string;
-   subPanel?: SubSidebarSection;
    earlyAccessFlag?: string;
    earlyAccessFallbackStage?:
       | "alpha"

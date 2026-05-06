@@ -20,6 +20,7 @@ export * from "@core/database/schemas/subscription-items";
 export * from "@core/database/schemas/subscriptions";
 export * from "@core/database/schemas/tags";
 export * from "@core/database/schemas/threads";
+export * from "@core/database/schemas/messages";
 export * from "@core/database/schemas/transactions";
 export * from "@core/database/schemas/usage-events";
 export * from "@core/database/relations";

@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { z } from "zod";
 import { Users } from "lucide-react";
-import { DefaultHeader } from "@/components/default-header";
+import { DefaultHeader } from "../../-layout/default-header";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import {
    EarlyAccessBanner,

@@ -1,23 +1,21 @@
-import { maxIterations, type ConstrainedModelMessage } from "@tanstack/ai";
-import type { OpenRouterMessageMetadataByModality } from "@tanstack/ai-openrouter";
+import {
+   chat,
+   convertMessagesToModelMessages,
+   maxIterations,
+   type ChatMiddleware,
+   type UIMessage,
+} from "@tanstack/ai";
 import type { PostHog, Prompts } from "@core/posthog/server";
 import { flashModel } from "@core/ai/models";
 import { createPosthogAiMiddleware } from "@core/ai/middleware";
-import { AGENT_PROMPTS } from "@modules/agents/constants";
+import { AGENT_PROMPTS, type PageContext } from "@modules/agents/constants";
 import { createAgentToolClient } from "@modules/agents/orpc-tool-router";
 import {
    buildSkillCatalog,
    buildSkillDiscoverTool,
 } from "@modules/agents/skills";
 import { buildAdvisorTool } from "@modules/agents/tools/advisor";
-import { buildBenefitsTools } from "@modules/agents/tools/benefits";
-import { buildCouponsTools } from "@modules/agents/tools/coupons";
-import { buildMetersTools } from "@modules/agents/tools/meters";
-import { buildPricesTools } from "@modules/agents/tools/prices";
 import { buildServicesTools } from "@modules/agents/tools/services";
-import { buildSetupTools } from "@modules/agents/tools/setup";
-import type { ToolDeps } from "@modules/agents/tools/types";
-import type { PageContext } from "@modules/agents/router/chat";
 
 export interface AgentChatOptions {
    prompts: Prompts;
@@ -26,46 +24,30 @@ export interface AgentChatOptions {
    headers: Headers;
    request: Request;
    threadId?: string;
-   messages: ConstrainedModelMessage<{
-      inputModalities: readonly ["text"];
-      messageMetadataByModality: OpenRouterMessageMetadataByModality;
-   }>[];
-   pageContext: PageContext;
+   messages: UIMessage[];
+   pageContext?: PageContext;
+   reasoningEffort?: "high" | "xhigh";
    abortSignal?: AbortSignal;
+   extraMiddleware?: ChatMiddleware[];
 }
 
 const RENDERING_PRIMER = `## Renderização (json-render)
 
 Toda tool de leitura/escrita retorna um campo \`ui\` com um spec json-render que o cliente renderiza usando shadcn. Você nunca precisa formatar a saída em markdown — o spec já mostra a tabela/alert/card.
 
-**Não duplique a informação em texto.** Após uma tool call, escreva no máximo 1-2 frases curtas conectando o resultado à próxima ação. Nunca repita a tabela / contagem / nomes que o spec já mostra.
+Não duplique a informação em texto. Após uma tool call, escreva no máximo 1-2 frases curtas conectando o resultado à próxima ação. Nunca repita tabela, contagem ou nomes que o spec já mostra.
 
-Vocabulário disponível no catalog (quando o tool não monta o spec por você): Card, Stack, Grid, Separator, Heading, Text, Badge, Alert, Table, Accordion, Collapsible, Tabs, Progress, Skeleton, Spinner, Avatar, Image, Link, Tooltip.`;
+Vocabulário disponível no catalog: Card, Stack, Grid, Separator, Heading, Text, Badge, Alert, Table, Accordion, Collapsible, Tabs, Progress, Skeleton, Spinner, Avatar, Image, Link, Tooltip.`;
 
-function formatPageContext(pageContext: PageContext): string {
+function formatPageContext(pageContext: PageContext | undefined): string {
    if (pageContext === undefined) return "Nenhum contexto de página fornecido.";
    const lines: string[] = [];
-   if (pageContext.skillHint)
-      lines.push(
-         `Skill sugerida pelo usuário: \`${pageContext.skillHint}\`. Chame skill_discover com esse skillId antes de responder, a menos que o pedido claramente esteja fora do domínio dela.`,
-      );
    if (pageContext.route) lines.push(`Rota: ${pageContext.route}`);
    if (pageContext.title) lines.push(`Título: ${pageContext.title}`);
    if (pageContext.summary) lines.push(`Resumo: ${pageContext.summary}`);
    return lines.length === 0
       ? "Nenhum contexto de página fornecido."
       : lines.join("\n");
-}
-
-function buildDomainTools(deps: ToolDeps) {
-   return [
-      ...buildSetupTools(deps),
-      ...buildServicesTools(deps),
-      ...buildPricesTools(deps),
-      ...buildMetersTools(deps),
-      ...buildBenefitsTools(deps),
-      ...buildCouponsTools(deps),
-   ];
 }
 
 function abortControllerFromSignal(signal: AbortSignal) {
@@ -78,20 +60,20 @@ function abortControllerFromSignal(signal: AbortSignal) {
    return controller;
 }
 
-export async function buildAgentChatArgs(options: AgentChatOptions) {
+async function buildAgentChatArgs(options: AgentChatOptions) {
    const turnId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
    const orpcClient = createAgentToolClient(options.headers, options.request);
-   const toolDeps: ToolDeps = { orpcClient };
-
-   const skillDiscoverTool = buildSkillDiscoverTool(options.prompts);
-   const advisorTool = buildAdvisorTool({
-      prompts: options.prompts,
-      posthog: options.posthog,
-      distinctId: options.userId,
-      threadId: options.threadId,
-      turnId,
-   });
-   const domainTools = buildDomainTools(toolDeps);
+   const tools = [
+      buildSkillDiscoverTool(options.prompts),
+      buildAdvisorTool({
+         prompts: options.prompts,
+         posthog: options.posthog,
+         distinctId: options.userId,
+         threadId: options.threadId,
+         turnId,
+      }),
+      ...buildServicesTools({ orpcClient }),
+   ];
 
    const rootTemplate = await options.prompts.get(AGENT_PROMPTS.root, {
       withMetadata: false,
@@ -104,9 +86,13 @@ export async function buildAgentChatArgs(options: AgentChatOptions) {
    return {
       adapter: flashModel,
       systemPrompts: [systemPrompt, RENDERING_PRIMER],
-      messages: options.messages,
-      tools: [skillDiscoverTool, advisorTool, ...domainTools],
-      agentLoopStrategy: maxIterations(25),
+      messages: convertMessagesToModelMessages(options.messages),
+      tools,
+      modelOptions: {
+         reasoning: { effort: options.reasoningEffort ?? "high" },
+         parallelToolCalls: false,
+      },
+      agentLoopStrategy: maxIterations(8),
       ...(options.threadId && { conversationId: options.threadId }),
       abortController: options.abortSignal
          ? abortControllerFromSignal(options.abortSignal)
@@ -125,6 +111,12 @@ export async function buildAgentChatArgs(options: AgentChatOptions) {
                }),
             },
          }),
+         ...(options.extraMiddleware ?? []),
       ],
+      debug: true,
    };
+}
+
+export async function createAgentChat(options: AgentChatOptions) {
+   return chat(await buildAgentChatArgs(options));
 }
