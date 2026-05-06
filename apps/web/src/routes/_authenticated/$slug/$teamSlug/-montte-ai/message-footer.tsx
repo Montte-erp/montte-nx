@@ -11,7 +11,7 @@ interface MessageFooterProps {
 }
 
 export function MessageFooter({ messageId, text }: MessageFooterProps) {
-   const traceId = useTraceIdForMessage(messageId);
+   const traceId = useChatSession().traceIdFor(messageId);
    const { copy, copied } = useClipboard({ timeout: 1500 });
    const surveyId = POSTHOG_SURVEYS.aiAgentFeedback.id;
    const surveyReady = traceId !== undefined;
