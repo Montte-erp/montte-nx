@@ -6,7 +6,7 @@ import {
 } from "@assistant-ui/react";
 import { fetchHttpStream, useChat } from "@tanstack/ai-react";
 import { useLiveQuery } from "@tanstack/react-db";
-import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { createStore, useStore } from "@tanstack/react-store";
 import type { UIMessage } from "@tanstack/ai-react";
 import {
@@ -35,10 +35,10 @@ import { createPersistedStore } from "@/lib/store";
 import { client } from "@/integrations/orpc/client";
 import {
    type ChatMessage,
+   getMessagesCollection,
+   getThreadDetailCollection,
    getThreadsCollection,
    refreshChatData,
-   removeMessageFromChatData,
-   writeThreadSnapshot,
 } from "./chat-data";
 import { useAgentLive } from "./use-agent-live";
 
@@ -396,22 +396,31 @@ export function ChatSessionProvider({
          ).then((result) => {
             if (result.isErr())
                toast.error("Falha ao salvar resposta da Montte AI.");
+            if (result.isOk()) void refreshChatData(queryClient, id);
          });
       },
       onError: () => toast.error("Falha no streaming da Montte AI."),
    });
 
-   const threadQuery = useQuery(
-      threadId === null
-         ? {
-              queryKey: ["chat-thread-runtime", null],
-              queryFn: skipToken,
-           }
-         : {
-              queryKey: ["chat-thread-runtime", threadId],
-              queryFn: () => client.threads.getById({ threadId }),
-           },
+   const { data: storedMessages } = useLiveQuery(
+      (q) => {
+         if (threadId === null) return undefined;
+         return q
+            .from({ message: getMessagesCollection(threadId, queryClient) })
+            .orderBy(({ message }) => message.createdAt, "asc");
+      },
+      [queryClient, threadId],
    );
+   const { data: threadDetails = [] } = useLiveQuery(
+      (q) => {
+         if (threadId === null) return undefined;
+         return q.from({
+            thread: getThreadDetailCollection(threadId, queryClient),
+         });
+      },
+      [queryClient, threadId],
+   );
+   const threadDetail = threadDetails[0];
 
    const status = chat.status;
    const activeTurn =
@@ -430,28 +439,15 @@ export function ChatSessionProvider({
          return;
       }
       if (activeTurn) return;
-      const data = threadQuery.data;
-      if (data === undefined) return;
-      const messages = data.messages.map(toUiMessage);
-      if (chat.messages.length > messages.length) return;
+      if (storedMessages === undefined) return;
+      const messages = storedMessages.map(toUiMessage);
       const snapshotKey = `${threadId}:${messages
          .map((message) => message.id)
          .join(":")}`;
       if (loadedSnapshotKey.current === snapshotKey) return;
       loadedSnapshotKey.current = snapshotKey;
       chat.setMessages(messages);
-      writeThreadSnapshot(queryClient, {
-         ...data.thread,
-         suggestions: data.thread.suggestions ?? [],
-      });
-   }, [
-      activeTurn,
-      chat,
-      chat.messages.length,
-      queryClient,
-      threadId,
-      threadQuery.data,
-   ]);
+   }, [activeTurn, chat, chat.messages.length, storedMessages, threadId]);
 
    const messages = useMemo(() => {
       const merged = mergeStreamingMessages(
@@ -473,10 +469,7 @@ export function ChatSessionProvider({
          toast.error("Falha ao criar conversa.");
          return null;
       }
-      writeThreadSnapshot(queryClient, {
-         ...result.value,
-         suggestions: result.value.suggestions,
-      });
+      void refreshChatData(queryClient);
       setActiveThread(result.value.id);
       return result.value.id;
    }, [queryClient]);
@@ -518,9 +511,9 @@ export function ChatSessionProvider({
       messages,
       isRunning: activeTurn,
       isDisabled: false,
-      suggestions: (threadQuery.data?.thread?.suggestions ?? []).map(
-         (prompt) => ({ prompt }),
-      ),
+      suggestions: (threadDetail?.suggestions ?? []).map((prompt) => ({
+         prompt,
+      })),
       convertMessage,
       onNew,
       onEdit,
@@ -565,7 +558,6 @@ export function ChatSessionProvider({
                toast.error("Falha ao excluir mensagem.");
                return;
             }
-            removeMessageFromChatData(queryClient, id, messageId);
             await refreshChatData(queryClient, id);
          },
          approveTool: (id) =>
