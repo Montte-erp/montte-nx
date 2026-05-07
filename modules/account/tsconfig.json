@@ -19,5 +19,19 @@
          "@modules/classification/*": ["../classification/src/*"]
       }
    },
-   "include": ["src"]
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../../core/utils"
+      },
+      {
+         "path": "../../core/logging"
+      },
+      {
+         "path": "../../core/files"
+      },
+      {
+         "path": "../../core/database"
+      }
+   ]
 }

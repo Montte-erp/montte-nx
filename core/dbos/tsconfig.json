@@ -1,5 +1,10 @@
 {
    "extends": "@tooling/typescript/core.json",
    "compilerOptions": {},
-   "include": ["src"]
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../database"
+      }
+   ]
 }

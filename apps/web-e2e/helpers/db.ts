@@ -3,7 +3,11 @@ import path from "node:path";
 import { eq } from "drizzle-orm";
 import { fromThrowable } from "neverthrow";
 import { createDb, type DatabaseInstance } from "@core/database/client";
-import { organization, user as userTable } from "@core/database/schemas/auth";
+import {
+   invitation as invitationTable,
+   organization,
+   user as userTable,
+} from "@core/database/schemas/auth";
 
 loadEnv({
    path: path.join(import.meta.dirname, "..", "..", "web", ".env.local"),
@@ -69,6 +73,17 @@ export async function clearOrganizationLogoForEmail(email: string) {
       .update(organization)
       .set({ logo: null })
       .where(eq(organization.id, org.id));
+}
+
+export async function findPendingInvitationByEmail(email: string) {
+   return db().query.invitation.findFirst({
+      where: (f, { eq, and }) =>
+         and(eq(f.email, email), eq(f.status, "pending")),
+   });
+}
+
+export async function deleteInvitationsByEmail(email: string) {
+   await db().delete(invitationTable).where(eq(invitationTable.email, email));
 }
 
 export async function deleteUserByEmail(email: string) {

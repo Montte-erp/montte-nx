@@ -23,7 +23,7 @@ import type {
 } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Mail, Plus, ShieldCheck, Users, X } from "lucide-react";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
@@ -36,6 +36,8 @@ import { DataTableEmptyState } from "@/components/data-table/data-table-empty-st
 import { DataTableRoot } from "@/components/data-table/data-table-root";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { useCredenza } from "@/hooks/use-credenza";
+import { InviteMembersForm } from "./-members/invite-members-form";
 import { MembersSkeleton } from "./-members/members-skeleton";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -223,8 +225,7 @@ function MembersContent() {
 
    const queryClient = useQueryClient();
    const { openAlertDialog } = useAlertDialog();
-   const [isDraftActive, setIsDraftActive] = useState(false);
-   const [isPending, startTransition] = useTransition();
+   const { openCredenza, closeCredenza } = useCredenza();
 
    const [
       { data: members },
@@ -311,20 +312,22 @@ function MembersContent() {
    }, [queryClient]);
 
    function handleUpdateRole(member: MemberRow, newRole: string) {
-      startTransition(async () => {
-         const result = await authClient.organization.updateMemberRole({
-            memberId: member.id,
-            role: newRole,
-            organizationId,
-         });
-         if (result.error) {
-            toast.error(result.error.message ?? "Erro ao alterar função");
-            return;
-         }
-         queryClient.invalidateQueries({
-            queryKey: orpc.organization.getMembers.queryOptions({}).queryKey,
-         });
-         toast.success("Função atualizada com sucesso");
+      authClient.organization.updateMemberRole({
+         memberId: member.id,
+         role: newRole,
+         organizationId,
+         fetchOptions: {
+            onSuccess: () => {
+               queryClient.invalidateQueries({
+                  queryKey: orpc.organization.getMembers.queryOptions({})
+                     .queryKey,
+               });
+               toast.success("Função atualizada com sucesso");
+            },
+            onError: ({ error }) => {
+               toast.error(error.message ?? "Erro ao alterar função");
+            },
+         },
       });
    }
 
@@ -336,52 +339,40 @@ function MembersContent() {
             actionLabel: "Cancelar convite",
             cancelLabel: "Voltar",
             variant: "destructive",
-            onAction: async () => {
-               const { error } = await authClient.organization.cancelInvitation(
-                  { invitationId: invite.id },
-               );
-               if (error) {
-                  toast.error(error.message);
-                  return;
-               }
-               invalidateInvites();
-               toast.success("Convite cancelado");
+            onAction: () => {
+               authClient.organization.cancelInvitation({
+                  invitationId: invite.id,
+                  fetchOptions: {
+                     onSuccess: () => {
+                        invalidateInvites();
+                        toast.success("Convite cancelado");
+                     },
+                     onError: ({ error }) => {
+                        toast.error(error.message);
+                     },
+                  },
+               });
             },
          });
       },
       [openAlertDialog, invalidateInvites],
    );
 
-   const handleAddInvite = useCallback(
-      async (formData: Record<string, string | string[]>) => {
-         const email = String(formData.email ?? "").trim();
-         const roleValue = String(formData.role ?? "member");
-         const role: "member" | "admin" =
-            roleValue === "admin" ? "admin" : "member";
-
-         openAlertDialog({
-            title: "Enviar convite",
-            description: `Um e-mail será enviado para ${email} com um link para entrar na organização como ${ROLE_LABELS[role]}.`,
-            actionLabel: "Enviar",
-            cancelLabel: "Voltar",
-            onAction: async () => {
-               const { error } = await authClient.organization.inviteMember({
-                  email,
-                  role,
-                  organizationId,
-               });
-               if (error) {
-                  toast.error(error.message);
-                  return;
-               }
-               setIsDraftActive(false);
-               invalidateInvites();
-               toast.success("Convite enviado com sucesso!");
-            },
-         });
-      },
-      [openAlertDialog, organizationId, invalidateInvites],
-   );
+   const handleOpenInvite = useCallback(() => {
+      if (!organizationId) return;
+      openCredenza({
+         className: "sm:max-w-lg w-full gap-2 ",
+         renderChildren: () => (
+            <InviteMembersForm
+               organizationId={organizationId}
+               onSuccess={() => {
+                  invalidateInvites();
+                  closeCredenza();
+               }}
+            />
+         ),
+      });
+   }, [openCredenza, closeCredenza, organizationId, invalidateInvites]);
 
    const searchValue = columnFilters.find((f) => f.id === "name")?.value;
    const searchDefaultValue =
@@ -398,17 +389,13 @@ function MembersContent() {
             columnFilters={columnFilters}
             columns={columns}
             data={filteredData}
-            draftRowDefaults={{ role: "member" }}
             getRowId={(row) => `${row.kind}:${row.id}`}
             groupBy={(row) =>
                row.kind === "member" ? "Membros" : "Convites pendentes"
             }
-            isDraftRowActive={isDraftActive}
             onColumnFiltersChange={handleColumnFiltersChange}
             onSortingChange={handleSortingChange}
             sorting={sorting}
-            onAddRow={handleAddInvite}
-            onDiscardAddRow={() => setIsDraftActive(false)}
             renderGroupHeader={(key, rows) => (
                <span className="flex items-center gap-2">
                   {key}
@@ -431,7 +418,7 @@ function MembersContent() {
                const member = original;
                const isSelf = member.userId === currentUserId;
                const isOwner = member.role === "owner";
-               const isDisabled = isSelf || isOwner || isPending;
+               const isDisabled = isSelf || isOwner;
                const roleLabel =
                   member.role === "admin"
                      ? "Alterar para membro"
@@ -460,8 +447,8 @@ function MembersContent() {
                searchPlaceholder="Pesquisar por nome ou e-mail..."
             >
                <Button
-                  disabled={isDraftActive}
-                  onClick={() => setIsDraftActive(true)}
+                  disabled={!organizationId}
+                  onClick={handleOpenInvite}
                   size="icon-sm"
                   tooltip="Convidar membro"
                   variant="outline"

@@ -1,9 +1,9 @@
-import { Button } from "@packages/ui/components/button";
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { AlertCircle, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
 import { useLocalStorage } from "foxact/use-local-storage";
+import { toast } from "sonner";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 import { PENDING_INVITATION_KEY } from "@/features/organization/constants";
@@ -22,7 +22,6 @@ function AcceptInvitationPage() {
       PENDING_INVITATION_KEY,
       null,
    );
-   const [error, setError] = useState<string | null>(null);
 
    useEffect(() => {
       const run = async () => {
@@ -41,7 +40,17 @@ function AcceptInvitationPage() {
          });
 
          if (err) {
-            setError(err.message ?? "Convite inválido ou expirado.");
+            toast.error(err.message ?? "Convite inválido ou expirado.");
+            const isRecipientMismatch =
+               err.status === 403 ||
+               /recipient|destinatário/i.test(err.message ?? "");
+            if (isRecipientMismatch) {
+               setPendingInvitation(invitationId);
+               await authClient.signOut();
+               router.navigate({ to: "/auth/sign-in" });
+               return;
+            }
+            router.navigate({ to: "/auth/callback" });
             return;
          }
 
@@ -50,23 +59,6 @@ function AcceptInvitationPage() {
 
       run();
    }, [invitationId, queryClient, router, setPendingInvitation]);
-
-   if (error) {
-      return (
-         <div className="flex min-h-screen items-center justify-center bg-background">
-            <div className="text-center flex flex-col gap-4 max-w-sm px-4">
-               <div className="flex justify-center">
-                  <AlertCircle className="size-12 text-destructive" />
-               </div>
-               <h1 className="text-xl font-semibold">Convite inválido</h1>
-               <p className="text-muted-foreground text-sm">{error}</p>
-               <Button asChild variant="outline">
-                  <Link to="/auth/sign-in">Ir para o login</Link>
-               </Button>
-            </div>
-         </div>
-      );
-   }
 
    return (
       <div className="flex min-h-screen items-center justify-center bg-background">

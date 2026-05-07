@@ -40,7 +40,7 @@
          "path": "./core/dbos"
       },
       {
-         "path": "./modules/classification"
+         "path": "./apps/web-e2e"
       }
    ]
 }
