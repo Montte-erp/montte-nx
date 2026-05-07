@@ -7,6 +7,7 @@ import {
 import { cn } from "@packages/ui/lib/utils";
 import { useMatches } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
+import { useEffect } from "react";
 import type * as React from "react";
 import { useJobNotifications } from "@/features/notifications/use-job-notifications";
 import { ContextPanelTabContent } from "../-context-panel/context-panel";
@@ -51,6 +52,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
    const isChatPage = matches.some((m) =>
       m.routeId.includes("/_dashboard/chat"),
    );
+   const hasDedicatedSidebar = isSettingsPage || isChatPage;
+
+   useEffect(() => {
+      if (hasDedicatedSidebar) setCollapsed(true);
+   }, [hasDedicatedSidebar]);
 
    return (
       <EarlyAccessProvider>
@@ -58,7 +64,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <SidebarProvider
                className="h-svh"
                onOpenChange={(open) => setCollapsed(!open)}
-               open={!isCollapsed && !isChatPage}
+               open={!isCollapsed}
             >
                <SidebarManager name="main" style={SIDEBAR_WIDTH_STYLE}>
                   <AppSidebar />
@@ -70,7 +76,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         <main
                            className={cn(
                               "relative flex-1 p-4",
-                              isSettingsPage || isChatPage
+                              hasDedicatedSidebar
                                  ? "overflow-hidden"
                                  : "overflow-y-auto",
                            )}
@@ -82,7 +88,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   <AutoBugReporter />
                   <MonthlySatisfactionSurvey />
                </SidebarInset>
-               {!isChatPage ? (
+               {!hasDedicatedSidebar ? (
                   <>
                      <InlineContextPanel />
                      <ContextPanelRail />
