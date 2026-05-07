@@ -1,5 +1,5 @@
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
-import { findOrgByOwnerEmail } from "../helpers/db";
+import { findFirstOrgByUserEmail } from "../helpers/db";
 import type { E2EUser } from "../helpers/auth";
 
 export type TestUser = E2EUser;
@@ -32,6 +32,15 @@ export async function signInViaApi(request: APIRequestContext, user: TestUser) {
    ).toBeTruthy();
 }
 
+function parseSlugsFromUrl(url: string): {
+   orgSlug: string;
+   teamSlug: string;
+} {
+   const match = new URL(url).pathname.match(/^\/([^/]+)\/([^/]+)\/home/);
+   if (!match) throw new Error(`Could not parse slugs from ${url}`);
+   return { orgSlug: match[1]!, teamSlug: match[2]! };
+}
+
 export async function completeOnboarding(page: Page, workspace: string) {
    await page.goto("/");
 
@@ -46,21 +55,13 @@ export async function completeOnboarding(page: Page, workspace: string) {
    await page.waitForURL(/\/[^/]+\/[^/]+\/home/, { timeout: 30_000 });
    await page.goto("/");
    await page.waitForURL(/\/[^/]+\/[^/]+\/home/, { timeout: 15_000 });
-   const match = new URL(page.url()).pathname.match(
-      /^\/([^/]+)\/([^/]+)\/home/,
-   );
-   if (!match) throw new Error(`Could not parse slugs from ${page.url()}`);
-   return { orgSlug: match[1]!, teamSlug: match[2]! };
+   return parseSlugsFromUrl(page.url());
 }
 
 async function signedInLandingSlugs(page: Page) {
    await page.goto("/");
    await page.waitForURL(/\/[^/]+\/[^/]+\/home/, { timeout: 15_000 });
-   const match = new URL(page.url()).pathname.match(
-      /^\/([^/]+)\/([^/]+)\/home/,
-   );
-   if (!match) throw new Error(`Could not parse slugs from ${page.url()}`);
-   return { orgSlug: match[1]!, teamSlug: match[2]! };
+   return parseSlugsFromUrl(page.url());
 }
 
 export async function ensureE2EUserSession(page: Page, user: TestUser) {
@@ -70,7 +71,7 @@ export async function ensureE2EUserSession(page: Page, user: TestUser) {
       return slugs;
    }
 
-   const existingOrg = await findOrgByOwnerEmail(user.email);
+   const existingOrg = await findFirstOrgByUserEmail(user.email);
    await signInViaApi(page.request, user);
 
    if (!existingOrg || !existingOrg.onboardingCompleted) {

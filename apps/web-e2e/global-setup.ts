@@ -1,6 +1,7 @@
-import { chromium, type FullConfig } from "@playwright/test";
+import { type Browser, chromium, type FullConfig } from "@playwright/test";
 import path from "node:path";
 import fs from "node:fs";
+import { fromPromise } from "neverthrow";
 import { ensureE2EUserSession } from "./features/auth";
 import { E2E_USER } from "./helpers/auth";
 
@@ -11,15 +12,9 @@ export const SESSION_FILE = path.join(
    "session.json",
 );
 
-export default async function globalSetup(config: FullConfig) {
-   fs.mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
+const toError = (e: unknown) => (e instanceof Error ? e : new Error(String(e)));
 
-   const baseURL =
-      config.projects[0]?.use.baseURL ??
-      process.env.E2E_BASE_URL ??
-      "http://localhost:3000";
-
-   const browser = await chromium.launch();
+async function runSetup(browser: Browser, baseURL: string) {
    const context = await browser.newContext({ baseURL });
    const page = await context.newPage();
 
@@ -30,6 +25,18 @@ export default async function globalSetup(config: FullConfig) {
       SESSION_FILE,
       JSON.stringify({ email: E2E_USER.email, orgSlug, teamSlug }, null, 2),
    );
+}
 
+export default async function globalSetup(config: FullConfig) {
+   fs.mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
+
+   const baseURL =
+      config.projects[0]?.use.baseURL ??
+      process.env.E2E_BASE_URL ??
+      "http://localhost:3000";
+
+   const browser = await chromium.launch();
+   const result = await fromPromise(runSetup(browser, baseURL), toError);
    await browser.close();
+   if (result.isErr()) throw result.error;
 }

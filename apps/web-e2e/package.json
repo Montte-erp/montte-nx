@@ -12,6 +12,7 @@
       "@tooling/typescript": "workspace:*",
       "drizzle-orm": "catalog:database",
       "pg": "catalog:database",
-      "typescript": "catalog:development"
+      "typescript": "catalog:development",
+      "zod": "catalog:validation"
    }
 }

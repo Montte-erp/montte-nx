@@ -42,7 +42,7 @@ export async function findUserByEmail(email: string) {
    return db().query.user.findFirst({ where: eq(userTable.email, email) });
 }
 
-export async function findOrgByOwnerEmail(email: string) {
+export async function findFirstOrgByUserEmail(email: string) {
    const u = await findUserByEmail(email);
    if (!u) return null;
    const member = await db().query.member.findFirst({
@@ -53,7 +53,7 @@ export async function findOrgByOwnerEmail(email: string) {
 }
 
 export async function clearOrganizationLogoForEmail(email: string) {
-   const org = await findOrgByOwnerEmail(email);
+   const org = await findFirstOrgByUserEmail(email);
    if (!org) return;
    await db()
       .update(organization)

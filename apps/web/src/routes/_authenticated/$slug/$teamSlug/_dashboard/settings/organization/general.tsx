@@ -112,6 +112,13 @@ function DisplayNameSection({
 
 // Logo Section
 
+function extractPublicUrl(metadata: unknown): string | null {
+   if (typeof metadata !== "object" || metadata === null) return null;
+   if (!("publicUrl" in metadata)) return null;
+   const url = metadata.publicUrl;
+   return typeof url === "string" ? url : null;
+}
+
 function LogoSection({
    organizationId,
    currentLogo,
@@ -131,7 +138,7 @@ function LogoSection({
       route: "organizationLogo",
       api: "/api/upload",
       onUploadComplete: ({ metadata }) => {
-         const publicUrl = (metadata as { publicUrl?: string }).publicUrl;
+         const publicUrl = extractPublicUrl(metadata);
          if (!publicUrl) {
             toast.error("Erro ao atualizar logo");
             return;

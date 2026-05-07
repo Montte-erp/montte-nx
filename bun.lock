@@ -170,6 +170,7 @@
         "drizzle-orm": "catalog:database",
         "pg": "catalog:database",
         "typescript": "catalog:development",
+        "zod": "catalog:validation",
       },
     },
     "apps/worker": {
