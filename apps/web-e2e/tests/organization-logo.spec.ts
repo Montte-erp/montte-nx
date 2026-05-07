@@ -3,8 +3,13 @@ import { expect, test } from "../fixtures";
 import { uploadOrganizationLogo } from "../features/upload";
 
 const FIXTURE = path.join(import.meta.dirname, "fixtures", "logo.png");
+const LOGO_URL_RX =
+   /\/api\/files\/organization-logos\/.+\.(png|jpg|jpeg|webp|gif)$/i;
 
-test("upload organization logo", async ({ page, e2eSession }) => {
+test("upload organization logo refletido em LogoSection e sidebar", async ({
+   page,
+   e2eSession,
+}) => {
    await page.goto(
       `/${e2eSession.orgSlug}/${e2eSession.teamSlug}/settings/organization/general`,
    );
@@ -13,4 +18,14 @@ test("upload organization logo", async ({ page, e2eSession }) => {
    expect(status, `upload route status ${status}`).toBe(200);
 
    await expect(page.getByText("Logo atualizado com sucesso!")).toBeVisible();
+
+   await page.reload();
+
+   const logoImages = page.locator(
+      `img[src*="/api/files/organization-logos/"]`,
+   );
+   await expect(logoImages).toHaveCount(2);
+   for (let i = 0; i < 2; i++) {
+      await expect(logoImages.nth(i)).toHaveAttribute("src", LOGO_URL_RX);
+   }
 });

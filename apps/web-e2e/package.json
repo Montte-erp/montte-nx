@@ -8,8 +8,11 @@
       "test:e2e:install": "playwright install --with-deps chromium"
    },
    "devDependencies": {
+      "@core/database": "workspace:*",
       "@playwright/test": "catalog:testing",
       "@tooling/typescript": "workspace:*",
+      "drizzle-orm": "catalog:database",
+      "pg": "catalog:database",
       "typescript": "catalog:development"
    }
 }

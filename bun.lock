@@ -163,8 +163,11 @@
     "apps/web-e2e": {
       "name": "web-e2e",
       "devDependencies": {
+        "@core/database": "workspace:*",
         "@playwright/test": "catalog:testing",
         "@tooling/typescript": "workspace:*",
+        "drizzle-orm": "catalog:database",
+        "pg": "catalog:database",
         "typescript": "catalog:development",
       },
     },
