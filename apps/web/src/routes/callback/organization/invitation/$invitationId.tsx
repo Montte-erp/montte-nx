@@ -11,6 +11,7 @@ import { PENDING_INVITATION_KEY } from "@/features/organization/constants";
 export const Route = createFileRoute(
    "/callback/organization/invitation/$invitationId",
 )({
+   head: () => ({ meta: [{ title: "Aceitar Convite — Montte" }] }),
    component: AcceptInvitationPage,
 });
 

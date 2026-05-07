@@ -362,7 +362,7 @@ function MembersContent() {
    const handleOpenInvite = useCallback(() => {
       if (!organizationId) return;
       openCredenza({
-         className: "sm:max-w-lg w-full gap-2 ",
+         className: "sm:max-w-lg w-full gap-2",
          renderChildren: () => (
             <InviteMembersForm
                organizationId={organizationId}

@@ -179,6 +179,7 @@ export function createAuth(deps: CreateAuthDeps) {
       plugins: [
          i18n({
             defaultLocale: "pt-BR",
+            detection: [],
             translations: { "pt-BR": ptBRTranslations },
          }),
 

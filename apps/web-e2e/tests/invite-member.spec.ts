@@ -45,13 +45,12 @@ test("envia convite via modal e atualiza tabela com group pendente", async ({
    await sendInviteViaModal(page, INVITEE_EMAIL);
 
    await expect
-      .poll(() => findPendingInvitationByEmail(INVITEE_EMAIL), {
-         timeout: 5_000,
-      })
-      .toBeTruthy();
-
-   const invite = await findPendingInvitationByEmail(INVITEE_EMAIL);
-   expect(invite?.status).toBe("pending");
+      .poll(
+         async () =>
+            (await findPendingInvitationByEmail(INVITEE_EMAIL))?.status,
+         { timeout: 5_000 },
+      )
+      .toBe("pending");
 });
 
 test("convite com sessão errada mostra erro em pt-BR e redireciona", async ({

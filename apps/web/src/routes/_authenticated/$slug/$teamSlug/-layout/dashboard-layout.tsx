@@ -52,15 +52,17 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       m.routeId.includes("/_dashboard/chat"),
    );
    const hasDedicatedSidebar = isSettingsPage || isChatPage;
-   const isCollapsed = hasDedicatedSidebar ? true : persistedCollapsed;
 
    return (
       <EarlyAccessProvider>
          <SidebarManagerProvider>
             <SidebarProvider
+               key={hasDedicatedSidebar ? "dedicated" : "default"}
                className="h-svh"
-               onOpenChange={(open) => setCollapsed(!open)}
-               open={!isCollapsed}
+               defaultOpen={hasDedicatedSidebar ? false : !persistedCollapsed}
+               onOpenChange={(open) => {
+                  if (!hasDedicatedSidebar) setCollapsed(!open);
+               }}
             >
                <SidebarManager name="main" style={SIDEBAR_WIDTH_STYLE}>
                   <AppSidebar />
