@@ -98,6 +98,26 @@ export async function findPendingInvitationByEmail(email: string) {
    });
 }
 
+export async function findInvitationByEmail(email: string) {
+   return db().query.invitation.findFirst({
+      where: (f, { eq }) => eq(f.email, email),
+      orderBy: (f, { desc }) => [desc(f.createdAt)],
+   });
+}
+
+export async function isUserMemberOfOrgByEmail(
+   email: string,
+   organizationId: string,
+) {
+   const u = await findUserByEmail(email);
+   if (!u) return false;
+   const m = await db().query.member.findFirst({
+      where: (f, { eq, and }) =>
+         and(eq(f.userId, u.id), eq(f.organizationId, organizationId)),
+   });
+   return !!m;
+}
+
 export async function deleteInvitationsByEmail(email: string) {
    await db().delete(invitationTable).where(eq(invitationTable.email, email));
 }

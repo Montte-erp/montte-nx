@@ -19,6 +19,8 @@ import { SettingsSidebar } from "./settings-sidebar";
 
 const SETTINGS_SIDEBAR_STYLE = {
    "--sidebar-width": "16rem",
+   "--sidebar": "var(--muted)",
+   "--sidebar-foreground": "var(--text-foreground)",
 } as React.CSSProperties;
 
 interface SettingsLayoutProps {
