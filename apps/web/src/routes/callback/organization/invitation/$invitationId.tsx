@@ -38,21 +38,6 @@ function AcceptInvitationPage() {
          const { data, error: err } =
             await authClient.organization.acceptInvitation({ invitationId });
 
-         if (data?.invitation?.organizationId) {
-            await authClient.organization.setActive({
-               organizationId: data.invitation.organizationId,
-            });
-            const teams = await authClient.organization.listTeams({
-               query: { organizationId: data.invitation.organizationId },
-            });
-            const firstTeam = teams.data?.[0];
-            if (firstTeam) {
-               await authClient.organization.setActiveTeam({
-                  teamId: firstTeam.id,
-               });
-            }
-         }
-
          if (err) {
             toast.error(err.message ?? "Convite inválido ou expirado.");
             const isRecipientMismatch =
@@ -66,6 +51,21 @@ function AcceptInvitationPage() {
             }
             router.navigate({ to: "/auth/callback" });
             return;
+         }
+
+         if (data?.invitation?.organizationId) {
+            await authClient.organization.setActive({
+               organizationId: data.invitation.organizationId,
+            });
+            const teams = await authClient.organization.listTeams({
+               query: { organizationId: data.invitation.organizationId },
+            });
+            const firstTeam = teams.data?.[0];
+            if (firstTeam) {
+               await authClient.organization.setActiveTeam({
+                  teamId: firstTeam.id,
+               });
+            }
          }
 
          router.navigate({ to: "/auth/callback" });

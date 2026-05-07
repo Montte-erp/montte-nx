@@ -75,39 +75,35 @@ export function InviteMembersForm({
       validators: { onSubmit: inviteSchema },
       onSubmit: async ({ value }) => {
          const { valid } = parseEmails(value.emails);
-         let succeeded = 0;
-         await Promise.all(
-            valid.map(
-               (email) =>
-                  new Promise<void>((resolve) => {
-                     authClient.organization.inviteMember({
-                        email,
-                        role: "member",
-                        organizationId,
-                        ...(teamId ? { teamId } : {}),
-                        fetchOptions: {
-                           onSuccess: () => {
-                              succeeded += 1;
-                              resolve();
-                           },
-                           onError: ({ error }) => {
-                              toast.error(`${email}: ${error.message}`);
-                              resolve();
-                           },
-                        },
-                     });
-                  }),
-            ),
+         const results = await Promise.allSettled(
+            valid.map(async (email) => {
+               const { error } = await authClient.organization.inviteMember({
+                  email,
+                  role: "member",
+                  organizationId,
+                  ...(teamId ? { teamId } : {}),
+               });
+               if (error) throw new Error(`${email}: ${error.message}`);
+               return email;
+            }),
          );
 
-         if (succeeded > 0) {
+         const fulfilledCount = results.filter(
+            (r) => r.status === "fulfilled",
+         ).length;
+
+         for (const r of results) {
+            if (r.status === "rejected") toast.error(String(r.reason.message));
+         }
+
+         if (fulfilledCount > 0) {
             toast.success(
-               succeeded === 1
+               fulfilledCount === 1
                   ? "Convite enviado!"
-                  : `${succeeded} convites enviados!`,
+                  : `${fulfilledCount} convites enviados!`,
             );
          }
-         if (succeeded === valid.length) onSuccess();
+         if (fulfilledCount === valid.length) onSuccess();
       },
    });
 
@@ -182,7 +178,7 @@ export function InviteMembersForm({
                      form="invite-members-form"
                      type="submit"
                   >
-                     {isSubmitting && <Spinner className="size-4 mr-2" />}
+                     {isSubmitting && <Spinner className="size-4" />}
                      Enviar convites
                   </Button>
                )}

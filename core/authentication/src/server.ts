@@ -18,7 +18,7 @@ import {
    twoFactor,
 } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
-import { ptBRTranslations } from "./translations/pt-br";
+import { ptBRTranslations } from "@core/authentication/translations/pt-br";
 import { z } from "zod";
 import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog } from "@core/posthog/server";

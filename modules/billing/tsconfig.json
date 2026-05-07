@@ -17,6 +17,7 @@
          "@core/redis/*": ["../../core/redis/src/*"],
          "@core/sse": ["../../core/sse/src/sse.ts"],
          "@core/transactional/*": ["../../core/transactional/src/*"],
+         "@core/utils/*": ["../../core/utils/src/*"],
          "@modules/billing/*": ["./src/*"]
       }
    },

@@ -7,7 +7,6 @@ import {
 import { cn } from "@packages/ui/lib/utils";
 import { useMatches } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
-import { useEffect } from "react";
 import type * as React from "react";
 import { useJobNotifications } from "@/features/notifications/use-job-notifications";
 import { ContextPanelTabContent } from "../-context-panel/context-panel";
@@ -44,7 +43,7 @@ function InlineContextPanel() {
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
    useJobNotifications();
 
-   const isCollapsed = useSidebarCollapsed();
+   const persistedCollapsed = useSidebarCollapsed();
    const matches = useMatches();
    const isSettingsPage = matches.some((m) =>
       m.routeId.includes("/_dashboard/settings"),
@@ -53,10 +52,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       m.routeId.includes("/_dashboard/chat"),
    );
    const hasDedicatedSidebar = isSettingsPage || isChatPage;
-
-   useEffect(() => {
-      if (hasDedicatedSidebar) setCollapsed(true);
-   }, [hasDedicatedSidebar]);
+   const isCollapsed = hasDedicatedSidebar ? true : persistedCollapsed;
 
    return (
       <EarlyAccessProvider>
