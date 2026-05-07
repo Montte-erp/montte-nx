@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { API_ERROR_THRESHOLD, API_ERROR_WINDOW_MS } from "../constants";
+import { API_ERROR_THRESHOLD, API_ERROR_WINDOW_MS } from "./constants";
 
 export function useApiErrorTracker() {
    const queryClient = useQueryClient();

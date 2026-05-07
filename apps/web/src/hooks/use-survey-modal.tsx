@@ -1,6 +1,6 @@
 import { Dialog, DialogContent } from "@packages/ui/components/dialog";
 import { createStore, useStore, shallow } from "@tanstack/react-store";
-import { SurveyModalContent } from "@/features/feedback/ui/survey-modal-content";
+import { SurveyModalContent } from "@/components/feedback/survey-modal-content";
 
 interface SurveyModalState {
    isOpen: boolean;
