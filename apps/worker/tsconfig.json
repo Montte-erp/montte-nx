@@ -2,7 +2,6 @@
    "extends": "@tooling/typescript/core.json",
    "compilerOptions": {
       "composite": false,
-      "jsx": "react-jsx",
       "noEmit": true,
       "paths": {
          "@core/database": ["../../core/database/src/index.ts"],

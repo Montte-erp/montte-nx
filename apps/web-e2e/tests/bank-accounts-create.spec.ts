@@ -160,19 +160,21 @@ test("filtra por tipo e exclui via alert dialog", async ({
 
    // criar checking
    await page.getByRole("button", { name: "Nova Conta" }).click();
-   await page.getByLabel("Nome").fill(checkingName);
-   await page.getByPlaceholder("Digite o nome ou código").fill("itau");
-   await page.getByRole("option").first().click();
-   await page.getByRole("button", { name: "Criar conta" }).click();
+   const checkingSheet = page.getByRole("dialog");
+   await checkingSheet.getByLabel("Nome").fill(checkingName);
+   await checkingSheet.getByPlaceholder("Digite o nome ou código").fill("itau");
+   await checkingSheet.getByRole("option").first().click();
+   await checkingSheet.getByRole("button", { name: "Criar conta" }).click();
    await expect(page.getByRole("cell", { name: checkingName })).toBeVisible();
    await rememberCreatedAccount(e2eSession, checkingName);
 
    // criar caixa
    await page.getByRole("button", { name: "Nova Conta" }).click();
-   await page.getByLabel("Nome").fill(cashName);
-   await page.getByLabel("Tipo").click();
+   const cashSheet = page.getByRole("dialog");
+   await cashSheet.getByLabel("Nome").fill(cashName);
+   await cashSheet.getByLabel("Tipo").click();
    await page.getByRole("option", { name: "Caixa Físico" }).click();
-   await page.getByRole("button", { name: "Criar conta" }).click();
+   await cashSheet.getByRole("button", { name: "Criar conta" }).click();
    await expect(page.getByRole("cell", { name: cashName })).toBeVisible();
    await rememberCreatedAccount(e2eSession, cashName);
 
@@ -205,10 +207,11 @@ test("busca server-side por nome e exclusão em massa", async ({
 
    for (const name of [a, b]) {
       await page.getByRole("button", { name: "Nova Conta" }).click();
-      await page.getByLabel("Nome").fill(name);
-      await page.getByLabel("Tipo").click();
+      const sheet = page.getByRole("dialog");
+      await sheet.getByLabel("Nome").fill(name);
+      await sheet.getByLabel("Tipo").click();
       await page.getByRole("option", { name: "Caixa Físico" }).click();
-      await page.getByRole("button", { name: "Criar conta" }).click();
+      await sheet.getByRole("button", { name: "Criar conta" }).click();
       await expect(page.getByRole("cell", { name })).toBeVisible();
       await rememberCreatedAccount(e2eSession, name);
    }
@@ -233,11 +236,7 @@ test("empty state aparece quando não há contas", async ({
 }) => {
    await gotoBankAccounts(page, e2eSession);
 
-   const hasRows = await page
-      .getByRole("cell")
-      .first()
-      .isVisible()
-      .catch(() => false);
+   const hasRows = await page.getByRole("cell").first().isVisible();
    if (hasRows) test.skip(true, "team já tem contas; pular empty state");
 
    await expect(page.getByText("Nenhuma conta bancária")).toBeVisible();

@@ -49,7 +49,11 @@ type BankAccountType = (typeof BANK_ACCOUNT_TYPES)[number];
 const BANK_TYPES = ["checking", "savings", "investment", "payment"] as const;
 type BankType = (typeof BANK_TYPES)[number];
 const isBankType = (t: BankAccountType): t is BankType =>
-   (BANK_TYPES as readonly string[]).includes(t);
+   BANK_TYPES.some((type) => type === t);
+
+function parseBankAccountType(value: string): BankAccountType | undefined {
+   return BANK_ACCOUNT_TYPES.find((type) => type === value);
+}
 
 const TYPE_OPTIONS: {
    value: BankAccountType;
@@ -259,9 +263,11 @@ function BankAccountFormSheetContent() {
                      <FieldLabel htmlFor={field.name}>Tipo</FieldLabel>
                      <Select
                         value={field.state.value}
-                        onValueChange={(v) =>
-                           field.handleChange(v as BankAccountType)
-                        }
+                        onValueChange={(v) => {
+                           const parsed = parseBankAccountType(v);
+                           if (!parsed) return;
+                           field.handleChange(parsed);
+                        }}
                      >
                         <SelectTrigger id={field.name} name={field.name}>
                            <SelectValue />

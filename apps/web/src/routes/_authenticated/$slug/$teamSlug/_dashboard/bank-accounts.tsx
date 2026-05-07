@@ -201,13 +201,20 @@ function BankAccountsList() {
                   "Arquivo contém tipo de conta inválido. Use checking, savings, investment, payment ou cash.",
                );
             }
+            const accounts = rows.flatMap((r) => {
+               const type = resolveType(r.type);
+               if (!type) return [];
+               return [
+                  {
+                     name: String(r.name ?? "").trim(),
+                     type,
+                     color: "#6366f1",
+                     initialBalance: String(r.initialBalance ?? "0"),
+                  },
+               ];
+            });
             await bulkCreateMutation.mutateAsync({
-               accounts: rows.map((r) => ({
-                  name: String(r.name ?? "").trim(),
-                  type: resolveType(r.type) ?? "checking",
-                  color: "#6366f1",
-                  initialBalance: String(r.initialBalance ?? "0"),
-               })),
+               accounts,
             });
          },
       }),
