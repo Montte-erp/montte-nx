@@ -48,7 +48,9 @@ export async function completeOnboarding(page: Page, workspace: string) {
       page.getByRole("button", { name: /Organizar meu financeiro/ }),
    ).toBeVisible({ timeout: 15_000 });
    await page.getByRole("button", { name: /Organizar meu financeiro/ }).click();
-   await page.getByRole("button", { name: "Continuar" }).click();
+   const continueButton = page.getByRole("button", { name: "Continuar" });
+   await expect(continueButton).toBeEnabled();
+   await continueButton.click();
 
    await page.getByRole("textbox", { name: "Nome da empresa" }).fill(workspace);
    await page.getByRole("button", { name: "Concluir" }).click();
@@ -71,7 +73,9 @@ export async function createAdditionalOrganization(
    await page
       .getByRole("button", { name: /Gerenciar clientes e serviços/ })
       .click();
-   await page.getByRole("button", { name: "Continuar" }).click();
+   const continueButton = page.getByRole("button", { name: "Continuar" });
+   await expect(continueButton).toBeEnabled();
+   await continueButton.click();
 
    await page.getByRole("textbox", { name: "Nome da empresa" }).fill(workspace);
    await page.getByRole("button", { name: "Concluir" }).click();
