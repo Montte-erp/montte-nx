@@ -20,14 +20,14 @@ import viteTsConfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
-  plugins: [
-    viteTsConfigPaths({
-      projects: ["./tsconfig.json"],
-    }),
-    tailwindcss(),
-    tanstackStart(),
-    viteReact(),
-  ],
+   plugins: [
+      viteTsConfigPaths({
+         projects: ["./tsconfig.json"],
+      }),
+      tailwindcss(),
+      tanstackStart(),
+      viteReact(),
+   ],
 });
 ```
 
@@ -39,11 +39,11 @@ import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 
 export const getRouter = () => {
-  return createRouter({
-    routeTree,
-    scrollRestoration: true,
-    defaultPreloadStaleTime: 0,
-  });
+   return createRouter({
+      routeTree,
+      scrollRestoration: true,
+      defaultPreloadStaleTime: 0,
+   });
 };
 ```
 
@@ -58,13 +58,13 @@ import { MyRuntimeProvider } from "@/components/MyRuntimeProvider";
 export const Route = createFileRoute("/")({ component: App });
 
 function App() {
-  return (
-    <MyRuntimeProvider>
-      <main className="h-dvh">
-        <Thread />
-      </main>
-    </MyRuntimeProvider>
-  );
+   return (
+      <MyRuntimeProvider>
+         <main className="h-dvh">
+            <Thread />
+         </main>
+      </MyRuntimeProvider>
+   );
 }
 ```
 
@@ -74,77 +74,102 @@ function App() {
 // src/components/MyRuntimeProvider.tsx
 import { useState, type ReactNode } from "react";
 import {
-  useExternalStoreRuntime,
-  ThreadMessageLike,
-  AppendMessage,
-  AssistantRuntimeProvider,
+   useExternalStoreRuntime,
+   ThreadMessageLike,
+   AppendMessage,
+   AssistantRuntimeProvider,
 } from "@assistant-ui/react";
 
 type MyMessage = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
+   id: string;
+   role: "user" | "assistant";
+   content: string;
 };
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
+async function* fetchStream(messages: MyMessage[]): AsyncGenerator<string> {
+   const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages }),
+   });
+
+   if (!response.body) {
+      throw new Error(
+         "Expected /api/chat to return a streaming response body.",
+      );
+   }
+
+   const reader = response.body.getReader();
+   const decoder = new TextDecoder();
+
+   while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      yield decoder.decode(value, { stream: true });
+   }
+}
+
 const convertMessage = (message: MyMessage): ThreadMessageLike => ({
-  id: message.id,
-  role: message.role,
-  content: [{ type: "text", text: message.content }],
+   id: message.id,
+   role: message.role,
+   content: [{ type: "text", text: message.content }],
 });
 
 export function MyRuntimeProvider({ children }: { children: ReactNode }) {
-  const [isRunning, setIsRunning] = useState(false);
-  const [messages, setMessages] = useState<MyMessage[]>([]);
+   const [isRunning, setIsRunning] = useState(false);
+   const [messages, setMessages] = useState<MyMessage[]>([]);
 
-  const onNew = async (message: AppendMessage) => {
-    if (message.content[0]?.type !== "text")
-      throw new Error("Only text messages are supported");
+   const onNew = async (message: AppendMessage) => {
+      if (message.content[0]?.type !== "text")
+         throw new Error("Only text messages are supported");
 
-    const input = message.content[0].text;
-    const userMessage: MyMessage = {
-      id: generateId(),
-      role: "user",
-      content: input,
-    };
+      const input = message.content[0].text;
+      const userMessage: MyMessage = {
+         id: generateId(),
+         role: "user",
+         content: input,
+      };
 
-    setMessages((prev) => [...prev, userMessage]);
-    setIsRunning(true);
+      setMessages((prev) => [...prev, userMessage]);
+      setIsRunning(true);
 
-    const assistantId = generateId();
-    setMessages((prev) => [
-      ...prev,
-      { id: assistantId, role: "assistant", content: "" },
-    ]);
+      const assistantId = generateId();
+      setMessages((prev) => [
+         ...prev,
+         { id: assistantId, role: "assistant", content: "" },
+      ]);
 
-    try {
-      // Your streaming implementation here
-      const stream = await fetchStream([...messages, userMessage]);
-      for await (const chunk of stream) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId ? { ...m, content: m.content + chunk } : m
-          )
-        );
+      try {
+         // Your streaming implementation here
+         const stream = await fetchStream([...messages, userMessage]);
+         for await (const chunk of stream) {
+            setMessages((prev) =>
+               prev.map((m) =>
+                  m.id === assistantId
+                     ? { ...m, content: m.content + chunk }
+                     : m,
+               ),
+            );
+         }
+      } finally {
+         setIsRunning(false);
       }
-    } finally {
-      setIsRunning(false);
-    }
-  };
+   };
 
-  const runtime = useExternalStoreRuntime({
-    isRunning,
-    messages,
-    convertMessage,
-    onNew,
-  });
+   const runtime = useExternalStoreRuntime({
+      isRunning,
+      messages,
+      convertMessage,
+      onNew,
+   });
 
-  return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      {children}
-    </AssistantRuntimeProvider>
-  );
+   return (
+      <AssistantRuntimeProvider runtime={runtime}>
+         {children}
+      </AssistantRuntimeProvider>
+   );
 }
 ```
 
@@ -152,12 +177,12 @@ export function MyRuntimeProvider({ children }: { children: ReactNode }) {
 
 ```json
 {
-  "@assistant-ui/react": "latest",
-  "@tanstack/react-router": "^1.162.9",
-  "@tanstack/react-start": "^1.162.9",
-  "@tailwindcss/vite": "^4.2.1",
-  "react": "^19.2.4",
-  "vite": "^7.3.1"
+   "@assistant-ui/react": "^0.12.28",
+   "@tanstack/react-router": "^1.162.9",
+   "@tanstack/react-start": "^1.162.9",
+   "@tailwindcss/vite": "^4.2.1",
+   "react": "^19.2.4",
+   "vite": "^7.3.1"
 }
 ```
 

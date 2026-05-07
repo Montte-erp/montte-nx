@@ -71,11 +71,11 @@ export function Composer({
                <ComposerPrimitive.Send asChild>
                   <Button
                      aria-label="Enviar"
-                     className="size-8 rounded-md"
+                     className="h-8 w-8 rounded-md"
                      size="icon"
                      type="submit"
                   >
-                     <ArrowRight />
+                     <ArrowRight className="size-4" />
                   </Button>
                </ComposerPrimitive.Send>
             </div>
@@ -151,7 +151,10 @@ function ScopePicker() {
 
 function EffortPicker() {
    return (
-      <QueryBoundary fallback={<Skel />} errorTitle="Agent settings">
+      <QueryBoundary
+         fallback={<Skel />}
+         errorTitle="Erro ao carregar configurações da Montte AI"
+      >
          <EffortPickerContent />
       </QueryBoundary>
    );

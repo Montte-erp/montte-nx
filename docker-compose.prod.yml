@@ -11,7 +11,7 @@ name: montte
 
 services:
    postgres:
-      image: paradedb/paradedb:latest
+      image: postgres:latest
       command: postgres -c wal_level=logical
       restart: unless-stopped
       environment:
@@ -19,7 +19,7 @@ services:
          POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.production}
          POSTGRES_DB: ${POSTGRES_DB:-montte}
       volumes:
-         - pgdata:/var/lib/postgresql
+         - pgdata:/var/lib/postgresql/data
       healthcheck:
          test:
             [

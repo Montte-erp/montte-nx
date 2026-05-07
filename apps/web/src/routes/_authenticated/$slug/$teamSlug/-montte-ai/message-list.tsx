@@ -241,8 +241,8 @@ function ChainOfThoughtGroup({
       >
          <CollapsibleTrigger className="flex w-full items-center gap-2 p-2 text-left text-foreground/90 hover:bg-muted/30">
             <ChevronDown className="size-4 shrink-0 transition-transform group-data-[state=closed]/cot:-rotate-90" />
-            <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-               <Brain className="size-3" />
+            <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+               <Brain className="size-2" />
             </span>
             <span className="flex-1 font-medium">Raciocínio</span>
             {running ? (
@@ -270,8 +270,8 @@ function ReasoningGroup({
          aria-busy={running}
          className="flex gap-2 rounded-lg p-2 text-muted-foreground hover:bg-muted/30"
       >
-         <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-muted">
-            <Brain className="size-3" />
+         <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-muted">
+            <Brain className="size-2" />
          </span>
          <div className="min-w-0 flex-1 italic leading-relaxed">{children}</div>
       </div>
@@ -312,6 +312,13 @@ function ToolPart({
       approvalApproved === undefined;
    const running =
       toolState === "awaiting-input" || toolState === "input-streaming";
+   const completed =
+      toolState !== "approval-requested" &&
+      (part.result !== undefined ||
+         part.artifact !== undefined ||
+         approvalApproved === true ||
+         toolState === "completed" ||
+         part.status.type === "complete");
    const label = TOOL_LABELS[part.toolName] ?? "Executando ferramenta";
 
    return (
@@ -319,16 +326,20 @@ function ToolPart({
          <div className="flex min-w-0 items-center gap-2">
             <span
                className={cn(
-                  "inline-flex size-4 shrink-0 items-center justify-center rounded-full",
+                  "inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full",
                   running
                      ? "bg-muted text-muted-foreground"
-                     : "bg-emerald-500/10 text-emerald-500",
+                     : completed
+                       ? "bg-emerald-500/10 text-emerald-500"
+                       : "bg-muted text-muted-foreground",
                )}
             >
                {running ? (
-                  <Loader2 className="size-3 animate-spin" />
+                  <Loader2 className="size-2 animate-spin" />
+               ) : completed ? (
+                  <Check className="size-2" />
                ) : (
-                  <Check className="size-3" />
+                  <Wrench className="size-2" />
                )}
             </span>
             <Wrench className="size-4 shrink-0" />
@@ -386,22 +397,22 @@ function MessageActions({
          <ActionBarPrimitive.Copy asChild>
             <Button
                aria-label="Copiar"
-               className="size-7 text-muted-foreground hover:text-foreground"
+               className="h-7 w-7 text-muted-foreground hover:text-foreground"
                size="icon"
                variant="ghost"
             >
-               <Copy className="size-3.5" />
+               <Copy className="size-4" />
             </Button>
          </ActionBarPrimitive.Copy>
          {role === "user" ? (
             <ActionBarPrimitive.Edit asChild>
                <Button
                   aria-label="Editar"
-                  className="size-7 text-muted-foreground hover:text-foreground"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
                   size="icon"
                   variant="ghost"
                >
-                  <Pencil className="size-3.5" />
+                  <Pencil className="size-4" />
                </Button>
             </ActionBarPrimitive.Edit>
          ) : null}
@@ -410,44 +421,44 @@ function MessageActions({
                <ActionBarPrimitive.FeedbackPositive asChild>
                   <Button
                      aria-label="Gostei da mensagem"
-                     className="size-7 text-muted-foreground hover:text-emerald-500 data-[submitted=true]:text-emerald-500"
+                     className="h-7 w-7 text-muted-foreground hover:text-emerald-500 data-[submitted=true]:text-emerald-500"
                      size="icon"
                      variant="ghost"
                   >
-                     <ThumbsUp className="size-3.5" />
+                     <ThumbsUp className="size-4" />
                   </Button>
                </ActionBarPrimitive.FeedbackPositive>
                <ActionBarPrimitive.FeedbackNegative asChild>
                   <Button
                      aria-label="Não gostei da mensagem"
-                     className="size-7 text-muted-foreground hover:text-destructive data-[submitted=true]:text-destructive"
+                     className="h-7 w-7 text-muted-foreground hover:text-destructive data-[submitted=true]:text-destructive"
                      size="icon"
                      variant="ghost"
                   >
-                     <ThumbsDown className="size-3.5" />
+                     <ThumbsDown className="size-4" />
                   </Button>
                </ActionBarPrimitive.FeedbackNegative>
                <ActionBarPrimitive.Reload asChild>
                   <Button
                      aria-label="Regenerar resposta"
-                     className="size-7 text-muted-foreground hover:text-foreground"
+                     className="h-7 w-7 text-muted-foreground hover:text-foreground"
                      size="icon"
                      variant="ghost"
                   >
-                     <RefreshCw className="size-3.5" />
+                     <RefreshCw className="size-4" />
                   </Button>
                </ActionBarPrimitive.Reload>
             </>
          ) : null}
          <Button
             aria-label="Excluir mensagem"
-            className="size-7 text-muted-foreground hover:text-destructive"
+            className="h-7 w-7 text-muted-foreground hover:text-destructive"
             disabled={isRunning}
             onClick={() => void deleteMessage(messageId)}
             size="icon"
             variant="ghost"
          >
-            <Trash2 className="size-3.5" />
+            <Trash2 className="size-4" />
          </Button>
       </ActionBarPrimitive.Root>
    );

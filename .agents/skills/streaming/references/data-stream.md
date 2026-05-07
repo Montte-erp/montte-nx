@@ -15,18 +15,18 @@ import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+   const { messages } = await req.json();
 
-  const result = streamText({
-    model: openai("gpt-4o"),
-    messages,
-  });
+   const result = streamText({
+      model: openai("gpt-4o"),
+      messages,
+   });
 
-  // Preferred for assistant-ui
-  return result.toUIMessageStreamResponse();
+   // Preferred for assistant-ui
+   return result.toUIMessageStreamResponse();
 
-  // Or use toDataStreamResponse() for raw Data Stream
-  // return result.toDataStreamResponse();
+   // Or use toDataStreamResponse() for raw Data Stream
+   // return result.toDataStreamResponse();
 }
 ```
 
@@ -36,23 +36,23 @@ export async function POST(req: Request) {
 import { createAssistantStreamResponse } from "assistant-stream";
 
 export async function POST(req: Request) {
-  return createAssistantStreamResponse(async (stream) => {
-    // Text
-    stream.appendText("Hello ");
-    stream.appendText("world!");
+   return createAssistantStreamResponse(async (stream) => {
+      // Text
+      stream.appendText("Hello ");
+      stream.appendText("world!");
 
-    // Tool call
-    const tool = stream.addToolCallPart({
-      toolCallId: "call_123",
-      toolName: "search",
-    });
-    tool.argsText.append('{"query":"weather NYC"}');
-    tool.argsText.close();
-    tool.setResponse({ result: { temperature: 22 } });
+      // Tool call
+      const tool = stream.addToolCallPart({
+         toolCallId: "call_123",
+         toolName: "search",
+      });
+      tool.argsText.append('{"query":"weather NYC"}');
+      tool.argsText.close();
+      tool.setResponse({ result: { temperature: 22 } });
 
-    // Finish
-    stream.close();
-  });
+      // Finish
+      stream.close();
+   });
 }
 ```
 
@@ -64,8 +64,8 @@ import { AssistantStream, DataStreamDecoder } from "assistant-stream";
 const stream = AssistantStream.fromResponse(response, new DataStreamDecoder());
 
 for await (const chunk of stream) {
-  if (chunk.type === "text-delta") console.log("Text:", chunk.textDelta);
-  if (chunk.type === "result") console.log("Result:", chunk.result);
+   if (chunk.type === "text-delta") console.log("Text:", chunk.textDelta);
+   if (chunk.type === "result") console.log("Result:", chunk.result);
 }
 ```
 
@@ -76,9 +76,9 @@ for await (const chunk of stream) {
 - `appendSource({ sourceType: "url", id, url, title?, parentId? })`
 - `appendFile({ data, mimeType })`
 - `addToolCallPart({ toolCallId, toolName, parentId? })` → controller with:
-  - `argsText.append(text)`, `argsText.close()`
-  - `setResponse({ result, artifact?, isError? })`
-  - `close()`
+   - `argsText.append(text)`, `argsText.close()`
+   - `setResponse({ result, artifact?, isError? })`
+   - `close()`
 - `close()` to end the message
 
 ## Event Types
@@ -98,23 +98,23 @@ Decoded `AssistantStreamChunk` shapes:
 import { createAssistantStreamResponse } from "assistant-stream";
 
 async function streamWithTools(req: Request) {
-  return createAssistantStreamResponse(async (stream) => {
-    stream.appendText("Let me search for that...\n\n");
+   return createAssistantStreamResponse(async (stream) => {
+      stream.appendText("Let me search for that...\n\n");
 
-    const toolCallId = "call_" + Date.now();
-    const tool = stream.addToolCallPart({
-      toolCallId,
-      toolName: "search",
-    });
-    tool.argsText.append('{"query":"weather NYC"}');
-    tool.argsText.close();
+      const toolCallId = "call_" + Date.now();
+      const tool = stream.addToolCallPart({
+         toolCallId,
+         toolName: "search",
+      });
+      tool.argsText.append('{"query":"weather NYC"}');
+      tool.argsText.close();
 
-    const result = await searchWeather("NYC");
-    tool.setResponse({ result });
+      const result = await searchWeather("NYC");
+      tool.setResponse({ result });
 
-    stream.appendText(`The current weather in NYC is ${result.temp}°F`);
-    stream.close();
-  });
+      stream.appendText(`The current weather in NYC is ${result.temp}°F`);
+      stream.close();
+   });
 }
 ```
 
@@ -122,13 +122,14 @@ async function streamWithTools(req: Request) {
 
 Data Stream uses Server-Sent Events (SSE) format:
 
-```
+```txt
 0:"Hello "
 0:"world!"
 d:{"finishReason":"stop","usage":{"promptTokens":0,"completionTokens":0}}
 ```
 
 Each line:
+
 - `0:` - Text content
 - `9:` - Tool call
 - `b:` - Tool call start
@@ -144,22 +145,25 @@ Each line:
 ## Integration with useChatRuntime
 
 ```tsx
-import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/react-ai-sdk";
+import {
+   useChatRuntime,
+   AssistantChatTransport,
+} from "@assistant-ui/react-ai-sdk";
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { Thread } from "@/components/assistant-ui/thread";
 
 function Chat() {
-  const runtime = useChatRuntime({
-    transport: new AssistantChatTransport({
-      api: "/api/chat",
-    }),
-    // Data Stream format is automatically handled
-  });
+   const runtime = useChatRuntime({
+      transport: new AssistantChatTransport({
+         api: "/api/chat",
+      }),
+      // Data Stream format is automatically handled
+   });
 
-  return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      <Thread />
-    </AssistantRuntimeProvider>
-  );
+   return (
+      <AssistantRuntimeProvider runtime={runtime}>
+         <Thread />
+      </AssistantRuntimeProvider>
+   );
 }
 ```

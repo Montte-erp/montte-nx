@@ -19,7 +19,7 @@ The `assistant-stream` package handles streaming from AI backends.
 
 ## When to Use
 
-```
+```txt
 Using Vercel AI SDK?
 ├─ Yes → toUIMessageStreamResponse() (no assistant-stream needed)
 └─ No → assistant-stream for custom backends
@@ -37,18 +37,21 @@ npm install assistant-stream
 import { createAssistantStreamResponse } from "assistant-stream";
 
 export async function POST(req: Request) {
-  return createAssistantStreamResponse(async (stream) => {
-    stream.appendText("Hello ");
-    stream.appendText("world!");
+   return createAssistantStreamResponse(async (stream) => {
+      stream.appendText("Hello ");
+      stream.appendText("world!");
 
-    // Tool call example
-    const tool = stream.addToolCallPart({ toolCallId: "1", toolName: "get_weather" });
-    tool.argsText.append('{"city":"NYC"}');
-    tool.argsText.close();
-    tool.setResponse({ result: { temperature: 22 } });
+      // Tool call example
+      const tool = stream.addToolCallPart({
+         toolCallId: "1",
+         toolName: "get_weather",
+      });
+      tool.argsText.append('{"city":"NYC"}');
+      tool.argsText.close();
+      tool.setResponse({ result: { temperature: 22 } });
 
-    stream.close();
-  });
+      stream.close();
+   });
 }
 ```
 
@@ -60,32 +63,32 @@ export async function POST(req: Request) {
 import { useLocalRuntime } from "@assistant-ui/react";
 
 const runtime = useLocalRuntime({
-  model: {
-    async *run({ messages, abortSignal }) {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        body: JSON.stringify({ messages }),
-        signal: abortSignal,
-      });
+   model: {
+      async *run({ messages, abortSignal }) {
+         const response = await fetch("/api/chat", {
+            method: "POST",
+            body: JSON.stringify({ messages }),
+            signal: abortSignal,
+         });
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
+         const reader = response.body?.getReader();
+         const decoder = new TextDecoder();
+         let buffer = "";
 
-      while (reader) {
-        const { done, value } = await reader.read();
-        if (done) break;
+         while (reader) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split("\n");
-        buffer = parts.pop() ?? "";
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split("\n");
+            buffer = parts.pop() ?? "";
 
-        for (const chunk of parts.filter(Boolean)) {
-          yield { content: [{ type: "text", text: chunk }] };
-        }
-      }
-    },
-  },
+            for (const chunk of parts.filter(Boolean)) {
+               yield { content: [{ type: "text", text: chunk }] };
+            }
+         }
+      },
+   },
 });
 ```
 
@@ -96,7 +99,7 @@ import { AssistantStream, DataStreamDecoder } from "assistant-stream";
 
 const stream = AssistantStream.fromResponse(response, new DataStreamDecoder());
 for await (const event of stream) {
-  console.log("Event:", JSON.stringify(event, null, 2));
+   console.log("Event:", JSON.stringify(event, null, 2));
 }
 ```
 
@@ -111,12 +114,15 @@ for await (const event of stream) {
 ## Common Gotchas
 
 **Stream not updating UI**
+
 - Check Content-Type is `text/event-stream`
 - Check for CORS errors
 
 **Tool calls not rendering**
+
 - `addToolCallPart` needs both `toolCallId` and `toolName`
 - Register tool UI with `makeAssistantToolUI`
 
 **Partial text not showing**
+
 - Use `text-delta` events for streaming

@@ -19,7 +19,7 @@ license: MIT
 
 ## Runtime Hierarchy
 
-```
+```text
 AssistantRuntime
 ├── ThreadListRuntime (thread management)
 │   ├── ThreadListItemRuntime (per-thread item)
@@ -36,27 +36,31 @@ AssistantRuntime
 import { useAui, useAuiState, useAuiEvent } from "@assistant-ui/react";
 
 function ChatControls() {
-  const api = useAui();
-  const messages = useAuiState(s => s.thread.messages);
-  const isRunning = useAuiState(s => s.thread.isRunning);
+   const api = useAui();
+   const messages = useAuiState((s) => s.thread.messages);
+   const isRunning = useAuiState((s) => s.thread.isRunning);
 
-  useAuiEvent("composer.send", (e) => {
-    console.log("Sent in thread:", e.threadId);
-  });
+   useAuiEvent("composer.send", (e) => {
+      console.log("Sent in thread:", e.threadId);
+   });
 
-  return (
-    <div>
-      <button onClick={() => api.thread().append({
-        role: "user",
-        content: [{ type: "text", text: "Hello!" }],
-      })}>
-        Send
-      </button>
-      {isRunning && (
-        <button onClick={() => api.thread().cancelRun()}>Cancel</button>
-      )}
-    </div>
-  );
+   return (
+      <div>
+         <button
+            onClick={() =>
+               api.thread().append({
+                  role: "user",
+                  content: [{ type: "text", text: "Hello!" }],
+               })
+            }
+         >
+            Send
+         </button>
+         {isRunning && (
+            <button onClick={() => api.thread().cancelRun()}>Cancel</button>
+         )}
+      </div>
+   );
 }
 ```
 
@@ -73,13 +77,13 @@ thread.append({ role: "user", content: [{ type: "text", text: "Hello" }] });
 thread.cancelRun();
 
 // Get current state
-const state = thread.getState();  // { messages, isRunning, ... }
+const state = thread.getState(); // { messages, isRunning, ... }
 ```
 
 ## Message Operations
 
 ```tsx
-const message = api.thread().message(0);  // By index
+const message = api.thread().message(0); // By index
 
 message.edit({ role: "user", content: [{ type: "text", text: "Updated" }] });
 message.reload();
@@ -91,7 +95,7 @@ message.reload();
 useAuiEvent("thread.runStart", () => {});
 useAuiEvent("thread.runEnd", () => {});
 useAuiEvent("composer.send", ({ threadId }) => {
-  console.log("Sent in thread:", threadId);
+   console.log("Sent in thread:", threadId);
 });
 useAuiEvent("thread.modelContextUpdate", () => {});
 ```
@@ -99,7 +103,7 @@ useAuiEvent("thread.modelContextUpdate", () => {});
 ## Capabilities
 
 ```tsx
-const caps = useAuiState(s => s.thread.capabilities);
+const caps = useAuiState((s) => s.thread.capabilities);
 // { cancel, edit, reload, copy, speak, attachments }
 ```
 
@@ -128,11 +132,14 @@ api.thread().message(index).reload();
 ## Common Gotchas
 
 **"Cannot read property of undefined"**
+
 - Ensure hooks are called inside `AssistantRuntimeProvider`
 
 **State not updating**
+
 - Use selectors with `useAuiState` to prevent unnecessary re-renders
 
 **Messages array empty**
+
 - Check runtime is configured
 - Verify API response format

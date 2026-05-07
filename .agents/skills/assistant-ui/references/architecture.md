@@ -15,11 +15,11 @@ Internal implementations that manage state:
 ```typescript
 // Internal - not directly used
 interface ThreadRuntimeCore {
-  readonly messages: readonly ThreadMessage[];
-  readonly isRunning: boolean;
-  append(message: AppendMessage): void;
-  cancelRun(): void;
-  subscribe(callback: () => void): Unsubscribe;
+   readonly messages: readonly ThreadMessage[];
+   readonly isRunning: boolean;
+   append(message: AppendMessage): void;
+   cancelRun(): void;
+   subscribe(callback: () => void): Unsubscribe;
 }
 ```
 
@@ -29,25 +29,25 @@ Public API exposed via hooks:
 
 ```typescript
 type AssistantRuntime = {
-  thread(): ThreadRuntime;
-  threads(): ThreadListRuntime;
-  getState(): AssistantState;
-  subscribe(callback: () => void): Unsubscribe;
+   thread(): ThreadRuntime;
+   threads(): ThreadListRuntime;
+   getState(): AssistantState;
+   subscribe(callback: () => void): Unsubscribe;
 };
 
 type ThreadRuntime = {
-  getState(): ThreadState;
-  append(message: AppendMessage): void;
-  cancelRun(): void;
-  message(index: number): MessageRuntime;
-  composer(): ComposerRuntime;
+   getState(): ThreadState;
+   append(message: AppendMessage): void;
+   cancelRun(): void;
+   message(index: number): MessageRuntime;
+   composer(): ComposerRuntime;
 };
 
 type MessageRuntime = {
-  getState(): MessageState;
-  edit(message: EditMessage): void;
-  reload(): void;
-  part(index: number): MessagePartRuntime;
+   getState(): MessageState;
+   edit(message: EditMessage): void;
+   reload(): void;
+   part(index: number): MessagePartRuntime;
 };
 ```
 
@@ -63,7 +63,7 @@ import { useAui, useAuiState, useAuiEvent } from "@assistant-ui/react";
 const api = useAui();
 
 // Subscribe to state changes
-const messages = useAuiState(s => s.thread.messages);
+const messages = useAuiState((s) => s.thread.messages);
 
 // Listen to events
 useAuiEvent("composer.send", (e) => console.log(e));
@@ -75,16 +75,16 @@ Composable UI components:
 
 ```tsx
 import {
-  ThreadPrimitive,
-  ComposerPrimitive,
-  MessagePrimitive,
-  ActionBarPrimitive,
+   ThreadPrimitive,
+   ComposerPrimitive,
+   MessagePrimitive,
+   ActionBarPrimitive,
 } from "@assistant-ui/react";
 ```
 
 ## Data Flow
 
-```
+```text
 User Action (send message)
     │
     ▼
@@ -110,60 +110,60 @@ Primitives re-render with new state
 
 ```typescript
 type ThreadMessage =
-  | ThreadUserMessage
-  | ThreadAssistantMessage
-  | ThreadSystemMessage;
+   | ThreadUserMessage
+   | ThreadAssistantMessage
+   | ThreadSystemMessage;
 
 interface ThreadUserMessage {
-  id: string;
-  role: "user";
-  content: MessagePart[];
-  attachments?: Attachment[];
-  createdAt: Date;
+   id: string;
+   role: "user";
+   content: MessagePart[];
+   attachments?: Attachment[];
+   createdAt: Date;
 }
 
 interface ThreadAssistantMessage {
-  id: string;
-  role: "assistant";
-  content: MessagePart[];
-  status: "running" | "complete" | "incomplete" | "requires-action";
-  createdAt: Date;
+   id: string;
+   role: "assistant";
+   content: MessagePart[];
+   status: "running" | "complete" | "incomplete" | "requires-action";
+   createdAt: Date;
 }
 
 type MessagePart =
-  | { type: "text"; text: string }
-  | { type: "image"; image: string }
-  | {
-      type: "tool-call";
-      toolCallId: string;
-      toolName: string;
-      args: unknown;
-      argsText: string;
-      result?: unknown;
-      isError?: boolean;
-      artifact?: unknown;
-    }
-  | { type: "reasoning"; text: string }
-  | {
-      type: "source";
-      sourceType: "url";
-      id: string;
-      url: string;
-      title?: string;
-    }
-  | {
-      type: "file";
-      filename?: string;
-      data: string;
-      mimeType: string;
-    };
+   | { type: "text"; text: string }
+   | { type: "image"; image: string }
+   | {
+        type: "tool-call";
+        toolCallId: string;
+        toolName: string;
+        args: unknown;
+        argsText: string;
+        result?: unknown;
+        isError?: boolean;
+        artifact?: unknown;
+     }
+   | { type: "reasoning"; text: string }
+   | {
+        type: "source";
+        sourceType: "url";
+        id: string;
+        url: string;
+        title?: string;
+     }
+   | {
+        type: "file";
+        filename?: string;
+        data: string;
+        mimeType: string;
+     };
 ```
 
 ## Branching Model
 
 Messages form a tree structure supporting edits:
 
-```
+```text
 User: "Hello"
     └─ Assistant: "Hi there!"
        └─ User: "Tell me a joke"          ← Current branch

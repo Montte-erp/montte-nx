@@ -135,7 +135,5 @@ export async function refreshChatData(
 ) {
    void getThreadsCollection(queryClient).utils.refetch();
    if (!threadId) return;
-   await getCollectionMap(threadCollections, queryClient)
-      .get(threadId)
-      ?.utils.refetch();
+   await getThreadCollection(threadId, queryClient).utils.refetch();
 }

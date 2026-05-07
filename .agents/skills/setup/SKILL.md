@@ -12,12 +12,14 @@ license: MIT
 ### Quick Decision Flow
 
 - Existing Next.js app (`package.json` exists): use `npx assistant-ui@latest init`
-- Existing app in CI/agent/non-interactive shell: use `npx assistant-ui@latest init --yes`
-- Existing app + force overwrite of conflicts: add `--overwrite`
+- Existing app in CI/agent/non-interactive shell: use `npx assistant-ui@0.0.90 init --yes`
+- Existing app + force overwrite of conflicts: add `--overwrite`; use pinned CLI versions in automation when reproducibility matters
 - New app / empty directory: use `npx assistant-ui@latest create <name>`
 - Need specific starter template: add `-t <default|minimal|cloud|cloud-clerk|langgraph|mcp>`
 - Need a curated example: use `npx assistant-ui@latest create <name> --example <example>`
 - Need playground preset config: use `npx assistant-ui@latest create <name> --preset <url>`
+
+Use `@latest` for interactive user-facing commands. Use `assistant-ui@0.0.90` for CI, agents, and other non-interactive automation. The flags `--yes`, `-t`, `--example`, `--preset`, and `--overwrite` are stable in `assistant-ui@0.0.90`; replace `--yes` and `--overwrite` in automation commands only when reproducibility is required.
 
 ### New Project (`create`)
 
@@ -25,20 +27,22 @@ license: MIT
 npx assistant-ui@latest create my-app -t minimal
 npx assistant-ui@latest create my-app -t cloud-clerk
 npx assistant-ui@latest create my-app --preset "https://www.assistant-ui.com/playground/init?preset=chatgpt"
+npx assistant-ui@0.0.90 create my-app -t minimal --yes
 ```
 
 Templates:
 
-| Template | Description |
-|-------|-------|
-| `default` | Default template with Vercel AI SDK |
-| `minimal` | Bare-bones starting point |
-| `cloud` | Cloud-backed persistence starter |
+| Template      | Description                          |
+| ------------- | ------------------------------------ |
+| `default`     | Default template with Vercel AI SDK  |
+| `minimal`     | Bare-bones starting point            |
+| `cloud`       | Cloud-backed persistence starter     |
 | `cloud-clerk` | Cloud-backed starter with Clerk auth |
-| `langgraph` | LangGraph starter template |
-| `mcp` | MCP starter template |
+| `langgraph`   | LangGraph starter template           |
+| `mcp`         | MCP starter template                 |
 
 When `-t` is omitted:
+
 - Interactive shell (TTY): an interactive template picker is shown.
 - Non-interactive shell (CI/agent): template defaults to `default`.
 
@@ -47,7 +51,7 @@ If no project directory is provided in a non-interactive shell, `create` uses `m
 ### Existing Next.js Project (`init`)
 
 ```bash
-npx assistant-ui@latest init --yes
+npx assistant-ui@0.0.90 init --yes
 ```
 
 The `init` command is for **existing projects only** (requires `package.json`).
@@ -77,16 +81,16 @@ When using CLI templates (`npx assistant-ui@latest create`), **never modify gene
 
 For runtimes other than AI SDK or frameworks other than Next.js, consult the reference files:
 
-| Setup | Runtime Hook | Reference |
-|-------|-------------|-----------|
-| AI SDK advanced (tools, cloud, options) | `useChatRuntime` | [references/ai-sdk.md](./references/ai-sdk.md) |
-| Styling and UI customization (shadcn pattern) | — | [references/styling.md](./references/styling.md) |
-| LangGraph agents | `useLangGraphRuntime` | [references/langgraph.md](./references/langgraph.md) |
-| AG-UI protocol | `useAgUiRuntime` | [references/ag-ui.md](./references/ag-ui.md) |
-| A2A protocol | `useA2ARuntime` | [references/a2a.md](./references/a2a.md) |
-| Custom streaming API | `useLocalRuntime` | [references/custom-backend.md](./references/custom-backend.md) |
-| Existing state (Redux/Zustand) | `useExternalStoreRuntime` | [references/custom-backend.md](./references/custom-backend.md) |
-| Vite / TanStack Start | — | [references/tanstack.md](./references/tanstack.md) |
+| Setup                                         | Runtime Hook              | Reference                                                      |
+| --------------------------------------------- | ------------------------- | -------------------------------------------------------------- |
+| AI SDK advanced (tools, cloud, options)       | `useChatRuntime`          | [references/ai-sdk.md](./references/ai-sdk.md)                 |
+| Styling and UI customization (shadcn pattern) | —                         | [references/styling.md](./references/styling.md)               |
+| LangGraph agents                              | `useLangGraphRuntime`     | [references/langgraph.md](./references/langgraph.md)           |
+| AG-UI protocol                                | `useAgUiRuntime`          | [references/ag-ui.md](./references/ag-ui.md)                   |
+| A2A protocol                                  | `useA2ARuntime`           | [references/a2a.md](./references/a2a.md)                       |
+| Custom streaming API                          | `useLocalRuntime`         | [references/custom-backend.md](./references/custom-backend.md) |
+| Existing state (Redux/Zustand)                | `useExternalStoreRuntime` | [references/custom-backend.md](./references/custom-backend.md) |
+| Vite / TanStack Start                         | —                         | [references/tanstack.md](./references/tanstack.md)             |
 
 ---
 

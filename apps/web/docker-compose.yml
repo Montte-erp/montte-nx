@@ -24,14 +24,14 @@ services:
          retries: 3
 
    montte-db:
-      image: docker.io/paradedb/paradedb:latest
+      image: docker.io/library/postgres:latest
       command: postgres -c wal_level=logical
       environment:
          POSTGRES_USER: postgres
          POSTGRES_PASSWORD: password
          POSTGRES_DB: montte
       volumes:
-         - montte_pgdata:/var/lib/postgresql
+         - montte_pgdata:/var/lib/postgresql/data
       ports:
          - "5432:5432"
       healthcheck:

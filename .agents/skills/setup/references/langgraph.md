@@ -16,36 +16,42 @@ import { Thread } from "@/components/assistant-ui/thread";
 import { useLangGraphRuntime } from "@assistant-ui/react-langgraph";
 
 function Chat() {
-  const runtime = useLangGraphRuntime({
-    threadId: "my-thread-id",
-    stream: async function* (messages, config) {
-      const response = await fetch("/api/langgraph", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages, config }),
-      });
+   const runtime = useLangGraphRuntime({
+      threadId: "my-thread-id",
+      stream: async function* (messages, config) {
+         const response = await fetch("/api/langgraph", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messages, config }),
+         });
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+         if (!response.body) {
+            throw new Error(
+               "parseLangGraphEvents requires a streaming response body.",
+            );
+         }
 
-      while (reader) {
-        const { done, value } = await reader.read();
-        if (done) break;
+         const reader = response.body.getReader();
+         const decoder = new TextDecoder();
 
-        const chunk = decoder.decode(value);
-        // Parse LangGraph events and yield
-        for (const event of parseLangGraphEvents(chunk)) {
-          yield event;
-        }
-      }
-    },
-  });
+         while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-  return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      <Thread />
-    </AssistantRuntimeProvider>
-  );
+            const chunk = decoder.decode(value);
+            // Parse LangGraph events and yield
+            for (const event of parseLangGraphEvents(chunk)) {
+               yield event;
+            }
+         }
+      },
+   });
+
+   return (
+      <AssistantRuntimeProvider runtime={runtime}>
+         <Thread />
+      </AssistantRuntimeProvider>
+   );
 }
 ```
 
@@ -56,44 +62,44 @@ import { Client } from "@langchain/langgraph-sdk";
 import { useLangGraphRuntime } from "@assistant-ui/react-langgraph";
 
 const client = new Client({
-  apiUrl: process.env.NEXT_PUBLIC_LANGGRAPH_API_URL || "http://localhost:8123",
+   apiUrl: process.env.NEXT_PUBLIC_LANGGRAPH_API_URL || "http://localhost:8123",
 });
 
 function Chat() {
-  const [threadId, setThreadId] = useState<string | null>(null);
+   const [threadId, setThreadId] = useState<string | null>(null);
 
-  const runtime = useLangGraphRuntime({
-    threadId,
-    stream: async function* (messages, config) {
-      // Create thread if needed
-      let currentThreadId = threadId;
-      if (!currentThreadId) {
-        const thread = await client.threads.create();
-        currentThreadId = thread.thread_id;
-        setThreadId(currentThreadId);
-      }
+   const runtime = useLangGraphRuntime({
+      threadId,
+      stream: async function* (messages, config) {
+         // Create thread if needed
+         let currentThreadId = threadId;
+         if (!currentThreadId) {
+            const thread = await client.threads.create();
+            currentThreadId = thread.thread_id;
+            setThreadId(currentThreadId);
+         }
 
-      // Stream from LangGraph
-      const stream = client.runs.stream(
-        currentThreadId,
-        "my-assistant",  // Assistant name in LangGraph
-        {
-          input: { messages },
-          config,
-        }
-      );
+         // Stream from LangGraph
+         const stream = client.runs.stream(
+            currentThreadId,
+            "my-assistant", // Assistant name in LangGraph
+            {
+               input: { messages },
+               config,
+            },
+         );
 
-      for await (const event of stream) {
-        yield event;
-      }
-    },
-  });
+         for await (const event of stream) {
+            yield event;
+         }
+      },
+   });
 
-  return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      <Thread />
-    </AssistantRuntimeProvider>
-  );
+   return (
+      <AssistantRuntimeProvider runtime={runtime}>
+         <Thread />
+      </AssistantRuntimeProvider>
+   );
 }
 ```
 
@@ -135,19 +141,21 @@ import { makeAssistantToolUI } from "@assistant-ui/react";
 
 // LangGraph tools can have custom UI
 const SearchToolUI = makeAssistantToolUI({
-  toolName: "tavily_search",
-  render: ({ args, result, status }) => {
-    if (status === "running") {
-      return <div>Searching for: {args.query}...</div>;
-    }
-    return (
-      <div>
-        {result?.results?.map((r: any) => (
-          <a key={r.url} href={r.url}>{r.title}</a>
-        ))}
-      </div>
-    );
-  },
+   toolName: "tavily_search",
+   render: ({ args, result, status }) => {
+      if (status === "running") {
+         return <div>Searching for: {args.query}...</div>;
+      }
+      return (
+         <div>
+            {result?.results?.map((r: any) => (
+               <a key={r.url} href={r.url}>
+                  {r.title}
+               </a>
+            ))}
+         </div>
+      );
+   },
 });
 ```
 
@@ -181,21 +189,21 @@ LangGraph handles thread persistence server-side. The `threadId` you pass to the
 ```tsx
 // Thread list with LangGraph
 function ThreadSelector() {
-  const [threads, setThreads] = useState([]);
+   const [threads, setThreads] = useState([]);
 
-  useEffect(() => {
-    client.threads.list().then(setThreads);
-  }, []);
+   useEffect(() => {
+      client.threads.list().then(setThreads);
+   }, []);
 
-  return (
-    <select onChange={(e) => setThreadId(e.target.value)}>
-      {threads.map((t) => (
-        <option key={t.thread_id} value={t.thread_id}>
-          {t.thread_id}
-        </option>
-      ))}
-    </select>
-  );
+   return (
+      <select onChange={(e) => setThreadId(e.target.value)}>
+         {threads.map((t) => (
+            <option key={t.thread_id} value={t.thread_id}>
+               {t.thread_id}
+            </option>
+         ))}
+      </select>
+   );
 }
 ```
 

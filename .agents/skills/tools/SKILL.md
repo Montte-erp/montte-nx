@@ -19,7 +19,7 @@ Tools let LLMs trigger actions with custom UI rendering.
 
 ## Tool Types
 
-```
+```text
 Where does the tool execute?
 ├─ Backend (LLM calls API) → AI SDK tool()
 │  └─ Want custom UI? → makeAssistantToolUI
@@ -35,18 +35,18 @@ import { tool, stepCountIs } from "ai";
 import { z } from "zod";
 
 const tools = {
-  get_weather: tool({
-    description: "Get weather for a city",
-    inputSchema: z.object({ city: z.string() }),
-    execute: async ({ city }) => ({ temp: 22, city }),
-  }),
+   get_weather: tool({
+      description: "Get weather for a city",
+      inputSchema: z.object({ city: z.string() }),
+      execute: async ({ city }) => ({ temp: 22, city }),
+   }),
 };
 
 const result = streamText({
-  model: openai("gpt-4o"),
-  messages,
-  tools,
-  stopWhen: stepCountIs(5),
+   model: openai("gpt-4o"),
+   messages,
+   tools,
+   stopWhen: stepCountIs(5),
 });
 ```
 
@@ -55,18 +55,22 @@ const result = streamText({
 import { makeAssistantToolUI } from "@assistant-ui/react";
 
 const WeatherToolUI = makeAssistantToolUI({
-  toolName: "get_weather",
-  render: ({ args, result, status }) => {
-    if (status === "running") return <div>Loading weather...</div>;
-    return <div>{result?.city}: {result?.temp}°C</div>;
-  },
+   toolName: "get_weather",
+   render: ({ args, result, status }) => {
+      if (status === "running") return <div>Loading weather...</div>;
+      return (
+         <div>
+            {result?.city}: {result?.temp}°C
+         </div>
+      );
+   },
 });
 
 // Register in app
 <AssistantRuntimeProvider runtime={runtime}>
-  <WeatherToolUI />
-  <Thread />
-</AssistantRuntimeProvider>
+   <WeatherToolUI />
+   <Thread />
+</AssistantRuntimeProvider>;
 ```
 
 ## Frontend-Only Tool
@@ -76,18 +80,18 @@ import { makeAssistantTool } from "@assistant-ui/react";
 import { z } from "zod";
 
 const CopyTool = makeAssistantTool({
-  toolName: "copy_to_clipboard",
-  parameters: z.object({ text: z.string() }),
-  execute: async ({ text }) => {
-    await navigator.clipboard.writeText(text);
-    return { success: true };
-  },
+   toolName: "copy_to_clipboard",
+   parameters: z.object({ text: z.string() }),
+   execute: async ({ text }) => {
+      await navigator.clipboard.writeText(text);
+      return { success: true };
+   },
 });
 
 <AssistantRuntimeProvider runtime={runtime}>
-  <CopyTool />
-  <Thread />
-</AssistantRuntimeProvider>
+   <CopyTool />
+   <Thread />
+</AssistantRuntimeProvider>;
 ```
 
 ## API Reference
@@ -95,13 +99,13 @@ const CopyTool = makeAssistantTool({
 ```tsx
 // makeAssistantToolUI props
 interface ToolUIProps {
-  toolCallId: string;
-  toolName: string;
-  args: Record<string, unknown>;
-  argsText: string;
-  result?: unknown;
-  status: "running" | "complete" | "incomplete" | "requires-action";
-  submitResult: (result: unknown) => void;  // For interactive tools
+   toolCallId: string;
+   toolName: string;
+   args: Record<string, unknown>;
+   argsText: string;
+   result?: unknown;
+   status: "running" | "complete" | "incomplete" | "requires-action";
+   submitResult: (result: unknown) => void; // For interactive tools
 }
 ```
 
@@ -109,32 +113,39 @@ interface ToolUIProps {
 
 ```tsx
 const DeleteToolUI = makeAssistantToolUI({
-  toolName: "delete_file",
-  render: ({ args, status, submitResult }) => {
-    if (status === "requires-action") {
-      return (
-        <div>
-          <p>Delete {args.path}?</p>
-          <button onClick={() => submitResult({ confirmed: true })}>Confirm</button>
-          <button onClick={() => submitResult({ confirmed: false })}>Cancel</button>
-        </div>
-      );
-    }
-    return <div>File deleted</div>;
-  },
+   toolName: "delete_file",
+   render: ({ args, status, submitResult }) => {
+      if (status === "requires-action") {
+         return (
+            <div>
+               <p>Delete {args.path}?</p>
+               <button onClick={() => submitResult({ confirmed: true })}>
+                  Confirm
+               </button>
+               <button onClick={() => submitResult({ confirmed: false })}>
+                  Cancel
+               </button>
+            </div>
+         );
+      }
+      return <div>File deleted</div>;
+   },
 });
 ```
 
 ## Common Gotchas
 
 **Tool UI not rendering**
+
 - `toolName` must match exactly (case-sensitive)
 - Register UI inside `AssistantRuntimeProvider`
 
 **Tool not being called**
+
 - Check tool description is clear
 - Use `stopWhen: stepCountIs(n)` to allow multi-step
 
 **Result not showing**
+
 - Tool must return a value
 - Check `status === "complete"` before accessing result
