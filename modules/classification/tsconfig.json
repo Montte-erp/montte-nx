@@ -21,5 +21,31 @@
          "@core/sse": ["../../core/sse/src/sse.ts"]
       }
    },
-   "include": ["src"]
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../../core/sse"
+      },
+      {
+         "path": "../../core/redis"
+      },
+      {
+         "path": "../../core/logging"
+      },
+      {
+         "path": "../../core/environment"
+      },
+      {
+         "path": "../../core/dbos"
+      },
+      {
+         "path": "../../core/database"
+      },
+      {
+         "path": "../../core/posthog"
+      },
+      {
+         "path": "../../core/ai"
+      }
+   ]
 }

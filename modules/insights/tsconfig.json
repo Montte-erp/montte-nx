@@ -15,5 +15,13 @@
          "@modules/insights/*": ["./src/*"]
       }
    },
-   "include": ["src"]
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../../core/logging"
+      },
+      {
+         "path": "../../core/database"
+      }
+   ]
 }

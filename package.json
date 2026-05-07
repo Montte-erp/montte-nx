@@ -29,6 +29,7 @@
             "better-auth": "1.6.5",
             "@better-auth/api-key": "1.6.5",
             "@better-auth/drizzle-adapter": "1.6.5",
+            "@better-auth/i18n": "1.6.5",
             "@better-auth/stripe": "1.6.5"
          },
          "database": {
@@ -240,6 +241,8 @@
       "release:version": "nx release version",
       "reset": "bun run scripts/clean.ts reset",
       "test": "nx run-many -t test --parallel=3",
+      "test:e2e": "nx run web-e2e:e2e",
+      "test:e2e:ui": "bun run --filter=web-e2e e2e:ui",
       "test:scripts": "vitest run __tests__/workspace-scripts.test.ts",
       "test:coverage": "nx run-many -t test --parallel=3 -- --coverage",
       "typecheck": "nx run-many -t typecheck --parallel=8",

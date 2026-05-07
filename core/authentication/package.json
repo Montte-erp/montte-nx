@@ -29,6 +29,7 @@
    "dependencies": {
       "@better-auth/api-key": "catalog:auth",
       "@better-auth/drizzle-adapter": "catalog:auth",
+      "@better-auth/i18n": "catalog:auth",
       "@core/database": "workspace:*",
       "@core/environment": "workspace:*",
       "@core/logging": "workspace:*",

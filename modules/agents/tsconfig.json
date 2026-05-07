@@ -10,14 +10,43 @@
          "@core/ai/*": ["../../core/ai/src/*"],
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],
+         "@core/dbos/*": ["../../core/dbos/src/*"],
          "@core/environment/*": ["../../core/environment/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
+         "@core/redis/*": ["../../core/redis/src/*"],
+         "@core/sse": ["../../core/sse/src/sse.ts"],
          "@modules/agents/*": ["./src/*"],
          "@modules/billing/*": ["../billing/src/*"]
       }
    },
-   "include": ["src"]
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../../core/sse"
+      },
+      {
+         "path": "../../core/redis"
+      },
+      {
+         "path": "../../core/posthog"
+      },
+      {
+         "path": "../../core/logging"
+      },
+      {
+         "path": "../../core/environment"
+      },
+      {
+         "path": "../../core/dbos"
+      },
+      {
+         "path": "../../core/database"
+      },
+      {
+         "path": "../../core/ai"
+      }
+   ]
 }

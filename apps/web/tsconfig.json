@@ -43,6 +43,9 @@
          "path": "../../core/utils"
       },
       {
+         "path": "../../core/sse"
+      },
+      {
          "path": "../../core/redis"
       },
       {

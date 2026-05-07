@@ -20,14 +20,33 @@
       }
    },
    "references": [
-      { "path": "../database" },
-      { "path": "../dbos" },
-      { "path": "../environment" },
-      { "path": "../logging" },
-      { "path": "../posthog" },
-      { "path": "../redis" },
-      { "path": "../transactional" },
-      { "path": "../utils" }
+      {
+         "path": "../files"
+      },
+      {
+         "path": "../utils"
+      },
+      {
+         "path": "../transactional"
+      },
+      {
+         "path": "../redis"
+      },
+      {
+         "path": "../posthog"
+      },
+      {
+         "path": "../logging"
+      },
+      {
+         "path": "../environment"
+      },
+      {
+         "path": "../dbos"
+      },
+      {
+         "path": "../database"
+      }
    ],
    "include": ["src"]
 }
