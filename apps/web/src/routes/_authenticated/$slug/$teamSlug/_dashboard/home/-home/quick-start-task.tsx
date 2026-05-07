@@ -28,7 +28,7 @@ export function QuickStartTask({
    const handleClick = useCallback(() => {
       if (isLocked || isCompleted) return;
       navigate({
-         to: task.route as "/$slug/$teamSlug/transactions",
+         to: task.route,
          params: { slug, teamSlug },
       });
    }, [isLocked, isCompleted, task.route, navigate, slug, teamSlug]);

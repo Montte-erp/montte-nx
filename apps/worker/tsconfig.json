@@ -12,7 +12,7 @@
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
-         "@core/transactional/*": ["../../core/transactional/dist/*"],
+         "@core/transactional/*": ["../../core/transactional/src/*"],
          "@modules/billing/*": ["../../modules/billing/src/*"],
          "@modules/classification/*": ["../../modules/classification/src/*"]
       }
