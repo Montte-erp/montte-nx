@@ -16,6 +16,8 @@
    "dependencies": {
       "@assistant-ui/react": "catalog:ui",
       "@assistant-ui/react-streamdown": "catalog:ui",
+      "@better-upload/client": "catalog:files",
+      "@better-upload/server": "catalog:files",
       "@core/authentication": "workspace:*",
       "@core/database": "workspace:*",
       "@core/environment": "workspace:*",

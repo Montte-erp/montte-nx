@@ -55,7 +55,9 @@
          },
          "files": {
             "fflate": "^0.8.2",
-            "minio": "^8.0.6"
+            "minio": "^8.0.6",
+            "@better-upload/server": "^3.0.19",
+            "@better-upload/client": "^3.0.19"
          },
          "fot": {
             "@f-o-t/condition-evaluator": "2.0.7",
@@ -130,6 +132,7 @@
          },
          "testing": {
             "@faker-js/faker": "^10.4.0",
+            "@playwright/test": "^1.59.1",
             "@testing-library/dom": "^10.4.1",
             "@testing-library/react": "^16.3.2",
             "@vitest/coverage-istanbul": "^4.1.4",
@@ -216,8 +219,8 @@
       "check-boundaries": "bun run tooling/boundary/check-boundaries.ts",
       "clean": "bun run scripts/clean.ts clean",
       "clean:cache": "bun run scripts/clean.ts cache",
-      "db:push": "bun run scripts/ensure-schemas.ts && nx run core/database:db-push-local",
-      "db:push:prod": "bun run scripts/ensure-schemas.ts --env production && nx run core/database:db-push-prod",
+      "db:push": "bun run scripts/ensure-database.ts && bun run scripts/ensure-schemas.ts && nx run core/database:db-push-local",
+      "db:push:prod": "bun run scripts/ensure-database.ts --env production && bun run scripts/ensure-schemas.ts --env production && nx run core/database:db-push-prod",
       "db:studio:local": "nx run core/database:db-studio-local",
       "db:studio:prod": "nx run core/database:db-studio-prod",
       "dev": "bun run scripts/dev-init.ts; nx run-many -t dev --parallel=3 -p web worker landing",
@@ -247,6 +250,7 @@
    },
    "devDependencies": {
       "@nx/js": "22.6.5",
+      "@nx/playwright": "22.6.5",
       "@rolldown/plugin-babel": "^0.2.3",
       "@schpet/linear-cli": "^2.0.0",
       "@swc-node/register": "1.11.1",
@@ -266,7 +270,8 @@
       "oxlint": "^1.60.0",
       "typescript": "^6.0.3",
       "vite-tsconfig-paths": "catalog:vite",
-      "vitest": "catalog:testing"
+      "vitest": "catalog:testing",
+      "web": "workspace:*"
    },
    "engines": {
       "node": ">=22.12.0"

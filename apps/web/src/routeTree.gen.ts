@@ -18,6 +18,7 @@ import { Route as AuthMagicLinkRouteImport } from './routes/auth/magic-link'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AuthEmailVerificationRouteImport } from './routes/auth/email-verification'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as ApiPingRouteImport } from './routes/api/ping'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
@@ -115,6 +116,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/callback',
   path: '/callback',
   getParentRoute: () => AuthRoute,
+} as any)
+const ApiUploadRoute = ApiUploadRouteImport.update({
+  id: '/api/upload',
+  path: '/api/upload',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPingRoute = ApiPingRouteImport.update({
   id: '/api/ping',
@@ -451,6 +457,7 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
   '/api/ping': typeof ApiPingRoute
+  '/api/upload': typeof ApiUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/email-verification': typeof AuthEmailVerificationRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -513,6 +520,7 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
   '/api/ping': typeof ApiPingRoute
+  '/api/upload': typeof ApiUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/email-verification': typeof AuthEmailVerificationRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -572,6 +580,7 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
   '/api/ping': typeof ApiPingRoute
+  '/api/upload': typeof ApiUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/email-verification': typeof AuthEmailVerificationRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -637,6 +646,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/health'
     | '/api/ping'
+    | '/api/upload'
     | '/auth/callback'
     | '/auth/email-verification'
     | '/auth/forgot-password'
@@ -699,6 +709,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/health'
     | '/api/ping'
+    | '/api/upload'
     | '/auth/callback'
     | '/auth/email-verification'
     | '/auth/forgot-password'
@@ -757,6 +768,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/health'
     | '/api/ping'
+    | '/api/upload'
     | '/auth/callback'
     | '/auth/email-verification'
     | '/auth/forgot-password'
@@ -820,6 +832,7 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiPingRoute: typeof ApiPingRoute
+  ApiUploadRoute: typeof ApiUploadRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiFilesSplatRoute: typeof ApiFilesSplatRoute
   ApiOpenapiSplatRoute: typeof ApiOpenapiSplatRoute
@@ -891,6 +904,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/api/upload': {
+      id: '/api/upload'
+      path: '/api/upload'
+      fullPath: '/api/upload'
+      preLoaderRoute: typeof ApiUploadRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/ping': {
       id: '/api/ping'
@@ -1524,6 +1544,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatRoute: ApiChatRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiPingRoute: ApiPingRoute,
+  ApiUploadRoute: ApiUploadRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiFilesSplatRoute: ApiFilesSplatRoute,
   ApiOpenapiSplatRoute: ApiOpenapiSplatRoute,

@@ -19,11 +19,8 @@ import {
 } from "@packages/ui/components/item";
 import { Separator } from "@packages/ui/components/separator";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import {
-   useMutation,
-   useQueryClient,
-   useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useUploadFile } from "@better-upload/client";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
 import {
@@ -39,7 +36,6 @@ import { Suspense, useState, useTransition } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
 import { useFileUpload } from "@/features/file-upload/lib/use-file-upload";
-import { usePresignedUpload } from "@/features/file-upload/lib/use-presigned-upload";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -72,7 +68,6 @@ function DisplayNameSection({
    currentName: string;
 }) {
    const [name, setName] = useState(currentName);
-   const queryClient = useQueryClient();
    const [isPending, startTransition] = useTransition();
 
    const hasChanged = name.trim() !== currentName && name.trim().length > 0;
@@ -89,10 +84,6 @@ function DisplayNameSection({
             return;
          }
          toast.success("Organização renomeada com sucesso!");
-         queryClient.invalidateQueries({
-            queryKey: orpc.organization.getActiveOrganization.queryOptions({})
-               .queryKey,
-         });
       });
    }
 
@@ -121,8 +112,15 @@ function DisplayNameSection({
 
 // Logo Section
 
+function extractPublicUrl(metadata: unknown): string | null {
+   if (typeof metadata !== "object" || metadata === null) return null;
+   if (!("publicUrl" in metadata)) return null;
+   const url = metadata.publicUrl;
+   return typeof url === "string" ? url : null;
+}
+
 function LogoSection({
-   organizationId: _organizationId,
+   organizationId,
    currentLogo,
    organizationName,
 }: {
@@ -130,53 +128,43 @@ function LogoSection({
    currentLogo: string | null;
    organizationName: string;
 }) {
-   const queryClient = useQueryClient();
    const fileUpload = useFileUpload({
       acceptedTypes: ["image/*"],
       maxSize: 5 * 1024 * 1024,
    });
-   const presignedUpload = usePresignedUpload();
+   const [isSaving, startSaving] = useTransition();
 
-   const saveMutation = useMutation({
-      mutationFn: async () => {
-         if (!fileUpload.selectedFile) {
-            throw new Error("No file selected");
+   const { upload, isPending } = useUploadFile({
+      route: "organizationLogo",
+      api: "/api/upload",
+      onUploadComplete: ({ metadata }) => {
+         const publicUrl = extractPublicUrl(metadata);
+         if (!publicUrl) {
+            toast.error("Erro ao atualizar logo");
+            return;
          }
-
-         const fileExtension =
-            fileUpload.selectedFile.name.split(".").pop() ?? "png";
-         const contentType = fileUpload.selectedFile.type;
-
-         const uploadData = await orpc.organization.generateLogoUploadUrl.call({
-            fileExtension,
-            contentType,
-         });
-
-         await presignedUpload.uploadToPresignedUrl(
-            uploadData.presignedUrl,
-            fileUpload.selectedFile,
-            contentType,
-         );
-
-         await orpc.organization.updateLogo.call({
-            logoUrl: uploadData.publicUrl,
-         });
-      },
-      onSuccess: () => {
-         toast.success("Logo atualizado com sucesso!");
-         fileUpload.clearFile();
-         queryClient.invalidateQueries({
-            queryKey: orpc.organization.getActiveOrganization.queryOptions({})
-               .queryKey,
+         startSaving(async () => {
+            const { error } = await authClient.organization.update({
+               data: { logo: publicUrl },
+               organizationId,
+            });
+            if (error) {
+               toast.error("Erro ao atualizar logo");
+               return;
+            }
+            toast.success("Logo atualizado com sucesso!");
+            fileUpload.clearFile();
          });
       },
       onError: () => {
-         toast.error("Erro ao atualizar logo");
+         toast.error("Erro ao enviar imagem");
       },
    });
 
+   const isBusy = isPending || isSaving;
+
    return (
-      <section className="space-y-3">
+      <section className="space-y-3" data-testid="logo-section">
          <div>
             <h2 className="text-lg font-medium">Logo</h2>
             <p className="text-sm text-muted-foreground">
@@ -218,22 +206,20 @@ function LogoSection({
                </Dropzone>
             </div>
          </div>
-         {fileUpload.filePreview && (
+         {fileUpload.filePreview && fileUpload.selectedFile && (
             <Button
-               disabled={saveMutation.isPending || presignedUpload.isUploading}
-               onClick={() => saveMutation.mutate()}
+               data-testid="save-logo-button"
+               disabled={isBusy}
+               onClick={() =>
+                  fileUpload.selectedFile && upload(fileUpload.selectedFile)
+               }
             >
-               {(saveMutation.isPending || presignedUpload.isUploading) && (
-                  <Loader2 className="size-4 mr-2 animate-spin" />
-               )}
+               {isBusy && <Loader2 className="size-4 mr-2 animate-spin" />}
                Salvar logo
             </Button>
          )}
          {fileUpload.error && (
             <p className="text-sm text-destructive">{fileUpload.error}</p>
-         )}
-         {presignedUpload.error && (
-            <p className="text-sm text-destructive">{presignedUpload.error}</p>
          )}
       </section>
    );

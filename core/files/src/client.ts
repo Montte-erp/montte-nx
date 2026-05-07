@@ -3,45 +3,38 @@ import { Client } from "minio";
 
 const logger = getLogger().child({ module: "files" });
 
-const parseEndpoint = (endpointUrl: string) => {
-   const fullUrl = endpointUrl.startsWith("http")
-      ? endpointUrl
-      : `http://${endpointUrl}`;
+export type MinioClient = Client;
 
-   try {
-      const url = new URL(fullUrl);
-      const useSSL = url.protocol === "https:";
-      const port = url.port ? parseInt(url.port, 10) : useSSL ? 443 : 9000;
-
-      return {
-         endPoint: url.hostname,
-         port,
-         useSSL,
-      };
-   } catch (error) {
-      logger.error(
-         { err: error, endpointUrl },
-         "Invalid endpoint URL provided",
-      );
-      return {
-         endPoint: "localhost",
-         port: 9000,
-         useSSL: false,
-      };
-   }
+export type ParsedEndpoint = {
+   host: string;
+   hostname: string;
+   port: number;
+   useSSL: boolean;
 };
 
-export type MinioClient = Client;
+export function parseEndpoint(endpoint: string): ParsedEndpoint {
+   const url = new URL(
+      endpoint.startsWith("http") ? endpoint : `http://${endpoint}`,
+   );
+   const useSSL = url.protocol === "https:";
+   const port = url.port ? Number(url.port) : useSSL ? 443 : 9000;
+   return {
+      host: `${url.hostname}:${port}`,
+      hostname: url.hostname,
+      port,
+      useSSL,
+   };
+}
 
 export function createMinioClient(opts: {
    endpoint: string;
-   accessKey?: string;
-   secretKey?: string;
+   accessKey: string;
+   secretKey: string;
 }): Client {
-   const { endPoint, port, useSSL } = parseEndpoint(opts.endpoint);
+   const { hostname, port, useSSL } = parseEndpoint(opts.endpoint);
    return new Client({
       accessKey: opts.accessKey,
-      endPoint,
+      endPoint: hostname,
       port,
       secretKey: opts.secretKey,
       useSSL,
