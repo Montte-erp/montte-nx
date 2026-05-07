@@ -36,12 +36,6 @@ export const createWorkspace = authenticatedProcedure
          workspaceName: z
             .string()
             .min(2, "O nome deve ter no mínimo 2 caracteres."),
-         cnpj: z
-            .string()
-            .regex(/^\d{14}$/)
-            .nullable()
-            .optional(),
-         cnpjData: cnpjDataSchema.nullable().optional(),
          onboardingGoal: onboardingGoalSchema.default("pick_myself"),
          isMultiOrgCreation: z.boolean().default(false),
       }),
@@ -70,8 +64,6 @@ export const createWorkspace = authenticatedProcedure
             name: teamName,
             organizationId: org.id,
             slug: teamSlug,
-            cnpj: input.cnpj ?? undefined,
-            cnpjData: input.cnpjData ?? undefined,
          },
       });
       if (!created?.id) throw WebAppError.internal("Falha ao criar projeto.");
@@ -107,24 +99,6 @@ export const createWorkspace = authenticatedProcedure
             },
             groups: { organization: org.id },
          });
-         if (input.cnpjData) {
-            const d = input.cnpjData;
-            context.posthog.groupIdentify({
-               groupType: "organization",
-               groupKey: org.id,
-               properties: {
-                  cnpj: d.cnpj,
-                  razao_social: d.razao_social,
-                  nome_fantasia: d.nome_fantasia,
-                  cnae_fiscal_descricao: d.cnae_fiscal_descricao,
-                  porte: d.porte,
-                  municipio: d.municipio,
-                  uf: d.uf,
-                  natureza_juridica: d.natureza_juridica,
-                  data_inicio_atividade: d.data_inicio_atividade,
-               },
-            });
-         }
       }
 
       return {
