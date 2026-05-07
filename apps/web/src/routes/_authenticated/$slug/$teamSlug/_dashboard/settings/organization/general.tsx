@@ -20,7 +20,7 @@ import {
 import { Separator } from "@packages/ui/components/separator";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useUploadFile } from "@better-upload/client";
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
 import {
@@ -68,7 +68,6 @@ function DisplayNameSection({
    currentName: string;
 }) {
    const [name, setName] = useState(currentName);
-   const queryClient = useQueryClient();
    const [isPending, startTransition] = useTransition();
 
    const hasChanged = name.trim() !== currentName && name.trim().length > 0;
@@ -85,10 +84,6 @@ function DisplayNameSection({
             return;
          }
          toast.success("Organização renomeada com sucesso!");
-         queryClient.invalidateQueries({
-            queryKey: orpc.organization.getActiveOrganization.queryOptions({})
-               .queryKey,
-         });
       });
    }
 
@@ -126,7 +121,6 @@ function LogoSection({
    currentLogo: string | null;
    organizationName: string;
 }) {
-   const queryClient = useQueryClient();
    const fileUpload = useFileUpload({
       acceptedTypes: ["image/*"],
       maxSize: 5 * 1024 * 1024,
@@ -153,17 +147,6 @@ function LogoSection({
             }
             toast.success("Logo atualizado com sucesso!");
             fileUpload.clearFile();
-            await Promise.all([
-               queryClient.invalidateQueries({
-                  queryKey:
-                     orpc.organization.getActiveOrganization.queryOptions({})
-                        .queryKey,
-               }),
-               queryClient.invalidateQueries({
-                  queryKey: orpc.organization.getOrganizations.queryOptions({})
-                     .queryKey,
-               }),
-            ]);
          });
       },
       onError: () => {
