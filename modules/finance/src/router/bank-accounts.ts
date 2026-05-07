@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { eq, or, sql } from "drizzle-orm";
+import { and, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { err, fromPromise, fromThrowable, ok } from "neverthrow";
 import { z } from "zod";
 import {
@@ -32,6 +32,72 @@ export const create = protectedProcedure
       if (!account)
          throw WebAppError.internal("Falha ao criar conta bancária.");
       return account;
+   });
+
+const BANK_ACCOUNT_TYPES = [
+   "checking",
+   "savings",
+   "investment",
+   "payment",
+   "cash",
+] as const;
+
+const listSchema = z.object({
+   page: z.number().int().positive().catch(1).default(1),
+   pageSize: z.number().int().positive().max(1000).catch(20).default(20),
+   search: z.string().max(100).optional(),
+   type: z.enum(BANK_ACCOUNT_TYPES).optional(),
+});
+
+export const list = protectedProcedure
+   .input(listSchema)
+   .handler(async ({ context, input }) => {
+      const { page, pageSize, search, type } = input;
+      const offset = (page - 1) * pageSize;
+      const where = and(
+         eq(bankAccounts.teamId, context.teamId),
+         eq(bankAccounts.status, "active"),
+         type ? eq(bankAccounts.type, type) : undefined,
+         search ? ilike(bankAccounts.name, `%${search}%`) : undefined,
+      );
+
+      const result = await fromPromise(
+         Promise.all([
+            context.db.query.bankAccounts.findMany({
+               where: () => where,
+               orderBy: (f, { asc }) => [asc(f.name)],
+               limit: pageSize,
+               offset,
+            }),
+            context.db
+               .select({ count: sql<number>`cast(count(*) as int)` })
+               .from(bankAccounts)
+               .where(where),
+         ]),
+         () => WebAppError.internal("Falha ao listar contas bancárias."),
+      );
+      if (result.isErr()) throw result.error;
+      const [rows, countRows] = result.value;
+      const totalCount = countRows[0]?.count ?? 0;
+
+      const data = await Promise.all(
+         rows.map(async (account) => {
+            const balances = await computeBankAccountBalance(
+               context.db,
+               account.id,
+               account.initialBalance,
+            );
+            return { ...account, ...balances };
+         }),
+      );
+
+      return {
+         data,
+         totalCount,
+         page,
+         pageSize,
+         totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
+      };
    });
 
 export const getAll = protectedProcedure.handler(async ({ context }) => {
@@ -128,6 +194,56 @@ export const remove = protectedProcedure
       );
       if (deleted.isErr()) throw deleted.error;
       return { success: true };
+   });
+
+export const bulkRemove = protectedProcedure
+   .input(z.object({ ids: z.array(z.string().uuid()).min(1).max(500) }))
+   .handler(async ({ context, input }) => {
+      const owned = await fromPromise(
+         context.db.query.bankAccounts.findMany({
+            where: (f, { and, eq, inArray: inArr }) =>
+               and(eq(f.teamId, context.teamId), inArr(f.id, input.ids)),
+            columns: { id: true },
+         }),
+         () => WebAppError.internal("Falha ao verificar contas bancárias."),
+      );
+      if (owned.isErr()) throw owned.error;
+      if (owned.value.length !== input.ids.length) {
+         throw WebAppError.notFound(
+            "Uma ou mais contas bancárias não encontradas.",
+         );
+      }
+
+      const usage = await fromPromise(
+         context.db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(transactions)
+            .where(
+               or(
+                  inArray(transactions.bankAccountId, input.ids),
+                  inArray(transactions.destinationBankAccountId, input.ids),
+               ),
+            ),
+         () =>
+            WebAppError.internal(
+               "Falha ao verificar lançamentos das contas bancárias.",
+            ),
+      );
+      if (usage.isErr()) throw usage.error;
+      if ((usage.value[0]?.count ?? 0) > 0) {
+         throw WebAppError.conflict(
+            "Uma ou mais contas têm lançamentos e não podem ser excluídas. Use arquivamento.",
+         );
+      }
+
+      const deleted = await fromPromise(
+         context.db.transaction(async (tx) =>
+            tx.delete(bankAccounts).where(inArray(bankAccounts.id, input.ids)),
+         ),
+         () => WebAppError.internal("Falha ao excluir contas bancárias."),
+      );
+      if (deleted.isErr()) throw deleted.error;
+      return { deleted: input.ids.length };
    });
 
 type BrasilApiBank = {

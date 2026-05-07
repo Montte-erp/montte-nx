@@ -45,7 +45,9 @@ const BANK_ACCOUNT_TYPES = [
 type BankAccountType = (typeof BANK_ACCOUNT_TYPES)[number];
 
 const BANK_TYPES = ["checking", "savings", "investment", "payment"] as const;
-const BANK_TYPES_SET = new Set<BankAccountType>(BANK_TYPES);
+type BankType = (typeof BANK_TYPES)[number];
+const isBankType = (t: BankAccountType): t is BankType =>
+   (BANK_TYPES as readonly string[]).includes(t);
 
 const TYPE_OPTIONS: {
    value: BankAccountType;
@@ -96,7 +98,7 @@ const formSchema = z
       initialBalance: z.number().min(0, "Saldo inicial não pode ser negativo."),
    })
    .superRefine((v, ctx) => {
-      if (!BANK_TYPES_SET.has(v.type)) return;
+      if (!isBankType(v.type)) return;
       if (!v.bankName.trim()) {
          ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -131,15 +133,6 @@ function isFieldInvalid(field: {
    return field.state.meta.isTouched && field.state.meta.errors.length > 0;
 }
 
-function firstErrorMessage(errors: unknown[]): string {
-   const e = errors[0];
-   if (typeof e === "string") return e;
-   if (e && typeof e === "object" && "message" in e) {
-      return String((e as { message: unknown }).message);
-   }
-   return "";
-}
-
 export function BankAccountFormSheet() {
    const { closeTopSheet } = useSheet();
    const bankCodeMaskRef = useMaskito({ options: BANK_CODE_MASK });
@@ -169,7 +162,7 @@ export function BankAccountFormSheet() {
       defaultValues: DEFAULT_VALUES,
       validators: { onMount: formSchema, onChange: formSchema },
       onSubmit: async ({ value }) => {
-         const isBank = BANK_TYPES_SET.has(value.type);
+         const isBank = isBankType(value.type);
          const result = await fromPromise(
             createMutation.mutateAsync({
                name: value.name.trim(),
@@ -231,7 +224,7 @@ export function BankAccountFormSheet() {
                      />
                      {isFieldInvalid(field) ? (
                         <FieldError>
-                           {firstErrorMessage(field.state.meta.errors)}
+                           {field.state.meta.errors[0]?.message}
                         </FieldError>
                      ) : null}
                   </Field>
@@ -268,7 +261,7 @@ export function BankAccountFormSheet() {
 
             <form.Subscribe selector={(s) => s.values.type}>
                {(type) =>
-                  BANK_TYPES_SET.has(type) ? (
+                  isBankType(type) ? (
                      <div className="flex flex-col gap-4 rounded-md border p-4">
                         <span className="text-sm font-medium">
                            Detalhes bancários
@@ -308,9 +301,7 @@ export function BankAccountFormSheet() {
                                     </div>
                                     {isFieldInvalid(field) ? (
                                        <FieldError>
-                                          {firstErrorMessage(
-                                             field.state.meta.errors,
-                                          )}
+                                          {field.state.meta.errors[0]?.message}
                                        </FieldError>
                                     ) : null}
                                  </Field>
@@ -345,9 +336,7 @@ export function BankAccountFormSheet() {
                                  />
                                  {isFieldInvalid(field) ? (
                                     <FieldError>
-                                       {firstErrorMessage(
-                                          field.state.meta.errors,
-                                       )}
+                                       {field.state.meta.errors[0]?.message}
                                     </FieldError>
                                  ) : null}
                               </Field>
@@ -422,7 +411,7 @@ export function BankAccountFormSheet() {
                      />
                      {isFieldInvalid(field) ? (
                         <FieldError>
-                           {firstErrorMessage(field.state.meta.errors)}
+                           {field.state.meta.errors[0]?.message}
                         </FieldError>
                      ) : null}
                   </Field>
