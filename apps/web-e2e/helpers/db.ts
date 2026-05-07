@@ -1,8 +1,11 @@
 import { config as loadEnv } from "dotenv";
 import path from "node:path";
 import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { fromThrowable } from "neverthrow";
-import { createDb, type DatabaseInstance } from "@core/database/client";
+import { Pool } from "pg";
+import type { DatabaseInstance } from "@core/database/client";
+import * as schema from "@core/database/schema";
 import {
    invitation as invitationTable,
    organization,
@@ -34,21 +37,34 @@ function assertLocalOnly() {
    }
 }
 
-let cachedDb: DatabaseInstance | undefined;
+type CachedDb = {
+   db: DatabaseInstance;
+   pool: Pool;
+};
+
+let cachedDb: CachedDb | undefined;
 
 function db(): DatabaseInstance {
    if (!cachedDb) {
-      cachedDb = createDb({
-         databaseUrl: process.env.DATABASE_URL ?? "",
+      const pool = new Pool({
+         connectionString: process.env.DATABASE_URL ?? "",
          max: 2,
       });
+      cachedDb = {
+         db: drizzle({
+            casing: "snake_case",
+            client: pool,
+            schema,
+         }),
+         pool,
+      };
    }
-   return cachedDb;
+   return cachedDb.db;
 }
 
 export async function closeDb() {
    if (!cachedDb) return;
-   await cachedDb.$client.end();
+   await cachedDb.pool.end();
    cachedDb = undefined;
 }
 
