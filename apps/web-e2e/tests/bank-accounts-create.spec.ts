@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { expect, test } from "../fixtures";
 import { deleteBankAccountByName, findTeamByOrgAndSlug } from "../helpers/db";
 
@@ -5,7 +6,7 @@ const stamp = () => `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 const created: string[] = [];
 
 async function gotoBankAccounts(
-   page: Parameters<Parameters<typeof test>[1]>[0]["page"],
+   page: Page,
    session: { orgSlug: string; teamSlug: string },
 ) {
    await page.goto(`/${session.orgSlug}/${session.teamSlug}/bank-accounts`);
