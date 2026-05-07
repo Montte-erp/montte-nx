@@ -169,9 +169,9 @@ function handleClassificationBatchEvent(event: KnownEvent) {
    }
 }
 
-export function useJobNotifications() {
+export function useInboxStream() {
    const { data } = useQuery(
-      orpc.notifications.subscribe.experimental_liveOptions({
+      orpc.inbox.subscribe.experimental_liveOptions({
          retry: true,
       }),
    );

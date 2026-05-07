@@ -67,7 +67,7 @@ function TeamResolver({ orgSlug }: { orgSlug: string }) {
 
       if (fallbackTeam) {
          router.navigate({
-            to: "/$slug/$teamSlug/home",
+            to: "/$slug/$teamSlug/inbox",
             params: {
                slug: orgSlug,
                teamSlug: fallbackTeam.slug,

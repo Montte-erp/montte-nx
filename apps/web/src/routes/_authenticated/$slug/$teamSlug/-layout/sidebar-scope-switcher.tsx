@@ -156,7 +156,7 @@ function SidebarScopeSwitcherContent() {
 
          const nextPath =
             replaceSlugInPath(pathname, slug, org.slug) ??
-            `/${org.slug}/${teamSlug}/home`;
+            `/${org.slug}/${teamSlug}/inbox`;
          router.navigate({ to: nextPath });
       });
    }
@@ -173,7 +173,7 @@ function SidebarScopeSwitcherContent() {
          const teamPrefix = `/${slug}/${teamSlug}`;
          const nextPath = pathname.startsWith(teamPrefix)
             ? pathname.replace(teamPrefix, `/${slug}/${team.slug}`)
-            : `/${slug}/${team.slug}/home`;
+            : `/${slug}/${team.slug}/inbox`;
          router.navigate({ to: nextPath });
       });
    }

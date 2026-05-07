@@ -156,7 +156,7 @@ export function OnboardingWizard({
                });
 
                await navigate({
-                  to: "/$slug/$teamSlug/home",
+                  to: "/$slug/$teamSlug/inbox",
                   params: {
                      slug: created.orgSlug,
                      teamSlug: created.teamSlug,

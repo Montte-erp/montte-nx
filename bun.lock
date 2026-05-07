@@ -85,6 +85,7 @@
         "@modules/billing": "workspace:*",
         "@modules/classification": "workspace:*",
         "@modules/finance": "workspace:*",
+        "@modules/inbox": "workspace:*",
         "@modules/insights": "workspace:*",
         "@orpc/client": "catalog:orpc",
         "@orpc/json-schema": "catalog:orpc",
@@ -572,6 +573,26 @@
         "@f-o-t/condition-evaluator": "catalog:fot",
         "@f-o-t/money": "catalog:fot",
         "@modules/classification": "workspace:*",
+        "@orpc/server": "catalog:orpc",
+        "dayjs": "catalog:ui",
+        "drizzle-orm": "catalog:database",
+        "neverthrow": "catalog:validation",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
+        "typescript": "catalog:development",
+        "vitest": "catalog:testing",
+      },
+    },
+    "modules/inbox": {
+      "name": "@modules/inbox",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/database": "workspace:*",
+        "@core/logging": "workspace:*",
+        "@core/orpc": "workspace:*",
+        "@core/sse": "workspace:*",
         "@orpc/server": "catalog:orpc",
         "dayjs": "catalog:ui",
         "drizzle-orm": "catalog:database",
@@ -1538,6 +1559,8 @@
     "@modules/classification": ["@modules/classification@workspace:modules/classification"],
 
     "@modules/finance": ["@modules/finance@workspace:modules/finance"],
+
+    "@modules/inbox": ["@modules/inbox@workspace:modules/inbox"],
 
     "@modules/insights": ["@modules/insights@workspace:modules/insights"],
 

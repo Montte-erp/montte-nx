@@ -6,7 +6,7 @@ import {
    CreditCard,
    Gauge,
    Gift,
-   House,
+   Inbox,
    LayoutDashboard,
    Lightbulb,
    Tag,
@@ -40,11 +40,11 @@ export const navGroups: NavGroupDef[] = [
       id: "main",
       items: [
          {
-            id: "home",
-            label: "Inicio",
-            icon: House,
+            id: "inbox",
+            label: "Inbox",
+            icon: Inbox,
             iconColor: "text-sky-500",
-            route: "/$slug/$teamSlug/home",
+            route: "/$slug/$teamSlug/inbox",
          },
          {
             id: "dashboards",

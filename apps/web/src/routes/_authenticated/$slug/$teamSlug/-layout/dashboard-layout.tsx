@@ -8,7 +8,7 @@ import { cn } from "@packages/ui/lib/utils";
 import { useMatches } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
 import type * as React from "react";
-import { useJobNotifications } from "@/features/notifications/use-job-notifications";
+import { useInboxStream } from "@/features/inbox/use-inbox-stream";
 import { ContextPanelTabContent } from "../-context-panel/context-panel";
 import { ContextPanelRail } from "../-context-panel/context-panel-rail";
 import { contextPanelStore } from "../-context-panel/context-panel-store";
@@ -41,7 +41,7 @@ function InlineContextPanel() {
 }
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-   useJobNotifications();
+   useInboxStream();
 
    const persistedCollapsed = useSidebarCollapsed();
    const matches = useMatches();
