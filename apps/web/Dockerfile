@@ -20,6 +20,7 @@ COPY packages ./packages
 COPY modules ./modules
 COPY apps/landing/package.json ./apps/landing/
 COPY apps/web/package.json ./apps/web/
+COPY apps/web-e2e/package.json ./apps/web-e2e/
 COPY apps/worker/package.json ./apps/worker/
 RUN bun install --frozen-lockfile
 

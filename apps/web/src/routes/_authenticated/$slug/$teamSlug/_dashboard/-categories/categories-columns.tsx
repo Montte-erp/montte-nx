@@ -196,6 +196,11 @@ export function buildCategoryColumns(options?: {
                     });
                  }
                : undefined,
+            exportValue: (row) => {
+               if (row.type === "income") return "Receita";
+               if (row.type === "expense") return "Despesa";
+               return "";
+            },
          },
          cell: ({ row }) => {
             const { type } = row.original;
@@ -216,6 +221,10 @@ export function buildCategoryColumns(options?: {
       {
          id: "keywords",
          header: "Palavras-chave",
+         meta: {
+            label: "Palavras-chave",
+            exportValue: (row) => row.keywords?.join(", ") ?? "",
+         },
          cell: ({ row }) => {
             if (row.original.parentId !== null)
                return <span className="text-sm text-muted-foreground">—</span>;

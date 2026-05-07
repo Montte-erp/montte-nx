@@ -322,6 +322,8 @@ function CategoriesList() {
          <DataTableRoot
             columns={columns}
             data={categories}
+            exportDateFormat="DD-MM-YYYY"
+            exportFileBase="categorias"
             getRowId={(row) => row.id}
             groupBy={groupBy ? (row) => row.type ?? "other" : undefined}
             renderGroupHeader={(key) =>
