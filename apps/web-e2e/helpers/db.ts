@@ -1,9 +1,13 @@
 import { config as loadEnv } from "dotenv";
 import path from "node:path";
 import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { fromThrowable } from "neverthrow";
-import { createDb, type DatabaseInstance } from "@core/database/client";
+import { Pool } from "pg";
+import type { DatabaseInstance } from "@core/database/client";
+import * as schema from "@core/database/schema";
 import {
+   invitation as invitationTable,
    member,
    organization,
    team,
@@ -35,21 +39,34 @@ function assertLocalOnly() {
    }
 }
 
-let cachedDb: DatabaseInstance | undefined;
+type CachedDb = {
+   db: DatabaseInstance;
+   pool: Pool;
+};
+
+let cachedDb: CachedDb | undefined;
 
 function db(): DatabaseInstance {
    if (!cachedDb) {
-      cachedDb = createDb({
-         databaseUrl: process.env.DATABASE_URL ?? "",
+      const pool = new Pool({
+         connectionString: process.env.DATABASE_URL ?? "",
          max: 2,
       });
+      cachedDb = {
+         db: drizzle({
+            casing: "snake_case",
+            client: pool,
+            schema,
+         }),
+         pool,
+      };
    }
-   return cachedDb;
+   return cachedDb.db;
 }
 
 export async function closeDb() {
    if (!cachedDb) return;
-   await cachedDb.$client.end();
+   await cachedDb.pool.end();
    cachedDb = undefined;
 }
 
@@ -86,6 +103,37 @@ export async function clearOrganizationLogoForEmail(email: string) {
       .update(organization)
       .set({ logo: null })
       .where(eq(organization.id, org.id));
+}
+
+export async function findPendingInvitationByEmail(email: string) {
+   return db().query.invitation.findFirst({
+      where: (f, { eq, and }) =>
+         and(eq(f.email, email), eq(f.status, "pending")),
+   });
+}
+
+export async function findInvitationByEmail(email: string) {
+   return db().query.invitation.findFirst({
+      where: (f, { eq }) => eq(f.email, email),
+      orderBy: (f, { desc }) => [desc(f.createdAt)],
+   });
+}
+
+export async function isUserMemberOfOrgByEmail(
+   email: string,
+   organizationId: string,
+) {
+   const u = await findUserByEmail(email);
+   if (!u) return false;
+   const m = await db().query.member.findFirst({
+      where: (f, { eq, and }) =>
+         and(eq(f.userId, u.id), eq(f.organizationId, organizationId)),
+   });
+   return !!m;
+}
+
+export async function deleteInvitationsByEmail(email: string) {
+   await db().delete(invitationTable).where(eq(invitationTable.email, email));
 }
 
 export async function deleteUserByEmail(email: string) {

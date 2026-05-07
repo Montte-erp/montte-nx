@@ -1,4 +1,5 @@
 import { apiKey } from "@better-auth/api-key";
+import { i18n } from "@better-auth/i18n";
 import * as schema from "@core/database/schema";
 import { getDomain, isProduction } from "@core/environment/helpers";
 import { getLogger } from "@core/logging/root";
@@ -17,6 +18,7 @@ import {
    twoFactor,
 } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
+import { ptBRTranslations } from "@core/authentication/translations/pt-br";
 import { z } from "zod";
 import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog } from "@core/posthog/server";
@@ -175,6 +177,12 @@ export function createAuth(deps: CreateAuthDeps) {
       },
 
       plugins: [
+         i18n({
+            defaultLocale: "pt-BR",
+            detection: [],
+            translations: { "pt-BR": ptBRTranslations },
+         }),
+
          magicLink({
             expiresIn: 60 * 15,
             async sendMagicLink({ email, url }) {

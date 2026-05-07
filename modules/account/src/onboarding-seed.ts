@@ -3,9 +3,17 @@ import { eq } from "drizzle-orm";
 import type { PostHog } from "posthog-node";
 import type { DatabaseInstance } from "@core/database/client";
 import { organization, team, teamMember } from "@core/database/schemas/auth";
+import { AppError } from "@core/logging/errors";
 import { seedClassificationDefaults } from "@modules/classification/seeds";
 
 const EARLY_ACCESS_FLAGS = ["contacts", "services", "advanced-analytics"];
+const ONBOARDING_PRODUCTS = new Set<string>([
+   "finance",
+   "contacts",
+   "services",
+]);
+
+export type OnboardingProduct = "finance" | "contacts" | "services";
 
 export function enrollInAllFeatures(
    posthog: PostHog,
@@ -32,10 +40,16 @@ export async function runOnboardingCompletion(args: {
    teamId: string;
    userId: string;
    slug: string;
-   onboardingProducts: string[];
+   onboardingProducts: OnboardingProduct[];
 }) {
    const { db, organizationId, teamId, userId, slug, onboardingProducts } =
       args;
+
+   for (const product of onboardingProducts) {
+      if (!ONBOARDING_PRODUCTS.has(product)) {
+         throw AppError.validation("Produto de onboarding inválido.");
+      }
+   }
 
    await db.transaction(async (tx) => {
       await tx

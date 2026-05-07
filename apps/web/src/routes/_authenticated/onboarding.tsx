@@ -1,6 +1,11 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import {
+   createFileRoute,
+   redirect,
+   type ErrorComponentProps,
+} from "@tanstack/react-router";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
+import { Button } from "@packages/ui/components/button";
 import { OnboardingWizard } from "./-onboarding/onboarding-wizard";
 
 const onboardingStepSchema = z
@@ -116,8 +121,30 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
          activeOrg: activeOrg ?? null,
       };
    },
+   head: () => ({
+      meta: [{ title: "Onboarding — Montte" }],
+   }),
+   errorComponent: OnboardingErrorComponent,
    component: OnboardingPage,
 });
+
+function OnboardingErrorComponent({ reset }: ErrorComponentProps) {
+   return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-4 text-center">
+         <div className="flex flex-col gap-2">
+            <h1 className="text-xl font-semibold">
+               Falha ao carregar onboarding
+            </h1>
+            <p className="text-sm text-muted-foreground">
+               Tente novamente para continuar a configuração.
+            </p>
+         </div>
+         <Button onClick={reset} variant="outline">
+            Tentar novamente
+         </Button>
+      </div>
+   );
+}
 
 function OnboardingPage() {
    const { session, organizations, activeOrg } = Route.useRouteContext();

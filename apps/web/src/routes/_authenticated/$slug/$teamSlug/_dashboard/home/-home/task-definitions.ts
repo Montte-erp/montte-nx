@@ -95,9 +95,11 @@ export const TASK_DEFINITIONS: TaskDefinition[] = [
 export function getTasksForProducts(
    selectedProducts: string[] | null,
 ): TaskDefinition[] {
-   const products = selectedProducts ?? [];
-   if (products.length === 0) return TASK_DEFINITIONS;
-   return TASK_DEFINITIONS.filter((task) => products.includes(task.product));
+   if (selectedProducts === null) return TASK_DEFINITIONS;
+   if (selectedProducts.length === 0) return [];
+   return TASK_DEFINITIONS.filter((task) =>
+      selectedProducts.includes(task.product),
+   );
 }
 
 export function getProductLabel(product: ProductId): string {

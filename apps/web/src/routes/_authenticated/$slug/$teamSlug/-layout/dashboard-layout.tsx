@@ -43,7 +43,7 @@ function InlineContextPanel() {
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
    useJobNotifications();
 
-   const isCollapsed = useSidebarCollapsed();
+   const persistedCollapsed = useSidebarCollapsed();
    const matches = useMatches();
    const isSettingsPage = matches.some((m) =>
       m.routeId.includes("/_dashboard/settings"),
@@ -51,14 +51,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
    const isChatPage = matches.some((m) =>
       m.routeId.includes("/_dashboard/chat"),
    );
+   const hasDedicatedSidebar = isSettingsPage || isChatPage;
 
    return (
       <EarlyAccessProvider>
          <SidebarManagerProvider>
             <SidebarProvider
+               key={hasDedicatedSidebar ? "dedicated" : "default"}
                className="h-svh"
-               onOpenChange={(open) => setCollapsed(!open)}
-               open={!isCollapsed && !isChatPage}
+               defaultOpen={hasDedicatedSidebar ? false : !persistedCollapsed}
+               onOpenChange={(open) => {
+                  if (!hasDedicatedSidebar) setCollapsed(!open);
+               }}
             >
                <SidebarManager name="main" style={SIDEBAR_WIDTH_STYLE}>
                   <AppSidebar />
@@ -70,7 +74,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         <main
                            className={cn(
                               "relative flex-1 p-4",
-                              isSettingsPage || isChatPage
+                              hasDedicatedSidebar
                                  ? "overflow-hidden"
                                  : "overflow-y-auto",
                            )}
@@ -82,7 +86,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   <AutoBugReporter />
                   <MonthlySatisfactionSurvey />
                </SidebarInset>
-               {!isChatPage ? (
+               {!hasDedicatedSidebar ? (
                   <>
                      <InlineContextPanel />
                      <ContextPanelRail />

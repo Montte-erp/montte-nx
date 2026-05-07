@@ -1,4 +1,3 @@
-import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
    Field,
@@ -7,6 +6,7 @@ import {
    FieldLabel,
 } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
+import { Progress } from "@packages/ui/components/progress";
 import { Spinner } from "@packages/ui/components/spinner";
 import { cn } from "@packages/ui/lib/utils";
 import { useForm, useStore } from "@tanstack/react-form";
@@ -38,10 +38,7 @@ type Organization = {
    onboardingCompleted: boolean | null;
 };
 
-type StepItem = {
-   id: OnboardingStep;
-   title: string;
-};
+type StepItem = { id: OnboardingStep };
 
 type NavigateSearch = (search: {
    step?: OnboardingStep;
@@ -109,21 +106,14 @@ export function OnboardingWizard({
 
    const steps = useMemo<StepItem[]>(() => {
       if (!activeOrg && !session.user.name) {
-         return [
-            { id: "profile", title: "Perfil" },
-            { id: "goal", title: "Objetivo" },
-            { id: "company", title: "Empresa" },
-         ];
+         return [{ id: "profile" }, { id: "goal" }, { id: "company" }];
       }
 
       if (!activeOrg) {
-         return [
-            { id: "goal", title: "Objetivo" },
-            { id: "company", title: "Empresa" },
-         ];
+         return [{ id: "goal" }, { id: "company" }];
       }
 
-      return [{ id: "profile", title: "Perfil" }];
+      return [{ id: "profile" }];
    }, [activeOrg, session.user.name]);
 
    const currentIndex = Math.max(
@@ -165,14 +155,6 @@ export function OnboardingWizard({
                   onboarding_version: ONBOARDING_VERSION,
                });
 
-               posthog.capture("workspace_created", {
-                  onboarding_goal: selectedGoal,
-                  onboarding_version: ONBOARDING_VERSION,
-                  is_multi_org_creation: isMultiOrgCreation,
-                  organization_id: created.orgId,
-                  team_id: created.teamId,
-               });
-
                await navigate({
                   to: "/$slug/$teamSlug/home",
                   params: {
@@ -195,34 +177,18 @@ export function OnboardingWizard({
       void navigateSearch({ step: previous.id });
    }, [currentIndex, navigateSearch, steps]);
 
+   const progress = Math.round(((currentIndex + 1) / steps.length) * 100);
+
    return (
       <div className="flex min-h-screen flex-col">
          <header className="shrink-0 border-b p-4">
             <div className="flex w-full items-center gap-4">
-               <nav className="grid flex-1 grid-cols-3 gap-2">
-                  {steps.map((item, index) => (
-                     <StepProgressItem
-                        isCurrent={item.id === step}
-                        isDone={index < currentIndex}
-                        key={item.id}
-                        position={index + 1}
-                        title={item.title}
-                     />
-                  ))}
-               </nav>
-               <div className="flex shrink-0 items-center gap-2">
-                  <img
-                     alt="Montte"
-                     className="size-8 shrink-0 rounded-full"
-                     src="/favicon.svg"
-                  />
-                  <Badge
-                     className="bg-muted text-muted-foreground"
-                     variant="outline"
-                  >
-                     app.montte.co
-                  </Badge>
-               </div>
+               <img
+                  alt="Montte"
+                  className="size-8 shrink-0 rounded-full"
+                  src="/favicon.svg"
+               />
+               <Progress className="flex-1" value={progress} />
             </div>
          </header>
 
@@ -257,33 +223,6 @@ export function OnboardingWizard({
                )}
             </div>
          </main>
-      </div>
-   );
-}
-
-function StepProgressItem({
-   isCurrent,
-   isDone,
-   position,
-   title,
-}: {
-   isCurrent: boolean;
-   isDone: boolean;
-   position: number;
-   title: string;
-}) {
-   return (
-      <div className="flex items-center gap-2">
-         <div
-            className={
-               isCurrent || isDone
-                  ? "flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground"
-                  : "flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground"
-            }
-         >
-            {isDone ? <Check className="size-4" /> : position}
-         </div>
-         <span className="text-sm font-medium">{title}</span>
       </div>
    );
 }
@@ -537,14 +476,6 @@ function CompanyStep({
    const isSubmitting = useStore(form.store, (state) => state.isSubmitting);
    const isPending = isCreating || isSubmitting;
    const canContinue = workspaceName.trim().length >= 2 && !isPending;
-   const preview = workspaceName
-      .trim()
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 32);
 
    const handleSubmit = useCallback(
       (event: FormEvent) => {
@@ -593,15 +524,6 @@ function CompanyStep({
                            placeholder="Ex: Montte Tecnologia"
                            value={field.state.value}
                         />
-                        {preview && (
-                           <p className="text-xs text-muted-foreground">
-                              app.montte.co/{preview}/principal
-                           </p>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                           CNPJ e dados fiscais ficam fora deste cadastro
-                           inicial.
-                        </p>
                         {isInvalid && (
                            <FieldError errors={field.state.meta.errors} />
                         )}

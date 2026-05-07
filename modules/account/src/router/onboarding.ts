@@ -16,6 +16,7 @@ import { createSlug } from "@core/utils/text";
 import {
    enrollInAllFeatures,
    runOnboardingCompletion,
+   type OnboardingProduct,
 } from "@modules/account/onboarding-seed";
 
 const onboardingGoalSchema = z.enum([
@@ -24,10 +25,13 @@ const onboardingGoalSchema = z.enum([
    "pick_myself",
 ]);
 
-const productsByGoal: Record<z.infer<typeof onboardingGoalSchema>, string[]> = {
+const productsByGoal: Record<
+   z.infer<typeof onboardingGoalSchema>,
+   OnboardingProduct[]
+> = {
    finance: ["finance"],
    clients_services: ["contacts", "services"],
-   pick_myself: ["finance"],
+   pick_myself: [],
 };
 
 export const createWorkspace = authenticatedProcedure
