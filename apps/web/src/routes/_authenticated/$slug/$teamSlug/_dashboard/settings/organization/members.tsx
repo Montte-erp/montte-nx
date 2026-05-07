@@ -188,6 +188,7 @@ function buildColumns(currentUserId: string | undefined): ColumnDef<Row>[] {
             isEditable: true,
             cellComponent: "select",
             editOptions: ROLE_OPTIONS,
+            exportValue: (row) => ROLE_LABELS[row.role] ?? row.role,
             isEditableForRow: () => false,
          },
          cell: ({ row }) => (
@@ -199,7 +200,10 @@ function buildColumns(currentUserId: string | undefined): ColumnDef<Row>[] {
       {
          accessorKey: "createdAt",
          header: "Desde",
-         meta: { label: "Desde" },
+         meta: {
+            label: "Desde",
+            exportValue: (row) => dayjs(row.createdAt).format("DD/MM/YYYY"),
+         },
          cell: ({ row }) => (
             <span className="text-muted-foreground text-sm">
                {dayjs(row.original.createdAt).format("DD/MM/YYYY")}
@@ -391,6 +395,8 @@ function MembersContent() {
             columnFilters={columnFilters}
             columns={columns}
             data={filteredData}
+            exportDateFormat="DD-MM-YYYY"
+            exportFileBase="membros"
             getRowId={(row) => `${row.kind}:${row.id}`}
             groupBy={(row) =>
                row.kind === "member" ? "Membros" : "Convites pendentes"

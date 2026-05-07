@@ -75,6 +75,7 @@ declare module "@tanstack/react-table" {
       align?: "left" | "center" | "right";
       exportable?: boolean;
       exportIgnore?: boolean;
+      exportValue?: (row: TData, value: TValue) => string;
       importIgnore?: boolean;
       isEditable?: boolean;
       cellComponent?:
@@ -102,6 +103,8 @@ type DataTableContextValue<TData> = {
    store: Store<DataTableStoreState>;
    table: Table<TData>;
    storageKey: string;
+   exportFileBase?: string;
+   exportDateFormat?: string;
    onTableStateChange: (state: DataTableStoredState) => void;
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
@@ -137,6 +140,8 @@ export function useDataTable<TData>() {
       table: ctx.table,
       store: ctx.store,
       storageKey: ctx.storageKey,
+      exportFileBase: ctx.exportFileBase,
+      exportDateFormat: ctx.exportDateFormat,
       onTableStateChange: ctx.onTableStateChange,
       groupBy: ctx.groupBy,
       renderGroupHeader: ctx.renderGroupHeader,
@@ -168,6 +173,8 @@ function DataTableContextSync({
 interface DataTableRootProps<TData> {
    children: React.ReactNode;
    storageKey: string;
+   exportFileBase?: string;
+   exportDateFormat?: string;
    columns: ColumnDef<TData, unknown>[];
    data: TData[];
    getRowId: (row: TData) => string;
@@ -190,6 +197,8 @@ interface DataTableRootProps<TData> {
 
 function useDataTableRoot<TData>({
    storageKey,
+   exportFileBase,
+   exportDateFormat,
    columns,
    data,
    getRowId,
@@ -424,6 +433,8 @@ function useDataTableRoot<TData>({
          store,
          table,
          storageKey,
+         exportFileBase,
+         exportDateFormat,
          onTableStateChange,
          groupBy,
          renderGroupHeader,
@@ -437,6 +448,8 @@ function useDataTableRoot<TData>({
          store,
          table,
          storageKey,
+         exportFileBase,
+         exportDateFormat,
          onTableStateChange,
          groupBy,
          renderGroupHeader,

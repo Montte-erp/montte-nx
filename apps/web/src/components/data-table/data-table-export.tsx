@@ -25,8 +25,10 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 function useTableExport() {
-   const { table, storageKey } = useDataTable();
-   const exportFileBase = storageKey.replace(/^montte:datatable:/, "");
+   const { table, storageKey, exportFileBase, exportDateFormat } =
+      useDataTable();
+   const fileBase =
+      exportFileBase ?? storageKey.replace(/^montte:datatable:/, "");
    const { generate: generateCsv } = useCsvFile();
    const { generate: generateXlsx } = useXlsxFile();
 
@@ -54,9 +56,13 @@ function useTableExport() {
             Object.fromEntries(
                exportCols.map((col, i) => [
                   headers[i],
-                  row.getValue(col.id) == null
-                     ? ""
-                     : String(row.getValue(col.id)),
+                  col.columnDef.meta?.exportValue?.(
+                     row.original,
+                     row.getValue(col.id),
+                  ) ??
+                     (row.getValue(col.id) == null
+                        ? ""
+                        : String(row.getValue(col.id))),
                ]),
             ),
          ),
@@ -70,15 +76,22 @@ function useTableExport() {
          suffix: string,
       ) => {
          const data = buildRows(rows);
-         const dateStr = dayjs().format("YYYY-MM-DD");
-         const filename = `${exportFileBase}${suffix}-${dateStr}.${format}`;
+         const dateStr = dayjs().format(exportDateFormat ?? "YYYY-MM-DD");
+         const filename = `${fileBase}${suffix}-${dateStr}.${format}`;
          if (format === "csv") {
             downloadBlob(generateCsv(data, headers), filename);
             return;
          }
          downloadBlob(generateXlsx(data, headers), filename);
       },
-      [buildRows, exportFileBase, headers, generateCsv, generateXlsx],
+      [
+         buildRows,
+         fileBase,
+         exportDateFormat,
+         headers,
+         generateCsv,
+         generateXlsx,
+      ],
    );
 
    return { table, exportRows };
