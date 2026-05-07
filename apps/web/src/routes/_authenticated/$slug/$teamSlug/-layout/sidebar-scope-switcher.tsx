@@ -367,8 +367,6 @@ function SidebarScopeSwitcherContent() {
                         Configurações da organização
                      </Link>
                   </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
                </DropdownMenuContent>
             </DropdownMenu>
          </SidebarMenuItem>

@@ -243,6 +243,7 @@ function MembersContent() {
 
    const currentUserId = sessionData?.user?.id;
    const organizationId = activeOrg?.id ?? "";
+   const teamId = sessionData?.session.activeTeamId ?? null;
 
    const data = useMemo<Row[]>(
       () => [...members.map(toMemberRow), ...invites.map(toInviteRow)],
@@ -365,6 +366,7 @@ function MembersContent() {
          renderChildren: () => (
             <InviteMembersForm
                organizationId={organizationId}
+               teamId={teamId}
                onSuccess={() => {
                   invalidateInvites();
                   closeCredenza();
@@ -372,7 +374,7 @@ function MembersContent() {
             />
          ),
       });
-   }, [openCredenza, closeCredenza, organizationId, invalidateInvites]);
+   }, [openCredenza, closeCredenza, organizationId, teamId, invalidateInvites]);
 
    const searchValue = columnFilters.find((f) => f.id === "name")?.value;
    const searchDefaultValue =

@@ -57,11 +57,13 @@ function parseEmails(raw: string): { valid: string[]; invalid: string[] } {
 
 interface InviteMembersFormProps {
    organizationId: string;
+   teamId: string | null;
    onSuccess: () => void;
 }
 
 export function InviteMembersForm({
    organizationId,
+   teamId,
    onSuccess,
 }: InviteMembersFormProps) {
    const { data: activeOrg } = useSuspenseQuery(
@@ -82,6 +84,7 @@ export function InviteMembersForm({
                         email,
                         role: "member",
                         organizationId,
+                        ...(teamId ? { teamId } : {}),
                         fetchOptions: {
                            onSuccess: () => {
                               succeeded += 1;

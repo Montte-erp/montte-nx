@@ -138,7 +138,6 @@ test("aceita convite automaticamente após sign-up quando invitee não tem conta
    await inviteePage.goto(
       `/${e2eSession.orgSlug}/${e2eSession.teamSlug}/settings/organization/members`,
    );
-   await inviteePage.waitForLoadState("networkidle");
    await expect(
       inviteePage.getByRole("cell", { name: INVITEE_EMAIL }).first(),
    ).toBeVisible({ timeout: 15_000 });
@@ -208,7 +207,6 @@ test("aceita convite com sucesso quando logado com a conta convidada", async ({
    await inviteePage.goto(
       `/${e2eSession.orgSlug}/${e2eSession.teamSlug}/settings/organization/members`,
    );
-   await inviteePage.waitForLoadState("networkidle");
    await expect(
       inviteePage.getByRole("cell", { name: INVITEE_EMAIL }).first(),
    ).toBeVisible({ timeout: 15_000 });
