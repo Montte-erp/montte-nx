@@ -14,8 +14,8 @@ import * as creditCardsRouter from "@modules/finance/router/credit-cards";
 import * as customerPortalRouter from "@modules/billing/router/customer-portal";
 import * as dashboardsRouter from "@modules/insights/router/dashboards";
 import * as financialSettingsRouter from "@modules/account/router/financial-settings";
+import * as inboxRouter from "@modules/inbox/router/inbox";
 import * as insightsRouter from "@modules/insights/router/insights";
-import * as notificationsRouter from "./notifications";
 import * as onboardingRouter from "@modules/account/router/onboarding";
 import * as organizationRouter from "@modules/account/router/organization";
 import * as benefitsRouter from "@modules/billing/router/benefits";
@@ -73,8 +73,8 @@ export default {
    customerPortal: customerPortalRouter,
    dashboards: dashboardsRouter,
    financialSettings: financialSettingsRouter,
+   inbox: inboxRouter,
    insights: insightsRouter,
-   notifications: notificationsRouter,
    onboarding: onboardingRouter,
    prices: pricesRouter,
    services: servicesProcedures,

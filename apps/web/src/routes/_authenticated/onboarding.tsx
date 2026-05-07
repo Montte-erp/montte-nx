@@ -85,7 +85,7 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
 
          if (fixedResult.isOk() && fixedResult.value && session.user.name) {
             throw redirect({
-               to: "/$slug/$teamSlug/home",
+               to: "/$slug/$teamSlug/inbox",
                params: {
                   slug: fixedResult.value.orgSlug,
                   teamSlug: fixedResult.value.teamSlug,

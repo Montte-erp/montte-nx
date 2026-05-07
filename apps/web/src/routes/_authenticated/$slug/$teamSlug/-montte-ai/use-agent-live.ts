@@ -24,7 +24,7 @@ function stringArrayField(payload: unknown, key: string): string[] | null {
 export function useAgentLive() {
    const queryClient = useQueryClient();
    const { data } = useQuery(
-      orpc.notifications.subscribe.experimental_liveOptions({ retry: true }),
+      orpc.inbox.subscribe.experimental_liveOptions({ retry: true }),
    );
 
    useEffect(() => {

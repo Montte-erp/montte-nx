@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/$slug/$teamSlug")({
          const fallbackTeam = teams[0];
          if (fallbackTeam) {
             throw redirect({
-               to: "/$slug/$teamSlug/home",
+               to: "/$slug/$teamSlug/inbox",
                params: {
                   slug: params.slug,
                   teamSlug: fallbackTeam.slug,

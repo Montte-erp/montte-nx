@@ -11,6 +11,7 @@ export * from "@core/database/schemas/credit-cards";
 export * from "@core/database/schemas/credit-card-statements";
 export * from "@core/database/schemas/credit-card-statement-totals";
 export * from "@core/database/schemas/dashboards";
+export * from "@core/database/schemas/inbox";
 export * from "@core/database/schemas/insights";
 export * from "@core/database/schemas/invoices";
 export * from "@core/database/schemas/meters";
@@ -31,4 +32,5 @@ export {
    platformSchema,
    settingsSchema,
    agentsSchema,
+   inboxSchema,
 } from "@core/database/schemas/schemas";
