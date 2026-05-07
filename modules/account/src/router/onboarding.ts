@@ -6,7 +6,9 @@ import type { DatabaseInstance } from "@core/database/client";
 import { organization, team } from "@core/database/schemas/auth";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
+import { contacts } from "@core/database/schemas/contacts";
 import { insights } from "@core/database/schemas/insights";
+import { services } from "@core/database/schemas/services";
 import { transactions } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
 import { authenticatedProcedure, protectedProcedure } from "@core/orpc/server";
@@ -15,6 +17,18 @@ import {
    enrollInAllFeatures,
    runOnboardingCompletion,
 } from "@modules/account/onboarding-seed";
+
+const onboardingGoalSchema = z.enum([
+   "finance",
+   "clients_services",
+   "pick_myself",
+]);
+
+const productsByGoal: Record<z.infer<typeof onboardingGoalSchema>, string[]> = {
+   finance: ["finance"],
+   clients_services: ["contacts", "services"],
+   pick_myself: ["finance"],
+};
 
 export const createWorkspace = authenticatedProcedure
    .input(
@@ -28,10 +42,13 @@ export const createWorkspace = authenticatedProcedure
             .nullable()
             .optional(),
          cnpjData: cnpjDataSchema.nullable().optional(),
+         onboardingGoal: onboardingGoalSchema.default("pick_myself"),
+         isMultiOrgCreation: z.boolean().default(false),
       }),
    )
    .handler(async ({ context, input }) => {
       const slug = createSlug(input.workspaceName);
+      const onboardingProducts = productsByGoal[input.onboardingGoal];
 
       const org = await context.auth.api.createOrganization({
          headers: context.headers,
@@ -44,7 +61,7 @@ export const createWorkspace = authenticatedProcedure
          body: { organizationId: org.id },
       });
 
-      const teamName = `${input.workspaceName} - Empresarial`;
+      const teamName = "Principal";
       const teamSlug = createSlug(teamName);
 
       const created = await context.auth.api.createTeam({
@@ -64,11 +81,32 @@ export const createWorkspace = authenticatedProcedure
          organizationId: org.id,
          teamId: created.id,
          userId: context.userId,
-         slug,
+         slug: teamSlug,
+         onboardingProducts,
       });
 
       if (context.posthog) {
          enrollInAllFeatures(context.posthog, context.userId, org.id);
+         context.posthog.groupIdentify({
+            groupType: "organization",
+            groupKey: org.id,
+            properties: {
+               onboarding_goal: input.onboardingGoal,
+               onboarding_version: "2026-05",
+            },
+         });
+         context.posthog.capture({
+            distinctId: context.userId,
+            event: "workspace_created",
+            properties: {
+               onboarding_goal: input.onboardingGoal,
+               onboarding_version: "2026-05",
+               is_multi_org_creation: input.isMultiOrgCreation,
+               organization_id: org.id,
+               team_id: created.id,
+            },
+            groups: { organization: org.id },
+         });
          if (input.cnpjData) {
             const d = input.cnpjData;
             context.posthog.groupIdentify({
@@ -118,6 +156,10 @@ export const getOnboardingStatus = protectedProcedure.handler(
             db.$count(transactions, eq(transactions.teamId, teamId)),
             db.$count(bankAccounts, eq(bankAccounts.teamId, teamId)),
          ]);
+      const [contactCount, serviceCount] = await Promise.all([
+         db.$count(contacts, eq(contacts.teamId, teamId)),
+         db.$count(services, eq(services.teamId, teamId)),
+      ]);
 
       const stored = currentTeam.onboardingTasks ?? {};
       const auto: Record<string, boolean> = {};
@@ -125,6 +167,8 @@ export const getOnboardingStatus = protectedProcedure.handler(
       if (insightCount > 0) auto.create_insight = true;
       if (categoryCount > 0) auto.create_category = true;
       if (transactionCount > 0) auto.add_transaction = true;
+      if (contactCount > 0) auto.create_contact = true;
+      if (serviceCount > 0) auto.create_service = true;
       const tasks = { ...stored, ...auto };
 
       return {
@@ -227,8 +271,12 @@ export const skipTask = protectedProcedure
    });
 
 export const completeOnboarding = protectedProcedure
-   .input(z.object({ products: z.array(z.enum(["finance"])) }))
-   .handler(async ({ context }) => {
+   .input(
+      z.object({
+         products: z.array(z.enum(["finance", "contacts", "services"])),
+      }),
+   )
+   .handler(async ({ context, input }) => {
       const { db, organizationId, teamId, userId } = context;
 
       const teamRecord = await db.query.team.findFirst({
@@ -242,6 +290,7 @@ export const completeOnboarding = protectedProcedure
          teamId,
          userId,
          slug: teamRecord?.slug ?? teamId,
+         onboardingProducts: input.products,
       });
 
       const org = await db.query.organization.findFirst({

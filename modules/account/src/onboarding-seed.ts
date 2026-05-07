@@ -32,8 +32,10 @@ export async function runOnboardingCompletion(args: {
    teamId: string;
    userId: string;
    slug: string;
+   onboardingProducts: string[];
 }) {
-   const { db, organizationId, teamId, userId, slug } = args;
+   const { db, organizationId, teamId, userId, slug, onboardingProducts } =
+      args;
 
    await db.transaction(async (tx) => {
       await tx
@@ -47,7 +49,7 @@ export async function runOnboardingCompletion(args: {
          .update(team)
          .set({
             slug,
-            onboardingProducts: ["finance"],
+            onboardingProducts,
             onboardingCompleted: true,
          })
          .where(eq(team.id, teamId));

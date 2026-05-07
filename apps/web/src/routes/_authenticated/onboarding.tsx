@@ -3,9 +3,22 @@ import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { OnboardingWizard } from "./-onboarding/onboarding-wizard";
 
+const onboardingStepSchema = z
+   .enum(["profile", "goal", "company"])
+   .catch("goal")
+   .default("goal");
+
+const onboardingGoalSchema = z
+   .enum(["finance", "clients_services", "pick_myself"])
+   .nullable()
+   .catch(null)
+   .default(null);
+
 export const Route = createFileRoute("/_authenticated/onboarding")({
    validateSearch: z.object({
       new: z.boolean().catch(false).default(false),
+      step: onboardingStepSchema,
+      goal: onboardingGoalSchema,
    }),
    beforeLoad: async ({ context, search }) => {
       const sessionResult = await fromPromise(
@@ -26,6 +39,27 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
       );
 
       if (search.new) {
+         if (!session.user.name && search.step !== "profile") {
+            throw redirect({
+               to: "/onboarding",
+               search: { ...search, step: "profile" },
+            });
+         }
+
+         if (session.user.name && search.step === "profile") {
+            throw redirect({
+               to: "/onboarding",
+               search: { ...search, step: "goal" },
+            });
+         }
+
+         if (search.step === "company" && !search.goal) {
+            throw redirect({
+               to: "/onboarding",
+               search: { ...search, step: "goal" },
+            });
+         }
+
          return { session, organizations, activeOrg: null };
       }
 
@@ -55,6 +89,27 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
          }
       }
 
+      if (!session.user.name && search.step !== "profile") {
+         throw redirect({
+            to: "/onboarding",
+            search: { ...search, step: "profile" },
+         });
+      }
+
+      if (!activeOrg && session.user.name && search.step === "profile") {
+         throw redirect({
+            to: "/onboarding",
+            search: { ...search, step: "goal" },
+         });
+      }
+
+      if (!activeOrg && search.step === "company" && !search.goal) {
+         throw redirect({
+            to: "/onboarding",
+            search: { ...search, step: "goal" },
+         });
+      }
+
       return {
          session,
          organizations,
@@ -66,12 +121,23 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
 
 function OnboardingPage() {
    const { session, organizations, activeOrg } = Route.useRouteContext();
+   const navigate = Route.useNavigate();
+   const search = Route.useSearch();
 
    return (
       <OnboardingWizard
          activeOrg={activeOrg}
+         goal={search.goal}
+         isNewOrganization={search.new}
+         navigateSearch={(nextSearch) =>
+            navigate({
+               search: (prev) => ({ ...prev, ...nextSearch }),
+               replace: true,
+            })
+         }
          organizations={organizations}
          session={session}
+         step={search.step}
       />
    );
 }

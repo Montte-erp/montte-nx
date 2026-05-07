@@ -16,5 +16,16 @@
          "@modules/classification/*": ["../classification/src/*"]
       }
    },
-   "include": ["src"]
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../../core/redis"
+      },
+      {
+         "path": "../../core/logging"
+      },
+      {
+         "path": "../../core/database"
+      }
+   ]
 }

@@ -1,5 +1,13 @@
 export type TaskType = "setup" | "onboarding" | "explore";
-export type ProductId = "finance";
+export type ProductId = "finance" | "contacts" | "services";
+export type TaskRoute =
+   | "/$slug/$teamSlug/analytics/dashboards"
+   | "/$slug/$teamSlug/bank-accounts"
+   | "/$slug/$teamSlug/categories"
+   | "/$slug/$teamSlug/contacts"
+   | "/$slug/$teamSlug/services"
+   | "/$slug/$teamSlug/services/benefits"
+   | "/$slug/$teamSlug/transactions";
 
 export interface TaskDefinition {
    id: string;
@@ -9,7 +17,7 @@ export interface TaskDefinition {
    product: ProductId;
    dependsOn?: string;
    autoDetect: boolean;
-   route: string;
+   route: TaskRoute;
 }
 
 export const TASK_DEFINITIONS: TaskDefinition[] = [
@@ -54,21 +62,52 @@ export const TASK_DEFINITIONS: TaskDefinition[] = [
       autoDetect: true,
       route: "/$slug/$teamSlug/analytics/dashboards",
    },
+   {
+      id: "create_contact",
+      title: "Cadastre um contato",
+      description: "Adicione seu primeiro cliente ou fornecedor.",
+      type: "setup",
+      product: "contacts",
+      autoDetect: true,
+      route: "/$slug/$teamSlug/contacts",
+   },
+   {
+      id: "create_service",
+      title: "Cadastre um serviço",
+      description: "Monte seu catálogo inicial de serviços.",
+      type: "setup",
+      product: "services",
+      autoDetect: true,
+      route: "/$slug/$teamSlug/services",
+   },
+   {
+      id: "review_benefits",
+      title: "Revise benefícios",
+      description: "Organize benefícios que podem compor seus serviços.",
+      type: "explore",
+      product: "services",
+      dependsOn: "create_service",
+      autoDetect: false,
+      route: "/$slug/$teamSlug/services/benefits",
+   },
 ];
 
 export function getTasksForProducts(
    selectedProducts: string[] | null,
 ): TaskDefinition[] {
    const products = selectedProducts ?? [];
-   const hasFinance = products.includes("finance");
-   if (!hasFinance) return [];
-   return TASK_DEFINITIONS;
+   if (products.length === 0) return TASK_DEFINITIONS;
+   return TASK_DEFINITIONS.filter((task) => products.includes(task.product));
 }
 
 export function getProductLabel(product: ProductId): string {
    switch (product) {
       case "finance":
-         return "Finanças Pessoais";
+         return "Financeiro";
+      case "contacts":
+         return "Contatos";
+      case "services":
+         return "Serviços";
    }
 }
 

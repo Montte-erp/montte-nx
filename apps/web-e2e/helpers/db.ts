@@ -62,6 +62,18 @@ export async function findFirstOrgByUserEmail(email: string) {
    return member?.organization ?? null;
 }
 
+export async function findTeamByOrgAndSlug(orgSlug: string, teamSlug: string) {
+   const org = await db().query.organization.findFirst({
+      where: (f, { eq: eqOp }) => eqOp(f.slug, orgSlug),
+   });
+   if (!org) return null;
+
+   return db().query.team.findFirst({
+      where: (f, { and, eq: eqOp }) =>
+         and(eqOp(f.organizationId, org.id), eqOp(f.slug, teamSlug)),
+   });
+}
+
 export async function clearOrganizationLogoForEmail(email: string) {
    const org = await findFirstOrgByUserEmail(email);
    if (!org) return;

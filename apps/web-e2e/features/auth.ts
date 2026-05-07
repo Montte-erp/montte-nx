@@ -44,17 +44,39 @@ function parseSlugsFromUrl(url: string): {
 export async function completeOnboarding(page: Page, workspace: string) {
    await page.goto("/");
 
-   await expect(page.getByRole("button", { name: "Pular CNPJ" })).toBeVisible({
-      timeout: 15_000,
-   });
-   await page.getByRole("button", { name: "Pular CNPJ" }).click();
+   await expect(
+      page.getByRole("button", { name: /Organizar meu financeiro/ }),
+   ).toBeVisible({ timeout: 15_000 });
+   await page.getByRole("button", { name: /Organizar meu financeiro/ }).click();
+   await page.getByRole("button", { name: "Continuar" }).click();
 
-   await page.getByRole("textbox", { name: "Nome" }).fill(workspace);
+   await page.getByRole("textbox", { name: "Nome da empresa" }).fill(workspace);
    await page.getByRole("button", { name: "Concluir" }).click();
 
    await page.waitForURL(/\/[^/]+\/[^/]+\/home/, { timeout: 30_000 });
    await page.goto("/");
    await page.waitForURL(/\/[^/]+\/[^/]+\/home/, { timeout: 15_000 });
+   return parseSlugsFromUrl(page.url());
+}
+
+export async function createAdditionalOrganization(
+   page: Page,
+   workspace: string,
+) {
+   await page.goto("/onboarding?new=true");
+
+   await expect(
+      page.getByRole("button", { name: /Gerenciar clientes e serviços/ }),
+   ).toBeVisible({ timeout: 15_000 });
+   await page
+      .getByRole("button", { name: /Gerenciar clientes e serviços/ })
+      .click();
+   await page.getByRole("button", { name: "Continuar" }).click();
+
+   await page.getByRole("textbox", { name: "Nome da empresa" }).fill(workspace);
+   await page.getByRole("button", { name: "Concluir" }).click();
+
+   await page.waitForURL(/\/[^/]+\/[^/]+\/home/, { timeout: 30_000 });
    return parseSlugsFromUrl(page.url());
 }
 

@@ -20,6 +20,9 @@
    "include": ["src"],
    "references": [
       {
+         "path": "../../core/transactional"
+      },
+      {
          "path": "../../core/redis"
       },
       {

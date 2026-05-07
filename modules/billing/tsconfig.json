@@ -20,5 +20,31 @@
          "@modules/billing/*": ["./src/*"]
       }
    },
-   "include": ["src"]
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../../core/utils"
+      },
+      {
+         "path": "../../core/transactional"
+      },
+      {
+         "path": "../../core/sse"
+      },
+      {
+         "path": "../../core/redis"
+      },
+      {
+         "path": "../../core/logging"
+      },
+      {
+         "path": "../../core/environment"
+      },
+      {
+         "path": "../../core/dbos"
+      },
+      {
+         "path": "../../core/database"
+      }
+   ]
 }
