@@ -45,14 +45,13 @@ const TYPE_LABELS: Record<BankAccountRow["type"], string> = {
    payment: "Conta Pagamento",
    investment: "Conta Investimento",
 };
-
-const TYPE_EDIT_OPTIONS = [
-   { value: "checking", label: "Conta Corrente" },
-   { value: "savings", label: "Conta Poupança" },
-   { value: "investment", label: "Conta Investimento" },
-   { value: "payment", label: "Conta Pagamento" },
-   { value: "cash", label: "Caixa Físico" },
-];
+const typeSchema = z.enum([
+   "checking",
+   "savings",
+   "investment",
+   "payment",
+   "cash",
+]);
 
 const TYPE_ICONS: Record<BankAccountRow["type"], ReactNode> = {
    cash: <Wallet className="size-3" />,
@@ -66,7 +65,14 @@ function formatBRL(value: string | number): string {
    return format(of(String(value), "BRL"), "pt-BR");
 }
 
-export function buildBankAccountColumns(): ColumnDef<BankAccountRow>[] {
+interface BuildBankAccountColumnsOptions {
+   onRenameAccount?: (id: string, name: string) => Promise<void>;
+}
+
+export function buildBankAccountColumns(
+   options?: BuildBankAccountColumnsOptions,
+): ColumnDef<BankAccountRow>[] {
+   const canRenameAccount = Boolean(options?.onRenameAccount);
    return [
       {
          accessorKey: "name",
@@ -74,7 +80,16 @@ export function buildBankAccountColumns(): ColumnDef<BankAccountRow>[] {
          meta: {
             label: "Nome",
             cellComponent: "text" as const,
-            editSchema: z.string().min(1, "Nome é obrigatório."),
+            isEditable: canRenameAccount,
+            editMode: "inline" as const,
+            editSchema: z
+               .string()
+               .trim()
+               .min(2, "Nome deve ter no mínimo 2 caracteres."),
+            onSave: async (rowId, value) => {
+               if (!options?.onRenameAccount) return;
+               await options.onRenameAccount(rowId, String(value).trim());
+            },
          },
          cell: ({ row }) => (
             <span className="font-medium truncate">{row.original.name}</span>
@@ -154,28 +169,30 @@ export function buildBankAccountColumns(): ColumnDef<BankAccountRow>[] {
       {
          accessorKey: "type",
          header: "Tipo",
-         meta: {
-            label: "Tipo",
-            cellComponent: "select" as const,
-            editOptions: TYPE_EDIT_OPTIONS,
-            editSchema: z.enum([
-               "checking",
-               "savings",
-               "investment",
-               "payment",
-               "cash",
-            ]),
+         meta: { label: "Tipo" },
+         cell: ({ row }) => {
+            const parsed = typeSchema.safeParse(row.original.type);
+            if (!parsed.success) {
+               return (
+                  <Announcement>
+                     <AnnouncementTitle className="text-destructive">
+                        Tipo inválido
+                     </AnnouncementTitle>
+                  </Announcement>
+               );
+            }
+
+            return (
+               <Announcement>
+                  <AnnouncementTag className="flex items-center">
+                     {TYPE_ICONS[parsed.data]}
+                  </AnnouncementTag>
+                  <AnnouncementTitle>
+                     {TYPE_LABELS[parsed.data]}
+                  </AnnouncementTitle>
+               </Announcement>
+            );
          },
-         cell: ({ row }) => (
-            <Announcement>
-               <AnnouncementTag className="flex items-center">
-                  {TYPE_ICONS[row.original.type]}
-               </AnnouncementTag>
-               <AnnouncementTitle>
-                  {TYPE_LABELS[row.original.type]}
-               </AnnouncementTitle>
-            </Announcement>
-         ),
       },
       {
          accessorKey: "initialBalance",

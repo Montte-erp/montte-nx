@@ -95,7 +95,11 @@ const dateStringSchema = z
    .optional();
 
 const bankDetailFields = {
-   bankCode: z.string().max(10).nullable().optional(),
+   bankCode: z
+      .string()
+      .regex(/^\d{1,3}$/, "Código do banco deve ter até 3 dígitos.")
+      .nullable()
+      .optional(),
    bankName: z.string().max(120).nullable().optional(),
    branch: z.string().max(20).nullable().optional(),
    accountNumber: z.string().max(30).nullable().optional(),

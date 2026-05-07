@@ -1,6 +1,6 @@
 import { config as loadEnv } from "dotenv";
 import path from "node:path";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { fromThrowable } from "neverthrow";
 import { Pool } from "pg";
@@ -13,6 +13,7 @@ import {
    team,
    user as userTable,
 } from "@core/database/schemas/auth";
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
 
 loadEnv({
    path: path.join(import.meta.dirname, "..", "..", "web", ".env.local"),
@@ -185,6 +186,18 @@ export async function addMemberToOrg(
       role,
       createdAt: new Date(),
    });
+}
+
+export async function findBankAccountByName(teamId: string, name: string) {
+   return db().query.bankAccounts.findFirst({
+      where: (f, { and, eq }) => and(eq(f.teamId, teamId), eq(f.name, name)),
+   });
+}
+
+export async function deleteBankAccountById(teamId: string, id: string) {
+   await db()
+      .delete(bankAccounts)
+      .where(and(eq(bankAccounts.teamId, teamId), eq(bankAccounts.id, id)));
 }
 
 export async function countMemberOrgsByEmail(email: string) {

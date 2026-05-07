@@ -10,45 +10,56 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { Landmark, Plus, Trash2 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { QueryBoundary } from "@/components/query-boundary";
 import { DefaultHeader } from "../-layout/default-header";
+import {
+   DataTableBulkActions,
+   SelectionActionButton,
+} from "@/components/data-table/data-table-bulk-actions";
 import { DataTableContent } from "@/components/data-table/data-table-content";
 import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
+import {
+   DataTableImportButton,
+   type DataTableImportConfig,
+} from "@/components/data-table/data-table-import";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import {
    DataTableExternalFilter,
    DataTableRoot,
 } from "@/components/data-table/data-table-root";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import {
-   DataTableImportButton,
-   type DataTableImportConfig,
-} from "@/components/data-table/data-table-import";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCsvFile } from "@/hooks/use-csv-file";
+import { useSheet } from "@/hooks/use-sheet";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { orpc } from "@/integrations/orpc/client";
+import { BankAccountFormSheet } from "./-bank-accounts/bank-account-form-sheet";
 import {
    buildBankAccountColumns,
    type BankAccountRow,
 } from "./-bank-accounts/bank-accounts-columns";
 
-const VALID_TYPES = [
-   "checking",
-   "savings",
-   "investment",
-   "payment",
-   "cash",
-] as const;
+const TYPES = ["checking", "savings", "investment", "payment", "cash"] as const;
+const typeSchema = z.enum(TYPES);
 
-function resolveType(raw: unknown): BankAccountRow["type"] {
-   const str = String(raw ?? "");
-   if ((VALID_TYPES as readonly string[]).includes(str))
-      return str as BankAccountRow["type"];
-   return "checking";
+const TYPE_LABELS: Record<(typeof TYPES)[number], string> = {
+   checking: "Conta Corrente",
+   savings: "Conta Poupança",
+   investment: "Conta Investimento",
+   payment: "Conta Pagamento",
+   cash: "Caixa Físico",
+};
+
+function resolveType(raw: unknown): BankAccountRow["type"] | undefined {
+   if (raw === null || raw === undefined || raw === "") return "checking";
+   const str = String(raw).trim();
+   if (!str) return "checking";
+   const parsed = typeSchema.safeParse(str);
+   return parsed.success ? parsed.data : undefined;
 }
 
 const searchSchema = z.object({
@@ -60,10 +71,10 @@ const searchSchema = z.object({
       .array(z.object({ id: z.string(), value: z.unknown() }))
       .catch([])
       .default([]),
-   typeFilter: z
-      .enum(["all", "checking", "savings", "investment", "payment", "cash"])
-      .catch("all")
-      .default("all"),
+   type: z.union([typeSchema, z.undefined()]).catch(() => undefined),
+   search: z.string().max(100).catch("").default(""),
+   page: z.number().int().min(1).catch(1).default(1),
+   pageSize: z.number().int().catch(20).default(20),
 });
 
 const skeletonColumns = buildBankAccountColumns();
@@ -72,9 +83,22 @@ export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts",
 )({
    validateSearch: searchSchema,
-   loader: ({ context }) => {
+   loaderDeps: ({ search: { page, pageSize, search, type } }) => ({
+      page,
+      pageSize,
+      search,
+      type,
+   }),
+   loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
-         orpc.bankAccounts.getAll.queryOptions({}),
+         orpc.bankAccounts.list.queryOptions({
+            input: {
+               page: deps.page,
+               pageSize: deps.pageSize,
+               search: deps.search || undefined,
+               type: deps.type,
+            },
+         }),
       );
    },
    pendingMs: 300,
@@ -91,24 +115,27 @@ function BankAccountsSkeleton() {
 
 function BankAccountsList() {
    const navigate = Route.useNavigate();
-   const { sorting, columnFilters, typeFilter } = Route.useSearch();
+   const { sorting, columnFilters, type, search, page, pageSize } =
+      Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
+   const { openSheet } = useSheet();
    const { parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
 
-   const { data: bankAccounts } = useSuspenseQuery(
-      orpc.bankAccounts.getAll.queryOptions({}),
-   );
-
-   const createMutation = useMutation(
-      orpc.bankAccounts.create.mutationOptions({
-         onSuccess: () => toast.success("Conta criada com sucesso."),
-         onError: (e) => toast.error(e.message),
+   const { data: result } = useSuspenseQuery(
+      orpc.bankAccounts.list.queryOptions({
+         input: { page, pageSize, search: search || undefined, type },
       }),
    );
 
    const bulkCreateMutation = useMutation(
       orpc.bankAccounts.bulkCreate.mutationOptions({
+         onError: (e) => toast.error(e.message),
+      }),
+   );
+
+   const updateMutation = useMutation(
+      orpc.bankAccounts.update.mutationOptions({
          onError: (e) => toast.error(e.message),
       }),
    );
@@ -120,25 +147,26 @@ function BankAccountsList() {
       }),
    );
 
-   const [isDraftActive, setIsDraftActive] = useState(false);
-
-   const handleDiscardDraft = useCallback(() => setIsDraftActive(false), []);
-
-   const handleAddAccount = useCallback(
-      async (data: Record<string, string | string[]>) => {
-         const name = String(data.name ?? "").trim();
-         const type = resolveType(data.type);
-         if (!name || !type) return;
-         await createMutation.mutateAsync({
-            name,
-            type,
-            color: "#6366f1",
-            initialBalance: "0",
-         });
-         setIsDraftActive(false);
-      },
-      [createMutation],
+   const bulkDeleteMutation = useMutation(
+      orpc.bankAccounts.bulkRemove.mutationOptions({
+         onSuccess: ({ deleted }) =>
+            toast.success(
+               `${deleted} ${deleted === 1 ? "conta excluída" : "contas excluídas"} com sucesso.`,
+            ),
+         onError: (e) => toast.error(e.message),
+      }),
    );
+
+   const handleRenameAccount = useCallback(
+      async (id: string, name: string) => {
+         await updateMutation.mutateAsync({ id, name });
+      },
+      [updateMutation],
+   );
+
+   const handleOpenCreate = useCallback(() => {
+      openSheet({ renderChildren: () => <BankAccountFormSheet /> });
+   }, [openSheet]);
 
    const importConfig: DataTableImportConfig = useMemo(
       () => ({
@@ -167,13 +195,26 @@ function BankAccountsList() {
             updatedAt: dayjs().toISOString(),
          }),
          onImport: async (rows) => {
+            const invalidType = rows.some((r) => !resolveType(r.type));
+            if (invalidType) {
+               throw new Error(
+                  "Arquivo contém tipo de conta inválido. Use checking, savings, investment, payment ou cash.",
+               );
+            }
+            const accounts = rows.flatMap((r) => {
+               const type = resolveType(r.type);
+               if (!type) return [];
+               return [
+                  {
+                     name: String(r.name ?? "").trim(),
+                     type,
+                     color: "#6366f1",
+                     initialBalance: String(r.initialBalance ?? "0"),
+                  },
+               ];
+            });
             await bulkCreateMutation.mutateAsync({
-               accounts: rows.map((r) => ({
-                  name: String(r.name ?? "").trim(),
-                  type: resolveType(r.type),
-                  color: "#6366f1",
-                  initialBalance: String(r.initialBalance ?? "0"),
-               })),
+               accounts,
             });
          },
       }),
@@ -196,19 +237,15 @@ function BankAccountsList() {
       [openAlertDialog, deleteMutation],
    );
 
-   const filtered = useMemo(() => {
-      if (typeFilter === "all") return bankAccounts as BankAccountRow[];
-      return (bankAccounts as BankAccountRow[]).filter(
-         (a) => a.type === typeFilter,
-      );
-   }, [bankAccounts, typeFilter]);
-
-   const columns = useMemo(() => buildBankAccountColumns(), []);
+   const columns = useMemo(
+      () => buildBankAccountColumns({ onRenameAccount: handleRenameAccount }),
+      [handleRenameAccount],
+   );
 
    return (
       <DataTableRoot
          columns={columns}
-         data={filtered}
+         data={result.data}
          getRowId={(row) => row.id}
          storageKey="montte:datatable:bank-accounts"
          sorting={sorting}
@@ -225,13 +262,10 @@ function BankAccountsList() {
             const next =
                typeof updater === "function" ? updater(columnFilters) : updater;
             navigate({
-               search: (prev) => ({ ...prev, columnFilters: next }),
+               search: (prev) => ({ ...prev, columnFilters: next, page: 1 }),
                replace: true,
             });
          }}
-         isDraftRowActive={isDraftActive}
-         onAddRow={handleAddAccount}
-         onDiscardAddRow={handleDiscardDraft}
          renderActions={({ row }) => (
             <Button
                className="text-destructive hover:text-destructive"
@@ -243,38 +277,38 @@ function BankAccountsList() {
             </Button>
          )}
       >
-         {(
-            ["checking", "savings", "investment", "payment", "cash"] as const
-         ).map((key) => (
+         {TYPES.map((key) => (
             <DataTableExternalFilter
                key={key}
                id={`type:${key}`}
-               label={
-                  {
-                     checking: "Conta Corrente",
-                     savings: "Conta Poupança",
-                     investment: "Conta Investimento",
-                     payment: "Conta Pagamento",
-                     cash: "Caixa Físico",
-                  }[key]
-               }
+               label={TYPE_LABELS[key]}
                group="Tipo"
-               active={typeFilter === key}
+               active={type === key}
                onToggle={(active) =>
                   navigate({
                      search: (prev) => ({
                         ...prev,
-                        typeFilter: active ? key : "all",
+                        type: active ? key : undefined,
+                        page: 1,
                      }),
                      replace: true,
                   })
                }
             />
          ))}
-         <DataTableToolbar>
+         <DataTableToolbar
+            searchPlaceholder="Buscar conta por nome..."
+            searchDefaultValue={search}
+            onSearch={(value) =>
+               navigate({
+                  search: (prev) => ({ ...prev, search: value, page: 1 }),
+                  replace: true,
+               })
+            }
+         >
             <DataTableImportButton importConfig={importConfig} />
             <Button
-               onClick={() => setIsDraftActive(true)}
+               onClick={handleOpenCreate}
                size="icon-sm"
                tooltip="Nova Conta"
                variant="outline"
@@ -296,6 +330,49 @@ function BankAccountsList() {
                </EmptyHeader>
             </Empty>
          </DataTableEmptyState>
+         <DataTableBulkActions<BankAccountRow>>
+            {({ selectedRows, clearSelection }) => (
+               <SelectionActionButton
+                  icon={<Trash2 className="size-4" />}
+                  variant="destructive"
+                  onClick={() => {
+                     const ids = selectedRows.map((r) => r.id);
+                     openAlertDialog({
+                        title: `Excluir ${ids.length} ${ids.length === 1 ? "conta" : "contas"}`,
+                        description:
+                           "Tem certeza que deseja excluir as contas selecionadas? Esta ação não pode ser desfeita.",
+                        actionLabel: "Excluir",
+                        cancelLabel: "Cancelar",
+                        variant: "destructive",
+                        onAction: async () => {
+                           await bulkDeleteMutation.mutateAsync({ ids });
+                           clearSelection();
+                        },
+                     });
+                  }}
+               >
+                  Excluir
+               </SelectionActionButton>
+            )}
+         </DataTableBulkActions>
+         <DataTablePagination
+            currentPage={page}
+            pageSize={pageSize}
+            totalPages={result.totalPages}
+            totalCount={result.totalCount}
+            onPageChange={(p) =>
+               navigate({
+                  search: (prev) => ({ ...prev, page: p }),
+                  replace: true,
+               })
+            }
+            onPageSizeChange={(s) =>
+               navigate({
+                  search: (prev) => ({ ...prev, pageSize: s, page: 1 }),
+                  replace: true,
+               })
+            }
+         />
       </DataTableRoot>
    );
 }

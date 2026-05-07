@@ -161,8 +161,8 @@ export function Autocomplete({
    }, [selected]);
 
    return (
-      <CommandPrimitive onKeyDown={handleKeyDown}>
-         <div className="dark:bg-input/30 rounded-md border border-input">
+      <CommandPrimitive className="relative w-full" onKeyDown={handleKeyDown}>
+         <div className="dark:bg-input/30 rounded-md border border-input [&_[data-slot=command-input-wrapper]]:border-b-0">
             <CommandInput
                className="text-base border-0"
                disabled={disabled}
@@ -174,88 +174,89 @@ export function Autocomplete({
                value={inputValue}
             />
          </div>
-         <div className="relative mt-1">
-            <div
-               className={cn(
-                  "animate-in fade-in-0 zoom-in-95 absolute top-0 z-10 w-full rounded-xl bg-popover outline-none border border-border shadow-md",
-                  isOpen ? "block" : "hidden",
-               )}
-            >
-               <CommandList className="rounded-lg" ref={refCallback}>
-                  {isLoading ? (
-                     <CommandPrimitive.Loading>
-                        <div className="p-1">
-                           <Skeleton className="h-8 w-full" />
-                        </div>
-                     </CommandPrimitive.Loading>
-                  ) : null}
-                  {filteredOptions.length > 0 && !isLoading ? (
-                     <CommandGroup>
-                        <div
-                           style={{
-                              height: virtualizer.getTotalSize(),
-                              position: "relative",
-                              width: "100%",
-                           }}
-                        >
-                           {virtualItems.length > 0 ? (
-                              <div
-                                 style={{
-                                    left: 0,
-                                    position: "absolute",
-                                    top: 0,
-                                    transform: `translateY(${virtualItems[0]?.start ?? 0}px)`,
-                                    width: "100%",
-                                 }}
-                              >
-                                 {virtualItems.map((virtualRow) => {
-                                    const option =
-                                       filteredOptions[virtualRow.index];
+         {isOpen ? (
+            <div className="relative">
+               <div
+                  className={cn(
+                     "animate-in fade-in-0 zoom-in-95 absolute top-1 z-10 w-full rounded-xl bg-popover outline-none border border-border shadow-md",
+                  )}
+               >
+                  <CommandList className="rounded-lg" ref={refCallback}>
+                     {isLoading ? (
+                        <CommandPrimitive.Loading>
+                           <div className="p-1">
+                              <Skeleton className="h-8 w-full" />
+                           </div>
+                        </CommandPrimitive.Loading>
+                     ) : null}
+                     {filteredOptions.length > 0 && !isLoading ? (
+                        <CommandGroup>
+                           <div
+                              style={{
+                                 height: virtualizer.getTotalSize(),
+                                 position: "relative",
+                                 width: "100%",
+                              }}
+                           >
+                              {virtualItems.length > 0 ? (
+                                 <div
+                                    style={{
+                                       left: 0,
+                                       position: "absolute",
+                                       top: 0,
+                                       transform: `translateY(${virtualItems[0]?.start ?? 0}px)`,
+                                       width: "100%",
+                                    }}
+                                 >
+                                    {virtualItems.map((virtualRow) => {
+                                       const option =
+                                          filteredOptions[virtualRow.index];
 
-                                    if (!option) return null;
+                                       if (!option) return null;
 
-                                    const isSelected =
-                                       selected?.value === option.value;
+                                       const isSelected =
+                                          selected?.value === option.value;
 
-                                    return (
-                                       <CommandItem
-                                          className={cn(
-                                             "flex w-full items-start gap-2 py-1",
-                                             !isSelected ? "pl-8" : null,
-                                          )}
-                                          key={option.value}
-                                          onMouseDown={(event) => {
-                                             event.preventDefault();
-                                             event.stopPropagation();
-                                          }}
-                                          onSelect={() =>
-                                             handleSelectOption(option)
-                                          }
-                                          ref={virtualizer.measureElement}
-                                          value={option.label}
-                                       >
-                                          {isSelected ? (
-                                             <Check className="w-4 shrink-0 mt-0.5" />
-                                          ) : null}
-                                          <span className="break-words">
-                                             {option.label}
-                                          </span>
-                                       </CommandItem>
-                                    );
-                                 })}
-                              </div>
-                           ) : null}
-                        </div>
-                     </CommandGroup>
-                  ) : null}
-                  {!isLoading && filteredOptions.length === 0 ? (
-                     <CommandPrimitive.Empty className="select-none rounded-sm px-2 py-3 text-center text-sm">
-                        {emptyMessage}
-                     </CommandPrimitive.Empty>
-                  ) : null}
-               </CommandList>
+                                       return (
+                                          <CommandItem
+                                             className={cn(
+                                                "flex w-full items-start gap-2 py-1",
+                                                !isSelected ? "pl-8" : null,
+                                             )}
+                                             key={option.value}
+                                             onMouseDown={(event) => {
+                                                event.preventDefault();
+                                                event.stopPropagation();
+                                             }}
+                                             onSelect={() =>
+                                                handleSelectOption(option)
+                                             }
+                                             ref={virtualizer.measureElement}
+                                             value={option.label}
+                                          >
+                                             {isSelected ? (
+                                                <Check className="w-4 shrink-0 mt-0.5" />
+                                             ) : null}
+                                             <span className="break-words">
+                                                {option.label}
+                                             </span>
+                                          </CommandItem>
+                                       );
+                                    })}
+                                 </div>
+                              ) : null}
+                           </div>
+                        </CommandGroup>
+                     ) : null}
+                     {!isLoading && filteredOptions.length === 0 ? (
+                        <CommandPrimitive.Empty className="select-none rounded-sm px-2 py-3 text-center text-sm">
+                           {emptyMessage}
+                        </CommandPrimitive.Empty>
+                     ) : null}
+                  </CommandList>
+               </div>
             </div>
-         </div>
+         ) : null}
       </CommandPrimitive>
    );
 }
