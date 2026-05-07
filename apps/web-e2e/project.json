@@ -1,17 +1,5 @@
 {
    "name": "web-e2e",
    "$schema": "../../node_modules/nx/schemas/project-schema.json",
-   "projectType": "application",
-   "sourceRoot": "apps/web-e2e",
-   "implicitDependencies": ["web"],
-   "targets": {
-      "test:e2e": {
-         "executor": "nx:run-script",
-         "options": { "script": "test:e2e" }
-      },
-      "test:e2e:install": {
-         "executor": "nx:run-script",
-         "options": { "script": "test:e2e:install" }
-      }
-   }
+   "implicitDependencies": ["web"]
 }
