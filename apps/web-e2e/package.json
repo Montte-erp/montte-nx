@@ -1,0 +1,15 @@
+{
+   "name": "web-e2e",
+   "private": true,
+   "type": "module",
+   "scripts": {
+      "test:e2e": "playwright test",
+      "test:e2e:ui": "playwright test --ui",
+      "test:e2e:install": "playwright install --with-deps chromium"
+   },
+   "devDependencies": {
+      "@playwright/test": "catalog:testing",
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development"
+   }
+}

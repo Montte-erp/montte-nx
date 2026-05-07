@@ -1,8 +1,5 @@
-import { eq } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
-import { organization } from "@core/database/schemas/auth";
-import { generatePresignedPutUrl } from "@core/files/client";
 import { WebAppError } from "@core/logging/errors";
 import { authenticatedProcedure, protectedProcedure } from "@core/orpc/server";
 
@@ -142,42 +139,4 @@ export const getMemberTeams = protectedProcedure
       return teams
          .filter((t) => ids.has(t.id))
          .map((t) => ({ id: t.id, name: t.name }));
-   });
-
-export const generateLogoUploadUrl = protectedProcedure
-   .input(z.object({ fileExtension: z.string(), contentType: z.string() }))
-   .handler(async ({ context, input }) => {
-      const bucketName = "organization-logos";
-      const fileName = `org-${context.organizationId}-${crypto.randomUUID()}.${input.fileExtension}`;
-      const result = await fromPromise(
-         generatePresignedPutUrl(
-            context.minioClient,
-            fileName,
-            bucketName,
-            300,
-         ),
-         () => WebAppError.internal("Falha ao gerar URL de upload."),
-      );
-      if (result.isErr()) throw result.error;
-      return {
-         presignedUrl: result.value,
-         fileName,
-         publicUrl: `/api/files/${bucketName}/${fileName}`,
-      };
-   });
-
-export const updateLogo = protectedProcedure
-   .input(z.object({ logoUrl: z.string() }))
-   .handler(async ({ context, input }) => {
-      const result = await fromPromise(
-         context.db.transaction(async (tx) => {
-            await tx
-               .update(organization)
-               .set({ logo: input.logoUrl })
-               .where(eq(organization.id, context.organizationId));
-         }),
-         () => WebAppError.internal("Falha ao atualizar logo."),
-      );
-      if (result.isErr()) throw result.error;
-      return { success: true };
    });
