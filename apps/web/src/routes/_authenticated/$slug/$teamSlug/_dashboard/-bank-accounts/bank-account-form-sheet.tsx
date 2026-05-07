@@ -1,3 +1,4 @@
+import { of, toMajorUnitsString } from "@f-o-t/money";
 import type { MaskitoOptions } from "@maskito/core";
 import { useMaskito } from "@maskito/react";
 import { Autocomplete } from "@packages/ui/components/autocomplete";
@@ -21,7 +22,7 @@ import {
 } from "@packages/ui/components/sheet";
 import { toast } from "@packages/ui/components/sonner";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import {
    CreditCard,
    Landmark,
@@ -34,6 +35,7 @@ import type { ReactNode } from "react";
 import { z } from "zod";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
+import { QueryBoundary } from "@/components/query-boundary";
 
 const BANK_ACCOUNT_TYPES = [
    "checking",
@@ -134,12 +136,30 @@ function isFieldInvalid(field: {
 }
 
 export function BankAccountFormSheet() {
+   return (
+      <QueryBoundary
+         fallback={
+            <div className="flex flex-col gap-4 p-4">
+               <SheetHeader>
+                  <SheetTitle>Nova conta bancária</SheetTitle>
+                  <SheetDescription>Carregando bancos...</SheetDescription>
+               </SheetHeader>
+            </div>
+         }
+         errorTitle="Erro ao carregar bancos"
+      >
+         <BankAccountFormSheetContent />
+      </QueryBoundary>
+   );
+}
+
+function BankAccountFormSheetContent() {
    const { closeTopSheet } = useSheet();
    const bankCodeMaskRef = useMaskito({ options: BANK_CODE_MASK });
    const branchMaskRef = useMaskito({ options: BRANCH_MASK });
    const accountNumberMaskRef = useMaskito({ options: ACCOUNT_NUMBER_MASK });
 
-   const { data: banks = [], isLoading: isLoadingBanks } = useQuery(
+   const { data: banks } = useSuspenseQuery(
       orpc.bankAccounts.searchBanks.queryOptions({ input: { query: "" } }),
    );
 
@@ -168,7 +188,9 @@ export function BankAccountFormSheet() {
                name: value.name.trim(),
                type: value.type,
                color: "#6366f1",
-               initialBalance: value.initialBalance.toFixed(2),
+               initialBalance: toMajorUnitsString(
+                  of(String(value.initialBalance), "BRL"),
+               ),
                bankCode: isBank ? value.bankCode : null,
                bankName: isBank ? value.bankName.trim() : null,
                branch: isBank ? value.branch.trim() || null : null,
@@ -284,7 +306,7 @@ export function BankAccountFormSheet() {
                                     <div className="w-full">
                                        <Autocomplete
                                           emptyMessage="Nenhum banco encontrado."
-                                          isLoading={isLoadingBanks}
+                                          isLoading={false}
                                           options={bankOptions}
                                           placeholder="Digite o nome ou código"
                                           value={selectedOption}

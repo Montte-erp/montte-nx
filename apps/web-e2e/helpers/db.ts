@@ -188,10 +188,16 @@ export async function addMemberToOrg(
    });
 }
 
-export async function deleteBankAccountByName(teamId: string, name: string) {
+export async function findBankAccountByName(teamId: string, name: string) {
+   return db().query.bankAccounts.findFirst({
+      where: (f, { and, eq }) => and(eq(f.teamId, teamId), eq(f.name, name)),
+   });
+}
+
+export async function deleteBankAccountById(teamId: string, id: string) {
    await db()
       .delete(bankAccounts)
-      .where(and(eq(bankAccounts.teamId, teamId), eq(bankAccounts.name, name)));
+      .where(and(eq(bankAccounts.teamId, teamId), eq(bankAccounts.id, id)));
 }
 
 export async function countMemberOrgsByEmail(email: string) {

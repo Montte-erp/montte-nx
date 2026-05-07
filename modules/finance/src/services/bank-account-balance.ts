@@ -1,7 +1,22 @@
 import { of, toDecimal } from "@f-o-t/money";
-import { or, eq, sql } from "drizzle-orm";
+import { eq, inArray, or, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { transactions } from "@core/database/schemas/transactions";
+
+type BankAccountBalanceInput = Pick<
+   typeof bankAccounts.$inferSelect,
+   "id" | "initialBalance"
+>;
+
+type BankAccountBalances = {
+   currentBalance: string;
+   projectedBalance: string;
+};
+
+function normalizeBalance(value: string | undefined) {
+   return toDecimal(of(value ?? "0", "BRL"));
+}
 
 export async function computeBankAccountBalance(
    db: DatabaseInstance,
@@ -41,4 +56,59 @@ export async function computeBankAccountBalance(
       currentBalance: toDecimal(of(current.toFixed(2), currency)),
       projectedBalance: toDecimal(of(projected.toFixed(2), currency)),
    };
+}
+
+export async function computeBankAccountBalances(
+   db: DatabaseInstance,
+   accounts: BankAccountBalanceInput[],
+): Promise<Map<string, BankAccountBalances>> {
+   if (accounts.length === 0) return new Map();
+
+   const ids = accounts.map((account) => account.id);
+   const a = bankAccounts;
+   const t = transactions;
+   const currentBalanceSql = sql<string>`
+      (
+         ${a.initialBalance}
+         + COALESCE(SUM(CASE WHEN ${t.type} = 'income' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+         - COALESCE(SUM(CASE WHEN ${t.type} = 'expense' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+         - COALESCE(SUM(CASE WHEN ${t.type} = 'transfer' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+         + COALESCE(SUM(CASE WHEN ${t.type} = 'transfer' AND ${t.destinationBankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+      )::text
+   `;
+   const projectedBalanceSql = sql<string>`
+      (
+         ${a.initialBalance}
+         + COALESCE(SUM(CASE WHEN ${t.type} = 'income' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+         - COALESCE(SUM(CASE WHEN ${t.type} = 'expense' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+         - COALESCE(SUM(CASE WHEN ${t.type} = 'transfer' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+         + COALESCE(SUM(CASE WHEN ${t.type} = 'transfer' AND ${t.destinationBankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+         + COALESCE(SUM(CASE WHEN ${t.type} = 'income' AND ${t.status} = 'pending' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+         - COALESCE(SUM(CASE WHEN ${t.type} = 'expense' AND ${t.status} = 'pending' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+      )::text
+   `;
+
+   const rows = await db
+      .select({
+         accountId: a.id,
+         currentBalance: currentBalanceSql,
+         projectedBalance: projectedBalanceSql,
+      })
+      .from(a)
+      .leftJoin(
+         t,
+         or(eq(t.bankAccountId, a.id), eq(t.destinationBankAccountId, a.id)),
+      )
+      .where(inArray(a.id, ids))
+      .groupBy(a.id, a.initialBalance);
+
+   return new Map(
+      rows.map((row) => [
+         row.accountId,
+         {
+            currentBalance: normalizeBalance(row.currentBalance),
+            projectedBalance: normalizeBalance(row.projectedBalance),
+         },
+      ]),
+   );
 }

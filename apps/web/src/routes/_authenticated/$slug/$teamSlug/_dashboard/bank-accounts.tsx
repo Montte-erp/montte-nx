@@ -44,6 +44,7 @@ import {
 } from "./-bank-accounts/bank-accounts-columns";
 
 const TYPES = ["checking", "savings", "investment", "payment", "cash"] as const;
+const typeSchema = z.enum(TYPES);
 
 const TYPE_LABELS: Record<(typeof TYPES)[number], string> = {
    checking: "Conta Corrente",
@@ -53,11 +54,12 @@ const TYPE_LABELS: Record<(typeof TYPES)[number], string> = {
    cash: "Caixa Físico",
 };
 
-function resolveType(raw: unknown): BankAccountRow["type"] {
-   const str = String(raw ?? "");
-   if ((TYPES as readonly string[]).includes(str))
-      return str as BankAccountRow["type"];
-   return "checking";
+function resolveType(raw: unknown): BankAccountRow["type"] | undefined {
+   if (raw === null || raw === undefined || raw === "") return "checking";
+   const str = String(raw).trim();
+   if (!str) return "checking";
+   const parsed = typeSchema.safeParse(str);
+   return parsed.success ? parsed.data : undefined;
 }
 
 const searchSchema = z.object({
@@ -69,7 +71,7 @@ const searchSchema = z.object({
       .array(z.object({ id: z.string(), value: z.unknown() }))
       .catch([])
       .default([]),
-   type: z.enum(TYPES).optional().catch(undefined),
+   type: z.union([typeSchema, z.undefined()]).catch(() => undefined),
    search: z.string().max(100).catch("").default(""),
    page: z.number().int().min(1).catch(1).default(1),
    pageSize: z.number().int().catch(20).default(20),
@@ -193,10 +195,16 @@ function BankAccountsList() {
             updatedAt: dayjs().toISOString(),
          }),
          onImport: async (rows) => {
+            const invalidType = rows.some((r) => !resolveType(r.type));
+            if (invalidType) {
+               throw new Error(
+                  "Arquivo contém tipo de conta inválido. Use checking, savings, investment, payment ou cash.",
+               );
+            }
             await bulkCreateMutation.mutateAsync({
                accounts: rows.map((r) => ({
                   name: String(r.name ?? "").trim(),
-                  type: resolveType(r.type),
+                  type: resolveType(r.type) ?? "checking",
                   color: "#6366f1",
                   initialBalance: String(r.initialBalance ?? "0"),
                })),

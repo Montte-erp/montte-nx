@@ -1,18 +1,27 @@
 import type { Page } from "@playwright/test";
-import { expect, test } from "../fixtures";
-import { deleteBankAccountByName, findTeamByOrgAndSlug } from "../helpers/db";
+import { expect, test, type E2ESession } from "../fixtures";
+import {
+   deleteBankAccountById,
+   findBankAccountByName,
+   findTeamByOrgAndSlug,
+} from "../helpers/db";
 
 const stamp = () => `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-const created: string[] = [];
+const createdIds: string[] = [];
 
-async function gotoBankAccounts(
-   page: Page,
-   session: { orgSlug: string; teamSlug: string },
-) {
+async function gotoBankAccounts(page: Page, session: E2ESession) {
    await page.goto(`/${session.orgSlug}/${session.teamSlug}/bank-accounts`);
    await expect(
       page.getByRole("heading", { name: "Contas Bancárias" }),
    ).toBeVisible();
+}
+
+async function rememberCreatedAccount(session: E2ESession, name: string) {
+   const team = await findTeamByOrgAndSlug(session.orgSlug, session.teamSlug);
+   if (!team) return;
+   const account = await findBankAccountByName(team.id, name);
+   if (!account) return;
+   createdIds.push(account.id);
 }
 
 test.afterEach(async ({ e2eSession }) => {
@@ -21,8 +30,8 @@ test.afterEach(async ({ e2eSession }) => {
       e2eSession.teamSlug,
    );
    if (!team) return;
-   for (const name of created.splice(0)) {
-      await deleteBankAccountByName(team.id, name);
+   for (const id of createdIds.splice(0)) {
+      await deleteBankAccountById(team.id, id);
    }
 });
 
@@ -31,7 +40,6 @@ test("cria conta bancária com validações, máscaras e autocomplete", async ({
    e2eSession,
 }) => {
    const name = `Itaú E2E ${stamp()}`;
-   created.push(name);
 
    await gotoBankAccounts(page, e2eSession);
    await page.getByRole("button", { name: "Nova Conta" }).click();
@@ -79,12 +87,14 @@ test("cria conta bancária com validações, máscaras e autocomplete", async ({
    await submit.click();
    await expect(page.getByText("Conta criada com sucesso.")).toBeVisible();
    await expect(page.getByRole("cell", { name })).toBeVisible();
+   await rememberCreatedAccount(e2eSession, name);
 
    // inline edit do nome (única coluna editável inline)
    const renamed = `${name} renomeado`;
-   created.push(renamed);
-   await page.getByRole("cell", { name }).click();
-   const inlineInput = page.getByRole("textbox").first();
+   const cell = page.getByRole("cell", { name });
+   await cell.click();
+   const inlineInput = cell.getByRole("textbox");
+   await expect(inlineInput).toBeVisible();
    await inlineInput.fill(renamed);
    await inlineInput.press("Enter");
    await expect(page.getByRole("cell", { name: renamed })).toBeVisible();
@@ -95,7 +105,6 @@ test("toggle de tipo + caixa físico (sem detalhes bancários)", async ({
    e2eSession,
 }) => {
    const name = `Caixa E2E ${stamp()}`;
-   created.push(name);
 
    await gotoBankAccounts(page, e2eSession);
    await page.getByRole("button", { name: "Nova Conta" }).click();
@@ -123,6 +132,7 @@ test("toggle de tipo + caixa físico (sem detalhes bancários)", async ({
 
    await expect(page.getByText("Conta criada com sucesso.")).toBeVisible();
    await expect(page.getByRole("cell", { name })).toBeVisible();
+   await rememberCreatedAccount(e2eSession, name);
 });
 
 test("cancelar fecha sheet sem criar", async ({ page, e2eSession }) => {
@@ -145,7 +155,6 @@ test("filtra por tipo e exclui via alert dialog", async ({
 }) => {
    const checkingName = `Checking E2E ${stamp()}`;
    const cashName = `Caixa E2E ${stamp()}`;
-   created.push(checkingName, cashName);
 
    await gotoBankAccounts(page, e2eSession);
 
@@ -156,6 +165,7 @@ test("filtra por tipo e exclui via alert dialog", async ({
    await page.getByRole("option").first().click();
    await page.getByRole("button", { name: "Criar conta" }).click();
    await expect(page.getByRole("cell", { name: checkingName })).toBeVisible();
+   await rememberCreatedAccount(e2eSession, checkingName);
 
    // criar caixa
    await page.getByRole("button", { name: "Nova Conta" }).click();
@@ -164,6 +174,7 @@ test("filtra por tipo e exclui via alert dialog", async ({
    await page.getByRole("option", { name: "Caixa Físico" }).click();
    await page.getByRole("button", { name: "Criar conta" }).click();
    await expect(page.getByRole("cell", { name: cashName })).toBeVisible();
+   await rememberCreatedAccount(e2eSession, cashName);
 
    // filtrar Caixa Físico
    await page.getByRole("button", { name: "Caixa Físico" }).first().click();
@@ -189,7 +200,6 @@ test("busca server-side por nome e exclusão em massa", async ({
 }) => {
    const a = `Bulk-A E2E ${stamp()}`;
    const b = `Bulk-B E2E ${stamp()}`;
-   created.push(a, b);
 
    await gotoBankAccounts(page, e2eSession);
 
@@ -200,6 +210,7 @@ test("busca server-side por nome e exclusão em massa", async ({
       await page.getByRole("option", { name: "Caixa Físico" }).click();
       await page.getByRole("button", { name: "Criar conta" }).click();
       await expect(page.getByRole("cell", { name })).toBeVisible();
+      await rememberCreatedAccount(e2eSession, name);
    }
 
    // server-side search filtra a lista

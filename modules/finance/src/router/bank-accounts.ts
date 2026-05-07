@@ -11,7 +11,10 @@ import { transactions } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import { requireBankAccount } from "@modules/finance/router/middlewares";
-import { computeBankAccountBalance } from "@modules/finance/services/bank-account-balance";
+import {
+   computeBankAccountBalance,
+   computeBankAccountBalances,
+} from "@modules/finance/services/bank-account-balance";
 
 const idSchema = z.object({ id: z.string().uuid() });
 
@@ -44,7 +47,7 @@ const BANK_ACCOUNT_TYPES = [
 
 const listSchema = z.object({
    page: z.number().int().positive().catch(1).default(1),
-   pageSize: z.number().int().positive().max(1000).catch(20).default(20),
+   pageSize: z.number().int().positive().max(100).catch(20).default(20),
    search: z.string().max(100).optional(),
    type: z.enum(BANK_ACCOUNT_TYPES).optional(),
 });
@@ -80,16 +83,15 @@ export const list = protectedProcedure
       const [rows, countRows] = result.value;
       const totalCount = countRows[0]?.count ?? 0;
 
-      const data = await Promise.all(
-         rows.map(async (account) => {
-            const balances = await computeBankAccountBalance(
-               context.db,
-               account.id,
-               account.initialBalance,
-            );
-            return { ...account, ...balances };
-         }),
-      );
+      const balances = await computeBankAccountBalances(context.db, rows);
+      const data = rows.map((account) => ({
+         ...account,
+         currentBalance:
+            balances.get(account.id)?.currentBalance ?? account.initialBalance,
+         projectedBalance:
+            balances.get(account.id)?.projectedBalance ??
+            account.initialBalance,
+      }));
 
       return {
          data,
@@ -111,16 +113,14 @@ export const getAll = protectedProcedure.handler(async ({ context }) => {
    );
    if (result.isErr()) throw result.error;
 
-   return Promise.all(
-      result.value.map(async (account) => {
-         const balances = await computeBankAccountBalance(
-            context.db,
-            account.id,
-            account.initialBalance,
-         );
-         return { ...account, ...balances };
-      }),
-   );
+   const balances = await computeBankAccountBalances(context.db, result.value);
+   return result.value.map((account) => ({
+      ...account,
+      currentBalance:
+         balances.get(account.id)?.currentBalance ?? account.initialBalance,
+      projectedBalance:
+         balances.get(account.id)?.projectedBalance ?? account.initialBalance,
+   }));
 });
 
 export const getById = protectedProcedure
@@ -253,6 +253,15 @@ type BrasilApiBank = {
    fullName: string | null;
 };
 
+const BrasilApiBankSchema = z.object({
+   ispb: z.string(),
+   name: z.string().nullable(),
+   code: z.number().nullable(),
+   fullName: z.string().nullable(),
+});
+
+const BrasilApiBankArraySchema = z.array(BrasilApiBankSchema);
+
 const BANKS_REDIS_KEY = "finance:brasilapi:banks:v1";
 const BANKS_CACHE_TTL_SEC = 30 * 24 * 60 * 60;
 
@@ -261,29 +270,45 @@ async function fetchBanks(
 ): Promise<BrasilApiBank[]> {
    const cached = await fromPromise(redis.get(BANKS_REDIS_KEY), () => null);
    if (cached.isOk() && cached.value) {
+      const cachedPayload = cached.value;
       const parsed = fromThrowable(
-         () => JSON.parse(cached.value as string) as BrasilApiBank[],
+         () => BrasilApiBankArraySchema.parse(JSON.parse(cachedPayload)),
          () => null,
       )();
       if (parsed.isOk()) return parsed.value;
    }
-   const result = await fromPromise(
+
+   const responseResult = await fromPromise(
       fetch("https://brasilapi.com.br/api/banks/v1", {
          signal: AbortSignal.timeout(5000),
-      }).then((r) => r.json() as Promise<BrasilApiBank[]>),
+      }),
       () => WebAppError.internal("Falha ao consultar bancos."),
    );
-   if (result.isErr()) throw result.error;
+   if (responseResult.isErr()) throw responseResult.error;
+   if (!responseResult.value.ok) {
+      throw WebAppError.internal("Falha ao consultar bancos.");
+   }
+
+   const jsonResult = await fromPromise(responseResult.value.json(), () =>
+      WebAppError.internal("Falha ao ler resposta dos bancos."),
+   );
+   if (jsonResult.isErr()) throw jsonResult.error;
+
+   const parsed = BrasilApiBankArraySchema.safeParse(jsonResult.value);
+   if (!parsed.success) {
+      throw WebAppError.internal("Resposta inválida ao consultar bancos.");
+   }
+
    await fromPromise(
       redis.set(
          BANKS_REDIS_KEY,
-         JSON.stringify(result.value),
+         JSON.stringify(parsed.data),
          "EX",
          BANKS_CACHE_TTL_SEC,
       ),
       () => null,
    );
-   return result.value;
+   return parsed.data;
 }
 
 export const searchBanks = protectedProcedure

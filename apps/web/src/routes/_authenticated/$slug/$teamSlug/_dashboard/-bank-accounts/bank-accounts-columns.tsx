@@ -45,6 +45,13 @@ const TYPE_LABELS: Record<BankAccountRow["type"], string> = {
    payment: "Conta Pagamento",
    investment: "Conta Investimento",
 };
+const typeSchema = z.enum([
+   "checking",
+   "savings",
+   "investment",
+   "payment",
+   "cash",
+]);
 
 const TYPE_ICONS: Record<BankAccountRow["type"], ReactNode> = {
    cash: <Wallet className="size-3" />,
@@ -65,6 +72,7 @@ interface BuildBankAccountColumnsOptions {
 export function buildBankAccountColumns(
    options?: BuildBankAccountColumnsOptions,
 ): ColumnDef<BankAccountRow>[] {
+   const canRenameAccount = Boolean(options?.onRenameAccount);
    return [
       {
          accessorKey: "name",
@@ -72,14 +80,15 @@ export function buildBankAccountColumns(
          meta: {
             label: "Nome",
             cellComponent: "text" as const,
-            isEditable: true,
+            isEditable: canRenameAccount,
             editMode: "inline" as const,
             editSchema: z
                .string()
                .trim()
                .min(2, "Nome deve ter no mínimo 2 caracteres."),
             onSave: async (rowId, value) => {
-               await options?.onRenameAccount?.(rowId, String(value).trim());
+               if (!options?.onRenameAccount) return;
+               await options.onRenameAccount(rowId, String(value).trim());
             },
          },
          cell: ({ row }) => (
@@ -161,16 +170,29 @@ export function buildBankAccountColumns(
          accessorKey: "type",
          header: "Tipo",
          meta: { label: "Tipo" },
-         cell: ({ row }) => (
-            <Announcement>
-               <AnnouncementTag className="flex items-center">
-                  {TYPE_ICONS[row.original.type]}
-               </AnnouncementTag>
-               <AnnouncementTitle>
-                  {TYPE_LABELS[row.original.type]}
-               </AnnouncementTitle>
-            </Announcement>
-         ),
+         cell: ({ row }) => {
+            const parsed = typeSchema.safeParse(row.original.type);
+            if (!parsed.success) {
+               return (
+                  <Announcement>
+                     <AnnouncementTitle className="text-destructive">
+                        Tipo inválido
+                     </AnnouncementTitle>
+                  </Announcement>
+               );
+            }
+
+            return (
+               <Announcement>
+                  <AnnouncementTag className="flex items-center">
+                     {TYPE_ICONS[parsed.data]}
+                  </AnnouncementTag>
+                  <AnnouncementTitle>
+                     {TYPE_LABELS[parsed.data]}
+                  </AnnouncementTitle>
+               </Announcement>
+            );
+         },
       },
       {
          accessorKey: "initialBalance",
