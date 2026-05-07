@@ -12,8 +12,8 @@ import { useJobNotifications } from "@/features/notifications/use-job-notificati
 import { ContextPanelTabContent } from "../-context-panel/context-panel";
 import { ContextPanelRail } from "../-context-panel/context-panel-rail";
 import { contextPanelStore } from "../-context-panel/context-panel-store";
-import { AutoBugReporter } from "@/features/feedback/ui/auto-bug-reporter";
-import { MonthlySatisfactionSurvey } from "@/features/feedback/ui/monthly-satisfaction-survey";
+import { AutoBugReporter } from "./feedback/auto-bug-reporter";
+import { MonthlySatisfactionSurvey } from "./feedback/monthly-satisfaction-survey";
 import { EarlyAccessProvider } from "@/hooks/use-early-access";
 import { setCollapsed, useSidebarCollapsed } from "./hooks/use-sidebar-store";
 import { AppSidebar } from "./app-sidebar";
