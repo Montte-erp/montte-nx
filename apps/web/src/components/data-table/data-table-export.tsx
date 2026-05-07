@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { Download } from "lucide-react";
+import { Upload } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -102,7 +102,7 @@ export function DataTableExportButton() {
       <DropdownMenu>
          <DropdownMenuTrigger asChild>
             <Button tooltip="Exportar" variant="outline" size="icon-sm">
-               <Download />
+               <Upload />
                <span className="sr-only">Exportar</span>
             </Button>
          </DropdownMenuTrigger>
@@ -137,7 +137,7 @@ export function DataTableExportSelectedButton() {
       <DropdownMenu>
          <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
-               <Download data-icon="inline-start" />
+               <Upload data-icon="inline-start" />
                Exportar
             </Button>
          </DropdownMenuTrigger>

@@ -1,6 +1,6 @@
 import { fromPromise } from "neverthrow";
 import { useState, useTransition } from "react";
-import { FileSpreadsheet, Loader2, Upload } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import {
    Popover,
    PopoverContent,
@@ -142,7 +142,7 @@ export function DataTableImportButton({
                type="button"
                variant="outline"
             >
-               <Upload />
+               <Download />
                <span className="sr-only">Importar dados</span>
             </Button>
          </PopoverTrigger>
