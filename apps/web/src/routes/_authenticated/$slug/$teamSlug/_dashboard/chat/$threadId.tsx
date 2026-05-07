@@ -1,10 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { Button } from "@packages/ui/components/button";
-import {
-   getMessagesCollection,
-   getThreadDetailCollection,
-} from "../../-montte-ai/chat-data";
+import { getThreadCollection } from "../../-montte-ai/chat-data";
 import { setActiveThread } from "../../-montte-ai/chat-store";
 import { Composer } from "../../-montte-ai/composer";
 import { MessageList } from "../../-montte-ai/message-list";
@@ -22,13 +19,7 @@ export const Route = createFileRoute(
       }
    },
    loader: async ({ context, params }) => {
-      await Promise.all([
-         getMessagesCollection(params.threadId, context.queryClient).preload(),
-         getThreadDetailCollection(
-            params.threadId,
-            context.queryClient,
-         ).preload(),
-      ]);
+      await getThreadCollection(params.threadId, context.queryClient).preload();
    },
    pendingMs: 300,
    pendingComponent: () => (

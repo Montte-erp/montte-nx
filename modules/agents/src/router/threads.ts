@@ -1,6 +1,8 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
+import dayjs from "dayjs";
 import { err, fromPromise, ok } from "neverthrow";
 import { z } from "zod";
+import type { UIMessage } from "@tanstack/ai";
 import { messages } from "@core/database/schemas/messages";
 import {
    insertThreadSchema,
@@ -27,6 +29,80 @@ const updateThreadInputSchema = threadIdInputSchema.merge(
 const listThreadsInputSchema = z
    .object({ limit: z.number().int().min(1).max(100).default(50) })
    .default({ limit: 50 });
+
+const contentPartSourceSchema = z.discriminatedUnion("type", [
+   z.object({
+      type: z.literal("data"),
+      value: z.string(),
+      mimeType: z.string(),
+   }),
+   z.object({
+      type: z.literal("url"),
+      value: z.string(),
+      mimeType: z.string().optional(),
+   }),
+]);
+
+const messagePartSchema = z.discriminatedUnion("type", [
+   z.object({ type: z.literal("text"), content: z.string() }),
+   z.object({
+      type: z.literal("image"),
+      source: contentPartSourceSchema,
+      metadata: z.unknown().optional(),
+   }),
+   z.object({
+      type: z.literal("audio"),
+      source: contentPartSourceSchema,
+      metadata: z.unknown().optional(),
+   }),
+   z.object({
+      type: z.literal("video"),
+      source: contentPartSourceSchema,
+      metadata: z.unknown().optional(),
+   }),
+   z.object({
+      type: z.literal("document"),
+      source: contentPartSourceSchema,
+      metadata: z.unknown().optional(),
+   }),
+   z.object({ type: z.literal("thinking"), content: z.string() }),
+   z.object({
+      type: z.literal("tool-call"),
+      id: z.string().min(1),
+      name: z.string().min(1),
+      arguments: z.string(),
+      state: z.enum([
+         "awaiting-input",
+         "input-streaming",
+         "input-complete",
+         "approval-requested",
+         "approval-responded",
+      ]),
+      approval: z
+         .object({
+            id: z.string().min(1),
+            needsApproval: z.boolean(),
+            approved: z.boolean().optional(),
+         })
+         .optional(),
+      output: z.unknown().optional(),
+   }),
+   z.object({
+      type: z.literal("tool-result"),
+      toolCallId: z.string().min(1),
+      content: z.string(),
+      state: z.enum(["streaming", "complete", "error"]),
+      error: z.string().optional(),
+   }),
+]);
+
+const messagePartsSchema = z
+   .array(messagePartSchema)
+   .min(1) satisfies z.ZodType<UIMessage["parts"]>;
+
+const saveAssistantMessageInputSchema = threadIdInputSchema.extend({
+   parts: messagePartsSchema,
+});
 
 export const list = protectedProcedure
    .input(listThreadsInputSchema)
@@ -178,6 +254,52 @@ export const removeMessage = protectedProcedure
       );
       if (result.isErr()) throw result.error;
       return { ok: true };
+   });
+
+export const saveAssistantMessage = protectedProcedure
+   .input(saveAssistantMessageInputSchema)
+   .use(requireThread, (input) => input.threadId)
+   .handler(async ({ context, input }) => {
+      const result = await fromPromise(
+         context.db.transaction(async (tx) => {
+            const rows = await tx
+               .insert(messages)
+               .values({
+                  threadId: input.threadId,
+                  role: "assistant",
+                  parts: input.parts,
+               })
+               .returning({ id: messages.id });
+            await tx
+               .update(threads)
+               .set({ lastMessageAt: dayjs().toDate() })
+               .where(eq(threads.id, input.threadId));
+            return rows;
+         }),
+         () => WebAppError.internal("Falha ao salvar resposta da conversa."),
+      ).andThen((rows) => {
+         const row = rows[0];
+         if (row === undefined) {
+            return err(
+               WebAppError.internal("Falha ao salvar resposta da conversa."),
+            );
+         }
+         return ok(row);
+      });
+      if (result.isErr()) throw result.error;
+      void agentsSseEvents.publish(
+         context.redis,
+         { kind: "team", id: context.teamId },
+         {
+            type: "agent.message.persisted",
+            payload: {
+               threadId: input.threadId,
+               messageId: result.value.id,
+               role: "assistant",
+            },
+         },
+      );
+      return result.value;
    });
 
 export const removeBulk = protectedProcedure

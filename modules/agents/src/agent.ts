@@ -113,7 +113,6 @@ async function buildAgentChatArgs(options: AgentChatOptions) {
          }),
          ...(options.extraMiddleware ?? []),
       ],
-      debug: true,
    };
 }
 

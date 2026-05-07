@@ -8,23 +8,15 @@ export type ChatThreadSnapshot = Outputs["threads"]["getById"]["thread"];
 export type ChatMessage = Outputs["threads"]["getById"]["messages"][number];
 export type ChatThreadDetail = ChatThreadSnapshot & { suggestions: string[] };
 
-interface ThreadBundle {
+export interface ChatThreadBundle {
    id: string;
    thread: ChatThreadDetail;
    messages: ChatMessage[];
 }
 
-const messagesCollections = new WeakMap<
+const threadCollections = new WeakMap<
    QueryClient,
-   Map<string, ReturnType<typeof createMessagesCollection>>
->();
-const threadDetailCollections = new WeakMap<
-   QueryClient,
-   Map<string, ReturnType<typeof createThreadDetailCollection>>
->();
-const threadBundleCollections = new WeakMap<
-   QueryClient,
-   Map<string, ReturnType<typeof createThreadBundleCollection>>
+   Map<string, ReturnType<typeof createThreadCollection>>
 >();
 const threadsCollections = new WeakMap<
    QueryClient,
@@ -57,84 +49,27 @@ function createThreadsCollection(queryClient: QueryClient) {
    );
 }
 
-function writeBundleThreadPatch(
-   queryClient: QueryClient,
-   threadId: string,
-   patch: Partial<ChatThreadDetail>,
-) {
-   const bundle = getCollectionMap(threadBundleCollections, queryClient).get(
-      threadId,
-   );
-   const current = bundle?.get(threadId);
-   if (!bundle || !current) return;
-   bundle.utils.writeUpdate({
-      id: threadId,
-      thread: { ...current.thread, ...patch },
-   });
-}
-
-function createThreadBundleCollection(
-   threadId: string,
-   queryClient: QueryClient,
-) {
+function createThreadCollection(threadId: string, queryClient: QueryClient) {
    return createCollection(
       queryCollectionOptions({
-         id: `chat-thread-bundle:${threadId}`,
+         id: `chat-thread:${threadId}`,
          queryClient,
-         queryKey: ["chat-thread-bundle", threadId],
-         queryFn: async (): Promise<ThreadBundle[]> => {
+         queryKey: ["chat-thread", threadId],
+         queryFn: async (): Promise<ChatThreadBundle[]> => {
             const data = await client.threads.getById({ threadId });
+            const thread = {
+               ...data.thread,
+               suggestions: data.thread.suggestions ?? [],
+            };
             return [
                {
-                  id: data.thread.id,
-                  thread: {
-                     ...data.thread,
-                     suggestions: data.thread.suggestions ?? [],
-                  },
+                  id: thread.id,
+                  thread,
                   messages: data.messages,
                },
             ];
          },
          getKey: (bundle) => bundle.id,
-      }),
-   );
-}
-
-function createMessagesCollection(threadId: string, queryClient: QueryClient) {
-   return createCollection(
-      queryCollectionOptions({
-         id: `chat-messages:${threadId}`,
-         queryClient,
-         queryKey: ["chat-thread-messages", threadId],
-         queryFn: async (): Promise<ChatMessage[]> => {
-            const data = await getThreadBundleCollection(
-               threadId,
-               queryClient,
-            ).toArrayWhenReady();
-            return data.flatMap((bundle) => bundle.messages);
-         },
-         getKey: (message) => message.id,
-      }),
-   );
-}
-
-function createThreadDetailCollection(
-   threadId: string,
-   queryClient: QueryClient,
-) {
-   return createCollection(
-      queryCollectionOptions({
-         id: `chat-thread:${threadId}`,
-         queryClient,
-         queryKey: ["chat-thread-detail", threadId],
-         queryFn: async (): Promise<ChatThreadDetail[]> => {
-            const data = await getThreadBundleCollection(
-               threadId,
-               queryClient,
-            ).toArrayWhenReady();
-            return data.map((bundle) => bundle.thread);
-         },
-         getKey: (thread) => thread.id,
       }),
    );
 }
@@ -147,51 +82,16 @@ export function getThreadsCollection(queryClient: QueryClient) {
    return collection;
 }
 
-export function getThreadBundleCollection(
+export function getThreadCollection(
    threadId: string,
    queryClient: QueryClient,
 ) {
-   const collections = getCollectionMap(threadBundleCollections, queryClient);
+   const collections = getCollectionMap(threadCollections, queryClient);
    const existing = collections.get(threadId);
    if (existing) return existing;
-   const collection = createThreadBundleCollection(threadId, queryClient);
+   const collection = createThreadCollection(threadId, queryClient);
    collections.set(threadId, collection);
    return collection;
-}
-
-export function getMessagesCollection(
-   threadId: string,
-   queryClient: QueryClient,
-) {
-   const collections = getCollectionMap(messagesCollections, queryClient);
-   const existing = collections.get(threadId);
-   if (existing) return existing;
-   const collection = createMessagesCollection(threadId, queryClient);
-   collections.set(threadId, collection);
-   return collection;
-}
-
-export function getThreadDetailCollection(
-   threadId: string,
-   queryClient: QueryClient,
-) {
-   const collections = getCollectionMap(threadDetailCollections, queryClient);
-   const existing = collections.get(threadId);
-   if (existing) return existing;
-   const collection = createThreadDetailCollection(threadId, queryClient);
-   collections.set(threadId, collection);
-   return collection;
-}
-
-export function writeThreadSnapshot(
-   queryClient: QueryClient,
-   thread: ChatThreadDetail,
-) {
-   getThreadsCollection(queryClient).utils.writeUpsert(thread);
-   getCollectionMap(threadDetailCollections, queryClient)
-      .get(thread.id)
-      ?.utils.writeUpsert(thread);
-   writeBundleThreadPatch(queryClient, thread.id, thread);
 }
 
 export function writeThreadTitle(
@@ -202,11 +102,15 @@ export function writeThreadTitle(
    const threads = getThreadsCollection(queryClient);
    if (threads.has(threadId))
       threads.utils.writeUpdate({ id: threadId, title });
-   const detail = getCollectionMap(threadDetailCollections, queryClient).get(
+   const thread = getCollectionMap(threadCollections, queryClient).get(
       threadId,
    );
-   if (detail?.has(threadId)) detail.utils.writeUpdate({ id: threadId, title });
-   writeBundleThreadPatch(queryClient, threadId, { title });
+   const current = thread?.get(threadId);
+   if (!thread || !current) return;
+   thread.utils.writeUpdate({
+      id: threadId,
+      thread: { ...current.thread, title },
+   });
 }
 
 export function writeThreadSuggestions(
@@ -214,22 +118,15 @@ export function writeThreadSuggestions(
    threadId: string,
    suggestions: string[],
 ) {
-   const detail = getCollectionMap(threadDetailCollections, queryClient).get(
+   const thread = getCollectionMap(threadCollections, queryClient).get(
       threadId,
    );
-   if (detail?.has(threadId))
-      detail.utils.writeUpdate({ id: threadId, suggestions });
-   writeBundleThreadPatch(queryClient, threadId, { suggestions });
-}
-
-export function removeMessageFromChatData(
-   queryClient: QueryClient,
-   threadId: string,
-   messageId: string,
-) {
-   getCollectionMap(messagesCollections, queryClient)
-      .get(threadId)
-      ?.utils.writeDelete(messageId);
+   const current = thread?.get(threadId);
+   if (!thread || !current) return;
+   thread.utils.writeUpdate({
+      id: threadId,
+      thread: { ...current.thread, suggestions },
+   });
 }
 
 export async function refreshChatData(
@@ -238,13 +135,5 @@ export async function refreshChatData(
 ) {
    void getThreadsCollection(queryClient).utils.refetch();
    if (!threadId) return;
-   await getCollectionMap(threadBundleCollections, queryClient)
-      .get(threadId)
-      ?.utils.refetch();
-   await getCollectionMap(messagesCollections, queryClient)
-      .get(threadId)
-      ?.utils.refetch();
-   await getCollectionMap(threadDetailCollections, queryClient)
-      .get(threadId)
-      ?.utils.refetch();
+   await getThreadCollection(threadId, queryClient).utils.refetch();
 }
