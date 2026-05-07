@@ -1,7 +1,8 @@
 import { chromium, type FullConfig } from "@playwright/test";
 import path from "node:path";
 import fs from "node:fs";
-import { signUpAndOnboard } from "./features/auth";
+import { ensureE2EUserSession } from "./features/auth";
+import { E2E_USER } from "./helpers/auth";
 
 export const AUTH_FILE = path.join(import.meta.dirname, ".auth", "user.json");
 export const SESSION_FILE = path.join(
@@ -22,12 +23,12 @@ export default async function globalSetup(config: FullConfig) {
    const context = await browser.newContext({ baseURL });
    const page = await context.newPage();
 
-   const { user, orgSlug, teamSlug } = await signUpAndOnboard(page);
+   const { orgSlug, teamSlug } = await ensureE2EUserSession(page, E2E_USER);
 
    await context.storageState({ path: AUTH_FILE });
    fs.writeFileSync(
       SESSION_FILE,
-      JSON.stringify({ email: user.email, orgSlug, teamSlug }, null, 2),
+      JSON.stringify({ email: E2E_USER.email, orgSlug, teamSlug }, null, 2),
    );
 
    await browser.close();

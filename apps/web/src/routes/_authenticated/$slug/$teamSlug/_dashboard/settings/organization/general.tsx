@@ -153,11 +153,17 @@ function LogoSection({
             }
             toast.success("Logo atualizado com sucesso!");
             fileUpload.clearFile();
-            queryClient.invalidateQueries({
-               queryKey: orpc.organization.getActiveOrganization.queryOptions(
-                  {},
-               ).queryKey,
-            });
+            await Promise.all([
+               queryClient.invalidateQueries({
+                  queryKey:
+                     orpc.organization.getActiveOrganization.queryOptions({})
+                        .queryKey,
+               }),
+               queryClient.invalidateQueries({
+                  queryKey: orpc.organization.getOrganizations.queryOptions({})
+                     .queryKey,
+               }),
+            ]);
          });
       },
       onError: () => {
