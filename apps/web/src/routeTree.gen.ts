@@ -29,7 +29,6 @@ import { Route as AuthSignInEmailRouteImport } from "./routes/auth/sign-in/email
 import { Route as ApiRpcSplatRouteImport } from "./routes/api/rpc/$";
 import { Route as ApiOpenapiSplatRouteImport } from "./routes/api/openapi/$";
 import { Route as ApiFilesSplatRouteImport } from "./routes/api/files/$";
-import { Route as ApiDevSeedE2eRouteImport } from "./routes/api/dev/seed-e2e";
 import { Route as ApiAuthSplatRouteImport } from "./routes/api/auth/$";
 import { Route as AuthenticatedSlugTeamSlugRouteImport } from "./routes/_authenticated/$slug/$teamSlug";
 import { Route as CallbackOrganizationInvitationInvitationIdRouteImport } from "./routes/callback/organization/invitation/$invitationId";
@@ -171,11 +170,6 @@ const ApiOpenapiSplatRoute = ApiOpenapiSplatRouteImport.update({
 const ApiFilesSplatRoute = ApiFilesSplatRouteImport.update({
    id: "/api/files/$",
    path: "/api/files/$",
-   getParentRoute: () => rootRouteImport,
-} as any);
-const ApiDevSeedE2eRoute = ApiDevSeedE2eRouteImport.update({
-   id: "/api/dev/seed-e2e",
-   path: "/api/dev/seed-e2e",
    getParentRoute: () => rootRouteImport,
 } as any);
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -474,7 +468,6 @@ export interface FileRoutesByFullPath {
    "/auth/sign-up": typeof AuthSignUpRoute;
    "/$slug/$teamSlug": typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren;
    "/api/auth/$": typeof ApiAuthSplatRoute;
-   "/api/dev/seed-e2e": typeof ApiDevSeedE2eRoute;
    "/api/files/$": typeof ApiFilesSplatRoute;
    "/api/openapi/$": typeof ApiOpenapiSplatRoute;
    "/api/rpc/$": typeof ApiRpcSplatRoute;
@@ -537,7 +530,6 @@ export interface FileRoutesByTo {
    "/auth/sign-up": typeof AuthSignUpRoute;
    "/$slug/$teamSlug": typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren;
    "/api/auth/$": typeof ApiAuthSplatRoute;
-   "/api/dev/seed-e2e": typeof ApiDevSeedE2eRoute;
    "/api/files/$": typeof ApiFilesSplatRoute;
    "/api/openapi/$": typeof ApiOpenapiSplatRoute;
    "/api/rpc/$": typeof ApiRpcSplatRoute;
@@ -599,7 +591,6 @@ export interface FileRoutesById {
    "/auth/sign-up": typeof AuthSignUpRoute;
    "/_authenticated/$slug/$teamSlug": typeof AuthenticatedSlugTeamSlugRouteWithChildren;
    "/api/auth/$": typeof ApiAuthSplatRoute;
-   "/api/dev/seed-e2e": typeof ApiDevSeedE2eRoute;
    "/api/files/$": typeof ApiFilesSplatRoute;
    "/api/openapi/$": typeof ApiOpenapiSplatRoute;
    "/api/rpc/$": typeof ApiRpcSplatRoute;
@@ -666,7 +657,6 @@ export interface FileRouteTypes {
       | "/auth/sign-up"
       | "/$slug/$teamSlug"
       | "/api/auth/$"
-      | "/api/dev/seed-e2e"
       | "/api/files/$"
       | "/api/openapi/$"
       | "/api/rpc/$"
@@ -729,7 +719,6 @@ export interface FileRouteTypes {
       | "/auth/sign-up"
       | "/$slug/$teamSlug"
       | "/api/auth/$"
-      | "/api/dev/seed-e2e"
       | "/api/files/$"
       | "/api/openapi/$"
       | "/api/rpc/$"
@@ -790,7 +779,6 @@ export interface FileRouteTypes {
       | "/auth/sign-up"
       | "/_authenticated/$slug/$teamSlug"
       | "/api/auth/$"
-      | "/api/dev/seed-e2e"
       | "/api/files/$"
       | "/api/openapi/$"
       | "/api/rpc/$"
@@ -848,7 +836,6 @@ export interface RootRouteChildren {
    ApiPingRoute: typeof ApiPingRoute;
    ApiUploadRoute: typeof ApiUploadRoute;
    ApiAuthSplatRoute: typeof ApiAuthSplatRoute;
-   ApiDevSeedE2eRoute: typeof ApiDevSeedE2eRoute;
    ApiFilesSplatRoute: typeof ApiFilesSplatRoute;
    ApiOpenapiSplatRoute: typeof ApiOpenapiSplatRoute;
    ApiRpcSplatRoute: typeof ApiRpcSplatRoute;
@@ -995,13 +982,6 @@ declare module "@tanstack/react-router" {
          path: "/api/files/$";
          fullPath: "/api/files/$";
          preLoaderRoute: typeof ApiFilesSplatRouteImport;
-         parentRoute: typeof rootRouteImport;
-      };
-      "/api/dev/seed-e2e": {
-         id: "/api/dev/seed-e2e";
-         path: "/api/dev/seed-e2e";
-         fullPath: "/api/dev/seed-e2e";
-         preLoaderRoute: typeof ApiDevSeedE2eRouteImport;
          parentRoute: typeof rootRouteImport;
       };
       "/api/auth/$": {
@@ -1568,7 +1548,6 @@ const rootRouteChildren: RootRouteChildren = {
    ApiPingRoute: ApiPingRoute,
    ApiUploadRoute: ApiUploadRoute,
    ApiAuthSplatRoute: ApiAuthSplatRoute,
-   ApiDevSeedE2eRoute: ApiDevSeedE2eRoute,
    ApiFilesSplatRoute: ApiFilesSplatRoute,
    ApiOpenapiSplatRoute: ApiOpenapiSplatRoute,
    ApiRpcSplatRoute: ApiRpcSplatRoute,
