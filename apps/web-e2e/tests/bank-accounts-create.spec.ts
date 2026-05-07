@@ -182,6 +182,39 @@ test("filtra por tipo e exclui via alert dialog", async ({
    await expect(page.getByRole("cell", { name: cashName })).not.toBeVisible();
 });
 
+test("busca server-side por nome e exclusão em massa", async ({
+   page,
+   e2eSession,
+}) => {
+   const a = `Bulk-A E2E ${stamp()}`;
+   const b = `Bulk-B E2E ${stamp()}`;
+   created.push(a, b);
+
+   await gotoBankAccounts(page, e2eSession);
+
+   for (const name of [a, b]) {
+      await page.getByRole("button", { name: "Nova Conta" }).click();
+      await page.getByLabel("Nome").fill(name);
+      await page.getByLabel("Tipo").click();
+      await page.getByRole("option", { name: "Caixa Físico" }).click();
+      await page.getByRole("button", { name: "Criar conta" }).click();
+      await expect(page.getByRole("cell", { name })).toBeVisible();
+   }
+
+   // server-side search filtra a lista
+   await page.getByPlaceholder("Buscar conta por nome...").fill("Bulk-A");
+   await expect(page.getByRole("cell", { name: a })).toBeVisible();
+   await expect(page.getByRole("cell", { name: b })).not.toBeVisible();
+   await page.getByPlaceholder("Buscar conta por nome...").fill("");
+
+   // selecionar ambos e bulk delete
+   await page.getByRole("checkbox", { name: /selecionar todas/i }).check();
+   await page.getByRole("button", { name: /^Excluir/ }).click();
+   const alert = page.getByRole("alertdialog");
+   await alert.getByRole("button", { name: "Excluir" }).click();
+   await expect(page.getByText(/contas? exclu[ií]da/)).toBeVisible();
+});
+
 test("empty state aparece quando não há contas", async ({
    page,
    e2eSession,
