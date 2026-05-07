@@ -260,7 +260,8 @@ Routers tag cost-incurring procedures with `billableProcedure` + `.meta({ billab
 
 ## UI Conventions
 
-- Modals/sheets/drawers: **always `useCredenza`**. Destructive confirmation: `useAlertDialog`. Never import Sheet/Dialog/Drawer/AlertDialog/Credenza directly. `useSheet` is unused.
+- Modals/drawers genéricos: **`useCredenza`**. Destructive confirmation: `useAlertDialog`. Never import Sheet/Dialog/Drawer/AlertDialog/Credenza directly.
+- DataTable create flows: **`useSheet`** (`@/hooks/use-sheet`) — botão `+` da toolbar abre side sheet com TanStack Form completo, schema do `core/database`, blocos condicionais por tipo. Edit fica inline célula a célula. Padrão: `openSheet({ renderChildren: () => <FeatureForm /> })`; form chama `closeTopSheet()` no `onSuccess`.
 - Empty states: `Empty / EmptyHeader / EmptyMedia / EmptyTitle / EmptyDescription / EmptyContent` from `@packages/ui/components/empty`.
 - DataTable (`@packages/ui/components/data-table`): never wrap in `Card`. Required props: `getRowId`, `sorting`, `onSortingChange`, `columnFilters`, `onColumnFiltersChange`, `tableState`, `onTableStateChange`. Column defs **must** be memoized. `manualSorting`/`manualFiltering` already wired internally. Per usage: a module-level `createLocalStorageState<DataTableStoredState | null>("montte:datatable:<feature>", null)` + `validateSearch` with `sorting` + `columnFilters` arrays. `ColumnMeta`: `label`, `filterVariant` (`"text"|"select"|"range"|"date"`), `align`, `exportable`. View toggle via `useViewSwitch("feature:view", VIEWS)` — never `renderMobileCard`.
 - Animations: Tailwind-first. Framer Motion only for state-dependent enter/exit, `layoutId`, gestures — client components only, wrap shadcn primitives in `motion.div` (never modify them). Animate only `transform` and `opacity`.

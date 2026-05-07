@@ -46,14 +46,6 @@ const TYPE_LABELS: Record<BankAccountRow["type"], string> = {
    investment: "Conta Investimento",
 };
 
-const TYPE_EDIT_OPTIONS = [
-   { value: "checking", label: "Conta Corrente" },
-   { value: "savings", label: "Conta Poupança" },
-   { value: "investment", label: "Conta Investimento" },
-   { value: "payment", label: "Conta Pagamento" },
-   { value: "cash", label: "Caixa Físico" },
-];
-
 const TYPE_ICONS: Record<BankAccountRow["type"], ReactNode> = {
    cash: <Wallet className="size-3" />,
    checking: <Landmark className="size-3" />,
@@ -66,7 +58,13 @@ function formatBRL(value: string | number): string {
    return format(of(String(value), "BRL"), "pt-BR");
 }
 
-export function buildBankAccountColumns(): ColumnDef<BankAccountRow>[] {
+interface BuildBankAccountColumnsOptions {
+   onRenameAccount?: (id: string, name: string) => Promise<void>;
+}
+
+export function buildBankAccountColumns(
+   options?: BuildBankAccountColumnsOptions,
+): ColumnDef<BankAccountRow>[] {
    return [
       {
          accessorKey: "name",
@@ -74,7 +72,15 @@ export function buildBankAccountColumns(): ColumnDef<BankAccountRow>[] {
          meta: {
             label: "Nome",
             cellComponent: "text" as const,
-            editSchema: z.string().min(1, "Nome é obrigatório."),
+            isEditable: true,
+            editMode: "inline" as const,
+            editSchema: z
+               .string()
+               .trim()
+               .min(2, "Nome deve ter no mínimo 2 caracteres."),
+            onSave: async (rowId, value) => {
+               await options?.onRenameAccount?.(rowId, String(value).trim());
+            },
          },
          cell: ({ row }) => (
             <span className="font-medium truncate">{row.original.name}</span>
@@ -154,18 +160,7 @@ export function buildBankAccountColumns(): ColumnDef<BankAccountRow>[] {
       {
          accessorKey: "type",
          header: "Tipo",
-         meta: {
-            label: "Tipo",
-            cellComponent: "select" as const,
-            editOptions: TYPE_EDIT_OPTIONS,
-            editSchema: z.enum([
-               "checking",
-               "savings",
-               "investment",
-               "payment",
-               "cash",
-            ]),
-         },
+         meta: { label: "Tipo" },
          cell: ({ row }) => (
             <Announcement>
                <AnnouncementTag className="flex items-center">

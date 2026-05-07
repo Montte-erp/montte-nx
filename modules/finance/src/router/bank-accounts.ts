@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { eq, or, sql } from "drizzle-orm";
-import { err, fromPromise, ok } from "neverthrow";
+import { err, fromPromise, fromThrowable, ok } from "neverthrow";
 import { z } from "zod";
 import {
    bankAccounts,
@@ -128,6 +128,66 @@ export const remove = protectedProcedure
       );
       if (deleted.isErr()) throw deleted.error;
       return { success: true };
+   });
+
+type BrasilApiBank = {
+   ispb: string;
+   name: string | null;
+   code: number | null;
+   fullName: string | null;
+};
+
+const BANKS_REDIS_KEY = "finance:brasilapi:banks:v1";
+const BANKS_CACHE_TTL_SEC = 30 * 24 * 60 * 60;
+
+async function fetchBanks(
+   redis: import("@core/redis/connection").Redis,
+): Promise<BrasilApiBank[]> {
+   const cached = await fromPromise(redis.get(BANKS_REDIS_KEY), () => null);
+   if (cached.isOk() && cached.value) {
+      const parsed = fromThrowable(
+         () => JSON.parse(cached.value as string) as BrasilApiBank[],
+         () => null,
+      )();
+      if (parsed.isOk()) return parsed.value;
+   }
+   const result = await fromPromise(
+      fetch("https://brasilapi.com.br/api/banks/v1", {
+         signal: AbortSignal.timeout(5000),
+      }).then((r) => r.json() as Promise<BrasilApiBank[]>),
+      () => WebAppError.internal("Falha ao consultar bancos."),
+   );
+   if (result.isErr()) throw result.error;
+   await fromPromise(
+      redis.set(
+         BANKS_REDIS_KEY,
+         JSON.stringify(result.value),
+         "EX",
+         BANKS_CACHE_TTL_SEC,
+      ),
+      () => null,
+   );
+   return result.value;
+}
+
+export const searchBanks = protectedProcedure
+   .input(z.object({ query: z.string().max(80).default("") }))
+   .handler(async ({ context, input }) => {
+      const banks = await fetchBanks(context.redis);
+      const term = input.query.trim().toLowerCase();
+      const filtered = term
+         ? banks.filter((b) => {
+              if (!b.code) return false;
+              const haystack =
+                 `${b.code} ${b.name ?? ""} ${b.fullName ?? ""}`.toLowerCase();
+              return haystack.includes(term);
+           })
+         : banks.filter((b) => b.code !== null);
+      return filtered.map((b) => ({
+         code: String(b.code).padStart(3, "0"),
+         name: b.name ?? b.fullName ?? "",
+         fullName: b.fullName ?? b.name ?? "",
+      }));
    });
 
 export const bulkCreate = protectedProcedure

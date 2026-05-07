@@ -27,7 +27,6 @@ const maskOptions = maskitoNumberOptionsGenerator({
    decimalSeparator: ",",
    thousandSeparator: ".",
    maximumFractionDigits: 2,
-   minimumFractionDigits: 2,
    min: 0,
 });
 

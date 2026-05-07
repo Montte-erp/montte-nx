@@ -10,7 +10,7 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { Landmark, Plus, Trash2 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { QueryBoundary } from "@/components/query-boundary";
@@ -29,8 +29,10 @@ import {
 } from "@/components/data-table/data-table-import";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCsvFile } from "@/hooks/use-csv-file";
+import { useSheet } from "@/hooks/use-sheet";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { orpc } from "@/integrations/orpc/client";
+import { BankAccountFormSheet } from "./-bank-accounts/bank-account-form-sheet";
 import {
    buildBankAccountColumns,
    type BankAccountRow,
@@ -93,6 +95,7 @@ function BankAccountsList() {
    const navigate = Route.useNavigate();
    const { sorting, columnFilters, typeFilter } = Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
+   const { openSheet } = useSheet();
    const { parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
 
@@ -100,15 +103,14 @@ function BankAccountsList() {
       orpc.bankAccounts.getAll.queryOptions({}),
    );
 
-   const createMutation = useMutation(
-      orpc.bankAccounts.create.mutationOptions({
-         onSuccess: () => toast.success("Conta criada com sucesso."),
+   const bulkCreateMutation = useMutation(
+      orpc.bankAccounts.bulkCreate.mutationOptions({
          onError: (e) => toast.error(e.message),
       }),
    );
 
-   const bulkCreateMutation = useMutation(
-      orpc.bankAccounts.bulkCreate.mutationOptions({
+   const updateMutation = useMutation(
+      orpc.bankAccounts.update.mutationOptions({
          onError: (e) => toast.error(e.message),
       }),
    );
@@ -120,25 +122,16 @@ function BankAccountsList() {
       }),
    );
 
-   const [isDraftActive, setIsDraftActive] = useState(false);
-
-   const handleDiscardDraft = useCallback(() => setIsDraftActive(false), []);
-
-   const handleAddAccount = useCallback(
-      async (data: Record<string, string | string[]>) => {
-         const name = String(data.name ?? "").trim();
-         const type = resolveType(data.type);
-         if (!name || !type) return;
-         await createMutation.mutateAsync({
-            name,
-            type,
-            color: "#6366f1",
-            initialBalance: "0",
-         });
-         setIsDraftActive(false);
+   const handleRenameAccount = useCallback(
+      async (id: string, name: string) => {
+         await updateMutation.mutateAsync({ id, name });
       },
-      [createMutation],
+      [updateMutation],
    );
+
+   const handleOpenCreate = useCallback(() => {
+      openSheet({ renderChildren: () => <BankAccountFormSheet /> });
+   }, [openSheet]);
 
    const importConfig: DataTableImportConfig = useMemo(
       () => ({
@@ -203,7 +196,10 @@ function BankAccountsList() {
       );
    }, [bankAccounts, typeFilter]);
 
-   const columns = useMemo(() => buildBankAccountColumns(), []);
+   const columns = useMemo(
+      () => buildBankAccountColumns({ onRenameAccount: handleRenameAccount }),
+      [handleRenameAccount],
+   );
 
    return (
       <DataTableRoot
@@ -229,9 +225,6 @@ function BankAccountsList() {
                replace: true,
             });
          }}
-         isDraftRowActive={isDraftActive}
-         onAddRow={handleAddAccount}
-         onDiscardAddRow={handleDiscardDraft}
          renderActions={({ row }) => (
             <Button
                className="text-destructive hover:text-destructive"
@@ -274,7 +267,7 @@ function BankAccountsList() {
          <DataTableToolbar>
             <DataTableImportButton importConfig={importConfig} />
             <Button
-               onClick={() => setIsDraftActive(true)}
+               onClick={handleOpenCreate}
                size="icon-sm"
                tooltip="Nova Conta"
                variant="outline"
