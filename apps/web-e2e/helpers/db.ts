@@ -1,6 +1,7 @@
 import { config as loadEnv } from "dotenv";
 import path from "node:path";
 import { eq } from "drizzle-orm";
+import { fromThrowable } from "neverthrow";
 import { createDb, type DatabaseInstance } from "@core/database/client";
 import { organization, user as userTable } from "@core/database/schemas/auth";
 
@@ -11,14 +12,17 @@ loadEnv({
 assertLocalOnly();
 
 function assertLocalOnly() {
-   const url = process.env.DATABASE_URL ?? "";
-   const host = (() => {
-      try {
-         return new URL(url).host;
-      } catch {
-         return "";
-      }
-   })();
+   const url = process.env.DATABASE_URL;
+   if (!url) {
+      throw new Error("DATABASE_URL is not set for e2e");
+   }
+   const parse = fromThrowable(
+      (raw: string) => new URL(raw),
+      () => null,
+   );
+   const host = parse(url)
+      .map((u) => u.host)
+      .unwrapOr("");
    if (!/^(localhost|127\.0\.0\.1)(:|$)/.test(host)) {
       throw new Error(
          `e2e refuses non-local DATABASE_URL: "${url}". Only localhost/127.0.0.1 allowed.`,
@@ -36,6 +40,12 @@ function db(): DatabaseInstance {
       });
    }
    return cachedDb;
+}
+
+export async function closeDb() {
+   if (!cachedDb) return;
+   await cachedDb.$client.end();
+   cachedDb = undefined;
 }
 
 export async function findUserByEmail(email: string) {
