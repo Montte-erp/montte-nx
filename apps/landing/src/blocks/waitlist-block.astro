@@ -1,0 +1,64 @@
+---
+import { CircleCheck, ShieldCheck } from "@lucide/astro";
+import {
+   Announcement,
+   AnnouncementTag,
+   AnnouncementTitle,
+} from "@packages/ui/components/announcement";
+import { Reveal } from "../components/reveal";
+import { WaitlistForm } from "./waitlist-form";
+
+const waitlistAnnouncements = [
+   {
+      Icon: CircleCheck,
+      tag: "Perfil",
+      title: "Prioridade no próximo lote.",
+   },
+   {
+      Icon: ShieldCheck,
+      tag: "Avisos",
+      title: "E-mail reservado no Montte.",
+   },
+];
+---
+
+<section
+   id="waitlist"
+   class="relative isolate flex min-h-[60vh] flex-col justify-center overflow-hidden bg-background"
+   aria-label="Waitlist"
+>
+   <Reveal client:visible>
+      <div class="mx-auto flex max-w-2xl flex-col items-center gap-8 px-4 text-center sm:px-4">
+         <div class="flex flex-col gap-4">
+            <h2
+               class="text-4xl leading-none font-black tracking-[-0.04em] text-foreground text-balance sm:text-5xl"
+            >
+               Receba seu convite para o Montte.
+            </h2>
+            <p class="text-base leading-relaxed text-muted-foreground text-balance sm:text-lg">
+               O acesso está sendo liberado gradualmente. Entre na lista para ser chamado quando
+               abrirmos o próximo lote de empresas.
+            </p>
+         </div>
+
+         <div class="w-full">
+            <WaitlistForm client:load />
+         </div>
+
+         <div class="flex  items-center justify-center gap-4 ">
+            {
+               waitlistAnnouncements.map(({ Icon,  title }) => (
+                  <Announcement >
+                     <AnnouncementTag >
+                  <Icon  class="text-primary" aria-hidden="true" />
+                     </AnnouncementTag>
+                     <AnnouncementTitle className="">
+                        {title}
+                     </AnnouncementTitle>
+                  </Announcement>
+               ))
+            }
+         </div>
+      </div>
+   </Reveal>
+</section>
