@@ -9,7 +9,7 @@ import {
 const stamp = () => `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
 const test = base.extend<{ createdCategoryIds: string[] }>({
-   // oxlint-ignore no-empty-pattern
+   // oxlint-ignore eslint(no-empty-pattern)
    createdCategoryIds: async ({}, use) => {
       await use([]);
    },
@@ -128,6 +128,9 @@ test("cria categoria vinculada a uma categoria pai", async ({
    expect(parent).not.toBeNull();
    expect(child?.parentId).toBe(parent?.id);
 
+   await page
+      .getByRole("textbox", { name: "Buscar categorias..." })
+      .fill(childName);
    await expect(
       page
          .getByRole("row")
