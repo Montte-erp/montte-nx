@@ -15,8 +15,7 @@ jobs:
       if: github.event.pull_request.draft == false
       runs-on: blacksmith-4vcpu-ubuntu-2404
       env:
-         NX_SELF_HOSTED_REMOTE_CACHE_SERVER: ${{ secrets.NX_SELF_HOSTED_REMOTE_CACHE_SERVER }}
-         NX_SELF_HOSTED_REMOTE_CACHE_ACCESS_TOKEN: ${{ secrets.NX_SELF_HOSTED_REMOTE_CACHE_ACCESS_TOKEN }}
+         NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       steps:
          - name: Checkout code
            uses: actions/checkout@v4

@@ -46,7 +46,7 @@ const formSchema = z.object({
       .trim()
       .min(2, "Nome deve ter no mínimo 2 caracteres.")
       .max(120, "Nome deve ter no máximo 120 caracteres."),
-   parentId: z.string(),
+   parentId: z.string().min(1).optional().nullable(),
 });
 
 type FormValues = z.input<typeof formSchema>;
@@ -84,12 +84,18 @@ export function CategoryFormSheet({
       defaultValues: DEFAULT_VALUES,
       validators: { onMount: formSchema, onChange: formSchema },
       onSubmit: async ({ value }) => {
+         const selectedParent = categories.find(
+            (category) =>
+               category.id === value.parentId &&
+               category.type === value.type &&
+               category.level < 3 &&
+               !category.isArchived,
+         );
          const result = await fromPromise(
             createMutation.mutateAsync({
                name: value.name.trim(),
                type: value.type,
-               parentId:
-                  value.parentId === NO_PARENT_VALUE ? null : value.parentId,
+               parentId: selectedParent?.id ?? null,
                participatesDre: false,
             }),
             (e) => e,
@@ -150,17 +156,19 @@ export function CategoryFormSheet({
                   );
 
                   return (
-                     <form.Field name="parentId">
-                        {(field) => (
+                     <form.Field
+                        name="parentId"
+                        children={(field) => (
                            <Field>
                               <FieldLabel htmlFor={field.name}>
                                  Categoria pai
                               </FieldLabel>
                               <Select
-                                 value={field.state.value}
+                                 value={field.state.value ?? NO_PARENT_VALUE}
                                  onValueChange={field.handleChange}
                               >
                                  <SelectTrigger
+                                    aria-invalid={isFieldInvalid(field)}
                                     id={field.name}
                                     name={field.name}
                                  >
@@ -180,7 +188,7 @@ export function CategoryFormSheet({
                               </Select>
                            </Field>
                         )}
-                     </form.Field>
+                     />
                   );
                }}
             </form.Subscribe>

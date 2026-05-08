@@ -225,6 +225,8 @@ export const requireResolvedCategoryUpdateParent = os
                return err(
                   WebAppError.notFound("Categoria pai não encontrada."),
                );
+            if (parent.isArchived)
+               return err(WebAppError.badRequest("Categoria pai arquivada."));
 
             const nextLevel = parent.level + 1;
             if (nextLevel + maxDepth - 1 > 3)

@@ -6,11 +6,13 @@ import { errAsync, fromPromise, okAsync } from "neverthrow";
 import { z } from "zod";
 import {
    categories,
+   type CategoryType,
    categorySchema,
    createCategorySchema,
    updateCategorySchema,
 } from "@core/database/schemas/categories";
 import { WebAppError } from "@core/logging/errors";
+import type { ORPCContextWithOrganization } from "@core/orpc/context";
 import { protectedProcedure } from "@core/orpc/server";
 import {
    requireCategory,
@@ -24,9 +26,39 @@ import { enqueueDeriveKeywordsWorkflow } from "@modules/classification/workflows
 
 const idSchema = z.object({ id: z.string().uuid() });
 const subcategoryInputSchema = categorySchema.pick({ name: true });
+type CategoryUniqueCandidate = {
+   parentId: string | null;
+   type: CategoryType;
+   name: string;
+   excludeIds: string[];
+};
 
 const ensureRow = <T>(row: T | undefined, msg: string) =>
    row ? okAsync(row) : errAsync(WebAppError.internal(msg));
+
+async function checkCategoryUniqueConflict(
+   db: ORPCContextWithOrganization["db"],
+   candidate: CategoryUniqueCandidate,
+   teamId: string,
+) {
+   const [row] = await db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(
+         and(
+            eq(categories.teamId, teamId),
+            sql`${categories.parentId} IS NOT DISTINCT FROM ${candidate.parentId}`,
+            eq(categories.type, candidate.type),
+            eq(categories.name, candidate.name),
+            sql`${categories.id} NOT IN (${sql.join(
+               candidate.excludeIds.map((excludeId) => sql`${excludeId}`),
+               sql`,`,
+            )})`,
+         ),
+      )
+      .limit(1);
+   return row !== undefined;
+}
 
 export const create = protectedProcedure
    .input(
@@ -201,6 +233,72 @@ export const update = protectedProcedure
 
       const { id, ...data } = input;
       const { resolvedParent } = context;
+
+      const conflictResult = await fromPromise(
+         (async () => {
+            const excludeIds = [id, ...resolvedParent.descendantCategoryIds];
+            const candidates: CategoryUniqueCandidate[] = [
+               {
+                  parentId: resolvedParent.updateParent
+                     ? (data.parentId ?? null)
+                     : context.category.parentId,
+                  type: resolvedParent.updateParent
+                     ? resolvedParent.type
+                     : context.category.type,
+                  name: data.name ?? context.category.name,
+                  excludeIds,
+               },
+            ];
+
+            if (
+               resolvedParent.updateParent &&
+               resolvedParent.type !== context.category.type &&
+               resolvedParent.descendantCategoryIds.length > 0
+            ) {
+               const descendantRows = await context.db
+                  .select({
+                     id: categories.id,
+                     parentId: categories.parentId,
+                     name: categories.name,
+                  })
+                  .from(categories)
+                  .where(
+                     inArray(
+                        categories.id,
+                        resolvedParent.descendantCategoryIds,
+                     ),
+                  );
+
+               for (const descendant of descendantRows) {
+                  candidates.push({
+                     parentId: descendant.parentId,
+                     type: resolvedParent.type,
+                     name: descendant.name,
+                     excludeIds,
+                  });
+               }
+            }
+
+            for (const candidate of candidates) {
+               if (
+                  await checkCategoryUniqueConflict(
+                     context.db,
+                     candidate,
+                     context.teamId,
+                  )
+               ) {
+                  return true;
+               }
+            }
+
+            return false;
+         })(),
+         () => WebAppError.internal("Falha ao validar categoria duplicada."),
+      );
+      if (conflictResult.isErr()) throw conflictResult.error;
+      if (conflictResult.value)
+         throw WebAppError.conflict("Categoria já existe nesse nível.");
+
       const result = await fromPromise(
          context.db.transaction(async (tx) => {
             const levelOffset = resolvedParent.updateParent

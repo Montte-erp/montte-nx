@@ -39,7 +39,7 @@ const code = [
    { n: 9, html: "&nbsp;" },
    {
       n: 10,
-      html: `<span class="${KW}">if</span> (tracked.<span class="${FN}">isErr</span>()) <span class="${KW}">return</span> <span class="${FN}">err</span>(tracked.error);`,
+      html: `<span class="${KW}">if</span> (tracked.<span class="${FN}">isErr</span>()) <span class="${KW}">throw</span> tracked.error;`,
    },
 ];
 
