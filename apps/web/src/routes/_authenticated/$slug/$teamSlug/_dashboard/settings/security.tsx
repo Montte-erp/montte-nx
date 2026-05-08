@@ -42,8 +42,8 @@ import type { FallbackProps } from "react-error-boundary";
 import {
    useRevokeAllSessions,
    useRevokeOtherSessions,
-} from "@/features/settings/hooks/use-session-actions";
-import { SessionDetailsForm } from "@/features/settings/ui/session-details-form";
+} from "./-settings/hooks/use-session-actions";
+import { SessionDetailsForm } from "./-settings/ui/session-details-form";
 import { useCredenza } from "@/hooks/use-credenza";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
