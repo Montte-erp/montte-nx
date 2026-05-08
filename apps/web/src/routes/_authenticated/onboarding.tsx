@@ -9,21 +9,22 @@ import { Button } from "@packages/ui/components/button";
 import { OnboardingWizard } from "./-onboarding/onboarding-wizard";
 
 const onboardingStepSchema = z
-   .enum(["profile", "goal", "company"])
-   .catch("goal")
-   .default("goal");
+   .enum(["profile", "features", "company"])
+   .catch("features")
+   .default("features");
 
-const onboardingGoalSchema = z
-   .enum(["finance", "clients_services", "pick_myself"])
-   .nullable()
-   .catch(null)
-   .default(null);
+const onboardingFeatureSchema = z.enum(["finance", "contacts", "services"]);
+
+const onboardingFeaturesSchema = z
+   .array(onboardingFeatureSchema)
+   .catch([])
+   .default([]);
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
    validateSearch: z.object({
       new: z.boolean().catch(false).default(false),
       step: onboardingStepSchema,
-      goal: onboardingGoalSchema,
+      features: onboardingFeaturesSchema,
    }),
    beforeLoad: async ({ context, search }) => {
       const sessionResult = await fromPromise(
@@ -54,14 +55,7 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
          if (session.user.name && search.step === "profile") {
             throw redirect({
                to: "/onboarding",
-               search: { ...search, step: "goal" },
-            });
-         }
-
-         if (search.step === "company" && !search.goal) {
-            throw redirect({
-               to: "/onboarding",
-               search: { ...search, step: "goal" },
+               search: { ...search, step: "features" },
             });
          }
 
@@ -104,14 +98,7 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
       if (!activeOrg && session.user.name && search.step === "profile") {
          throw redirect({
             to: "/onboarding",
-            search: { ...search, step: "goal" },
-         });
-      }
-
-      if (!activeOrg && search.step === "company" && !search.goal) {
-         throw redirect({
-            to: "/onboarding",
-            search: { ...search, step: "goal" },
+            search: { ...search, step: "features" },
          });
       }
 
@@ -154,7 +141,7 @@ function OnboardingPage() {
    return (
       <OnboardingWizard
          activeOrg={activeOrg}
-         goal={search.goal}
+         features={search.features}
          isNewOrganization={search.new}
          navigateSearch={(nextSearch) =>
             navigate({

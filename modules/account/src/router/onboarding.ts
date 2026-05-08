@@ -19,20 +19,7 @@ import {
    type OnboardingProduct,
 } from "@modules/account/onboarding-seed";
 
-const onboardingGoalSchema = z.enum([
-   "finance",
-   "clients_services",
-   "pick_myself",
-]);
-
-const productsByGoal: Record<
-   z.infer<typeof onboardingGoalSchema>,
-   OnboardingProduct[]
-> = {
-   finance: ["finance"],
-   clients_services: ["contacts", "services"],
-   pick_myself: [],
-};
+const onboardingFeatureSchema = z.enum(["finance", "contacts", "services"]);
 
 export const createWorkspace = authenticatedProcedure
    .input(
@@ -40,13 +27,15 @@ export const createWorkspace = authenticatedProcedure
          workspaceName: z
             .string()
             .min(2, "O nome deve ter no mínimo 2 caracteres."),
-         onboardingGoal: onboardingGoalSchema.default("pick_myself"),
+         features: z.array(onboardingFeatureSchema).default([]),
          isMultiOrgCreation: z.boolean().default(false),
       }),
    )
    .handler(async ({ context, input }) => {
       const slug = createSlug(input.workspaceName);
-      const onboardingProducts = productsByGoal[input.onboardingGoal];
+      const onboardingProducts: OnboardingProduct[] = Array.from(
+         new Set(input.features),
+      );
 
       const org = await context.auth.api.createOrganization({
          headers: context.headers,
@@ -87,7 +76,7 @@ export const createWorkspace = authenticatedProcedure
             groupType: "organization",
             groupKey: org.id,
             properties: {
-               onboarding_goal: input.onboardingGoal,
+               onboarding_features: onboardingProducts,
                onboarding_version: "2026-05",
             },
          });
@@ -95,7 +84,7 @@ export const createWorkspace = authenticatedProcedure
             distinctId: context.userId,
             event: "workspace_created",
             properties: {
-               onboarding_goal: input.onboardingGoal,
+               onboarding_features: onboardingProducts,
                onboarding_version: "2026-05",
                is_multi_org_creation: input.isMultiOrgCreation,
                organization_id: org.id,

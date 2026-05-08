@@ -10,6 +10,7 @@ import {
    InputOTPGroup,
    InputOTPSlot,
 } from "@packages/ui/components/input-otp";
+import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { type FormEvent, useCallback } from "react";
@@ -22,6 +23,7 @@ const searchParams = z.object({
 });
 
 export const Route = createFileRoute("/auth/email-verification")({
+   head: () => ({ meta: [{ title: "Verificar email — Montte" }] }),
    component: EmailVerificationPage,
    validateSearch: searchParams,
 });
@@ -36,10 +38,7 @@ function EmailVerificationPage() {
 
    const handleResendEmail = useCallback(async () => {
       await authClient.emailOtp.sendVerificationOtp(
-         {
-            email,
-            type: "email-verification",
-         },
+         { email, type: "email-verification" },
          {
             onError: ({ error }) => {
                toast.error(error.message);
@@ -48,7 +47,7 @@ function EmailVerificationPage() {
                toast.loading("Processando...");
             },
             onSuccess: () => {
-               toast.success("E-mail reenviado!");
+               toast.success("Email reenviado!");
             },
          },
       );
@@ -57,10 +56,7 @@ function EmailVerificationPage() {
    const handleVerifyEmail = useCallback(
       async (otp: string) => {
          await authClient.emailOtp.verifyEmail(
-            {
-               email,
-               otp,
-            },
+            { email, otp },
             {
                onError: ({ error }) => {
                   toast.error(error.message);
@@ -69,7 +65,7 @@ function EmailVerificationPage() {
                   toast.loading("Verificando...");
                },
                onSuccess: () => {
-                  toast.success("E-mail verificado!");
+                  toast.success("Email verificado!");
                   router.navigate({ to: "/auth/callback" });
                },
             },
@@ -101,93 +97,82 @@ function EmailVerificationPage() {
    );
 
    return (
-      <section className="flex flex-col gap-4 w-full">
-         <div className="text-center flex flex-col gap-2">
-            <h1 className="text-3xl font-semibold font-serif">
-               Verificacao de Email
+      <div className="flex w-full flex-col gap-6">
+         <div className="flex flex-col items-center gap-2">
+            <h1 className="text-center font-medium text-foreground text-xl leading-none">
+               Verificar email
             </h1>
-            <p className="text-muted-foreground text-sm">
-               Digite o codigo de verificacao enviado para seu email.
+            <p className="max-w-xs text-center text-muted-foreground text-sm">
+               Digite o código que enviamos para {email}.
             </p>
          </div>
 
-         <div className="flex flex-col gap-4">
-            <form
-               className="flex flex-col gap-4"
-               onSubmit={(e) => {
-                  handleSubmit(e);
-               }}
-            >
-               <FieldGroup>
-                  <form.Field
-                     name="otp"
-                     children={(field) => {
-                        const isInvalid =
-                           field.state.meta.isTouched &&
-                           field.state.meta.errors.length > 0;
-                        return (
-                           <Field
-                              className="flex flex-col items-center"
-                              data-invalid={isInvalid}
+         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+            <FieldGroup>
+               <form.Field
+                  name="otp"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
+                     return (
+                        <Field
+                           className="items-center"
+                           data-invalid={isInvalid}
+                        >
+                           <FieldLabel className="sr-only">
+                              Código OTP
+                           </FieldLabel>
+                           <InputOTP
+                              aria-invalid={isInvalid}
+                              autoComplete="one-time-code"
+                              className="gap-2"
+                              maxLength={6}
+                              onBlur={field.handleBlur}
+                              onChange={field.handleChange}
+                              value={field.state.value}
                            >
-                              <FieldLabel>Codigo OTP</FieldLabel>
-                              <InputOTP
-                                 aria-invalid={isInvalid}
-                                 autoComplete="one-time-code"
-                                 className="gap-2"
-                                 maxLength={6}
-                                 onBlur={field.handleBlur}
-                                 onChange={field.handleChange}
-                                 value={field.state.value}
-                              >
-                                 <div className="w-full flex gap-2 items-center justify-center">
-                                    <InputOTPGroup>
-                                       <InputOTPSlot index={0} />
-                                       <InputOTPSlot index={1} />
-                                       <InputOTPSlot index={2} />
-                                    </InputOTPGroup>
-                                    <InputOTPGroup>
-                                       <InputOTPSlot index={3} />
-                                       <InputOTPSlot index={4} />
-                                       <InputOTPSlot index={5} />
-                                    </InputOTPGroup>
-                                 </div>
-                              </InputOTP>
-                              {isInvalid && (
-                                 <FieldError errors={field.state.meta.errors} />
-                              )}
-                           </Field>
-                        );
-                     }}
-                  />
-               </FieldGroup>
-               <form.Subscribe
-                  selector={(state) =>
-                     [state.canSubmit, state.isSubmitting] as const
-                  }
-               >
-                  {([canSubmit, isSubmitting]) => (
-                     <Button
-                        className="w-full"
-                        disabled={!canSubmit || isSubmitting}
-                        type="submit"
-                     >
-                        Enviar
-                     </Button>
-                  )}
-               </form.Subscribe>
-            </form>
-         </div>
-
-         <div className="text-sm text-center">
-            <Button
-               className="text-muted-foreground"
-               onClick={handleResendEmail}
-               variant="link"
+                              <div className="flex w-full items-center justify-center gap-2">
+                                 <InputOTPGroup>
+                                    <InputOTPSlot index={0} />
+                                    <InputOTPSlot index={1} />
+                                    <InputOTPSlot index={2} />
+                                 </InputOTPGroup>
+                                 <InputOTPGroup>
+                                    <InputOTPSlot index={3} />
+                                    <InputOTPSlot index={4} />
+                                    <InputOTPSlot index={5} />
+                                 </InputOTPGroup>
+                              </div>
+                           </InputOTP>
+                           {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                           )}
+                        </Field>
+                     );
+                  }}
+               />
+            </FieldGroup>
+            <form.Subscribe
+               selector={(state) =>
+                  [state.canSubmit, state.isSubmitting] as const
+               }
             >
-               Reenviar Codigo
-            </Button>
-         </div>
-      </section>
+               {([canSubmit, isSubmitting]) => (
+                  <Button
+                     className="h-10 w-full"
+                     disabled={!canSubmit || isSubmitting}
+                     type="submit"
+                  >
+                     {isSubmitting ? <Spinner /> : "Verificar"}
+                  </Button>
+               )}
+            </form.Subscribe>
+         </form>
+
+         <Button className="h-10" onClick={handleResendEmail} variant="ghost">
+            Reenviar código
+         </Button>
+      </div>
    );
 }

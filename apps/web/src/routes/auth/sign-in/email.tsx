@@ -7,6 +7,7 @@ import {
 } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { PasswordInput } from "@packages/ui/components/password-input";
+import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
@@ -21,6 +22,7 @@ const signInSchema = z.object({
 });
 
 export const Route = createFileRoute("/auth/sign-in/email")({
+   head: () => ({ meta: [{ title: "Entrar com email — Montte" }] }),
    component: SignInEmailPage,
 });
 
@@ -30,10 +32,7 @@ function SignInEmailPage() {
    const handleSignIn = useCallback(
       async (email: string, password: string) => {
          await authClient.signIn.email(
-            {
-               email,
-               password,
-            },
+            { email, password },
             {
                onError: ({ error }) => {
                   toast.error(error.message);
@@ -59,8 +58,7 @@ function SignInEmailPage() {
          password: "",
       },
       onSubmit: async ({ value, formApi }) => {
-         const { email, password } = value;
-         await handleSignIn(email, password);
+         await handleSignIn(value.email, value.password);
          formApi.reset();
       },
       validators: {
@@ -78,25 +76,18 @@ function SignInEmailPage() {
    );
 
    return (
-      <section className="flex flex-col gap-4 w-full">
-         <Button asChild className="gap-2 px-0" variant="link">
-            <Link to="/auth/sign-in">
-               <ArrowLeft className="size-4" />
-               Voltar para opcoes de login
-            </Link>
-         </Button>
-
-         <div className="text-center flex flex-col gap-2">
-            <h1 className="text-3xl font-semibold font-serif">
-               Entrar com Email
+      <div className="flex w-full flex-col gap-6">
+         <div className="flex flex-col items-center gap-2">
+            <h1 className="text-center font-medium text-foreground text-xl leading-none">
+               Entrar com email
             </h1>
-            <p className="text-muted-foreground text-sm">
-               Use seu email e senha para acessar sua conta.
+            <p className="text-center text-muted-foreground text-sm">
+               Use email e senha para acessar sua conta.
             </p>
          </div>
 
          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-            <FieldGroup>
+            <FieldGroup className="gap-4">
                <form.Field
                   name="email"
                   children={(field) => {
@@ -108,13 +99,14 @@ function SignInEmailPage() {
                            <FieldLabel htmlFor={field.name}>Email</FieldLabel>
                            <Input
                               aria-invalid={isInvalid}
+                              autoComplete="email"
                               id={field.name}
                               name={field.name}
                               onBlur={field.handleBlur}
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder="seu@email.com"
+                              placeholder="nome@empresa.com"
                               type="email"
                               value={field.state.value}
                            />
@@ -125,8 +117,6 @@ function SignInEmailPage() {
                      );
                   }}
                />
-            </FieldGroup>
-            <FieldGroup>
                <form.Field
                   name="password"
                   children={(field) => {
@@ -135,12 +125,12 @@ function SignInEmailPage() {
                         field.state.meta.errors.length > 0;
                      return (
                         <Field aria-required data-invalid={isInvalid}>
-                           <div className="flex justify-between items-center">
+                           <div className="flex items-center justify-between">
                               <FieldLabel htmlFor={field.name}>
                                  Senha
                               </FieldLabel>
                               <Link
-                                 className="underline text-sm text-muted-foreground hover:text-primary"
+                                 className="text-muted-foreground text-xs hover:text-foreground hover:underline"
                                  to="/auth/forgot-password"
                               >
                                  Esqueci minha senha
@@ -173,27 +163,32 @@ function SignInEmailPage() {
             >
                {([canSubmit, isSubmitting]) => (
                   <Button
-                     className="w-full h-11"
+                     className="h-10 w-full"
                      disabled={!canSubmit || isSubmitting}
                      type="submit"
                   >
-                     Entrar
+                     {isSubmitting ? <Spinner /> : "Entrar"}
                   </Button>
                )}
             </form.Subscribe>
          </form>
 
-         <div className="text-sm text-center">
-            <div className="flex gap-1 justify-center items-center">
-               <span>Primeira vez aqui? </span>
-               <Link
-                  className="text-primary font-medium hover:underline"
-                  to="/auth/sign-up"
-               >
-                  Criar conta
-               </Link>
-            </div>
+         <Button asChild className="h-10" variant="ghost">
+            <Link to="/auth/sign-in">
+               <ArrowLeft className="size-4" />
+               Voltar para login
+            </Link>
+         </Button>
+
+         <div className="flex items-center justify-center gap-1 text-center text-sm">
+            <span className="text-muted-foreground">Primeira vez aqui?</span>
+            <Link
+               className="font-medium text-foreground hover:underline"
+               to="/auth/sign-up"
+            >
+               Criar conta
+            </Link>
          </div>
-      </section>
+      </div>
    );
 }

@@ -24,15 +24,20 @@ const test = base.extend<{ user: TestUser }>({
    },
 });
 
-async function pickGoalAndContinue(page: Page, goalLabel: RegExp) {
-   const card = page.getByRole("button", { name: goalLabel });
+async function toggleFeature(page: Page, label: RegExp) {
+   const card = page.getByRole("button", { name: label });
    await expect(card).toBeVisible({ timeout: 15_000 });
+   const before = await card.getAttribute("aria-pressed");
+   const target = before === "true" ? "false" : "true";
    await expect(async () => {
       await card.click();
-      await expect(card).toHaveAttribute("aria-pressed", "true", {
+      await expect(card).toHaveAttribute("aria-pressed", target, {
          timeout: 1_500,
       });
    }).toPass({ timeout: 15_000 });
+}
+
+async function continueToCompany(page: Page) {
    const next = page.getByRole("button", { name: "Continuar" });
    await expect(next).toBeEnabled();
    await next.click();
@@ -47,10 +52,13 @@ async function fillCompanyAndSubmit(page: Page, workspace: string) {
 async function completeFirstOnboarding(
    page: Page,
    user: TestUser,
-   goalLabel: RegExp,
+   featureLabels: RegExp[],
 ) {
    await page.goto("/");
-   await pickGoalAndContinue(page, goalLabel);
+   for (const label of featureLabels) {
+      await toggleFeature(page, label);
+   }
+   await continueToCompany(page);
    await fillCompanyAndSubmit(page, user.workspace);
 }
 
@@ -61,10 +69,11 @@ test("happy path finance: validações dos botões + seed correto", async ({
    await signUpViaApi(page.request, user);
    await page.goto("/");
 
-   await expect(page.getByRole("button", { name: "Continuar" })).toBeDisabled();
-   await pickGoalAndContinue(page, /Organizar meu financeiro/);
+   await expect(page.getByRole("button", { name: "Continuar" })).toBeEnabled();
+   await toggleFeature(page, /Finanças/);
+   await continueToCompany(page);
    await expect(page).toHaveURL(/step=company/);
-   await expect(page).toHaveURL(/goal=finance/);
+   await expect(page).toHaveURL(/features=finance/);
 
    const submit = page.getByRole("button", { name: "Concluir" });
    const input = page.getByRole("textbox", { name: "Nome da empresa" });
@@ -84,41 +93,56 @@ test("happy path finance: validações dos botões + seed correto", async ({
    expect(team?.onboardingProducts).toEqual(["finance"]);
 });
 
-test("clients_services + multi-org via ?new=true", async ({ page, user }) => {
+test("contacts + services + multi-org via ?new=true", async ({
+   page,
+   user,
+}) => {
    await signUpViaApi(page.request, user);
-   await completeFirstOnboarding(page, user, /Gerenciar clientes e serviços/);
+   await completeFirstOnboarding(page, user, [/Negócios/, /Serviços/]);
 
    const firstOrg = await findFirstOrgByUserEmail(user.email);
    if (!firstOrg?.slug) throw new Error("Primeira org não foi criada.");
    const firstTeam = await findTeamByOrgAndSlug(firstOrg.slug, "principal");
-   expect(firstTeam?.onboardingProducts).toEqual(["contacts", "services"]);
+   expect(firstTeam?.onboardingProducts?.sort()).toEqual(
+      ["contacts", "services"].sort(),
+   );
 
    await page.goto("/onboarding?new=true");
-   await pickGoalAndContinue(page, /Organizar meu financeiro/);
+   await toggleFeature(page, /Finanças/);
+   await continueToCompany(page);
    await fillCompanyAndSubmit(page, `${user.workspace} Two`);
 
    expect(await countMemberOrgsByEmail(user.email)).toBe(2);
 });
 
-test("Voltar preserva o goal selecionado", async ({ page, user }) => {
+test("Voltar preserva as features selecionadas", async ({ page, user }) => {
    await signUpViaApi(page.request, user);
    await page.goto("/");
-   await pickGoalAndContinue(page, /Gerenciar clientes e serviços/);
+   await toggleFeature(page, /Negócios/);
+   await toggleFeature(page, /Serviços/);
+   await continueToCompany(page);
    await expect(page).toHaveURL(/step=company/);
 
    await page.getByRole("button", { name: "Voltar" }).click();
-   await expect(page).toHaveURL(/step=goal/);
-   await expect(
-      page.getByRole("button", { name: /Gerenciar clientes e serviços/ }),
-   ).toHaveAttribute("aria-pressed", "true");
+   await expect(page).toHaveURL(/step=features/);
+   await expect(page.getByRole("button", { name: /Negócios/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+   );
+   await expect(page.getByRole("button", { name: /Serviços/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+   );
 });
 
-test("goal 'pick_myself' não pré-seleciona produtos", async ({
+test("nenhuma feature selecionada → onboardingProducts vazio", async ({
    page,
    user,
 }) => {
    await signUpViaApi(page.request, user);
-   await completeFirstOnboarding(page, user, /Vou escolher sozinho/);
+   await page.goto("/");
+   await continueToCompany(page);
+   await fillCompanyAndSubmit(page, user.workspace);
 
    const org = await findFirstOrgByUserEmail(user.email);
    if (!org?.slug) throw new Error("Org não foi criada.");
@@ -132,16 +156,8 @@ test("guards de search params redirecionam para o step correto", async ({
 }) => {
    await signUpViaApi(page.request, user);
 
-   await page.goto("/onboarding?step=company");
-   await expect(page).toHaveURL(/step=goal/);
-
    await page.goto("/onboarding?step=profile");
-   await expect(page).toHaveURL(/step=goal/);
-
-   await completeFirstOnboarding(page, user, /Organizar meu financeiro/);
-
-   await page.goto("/onboarding?new=true&step=company");
-   await expect(page).toHaveURL(/step=goal/);
+   await expect(page).toHaveURL(/step=features/);
 });
 
 test("já onboarded volta para home; estado incompleto é reparado", async ({
@@ -149,7 +165,7 @@ test("já onboarded volta para home; estado incompleto é reparado", async ({
    user,
 }) => {
    await signUpViaApi(page.request, user);
-   await completeFirstOnboarding(page, user, /Organizar meu financeiro/);
+   await completeFirstOnboarding(page, user, [/Finanças/]);
 
    await page.goto("/onboarding");
    await page.waitForURL(/\/[^/]+\/[^/]+\/home/, { timeout: 15_000 });

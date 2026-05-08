@@ -41,13 +41,21 @@ function parseSlugsFromUrl(url: string): {
    return { orgSlug: match[1]!, teamSlug: match[2]! };
 }
 
+async function pickFeature(page: Page, label: RegExp) {
+   const card = page.getByRole("button", { name: label });
+   await expect(card).toBeVisible({ timeout: 15_000 });
+   await expect(async () => {
+      await card.click();
+      await expect(card).toHaveAttribute("aria-pressed", "true", {
+         timeout: 1_500,
+      });
+   }).toPass({ timeout: 15_000 });
+}
+
 export async function completeOnboarding(page: Page, workspace: string) {
    await page.goto("/");
 
-   await expect(
-      page.getByRole("button", { name: /Organizar meu financeiro/ }),
-   ).toBeVisible({ timeout: 15_000 });
-   await page.getByRole("button", { name: /Organizar meu financeiro/ }).click();
+   await pickFeature(page, /Finanças/);
    const continueButton = page.getByRole("button", { name: "Continuar" });
    await expect(continueButton).toBeEnabled();
    await continueButton.click();
@@ -67,12 +75,8 @@ export async function createAdditionalOrganization(
 ) {
    await page.goto("/onboarding?new=true");
 
-   await expect(
-      page.getByRole("button", { name: /Gerenciar clientes e serviços/ }),
-   ).toBeVisible({ timeout: 15_000 });
-   await page
-      .getByRole("button", { name: /Gerenciar clientes e serviços/ })
-      .click();
+   await pickFeature(page, /Negócios/);
+   await pickFeature(page, /Serviços/);
    const continueButton = page.getByRole("button", { name: "Continuar" });
    await expect(continueButton).toBeEnabled();
    await continueButton.click();

@@ -17,6 +17,7 @@ import { z } from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
 export const Route = createFileRoute("/auth/magic-link")({
+   head: () => ({ meta: [{ title: "Link mágico — Montte" }] }),
    component: MagicLinkPage,
 });
 
@@ -51,7 +52,7 @@ function MagicLinkPage() {
                      return;
                   }
                } catch {
-                  // Not in dev mode or endpoint unavailable — fall through
+                  // dev endpoint indisponível — fluxo normal
                }
                setIsSent(true);
                toast.success("Link enviado! Verifique seu e-mail.");
@@ -83,71 +84,57 @@ function MagicLinkPage() {
 
    if (isSent) {
       return (
-         <section className="flex flex-col gap-4 w-full">
-            <div className="text-center flex flex-col gap-4 py-4">
-               {/* Success Icon */}
-               <div className="flex items-center justify-center">
-                  <div className="flex items-center justify-center size-16 rounded-full bg-primary/10">
-                     <Mail className="size-8 text-primary" />
-                  </div>
-               </div>
-
-               {/* Header */}
-               <div className="flex flex-col gap-2">
-                  <h1 className="text-3xl font-semibold font-serif">
-                     Verifique seu e-mail
-                  </h1>
-                  <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                     Enviamos um link para seu e-mail. Clique nele para acessar
-                     sua conta instantaneamente.
-                  </p>
-               </div>
-
-               {/* Actions */}
-               <div className="flex flex-col gap-3 pt-2">
-                  <Button
-                     className="h-11"
-                     onClick={() => setIsSent(false)}
-                     variant="outline"
-                  >
-                     Tentar outro e-mail
-                  </Button>
-                  <Button asChild variant="ghost">
-                     <Link to="/auth/sign-in">
-                        <ArrowLeft className="size-4" />
-                        Voltar para o login
-                     </Link>
-                  </Button>
+         <div className="flex w-full flex-col gap-6">
+            <div className="flex items-center justify-center">
+               <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+                  <Mail className="size-5 text-foreground" />
                </div>
             </div>
-         </section>
+            <div className="flex flex-col items-center gap-2">
+               <h1 className="text-center font-medium text-foreground text-xl leading-none">
+                  Verifique seu email
+               </h1>
+               <p className="max-w-xs text-center text-muted-foreground text-sm">
+                  Enviamos um link para acessar sua conta. Pode demorar até um
+                  minuto.
+               </p>
+            </div>
+            <div className="flex flex-col gap-2">
+               <Button
+                  className="h-10"
+                  onClick={() => setIsSent(false)}
+                  variant="outline"
+               >
+                  Usar outro email
+               </Button>
+               <Button asChild className="h-10" variant="ghost">
+                  <Link to="/auth/sign-in">
+                     <ArrowLeft className="size-4" />
+                     Voltar para login
+                  </Link>
+               </Button>
+            </div>
+         </div>
       );
    }
 
    return (
-      <section className="flex flex-col gap-4 w-full">
-         {/* Back Link */}
-         <Button asChild className="gap-2 px-0" variant="link">
-            <Link to="/auth/sign-in">
-               <ArrowLeft className="size-4" />
-               Voltar para o login
-            </Link>
-         </Button>
-
-         {/* Header */}
-         <div className="text-center flex flex-col gap-2">
-            <h1 className="text-3xl font-semibold font-serif">
-               Acesso sem senha
+      <div className="flex w-full flex-col gap-6">
+         <div className="flex flex-col items-center gap-2">
+            <h1 className="text-center font-medium text-foreground text-xl leading-none">
+               Qual é o seu email?
             </h1>
-            <p className="text-muted-foreground text-sm">
-               Receba um link no seu e-mail para acessar sua conta sem precisar
-               de senha.
+            <p className="text-center text-muted-foreground text-sm">
+               Receba um link para entrar sem senha.
             </p>
          </div>
 
-         {/* Form */}
-         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-            <FieldGroup>
+         <form
+            className="flex flex-col gap-4"
+            noValidate
+            onSubmit={handleSubmit}
+         >
+            <FieldGroup className="gap-4">
                <form.Field
                   name="email"
                   children={(field) => {
@@ -156,16 +143,19 @@ function MagicLinkPage() {
                         field.state.meta.errors.length > 0;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                           <FieldLabel className="sr-only" htmlFor={field.name}>
+                              Email
+                           </FieldLabel>
                            <Input
                               aria-invalid={isInvalid}
+                              autoComplete="email"
                               id={field.name}
                               name={field.name}
                               onBlur={field.handleBlur}
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder="seu@email.com"
+                              placeholder="nome@empresa.com"
                               type="email"
                               value={field.state.value}
                            />
@@ -184,34 +174,26 @@ function MagicLinkPage() {
             >
                {([canSubmit, isSubmitting]) => (
                   <Button
-                     className="w-full h-11"
+                     className="h-10 w-full"
                      disabled={!canSubmit || isSubmitting}
                      type="submit"
                   >
-                     {isSubmitting ? <Spinner /> : "Enviar link"}
+                     {isSubmitting ? <Spinner /> : "Continuar com email"}
                   </Button>
                )}
             </form.Subscribe>
          </form>
 
-         {/* Note */}
          <FieldDescription className="text-center">
-            O link expira em 15 minutos. Verifique sua caixa de spam se nao
-            encontrar o e-mail.
+            O link expira em 15 minutos.
          </FieldDescription>
 
-         {/* Footer */}
-         <div className="text-sm text-center">
-            <div className="flex gap-1 justify-center items-center">
-               <span>Primeira vez aqui? </span>
-               <Link
-                  className="text-primary font-medium hover:underline"
-                  to="/auth/sign-up"
-               >
-                  Criar conta
-               </Link>
-            </div>
-         </div>
-      </section>
+         <Button asChild className="h-10" variant="ghost">
+            <Link to="/auth/sign-in">
+               <ArrowLeft className="size-4" />
+               Voltar para login
+            </Link>
+         </Button>
+      </div>
    );
 }

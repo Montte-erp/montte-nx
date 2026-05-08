@@ -13,6 +13,7 @@ import {
    InputOTPSlot,
 } from "@packages/ui/components/input-otp";
 import { PasswordInput } from "@packages/ui/components/password-input";
+import { Spinner } from "@packages/ui/components/spinner";
 import { defineStepper } from "@packages/ui/components/stepper";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
@@ -43,6 +44,7 @@ const forgotPasswordSchema = z
    });
 
 export const Route = createFileRoute("/auth/forgot-password")({
+   head: () => ({ meta: [{ title: "Recuperar senha — Montte" }] }),
    component: ForgotPasswordPage,
 });
 
@@ -89,7 +91,7 @@ function EmailStep() {
                         name={field.name}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="seu@email.com"
+                        placeholder="nome@empresa.com"
                         type="email"
                         value={field.state.value}
                      />
@@ -115,8 +117,10 @@ function OtpStep() {
                   field.state.meta.isTouched &&
                   field.state.meta.errors.length > 0;
                return (
-                  <Field data-invalid={isInvalid}>
-                     <FieldLabel htmlFor={field.name}>Codigo OTP</FieldLabel>
+                  <Field className="items-center" data-invalid={isInvalid}>
+                     <FieldLabel className="sr-only" htmlFor={field.name}>
+                        Código OTP
+                     </FieldLabel>
                      <InputOTP
                         aria-invalid={isInvalid}
                         autoComplete="one-time-code"
@@ -127,7 +131,7 @@ function OtpStep() {
                         onChange={field.handleChange}
                         value={field.state.value}
                      >
-                        <div className="w-full flex justify-center items-center gap-2">
+                        <div className="flex w-full items-center justify-center gap-2">
                            <InputOTPGroup>
                               <InputOTPSlot index={0} />
                               <InputOTPSlot index={1} />
@@ -158,66 +162,62 @@ function OtpStep() {
 function PasswordStep() {
    const form = useForgotPasswordForm();
    return (
-      <>
-         <FieldGroup>
-            <form.Field
-               name="password"
-               children={(field) => {
-                  const isInvalid =
-                     field.state.meta.isTouched &&
-                     field.state.meta.errors.length > 0;
-                  return (
-                     <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Senha</FieldLabel>
-                        <PasswordInput
-                           aria-invalid={isInvalid}
-                           autoComplete="new-password"
-                           id={field.name}
-                           name={field.name}
-                           onBlur={field.handleBlur}
-                           onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder="Minimo 8 caracteres"
-                           value={field.state.value}
-                        />
-                        {isInvalid && (
-                           <FieldError errors={field.state.meta.errors} />
-                        )}
-                     </Field>
-                  );
-               }}
-            />
-         </FieldGroup>
-         <FieldGroup>
-            <form.Field
-               name="confirmPassword"
-               children={(field) => {
-                  const isInvalid =
-                     field.state.meta.isTouched &&
-                     field.state.meta.errors.length > 0;
-                  return (
-                     <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>
-                           Confirmar Senha
-                        </FieldLabel>
-                        <PasswordInput
-                           aria-invalid={isInvalid}
-                           autoComplete="new-password"
-                           id={field.name}
-                           name={field.name}
-                           onBlur={field.handleBlur}
-                           onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder="Repita a senha"
-                           value={field.state.value}
-                        />
-                        {isInvalid && (
-                           <FieldError errors={field.state.meta.errors} />
-                        )}
-                     </Field>
-                  );
-               }}
-            />
-         </FieldGroup>
-      </>
+      <FieldGroup className="gap-4">
+         <form.Field
+            name="password"
+            children={(field) => {
+               const isInvalid =
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
+               return (
+                  <Field data-invalid={isInvalid}>
+                     <FieldLabel htmlFor={field.name}>Nova senha</FieldLabel>
+                     <PasswordInput
+                        aria-invalid={isInvalid}
+                        autoComplete="new-password"
+                        id={field.name}
+                        name={field.name}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder="Mínimo 8 caracteres"
+                        value={field.state.value}
+                     />
+                     {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                     )}
+                  </Field>
+               );
+            }}
+         />
+         <form.Field
+            name="confirmPassword"
+            children={(field) => {
+               const isInvalid =
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
+               return (
+                  <Field data-invalid={isInvalid}>
+                     <FieldLabel htmlFor={field.name}>
+                        Confirmar senha
+                     </FieldLabel>
+                     <PasswordInput
+                        aria-invalid={isInvalid}
+                        autoComplete="new-password"
+                        id={field.name}
+                        name={field.name}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder="Repita a senha"
+                        value={field.state.value}
+                     />
+                     {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                     )}
+                  </Field>
+               );
+            }}
+         />
+      </FieldGroup>
    );
 }
 
@@ -236,7 +236,7 @@ function ForgotPasswordPage() {
                toast.loading("Processando...");
             },
             onSuccess: () => {
-               toast.success("Codigo enviado!");
+               toast.success("Código enviado!");
                success = true;
             },
          },
@@ -247,11 +247,7 @@ function ForgotPasswordPage() {
    const handleResetPassword = useCallback(
       async (email: string, otp: string, password: string) => {
          await authClient.emailOtp.resetPassword(
-            {
-               email,
-               otp,
-               password,
-            },
+            { email, otp, password },
             {
                onError: ({ error }) => {
                   toast.error(error.message);
@@ -261,9 +257,7 @@ function ForgotPasswordPage() {
                },
                onSuccess: () => {
                   toast.success("Senha redefinida!");
-                  router.navigate({
-                     to: "/auth/sign-in",
-                  });
+                  router.navigate({ to: "/auth/sign-in" });
                },
             },
          );
@@ -299,132 +293,132 @@ function ForgotPasswordPage() {
       <ForgotPasswordFormContext.Provider value={form}>
          <Stepper.Provider>
             {({ methods }) => (
-               <section className="flex flex-col gap-4 w-full">
-                  <Button asChild className="gap-2 px-0" variant="link">
+               <div className="flex w-full flex-col gap-6">
+                  <div className="flex flex-col items-center gap-2">
+                     <h1 className="text-center font-medium text-foreground text-xl leading-none">
+                        Recuperar senha
+                     </h1>
+                     <p className="text-center text-muted-foreground text-sm">
+                        {methods.state.current.data.id === "enter-email"
+                           ? "Receba um código por email."
+                           : methods.state.current.data.id === "enter-otp"
+                             ? "Digite o código que enviamos."
+                             : "Defina sua nova senha."}
+                     </p>
+                  </div>
+
+                  <div className="flex justify-center gap-2">
+                     {steps.map((step, index) => (
+                        <span
+                           aria-current={
+                              methods.state.current.data.id === step.id
+                                 ? "step"
+                                 : undefined
+                           }
+                           aria-label={`Etapa ${index + 1}`}
+                           className="size-2 rounded-full bg-muted transition-colors data-[active=true]:bg-primary"
+                           data-active={
+                              methods.state.current.data.id === step.id
+                           }
+                           key={step.id}
+                        />
+                     ))}
+                  </div>
+
+                  <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+                     {methods.flow.switch({
+                        "enter-email": () => <EmailStep />,
+                        "enter-otp": () => <OtpStep />,
+                        "enter-password": () => <PasswordStep />,
+                     })}
+
+                     {methods.state.isLast ? (
+                        <form.Subscribe
+                           selector={(state) =>
+                              [state.canSubmit, state.isSubmitting] as const
+                           }
+                        >
+                           {([canSubmit, isSubmitting]) => (
+                              <div className="flex flex-col gap-2">
+                                 <Button
+                                    className="h-10"
+                                    disabled={!canSubmit || isSubmitting}
+                                    type="submit"
+                                 >
+                                    {isSubmitting ? (
+                                       <Spinner />
+                                    ) : (
+                                       "Redefinir senha"
+                                    )}
+                                 </Button>
+                                 <Button
+                                    className="h-10"
+                                    onClick={() => methods.navigation.prev()}
+                                    type="button"
+                                    variant="ghost"
+                                 >
+                                    Voltar
+                                 </Button>
+                              </div>
+                           )}
+                        </form.Subscribe>
+                     ) : methods.flow.is("enter-email") ? (
+                        <form.Subscribe
+                           selector={(state) => ({
+                              emailValid: state.fieldMeta.email?.isValid,
+                              emailValue: state.values.email,
+                           })}
+                        >
+                           {({ emailValid, emailValue }) => (
+                              <Button
+                                 className="h-10"
+                                 disabled={!emailValid}
+                                 onClick={async () => {
+                                    const sent =
+                                       await handleSendOtp(emailValue);
+                                    if (sent) methods.navigation.next();
+                                 }}
+                                 type="button"
+                              >
+                                 Continuar
+                              </Button>
+                           )}
+                        </form.Subscribe>
+                     ) : (
+                        <form.Subscribe
+                           selector={(state) => state.fieldMeta.otp?.isValid}
+                        >
+                           {(otpValid) => (
+                              <div className="flex flex-col gap-2">
+                                 <Button
+                                    className="h-10"
+                                    disabled={!otpValid}
+                                    onClick={() => methods.navigation.next()}
+                                    type="button"
+                                 >
+                                    Continuar
+                                 </Button>
+                                 <Button
+                                    className="h-10"
+                                    onClick={() => methods.navigation.prev()}
+                                    type="button"
+                                    variant="ghost"
+                                 >
+                                    Voltar
+                                 </Button>
+                              </div>
+                           )}
+                        </form.Subscribe>
+                     )}
+                  </form>
+
+                  <Button asChild className="h-10" variant="ghost">
                      <Link to="/auth/sign-in">
                         <ArrowLeft className="size-4" />
                         Voltar para login
                      </Link>
                   </Button>
-
-                  <div className="text-center flex flex-col gap-2">
-                     <h1 className="text-3xl font-semibold font-serif">
-                        Esqueci Minha Senha
-                     </h1>
-                     <p className="text-muted-foreground text-sm">
-                        {methods.state.current.data.id === "enter-email"
-                           ? "Digite seu e-mail para receber o codigo de recuperacao"
-                           : methods.state.current.data.id === "enter-otp"
-                             ? "Digite o codigo enviado para seu e-mail"
-                             : "Digite sua nova senha"}
-                     </p>
-                  </div>
-
-                  <div className="flex flex-col gap-4">
-                     <Stepper.Navigation className="w-full">
-                        {steps.map((step) => (
-                           <Stepper.Step key={step.id} of={step.id} />
-                        ))}
-                     </Stepper.Navigation>
-                     <form
-                        className="flex flex-col gap-4"
-                        onSubmit={handleSubmit}
-                     >
-                        {methods.flow.switch({
-                           "enter-email": () => <EmailStep />,
-                           "enter-otp": () => <OtpStep />,
-                           "enter-password": () => <PasswordStep />,
-                        })}
-                        <Stepper.Controls className="flex w-full justify-between">
-                           <Button
-                              disabled={methods.state.isFirst}
-                              onClick={() => methods.navigation.prev()}
-                              type="button"
-                              variant="outline"
-                           >
-                              Voltar
-                           </Button>
-                           {methods.state.isLast ? (
-                              <form.Subscribe
-                                 selector={(state) =>
-                                    [
-                                       state.canSubmit,
-                                       state.isSubmitting,
-                                    ] as const
-                                 }
-                              >
-                                 {([canSubmit, isSubmitting]) => (
-                                    <Button
-                                       className="flex gap-2 items-center justify-center"
-                                       disabled={!canSubmit || isSubmitting}
-                                       type="submit"
-                                       variant="default"
-                                    >
-                                       Redefinir senha
-                                    </Button>
-                                 )}
-                              </form.Subscribe>
-                           ) : methods.flow.is("enter-email") ? (
-                              <form.Subscribe
-                                 selector={(state) => ({
-                                    emailValid: state.fieldMeta.email?.isValid,
-                                    emailValue: state.values.email,
-                                 })}
-                              >
-                                 {({ emailValid, emailValue }) => (
-                                    <Button
-                                       disabled={!emailValid}
-                                       onClick={async () => {
-                                          const sent =
-                                             await handleSendOtp(emailValue);
-                                          if (sent) methods.navigation.next();
-                                       }}
-                                       type="button"
-                                    >
-                                       Proximo
-                                    </Button>
-                                 )}
-                              </form.Subscribe>
-                           ) : methods.flow.is("enter-otp") ? (
-                              <form.Subscribe
-                                 selector={(state) =>
-                                    state.fieldMeta.otp?.isValid
-                                 }
-                              >
-                                 {(otpValid) => (
-                                    <Button
-                                       disabled={!otpValid}
-                                       onClick={() => methods.navigation.next()}
-                                       type="button"
-                                    >
-                                       Proximo
-                                    </Button>
-                                 )}
-                              </form.Subscribe>
-                           ) : (
-                              <Button
-                                 onClick={() => methods.navigation.next()}
-                                 type="button"
-                              >
-                                 Proximo
-                              </Button>
-                           )}
-                        </Stepper.Controls>
-                     </form>
-                  </div>
-
-                  <div className="text-sm text-center">
-                     <div className="flex gap-1 justify-center items-center">
-                        <span>Lembrou sua senha?</span>
-                        <Link
-                           className="text-primary hover:underline"
-                           to="/auth/sign-in"
-                        >
-                           Entrar
-                        </Link>
-                     </div>
-                  </div>
-               </section>
+               </div>
             )}
          </Stepper.Provider>
       </ForgotPasswordFormContext.Provider>
