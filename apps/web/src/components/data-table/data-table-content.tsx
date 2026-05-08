@@ -1929,7 +1929,10 @@ export function DataTableContent<TData>({
                         </TableCell>
                      </TableRow>
                   )}
-                  {isVirtualized && virtualItems ? (
+                  {rows.length === 0 &&
+                  (importState !== null ||
+                     isDraftRowActive) ? null : isVirtualized &&
+                    virtualItems ? (
                      <>
                         {paddingTop > 0 && (
                            <TableRow>
