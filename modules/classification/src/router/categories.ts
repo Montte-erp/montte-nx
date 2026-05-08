@@ -16,6 +16,7 @@ import {
    requireCategory,
    requireEmptyCategoryTree,
    requireKeywordsUnique,
+   requireResolvedCategoryUpdateParent,
    requireResolvedCategoryParent,
    withCategoryDescendants,
 } from "@modules/classification/router/middlewares";
@@ -189,6 +190,9 @@ export const update = protectedProcedure
       keywords: input.keywords,
       excludeId: input.id,
    }))
+   .use(requireResolvedCategoryUpdateParent, (input) => ({
+      parentId: input.parentId,
+   }))
    .handler(async ({ context, input }) => {
       if (context.category.isDefault)
          throw WebAppError.conflict(
@@ -196,13 +200,49 @@ export const update = protectedProcedure
          );
 
       const { id, ...data } = input;
+      const { resolvedParent } = context;
       const result = await fromPromise(
-         context.db
-            .update(categories)
-            .set({ ...data, updatedAt: dayjs().toDate() })
-            .where(eq(categories.id, id))
-            .returning()
-            .then((rows) => rows[0]),
+         context.db.transaction(async (tx) => {
+            const levelOffset = resolvedParent.updateParent
+               ? resolvedParent.level - context.category.level
+               : 0;
+            const [row] = await tx
+               .update(categories)
+               .set({
+                  ...data,
+                  ...(resolvedParent.updateParent
+                     ? {
+                          level: resolvedParent.level,
+                          type: resolvedParent.type,
+                       }
+                     : {}),
+                  updatedAt: dayjs().toDate(),
+               })
+               .where(eq(categories.id, id))
+               .returning();
+
+            if (
+               row &&
+               resolvedParent.updateParent &&
+               resolvedParent.descendantCategoryIds.length > 0
+            ) {
+               await tx
+                  .update(categories)
+                  .set({
+                     level: sql`${categories.level} + ${levelOffset}`,
+                     type: resolvedParent.type,
+                     updatedAt: dayjs().toDate(),
+                  })
+                  .where(
+                     inArray(
+                        categories.id,
+                        resolvedParent.descendantCategoryIds,
+                     ),
+                  );
+            }
+
+            return row;
+         }),
          () => WebAppError.internal("Falha ao atualizar categoria."),
       ).andThen((row) =>
          ensureRow(row, "Falha ao atualizar categoria: update vazio."),

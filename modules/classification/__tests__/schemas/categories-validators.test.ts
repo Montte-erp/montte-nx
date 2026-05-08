@@ -177,13 +177,23 @@ describe("updateCategorySchema", () => {
       }
    });
 
-   it("does not accept parentId field (immutable)", () => {
+   it("accepts parentId field on update", () => {
       const result = parse({
          parentId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
       });
       expect(result.success).toBe(true);
       if (result.success) {
-         expect("parentId" in result.data).toBe(false);
+         expect(result.data.parentId).toBe(
+            "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+         );
+      }
+   });
+
+   it("accepts null parentId on update", () => {
+      const result = parse({ parentId: null });
+      expect(result.success).toBe(true);
+      if (result.success) {
+         expect(result.data.parentId).toBeNull();
       }
    });
 

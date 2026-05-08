@@ -131,6 +131,7 @@ export const createCategorySchema = baseCategorySchema
 export const updateCategorySchema = baseCategorySchema
    .extend({
       name: nameSchema,
+      parentId: z.string().uuid().nullable().optional(),
       description: z.string().max(255).nullable().optional(),
       color: colorSchema,
       icon: z.string().max(50).nullable().optional(),
@@ -143,7 +144,7 @@ export const updateCategorySchema = baseCategorySchema
       participatesDre: z.boolean(),
       dreGroupId: z.string().max(60).nullable().optional(),
    })
-   .omit({ type: true, parentId: true })
+   .omit({ type: true })
    .partial()
    .superRefine(refineDreGroup);
 

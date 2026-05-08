@@ -9,7 +9,7 @@ import {
 const stamp = () => `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
 const test = base.extend<{ createdCategoryIds: string[] }>({
-   createdCategoryIds: async ({}, use) => {
+   createdCategoryIds: async (_args, use) => {
       await use([]);
    },
 });
@@ -82,6 +82,80 @@ test("cria categoria do tipo Transferência", async ({
    await expect(page.getByText("Categoria criada com sucesso.")).toBeVisible();
    await rememberCreatedCategory(e2eSession, name, createdCategoryIds);
    await expect(page.getByRole("cell", { name })).toBeVisible();
+});
+
+test("cria categoria vinculada a uma categoria pai", async ({
+   page,
+   e2eSession,
+   createdCategoryIds,
+}) => {
+   const parentName = `Pai E2E ${stamp()}`;
+   const childName = `Filha E2E ${stamp()}`;
+
+   await gotoCategories(page, e2eSession);
+   await page.getByRole("button", { name: "Nova Categoria" }).click();
+
+   let sheet = page.getByRole("dialog");
+   await sheet.getByLabel("Nome").fill(parentName);
+   await sheet.getByRole("button", { name: "Criar categoria" }).click();
+   await expect(page.getByText("Categoria criada com sucesso.")).toBeVisible();
+   await rememberCreatedCategory(e2eSession, parentName, createdCategoryIds);
+   await expect(page.getByRole("cell", { name: parentName })).toBeVisible();
+
+   await page.getByRole("button", { name: "Nova Categoria" }).click();
+   sheet = page.getByRole("dialog");
+   await sheet.getByLabel("Categoria pai").click();
+   await page.getByRole("option", { name: parentName }).click();
+   await sheet.getByLabel("Nome").fill(childName);
+   await sheet.getByRole("button", { name: "Criar categoria" }).click();
+   await expect(page.getByText("Categoria criada com sucesso.")).toBeVisible();
+   await rememberCreatedCategory(e2eSession, childName, createdCategoryIds);
+
+   const team = await findTeamByOrgAndSlug(
+      e2eSession.orgSlug,
+      e2eSession.teamSlug,
+   );
+   expect(team).not.toBeNull();
+   if (!team) return;
+   const parent = await findCategoryByName(team.id, parentName);
+   const child = await findCategoryByName(team.id, childName);
+   expect(parent).not.toBeNull();
+   expect(child?.parentId).toBe(parent?.id);
+
+   await expect(
+      page
+         .getByRole("row")
+         .filter({ hasText: childName })
+         .filter({ hasText: parentName }),
+   ).toBeVisible();
+});
+
+test("cria categoria sem categoria pai", async ({
+   page,
+   e2eSession,
+   createdCategoryIds,
+}) => {
+   const name = `Raiz E2E ${stamp()}`;
+
+   await gotoCategories(page, e2eSession);
+   await page.getByRole("button", { name: "Nova Categoria" }).click();
+
+   const sheet = page.getByRole("dialog");
+   await sheet.getByLabel("Categoria pai").click();
+   await page.getByRole("option", { name: "Sem categoria pai" }).click();
+   await sheet.getByLabel("Nome").fill(name);
+   await sheet.getByRole("button", { name: "Criar categoria" }).click();
+   await expect(page.getByText("Categoria criada com sucesso.")).toBeVisible();
+   await rememberCreatedCategory(e2eSession, name, createdCategoryIds);
+
+   const team = await findTeamByOrgAndSlug(
+      e2eSession.orgSlug,
+      e2eSession.teamSlug,
+   );
+   expect(team).not.toBeNull();
+   if (!team) return;
+   const category = await findCategoryByName(team.id, name);
+   expect(category?.parentId).toBeNull();
 });
 
 test("filtro Somente transferências lista categoria criada", async ({

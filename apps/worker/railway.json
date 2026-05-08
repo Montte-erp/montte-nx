@@ -3,7 +3,14 @@
    "build": {
       "builder": "RAILPACK",
       "buildCommand": "bun run worker:build",
-      "watchPatterns": ["/apps/worker/**", "/packages/**", "/core/**"]
+      "watchPatterns": [
+         "apps/worker/**",
+         "core/**",
+         "modules/**",
+         "tooling/**",
+         "package.json",
+         "bun.lock"
+      ]
    },
    "deploy": {
       "startCommand": "bun run worker:start",
