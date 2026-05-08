@@ -1,3 +1,4 @@
+import type { FormEvent } from "react";
 import { useForm } from "@tanstack/react-form";
 import { motion, AnimatePresence } from "motion/react";
 import { fromPromise } from "neverthrow";
@@ -116,7 +117,7 @@ export function WaitlistForm() {
                                     aria-label="Seu e-mail"
                                     aria-invalid={isInvalid}
                                     value={field.state.value}
-                                    onInput={(e) =>
+                                    onInput={(e: FormEvent<HTMLInputElement>) =>
                                        field.handleChange(e.currentTarget.value)
                                     }
                                     onBlur={() => field.handleBlur()}

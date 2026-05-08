@@ -8,7 +8,7 @@ import {
    okAsync,
    ResultAsync,
 } from "neverthrow";
-import { categories } from "@core/database/schemas/categories";
+import { categories, type Category } from "@core/database/schemas/categories";
 import { transactions } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
@@ -16,6 +16,12 @@ import type { ORPCContextWithOrganization } from "@core/orpc/context";
 const base = os.$context<ORPCContextWithOrganization>();
 
 const dbErr = (msg: string) => () => WebAppError.internal(msg);
+type ResolvedCategoryUpdateParent = {
+   updateParent: boolean;
+   level: number;
+   type: Category["type"];
+   descendantCategoryIds: string[];
+};
 
 export const requireCategory = base.middleware(
    async ({ context, next }, id: string) => {
@@ -153,25 +159,125 @@ export const requireResolvedCategoryParent = base.middleware(
    },
 );
 
-function fetchDescendantIds(
+export const requireResolvedCategoryUpdateParent = os
+   .$context<
+      ORPCContextWithOrganization & {
+         category: Category;
+      }
+   >()
+   .middleware(
+      async (
+         { context, next },
+         args: { parentId: string | null | undefined },
+      ) => {
+         const { parentId } = args;
+         if (parentId === undefined) {
+            const resolvedParent: ResolvedCategoryUpdateParent = {
+               updateParent: false,
+               level: context.category.level,
+               type: context.category.type,
+               descendantCategoryIds: [],
+            };
+            return next({ context: { resolvedParent } });
+         }
+
+         const descendantsResult = await fetchDescendantRows(
+            context.db,
+            context.category.id,
+         );
+         if (descendantsResult.isErr()) throw descendantsResult.error;
+         const descendantCategoryIds = descendantsResult.value.map((r) => r.id);
+         const maxDepth = descendantsResult.value.reduce(
+            (max, row) => Math.max(max, row.level - context.category.level + 1),
+            1,
+         );
+
+         if (!parentId) {
+            if (maxDepth > 3)
+               throw WebAppError.badRequest("Limite de 3 níveis atingido.");
+            const resolvedParent: ResolvedCategoryUpdateParent = {
+               updateParent: true,
+               level: 1,
+               type: context.category.type,
+               descendantCategoryIds,
+            };
+            return next({
+               context: { resolvedParent },
+            });
+         }
+
+         if (parentId === context.category.id)
+            throw WebAppError.badRequest(
+               "Categoria pai não pode ser a própria categoria.",
+            );
+         if (descendantCategoryIds.includes(parentId))
+            throw WebAppError.badRequest(
+               "Categoria pai não pode ser uma subcategoria da categoria editada.",
+            );
+
+         const result = await fromPromise(
+            context.db.query.categories.findFirst({
+               where: (f, { eq }) => eq(f.id, parentId),
+            }),
+            dbErr("Falha ao verificar categoria pai."),
+         ).andThen((parent) => {
+            if (!parent || parent.teamId !== context.teamId)
+               return err(
+                  WebAppError.notFound("Categoria pai não encontrada."),
+               );
+            if (parent.isArchived)
+               return err(WebAppError.badRequest("Categoria pai arquivada."));
+
+            const nextLevel = parent.level + 1;
+            if (nextLevel + maxDepth - 1 > 3)
+               return err(
+                  WebAppError.badRequest("Limite de 3 níveis atingido."),
+               );
+
+            const resolvedParent: ResolvedCategoryUpdateParent = {
+               updateParent: true,
+               level: nextLevel,
+               type: parent.type,
+               descendantCategoryIds,
+            };
+            return ok(resolvedParent);
+         });
+         if (result.isErr()) throw result.error;
+         return next({ context: { resolvedParent: result.value } });
+      },
+   );
+
+function fetchDescendantRows(
    db: ORPCContextWithOrganization["db"],
    categoryId: string,
 ) {
    return fromPromise(
       (async () => {
          const level2 = await db
-            .select({ id: categories.id })
+            .select({ id: categories.id, level: categories.level })
             .from(categories)
             .where(eq(categories.parentId, categoryId));
-         if (level2.length === 0) return [] as string[];
+         if (level2.length === 0) {
+            const rows: { id: string; level: number }[] = [];
+            return rows;
+         }
          const level2Ids = level2.map((r) => r.id);
          const level3 = await db
-            .select({ id: categories.id })
+            .select({ id: categories.id, level: categories.level })
             .from(categories)
             .where(inArray(categories.parentId, level2Ids));
-         return [...level2Ids, ...level3.map((r) => r.id)];
+         return [...level2, ...level3];
       })(),
       dbErr("Falha ao verificar descendentes."),
+   );
+}
+
+function fetchDescendantIds(
+   db: ORPCContextWithOrganization["db"],
+   categoryId: string,
+) {
+   return fetchDescendantRows(db, categoryId).map((rows) =>
+      rows.map((row) => row.id),
    );
 }
 

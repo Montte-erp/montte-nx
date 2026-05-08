@@ -21,10 +21,13 @@ import { useMutation } from "@tanstack/react-query";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { useSheet } from "@/hooks/use-sheet";
-import { orpc } from "@/integrations/orpc/client";
+import { orpc, type Outputs } from "@/integrations/orpc/client";
 
 const CATEGORY_TYPES = ["income", "expense", "transfer"] as const;
 type CategoryType = (typeof CATEGORY_TYPES)[number];
+type CategoryOption = Outputs["categories"]["getAll"][number];
+
+const NO_PARENT_VALUE = "sem-categoria-pai";
 
 function parseCategoryType(value: string): CategoryType | undefined {
    return CATEGORY_TYPES.find((t) => t === value);
@@ -43,6 +46,7 @@ const formSchema = z.object({
       .trim()
       .min(2, "Nome deve ter no mínimo 2 caracteres.")
       .max(120, "Nome deve ter no máximo 120 caracteres."),
+   parentId: z.string().min(1).optional().nullable(),
 });
 
 type FormValues = z.input<typeof formSchema>;
@@ -50,6 +54,7 @@ type FormValues = z.input<typeof formSchema>;
 const DEFAULT_VALUES: FormValues = {
    type: "expense",
    name: "",
+   parentId: NO_PARENT_VALUE,
 };
 
 function isFieldInvalid(field: {
@@ -58,7 +63,11 @@ function isFieldInvalid(field: {
    return field.state.meta.isTouched && field.state.meta.errors.length > 0;
 }
 
-export function CategoryFormSheet() {
+export function CategoryFormSheet({
+   categories,
+}: {
+   categories: CategoryOption[];
+}) {
    const { closeTopSheet } = useSheet();
 
    const createMutation = useMutation(
@@ -75,10 +84,18 @@ export function CategoryFormSheet() {
       defaultValues: DEFAULT_VALUES,
       validators: { onMount: formSchema, onChange: formSchema },
       onSubmit: async ({ value }) => {
+         const selectedParent = categories.find(
+            (category) =>
+               category.id === value.parentId &&
+               category.type === value.type &&
+               category.level < 3 &&
+               !category.isArchived,
+         );
          const result = await fromPromise(
             createMutation.mutateAsync({
                name: value.name.trim(),
                type: value.type,
+               parentId: selectedParent?.id ?? null,
                participatesDre: false,
             }),
             (e) => e,
@@ -113,6 +130,7 @@ export function CategoryFormSheet() {
                            const parsed = parseCategoryType(v);
                            if (!parsed) return;
                            field.handleChange(parsed);
+                           form.setFieldValue("parentId", NO_PARENT_VALUE);
                         }}
                      >
                         <SelectTrigger id={field.name} name={field.name}>
@@ -129,6 +147,51 @@ export function CategoryFormSheet() {
                   </Field>
                )}
             </form.Field>
+
+            <form.Subscribe selector={(s) => s.values.type}>
+               {(selectedType) => {
+                  const parentOptions = categories.filter(
+                     (c) =>
+                        c.type === selectedType && c.level < 3 && !c.isArchived,
+                  );
+
+                  return (
+                     <form.Field
+                        name="parentId"
+                        children={(field) => (
+                           <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                 Categoria pai
+                              </FieldLabel>
+                              <Select
+                                 value={field.state.value ?? NO_PARENT_VALUE}
+                                 onValueChange={field.handleChange}
+                              >
+                                 <SelectTrigger
+                                    aria-invalid={isFieldInvalid(field)}
+                                    id={field.name}
+                                    name={field.name}
+                                 >
+                                    <SelectValue />
+                                 </SelectTrigger>
+                                 <SelectContent>
+                                    <SelectItem value={NO_PARENT_VALUE}>
+                                       Sem categoria pai
+                                    </SelectItem>
+                                    {parentOptions.map((c) => (
+                                       <SelectItem key={c.id} value={c.id}>
+                                          {c.level > 1 ? "Sub: " : ""}
+                                          {c.name}
+                                       </SelectItem>
+                                    ))}
+                                 </SelectContent>
+                              </Select>
+                           </Field>
+                        )}
+                     />
+                  );
+               }}
+            </form.Subscribe>
 
             <form.Field name="name">
                {(field) => (

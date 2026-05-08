@@ -6,7 +6,7 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
    Archive,
@@ -104,6 +104,9 @@ export const Route = createFileRoute(
             },
          }),
       );
+      context.queryClient.prefetchQuery(
+         orpc.categories.getAll.queryOptions({}),
+      );
    },
    pendingMs: 300,
    pendingComponent: CategoriesSkeleton,
@@ -126,17 +129,20 @@ function CategoriesList() {
    const { parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
 
-   const { data: result } = useSuspenseQuery(
-      orpc.categories.getPaginated.queryOptions({
-         input: {
-            type,
-            includeArchived: includeArchived || undefined,
-            search: search || undefined,
-            page,
-            pageSize,
-         },
-      }),
-   );
+   const [{ data: result }, { data: categoryOptions }] = useSuspenseQueries({
+      queries: [
+         orpc.categories.getPaginated.queryOptions({
+            input: {
+               type,
+               includeArchived: includeArchived || undefined,
+               search: search || undefined,
+               page,
+               pageSize,
+            },
+         }),
+         orpc.categories.getAll.queryOptions({}),
+      ],
+   });
    const { data: rows, total } = result;
    const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -206,13 +212,21 @@ function CategoriesList() {
    );
 
    const handleCreate = useCallback(() => {
-      openSheet({ renderChildren: () => <CategoryFormSheet /> });
-   }, [openSheet]);
+      openSheet({
+         renderChildren: () => (
+            <CategoryFormSheet categories={categoryOptions} />
+         ),
+      });
+   }, [categoryOptions, openSheet]);
 
    const handleUpdateCategory = useCallback(
       async (
          rowId: string,
-         data: { name?: string; type?: "income" | "expense" | "transfer" },
+         data: {
+            name?: string;
+            type?: "income" | "expense" | "transfer";
+            parentId?: string | null;
+         },
       ) => {
          await updateMutation.mutateAsync({ id: rowId, ...data });
       },
@@ -296,8 +310,12 @@ function CategoriesList() {
    );
 
    const columns = useMemo(
-      () => buildCategoryColumns({ onUpdate: handleUpdateCategory }),
-      [handleUpdateCategory],
+      () =>
+         buildCategoryColumns({
+            categories: categoryOptions,
+            onUpdate: handleUpdateCategory,
+         }),
+      [categoryOptions, handleUpdateCategory],
    );
 
    return (

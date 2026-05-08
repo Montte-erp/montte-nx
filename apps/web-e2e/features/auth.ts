@@ -36,9 +36,16 @@ function parseSlugsFromUrl(url: string): {
    orgSlug: string;
    teamSlug: string;
 } {
-   const match = new URL(url).pathname.match(/^\/([^/]+)\/([^/]+)\/home/);
+   const match = new URL(url).pathname.match(/^\/(?!auth\/)([^/]+)\/([^/]+)\//);
    if (!match) throw new Error(`Could not parse slugs from ${url}`);
    return { orgSlug: match[1]!, teamSlug: match[2]! };
+}
+
+async function waitForDashboardUrl(page: Page, timeout: number) {
+   await page.waitForURL(
+      (url) => /^\/(?!auth\/)[^/]+\/[^/]+\//.test(url.pathname),
+      { timeout },
+   );
 }
 
 async function pickFeature(page: Page, label: RegExp) {
@@ -63,9 +70,9 @@ export async function completeOnboarding(page: Page, workspace: string) {
    await page.getByRole("textbox", { name: "Nome da empresa" }).fill(workspace);
    await page.getByRole("button", { name: "Concluir" }).click();
 
-   await page.waitForURL(/\/[^/]+\/[^/]+\/home/, { timeout: 30_000 });
+   await waitForDashboardUrl(page, 30_000);
    await page.goto("/");
-   await page.waitForURL(/\/[^/]+\/[^/]+\/home/, { timeout: 15_000 });
+   await waitForDashboardUrl(page, 15_000);
    return parseSlugsFromUrl(page.url());
 }
 
@@ -84,13 +91,13 @@ export async function createAdditionalOrganization(
    await page.getByRole("textbox", { name: "Nome da empresa" }).fill(workspace);
    await page.getByRole("button", { name: "Concluir" }).click();
 
-   await page.waitForURL(/\/[^/]+\/[^/]+\/home/, { timeout: 30_000 });
+   await waitForDashboardUrl(page, 30_000);
    return parseSlugsFromUrl(page.url());
 }
 
 async function signedInLandingSlugs(page: Page) {
    await page.goto("/");
-   await page.waitForURL(/\/[^/]+\/[^/]+\/home/, { timeout: 15_000 });
+   await waitForDashboardUrl(page, 15_000);
    return parseSlugsFromUrl(page.url());
 }
 

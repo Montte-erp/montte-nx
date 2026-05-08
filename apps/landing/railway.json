@@ -3,7 +3,16 @@
    "build": {
       "builder": "RAILPACK",
       "buildCommand": "bun run landing:build",
-      "watchPatterns": ["/apps/landing/**", "/packages/**", "/tooling/css/**"]
+      "watchPatterns": [
+         "apps/landing/**",
+         "packages/ui/**",
+         "core/logging/**",
+         "core/utils/**",
+         "tooling/css/**",
+         "tooling/typescript/**",
+         "package.json",
+         "bun.lock"
+      ]
    },
    "deploy": {
       "startCommand": "bun run landing:start",

@@ -104,6 +104,36 @@ describe("categories router", () => {
       expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(1);
    });
 
+   it("create with parentId links category to selected parent", async () => {
+      const { teamId } = await seedTeam(testDb.db);
+      const parent = await makeCategory(testDb.db, teamId, {
+         name: "Operacional",
+         type: "expense",
+      });
+      const ctx = createTestContext(testDb.db, { teamId });
+
+      const result = await call(
+         categoriesRouter.create,
+         {
+            name: "Aluguel",
+            type: "income",
+            parentId: parent.id,
+            participatesDre: false,
+         },
+         { context: ctx },
+      );
+
+      expect(result.parentId).toBe(parent.id);
+      expect(result.type).toBe("expense");
+      expect(result.level).toBe(2);
+
+      const [persisted] = await testDb.db
+         .select()
+         .from(categories)
+         .where(eq(categories.id, result.id));
+      expect(persisted?.parentId).toBe(parent.id);
+   });
+
    it("update on cross-team category throws NOT_FOUND", async () => {
       const { teamId: otherTeamId } = await seedTeam(testDb.db);
       const cat = await makeCategory(testDb.db, otherTeamId);
@@ -149,6 +179,99 @@ describe("categories router", () => {
       );
 
       expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(1);
+   });
+
+   it("update changes parentId and recalculates level", async () => {
+      const { teamId } = await seedTeam(testDb.db);
+      const oldParent = await makeCategory(testDb.db, teamId, {
+         name: "Antiga",
+      });
+      const newParent = await makeCategory(testDb.db, teamId, {
+         name: "Nova",
+      });
+      const cat = await makeCategory(testDb.db, teamId, {
+         name: "Filha",
+         parentId: oldParent.id,
+         level: 2,
+      });
+      const ctx = createTestContext(testDb.db, { teamId });
+
+      const result = await call(
+         categoriesRouter.update,
+         { id: cat.id, parentId: newParent.id, participatesDre: false },
+         { context: ctx },
+      );
+
+      expect(result.parentId).toBe(newParent.id);
+      expect(result.level).toBe(2);
+
+      const [persisted] = await testDb.db
+         .select()
+         .from(categories)
+         .where(eq(categories.id, cat.id));
+      expect(persisted?.parentId).toBe(newParent.id);
+   });
+
+   it("update accepts null parentId and promotes category to root", async () => {
+      const { teamId } = await seedTeam(testDb.db);
+      const parent = await makeCategory(testDb.db, teamId, {
+         name: "Pai",
+      });
+      const cat = await makeCategory(testDb.db, teamId, {
+         name: "Sem pai",
+         parentId: parent.id,
+         level: 2,
+      });
+      const ctx = createTestContext(testDb.db, { teamId });
+
+      const result = await call(
+         categoriesRouter.update,
+         { id: cat.id, parentId: null, participatesDre: false },
+         { context: ctx },
+      );
+
+      expect(result.parentId).toBeNull();
+      expect(result.level).toBe(1);
+   });
+
+   it("update rejects parentId equal to the edited category", async () => {
+      const { teamId } = await seedTeam(testDb.db);
+      const cat = await makeCategory(testDb.db, teamId);
+      const ctx = createTestContext(testDb.db, { teamId });
+
+      await expect(
+         call(
+            categoriesRouter.update,
+            { id: cat.id, parentId: cat.id, participatesDre: false },
+            { context: ctx },
+         ),
+      ).rejects.toSatisfy(
+         (e: Error & { code?: string }) => e.code === "BAD_REQUEST",
+      );
+   });
+
+   it("getPaginated returns parents before children", async () => {
+      const { teamId } = await seedTeam(testDb.db);
+      const parent = await makeCategory(testDb.db, teamId, {
+         name: "Moradia",
+      });
+      const child = await makeCategory(testDb.db, teamId, {
+         name: "Aluguel",
+         parentId: parent.id,
+         level: 2,
+      });
+      const ctx = createTestContext(testDb.db, { teamId });
+
+      const result = await call(
+         categoriesRouter.getPaginated,
+         { page: 1, pageSize: 20 },
+         { context: ctx },
+      );
+
+      const parentIndex = result.data.findIndex((row) => row.id === parent.id);
+      const childIndex = result.data.findIndex((row) => row.id === child.id);
+      expect(parentIndex).toBeGreaterThanOrEqual(0);
+      expect(childIndex).toBeGreaterThan(parentIndex);
    });
 
    it("update does NOT enqueue derive-keywords when keywords are provided", async () => {

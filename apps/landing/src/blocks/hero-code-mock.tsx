@@ -11,52 +11,36 @@ const code = [
       n: 1,
       html: `<span class="${KW}">import</span> { hyprpay } <span class="${KW}">from</span> <span class="${STR}">"@/lib/hyprpay"</span>;`,
    },
+   { n: 2, html: "&nbsp;" },
    {
-      n: 2,
-      html: `<span class="${KW}">import</span> { ok, safeTry, fromPromise } <span class="${KW}">from</span> <span class="${STR}">"neverthrow"</span>;`,
+      n: 3,
+      html: `<span class="${COM}">// Cobra por uso. Result, sem throw.</span>`,
    },
-   { n: 3, html: "&nbsp;" },
    {
       n: 4,
-      html: `<span class="${COM}">// Cobra por uso, dentro do seu próprio código. Zero throws.</span>`,
+      html: `<span class="${KW}">const</span> tracked = <span class="${KW}">await</span> hyprpay.api.<span class="${FN}">track</span>({`,
    },
    {
       n: 5,
-      html: `<span class="${KW}">export const</span> <span class="${FN}">generateAI</span> = (<span class="${KEY}">input</span>: <span class="${FN}">string</span>) =&gt;`,
+      html: `&nbsp;&nbsp;<span class="${KEY}">feature</span>: <span class="${STR}">"ai_tokens"</span>,`,
    },
    {
       n: 6,
-      html: `&nbsp;&nbsp;<span class="${FN}">safeTry</span>(<span class="${KW}">async function</span>* () {`,
+      html: `&nbsp;&nbsp;<span class="${KEY}">value</span>: result.<span class="${KEY}">tokens</span>,`,
    },
    {
       n: 7,
-      html: `&nbsp;&nbsp;&nbsp;&nbsp;<span class="${KW}">yield</span>* hyprpay.api.<span class="${FN}">check</span>({ <span class="${KEY}">feature</span>: <span class="${STR}">"ai_tokens"</span> });`,
-   },
-   { n: 8, html: "&nbsp;" },
-   {
-      n: 9,
-      html: `&nbsp;&nbsp;&nbsp;&nbsp;<span class="${KW}">const</span> result = <span class="${KW}">yield</span>* <span class="${FN}">fromPromise</span>(ai.<span class="${FN}">generate</span>(input), AIError.from);`,
-   },
-   { n: 10, html: "&nbsp;" },
-   {
-      n: 11,
-      html: `&nbsp;&nbsp;&nbsp;&nbsp;<span class="${KW}">yield</span>* hyprpay.api.<span class="${FN}">track</span>({`,
+      html: `&nbsp;&nbsp;<span class="${KEY}">customer</span>: orgId,`,
    },
    {
-      n: 12,
-      html: `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="${KEY}">feature</span>: <span class="${STR}">"ai_tokens"</span>,`,
+      n: 8,
+      html: `});`,
    },
+   { n: 9, html: "&nbsp;" },
    {
-      n: 13,
-      html: `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="${KEY}">value</span>: result.<span class="${KEY}">tokens</span>,`,
+      n: 10,
+      html: `<span class="${KW}">if</span> (tracked.<span class="${FN}">isErr</span>()) <span class="${KW}">return</span> tracked;`,
    },
-   { n: 14, html: "&nbsp;&nbsp;&nbsp;&nbsp;});" },
-   { n: 15, html: "&nbsp;" },
-   {
-      n: 16,
-      html: `&nbsp;&nbsp;&nbsp;&nbsp;<span class="${KW}">return</span> <span class="${FN}">ok</span>(result);`,
-   },
-   { n: 17, html: "&nbsp;&nbsp;});" },
 ];
 
 export function HeroCodeMock() {
