@@ -1,48 +1,36 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { loggerErrorMock, minioClientMock } = vi.hoisted(() => ({
-   loggerErrorMock: vi.fn(),
-   minioClientMock: {
-      bucketExists: vi.fn(),
-      getObject: vi.fn(),
-      listObjectsV2: vi.fn(),
-      makeBucket: vi.fn(),
-      presignedGetObject: vi.fn(),
-      presignedPutObject: vi.fn(),
-      putObject: vi.fn(),
-      removeObject: vi.fn(),
-      statObject: vi.fn(),
-   },
+const { putObjectMock, headObjectMock, customMock } = vi.hoisted(() => ({
+   putObjectMock: vi.fn(),
+   headObjectMock: vi.fn(),
+   customMock: vi.fn(() => ({
+      buildBucketUrl: (b: string) => `https://${b}.example.com`,
+      s3: {},
+   })),
 }));
 
-vi.mock("@core/logging/root", () => ({
-   getLogger: () => ({
-      child: () => ({
-         error: loggerErrorMock,
-      }),
-   }),
+vi.mock("@better-upload/server/clients", () => ({ custom: customMock }));
+vi.mock("@better-upload/server/helpers", () => ({
+   putObject: putObjectMock,
+   headObject: headObjectMock,
+   getObjectStream: vi.fn(),
+   getObjectBlob: vi.fn(),
+   listObjectsV2: vi.fn(),
+   deleteObject: vi.fn(),
+   presignGetObject: vi.fn(),
 }));
 
-vi.mock("minio", () => ({
-   Client: vi.fn(function MockMinioClient() {
-      return minioClientMock;
-   }),
-}));
-
-import { createMinioClient, uploadFile, verifyFileExists } from "../src/client";
+import { createS3Client, uploadFile, verifyFileExists } from "../src/client";
 
 describe("files client", () => {
    beforeEach(() => {
       vi.clearAllMocks();
    });
 
-   it("creates the bucket before uploading when it does not exist", async () => {
-      minioClientMock.bucketExists.mockResolvedValueOnce(false);
-      minioClientMock.makeBucket.mockResolvedValueOnce(undefined);
-      minioClientMock.putObject.mockResolvedValueOnce(undefined);
-
-      const client = createMinioClient({
-         endpoint: "https://minio.example.com",
+   it("calls putObject when uploading a file", async () => {
+      putObjectMock.mockResolvedValueOnce(undefined);
+      const client = createS3Client({
+         endpoint: "https://s3.example.com",
          accessKey: "access-key",
          secretKey: "secret-key",
       });
@@ -57,26 +45,19 @@ describe("files client", () => {
       );
 
       expect(result).toBe("note.md");
-      expect(minioClientMock.bucketExists).toHaveBeenCalledWith(
-         "content-bucket",
-      );
-      expect(minioClientMock.makeBucket).toHaveBeenCalledWith("content-bucket");
-      expect(minioClientMock.putObject).toHaveBeenCalledWith(
-         "content-bucket",
-         "note.md",
-         fileBuffer,
-         fileBuffer.length,
-         {
-            "Content-Type": "text/markdown",
-         },
-      );
+      expect(putObjectMock).toHaveBeenCalledWith(client, {
+         bucket: "content-bucket",
+         key: "note.md",
+         body: fileBuffer,
+         contentType: "text/markdown",
+         contentLength: fileBuffer.byteLength,
+      });
    });
 
    it("returns null when a file does not exist", async () => {
-      minioClientMock.statObject.mockRejectedValueOnce(new Error("missing"));
-
-      const client = createMinioClient({
-         endpoint: "https://minio.example.com",
+      headObjectMock.mockRejectedValueOnce(new Error("missing"));
+      const client = createS3Client({
+         endpoint: "https://s3.example.com",
          accessKey: "access-key",
          secretKey: "secret-key",
       });

@@ -243,153 +243,162 @@ function BankAccountsList() {
    );
 
    return (
-      <DataTableRoot
-         columns={columns}
-         data={result.data}
-         getRowId={(row) => row.id}
-         storageKey="montte:datatable:bank-accounts"
-         sorting={sorting}
-         onSortingChange={(updater) => {
-            const next =
-               typeof updater === "function" ? updater(sorting) : updater;
-            navigate({
-               search: (prev) => ({ ...prev, sorting: next }),
-               replace: true,
-            });
-         }}
-         columnFilters={columnFilters}
-         onColumnFiltersChange={(updater) => {
-            const next =
-               typeof updater === "function" ? updater(columnFilters) : updater;
-            navigate({
-               search: (prev) => ({ ...prev, columnFilters: next, page: 1 }),
-               replace: true,
-            });
-         }}
-         renderActions={({ row }) => (
-            <Button
-               className="text-destructive hover:text-destructive"
-               onClick={() => handleDelete(row.original)}
-               tooltip="Excluir"
-               variant="outline"
-            >
-               <Trash2 className="size-4" />
-            </Button>
-         )}
-      >
-         {TYPES.map((key) => (
-            <DataTableExternalFilter
-               key={key}
-               id={`type:${key}`}
-               label={TYPE_LABELS[key]}
-               group="Tipo"
-               active={type === key}
-               onToggle={(active) =>
+      <div className="flex flex-1 flex-col gap-4 min-h-0">
+         <DataTableRoot
+            columns={columns}
+            data={result.data}
+            getRowId={(row) => row.id}
+            storageKey="montte:datatable:bank-accounts"
+            sorting={sorting}
+            onSortingChange={(updater) => {
+               const next =
+                  typeof updater === "function" ? updater(sorting) : updater;
+               navigate({
+                  search: (prev) => ({ ...prev, sorting: next }),
+                  replace: true,
+               });
+            }}
+            columnFilters={columnFilters}
+            onColumnFiltersChange={(updater) => {
+               const next =
+                  typeof updater === "function"
+                     ? updater(columnFilters)
+                     : updater;
+               navigate({
+                  search: (prev) => ({ ...prev, columnFilters: next, page: 1 }),
+                  replace: true,
+               });
+            }}
+            renderActions={({ row }) => (
+               <Button
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => handleDelete(row.original)}
+                  tooltip="Excluir"
+                  variant="outline"
+               >
+                  <Trash2 className="size-4" />
+               </Button>
+            )}
+         >
+            {TYPES.map((key) => (
+               <DataTableExternalFilter
+                  key={key}
+                  id={`type:${key}`}
+                  label={TYPE_LABELS[key]}
+                  group="Tipo"
+                  active={type === key}
+                  onToggle={(active) =>
+                     navigate({
+                        search: (prev) => ({
+                           ...prev,
+                           type: active ? key : undefined,
+                           page: 1,
+                        }),
+                        replace: true,
+                     })
+                  }
+               />
+            ))}
+            <DataTableToolbar
+               searchPlaceholder="Buscar conta por nome..."
+               searchDefaultValue={search}
+               onSearch={(value) =>
                   navigate({
-                     search: (prev) => ({
-                        ...prev,
-                        type: active ? key : undefined,
-                        page: 1,
-                     }),
+                     search: (prev) => ({ ...prev, search: value, page: 1 }),
+                     replace: true,
+                  })
+               }
+            >
+               <DataTableImportButton importConfig={importConfig} />
+               <Button
+                  onClick={handleOpenCreate}
+                  size="icon-sm"
+                  tooltip="Nova Conta"
+                  variant="outline"
+               >
+                  <Plus />
+               </Button>
+            </DataTableToolbar>
+            <DataTableContent className="flex-1 overflow-auto min-h-0" />
+            <DataTableEmptyState>
+               <Empty>
+                  <EmptyMedia>
+                     <Landmark className="size-10" />
+                  </EmptyMedia>
+                  <EmptyHeader>
+                     <EmptyTitle>Nenhuma conta bancária</EmptyTitle>
+                     <EmptyDescription>
+                        Adicione uma conta para começar a gerenciar suas
+                        finanças.
+                     </EmptyDescription>
+                  </EmptyHeader>
+               </Empty>
+            </DataTableEmptyState>
+            <DataTableBulkActions<BankAccountRow>>
+               {({ selectedRows, clearSelection }) => (
+                  <SelectionActionButton
+                     icon={<Trash2 className="size-4" />}
+                     variant="destructive"
+                     onClick={() => {
+                        const ids = selectedRows.map((r) => r.id);
+                        openAlertDialog({
+                           title: `Excluir ${ids.length} ${ids.length === 1 ? "conta" : "contas"}`,
+                           description:
+                              "Tem certeza que deseja excluir as contas selecionadas? Esta ação não pode ser desfeita.",
+                           actionLabel: "Excluir",
+                           cancelLabel: "Cancelar",
+                           variant: "destructive",
+                           onAction: async () => {
+                              await bulkDeleteMutation.mutateAsync({ ids });
+                              clearSelection();
+                           },
+                        });
+                     }}
+                  >
+                     Excluir
+                  </SelectionActionButton>
+               )}
+            </DataTableBulkActions>
+         </DataTableRoot>
+         {result.totalCount > 0 && (
+            <DataTablePagination
+               currentPage={page}
+               pageSize={pageSize}
+               totalPages={result.totalPages}
+               totalCount={result.totalCount}
+               onPageChange={(p) =>
+                  navigate({
+                     search: (prev) => ({ ...prev, page: p }),
+                     replace: true,
+                  })
+               }
+               onPageSizeChange={(s) =>
+                  navigate({
+                     search: (prev) => ({ ...prev, pageSize: s, page: 1 }),
                      replace: true,
                   })
                }
             />
-         ))}
-         <DataTableToolbar
-            searchPlaceholder="Buscar conta por nome..."
-            searchDefaultValue={search}
-            onSearch={(value) =>
-               navigate({
-                  search: (prev) => ({ ...prev, search: value, page: 1 }),
-                  replace: true,
-               })
-            }
-         >
-            <DataTableImportButton importConfig={importConfig} />
-            <Button
-               onClick={handleOpenCreate}
-               size="icon-sm"
-               tooltip="Nova Conta"
-               variant="outline"
-            >
-               <Plus />
-            </Button>
-         </DataTableToolbar>
-         <DataTableContent />
-         <DataTableEmptyState>
-            <Empty>
-               <EmptyMedia>
-                  <Landmark className="size-10" />
-               </EmptyMedia>
-               <EmptyHeader>
-                  <EmptyTitle>Nenhuma conta bancária</EmptyTitle>
-                  <EmptyDescription>
-                     Adicione uma conta para começar a gerenciar suas finanças.
-                  </EmptyDescription>
-               </EmptyHeader>
-            </Empty>
-         </DataTableEmptyState>
-         <DataTableBulkActions<BankAccountRow>>
-            {({ selectedRows, clearSelection }) => (
-               <SelectionActionButton
-                  icon={<Trash2 className="size-4" />}
-                  variant="destructive"
-                  onClick={() => {
-                     const ids = selectedRows.map((r) => r.id);
-                     openAlertDialog({
-                        title: `Excluir ${ids.length} ${ids.length === 1 ? "conta" : "contas"}`,
-                        description:
-                           "Tem certeza que deseja excluir as contas selecionadas? Esta ação não pode ser desfeita.",
-                        actionLabel: "Excluir",
-                        cancelLabel: "Cancelar",
-                        variant: "destructive",
-                        onAction: async () => {
-                           await bulkDeleteMutation.mutateAsync({ ids });
-                           clearSelection();
-                        },
-                     });
-                  }}
-               >
-                  Excluir
-               </SelectionActionButton>
-            )}
-         </DataTableBulkActions>
-         <DataTablePagination
-            currentPage={page}
-            pageSize={pageSize}
-            totalPages={result.totalPages}
-            totalCount={result.totalCount}
-            onPageChange={(p) =>
-               navigate({
-                  search: (prev) => ({ ...prev, page: p }),
-                  replace: true,
-               })
-            }
-            onPageSizeChange={(s) =>
-               navigate({
-                  search: (prev) => ({ ...prev, pageSize: s, page: 1 }),
-                  replace: true,
-               })
-            }
-         />
-      </DataTableRoot>
+         )}
+      </div>
    );
 }
 
 function BankAccountsPage() {
    return (
-      <main className="flex flex-col gap-4">
+      <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden">
          <DefaultHeader
             description="Gerencie suas contas bancárias"
             title="Contas Bancárias"
          />
-         <QueryBoundary
-            fallback={<BankAccountsSkeleton />}
-            errorTitle="Erro ao carregar contas"
-         >
-            <BankAccountsList />
-         </QueryBoundary>
+         <div className="flex flex-1 flex-col min-h-0">
+            <QueryBoundary
+               fallback={<BankAccountsSkeleton />}
+               errorTitle="Erro ao carregar contas"
+            >
+               <BankAccountsList />
+            </QueryBoundary>
+         </div>
       </main>
    );
 }

@@ -73,7 +73,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                      <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-background">
                         <main
                            className={cn(
-                              "relative flex-1 p-4",
+                              "relative flex flex-1 flex-col p-4",
                               hasDedicatedSidebar
                                  ? "overflow-hidden"
                                  : "overflow-y-auto",

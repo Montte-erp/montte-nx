@@ -1,9 +1,15 @@
-import { getLogger } from "@core/logging/root";
-import { Client } from "minio";
+import { custom } from "@better-upload/server/clients";
+import {
+   deleteObject as deleteObjectHelper,
+   getObjectBlob,
+   getObjectStream,
+   headObject,
+   listObjectsV2,
+   presignGetObject,
+   putObject as putObjectHelper,
+} from "@better-upload/server/helpers";
 
-const logger = getLogger().child({ module: "files" });
-
-export type MinioClient = Client;
+export type S3Client = ReturnType<typeof custom>;
 
 export type ParsedEndpoint = {
    host: string;
@@ -26,136 +32,149 @@ export function parseEndpoint(endpoint: string): ParsedEndpoint {
    };
 }
 
-export function createMinioClient(opts: {
+export function createS3Client(opts: {
    endpoint: string;
    accessKey: string;
    secretKey: string;
-}): Client {
-   const { hostname, port, useSSL } = parseEndpoint(opts.endpoint);
-   return new Client({
-      accessKey: opts.accessKey,
-      endPoint: hostname,
-      port,
-      secretKey: opts.secretKey,
-      useSSL,
+   region?: string;
+   forcePathStyle?: boolean;
+}): S3Client {
+   const { host, useSSL } = parseEndpoint(opts.endpoint);
+   return custom({
+      host,
+      accessKeyId: opts.accessKey,
+      secretAccessKey: opts.secretKey,
+      region: opts.region ?? "us-east-1",
+      secure: useSSL,
+      forcePathStyle: opts.forcePathStyle ?? false,
    });
 }
 
 export async function uploadFile(
-   client: Client,
+   client: S3Client,
    fileName: string,
-   fileBuffer: Buffer,
+   fileBuffer: Buffer | Uint8Array,
    contentType: string,
    bucketName: string,
 ): Promise<string> {
-   const bucketExists = await client.bucketExists(bucketName);
-   if (!bucketExists) {
-      await client.makeBucket(bucketName);
-   }
-   await client.putObject(bucketName, fileName, fileBuffer, fileBuffer.length, {
-      "Content-Type": contentType,
+   await putObjectHelper(client, {
+      bucket: bucketName,
+      key: fileName,
+      body: fileBuffer,
+      contentType,
+      contentLength: fileBuffer.byteLength,
    });
    return fileName;
 }
 
 export async function getFile(
-   client: Client,
+   client: S3Client,
    fileName: string,
    bucketName: string,
-): Promise<NodeJS.ReadableStream> {
-   const stream = await client.getObject(bucketName, fileName);
-   return stream;
+): Promise<ReadableStream<Uint8Array>> {
+   const result = await getObjectStream(client, {
+      bucket: bucketName,
+      key: fileName,
+   });
+   return result.stream;
 }
 
 export async function listFiles(
-   client: Client,
+   client: S3Client,
    bucketName: string,
    prefix: string,
 ): Promise<string[]> {
    const files: string[] = [];
-   const stream = client.listObjectsV2(bucketName, prefix, true);
-   for await (const obj of stream) {
-      if (obj.name) files.push(obj.name.replace(prefix, ""));
-   }
+   let continuationToken: string | undefined;
+   do {
+      const page = await listObjectsV2(client, {
+         bucket: bucketName,
+         prefix,
+         continuationToken,
+      });
+      for (const obj of page.contents) {
+         files.push(obj.key.replace(prefix, ""));
+      }
+      continuationToken = page.isTruncated
+         ? page.nextContinuationToken
+         : undefined;
+   } while (continuationToken);
    return files;
 }
 
 export async function streamFileForProxy(
-   client: Client,
+   client: S3Client,
    fileName: string,
    bucketName: string,
 ): Promise<{ buffer: Buffer; contentType: string }> {
-   const stream = await client.getObject(bucketName, fileName);
-   const chunks: Buffer[] = [];
-   for await (const chunk of stream) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-   }
-   const buffer = Buffer.concat(chunks);
-   let contentType = "image/jpeg";
-   try {
-      const stat = await client.statObject(bucketName, fileName);
-      if (stat.metaData?.["content-type"]) {
-         contentType = stat.metaData["content-type"];
-      }
-   } catch (err) {
-      logger.error({ err }, "Error fetching file metadata");
-   }
-   return { buffer, contentType };
+   const result = await getObjectBlob(client, {
+      bucket: bucketName,
+      key: fileName,
+   });
+   const arrayBuffer = await result.blob.arrayBuffer();
+   return {
+      buffer: Buffer.from(arrayBuffer),
+      contentType: result.contentType || "application/octet-stream",
+   };
 }
 
 export async function getFileInfo(
-   client: Client,
+   client: S3Client,
    fileName: string,
    bucketName: string,
 ): Promise<{ size: number; contentType: string }> {
-   const stat = await client.statObject(bucketName, fileName);
-   return { contentType: stat.metaData["content-type"], size: stat.size };
+   const stat = await headObject(client, { bucket: bucketName, key: fileName });
+   return { contentType: stat.contentType, size: stat.contentLength };
 }
 
 export async function generatePresignedPutUrl(
-   client: Client,
+   client: S3Client,
    fileName: string,
    bucketName: string,
    expirySeconds = 300,
 ): Promise<string> {
-   const bucketExists = await client.bucketExists(bucketName);
-   if (!bucketExists) {
-      await client.makeBucket(bucketName);
-   }
-   return client.presignedPutObject(bucketName, fileName, expirySeconds);
+   const url = `${client.buildBucketUrl(bucketName)}/${encodeURI(fileName)}?X-Amz-Expires=${expirySeconds}`;
+   const signed = await client.s3.sign(url, {
+      method: "PUT",
+      aws: { signQuery: true },
+   });
+   return signed.url.toString();
 }
 
 export async function generatePresignedGetUrl(
-   client: Client,
+   client: S3Client,
    fileName: string,
    bucketName: string,
    expirySeconds = 3600,
 ): Promise<string> {
-   return client.presignedGetObject(bucketName, fileName, expirySeconds);
+   return presignGetObject(client, {
+      bucket: bucketName,
+      key: fileName,
+      expiresIn: expirySeconds,
+   });
 }
 
 export async function verifyFileExists(
-   client: Client,
+   client: S3Client,
    fileName: string,
    bucketName: string,
 ): Promise<{ exists: boolean; size: number; contentType: string } | null> {
-   try {
-      const stat = await client.statObject(bucketName, fileName);
-      return {
-         contentType:
-            stat.metaData?.["content-type"] ?? "application/octet-stream",
-         exists: true,
-         size: stat.size,
-      };
-   } catch {
-      return null;
-   }
+   const stat = await headObject(client, {
+      bucket: bucketName,
+      key: fileName,
+   }).catch(() => null);
+   if (!stat) return null;
+   return {
+      contentType: stat.contentType || "application/octet-stream",
+      exists: true,
+      size: stat.contentLength,
+   };
 }
 
 export async function deleteFile(
-   client: Client,
+   client: S3Client,
    fileName: string,
    bucketName: string,
 ): Promise<void> {
-   await client.removeObject(bucketName, fileName);
+   await deleteObjectHelper(client, { bucket: bucketName, key: fileName });
 }

@@ -1,6 +1,5 @@
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
-import { generatePresignedPutUrl } from "@core/files/client";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 
@@ -63,32 +62,4 @@ export const setPassword = protectedProcedure
       );
       if (result.isErr()) throw result.error;
       return { success: true };
-   });
-
-export const generateAvatarUploadUrl = protectedProcedure
-   .input(
-      z.object({
-         fileExtension: z
-            .string()
-            .regex(/^[a-zA-Z0-9]{1,10}$/, "Extensão de arquivo inválida."),
-      }),
-   )
-   .handler(async ({ context, input }) => {
-      const bucketName = "user-avatars";
-      const fileName = `avatar-${context.userId}-${crypto.randomUUID()}.${input.fileExtension}`;
-      const result = await fromPromise(
-         generatePresignedPutUrl(
-            context.minioClient,
-            fileName,
-            bucketName,
-            300,
-         ),
-         () => WebAppError.internal("Erro ao gerar URL de upload."),
-      );
-      if (result.isErr()) throw result.error;
-      return {
-         presignedUrl: result.value,
-         fileName,
-         publicUrl: `/api/files/${bucketName}/${fileName}`,
-      };
    });

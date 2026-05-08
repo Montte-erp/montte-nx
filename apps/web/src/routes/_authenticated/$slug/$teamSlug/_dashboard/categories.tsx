@@ -581,35 +581,37 @@ function CategoriesList() {
                }}
             </DataTableBulkActions>
          </DataTableRoot>
-         <DataTablePagination
-            currentPage={page}
-            totalPages={totalPages}
-            totalCount={total}
-            pageSize={pageSize}
-            onPageChange={(newPage) =>
-               navigate({
-                  search: (prev) => ({ ...prev, page: newPage }),
-                  replace: true,
-               })
-            }
-            onPageSizeChange={(newPageSize) =>
-               navigate({
-                  search: (prev) => ({
-                     ...prev,
-                     pageSize: newPageSize,
-                     page: 1,
-                  }),
-                  replace: true,
-               })
-            }
-         />
+         {total > 0 && (
+            <DataTablePagination
+               currentPage={page}
+               totalPages={totalPages}
+               totalCount={total}
+               pageSize={pageSize}
+               onPageChange={(newPage) =>
+                  navigate({
+                     search: (prev) => ({ ...prev, page: newPage }),
+                     replace: true,
+                  })
+               }
+               onPageSizeChange={(newPageSize) =>
+                  navigate({
+                     search: (prev) => ({
+                        ...prev,
+                        pageSize: newPageSize,
+                        page: 1,
+                     }),
+                     replace: true,
+                  })
+               }
+            />
+         )}
       </div>
    );
 }
 
 function CategoriesPage() {
    return (
-      <main className="flex h-full flex-col gap-4">
+      <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden">
          <DefaultHeader
             description="Gerencie as categorias das suas transações"
             title="Categorias"

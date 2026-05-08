@@ -132,36 +132,31 @@ function LogoSection({
       acceptedTypes: ["image/*"],
       maxSize: 5 * 1024 * 1024,
    });
-   const [isSaving, startSaving] = useTransition();
 
    const { upload, isPending } = useUploadFile({
       route: "organizationLogo",
       api: "/api/upload",
-      onUploadComplete: ({ metadata }) => {
+      onUploadComplete: async ({ metadata }) => {
          const publicUrl = extractPublicUrl(metadata);
          if (!publicUrl) {
             toast.error("Erro ao atualizar logo");
             return;
          }
-         startSaving(async () => {
-            const { error } = await authClient.organization.update({
-               data: { logo: publicUrl },
-               organizationId,
-            });
-            if (error) {
-               toast.error("Erro ao atualizar logo");
-               return;
-            }
-            toast.success("Logo atualizado com sucesso!");
-            fileUpload.clearFile();
+         const { error } = await authClient.organization.update({
+            data: { logo: publicUrl },
+            organizationId,
          });
+         if (error) {
+            toast.error("Erro ao atualizar logo");
+            return;
+         }
+         toast.success("Logo atualizado com sucesso!");
+         fileUpload.clearFile();
       },
       onError: () => {
          toast.error("Erro ao enviar imagem");
       },
    });
-
-   const isBusy = isPending || isSaving;
 
    return (
       <section className="space-y-3" data-testid="logo-section">
@@ -209,12 +204,12 @@ function LogoSection({
          {fileUpload.filePreview && fileUpload.selectedFile && (
             <Button
                data-testid="save-logo-button"
-               disabled={isBusy}
+               disabled={isPending}
                onClick={() =>
                   fileUpload.selectedFile && upload(fileUpload.selectedFile)
                }
             >
-               {isBusy && <Loader2 className="size-4 mr-2 animate-spin" />}
+               {isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
                Salvar logo
             </Button>
          )}

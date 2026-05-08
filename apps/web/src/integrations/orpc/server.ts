@@ -15,11 +15,11 @@ import { AppError, WebAppError } from "@core/logging/errors";
 import type { Redis } from "@core/redis/connection";
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { sanitizeData } from "@core/utils/sanitization";
-import type { MinioClient } from "@core/files/client";
+import type { S3Client } from "@core/files/client";
 import {
    auth,
    db,
-   minioClient,
+   s3Client,
    posthog,
    posthogPrompts,
    redis,
@@ -39,7 +39,7 @@ export interface ORPCContextWithAuth extends ORPCContext {
    posthogPrompts: Prompts;
    redis: Redis;
    workflowClient: DBOSClient;
-   minioClient: MinioClient;
+   s3Client: S3Client;
 }
 
 export interface ORPCContextAuthenticated extends ORPCContextWithAuth {
@@ -70,7 +70,7 @@ const withDeps = base.use(async ({ context, next }) => {
          posthogPrompts,
          redis,
          workflowClient: await workflowClient,
-         minioClient,
+         s3Client,
       },
    });
 });

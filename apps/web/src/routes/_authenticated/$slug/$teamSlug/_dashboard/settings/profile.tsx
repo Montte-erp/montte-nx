@@ -34,8 +34,8 @@ import { useCallback, useState, useTransition } from "react";
 import type { FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useUploadFile } from "@better-upload/client";
 import { useFileUpload } from "@/features/file-upload/lib/use-file-upload";
-import { usePresignedUpload } from "@/features/file-upload/lib/use-presigned-upload";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
@@ -52,6 +52,13 @@ export const Route = createFileRoute(
 
 // Avatar Upload Section
 
+function extractPublicUrl(metadata: unknown): string | null {
+   if (typeof metadata !== "object" || metadata === null) return null;
+   if (!("publicUrl" in metadata)) return null;
+   const url = metadata.publicUrl;
+   return typeof url === "string" ? url : null;
+}
+
 function AvatarUploadSection({
    currentImage,
    name,
@@ -63,40 +70,32 @@ function AvatarUploadSection({
       acceptedTypes: ["image/*"],
       maxSize: 5 * 1024 * 1024,
    });
-   const presignedUpload = usePresignedUpload();
-   const [isPending, startTransition] = useTransition();
+
+   const { upload, isPending } = useUploadFile({
+      route: "userAvatar",
+      api: "/api/upload",
+      onUploadComplete: async ({ metadata }) => {
+         const publicUrl = extractPublicUrl(metadata);
+         if (!publicUrl) {
+            toast.error("Erro ao atualizar foto de perfil");
+            return;
+         }
+         const { error } = await authClient.updateUser({ image: publicUrl });
+         if (error) {
+            toast.error(error.message ?? "Erro ao atualizar foto de perfil");
+            return;
+         }
+         toast.success("Foto de perfil atualizada!");
+         fileUpload.clearFile();
+      },
+      onError: () => {
+         toast.error("Erro ao atualizar foto de perfil");
+      },
+   });
 
    const handleSave = () => {
       if (!fileUpload.selectedFile) return;
-      const file = fileUpload.selectedFile;
-      startTransition(async () => {
-         try {
-            const fileExtension = file.name.split(".").pop() ?? "png";
-            const contentType = file.type;
-
-            const uploadData = await orpc.account.generateAvatarUploadUrl.call({
-               fileExtension,
-            });
-
-            await presignedUpload.uploadToPresignedUrl(
-               uploadData.presignedUrl,
-               file,
-               contentType,
-            );
-
-            const { error } = await authClient.updateUser({
-               image: uploadData.publicUrl,
-            });
-            if (error) {
-               toast.error(error.message ?? "Erro ao atualizar foto de perfil");
-            } else {
-               toast.success("Foto de perfil atualizada!");
-               fileUpload.clearFile();
-            }
-         } catch {
-            toast.error("Erro ao atualizar foto de perfil");
-         }
-      });
+      upload(fileUpload.selectedFile);
    };
 
    return (
@@ -149,22 +148,15 @@ function AvatarUploadSection({
             </div>
          </div>
          {fileUpload.filePreview && (
-            <Button
-               disabled={isPending || presignedUpload.isUploading}
-               onClick={handleSave}
-            >
+            <Button disabled={isPending} onClick={handleSave}>
                <span className="flex items-center gap-2">
-                  {(isPending || presignedUpload.isUploading) && (
-                     <Loader2 className="size-4 animate-spin" />
-                  )}
+                  {isPending && <Loader2 className="size-4 animate-spin" />}
                   Salvar foto
                </span>
             </Button>
          )}
-         {(fileUpload.error || presignedUpload.error) && (
-            <p className="text-sm text-destructive">
-               {fileUpload.error || presignedUpload.error}
-            </p>
+         {fileUpload.error && (
+            <p className="text-sm text-destructive">{fileUpload.error}</p>
          )}
       </section>
    );
