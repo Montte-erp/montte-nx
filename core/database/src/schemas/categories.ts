@@ -15,6 +15,7 @@ import { financeSchema } from "@core/database/schemas/schemas";
 export const categoryTypeEnum = financeSchema.enum("category_type", [
    "income",
    "expense",
+   "transfer",
 ]);
 
 export const categories = financeSchema.table(
@@ -111,7 +112,7 @@ function refineDreGroup(
 export const createCategorySchema = baseCategorySchema
    .extend({
       name: nameSchema,
-      type: z.enum(["income", "expense"]),
+      type: z.enum(["income", "expense", "transfer"]),
       parentId: z.string().uuid().nullable().optional(),
       description: z.string().max(255).nullable().optional(),
       color: colorSchema,

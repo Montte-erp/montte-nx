@@ -6,15 +6,15 @@ import { PostHog } from "posthog-node";
 
 export const prerender = false;
 
-const PUBLIC_POSTHOG_HOST = process.env.PUBLIC_POSTHOG_HOST;
-const PUBLIC_POSTHOG_KEY = process.env.PUBLIC_POSTHOG_KEY;
+const POSTHOG_HOST = process.env.PUBLIC_POSTHOG_HOST;
+const POSTHOG_KEY = process.env.PUBLIC_POSTHOG_KEY;
 
 let posthogClient: PostHog | null = null;
 function getPosthog() {
-   if (!PUBLIC_POSTHOG_KEY) return null;
+   if (!POSTHOG_KEY || !POSTHOG_HOST) return null;
    if (!posthogClient) {
-      posthogClient = new PostHog(PUBLIC_POSTHOG_KEY, {
-         host: PUBLIC_POSTHOG_HOST,
+      posthogClient = new PostHog(POSTHOG_KEY, {
+         host: POSTHOG_HOST,
       });
    }
    return posthogClient;
