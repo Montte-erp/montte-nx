@@ -11,19 +11,28 @@
       "check": "oxlint astro.config.mjs src"
    },
    "dependencies": {
+      "@arcjet/astro": "^1.4.0",
       "@astrojs/check": "catalog:astro",
+      "@astrojs/node": "catalog:astro",
       "@astrojs/react": "catalog:astro",
       "@lucide/astro": "catalog:astro",
       "@packages/ui": "workspace:*",
       "@tailwindcss/vite": "catalog:vite",
+      "@tanstack/react-form": "catalog:tanstack",
       "@tooling/css": "workspace:*",
       "@types/react": "catalog:react",
       "@types/react-dom": "catalog:react",
       "astro": "catalog:astro",
+      "dayjs": "catalog:ui",
+      "motion": "catalog:ui",
+      "neverthrow": "catalog:validation",
+      "posthog-js": "catalog:analytics-client",
+      "posthog-node": "catalog:analytics-client",
       "react": "catalog:react",
       "react-dom": "catalog:react",
       "tailwindcss": "catalog:ui",
-      "typescript": "catalog:development"
+      "typescript": "catalog:development",
+      "zod": "catalog:validation"
    },
    "engines": {
       "node": ">=22.12.0"

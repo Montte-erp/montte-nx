@@ -2,6 +2,7 @@
 import "@tooling/css/globals.css";
 
 import NavbarBlock from "../blocks/navbar-block.astro";
+import { PostHogClient } from "../components/posthog-client";
 
 interface Props {
    description: string;
@@ -17,36 +18,23 @@ const { description, title } = Astro.props;
       <meta charset="UTF-8" />
       <meta name="description" content={description} />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta name="robots" content="index,follow" />
       <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      <link rel="canonical" href={Astro.url.href} />
+      <meta property="og:type" content="website" />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
+      <meta property="og:url" content={Astro.url.href} />
+      <meta property="og:image" content="/favicon.svg" />
+      <meta property="og:locale" content="pt_BR" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content="/favicon.svg" />
       <title>{title}</title>
    </head>
    <body class="relative min-h-dvh bg-background text-foreground antialiased">
-      <div
-         class="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
-         aria-hidden="true"
-      >
-         <div
-            class="absolute -top-40 left-1/2 size-[900px] -translate-x-1/2 rounded-full opacity-60 blur-3xl"
-            style="background: radial-gradient(circle, oklch(0.7729 0.1535 163.2231 / 0.18), transparent 60%);"
-         >
-         </div>
-         <div
-            class="absolute top-[40%] left-[10%] size-[500px] rounded-full opacity-40 blur-3xl"
-            style="background: radial-gradient(circle, oklch(0.65 0.19 250 / 0.18), transparent 60%);"
-         >
-         </div>
-         <div
-            class="absolute top-[60%] right-[5%] size-[600px] rounded-full opacity-30 blur-3xl"
-            style="background: radial-gradient(circle, oklch(0.72 0.22 340 / 0.16), transparent 60%);"
-         >
-         </div>
-         <div
-            class="absolute inset-0 opacity-[0.025]"
-            style="background-image: linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px); background-size: 60px 60px;"
-         >
-         </div>
-      </div>
-
+      <PostHogClient client:load />
       <NavbarBlock />
       <main class="relative">
          <slot />

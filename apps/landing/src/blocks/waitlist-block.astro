@@ -1,0 +1,42 @@
+---
+import { CircleCheck, ShieldCheck } from "@lucide/astro";
+import { Reveal } from "../components/reveal";
+import { WaitlistForm } from "./waitlist-form";
+---
+
+<section
+   id="waitlist"
+   class="relative isolate flex min-h-[60vh] flex-col justify-center overflow-hidden bg-background"
+   aria-label="Waitlist"
+>
+   <Reveal client:visible>
+      <div class="mx-auto flex max-w-2xl flex-col items-center gap-8 px-4 text-center sm:px-4">
+         <div class="flex flex-col gap-4">
+            <h2
+               class="text-4xl leading-none font-black tracking-[-0.04em] text-foreground text-balance sm:text-5xl"
+            >
+               Receba seu convite para o Montte.
+            </h2>
+            <p class="text-base leading-relaxed text-muted-foreground text-balance sm:text-lg">
+               O acesso está sendo liberado gradualmente. Entre na lista para ser chamado quando
+               abrirmos o próximo lote de empresas.
+            </p>
+         </div>
+
+         <div class="w-full">
+            <WaitlistForm client:load />
+         </div>
+
+         <div class="grid w-full gap-4 text-left text-sm text-muted-foreground sm:grid-cols-2">
+            <div class="flex items-start gap-4">
+               <CircleCheck class="size-4 shrink-0 text-primary" aria-hidden="true" />
+               <p>Convites enviados por prioridade de perfil e capacidade de onboarding.</p>
+            </div>
+            <div class="flex items-start gap-4">
+               <ShieldCheck class="size-4 shrink-0 text-primary" aria-hidden="true" />
+               <p>Seu e-mail fica reservado para acesso e avisos importantes do Montte.</p>
+            </div>
+         </div>
+      </div>
+   </Reveal>
+</section>

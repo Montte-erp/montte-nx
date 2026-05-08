@@ -5,12 +5,29 @@ import { cn } from "@packages/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
 
-function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
+const inputGroupVariants = cva(
+   "group/input-group border-input dark:bg-input/30 relative flex w-full items-center rounded-md border shadow-xs transition-[color,box-shadow] outline-none min-w-0 has-[>textarea]:h-auto",
+   {
+      defaultVariants: { size: "default" },
+      variants: {
+         size: {
+            default: "h-9",
+            lg: "h-12",
+            sm: "h-8",
+         },
+      },
+   },
+);
+
+function InputGroup({
+   className,
+   size,
+   ...props
+}: React.ComponentProps<"div"> & VariantProps<typeof inputGroupVariants>) {
    return (
       <div
          className={cn(
-            "group/input-group border-input dark:bg-input/30 relative flex w-full items-center rounded-md border shadow-xs transition-[color,box-shadow] outline-none",
-            "h-9 min-w-0 has-[>textarea]:h-auto",
+            inputGroupVariants({ size }),
 
             // Variants based on alignment.
             "has-[>[data-align=inline-start]]:[&>input]:pl-2",
