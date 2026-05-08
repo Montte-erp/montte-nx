@@ -76,6 +76,8 @@ export function buildCategoryColumns(options?: {
       data: { name?: string; type?: CategoryType },
    ) => Promise<void>;
 }): ColumnDef<CategoryRow>[] {
+   const onUpdate = options?.onUpdate;
+
    return [
       {
          accessorKey: "name",
@@ -195,11 +197,11 @@ export function buildCategoryColumns(options?: {
             editSchema: z.enum(["income", "expense", "transfer"]),
             isEditableForRow: (row: CategoryRow) =>
                !row.isDefault && !row.isArchived && row.parentId === null,
-            onSave: options?.onUpdate
+            onSave: onUpdate
                ? async (rowId: string, value: unknown) => {
                     const typeValue = String(value);
                     if (!isCategoryType(typeValue)) return;
-                    await options.onUpdate(rowId, { type: typeValue });
+                    await onUpdate(rowId, { type: typeValue });
                  }
                : undefined,
             exportValue: (row) => {
