@@ -20,28 +20,28 @@ import { HttpAgent } from "@ag-ui/client";
 import { useAgUiRuntime } from "@assistant-ui/react-ag-ui";
 
 function Chat() {
-  const agent = useMemo(() => {
-    return new HttpAgent({
-      url: "http://localhost:8000/agent",
-      headers: {
-        Accept: "text/event-stream",
+   const agent = useMemo(() => {
+      return new HttpAgent({
+         url: "http://localhost:8000/agent",
+         headers: {
+            Accept: "text/event-stream",
+         },
+      });
+   }, []);
+
+   const runtime = useAgUiRuntime({
+      agent,
+      logger: {
+         debug: (...args) => console.debug("[agui]", ...args),
+         error: (...args) => console.error("[agui]", ...args),
       },
-    });
-  }, []);
+   });
 
-  const runtime = useAgUiRuntime({
-    agent,
-    logger: {
-      debug: (...args) => console.debug("[agui]", ...args),
-      error: (...args) => console.error("[agui]", ...args),
-    },
-  });
-
-  return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      <Thread />
-    </AssistantRuntimeProvider>
-  );
+   return (
+      <AssistantRuntimeProvider runtime={runtime}>
+         <Thread />
+      </AssistantRuntimeProvider>
+   );
 }
 ```
 
@@ -49,21 +49,23 @@ function Chat() {
 
 ```tsx
 const runtime = useAgUiRuntime({
-  agent: HttpAgent,           // Required: AG-UI HttpAgent instance
-  logger: {                   // Optional: logging callbacks
-    debug: (...args) => {},
-    error: (...args) => {},
-  },
-  showThinking: true,         // Optional: show thinking content
-  onError: (e) => {},         // Optional: error handler
-  onCancel: () => {},         // Optional: cancel handler
-  adapters: {                 // Optional: assistant-ui adapters
-    attachments: AttachmentAdapter,
-    speech: SpeechSynthesisAdapter,
-    dictation: DictationAdapter,
-    feedback: FeedbackAdapter,
-    history: ThreadHistoryAdapter,
-  },
+   agent: HttpAgent, // Required: AG-UI HttpAgent instance
+   logger: {
+      // Optional: logging callbacks
+      debug: (...args) => {},
+      error: (...args) => {},
+   },
+   showThinking: true, // Optional: show thinking content
+   onError: (e) => {}, // Optional: error handler
+   onCancel: () => {}, // Optional: cancel handler
+   adapters: {
+      // Optional: assistant-ui adapters
+      attachments: AttachmentAdapter,
+      speech: SpeechSynthesisAdapter,
+      dictation: DictationAdapter,
+      feedback: FeedbackAdapter,
+      history: ThreadHistoryAdapter,
+   },
 });
 ```
 
@@ -73,11 +75,11 @@ const runtime = useAgUiRuntime({
 import { HttpAgent } from "@ag-ui/client";
 
 const agent = new HttpAgent({
-  url: process.env.NEXT_PUBLIC_AGUI_AGENT_URL ?? "http://localhost:8000/agent",
-  headers: {
-    Accept: "text/event-stream",
-    // Add auth headers if needed
-  },
+   url: process.env.NEXT_PUBLIC_AGUI_AGENT_URL ?? "http://localhost:8000/agent",
+   headers: {
+      Accept: "text/event-stream",
+      // Add auth headers if needed
+   },
 });
 ```
 

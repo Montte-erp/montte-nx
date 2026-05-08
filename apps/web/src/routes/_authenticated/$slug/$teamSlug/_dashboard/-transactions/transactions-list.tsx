@@ -36,6 +36,8 @@ import {
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useSheet } from "@/hooks/use-sheet";
+import { TransactionFormSheet } from "./transaction-form-sheet";
 import {
    DataTableBulkActions,
    SelectionActionButton,
@@ -72,8 +74,8 @@ export function TransactionsList() {
       routeApi.useSearch();
 
    const { openAlertDialog } = useAlertDialog();
+   const { openSheet } = useSheet();
    const queryClient = useQueryClient();
-   const [isDraftActive, setIsDraftActive] = useState(false);
    const { parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
    const { parse: parseOfx } = useOfxFile();
@@ -151,17 +153,6 @@ export function TransactionsList() {
    const transactionData = result.data;
    const total = result.total;
    const totalPages = Math.max(1, Math.ceil(total / pageSize));
-
-   const createMutation = useMutation(
-      orpc.transactions.create.mutationOptions({
-         onSuccess: () => {
-            toast.success("Lançamento criado com sucesso.");
-            setIsDraftActive(false);
-         },
-         onError: (error) =>
-            toast.error(error.message || "Erro ao criar lançamento."),
-      }),
-   );
 
    const importMutation = useMutation(
       orpc.transactions.create.mutationOptions({
@@ -278,52 +269,8 @@ export function TransactionsList() {
    );
 
    const handleCreate = useCallback(() => {
-      setIsDraftActive(true);
-   }, []);
-
-   const handleDiscardDraft = useCallback(() => {
-      setIsDraftActive(false);
-   }, []);
-
-   const handleAddTransaction = useCallback(
-      async (data: Record<string, string | string[]>) => {
-         const type = String(data.type || "expense") as
-            | "income"
-            | "expense"
-            | "transfer";
-         const name = String(data.name ?? "").trim() || null;
-         const amount = String(data.amount || "");
-         const date =
-            String(data.date || "").trim() || dayjs().format("YYYY-MM-DD");
-         const bankAccountId = String(data.bankAccountName || "") || null;
-         const contactId = String(data.contactName || "") || null;
-         const categoryId = String(data.categoryName || "") || null;
-         const creditCardId = String(data.creditCardName || "") || null;
-         const dueDate = String(data.dueDate || "").trim() || null;
-         const txStatus = String(data.status || "pending") as
-            | "pending"
-            | "paid"
-            | "cancelled";
-
-         await createMutation.mutateAsync({
-            type,
-            name,
-            amount,
-            date,
-            bankAccountId,
-            destinationBankAccountId: null,
-            categoryId,
-            attachments: [],
-            description: null,
-            contactId,
-            creditCardId,
-            paymentMethod: null,
-            status: txStatus,
-            dueDate,
-         });
-      },
-      [createMutation],
-   );
+      openSheet({ renderChildren: () => <TransactionFormSheet /> });
+   }, [openSheet]);
 
    const handleDelete = useCallback(
       (transaction: TransactionRow) => {
@@ -530,9 +477,6 @@ export function TransactionsList() {
             columns={columns}
             data={transactionData}
             getRowId={(row) => row.id}
-            isDraftRowActive={isDraftActive}
-            onAddRow={handleAddTransaction}
-            onDiscardAddRow={handleDiscardDraft}
             renderActions={({ row }) => {
                const tx = row.original;
                const { status: rowStatus } = tx;

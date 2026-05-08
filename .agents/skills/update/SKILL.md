@@ -31,14 +31,14 @@ npm view ai version
 
 ### Version Analysis
 
-| Package | Check For |
-|---------|-----------|
-| `ai` | < 6.0.0 → needs AI SDK v6 migration |
-| `@assistant-ui/react` | < 0.12.0 → needs unified state API migration |
-| `@assistant-ui/react` | < 0.11.0 → needs runtime migration |
-| `@assistant-ui/react` | < 0.10.0 → needs ESM migration |
-| `@assistant-ui/react` | < 0.8.0 → needs UI split migration |
-| `@assistant-ui/react-ai-sdk` | < 1.0.0 → needs AI SDK v6 first |
+| Package                      | Check For                                    |
+| ---------------------------- | -------------------------------------------- |
+| `ai`                         | < 6.0.0 → needs AI SDK v6 migration          |
+| `@assistant-ui/react`        | < 0.12.0 → needs unified state API migration |
+| `@assistant-ui/react`        | < 0.11.0 → needs runtime migration           |
+| `@assistant-ui/react`        | < 0.10.0 → needs ESM migration               |
+| `@assistant-ui/react`        | < 0.8.0 → needs UI split migration           |
+| `@assistant-ui/react-ai-sdk` | < 1.0.0 → needs AI SDK v6 first              |
 
 ## Phase 2: Route to Migration
 
@@ -83,13 +83,16 @@ pnpm build        # Build check
 ## Troubleshooting
 
 **"Peer dependency conflict"**
+
 - Update all packages together
 - Check version compatibility in [./references/breaking-changes.md](./references/breaking-changes.md)
 
 **Type errors after upgrade**
+
 - Consult breaking changes reference
 - Check specific migration guide
 
 **Runtime errors**
+
 - Verify API patterns match new version
 - Check for renamed/moved APIs

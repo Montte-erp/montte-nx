@@ -4,25 +4,25 @@ Message action buttons (copy, edit, reload, etc.).
 
 ## Parts
 
-| Part | Description |
-|------|-------------|
-| `.Root` | Container |
-| `.Copy` | Copy message to clipboard |
-| `.Edit` | Enter edit mode |
-| `.Reload` | Regenerate response |
-| `.Speak` | Text-to-speech |
-| `.StopSpeaking` | Stop TTS |
-| `.FeedbackPositive` | Thumbs up |
-| `.FeedbackNegative` | Thumbs down |
-| `.ExportMarkdown` | Export message |
+| Part                | Description               |
+| ------------------- | ------------------------- |
+| `.Root`             | Container                 |
+| `.Copy`             | Copy message to clipboard |
+| `.Edit`             | Enter edit mode           |
+| `.Reload`           | Regenerate response       |
+| `.Speak`            | Text-to-speech            |
+| `.StopSpeaking`     | Stop TTS                  |
+| `.FeedbackPositive` | Thumbs up                 |
+| `.FeedbackNegative` | Thumbs down               |
+| `.ExportMarkdown`   | Export message            |
 
 ## Basic Usage
 
 ```tsx
 <ActionBarPrimitive.Root>
-  <ActionBarPrimitive.Copy />
-  <ActionBarPrimitive.Reload />
-  <ActionBarPrimitive.Edit />
+   <ActionBarPrimitive.Copy />
+   <ActionBarPrimitive.Reload />
+   <ActionBarPrimitive.Edit />
 </ActionBarPrimitive.Root>
 ```
 
@@ -32,12 +32,12 @@ Container for action buttons. Usually placed inside a message.
 
 ```tsx
 <ActionBarPrimitive.Root
-  className="flex gap-2 mt-2"
-  hideWhenRunning  // Hide while generating
-  autohide="not-last"  // "always" | "not-last" | "never"
-  autohideFloat="single-branch"  // Float behavior
+   className="flex gap-2 mt-2"
+   hideWhenRunning // Hide while generating
+   autohide="not-last" // "always" | "not-last" | "never"
+   autohideFloat="single-branch" // Float behavior
 >
-  {children}
+   {children}
 </ActionBarPrimitive.Root>
 ```
 
@@ -77,8 +77,8 @@ Regenerate the assistant's response.
 
 ```tsx
 <ActionBarPrimitive.Reload className="p-1 rounded hover:bg-gray-100">
-  <RefreshIcon className="w-4 h-4" />
-  Regenerate
+   <RefreshIcon className="w-4 h-4" />
+   Regenerate
 </ActionBarPrimitive.Reload>
 ```
 
@@ -88,10 +88,10 @@ Enter edit mode for user messages.
 
 ```tsx
 <AuiIf condition={({ message }) => message.role === "user"}>
-  <ActionBarPrimitive.Edit className="p-1 rounded hover:bg-gray-100">
-    <EditIcon className="w-4 h-4" />
-    Edit
-  </ActionBarPrimitive.Edit>
+   <ActionBarPrimitive.Edit className="p-1 rounded hover:bg-gray-100">
+      <EditIcon className="w-4 h-4" />
+      Edit
+   </ActionBarPrimitive.Edit>
 </AuiIf>
 ```
 
@@ -133,19 +133,19 @@ Requires a feedback adapter in the runtime:
 
 ```tsx
 const runtime = useChatRuntime({
-  transport: new AssistantChatTransport({
-    api: "/api/chat",
-  }),
-  adapters: {
-    feedback: {
-      submit: async ({ messageId, type }) => {
-        await fetch("/api/feedback", {
-          method: "POST",
-          body: JSON.stringify({ messageId, type }),
-        });
+   transport: new AssistantChatTransport({
+      api: "/api/chat",
+   }),
+   adapters: {
+      feedback: {
+         submit: async ({ messageId, type }) => {
+            await fetch("/api/feedback", {
+               method: "POST",
+               body: JSON.stringify({ messageId, type }),
+            });
+         },
       },
-    },
-  },
+   },
 });
 ```
 
@@ -155,65 +155,61 @@ Use `AuiIf` for copy/speech conditional rendering instead of `ActionBarPrimitive
 
 ```tsx
 function MessageActionBar() {
-  return (
-    <ActionBarPrimitive.Root
-      className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-      hideWhenRunning
-    >
-      {/* Copy */}
-      <ActionBarPrimitive.Copy
-        className="p-1.5 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-        copiedDuration={2000}
+   return (
+      <ActionBarPrimitive.Root
+         className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+         hideWhenRunning
       >
-        <AuiIf condition={({ message }) => message.isCopied}>
-          <CheckIcon className="w-4 h-4 text-green-500" />
-        </AuiIf>
-        <AuiIf condition={({ message }) => !message.isCopied}>
-          <CopyIcon className="w-4 h-4" />
-        </AuiIf>
-      </ActionBarPrimitive.Copy>
+         {/* Copy */}
+         <ActionBarPrimitive.Copy
+            className="p-1.5 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+            copiedDuration={2000}
+         >
+            <AuiIf condition={({ message }) => message.isCopied}>
+               <CheckIcon className="w-4 h-4 text-green-500" />
+            </AuiIf>
+            <AuiIf condition={({ message }) => !message.isCopied}>
+               <CopyIcon className="w-4 h-4" />
+            </AuiIf>
+         </ActionBarPrimitive.Copy>
 
-      {/* Regenerate (assistant only) */}
-      <AuiIf condition={({ message }) => message.role === "assistant"}>
-        <ActionBarPrimitive.Reload className="p-1.5 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100">
-          <RefreshIcon className="w-4 h-4" />
-        </ActionBarPrimitive.Reload>
-      </AuiIf>
+         {/* Regenerate (assistant only) */}
+         <AuiIf condition={({ message }) => message.role === "assistant"}>
+            <ActionBarPrimitive.Reload className="p-1.5 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100">
+               <RefreshIcon className="w-4 h-4" />
+            </ActionBarPrimitive.Reload>
+         </AuiIf>
 
-      {/* Edit (user only) */}
-      <AuiIf condition={({ message }) => message.role === "user"}>
-        <ActionBarPrimitive.Edit className="p-1.5 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100">
-          <EditIcon className="w-4 h-4" />
-        </ActionBarPrimitive.Edit>
-      </AuiIf>
+         {/* Edit (user only) */}
+         <AuiIf condition={({ message }) => message.role === "user"}>
+            <ActionBarPrimitive.Edit className="p-1.5 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100">
+               <EditIcon className="w-4 h-4" />
+            </ActionBarPrimitive.Edit>
+         </AuiIf>
 
-      {/* Text-to-speech */}
-      <AuiIf condition={({ message }) => message.speech == null}>
-        <ActionBarPrimitive.Speak className="p-1.5 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100">
-          <SpeakerIcon className="w-4 h-4" />
-        </ActionBarPrimitive.Speak>
-      </AuiIf>
-      <AuiIf condition={({ message }) => message.speech != null}>
-        <ActionBarPrimitive.StopSpeaking className="p-1.5 rounded text-red-500 bg-red-50">
-          <StopIcon className="w-4 h-4" />
-        </ActionBarPrimitive.StopSpeaking>
-      </AuiIf>
+         {/* Text-to-speech */}
+         <AuiIf condition={({ message }) => message.speech == null}>
+            <ActionBarPrimitive.Speak className="p-1.5 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100">
+               <SpeakerIcon className="w-4 h-4" />
+            </ActionBarPrimitive.Speak>
+         </AuiIf>
+         <AuiIf condition={({ message }) => message.speech != null}>
+            <ActionBarPrimitive.StopSpeaking className="p-1.5 rounded text-red-500 bg-red-50">
+               <StopIcon className="w-4 h-4" />
+            </ActionBarPrimitive.StopSpeaking>
+         </AuiIf>
 
-      {/* Feedback */}
-      <div className="border-l pl-1 ml-1">
-        <ActionBarPrimitive.FeedbackPositive
-          className="p-1.5 rounded text-gray-500 hover:text-green-600 hover:bg-green-50"
-        >
-          <ThumbsUpIcon className="w-4 h-4" />
-        </ActionBarPrimitive.FeedbackPositive>
-        <ActionBarPrimitive.FeedbackNegative
-          className="p-1.5 rounded text-gray-500 hover:text-red-600 hover:bg-red-50"
-        >
-          <ThumbsDownIcon className="w-4 h-4" />
-        </ActionBarPrimitive.FeedbackNegative>
-      </div>
-    </ActionBarPrimitive.Root>
-  );
+         {/* Feedback */}
+         <div className="border-l pl-1 ml-1">
+            <ActionBarPrimitive.FeedbackPositive className="p-1.5 rounded text-gray-500 hover:text-green-600 hover:bg-green-50">
+               <ThumbsUpIcon className="w-4 h-4" />
+            </ActionBarPrimitive.FeedbackPositive>
+            <ActionBarPrimitive.FeedbackNegative className="p-1.5 rounded text-gray-500 hover:text-red-600 hover:bg-red-50">
+               <ThumbsDownIcon className="w-4 h-4" />
+            </ActionBarPrimitive.FeedbackNegative>
+         </div>
+      </ActionBarPrimitive.Root>
+   );
 }
 ```
 
@@ -221,15 +217,15 @@ function MessageActionBar() {
 
 ```tsx
 function AssistantMessage() {
-  return (
-    <MessagePrimitive.Root className="group flex mb-4">
-      <Avatar fallback="AI" />
-      <div className="flex-1">
-        <MessagePrimitive.Content />
-        <MessageActionBar />
-      </div>
-    </MessagePrimitive.Root>
-  );
+   return (
+      <MessagePrimitive.Root className="group flex mb-4">
+         <Avatar fallback="AI" />
+         <div className="flex-1">
+            <MessagePrimitive.Content />
+            <MessageActionBar />
+         </div>
+      </MessagePrimitive.Root>
+   );
 }
 ```
 
