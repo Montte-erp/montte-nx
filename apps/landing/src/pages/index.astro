@@ -17,8 +17,8 @@ import FooterBlock from "../blocks/footer-block.astro";
 ---
 
 <BaseLayout
-   title="Montte — Waitlist da plataforma operacional"
-   description="Entre na waitlist do Montte. Estamos liberando acesso gradual para empresas brasileiras que querem organizar financeiro, contatos, serviços e cobranças em uma operação só."
+   title="Montte — Plataforma operacional para empresas brasileiras"
+   description="Entre na waitlist do Montte e organize financeiro, contatos, serviços e cobranças em uma plataforma operacional feita para empresas brasileiras."
 >
    <section
       class="relative isolate flex min-h-screen flex-col overflow-hidden"
@@ -37,47 +37,46 @@ import FooterBlock from "../blocks/footer-block.astro";
       >
       </div>
 
-      <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center gap-4 px-4 pt-4 pb-4 sm:px-4 sm:pt-4">
-      <div class="grid items-center gap-4 lg:grid-cols-2">
-         <Reveal client:load>
-            <div class="flex flex-col items-start gap-4">
-                  <Announcement  >
+      <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col justify-start gap-8 overflow-hidden px-2 py-4 sm:px-4 lg:justify-center">
+         <div class="grid min-w-0 items-center gap-8 lg:grid-cols-2 lg:gap-4">
+            <Reveal client:load>
+               <div class="flex min-w-0 flex-col items-center gap-8 text-center sm:gap-4 lg:items-start lg:text-left">
+                  <Announcement>
                      <AnnouncementTag>
-
                         <Megaphone class=" text-primary" aria-hidden="true" />
                      </AnnouncementTag>
-                  <AnnouncementTitle className="text-foreground">
-                     Waitlist aberta · acesso gradual
-                  </AnnouncementTitle>
-               </Announcement>
+                     <AnnouncementTitle className="text-foreground">
+                        Waitlist aberta · acesso gradual
+                     </AnnouncementTitle>
+                  </Announcement>
 
-               <h1
-                  class="max-w-2xl text-5xl leading-[1.05] font-black tracking-[-0.05em] text-foreground text-balance sm:text-6xl"
-               >
-                  Coloque sua operação em ordem <span class="text-primary">no Montte</span>.
-               </h1>
+                  <h1
+                     class="max-w-2xl text-3xl leading-tight font-black text-foreground text-balance sm:text-4xl md:text-5xl lg:text-6xl"
+                  >
+                     Coloque sua operação em ordem <span class="text-primary">no Montte</span>.
+                  </h1>
 
-               <p class="max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-                  Financeiro, contatos, serviços e cobranças em uma plataforma brasileira.
-                  Estamos convidando empresas em lotes pequenos para acompanhar de perto a
-                  implantação, ajustar fluxos reais e abrir o produto com consistência.
-               </p>
+                  <p class="max-w-xl text-sm leading-relaxed text-foreground/80 sm:text-base lg:text-lg lg:text-muted-foreground">
+                     Financeiro, contatos, serviços e cobranças em uma plataforma brasileira.
+                     Estamos convidando empresas em lotes pequenos para acompanhar de perto a
+                     implantação, ajustar fluxos reais e abrir o produto com consistência.
+                  </p>
 
-               <div class="flex flex-wrap items-center gap-2 pt-2">
-                  <a href="#waitlist">
-                     <Button size="lg" variant="default">
-                        Entrar na lista
-                        <ArrowRight data-icon="inline-end" aria-hidden="true" />
-                     </Button>
-                  </a>
+                  <div class="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+                     <a href="#waitlist">
+                        <Button size="lg" variant="default">
+                           Entrar na lista
+                           <ArrowRight data-icon="inline-end" aria-hidden="true" />
+                        </Button>
+                     </a>
+                  </div>
                </div>
-            </div>
-         </Reveal>
+            </Reveal>
 
-         <div class="pt-4 lg:pt-0">
-            <HeroCodeMock client:load />
+            <div class="min-w-0">
+               <HeroCodeMock client:load />
+            </div>
          </div>
-      </div>
       </div>
    </section>
 

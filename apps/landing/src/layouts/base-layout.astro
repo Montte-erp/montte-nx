@@ -1,7 +1,11 @@
 ---
 import "@tooling/css/globals.css";
 
-import { PUBLIC_POSTHOG_HOST, PUBLIC_POSTHOG_KEY } from "astro:env/client";
+import {
+   PUBLIC_POSTHOG_HOST,
+   PUBLIC_POSTHOG_KEY,
+   PUBLIC_POSTHOG_UI_HOST,
+} from "astro:env/client";
 
 import NavbarBlock from "../blocks/navbar-block.astro";
 
@@ -68,6 +72,7 @@ const jsonLd = JSON.stringify({
                define:vars={{
                   posthogKey: PUBLIC_POSTHOG_KEY,
                   posthogHost: PUBLIC_POSTHOG_HOST,
+                  posthogUiHost: PUBLIC_POSTHOG_UI_HOST,
                }}
             >
                !(function (t, e) {
@@ -91,11 +96,7 @@ const jsonLd = JSON.stringify({
                            "text/javascript"),
                            (p.crossOrigin = "anonymous"),
                            (p.async = !0),
-                           (p.src =
-                              s.api_host.replace(
-                                 ".i.posthog.com",
-                                 "-assets.i.posthog.com",
-                              ) + "/static/array.js"),
+                           (p.src = s.api_host + "/static/array.js"),
                            (r =
                               t.getElementsByTagName(
                                  "script",
@@ -130,6 +131,7 @@ const jsonLd = JSON.stringify({
                })(document, window.posthog || []);
                posthog.init(posthogKey, {
                   api_host: posthogHost,
+                  ui_host: posthogUiHost,
                   defaults: "2025-05-24",
                   person_profiles: "always",
                });

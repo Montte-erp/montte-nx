@@ -21,6 +21,11 @@ export default defineConfig({
             access: "public",
             default: "https://us.i.posthog.com",
          }),
+         PUBLIC_POSTHOG_UI_HOST: envField.string({
+            context: "client",
+            access: "public",
+            default: "https://us.posthog.com",
+         }),
       },
    },
    integrations: [
