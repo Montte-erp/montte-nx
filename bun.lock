@@ -347,6 +347,7 @@
         "@core/database": "workspace:*",
         "@core/dbos": "workspace:*",
         "@core/environment": "workspace:*",
+        "@core/files": "workspace:*",
         "@core/logging": "workspace:*",
         "@core/posthog": "workspace:*",
         "@core/redis": "workspace:*",
