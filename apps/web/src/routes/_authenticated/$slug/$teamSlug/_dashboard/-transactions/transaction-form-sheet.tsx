@@ -319,13 +319,13 @@ function TransactionFormSheetContent() {
                      <Field data-invalid={isFieldInvalid(field) || undefined}>
                         <FieldLabel htmlFor={field.name}>Data</FieldLabel>
                         <DatePicker
-                           className="w-full"
+                           className="w-full overflow-hidden [&>span]:truncate"
                            date={
                               field.state.value
                                  ? dayjs(field.state.value).toDate()
                                  : undefined
                            }
-                           placeholder="Selecionar data"
+                           placeholder="Selecionar"
                            onSelect={(d) =>
                               field.handleChange(
                                  d ? dayjs(d).format("YYYY-MM-DD") : "",
@@ -346,13 +346,13 @@ function TransactionFormSheetContent() {
                      <Field>
                         <FieldLabel htmlFor={field.name}>Vencimento</FieldLabel>
                         <DatePicker
-                           className="w-full"
+                           className="w-full overflow-hidden [&>span]:truncate"
                            date={
                               field.state.value
                                  ? dayjs(field.state.value).toDate()
                                  : undefined
                            }
-                           placeholder="Selecionar vencimento"
+                           placeholder="Selecionar"
                            onSelect={(d) =>
                               field.handleChange(
                                  d ? dayjs(d).format("YYYY-MM-DD") : "",
