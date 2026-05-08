@@ -246,130 +246,137 @@ function CreditCardsList() {
    );
 
    return (
-      <DataTableRoot
-         columns={columns}
-         data={result.data}
-         getRowId={(row) => row.id}
-         storageKey="montte:datatable:credit-cards"
-         columnFilters={columnFilters}
-         onColumnFiltersChange={(updater) => {
-            const next =
-               typeof updater === "function" ? updater(columnFilters) : updater;
-            const statusFilter = next.find((f) => f.id === "status");
-            navigate({
-               search: (prev) => ({
-                  ...prev,
-                  columnFilters: next,
-                  status: creditCardsSearchSchema.shape.status.parse(
-                     statusFilter?.value,
-                  ),
-                  page: 1,
-               }),
-               replace: true,
-            });
-         }}
-         isDraftRowActive={isDraftActive}
-         onAddRow={handleAddCard}
-         onDiscardAddRow={handleDiscardDraft}
-         renderExpandedRow={(props) => (
-            <CreditCardFaturaRow creditCardId={props.row.original.id} />
-         )}
-         renderActions={({ row }) => (
-            <Button
-               className="text-destructive hover:text-destructive"
-               onClick={() => handleDelete(row.original)}
-               tooltip="Excluir"
-               variant="outline"
-            >
-               <Trash2 className="size-4" />
-            </Button>
-         )}
-      >
-         <DataTableToolbar>
-            <DataTableImportButton importConfig={importConfig} />
-            <Button
-               onClick={() => setIsDraftActive(true)}
-               size="icon-sm"
-               tooltip="Novo Cartão"
-               variant="outline"
-            >
-               <Plus />
-            </Button>
-         </DataTableToolbar>
-         <DataTableEmptyState>
-            <Empty>
-               <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                     <CreditCard className="size-6" />
-                  </EmptyMedia>
-                  <EmptyTitle>Nenhum cartão de crédito</EmptyTitle>
-                  <EmptyDescription>
-                     Adicione um cartão de crédito para controlar seus gastos.
-                  </EmptyDescription>
-               </EmptyHeader>
-            </Empty>
-         </DataTableEmptyState>
-         <DataTableContent />
-         <DataTableBulkActions<CreditCardRow>>
-            {({ selectedRows, clearSelection }) => (
-               <SelectionActionButton
-                  icon={<Trash2 className="size-4" />}
-                  variant="destructive"
-                  onClick={() => {
-                     const ids = selectedRows.map((r) => r.id);
-                     openAlertDialog({
-                        title: `Excluir ${ids.length} ${ids.length === 1 ? "cartão" : "cartões"}`,
-                        description:
-                           "Tem certeza que deseja excluir os cartões selecionados? Esta ação não pode ser desfeita.",
-                        actionLabel: "Excluir",
-                        cancelLabel: "Cancelar",
-                        variant: "destructive",
-                        onAction: async () => {
-                           await bulkDeleteMutation.mutateAsync({ ids });
-                           clearSelection();
-                        },
-                     });
-                  }}
-               >
-                  Excluir
-               </SelectionActionButton>
+      <div className="flex flex-1 flex-col gap-4 min-h-0">
+         <DataTableRoot
+            columns={columns}
+            data={result.data}
+            getRowId={(row) => row.id}
+            storageKey="montte:datatable:credit-cards"
+            columnFilters={columnFilters}
+            onColumnFiltersChange={(updater) => {
+               const next =
+                  typeof updater === "function"
+                     ? updater(columnFilters)
+                     : updater;
+               const statusFilter = next.find((f) => f.id === "status");
+               navigate({
+                  search: (prev) => ({
+                     ...prev,
+                     columnFilters: next,
+                     status: creditCardsSearchSchema.shape.status.parse(
+                        statusFilter?.value,
+                     ),
+                     page: 1,
+                  }),
+                  replace: true,
+               });
+            }}
+            isDraftRowActive={isDraftActive}
+            onAddRow={handleAddCard}
+            onDiscardAddRow={handleDiscardDraft}
+            renderExpandedRow={(props) => (
+               <CreditCardFaturaRow creditCardId={props.row.original.id} />
             )}
-         </DataTableBulkActions>
-         <DataTablePagination
-            currentPage={page}
-            pageSize={pageSize}
-            totalPages={result.totalPages}
-            totalCount={result.totalCount}
-            onPageChange={(p) =>
-               navigate({
-                  search: (prev) => ({ ...prev, page: p }),
-                  replace: true,
-               })
-            }
-            onPageSizeChange={(s) =>
-               navigate({
-                  search: (prev) => ({ ...prev, pageSize: s, page: 1 }),
-                  replace: true,
-               })
-            }
-         />
-      </DataTableRoot>
+            renderActions={({ row }) => (
+               <Button
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => handleDelete(row.original)}
+                  tooltip="Excluir"
+                  variant="outline"
+               >
+                  <Trash2 className="size-4" />
+               </Button>
+            )}
+         >
+            <DataTableToolbar>
+               <DataTableImportButton importConfig={importConfig} />
+               <Button
+                  onClick={() => setIsDraftActive(true)}
+                  size="icon-sm"
+                  tooltip="Novo Cartão"
+                  variant="outline"
+               >
+                  <Plus />
+               </Button>
+            </DataTableToolbar>
+            <DataTableEmptyState>
+               <Empty>
+                  <EmptyHeader>
+                     <EmptyMedia variant="icon">
+                        <CreditCard className="size-6" />
+                     </EmptyMedia>
+                     <EmptyTitle>Nenhum cartão de crédito</EmptyTitle>
+                     <EmptyDescription>
+                        Adicione um cartão de crédito para controlar seus
+                        gastos.
+                     </EmptyDescription>
+                  </EmptyHeader>
+               </Empty>
+            </DataTableEmptyState>
+            <DataTableContent className="flex-1 overflow-auto min-h-0" />
+            <DataTableBulkActions<CreditCardRow>>
+               {({ selectedRows, clearSelection }) => (
+                  <SelectionActionButton
+                     icon={<Trash2 className="size-4" />}
+                     variant="destructive"
+                     onClick={() => {
+                        const ids = selectedRows.map((r) => r.id);
+                        openAlertDialog({
+                           title: `Excluir ${ids.length} ${ids.length === 1 ? "cartão" : "cartões"}`,
+                           description:
+                              "Tem certeza que deseja excluir os cartões selecionados? Esta ação não pode ser desfeita.",
+                           actionLabel: "Excluir",
+                           cancelLabel: "Cancelar",
+                           variant: "destructive",
+                           onAction: async () => {
+                              await bulkDeleteMutation.mutateAsync({ ids });
+                              clearSelection();
+                           },
+                        });
+                     }}
+                  >
+                     Excluir
+                  </SelectionActionButton>
+               )}
+            </DataTableBulkActions>
+            <DataTablePagination
+               currentPage={page}
+               pageSize={pageSize}
+               totalPages={result.totalPages}
+               totalCount={result.totalCount}
+               onPageChange={(p) =>
+                  navigate({
+                     search: (prev) => ({ ...prev, page: p }),
+                     replace: true,
+                  })
+               }
+               onPageSizeChange={(s) =>
+                  navigate({
+                     search: (prev) => ({ ...prev, pageSize: s, page: 1 }),
+                     replace: true,
+                  })
+               }
+            />
+         </DataTableRoot>
+      </div>
    );
 }
 
 function CreditCardsPage() {
    return (
-      <main className="flex flex-col gap-4">
+      <main className="flex h-full flex-col gap-4">
          <DefaultHeader
             description="Gerencie seus cartões de crédito"
             title="Cartões de Crédito"
          />
-         <QueryBoundary
-            fallback={<CreditCardsSkeleton />}
-            errorTitle="Erro ao carregar cartões"
-         >
-            <CreditCardsList />
-         </QueryBoundary>
+         <div className="flex flex-1 flex-col min-h-0">
+            <QueryBoundary
+               fallback={<CreditCardsSkeleton />}
+               errorTitle="Erro ao carregar cartões"
+            >
+               <CreditCardsList />
+            </QueryBoundary>
+         </div>
       </main>
    );
 }
