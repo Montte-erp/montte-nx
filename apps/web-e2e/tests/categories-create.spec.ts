@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, test, type E2ESession } from "../fixtures";
+import { expect, test as base, type E2ESession } from "../fixtures";
 import {
    deleteCategoryById,
    findCategoryByName,
@@ -7,7 +7,12 @@ import {
 } from "../helpers/db";
 
 const stamp = () => `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-const createdCategoryIds: string[] = [];
+
+const test = base.extend<{ createdCategoryIds: string[] }>({
+   createdCategoryIds: async ({}, use) => {
+      await use([]);
+   },
+});
 
 async function gotoCategories(page: Page, session: E2ESession) {
    await page.goto(`/${session.orgSlug}/${session.teamSlug}/categories`);
@@ -16,7 +21,11 @@ async function gotoCategories(page: Page, session: E2ESession) {
    ).toBeVisible();
 }
 
-async function rememberCreatedCategory(session: E2ESession, name: string) {
+async function rememberCreatedCategory(
+   session: E2ESession,
+   name: string,
+   createdCategoryIds: string[],
+) {
    const team = await findTeamByOrgAndSlug(session.orgSlug, session.teamSlug);
    if (!team) return;
    const cat = await findCategoryByName(team.id, name);
@@ -24,7 +33,7 @@ async function rememberCreatedCategory(session: E2ESession, name: string) {
    createdCategoryIds.push(cat.id);
 }
 
-test.afterEach(async ({ e2eSession }) => {
+test.afterEach(async ({ e2eSession, createdCategoryIds }) => {
    const team = await findTeamByOrgAndSlug(
       e2eSession.orgSlug,
       e2eSession.teamSlug,
@@ -49,7 +58,11 @@ test("seletor de tipo exibe Transferência", async ({ page, e2eSession }) => {
    ).toBeVisible();
 });
 
-test("cria categoria do tipo Transferência", async ({ page, e2eSession }) => {
+test("cria categoria do tipo Transferência", async ({
+   page,
+   e2eSession,
+   createdCategoryIds,
+}) => {
    const name = `Transferência E2E ${stamp()}`;
 
    await gotoCategories(page, e2eSession);
@@ -68,12 +81,13 @@ test("cria categoria do tipo Transferência", async ({ page, e2eSession }) => {
 
    await expect(page.getByText("Categoria criada com sucesso.")).toBeVisible();
    await expect(page.getByRole("cell", { name })).toBeVisible();
-   await rememberCreatedCategory(e2eSession, name);
+   await rememberCreatedCategory(e2eSession, name, createdCategoryIds);
 });
 
 test("filtro Somente transferências lista categoria criada", async ({
    page,
    e2eSession,
+   createdCategoryIds,
 }) => {
    const name = `Categoria Transfer ${stamp()}`;
 
@@ -86,7 +100,7 @@ test("filtro Somente transferências lista categoria criada", async ({
    await sheet.getByLabel("Nome").fill(name);
    await sheet.getByRole("button", { name: "Criar categoria" }).click();
    await expect(page.getByText("Categoria criada com sucesso.")).toBeVisible();
-   await rememberCreatedCategory(e2eSession, name);
+   await rememberCreatedCategory(e2eSession, name, createdCategoryIds);
 
    await page.getByRole("button", { name: "Filtros" }).click();
    const menu = page.getByRole("menu");

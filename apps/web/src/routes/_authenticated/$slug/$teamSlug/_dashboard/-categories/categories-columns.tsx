@@ -64,11 +64,16 @@ const ICON_MAP: Record<string, LucideIcon> = {
 };
 
 export type CategoryRow = Outputs["categories"]["getPaginated"]["data"][number];
+type CategoryType = "income" | "expense" | "transfer";
+
+function isCategoryType(value: unknown): value is CategoryType {
+   return value === "income" || value === "expense" || value === "transfer";
+}
 
 export function buildCategoryColumns(options?: {
    onUpdate?: (
       rowId: string,
-      data: { name?: string; type?: "income" | "expense" | "transfer" },
+      data: { name?: string; type?: CategoryType },
    ) => Promise<void>;
 }): ColumnDef<CategoryRow>[] {
    return [
@@ -192,9 +197,9 @@ export function buildCategoryColumns(options?: {
                !row.isDefault && !row.isArchived && row.parentId === null,
             onSave: options?.onUpdate
                ? async (rowId: string, value: unknown) => {
-                    await options.onUpdate!(rowId, {
-                       type: String(value) as "income" | "expense" | "transfer",
-                    });
+                    const typeValue = String(value);
+                    if (!isCategoryType(typeValue)) return;
+                    await options.onUpdate(rowId, { type: typeValue });
                  }
                : undefined,
             exportValue: (row) => {
