@@ -19,5 +19,12 @@ jobs:
          - name: Bun & Nx Setup
            uses: ./.github/actions/setup-bun-nx
 
+         - name: Write landing CI env
+           run: |
+              printf '%s\n' \
+                 'PUBLIC_POSTHOG_KEY=phc_ci_stub' \
+                 'PUBLIC_POSTHOG_HOST=https://us.i.posthog.com' \
+                 > apps/landing/.env
+
          - name: Run Nx affected build
            run: bunx nx affected -t build --base=$NX_BASE --head=$NX_HEAD

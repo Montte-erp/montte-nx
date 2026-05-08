@@ -85,7 +85,7 @@ export const create = protectedProcedure
 
 const getAllInput = z
    .object({
-      type: z.enum(["income", "expense"]).optional(),
+      type: z.enum(["income", "expense", "transfer"]).optional(),
       includeArchived: z.boolean().optional(),
       search: z.string().optional(),
    })
@@ -119,7 +119,7 @@ export const getAll = protectedProcedure
    });
 
 const getPaginatedInput = z.object({
-   type: z.enum(["income", "expense"]).optional(),
+   type: z.enum(["income", "expense", "transfer"]).optional(),
    includeArchived: z.boolean().optional(),
    search: z.string().optional(),
    page: z.number().int().min(1).default(1),

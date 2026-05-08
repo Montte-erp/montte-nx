@@ -127,7 +127,10 @@ export const requireKeywordsUnique = base.middleware(
 export const requireResolvedCategoryParent = base.middleware(
    async (
       { context, next },
-      args: { parentId: string | null | undefined; type: "income" | "expense" },
+      args: {
+         parentId: string | null | undefined;
+         type: "income" | "expense" | "transfer";
+      },
    ) => {
       const { parentId, type } = args;
       if (!parentId)

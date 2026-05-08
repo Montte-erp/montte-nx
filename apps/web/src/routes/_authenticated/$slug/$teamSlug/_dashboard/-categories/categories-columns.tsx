@@ -64,13 +64,20 @@ const ICON_MAP: Record<string, LucideIcon> = {
 };
 
 export type CategoryRow = Outputs["categories"]["getPaginated"]["data"][number];
+type CategoryType = "income" | "expense" | "transfer";
+
+function isCategoryType(value: unknown): value is CategoryType {
+   return value === "income" || value === "expense" || value === "transfer";
+}
 
 export function buildCategoryColumns(options?: {
    onUpdate?: (
       rowId: string,
-      data: { name?: string; type?: "income" | "expense" },
+      data: { name?: string; type?: CategoryType },
    ) => Promise<void>;
 }): ColumnDef<CategoryRow>[] {
+   const onUpdate = options?.onUpdate;
+
    return [
       {
          accessorKey: "name",
@@ -185,20 +192,22 @@ export function buildCategoryColumns(options?: {
             editOptions: [
                { value: "income", label: "Receita" },
                { value: "expense", label: "Despesa" },
+               { value: "transfer", label: "Transferência" },
             ],
-            editSchema: z.enum(["income", "expense"]),
+            editSchema: z.enum(["income", "expense", "transfer"]),
             isEditableForRow: (row: CategoryRow) =>
                !row.isDefault && !row.isArchived && row.parentId === null,
-            onSave: options?.onUpdate
+            onSave: onUpdate
                ? async (rowId: string, value: unknown) => {
-                    await options.onUpdate!(rowId, {
-                       type: String(value) as "income" | "expense",
-                    });
+                    const typeValue = String(value);
+                    if (!isCategoryType(typeValue)) return;
+                    await onUpdate(rowId, { type: typeValue });
                  }
                : undefined,
             exportValue: (row) => {
                if (row.type === "income") return "Receita";
                if (row.type === "expense") return "Despesa";
+               if (row.type === "transfer") return "Transferência";
                return "";
             },
          },
@@ -215,6 +224,8 @@ export function buildCategoryColumns(options?: {
                );
             if (type === "expense")
                return <Badge variant="destructive">Despesa</Badge>;
+            if (type === "transfer")
+               return <Badge variant="secondary">Transferência</Badge>;
             return <span className="text-sm text-muted-foreground">—</span>;
          },
       },

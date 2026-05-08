@@ -1,4 +1,5 @@
 import { test as base, expect, type Page } from "@playwright/test";
+import { z } from "zod";
 import { signUpViaApi, type TestUser } from "../features/auth";
 import {
    countMemberOrgsByEmail,
@@ -23,6 +24,10 @@ const test = base.extend<{ user: TestUser }>({
       await deleteUserByEmail(u.email);
    },
 });
+
+const onboardingProductsSchema = z.array(
+   z.enum(["finance", "contacts", "services"]),
+);
 
 async function toggleFeature(page: Page, label: RegExp) {
    const card = page.getByRole("button", { name: label });
@@ -103,9 +108,12 @@ test("contacts + services + multi-org via ?new=true", async ({
    const firstOrg = await findFirstOrgByUserEmail(user.email);
    if (!firstOrg?.slug) throw new Error("Primeira org não foi criada.");
    const firstTeam = await findTeamByOrgAndSlug(firstOrg.slug, "principal");
-   expect(firstTeam?.onboardingProducts?.sort()).toEqual(
-      ["contacts", "services"].sort(),
+   if (!firstTeam)
+      throw new Error("Time principal da primeira org não foi criado.");
+   const onboardingProducts = onboardingProductsSchema.parse(
+      firstTeam.onboardingProducts,
    );
+   expect([...onboardingProducts].sort()).toEqual(["contacts", "services"]);
 
    await page.goto("/onboarding?new=true");
    await toggleFeature(page, /Finanças/);

@@ -168,24 +168,6 @@ Authenticate with `x-api-key` (created in Settings → Project → API Keys) or 
 
 ---
 
-## Self-host
-
-```bash
-cp .env.production.example .env.production
-# fill in secrets, then:
-docker compose -f docker-compose.prod.yml --env-file .env.production up -d
-```
-
-The stack runs `web` (TanStack Start, port 3000), `worker` (DBOS), `postgres` (ParadeDB), `redis` and `minio`. First boot only — push the schema from a dev checkout pointed at the same `DATABASE_URL`:
-
-```bash
-DATABASE_URL=postgresql://… bun run db:push
-```
-
-Per-app Dockerfiles live at `apps/web/Dockerfile` and `apps/worker/Dockerfile` (multi-stage Bun builds, build context is the repo root).
-
----
-
 ## Roadmap & contributing
 
 - The roadmap and active work are public on Linear at [linear.app/montte](https://linear.app/montte).

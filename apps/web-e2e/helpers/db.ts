@@ -14,6 +14,7 @@ import {
    user as userTable,
 } from "@core/database/schemas/auth";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { categories } from "@core/database/schemas/categories";
 import { transactions } from "@core/database/schemas/transactions";
 
 loadEnv({
@@ -211,6 +212,18 @@ export async function deleteTransactionById(teamId: string, id: string) {
    await db()
       .delete(transactions)
       .where(and(eq(transactions.teamId, teamId), eq(transactions.id, id)));
+}
+
+export async function findCategoryByName(teamId: string, name: string) {
+   return db().query.categories.findFirst({
+      where: (f, { and, eq }) => and(eq(f.teamId, teamId), eq(f.name, name)),
+   });
+}
+
+export async function deleteCategoryById(teamId: string, id: string) {
+   await db()
+      .delete(categories)
+      .where(and(eq(categories.teamId, teamId), eq(categories.id, id)));
 }
 
 export async function countMemberOrgsByEmail(email: string) {

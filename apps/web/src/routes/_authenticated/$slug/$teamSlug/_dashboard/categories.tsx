@@ -11,6 +11,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
    Archive,
    ArchiveRestore,
+   ArrowLeftRight,
    FolderOpen,
    Layers,
    Plus,
@@ -20,7 +21,7 @@ import {
    TrendingUp,
 } from "lucide-react";
 import { fromPromise } from "neverthrow";
-import { useState, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "../-layout/default-header";
@@ -44,8 +45,10 @@ import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCsvFile } from "@/hooks/use-csv-file";
+import { useSheet } from "@/hooks/use-sheet";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { orpc } from "@/integrations/orpc/client";
+import { CategoryFormSheet } from "./-categories/category-form-sheet";
 import {
    buildCategoryColumns,
    type CategoryRow,
@@ -60,7 +63,7 @@ const categoriesSearchSchema = z.object({
       .array(z.object({ id: z.string(), value: z.unknown() }))
       .catch([])
       .default([]),
-   type: z.enum(["income", "expense"]).optional().catch(undefined),
+   type: z.enum(["income", "expense", "transfer"]).optional().catch(undefined),
    includeArchived: z.boolean().catch(false).default(false),
    groupBy: z.boolean().catch(true).default(true),
    search: z.string().catch("").default(""),
@@ -68,9 +71,9 @@ const categoriesSearchSchema = z.object({
    pageSize: z.number().int().min(1).max(100).catch(20).default(20),
 });
 
-function parseCategoryType(raw: unknown): "income" | "expense" {
+function parseCategoryType(raw: unknown): "income" | "expense" | "transfer" {
    const str = String(raw ?? "").toLowerCase();
-   if (str === "income" || str === "expense") return str;
+   if (str === "income" || str === "expense" || str === "transfer") return str;
    return "expense";
 }
 
@@ -116,6 +119,7 @@ function CategoriesSkeleton() {
 
 function CategoriesList() {
    const { openAlertDialog } = useAlertDialog();
+   const { openSheet } = useSheet();
    const navigate = Route.useNavigate();
    const { search, type, includeArchived, groupBy, page, pageSize } =
       Route.useSearch();
@@ -187,13 +191,6 @@ function CategoriesList() {
       }),
    );
 
-   const createMutation = useMutation(
-      orpc.categories.create.mutationOptions({
-         onSuccess: () => toast.success("Categoria criada com sucesso."),
-         onError: (e) => toast.error(e.message || "Erro ao criar categoria."),
-      }),
-   );
-
    const importBatchMutation = useMutation(
       orpc.categoriesBulk.importBatch.mutationOptions({
          onError: (e) =>
@@ -208,28 +205,14 @@ function CategoriesList() {
       }),
    );
 
-   const [isDraftActive, setIsDraftActive] = useState(false);
-   const handleDiscardDraft = useCallback(() => setIsDraftActive(false), []);
-
-   const handleAddCategory = useCallback(
-      async (data: Record<string, string | string[]>) => {
-         const name = String(data.name ?? "").trim();
-         const categoryType = parseCategoryType(data.type);
-         if (!name) return;
-         await createMutation.mutateAsync({
-            name,
-            type: categoryType,
-            participatesDre: false,
-         });
-         setIsDraftActive(false);
-      },
-      [createMutation],
-   );
+   const handleCreate = useCallback(() => {
+      openSheet({ renderChildren: () => <CategoryFormSheet /> });
+   }, [openSheet]);
 
    const handleUpdateCategory = useCallback(
       async (
          rowId: string,
-         data: { name?: string; type?: "income" | "expense" },
+         data: { name?: string; type?: "income" | "expense" | "transfer" },
       ) => {
          await updateMutation.mutateAsync({ id: rowId, ...data });
       },
@@ -331,7 +314,9 @@ function CategoriesList() {
                   ? "Receitas"
                   : key === "expense"
                     ? "Despesas"
-                    : "Outros"
+                    : key === "transfer"
+                      ? "Transferências"
+                      : "Outros"
             }
             renderActions={({ row }) => {
                if (row.original.isDefault) return null;
@@ -397,9 +382,6 @@ function CategoriesList() {
                   </>
                );
             }}
-            isDraftRowActive={isDraftActive}
-            onAddRow={handleAddCategory}
-            onDiscardAddRow={handleDiscardDraft}
             storageKey="montte:datatable:categories"
          >
             <DataTableExternalFilter
@@ -454,6 +436,23 @@ function CategoriesList() {
                }
             />
             <DataTableExternalFilter
+               id="type-transfer"
+               label="Somente transferências"
+               group="Tipo"
+               active={type === "transfer"}
+               renderIcon={() => <ArrowLeftRight className="size-4" />}
+               onToggle={(checked) =>
+                  navigate({
+                     search: (prev) => ({
+                        ...prev,
+                        type: checked ? "transfer" : undefined,
+                        page: 1,
+                     }),
+                     replace: true,
+                  })
+               }
+            />
+            <DataTableExternalFilter
                id="groupBy"
                label="Agrupar por tipo"
                group="Exibição"
@@ -478,7 +477,7 @@ function CategoriesList() {
             >
                <DataTableImportButton importConfig={importConfig} />
                <Button
-                  onClick={() => setIsDraftActive(true)}
+                  onClick={handleCreate}
                   tooltip="Nova Categoria"
                   variant="outline"
                   size="icon-sm"
