@@ -6,7 +6,7 @@ import { FilterX, ListFilter, Plus, Search, X } from "lucide-react";
 import { createContextState } from "foxact/context-state";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useSingleton } from "foxact/use-singleton";
-import { useCallback, useMemo } from "react";
+import { startTransition, useCallback, useMemo } from "react";
 import type React from "react";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
@@ -85,7 +85,9 @@ function DataTableFilterDropdown() {
                         key={filter.id}
                         onSelect={(e) => {
                            e.preventDefault();
-                           filter.onToggle(!filter.active);
+                           startTransition(() => {
+                              filter.onToggle(!filter.active);
+                           });
                         }}
                      >
                         <span className="flex items-center gap-2 text-sm">
