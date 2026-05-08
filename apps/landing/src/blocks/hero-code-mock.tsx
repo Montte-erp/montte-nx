@@ -72,12 +72,12 @@ const code = [
 export function HeroCodeMock() {
    return (
       <motion.figure
-         className="w-full overflow-hidden rounded-xl border border-border/40 bg-background shadow-2xl shadow-background/70"
+         className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-border/40 bg-background shadow-2xl shadow-background/70"
          initial={{ opacity: 0, y: 32, scale: 0.97 }}
          animate={{ opacity: 1, y: 0, scale: 1 }}
          transition={{ duration: 0.7, delay: 0.1, ease: [0.32, 0.72, 0, 1] }}
       >
-         <pre className="overflow-x-auto p-4 text-xs leading-6 text-foreground sm:p-4 sm:text-sm">
+         <pre className="max-w-full overflow-x-auto p-2 text-xs leading-6 text-foreground sm:p-4 sm:text-sm">
             <code>
                {code.map((line, i) => (
                   <motion.div
