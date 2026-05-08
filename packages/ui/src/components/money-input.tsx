@@ -1,9 +1,4 @@
 import {
-   maskitoNumberOptionsGenerator,
-   maskitoParseNumber,
-} from "@maskito/kit";
-import { useMaskito } from "@maskito/react";
-import {
    InputGroup,
    InputGroupAddon,
    InputGroupInput,
@@ -22,13 +17,6 @@ interface MoneyInputProps extends Omit<
    className?: string;
    valueInCents?: boolean;
 }
-
-const maskOptions = maskitoNumberOptionsGenerator({
-   decimalSeparator: ",",
-   thousandSeparator: ".",
-   maximumFractionDigits: 2,
-   min: 0,
-});
 
 function toDisplayValue(
    value: number | string | undefined,
@@ -56,7 +44,6 @@ export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
       },
       ref,
    ) => {
-      const maskRef = useMaskito({ options: maskOptions });
       const inputRef = React.useRef<HTMLInputElement | null>(null);
 
       const displayValue = toDisplayValue(value, valueInCents);
@@ -69,16 +56,26 @@ export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
       }, [displayValue]);
 
       const handleInput = (e: React.FormEvent<HTMLInputElement>) => {
-         const el = e.target as HTMLInputElement;
+         const el = e.currentTarget;
          if (document.activeElement !== el) return;
-         const raw = el.value;
-         const parsed = maskitoParseNumber(raw, { decimalSeparator: "," });
-         if (Number.isNaN(parsed)) {
+         const digits = el.value.replace(/\D/g, "");
+         if (digits === "") {
+            el.value = "";
             onChange?.(undefined);
             return;
          }
-         const result = valueInCents ? Math.round(parsed * 100) : parsed;
-         onChange?.(result === 0 ? undefined : result);
+
+         const cents = Number.parseInt(digits, 10);
+         if (cents === 0) {
+            el.value = "";
+            onChange?.(undefined);
+            return;
+         }
+
+         const decimal = cents / 100;
+         el.value = toDisplayValue(decimal, false);
+         el.setSelectionRange(el.value.length, el.value.length);
+         onChange?.(valueInCents ? cents : decimal);
       };
 
       return (
@@ -92,7 +89,7 @@ export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
                inputMode="numeric"
                onInput={handleInput}
                placeholder={placeholder}
-               ref={mergeRefs(maskRef, inputRef, ref)}
+               ref={mergeRefs(inputRef, ref)}
                type="text"
                {...props}
             />
