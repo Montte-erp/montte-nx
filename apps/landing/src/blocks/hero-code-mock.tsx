@@ -14,7 +14,7 @@ const code = [
    { n: 2, html: "&nbsp;" },
    {
       n: 3,
-      html: `<span class="${COM}">// Cobra por uso. Result, zero throws.</span>`,
+      html: `<span class="${COM}">// Cobra por uso. Result, sem throw.</span>`,
    },
    {
       n: 4,
@@ -39,7 +39,7 @@ const code = [
    { n: 9, html: "&nbsp;" },
    {
       n: 10,
-      html: `<span class="${KW}">if</span> (tracked.<span class="${FN}">isErr</span>()) <span class="${KW}">throw</span> tracked.error;`,
+      html: `<span class="${KW}">if</span> (tracked.<span class="${FN}">isErr</span>()) <span class="${KW}">return</span> tracked;`,
    },
 ];
 
