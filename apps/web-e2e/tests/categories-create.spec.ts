@@ -9,8 +9,7 @@ import {
 const stamp = () => `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
 const test = base.extend<{ createdCategoryIds: string[] }>({
-   // oxlint-ignore eslint(no-empty-pattern)
-   createdCategoryIds: async ({}, use) => {
+   createdCategoryIds: async ({ browserName: _browserName }, use) => {
       await use([]);
    },
 });
