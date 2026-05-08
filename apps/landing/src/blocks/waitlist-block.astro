@@ -1,7 +1,25 @@
 ---
 import { CircleCheck, ShieldCheck } from "@lucide/astro";
+import {
+   Announcement,
+   AnnouncementTag,
+   AnnouncementTitle,
+} from "@packages/ui/components/announcement";
 import { Reveal } from "../components/reveal";
 import { WaitlistForm } from "./waitlist-form";
+
+const waitlistAnnouncements = [
+   {
+      Icon: CircleCheck,
+      tag: "Perfil",
+      title: "Prioridade no próximo lote.",
+   },
+   {
+      Icon: ShieldCheck,
+      tag: "Avisos",
+      title: "E-mail reservado no Montte.",
+   },
+];
 ---
 
 <section
@@ -27,15 +45,19 @@ import { WaitlistForm } from "./waitlist-form";
             <WaitlistForm client:load />
          </div>
 
-         <div class="grid w-full gap-4 text-left text-sm text-muted-foreground sm:grid-cols-2">
-            <div class="flex items-start gap-4">
-               <CircleCheck class="size-4 shrink-0 text-primary" aria-hidden="true" />
-               <p>Convites enviados por prioridade de perfil e capacidade de onboarding.</p>
-            </div>
-            <div class="flex items-start gap-4">
-               <ShieldCheck class="size-4 shrink-0 text-primary" aria-hidden="true" />
-               <p>Seu e-mail fica reservado para acesso e avisos importantes do Montte.</p>
-            </div>
+         <div class="flex  items-center justify-center gap-4 ">
+            {
+               waitlistAnnouncements.map(({ Icon,  title }) => (
+                  <Announcement >
+                     <AnnouncementTag >
+                  <Icon  class="text-primary" aria-hidden="true" />
+                     </AnnouncementTag>
+                     <AnnouncementTitle className="">
+                        {title}
+                     </AnnouncementTitle>
+                  </Announcement>
+               ))
+            }
          </div>
       </div>
    </Reveal>

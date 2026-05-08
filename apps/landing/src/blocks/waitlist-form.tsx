@@ -1,7 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { motion, AnimatePresence } from "motion/react";
 import { fromPromise } from "neverthrow";
-import posthog from "posthog-js";
 import { Button } from "@packages/ui/components/button";
 import { Field, FieldError } from "@packages/ui/components/field";
 import {
@@ -30,10 +29,8 @@ export function WaitlistForm() {
       validators: { onSubmit: waitlistSchema },
       onSubmit: async ({ value }) => {
          const trimmed = value.email.trim().toLowerCase();
-         const distinctId =
-            typeof window !== "undefined" && posthog.__loaded
-               ? posthog.get_distinct_id()
-               : trimmed;
+         const ph = typeof window !== "undefined" ? window.posthog : undefined;
+         const distinctId = ph?.__loaded ? ph.get_distinct_id() : trimmed;
 
          const fetched = await fromPromise(
             fetch("/api/waitlist", {
@@ -59,18 +56,18 @@ export function WaitlistForm() {
             };
          }
 
-         if (typeof window !== "undefined" && posthog.__loaded) {
-            posthog.identify(trimmed, {
+         if (ph?.__loaded) {
+            ph.identify(trimmed, {
                email: trimmed,
                waitlist_source: "landing",
             });
-            posthog.capture("waitlist", { email: trimmed, source: "landing" });
+            ph.capture("waitlist", { email: trimmed, source: "landing" });
          }
       },
    });
 
    return (
-      <div className="flex w-full flex-col gap-2">
+      <div className="flex w-full flex-col gap-8">
          <AnimatePresence mode="wait" initial={false}>
             {form.state.isSubmitSuccessful ? (
                <motion.div

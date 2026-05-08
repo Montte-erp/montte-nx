@@ -48,7 +48,6 @@
         "dayjs": "catalog:ui",
         "motion": "catalog:ui",
         "neverthrow": "catalog:validation",
-        "posthog-js": "catalog:analytics-client",
         "posthog-node": "catalog:analytics-client",
         "react": "catalog:react",
         "react-dom": "catalog:react",
