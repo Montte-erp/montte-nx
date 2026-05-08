@@ -13,7 +13,7 @@ const code = [
    },
    {
       n: 2,
-      html: `<span class="${KW}">import</span> { ok, err, safeTry } <span class="${KW}">from</span> <span class="${STR}">"neverthrow"</span>;`,
+      html: `<span class="${KW}">import</span> { ok, safeTry, fromPromise } <span class="${KW}">from</span> <span class="${STR}">"neverthrow"</span>;`,
    },
    { n: 3, html: "&nbsp;" },
    {
@@ -30,43 +30,33 @@ const code = [
    },
    {
       n: 7,
-      html: `&nbsp;&nbsp;&nbsp;&nbsp;<span class="${KW}">const</span> { allowed, remaining } = <span class="${KW}">yield</span>* hyprpay.api.<span class="${FN}">check</span>({`,
+      html: `&nbsp;&nbsp;&nbsp;&nbsp;<span class="${KW}">yield</span>* hyprpay.api.<span class="${FN}">check</span>({ <span class="${KEY}">feature</span>: <span class="${STR}">"ai_tokens"</span> });`,
    },
+   { n: 8, html: "&nbsp;" },
    {
-      n: 8,
-      html: `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="${KEY}">feature</span>: <span class="${STR}">"ai_tokens"</span>,`,
+      n: 9,
+      html: `&nbsp;&nbsp;&nbsp;&nbsp;<span class="${KW}">const</span> result = <span class="${KW}">yield</span>* <span class="${FN}">fromPromise</span>(ai.<span class="${FN}">generate</span>(input), AIError.from);`,
    },
-   { n: 9, html: "&nbsp;&nbsp;&nbsp;&nbsp;});" },
    { n: 10, html: "&nbsp;" },
    {
       n: 11,
-      html: `&nbsp;&nbsp;&nbsp;&nbsp;<span class="${KW}">if</span> (!allowed) <span class="${KW}">return</span> <span class="${FN}">err</span>(<span class="${KW}">new</span> <span class="${FN}">QuotaError</span>(remaining));`,
-   },
-   { n: 12, html: "&nbsp;" },
-   {
-      n: 13,
-      html: `&nbsp;&nbsp;&nbsp;&nbsp;<span class="${KW}">const</span> result = <span class="${KW}">await</span> ai.<span class="${FN}">generate</span>(input);`,
-   },
-   { n: 14, html: "&nbsp;" },
-   {
-      n: 15,
       html: `&nbsp;&nbsp;&nbsp;&nbsp;<span class="${KW}">yield</span>* hyprpay.api.<span class="${FN}">track</span>({`,
    },
    {
-      n: 16,
+      n: 12,
       html: `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="${KEY}">feature</span>: <span class="${STR}">"ai_tokens"</span>,`,
    },
    {
-      n: 17,
+      n: 13,
       html: `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="${KEY}">value</span>: result.<span class="${KEY}">tokens</span>,`,
    },
-   { n: 18, html: "&nbsp;&nbsp;&nbsp;&nbsp;});" },
-   { n: 19, html: "&nbsp;" },
+   { n: 14, html: "&nbsp;&nbsp;&nbsp;&nbsp;});" },
+   { n: 15, html: "&nbsp;" },
    {
-      n: 20,
+      n: 16,
       html: `&nbsp;&nbsp;&nbsp;&nbsp;<span class="${KW}">return</span> <span class="${FN}">ok</span>(result);`,
    },
-   { n: 21, html: "&nbsp;&nbsp;});" },
+   { n: 17, html: "&nbsp;&nbsp;});" },
 ];
 
 export function HeroCodeMock() {
