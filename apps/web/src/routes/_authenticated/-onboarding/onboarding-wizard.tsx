@@ -18,6 +18,7 @@ import { Banknote, Briefcase, Check, UsersRound } from "lucide-react";
 import { type FormEvent, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { RouteTransition } from "@/components/route-transition";
 import {
    authClient,
    type Session,
@@ -192,34 +193,36 @@ export function OnboardingWizard({
          </header>
 
          <main className="flex flex-1 items-center justify-center overflow-y-auto p-4">
-            <div className="w-full max-w-6xl animate-in fade-in slide-in-from-bottom-2 duration-200">
-               {step === "profile" && (
-                  <ProfileStep
-                     defaultName={session.user.name ?? ""}
-                     isFirstStep={currentIndex === 0}
-                     onBack={handleBack}
-                     onNext={handleProfileComplete}
-                  />
-               )}
+            <div className="w-full max-w-6xl">
+               <RouteTransition transitionKey={step}>
+                  {step === "profile" && (
+                     <ProfileStep
+                        defaultName={session.user.name ?? ""}
+                        isFirstStep={currentIndex === 0}
+                        onBack={handleBack}
+                        onNext={handleProfileComplete}
+                     />
+                  )}
 
-               {step === "features" && (
-                  <FeaturesStep
-                     features={features}
-                     isFirstStep={currentIndex === 0}
-                     isMultiOrgCreation={isMultiOrgCreation}
-                     navigateSearch={navigateSearch}
-                     onBack={handleBack}
-                  />
-               )}
+                  {step === "features" && (
+                     <FeaturesStep
+                        features={features}
+                        isFirstStep={currentIndex === 0}
+                        isMultiOrgCreation={isMultiOrgCreation}
+                        navigateSearch={navigateSearch}
+                        onBack={handleBack}
+                     />
+                  )}
 
-               {step === "company" && (
-                  <CompanyStep
-                     isCreating={createWorkspace.isPending}
-                     isFirstStep={currentIndex === 0}
-                     onBack={handleBack}
-                     onCreateWorkspace={handleCreateWorkspace}
-                  />
-               )}
+                  {step === "company" && (
+                     <CompanyStep
+                        isCreating={createWorkspace.isPending}
+                        isFirstStep={currentIndex === 0}
+                        onBack={handleBack}
+                        onCreateWorkspace={handleCreateWorkspace}
+                     />
+                  )}
+               </RouteTransition>
             </div>
          </main>
       </div>

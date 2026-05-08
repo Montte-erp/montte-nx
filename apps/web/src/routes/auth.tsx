@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { RouteTransition } from "./auth/-auth/route-transition";
+import { RouteTransition } from "@/components/route-transition";
 
 export const Route = createFileRoute("/auth")({
    beforeLoad: async ({ context, location }) => {
