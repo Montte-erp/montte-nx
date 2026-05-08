@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { fromPromise } from "neverthrow";
 import { deleteObject, listObjectsV2 } from "@better-upload/server/helpers";
 import { getLogger } from "@core/logging/root";
@@ -12,7 +13,7 @@ export async function cleanupOrphanedFiles(
    olderThanHours: number,
    isReferencedInDb: (key: string) => Promise<boolean>,
 ): Promise<number> {
-   const cutoffTime = new Date(Date.now() - olderThanHours * 60 * 60 * 1000);
+   const cutoffTime = dayjs().subtract(olderThanHours, "hour").toDate();
    let deletedCount = 0;
    let continuationToken: string | undefined;
 

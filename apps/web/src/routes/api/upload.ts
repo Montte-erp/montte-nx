@@ -1,4 +1,9 @@
-import { handleRequest, route, type Router } from "@better-upload/server";
+import {
+   handleRequest,
+   RejectUpload,
+   route,
+   type Router,
+} from "@better-upload/server";
 import { getLogger } from "@core/logging/root";
 import { createFileRoute } from "@tanstack/react-router";
 import { createMiddleware } from "@tanstack/react-start";
@@ -27,7 +32,7 @@ async function ensureBucket(bucket: string) {
    if (!put.ok && put.status !== 409) {
       const body = await put.text().catch(() => "");
       logger.error({ bucket, status: put.status, body }, "makeBucket failed");
-      throw new Error(`Falha ao criar bucket ${bucket}.`);
+      throw new RejectUpload(`Falha ao criar bucket ${bucket}.`);
    }
    ensuredBuckets.add(bucket);
 }

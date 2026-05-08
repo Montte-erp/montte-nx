@@ -70,33 +70,28 @@ function AvatarUploadSection({
       acceptedTypes: ["image/*"],
       maxSize: 5 * 1024 * 1024,
    });
-   const [isSaving, startSaving] = useTransition();
 
    const { upload, isPending } = useUploadFile({
       route: "userAvatar",
       api: "/api/upload",
-      onUploadComplete: ({ metadata }) => {
+      onUploadComplete: async ({ metadata }) => {
          const publicUrl = extractPublicUrl(metadata);
          if (!publicUrl) {
             toast.error("Erro ao atualizar foto de perfil");
             return;
          }
-         startSaving(async () => {
-            const { error } = await authClient.updateUser({ image: publicUrl });
-            if (error) {
-               toast.error(error.message ?? "Erro ao atualizar foto de perfil");
-               return;
-            }
-            toast.success("Foto de perfil atualizada!");
-            fileUpload.clearFile();
-         });
+         const { error } = await authClient.updateUser({ image: publicUrl });
+         if (error) {
+            toast.error(error.message ?? "Erro ao atualizar foto de perfil");
+            return;
+         }
+         toast.success("Foto de perfil atualizada!");
+         fileUpload.clearFile();
       },
       onError: () => {
          toast.error("Erro ao atualizar foto de perfil");
       },
    });
-
-   const isBusy = isPending || isSaving;
 
    const handleSave = () => {
       if (!fileUpload.selectedFile) return;
@@ -153,9 +148,9 @@ function AvatarUploadSection({
             </div>
          </div>
          {fileUpload.filePreview && (
-            <Button disabled={isBusy} onClick={handleSave}>
+            <Button disabled={isPending} onClick={handleSave}>
                <span className="flex items-center gap-2">
-                  {isBusy && <Loader2 className="size-4 animate-spin" />}
+                  {isPending && <Loader2 className="size-4 animate-spin" />}
                   Salvar foto
                </span>
             </Button>

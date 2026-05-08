@@ -308,6 +308,7 @@
         "@better-upload/server": "catalog:files",
         "@core/environment": "workspace:*",
         "@core/logging": "workspace:*",
+        "dayjs": "catalog:ui",
         "fflate": "catalog:files",
         "neverthrow": "catalog:validation",
       },
