@@ -42,9 +42,8 @@ function parseSlugsFromUrl(url: string): {
 }
 
 async function waitForDashboardUrl(page: Page, timeout: number) {
-   await page.waitForFunction(
-      () => /^\/(?!auth\/)[^/]+\/[^/]+\//.test(window.location.pathname),
-      undefined,
+   await page.waitForURL(
+      (url) => /^\/(?!auth\/)[^/]+\/[^/]+\//.test(url.pathname),
       { timeout },
    );
 }
