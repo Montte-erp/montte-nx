@@ -26,28 +26,31 @@ npm install assistant-cloud
 
 ```tsx
 import { AssistantCloud } from "assistant-cloud";
-import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/react-ai-sdk";
+import {
+   useChatRuntime,
+   AssistantChatTransport,
+} from "@assistant-ui/react-ai-sdk";
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { Thread } from "@/components/assistant-ui/thread";
 import { ThreadList } from "@/components/assistant-ui/thread-list";
 
 const cloud = new AssistantCloud({
-  baseUrl: process.env.NEXT_PUBLIC_ASSISTANT_BASE_URL,
-  authToken: async () => getAuthToken(),
+   baseUrl: process.env.NEXT_PUBLIC_ASSISTANT_BASE_URL,
+   authToken: async () => getAuthToken(),
 });
 
 function Chat() {
-  const runtime = useChatRuntime({
-    transport: new AssistantChatTransport({ api: "/api/chat" }),
-    cloud,
-  });
+   const runtime = useChatRuntime({
+      transport: new AssistantChatTransport({ api: "/api/chat" }),
+      cloud,
+   });
 
-  return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      <ThreadList />
-      <Thread />
-    </AssistantRuntimeProvider>
-  );
+   return (
+      <AssistantRuntimeProvider runtime={runtime}>
+         <ThreadList />
+         <Thread />
+      </AssistantRuntimeProvider>
+   );
 }
 ```
 
@@ -56,22 +59,22 @@ function Chat() {
 ```tsx
 // JWT Token (recommended)
 const cloud = new AssistantCloud({
-  baseUrl: process.env.NEXT_PUBLIC_ASSISTANT_BASE_URL,
-  authToken: async () => session?.accessToken,
+   baseUrl: process.env.NEXT_PUBLIC_ASSISTANT_BASE_URL,
+   authToken: async () => session?.accessToken,
 });
 
 // API Key (server-side)
 const cloud = new AssistantCloud({
-  baseUrl: process.env.ASSISTANT_BASE_URL,
-  apiKey: process.env.ASSISTANT_API_KEY,
-  userId: user.id,
-  workspaceId: user.workspaceId,
+   baseUrl: process.env.ASSISTANT_BASE_URL,
+   apiKey: process.env.ASSISTANT_API_KEY,
+   userId: user.id,
+   workspaceId: user.workspaceId,
 });
 
 // Anonymous (public apps)
 const cloud = new AssistantCloud({
-  baseUrl: process.env.NEXT_PUBLIC_ASSISTANT_BASE_URL,
-  anonymous: true,
+   baseUrl: process.env.NEXT_PUBLIC_ASSISTANT_BASE_URL,
+   anonymous: true,
 });
 ```
 
@@ -89,7 +92,7 @@ const messages = await cloud.threads.messages(threadId).list();
 
 // File uploads
 const { signedUrl, publicUrl } = await cloud.files.generatePresignedUploadUrl({
-  filename: "document.pdf",
+   filename: "document.pdf",
 });
 await fetch(signedUrl, { method: "PUT", body: file });
 ```
@@ -104,9 +107,11 @@ ASSISTANT_API_KEY=your-api-key  # Server-side only
 ## Common Gotchas
 
 **Threads not persisting**
+
 - Pass `cloud` to runtime
 - Check authentication
 
 **Auth errors**
+
 - Verify `authToken` returns valid token
 - Check `baseUrl` is correct

@@ -402,5 +402,5 @@ skills:
 - when: "TanStack Devtools setup, plugin panels, marketplace, production stripping"
   use: "@tanstack/devtools#devtools-app-setup"
 - when: "Working with .env files, dotenv config, encrypted env, variable expansion"
-use: "dotenv#dotenv"
-    <!-- intent-skills:end -->
+  use: "dotenv#dotenv"
+   <!-- intent-skills:end -->

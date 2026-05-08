@@ -4,18 +4,22 @@ Encode and decode streaming formats.
 
 ## Available Encoders
 
-| Encoder | Format | Use Case |
-|---------|--------|----------|
-| `DataStreamEncoder` | AI SDK Data Stream | Default (used by `toUIMessageStreamResponse`) |
-| `AssistantTransportEncoder` | Native SSE (`data: {chunk}`) | Custom backends that want all chunk types |
-| `PlainTextEncoder` | Text-only | Very simple demos |
+| Encoder                     | Format                       | Use Case                                      |
+| --------------------------- | ---------------------------- | --------------------------------------------- |
+| `DataStreamEncoder`         | AI SDK Data Stream           | Default (used by `toUIMessageStreamResponse`) |
+| `AssistantTransportEncoder` | Native SSE (`data: {chunk}`) | Custom backends that want all chunk types     |
+| `PlainTextEncoder`          | Text-only                    | Very simple demos                             |
 
 ## DataStreamEncoder
 
 AI SDK compatible format. You normally don't call it directly—wrap an `AssistantStream`:
 
 ```ts
-import { AssistantStream, DataStreamEncoder, DataStreamDecoder } from "assistant-stream";
+import {
+   AssistantStream,
+   DataStreamEncoder,
+   DataStreamDecoder,
+} from "assistant-stream";
 
 // Server
 const response = AssistantStream.toResponse(stream, new DataStreamEncoder());
@@ -23,7 +27,7 @@ const response = AssistantStream.toResponse(stream, new DataStreamEncoder());
 // Client
 const stream = AssistantStream.fromResponse(response, new DataStreamDecoder());
 for await (const chunk of stream) {
-  console.log(chunk);
+   console.log(chunk);
 }
 ```
 
@@ -33,17 +37,23 @@ Native assistant-ui format with all features.
 
 ```ts
 import {
-  AssistantTransportEncoder,
-  AssistantTransportDecoder,
+   AssistantTransportEncoder,
+   AssistantTransportDecoder,
 } from "assistant-stream";
 
 // Encoding: wrap AssistantStream chunks
-const response = AssistantStream.toResponse(stream, new AssistantTransportEncoder());
+const response = AssistantStream.toResponse(
+   stream,
+   new AssistantTransportEncoder(),
+);
 
 // Decoding
-const stream = AssistantStream.fromResponse(response, new AssistantTransportDecoder());
+const stream = AssistantStream.fromResponse(
+   response,
+   new AssistantTransportDecoder(),
+);
 for await (const chunk of stream) {
-  console.log(chunk);
+   console.log(chunk);
 }
 ```
 
@@ -61,7 +71,7 @@ const stream = encoder.encode("Hello world!");
 // Decoding
 const decoder = new PlainTextDecoder();
 for await (const text of decoder.decode(stream)) {
-  console.log(text);
+   console.log(text);
 }
 ```
 
@@ -75,8 +85,8 @@ import { UIMessageStreamDecoder } from "assistant-stream";
 const decoder = new UIMessageStreamDecoder();
 
 for await (const update of decoder.decode(stream)) {
-  // update contains full message state ready for UI
-  setMessages(update.messages);
+   // update contains full message state ready for UI
+   setMessages(update.messages);
 }
 ```
 
@@ -97,19 +107,19 @@ Use `createAssistantStreamController` to build an `AssistantStream` and encode i
 
 ```ts
 import {
-  AssistantStream,
-  AssistantTransportEncoder,
-  createAssistantStreamController,
+   AssistantStream,
+   AssistantTransportEncoder,
+   createAssistantStreamController,
 } from "assistant-stream";
 
 export async function POST() {
-  const [stream, controller] = createAssistantStreamController();
+   const [stream, controller] = createAssistantStreamController();
 
-  controller.appendText("Hello ");
-  controller.appendText("world!");
-  controller.close();
+   controller.appendText("Hello ");
+   controller.appendText("world!");
+   controller.close();
 
-  return AssistantStream.toResponse(stream, new AssistantTransportEncoder());
+   return AssistantStream.toResponse(stream, new AssistantTransportEncoder());
 }
 ```
 
@@ -134,5 +144,5 @@ while (reader) {
 ```ts
 // Check if response is valid SSE
 const contentType = response.headers.get("Content-Type");
-console.log("Content-Type:", contentType);  // Should be text/event-stream
+console.log("Content-Type:", contentType); // Should be text/event-stream
 ```

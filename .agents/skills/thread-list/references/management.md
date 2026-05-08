@@ -5,6 +5,7 @@ CRUD operations for managing multiple chat threads.
 ## Overview
 
 Thread list management allows users to:
+
 - Create new conversations
 - Switch between threads
 - Rename, archive, and delete threads
@@ -16,18 +17,16 @@ Thread list management allows users to:
 import { useAui, useAuiState } from "@assistant-ui/react";
 
 function ThreadManager() {
-  const api = useAui();
+   const api = useAui();
 
-  // Get thread list API
-  const threads = api.threads();
+   // Get thread list API
+   const threads = api.threads();
 
-  // Get current state
-  const { threadIds, mainThreadId } = useAuiState(
-    (s) => ({
+   // Get current state
+   const { threadIds, mainThreadId } = useAuiState((s) => ({
       threadIds: s.threads.threadIds,
       mainThreadId: s.threads.mainThreadId,
-    })
-  );
+   }));
 }
 ```
 
@@ -103,20 +102,20 @@ await item.generateTitle();
 
 ```typescript
 interface ThreadListState {
-  mainThreadId: string;           // Current thread
-  newThreadId: string | null;     // Pending new thread
-  threadIds: readonly string[];   // Regular thread IDs
-  archivedThreadIds: readonly string[];
-  isLoading: boolean;
-  threadItems: readonly ThreadListItemState[];
+   mainThreadId: string; // Current thread
+   newThreadId: string | null; // Pending new thread
+   threadIds: readonly string[]; // Regular thread IDs
+   archivedThreadIds: readonly string[];
+   isLoading: boolean;
+   threadItems: readonly ThreadListItemState[];
 }
 
 interface ThreadListItemState {
-  id: string;
-  title?: string;
-  remoteId?: string;
-  externalId?: string;
-  status: "archived" | "regular" | "new" | "deleted";
+   id: string;
+   title?: string;
+   remoteId?: string;
+   externalId?: string;
+   status: "archived" | "regular" | "new" | "deleted";
 }
 ```
 
@@ -126,15 +125,15 @@ interface ThreadListItemState {
 import { useAuiState, useAuiEvent } from "@assistant-ui/react";
 
 function ThreadWatcher() {
-  // Reactive state
-  const threads = useAuiState((s) => s.threads.threadIds);
+   // Reactive state
+   const threads = useAuiState((s) => s.threads.threadIds);
 
-  // Events
-  useAuiEvent("thread.initialize", () => {
-    console.log("New thread created");
-  });
+   // Events
+   useAuiEvent("thread.initialize", () => {
+      console.log("New thread created");
+   });
 
-  return <div>{threads.length} threads</div>;
+   return <div>{threads.length} threads</div>;
 }
 ```
 
@@ -161,18 +160,18 @@ const mainItem = threads.item("main");
 
 ```tsx
 async function archiveThreadsByTitlePrefix(prefix: string) {
-  const api = useAui();
-  const { threadIds } = api.threads().getState();
+   const api = useAui();
+   const { threadIds } = api.threads().getState();
 
-  for (const threadId of threadIds) {
-    const item = api.threads().item({ id: threadId });
-    const state = item.getState();
-    const title = (state.title || "").toLowerCase();
+   for (const threadId of threadIds) {
+      const item = api.threads().item({ id: threadId });
+      const state = item.getState();
+      const title = (state.title || "").toLowerCase();
 
-    if (title.startsWith(prefix.toLowerCase())) {
-      await item.archive();
-    }
-  }
+      if (title.startsWith(prefix.toLowerCase())) {
+         await item.archive();
+      }
+   }
 }
 ```
 
@@ -210,18 +209,18 @@ const { remoteId, externalId } = await item.initialize();
 
 ```tsx
 async function safeDelete(threadId: string) {
-  const api = useAui();
-  const item = api.threads().item({ id: threadId });
+   const api = useAui();
+   const item = api.threads().item({ id: threadId });
 
-  try {
-    await item.delete();
-  } catch (error) {
-    if (error.message.includes("not found")) {
-      // Thread already deleted
-      return;
-    }
-    throw error;
-  }
+   try {
+      await item.delete();
+   } catch (error) {
+      if (error.message.includes("not found")) {
+         // Thread already deleted
+         return;
+      }
+      throw error;
+   }
 }
 ```
 
@@ -231,26 +230,26 @@ Thread list can be sorted by title or by ID for custom ordering:
 
 ```tsx
 function SortedThreadList({ sortBy }: { sortBy: "title" | "id" }) {
-  const { threads } = useAuiState((s) => ({ threads: s.threads.threadIds }));
-  const api = useAui();
+   const { threads } = useAuiState((s) => ({ threads: s.threads.threadIds }));
+   const api = useAui();
 
-  const sorted = [...threads].sort((a, b) => {
-    const itemA = api.threads().item({ id: a }).getState();
-    const itemB = api.threads().item({ id: b }).getState();
+   const sorted = [...threads].sort((a, b) => {
+      const itemA = api.threads().item({ id: a }).getState();
+      const itemB = api.threads().item({ id: b }).getState();
 
-    if (sortBy === "title") {
-      return (itemA.title || "").localeCompare(itemB.title || "");
-    }
-    return b.localeCompare(a);
-  });
+      if (sortBy === "title") {
+         return (itemA.title || "").localeCompare(itemB.title || "");
+      }
+      return b.localeCompare(a);
+   });
 
-  return (
-    <div>
-      {sorted.map((id) => (
-        <ThreadListItem key={id} id={id} />
-      ))}
-    </div>
-  );
+   return (
+      <div>
+         {sorted.map((id) => (
+            <ThreadListItem key={id} id={id} />
+         ))}
+      </div>
+   );
 }
 ```
 
@@ -258,28 +257,28 @@ function SortedThreadList({ sortBy }: { sortBy: "title" | "id" }) {
 
 ```tsx
 function KeyboardNav() {
-  const { threads, mainThreadId } = useAuiState((s) => ({
-    threads: s.threads.threadIds,
-    mainThreadId: s.threads.mainThreadId,
-  }));
-  const api = useAui();
+   const { threads, mainThreadId } = useAuiState((s) => ({
+      threads: s.threads.threadIds,
+      mainThreadId: s.threads.mainThreadId,
+   }));
+   const api = useAui();
 
-  const currentIndex = threads.indexOf(mainThreadId);
+   const currentIndex = threads.indexOf(mainThreadId);
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === "ArrowUp" && currentIndex > 0) {
-      api.threads().switchToThread(threads[currentIndex - 1]);
-    }
-    if (e.key === "ArrowDown" && currentIndex < threads.length - 1) {
-      api.threads().switchToThread(threads[currentIndex + 1]);
-    }
-  };
+   const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowUp" && currentIndex > 0) {
+         api.threads().switchToThread(threads[currentIndex - 1]);
+      }
+      if (e.key === "ArrowDown" && currentIndex < threads.length - 1) {
+         api.threads().switchToThread(threads[currentIndex + 1]);
+      }
+   };
 
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentIndex, threads]);
+   useEffect(() => {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+   }, [currentIndex, threads]);
 
-  return null;
+   return null;
 }
 ```

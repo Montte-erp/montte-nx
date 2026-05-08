@@ -18,19 +18,19 @@ Assistant Transport is assistant-ui's optimized format with support for all feat
 
 ```ts
 import {
-  AssistantStream,
-  AssistantTransportEncoder,
-  createAssistantStreamController,
+   AssistantStream,
+   AssistantTransportEncoder,
+   createAssistantStreamController,
 } from "assistant-stream";
 
 export async function POST(req: Request) {
-  const [stream, controller] = createAssistantStreamController();
+   const [stream, controller] = createAssistantStreamController();
 
-  controller.appendText("Hello ");
-  controller.appendText("world!");
-  controller.close();
+   controller.appendText("Hello ");
+   controller.appendText("world!");
+   controller.close();
 
-  return AssistantStream.toResponse(stream, new AssistantTransportEncoder());
+   return AssistantStream.toResponse(stream, new AssistantTransportEncoder());
 }
 ```
 
@@ -40,12 +40,12 @@ export async function POST(req: Request) {
 import { AssistantStream, AssistantTransportDecoder } from "assistant-stream";
 
 const stream = AssistantStream.fromResponse(
-  response,
-  new AssistantTransportDecoder()
+   response,
+   new AssistantTransportDecoder(),
 );
 
 for await (const chunk of stream) {
-  console.log(chunk);
+   console.log(chunk);
 }
 ```
 
@@ -66,31 +66,31 @@ AssistantStream chunks (decoded from AssistantTransport) match the core types:
 
 ```ts
 import {
-  AssistantStream,
-  AssistantTransportEncoder,
-  createAssistantStreamController,
+   AssistantStream,
+   AssistantTransportEncoder,
+   createAssistantStreamController,
 } from "assistant-stream";
 
 async function streamResponse(query: string) {
-  const [stream, controller] = createAssistantStreamController();
-  const toolCallId = `tool_${Date.now()}`;
+   const [stream, controller] = createAssistantStreamController();
+   const toolCallId = `tool_${Date.now()}`;
 
-  controller.appendText("Based on my search, ");
+   controller.appendText("Based on my search, ");
 
-  const tool = controller.addToolCallPart({
-    toolCallId,
-    toolName: "search",
-  });
-  tool.argsText.append(JSON.stringify({ query }));
-  tool.argsText.close();
+   const tool = controller.addToolCallPart({
+      toolCallId,
+      toolName: "search",
+   });
+   tool.argsText.append(JSON.stringify({ query }));
+   tool.argsText.close();
 
-  const searchResult = await performSearch(query);
-  tool.setResponse({ result: searchResult });
+   const searchResult = await performSearch(query);
+   tool.setResponse({ result: searchResult });
 
-  controller.appendText(`here's what I found:\n\n${searchResult.summary}`);
-  controller.close();
+   controller.appendText(`here's what I found:\n\n${searchResult.summary}`);
+   controller.close();
 
-  return AssistantStream.toResponse(stream, new AssistantTransportEncoder());
+   return AssistantStream.toResponse(stream, new AssistantTransportEncoder());
 }
 ```
 
@@ -101,60 +101,63 @@ import { useLocalRuntime } from "@assistant-ui/react";
 import { AssistantStream, AssistantTransportDecoder } from "assistant-stream";
 
 const runtime = useLocalRuntime({
-  model: {
-    async *run({ messages, abortSignal }) {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        body: JSON.stringify({ messages }),
-        signal: abortSignal,
-      });
+   model: {
+      async *run({ messages, abortSignal }) {
+         const response = await fetch("/api/chat", {
+            method: "POST",
+            body: JSON.stringify({ messages }),
+            signal: abortSignal,
+         });
 
-      let currentTool:
-        | {
-            toolCallId: string;
-            toolName: string;
-            args: Record<string, unknown>;
-            argsText: string;
-          }
-        | undefined;
+         let currentTool:
+            | {
+                 toolCallId: string;
+                 toolName: string;
+                 args: Record<string, unknown>;
+                 argsText: string;
+              }
+            | undefined;
 
-      const stream = AssistantStream.fromResponse(
-        response,
-        new AssistantTransportDecoder()
-      );
+         const stream = AssistantStream.fromResponse(
+            response,
+            new AssistantTransportDecoder(),
+         );
 
-      for await (const chunk of stream) {
-        // Convert AssistantStreamChunk into ChatModelRunResult content parts
-        if (chunk.type === "text-delta") {
-          yield { content: [{ type: "text", text: chunk.textDelta }] };
-        }
+         for await (const chunk of stream) {
+            // Convert AssistantStreamChunk into ChatModelRunResult content parts
+            if (chunk.type === "text-delta") {
+               yield { content: [{ type: "text", text: chunk.textDelta }] };
+            }
 
-        // Track current tool-call to attach result to it
-        if (chunk.type === "part-start" && chunk.part.type === "tool-call") {
-          currentTool = {
-            toolCallId: chunk.part.toolCallId,
-            toolName: chunk.part.toolName,
-            args: {},
-            argsText: "{}",
-          };
-          yield { content: [currentTool] };
-        }
+            // Track current tool-call to attach result to it
+            if (
+               chunk.type === "part-start" &&
+               chunk.part.type === "tool-call"
+            ) {
+               currentTool = {
+                  toolCallId: chunk.part.toolCallId,
+                  toolName: chunk.part.toolName,
+                  args: {},
+                  argsText: "{}",
+               };
+               yield { content: [currentTool] };
+            }
 
-        if (chunk.type === "result" && currentTool) {
-          yield {
-            content: [
-              {
-                ...currentTool,
-                result: chunk.result,
-                artifact: chunk.artifact,
-                isError: chunk.isError,
-              },
-            ],
-          };
-          currentTool = undefined;
-        }
-      }
-    },
-  },
+            if (chunk.type === "result" && currentTool) {
+               yield {
+                  content: [
+                     {
+                        ...currentTool,
+                        result: chunk.result,
+                        artifact: chunk.artifact,
+                        isError: chunk.isError,
+                     },
+                  ],
+               };
+               currentTool = undefined;
+            }
+         }
+      },
+   },
 });
 ```
