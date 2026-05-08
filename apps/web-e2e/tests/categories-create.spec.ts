@@ -80,8 +80,8 @@ test("cria categoria do tipo Transferência", async ({
    await submit.click();
 
    await expect(page.getByText("Categoria criada com sucesso.")).toBeVisible();
-   await expect(page.getByRole("cell", { name })).toBeVisible();
    await rememberCreatedCategory(e2eSession, name, createdCategoryIds);
+   await expect(page.getByRole("cell", { name })).toBeVisible();
 });
 
 test("filtro Somente transferências lista categoria criada", async ({

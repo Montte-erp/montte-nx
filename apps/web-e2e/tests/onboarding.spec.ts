@@ -108,8 +108,10 @@ test("contacts + services + multi-org via ?new=true", async ({
    const firstOrg = await findFirstOrgByUserEmail(user.email);
    if (!firstOrg?.slug) throw new Error("Primeira org não foi criada.");
    const firstTeam = await findTeamByOrgAndSlug(firstOrg.slug, "principal");
+   if (!firstTeam)
+      throw new Error("Time principal da primeira org não foi criado.");
    const onboardingProducts = onboardingProductsSchema.parse(
-      firstTeam?.onboardingProducts,
+      firstTeam.onboardingProducts,
    );
    expect([...onboardingProducts].sort()).toEqual(["contacts", "services"]);
 
