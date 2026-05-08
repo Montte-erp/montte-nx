@@ -1,8 +1,13 @@
+import dns from "node:dns";
 import { env } from "@core/environment/web";
 import { createDb } from "@core/database/client";
+
+if (process.env.NODE_ENV === "development") {
+   dns.setDefaultResultOrder("ipv4first");
+}
 import { createRedis } from "@core/redis/connection";
 import { createPostHog, createPromptsClient } from "@core/posthog/server";
-import { createMinioClient } from "@core/files/client";
+import { createS3Client } from "@core/files/client";
 import { createResendClient } from "@core/transactional/utils";
 import { createAuth } from "@core/authentication/server";
 import { DBOSClient } from "@dbos-inc/dbos-sdk";
@@ -19,7 +24,7 @@ export const posthogPrompts = createPromptsClient({
    projectApiKey: env.POSTHOG_KEY,
    host: env.POSTHOG_HOST,
 });
-export const minioClient = createMinioClient({
+export const s3Client = createS3Client({
    endpoint: env.MINIO_ENDPOINT,
    accessKey: env.MINIO_ACCESS_KEY,
    secretKey: env.MINIO_SECRET_KEY,

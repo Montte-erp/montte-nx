@@ -15,7 +15,7 @@ export function RouteTransition({
    return (
       <motion.div
          animate={{ opacity: 1, x: 0 }}
-         className="w-full"
+         className="flex w-full min-h-0 flex-1 flex-col"
          initial={{ opacity: 0, x: 24 }}
          key={key}
          transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}

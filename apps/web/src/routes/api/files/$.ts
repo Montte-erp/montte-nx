@@ -1,55 +1,42 @@
+import { getObjectStream } from "@better-upload/server/helpers";
 import { getLogger } from "@core/logging/root";
 import { createFileRoute } from "@tanstack/react-router";
-import { minioClient } from "@/integrations/singletons";
+import { fromPromise } from "neverthrow";
+import { s3Client } from "@/integrations/singletons";
 
 const logger = getLogger().child({ module: "api:files" });
 
 async function handle({
-   request: _request,
    params,
 }: {
    request: Request;
    params: { _splat?: string };
 }) {
-   try {
-      const path = params._splat || "";
-      const [bucketName, ...fileNameParts] = path.split("/");
-      const fileName = fileNameParts.join("/");
+   const path = params._splat || "";
+   const [bucketName, ...fileNameParts] = path.split("/");
+   const fileName = fileNameParts.join("/");
 
-      if (!bucketName || !fileName) {
-         return new Response("Invalid file path", { status: 400 });
-      }
-
-      const stream = await minioClient.getObject(bucketName, fileName);
-
-      const stat = await minioClient.statObject(bucketName, fileName);
-
-      const webStream = new ReadableStream({
-         start(controller) {
-            stream.on("data", (chunk: Buffer) => {
-               controller.enqueue(new Uint8Array(chunk));
-            });
-            stream.on("end", () => {
-               controller.close();
-            });
-            stream.on("error", (error) => {
-               controller.error(error);
-            });
-         },
-      });
-
-      return new Response(webStream, {
-         headers: {
-            "Content-Type":
-               stat.metaData?.["content-type"] || "application/octet-stream",
-            "Content-Length": stat.size.toString(),
-            "Cache-Control": "public, max-age=31536000, immutable",
-         },
-      });
-   } catch (error) {
-      logger.error({ err: error }, "Error serving file");
-      return new Response("File not found", { status: 404 });
+   if (!bucketName || !fileName) {
+      return new Response("Invalid file path", { status: 400 });
    }
+
+   const result = await fromPromise(
+      getObjectStream(s3Client, { bucket: bucketName, key: fileName }),
+      (err) => {
+         logger.error({ err, bucketName, fileName }, "Error serving file");
+         return err;
+      },
+   );
+   if (result.isErr()) return new Response("File not found", { status: 404 });
+
+   const { stream, contentType, contentLength } = result.value;
+   return new Response(stream, {
+      headers: {
+         "Content-Type": contentType || "application/octet-stream",
+         "Content-Length": contentLength.toString(),
+         "Cache-Control": "public, max-age=31536000, immutable",
+      },
+   });
 }
 
 export const Route = createFileRoute("/api/files/$")({

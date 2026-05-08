@@ -1,10 +1,12 @@
+import { fromPromise } from "neverthrow";
+import { deleteObject, listObjectsV2 } from "@better-upload/server/helpers";
 import { getLogger } from "@core/logging/root";
-import type { MinioClient } from "@core/files/client";
+import type { S3Client } from "@core/files/client";
 
 const logger = getLogger().child({ module: "files:cleanup" });
 
 export async function cleanupOrphanedFiles(
-   client: MinioClient,
+   client: S3Client,
    bucketName: string,
    prefix: string,
    olderThanHours: number,
@@ -12,31 +14,39 @@ export async function cleanupOrphanedFiles(
 ): Promise<number> {
    const cutoffTime = new Date(Date.now() - olderThanHours * 60 * 60 * 1000);
    let deletedCount = 0;
+   let continuationToken: string | undefined;
 
-   const stream = client.listObjectsV2(bucketName, prefix, true);
+   do {
+      const page = await listObjectsV2(client, {
+         bucket: bucketName,
+         prefix,
+         continuationToken,
+      });
 
-   for await (const obj of stream) {
-      if (!obj.name || !obj.lastModified) {
-         continue;
+      for (const obj of page.contents) {
+         if (!obj.key || !obj.lastModified) continue;
+         if (obj.lastModified > cutoffTime) continue;
+
+         const isReferenced = await isReferencedInDb(obj.key);
+         if (isReferenced) continue;
+
+         const result = await fromPromise(
+            deleteObject(client, { bucket: bucketName, key: obj.key }),
+            (err) => {
+               logger.error(
+                  { err, fileName: obj.key },
+                  "Failed to delete orphaned file",
+               );
+               return err;
+            },
+         );
+         if (result.isOk()) deletedCount++;
       }
 
-      if (obj.lastModified > cutoffTime) {
-         continue;
-      }
-
-      const isReferenced = await isReferencedInDb(obj.name);
-      if (!isReferenced) {
-         try {
-            await client.removeObject(bucketName, obj.name);
-            deletedCount++;
-         } catch (error) {
-            logger.error(
-               { err: error, fileName: obj.name },
-               "Failed to delete orphaned file",
-            );
-         }
-      }
-   }
+      continuationToken = page.isTruncated
+         ? page.nextContinuationToken
+         : undefined;
+   } while (continuationToken);
 
    return deletedCount;
 }
@@ -48,7 +58,7 @@ export interface CleanupResult {
 }
 
 export async function cleanupAllOrphanedFiles(
-   client: MinioClient,
+   client: S3Client,
    bucketName: string,
    olderThanHours: number,
    dbCheckers: {
@@ -65,21 +75,24 @@ export async function cleanupAllOrphanedFiles(
 
    for (const { prefix, checker } of prefixes) {
       const errors: string[] = [];
-      let deletedCount = 0;
-
-      try {
-         deletedCount = await cleanupOrphanedFiles(
+      const result = await fromPromise(
+         cleanupOrphanedFiles(
             client,
             bucketName,
             prefix,
             olderThanHours,
             checker,
-         );
-      } catch (error) {
-         errors.push(error instanceof Error ? error.message : String(error));
+         ),
+         (err) => (err instanceof Error ? err.message : String(err)),
+      );
+
+      if (result.isErr()) {
+         errors.push(result.error);
+         results.push({ deletedCount: 0, errors, prefix });
+         continue;
       }
 
-      results.push({ deletedCount, errors, prefix });
+      results.push({ deletedCount: result.value, errors, prefix });
    }
 
    return results;

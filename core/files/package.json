@@ -26,10 +26,11 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
+      "@better-upload/server": "catalog:files",
       "@core/environment": "workspace:*",
       "@core/logging": "workspace:*",
       "fflate": "catalog:files",
-      "minio": "catalog:files"
+      "neverthrow": "catalog:validation"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",

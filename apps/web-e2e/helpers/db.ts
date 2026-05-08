@@ -99,6 +99,13 @@ export async function findTeamByOrgAndSlug(orgSlug: string, teamSlug: string) {
    });
 }
 
+export async function clearUserAvatarByEmail(email: string) {
+   await db()
+      .update(userTable)
+      .set({ image: null })
+      .where(eq(userTable.email, email));
+}
+
 export async function clearOrganizationLogoForEmail(email: string) {
    const org = await findFirstOrgByUserEmail(email);
    if (!org) return;
