@@ -2,6 +2,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import posthog from "posthog-js";
+import { RouteTransition } from "@/components/route-transition";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import type { orpc as orpcClient } from "@/integrations/orpc/client";
 import { ChatSessionProvider } from "./-montte-ai/chat-store";
@@ -70,7 +71,9 @@ function DashboardLayoutRoute() {
    return (
       <ChatSessionProvider>
          <DashboardLayout>
-            <Outlet />
+            <RouteTransition>
+               <Outlet />
+            </RouteTransition>
          </DashboardLayout>
       </ChatSessionProvider>
    );

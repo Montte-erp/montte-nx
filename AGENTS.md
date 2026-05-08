@@ -169,6 +169,8 @@ export const Route = createFileRoute("/feature")({
 
 Vite plugin order is critical: `tanstackStart({ router: { autoCodeSplitting: true } })` → `nitro({ preset: "bun" })` → `viteReact()`.
 
+Router config (`apps/web/src/router.tsx`) sets `defaultPendingMs: 0` and `defaultPendingMinMs: 0` so navigations swap instantly — without this the old route stays visible up to ~1s waiting for loaders. Page-transition animation lives in `apps/web/src/routes/auth/-auth/route-transition.tsx` for auth pages: keyed `motion.div` with **enter-only** animation (no `AnimatePresence` / `exit`) — exit animations cause overlapping h1s and visible flicker. Regression covered by `apps/web-e2e/tests/auth-route-transition.spec.ts`.
+
 `createServerFn` only for HTTP-pure ops needing `process.env` or request context — not a replacement for oRPC. **Never `VITE_*` / `import.meta.env`** for public env vars (breaks Railway skipped builds) — read `process.env` from a server fn and pass via loader. Theme: `theme` cookie read in root loader, applied as `<html className>` (no `dangerouslySetInnerHTML`). Devtools always inside `<ClientOnly>` + `import.meta.env.DEV`.
 
 ---
@@ -347,6 +349,9 @@ Surveys: `bugReport`, `featureRequest`, `featureFeedback`, `feedbackContatos`, `
 - Org: `organization.onboardingCompleted`
 - Project: `team.onboardingCompleted`, `team.onboardingProducts`, `team.onboardingTasks`
 - Procedures: `apps/web/src/integrations/orpc/router/onboarding.ts`
+- Step `features` is **multi-select** (PostHog-style). 3 options map 1:1 to `OnboardingProduct`: `finance` (Finanças), `contacts` (Negócios), `services` (Serviços). URL search param: `features` (array). Empty selection is valid → `onboardingProducts: []`. **Don't add a "pick myself" option** — empty array already covers it.
+- **Brand gender:** Montte é masculino. Sempre "no Montte" / "do Montte" / "o Montte" — nunca "na Montte".
+- E2E coverage: `apps/web-e2e/tests/onboarding.spec.ts` + `multi-org-onboarding.spec.ts`. Helpers in `features/auth.ts` (`completeOnboarding`, `createAdditionalOrganization`, `pickFeature`).
 
 ---
 
@@ -357,7 +362,9 @@ bun run test
 npx vitest run <file>
 ```
 
-Tests live in `core/*` and `packages/*` — non-trivial logic only (Zod transforms, date/math, analytics, credits, repository queries). **No unit/integration tests in `apps/*`** (E2E pending, not yet introduced). Never test routers/components/hooks/singletons/file existence.
+Tests live in `core/*` and `packages/*` — non-trivial logic only (Zod transforms, date/math, analytics, credits, repository queries). **No unit/integration tests in `apps/*`** — never test routers/components/hooks/singletons/file existence.
+
+E2E tests live in `apps/web-e2e/tests/` (Playwright). Auth fixture in `fixtures.ts` injects authenticated `storageState`. For pages that require an unauthenticated session (e.g. `/auth/*`), use raw `import { test } from "@playwright/test"` + `test.use({ storageState: { cookies: [], origins: [] } })`.
 
 ---
 

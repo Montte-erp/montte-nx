@@ -1,6 +1,7 @@
 import { createRouter, Link } from "@tanstack/react-router";
 
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
+import { PendingComponent } from "./components/pending-component";
 import * as TanstackQuery from "./integrations/tanstack-query/root-provider";
 import type { PublicEnv } from "./integrations/public-env";
 import { routeTree } from "./routeTree.gen";
@@ -36,8 +37,11 @@ export const getRouter = () => {
       },
       defaultPreload: "intent",
       defaultPreloadStaleTime: 0,
+      defaultPendingMs: 0,
+      defaultPendingMinMs: 0,
       scrollRestoration: true,
       defaultStructuralSharing: true,
+      defaultPendingComponent: PendingComponent,
       defaultNotFoundComponent: NotFound,
    });
 

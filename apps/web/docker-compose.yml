@@ -24,7 +24,7 @@ services:
          retries: 3
 
    montte-db:
-      image: docker.io/library/postgres:latest
+      image: docker.io/library/postgres:17
       command: postgres -c wal_level=logical
       environment:
          POSTGRES_USER: postgres

@@ -14,10 +14,11 @@ import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { fromPromise } from "neverthrow";
 import posthog from "posthog-js";
-import { Banknote, Check, MousePointer2, UsersRound } from "lucide-react";
+import { Banknote, Briefcase, Check, UsersRound } from "lucide-react";
 import { type FormEvent, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { RouteTransition } from "@/components/route-transition";
 import {
    authClient,
    type Session,
@@ -26,8 +27,8 @@ import { orpc } from "@/integrations/orpc/client";
 
 const ONBOARDING_VERSION = "2026-05";
 
-type OnboardingStep = "profile" | "goal" | "company";
-type OnboardingGoal = "finance" | "clients_services" | "pick_myself";
+type OnboardingStep = "profile" | "features" | "company";
+type OnboardingFeature = "finance" | "contacts" | "services";
 
 type Organization = {
    id: string;
@@ -42,7 +43,7 @@ type StepItem = { id: OnboardingStep };
 
 type NavigateSearch = (search: {
    step?: OnboardingStep;
-   goal?: OnboardingGoal | null;
+   features?: OnboardingFeature[];
    new?: boolean;
 }) => void | Promise<void>;
 
@@ -51,34 +52,34 @@ interface OnboardingWizardProps {
    organizations: Organization[];
    activeOrg: Organization | null;
    step: OnboardingStep;
-   goal: OnboardingGoal | null;
+   features: OnboardingFeature[];
    isNewOrganization: boolean;
    navigateSearch: NavigateSearch;
 }
 
-const GOAL_OPTIONS: {
-   id: OnboardingGoal;
+const FEATURE_OPTIONS: {
+   id: OnboardingFeature;
    title: string;
    description: string;
    Icon: typeof Banknote;
 }[] = [
    {
       id: "finance",
-      title: "Organizar meu financeiro",
-      description: "Controle contas, cartões, categorias e transações.",
+      title: "Finanças",
+      description: "Contas, cartões, categorias e lançamentos.",
       Icon: Banknote,
    },
    {
-      id: "clients_services",
-      title: "Gerenciar clientes e serviços",
-      description: "Centralize contatos, serviços, benefícios e cobranças.",
-      Icon: UsersRound,
+      id: "contacts",
+      title: "Negócios",
+      description: "Contatos, clientes e relacionamentos.",
+      Icon: Briefcase,
    },
    {
-      id: "pick_myself",
-      title: "Vou escolher sozinho",
-      description: "Crie seu espaço sem personalização inicial.",
-      Icon: MousePointer2,
+      id: "services",
+      title: "Serviços",
+      description: "Serviços, benefícios e cobranças.",
+      Icon: UsersRound,
    },
 ];
 
@@ -95,7 +96,7 @@ export function OnboardingWizard({
    organizations,
    activeOrg,
    step,
-   goal,
+   features,
    isNewOrganization,
    navigateSearch,
 }: OnboardingWizardProps) {
@@ -106,11 +107,11 @@ export function OnboardingWizard({
 
    const steps = useMemo<StepItem[]>(() => {
       if (!activeOrg && !session.user.name) {
-         return [{ id: "profile" }, { id: "goal" }, { id: "company" }];
+         return [{ id: "profile" }, { id: "features" }, { id: "company" }];
       }
 
       if (!activeOrg) {
-         return [{ id: "goal" }, { id: "company" }];
+         return [{ id: "features" }, { id: "company" }];
       }
 
       return [{ id: "profile" }];
@@ -124,7 +125,7 @@ export function OnboardingWizard({
 
    const handleProfileComplete = useCallback(() => {
       if (!activeOrg) {
-         void navigateSearch({ step: "goal" });
+         void navigateSearch({ step: "features" });
          return;
       }
 
@@ -133,12 +134,11 @@ export function OnboardingWizard({
 
    const handleCreateWorkspace = useCallback(
       async (workspaceName: string) => {
-         const selectedGoal = goal ?? "pick_myself";
          const result = await fromPromise(
             (async () => {
                const created = await createWorkspace.mutateAsync({
                   workspaceName,
-                  onboardingGoal: selectedGoal,
+                  features,
                   isMultiOrgCreation,
                });
 
@@ -151,7 +151,7 @@ export function OnboardingWizard({
                });
 
                posthog.group("organization", created.orgId, {
-                  onboarding_goal: selectedGoal,
+                  onboarding_features: features,
                   onboarding_version: ONBOARDING_VERSION,
                });
 
@@ -168,7 +168,7 @@ export function OnboardingWizard({
 
          if (result.isErr()) toast.error(result.error);
       },
-      [createWorkspace, goal, isMultiOrgCreation, navigate],
+      [createWorkspace, features, isMultiOrgCreation, navigate],
    );
 
    const handleBack = useCallback(() => {
@@ -193,34 +193,36 @@ export function OnboardingWizard({
          </header>
 
          <main className="flex flex-1 items-center justify-center overflow-y-auto p-4">
-            <div className="w-full max-w-6xl animate-in fade-in slide-in-from-bottom-2 duration-200">
-               {step === "profile" && (
-                  <ProfileStep
-                     defaultName={session.user.name ?? ""}
-                     isFirstStep={currentIndex === 0}
-                     onBack={handleBack}
-                     onNext={handleProfileComplete}
-                  />
-               )}
+            <div className="w-full max-w-6xl">
+               <RouteTransition transitionKey={step}>
+                  {step === "profile" && (
+                     <ProfileStep
+                        defaultName={session.user.name ?? ""}
+                        isFirstStep={currentIndex === 0}
+                        onBack={handleBack}
+                        onNext={handleProfileComplete}
+                     />
+                  )}
 
-               {step === "goal" && (
-                  <GoalStep
-                     goal={goal}
-                     isFirstStep={currentIndex === 0}
-                     isMultiOrgCreation={isMultiOrgCreation}
-                     navigateSearch={navigateSearch}
-                     onBack={handleBack}
-                  />
-               )}
+                  {step === "features" && (
+                     <FeaturesStep
+                        features={features}
+                        isFirstStep={currentIndex === 0}
+                        isMultiOrgCreation={isMultiOrgCreation}
+                        navigateSearch={navigateSearch}
+                        onBack={handleBack}
+                     />
+                  )}
 
-               {step === "company" && (
-                  <CompanyStep
-                     isCreating={createWorkspace.isPending}
-                     isFirstStep={currentIndex === 0}
-                     onBack={handleBack}
-                     onCreateWorkspace={handleCreateWorkspace}
-                  />
-               )}
+                  {step === "company" && (
+                     <CompanyStep
+                        isCreating={createWorkspace.isPending}
+                        isFirstStep={currentIndex === 0}
+                        onBack={handleBack}
+                        onCreateWorkspace={handleCreateWorkspace}
+                     />
+                  )}
+               </RouteTransition>
             </div>
          </main>
       </div>
@@ -361,88 +363,98 @@ function ProfileStep({
    );
 }
 
-function GoalStep({
-   goal,
+function FeaturesStep({
+   features,
    isFirstStep,
    isMultiOrgCreation,
    navigateSearch,
    onBack,
 }: {
-   goal: OnboardingGoal | null;
+   features: OnboardingFeature[];
    isFirstStep: boolean;
    isMultiOrgCreation: boolean;
    navigateSearch: NavigateSearch;
    onBack: () => void;
 }) {
+   const toggleFeature = useCallback(
+      (id: OnboardingFeature) => {
+         const next = features.includes(id)
+            ? features.filter((f) => f !== id)
+            : [...features, id];
+         void navigateSearch({ features: next });
+         posthog.capture("onboarding_features_changed", {
+            onboarding_features: next,
+            onboarding_version: ONBOARDING_VERSION,
+            is_multi_org_creation: isMultiOrgCreation,
+         });
+      },
+      [features, isMultiOrgCreation, navigateSearch],
+   );
+
    const handleSubmit = useCallback(
       (event: FormEvent) => {
          event.preventDefault();
-         if (!goal) return;
          void navigateSearch({ step: "company" });
       },
-      [goal, navigateSearch],
+      [navigateSearch],
    );
 
    return (
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
          <div className="flex flex-col gap-2 text-center">
             <h2 className="font-serif text-2xl font-semibold">
-               O que você quer fazer primeiro na Montte?
+               O que você vai usar no Montte?
             </h2>
             <p className="text-sm text-muted-foreground">
-               Vamos ajustar os primeiros passos do seu ERP com base nessa
-               escolha.
+               Escolha as áreas que fazem sentido hoje. Você pode ativar outras
+               depois.
             </p>
          </div>
 
          <div className="grid gap-4 md:grid-cols-3">
-            {GOAL_OPTIONS.map(({ id, title, description, Icon }) => (
-               <button
-                  aria-pressed={goal === id}
-                  className={cn(
-                     "flex min-h-40 items-start gap-4 rounded-md border bg-card p-4 text-left transition-colors",
-                     goal === id
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:bg-muted",
-                  )}
-                  key={id}
-                  onClick={() => {
-                     void navigateSearch({ goal: id });
-                     posthog.capture("onboarding_goal_selected", {
-                        onboarding_goal: id,
-                        onboarding_version: ONBOARDING_VERSION,
-                        is_multi_org_creation: isMultiOrgCreation,
-                     });
-                  }}
-                  type="button"
-               >
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                     <Icon className="size-5" />
-                  </div>
-                  <div className="flex flex-1 flex-col gap-2">
-                     <span className="font-medium">{title}</span>
-                     <span className="text-sm text-muted-foreground">
-                        {description}
-                     </span>
-                  </div>
-                  <div
+            {FEATURE_OPTIONS.map(({ id, title, description, Icon }) => {
+               const isSelected = features.includes(id);
+               return (
+                  <button
+                     aria-pressed={isSelected}
                      className={cn(
-                        "flex size-4 shrink-0 items-center justify-center rounded-full border",
-                        goal === id
-                           ? "border-primary bg-primary"
-                           : "border-border",
+                        "flex min-h-40 items-start gap-4 rounded-md border bg-card p-4 text-left transition-colors",
+                        isSelected
+                           ? "border-primary bg-primary/5"
+                           : "border-border hover:bg-muted",
                      )}
+                     key={id}
+                     onClick={() => toggleFeature(id)}
+                     type="button"
                   >
-                     {goal === id && (
-                        <Check className="size-2 text-primary-foreground" />
-                     )}
-                  </div>
-               </button>
-            ))}
+                     <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                        <Icon className="size-5" />
+                     </div>
+                     <div className="flex flex-1 flex-col gap-2">
+                        <span className="font-medium">{title}</span>
+                        <span className="text-sm text-muted-foreground">
+                           {description}
+                        </span>
+                     </div>
+                     <div
+                        className={cn(
+                           "flex size-4 shrink-0 items-center justify-center rounded-sm border",
+                           isSelected
+                              ? "border-primary bg-primary"
+                              : "border-border",
+                        )}
+                     >
+                        {isSelected && (
+                           <Check className="size-2 text-primary-foreground" />
+                        )}
+                     </div>
+                  </button>
+               );
+            })}
          </div>
 
          <StepFooter
-            canContinue={goal !== null}
+            canContinue
             isFirstStep={isFirstStep}
             isPending={false}
             onBack={onBack}
