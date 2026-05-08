@@ -9,7 +9,8 @@ import {
 const stamp = () => `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
 const test = base.extend<{ createdCategoryIds: string[] }>({
-   createdCategoryIds: async (_args, use) => {
+   // oxlint-ignore no-empty-pattern
+   createdCategoryIds: async ({}, use) => {
       await use([]);
    },
 });
@@ -31,6 +32,11 @@ async function rememberCreatedCategory(
    const cat = await findCategoryByName(team.id, name);
    if (!cat) return;
    createdCategoryIds.push(cat.id);
+}
+
+async function expectCategoryRowVisible(page: Page, name: string) {
+   await page.getByRole("textbox", { name: "Buscar categorias..." }).fill(name);
+   await expect(page.getByRole("row").filter({ hasText: name })).toBeVisible();
 }
 
 test.afterEach(async ({ e2eSession, createdCategoryIds }) => {
@@ -81,7 +87,7 @@ test("cria categoria do tipo Transferência", async ({
 
    await expect(page.getByText("Categoria criada com sucesso.")).toBeVisible();
    await rememberCreatedCategory(e2eSession, name, createdCategoryIds);
-   await expect(page.getByRole("cell", { name })).toBeVisible();
+   await expectCategoryRowVisible(page, name);
 });
 
 test("cria categoria vinculada a uma categoria pai", async ({
@@ -100,7 +106,7 @@ test("cria categoria vinculada a uma categoria pai", async ({
    await sheet.getByRole("button", { name: "Criar categoria" }).click();
    await expect(page.getByText("Categoria criada com sucesso.")).toBeVisible();
    await rememberCreatedCategory(e2eSession, parentName, createdCategoryIds);
-   await expect(page.getByRole("cell", { name: parentName })).toBeVisible();
+   await expectCategoryRowVisible(page, parentName);
 
    await page.getByRole("button", { name: "Nova Categoria" }).click();
    sheet = page.getByRole("dialog");
@@ -182,7 +188,7 @@ test("filtro Somente transferências lista categoria criada", async ({
    await menu.getByRole("menuitem", { name: /Somente transferências/ }).click();
    await page.mouse.click(10, 10);
 
-   await expect(page.getByRole("cell", { name })).toBeVisible();
+   await expectCategoryRowVisible(page, name);
 });
 
 test("validação: nome curto bloqueia submit", async ({ page, e2eSession }) => {
@@ -212,6 +218,6 @@ test("cancelar fecha sheet sem criar", async ({ page, e2eSession }) => {
 
    await expect(sheet).not.toBeVisible();
    await expect(
-      page.getByRole("cell", { name: "Não deve criar" }),
+      page.getByRole("row").filter({ hasText: "Não deve criar" }),
    ).not.toBeVisible();
 });
