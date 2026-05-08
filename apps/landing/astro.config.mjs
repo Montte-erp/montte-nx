@@ -19,10 +19,6 @@ export default defineConfig({
             context: "client",
             access: "public",
          }),
-         PUBLIC_POSTHOG_UI_HOST: envField.string({
-            context: "client",
-            access: "public",
-         }),
       },
    },
    integrations: [
