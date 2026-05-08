@@ -1,5 +1,5 @@
 ---
-import { Image } from "astro:assets";
+import { Picture } from "astro:assets";
 ---
 
 <header
@@ -16,7 +16,16 @@ import { Image } from "astro:assets";
          href="/"
          aria-label="Montte"
       >
-         <Image src="/favicon.svg" alt="" width={28} height={28} />
+         <Picture
+            src="/favicon.svg"
+            alt=""
+            width={28}
+            height={28}
+            formats={["svg"]}
+            fallbackFormat="svg"
+            loading="eager"
+            decoding="async"
+         />
       </a>
    </nav>
 </header>

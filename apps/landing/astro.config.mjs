@@ -1,11 +1,12 @@
-import arcjet, { detectBot, shield, validateEmail } from "@arcjet/astro";
+import arcjet, { shield } from "@arcjet/astro";
 import node from "@astrojs/node";
 import react from "@astrojs/react";
+import sitemap from "@astrojs/sitemap";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, envField } from "astro/config";
 
 export default defineConfig({
-   site: "https://montte.com.br",
+   site: "https://montte.co",
    output: "static",
    adapter: node({ mode: "standalone" }),
    env: {
@@ -24,19 +25,8 @@ export default defineConfig({
    },
    integrations: [
       react(),
-      arcjet({
-         rules: [
-            shield({ mode: "LIVE" }),
-            detectBot({
-               mode: "LIVE",
-               allow: ["CATEGORY:SEARCH_ENGINE", "CATEGORY:PREVIEW"],
-            }),
-            validateEmail({
-               mode: "LIVE",
-               deny: ["INVALID", "DISPOSABLE", "NO_MX_RECORDS"],
-            }),
-         ],
-      }),
+      sitemap(),
+      arcjet({ rules: [shield({ mode: "LIVE" })] }),
    ],
    prefetch: { defaultStrategy: "viewport" },
    vite: {

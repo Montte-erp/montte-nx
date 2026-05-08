@@ -1,7 +1,12 @@
 ---
+export const prerender = true;
 import BaseLayout from "../layouts/base-layout.astro";
-import { ArrowRight } from "@lucide/astro";
-import { Badge } from "@packages/ui/components/badge";
+import { ArrowRight, Megaphone } from "@lucide/astro";
+import {
+   Announcement,
+   AnnouncementTitle,
+   AnnouncementTag,
+} from "@packages/ui/components/announcement";
 import { Button } from "@packages/ui/components/button";
 import { AnimatedTexture } from "../components/animated-texture";
 import { Reveal } from "../components/reveal";
@@ -36,9 +41,15 @@ import FooterBlock from "../blocks/footer-block.astro";
       <div class="grid items-center gap-4 lg:grid-cols-2">
          <Reveal client:load>
             <div class="flex flex-col items-start gap-4">
-               <Badge variant="secondary" className="rounded-full px-2 py-2 text-xs">
-                  Waitlist aberta · acesso gradual
-               </Badge>
+                  <Announcement  >
+                     <AnnouncementTag>
+
+                        <Megaphone class=" text-primary" aria-hidden="true" />
+                     </AnnouncementTag>
+                  <AnnouncementTitle className="text-foreground">
+                     Waitlist aberta · acesso gradual
+                  </AnnouncementTitle>
+               </Announcement>
 
                <h1
                   class="max-w-2xl text-5xl leading-[1.05] font-black tracking-[-0.05em] text-foreground text-balance sm:text-6xl"

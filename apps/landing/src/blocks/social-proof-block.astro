@@ -1,4 +1,5 @@
 ---
+import { Picture } from "astro:assets";
 ---
 
 <section
@@ -17,7 +18,17 @@
             class="opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0"
             aria-label="Licitei"
          >
-            <img src="/logos/licitei.svg" alt="Licitei" class="h-8 w-auto" />
+            <Picture
+               src="/logos/licitei.svg"
+               alt="Licitei"
+               width={102}
+               height={22}
+               formats={["svg"]}
+               fallbackFormat="svg"
+               loading="lazy"
+               decoding="async"
+               class="h-8 w-auto"
+            />
          </a>
       </div>
    </div>

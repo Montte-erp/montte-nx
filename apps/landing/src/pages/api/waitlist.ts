@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { tokenBucket } from "arcjet";
+import { detectBot, tokenBucket, validateEmail } from "arcjet";
 import arcjet from "arcjet:client";
 import { fromPromise } from "neverthrow";
 import { PostHog } from "posthog-node";
@@ -20,8 +20,20 @@ function getPosthog() {
    return posthogClient;
 }
 
-export const POST: APIRoute = async (context) => {
-   const aj = arcjet.withRule(
+const aj = arcjet
+   .withRule(
+      detectBot({
+         mode: "LIVE",
+         allow: ["CATEGORY:SEARCH_ENGINE", "CATEGORY:PREVIEW"],
+      }),
+   )
+   .withRule(
+      validateEmail({
+         mode: "LIVE",
+         deny: ["INVALID", "DISPOSABLE", "NO_MX_RECORDS"],
+      }),
+   )
+   .withRule(
       tokenBucket({
          mode: "LIVE",
          refillRate: 5,
@@ -30,6 +42,7 @@ export const POST: APIRoute = async (context) => {
       }),
    );
 
+export const POST: APIRoute = async (context) => {
    const parsed = await fromPromise(context.request.json(), () => null);
    if (parsed.isErr()) {
       return Response.json(
