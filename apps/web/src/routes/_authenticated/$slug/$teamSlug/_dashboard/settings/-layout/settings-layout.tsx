@@ -13,6 +13,7 @@ import { Link, useMatches } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import type * as React from "react";
 import { Route } from "@/routes/_authenticated/$slug/$teamSlug/_dashboard/settings";
+import { RouteTransition } from "@/components/route-transition";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { SettingsMobileNav } from "./settings-mobile-nav";
 import { SettingsSidebar } from "./settings-sidebar";
@@ -46,7 +47,9 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
                   Configurações
                </Link>
             </Button>
-            <div className="flex-1">{children}</div>
+            <div className="flex-1">
+               <RouteTransition>{children}</RouteTransition>
+            </div>
          </div>
       );
    }
@@ -79,7 +82,9 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
             </Sidebar>
          </SidebarManager>
          <SidebarInset className="flex-1 overflow-y-auto">
-            <main className="p-4">{children}</main>
+            <main className="p-4">
+               <RouteTransition>{children}</RouteTransition>
+            </main>
          </SidebarInset>
       </SidebarProvider>
    );
