@@ -101,8 +101,7 @@ export function buildCategoryColumns(options?: {
             cellComponent: "text" as const,
             isEditable: true,
             editSchema: z.string().min(1, "Nome é obrigatório.").max(80),
-            isEditableForRow: (row: CategoryRow) =>
-               !row.isDefault && !row.isArchived,
+            isEditableForRow: (row: CategoryRow) => !row.isArchived,
             onSave: options?.onUpdate
                ? async (rowId: string, value: unknown) => {
                     await options.onUpdate!(rowId, { name: String(value) });
@@ -205,8 +204,7 @@ export function buildCategoryColumns(options?: {
             isEditable: true,
             editMode: "inline" as const,
             editOptions: parentOptions,
-            isEditableForRow: (row: CategoryRow) =>
-               !row.isDefault && !row.isArchived,
+            isEditableForRow: (row: CategoryRow) => !row.isArchived,
             onSave: onUpdate
                ? async (rowId: string, value: unknown) => {
                     const parentId = String(value);
@@ -243,7 +241,7 @@ export function buildCategoryColumns(options?: {
             ],
             editSchema: z.enum(["income", "expense", "transfer"]),
             isEditableForRow: (row: CategoryRow) =>
-               !row.isDefault && !row.isArchived && row.parentId === null,
+               !row.isArchived && row.parentId === null,
             onSave: onUpdate
                ? async (rowId: string, value: unknown) => {
                     const typeValue = String(value);

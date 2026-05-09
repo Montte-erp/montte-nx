@@ -151,20 +151,19 @@ describe("categories router", () => {
       );
    });
 
-   it("update on default category throws CONFLICT", async () => {
+   it("update allows default category", async () => {
       const { teamId } = await seedTeam(testDb.db);
       const cat = await makeCategory(testDb.db, teamId, { isDefault: true });
 
       const ctx = createTestContext(testDb.db, { teamId });
-      await expect(
-         call(
-            categoriesRouter.update,
-            { id: cat.id, name: "Novo", participatesDre: false },
-            { context: ctx },
-         ),
-      ).rejects.toSatisfy(
-         (e: Error & { code?: string }) => e.code === "CONFLICT",
+      const result = await call(
+         categoriesRouter.update,
+         { id: cat.id, name: "Novo", participatesDre: false },
+         { context: ctx },
       );
+
+      expect(result.name).toBe("Novo");
+      expect(result.isDefault).toBe(true);
    });
 
    it("update enqueues derive-keywords when keywords are not provided", async () => {
@@ -383,9 +382,12 @@ describe("categories router", () => {
       );
    });
 
-   it("bulkRemove deletes all selected non-default categories without transactions", async () => {
+   it("bulkRemove deletes selected categories including default ones without transactions", async () => {
       const { teamId } = await seedTeam(testDb.db);
-      const a = await makeCategory(testDb.db, teamId, { name: "A" });
+      const a = await makeCategory(testDb.db, teamId, {
+         name: "A",
+         isDefault: true,
+      });
       const b = await makeCategory(testDb.db, teamId, { name: "B" });
 
       const ctx = createTestContext(testDb.db, { teamId });
@@ -395,6 +397,26 @@ describe("categories router", () => {
          { context: ctx },
       );
       expect(result).toEqual({ deleted: 2 });
+
+      const rows = await testDb.db
+         .select()
+         .from(categories)
+         .where(eq(categories.teamId, teamId));
+      expect(rows).toHaveLength(0);
+   });
+
+   it("remove deletes default category without transactions", async () => {
+      const { teamId } = await seedTeam(testDb.db);
+      const cat = await makeCategory(testDb.db, teamId, { isDefault: true });
+
+      const ctx = createTestContext(testDb.db, { teamId });
+      const result = await call(
+         categoriesRouter.remove,
+         { id: cat.id },
+         { context: ctx },
+      );
+
+      expect(result).toEqual({ success: true });
 
       const rows = await testDb.db
          .select()
