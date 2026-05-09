@@ -93,7 +93,11 @@ export const create = protectedProcedure
       ) {
          await enqueueClassifyTransactionsBatchWorkflow(
             context.workflowClient,
-            { teamId: context.teamId, transactionIds: [created.value.id] },
+            {
+               organizationId: context.organizationId,
+               teamId: context.teamId,
+               transactionIds: [created.value.id],
+            },
          );
       }
 

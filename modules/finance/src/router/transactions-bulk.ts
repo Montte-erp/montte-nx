@@ -101,7 +101,11 @@ export const importStatement = protectedProcedure
          if (idsToClassify.length > 0) {
             await enqueueClassifyTransactionsBatchWorkflow(
                context.workflowClient,
-               { teamId: context.teamId, transactionIds: idsToClassify },
+               {
+                  organizationId: context.organizationId,
+                  teamId: context.teamId,
+                  transactionIds: idsToClassify,
+               },
             );
          }
       }
@@ -255,7 +259,11 @@ export const importBulk = protectedProcedure
       if (idsToClassify.length > 0) {
          await enqueueClassifyTransactionsBatchWorkflow(
             context.workflowClient,
-            { teamId: context.teamId, transactionIds: idsToClassify },
+            {
+               organizationId: context.organizationId,
+               teamId: context.teamId,
+               transactionIds: idsToClassify,
+            },
          );
       }
       return { imported, skipped: 0 };

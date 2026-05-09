@@ -1,5 +1,10 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import {
+   createFileRoute,
+   Outlet,
+   redirect,
+   useRouterState,
+} from "@tanstack/react-router";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import posthog from "posthog-js";
 import { RouteTransition } from "@/components/route-transition";
@@ -68,10 +73,13 @@ export const Route = createFileRoute(
 });
 
 function DashboardLayoutRoute() {
+   const sectionKey = useRouterState({
+      select: (s) => s.location.pathname.split("/").slice(1, 4).join("/"),
+   });
    return (
       <ChatSessionProvider>
          <DashboardLayout>
-            <RouteTransition>
+            <RouteTransition transitionKey={sectionKey}>
                <Outlet />
             </RouteTransition>
          </DashboardLayout>

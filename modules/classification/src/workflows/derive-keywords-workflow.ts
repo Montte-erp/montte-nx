@@ -9,7 +9,6 @@ import { CLASSIFICATION_QUEUES } from "@modules/classification/constants";
 import {
    classificationDataSource,
    createEnqueuer,
-   getClassificationPosthog,
    getClassificationPrompts,
    getClassificationRedis,
    registerWorkflowOnce,
@@ -71,8 +70,9 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsWorkflowInput) {
                   siblingKeywords,
                },
                {
-                  posthog: getClassificationPosthog(),
-                  distinctId: input.teamId,
+                  distinctId: input.userId ?? input.teamId,
+                  organizationId: input.organizationId,
+                  teamId: input.teamId,
                },
             );
             if (result.isErr()) throw result.error;

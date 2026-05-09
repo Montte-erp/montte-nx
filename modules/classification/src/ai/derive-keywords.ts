@@ -8,7 +8,7 @@ import { CLASSIFICATION_PROMPTS } from "@modules/classification/constants";
 import { proModel } from "@core/ai/models";
 import {
    type AiObservabilityContext,
-   createPosthogAiMiddleware,
+   createAiObservabilityMiddleware,
 } from "@core/ai/middleware";
 
 const KEYWORDS_MIN = 5;
@@ -73,7 +73,7 @@ export function deriveKeywords(
                outputSchema,
                stream: false,
                middleware: [
-                  createPosthogAiMiddleware({
+                  createAiObservabilityMiddleware({
                      ...observability,
                      promptName: name,
                      promptVersion: version,

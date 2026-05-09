@@ -1,4 +1,6 @@
+import { trace } from "@opentelemetry/api";
 import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { resourceFromAttributes } from "@opentelemetry/resources";
 import { BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
 import { NodeSDK } from "@opentelemetry/sdk-node";
@@ -17,18 +19,23 @@ let sdk: NodeSDK | null = null;
 export function initOtel(config: OtelConfig): NodeSDK {
    if (sdk) return sdk;
 
+   const host = config.posthogHost.replace(/\/$/, "");
+   const headers = { Authorization: `Bearer ${config.posthogKey}` };
+
    sdk = new NodeSDK({
       resource: resourceFromAttributes({
          "service.name": config.serviceName,
       }),
       instrumentations: [new ORPCInstrumentation()],
+      traceExporter: new OTLPTraceExporter({
+         url: `${host}/i/v0/ai/otel/v1/traces`,
+         headers,
+      }),
       logRecordProcessors: [
          new BatchLogRecordProcessor(
             new OTLPLogExporter({
-               url: `${config.posthogHost.replace(/\/$/, "")}/i/v1/logs`,
-               headers: {
-                  Authorization: `Bearer ${config.posthogKey}`,
-               },
+               url: `${host}/i/v1/logs`,
+               headers,
             }),
          ),
       ],
@@ -36,6 +43,10 @@ export function initOtel(config: OtelConfig): NodeSDK {
 
    sdk.start();
    return sdk;
+}
+
+export function getAiTracer() {
+   return trace.getTracer("montte-ai");
 }
 
 export async function shutdownOtel(): Promise<void> {

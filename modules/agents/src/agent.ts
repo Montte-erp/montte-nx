@@ -5,9 +5,9 @@ import {
    type ChatMiddleware,
    type UIMessage,
 } from "@tanstack/ai";
-import type { PostHog, Prompts } from "@core/posthog/server";
+import type { Prompts } from "@core/posthog/server";
 import { flashModel } from "@core/ai/models";
-import { createPosthogAiMiddleware } from "@core/ai/middleware";
+import { createAiObservabilityMiddleware } from "@core/ai/middleware";
 import { AGENT_PROMPTS, type PageContext } from "@modules/agents/constants";
 import { createAgentToolClient } from "@modules/agents/orpc-tool-router";
 import {
@@ -19,8 +19,9 @@ import { buildServicesTools } from "@modules/agents/tools/services";
 
 export interface AgentChatOptions {
    prompts: Prompts;
-   posthog: PostHog;
    userId: string;
+   organizationId: string;
+   teamId: string;
    headers: Headers;
    request: Request;
    threadId?: string;
@@ -67,8 +68,9 @@ async function buildAgentChatArgs(options: AgentChatOptions) {
       buildSkillDiscoverTool(options.prompts),
       buildAdvisorTool({
          prompts: options.prompts,
-         posthog: options.posthog,
          distinctId: options.userId,
+         organizationId: options.organizationId,
+         teamId: options.teamId,
          threadId: options.threadId,
          turnId,
       }),
@@ -98,12 +100,16 @@ async function buildAgentChatArgs(options: AgentChatOptions) {
          ? abortControllerFromSignal(options.abortSignal)
          : undefined,
       middleware: [
-         createPosthogAiMiddleware({
-            posthog: options.posthog,
+         createAiObservabilityMiddleware({
             distinctId: options.userId,
+            organizationId: options.organizationId,
+            teamId: options.teamId,
+            conversationId: options.threadId,
             promptName: AGENT_PROMPTS.root,
             customProperties: {
                agent_role: "executor",
+               agent_organization_id: options.organizationId,
+               agent_team_id: options.teamId,
                ...(options.threadId && { agent_thread_id: options.threadId }),
                agent_turn_id: turnId,
                ...(options.pageContext?.skillHint && {

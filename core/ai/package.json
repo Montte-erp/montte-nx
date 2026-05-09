@@ -25,11 +25,9 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@core/posthog": "workspace:*",
+      "@core/logging": "workspace:*",
       "@tanstack/ai": "catalog:tanstack-ai",
-      "@tanstack/ai-openrouter": "catalog:tanstack-ai",
-      "neverthrow": "catalog:validation",
-      "zod": "catalog:validation"
+      "@tanstack/ai-openrouter": "catalog:tanstack-ai"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",

@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const originalAppUrl = process.env.APP_URL;
 const originalNodeEnv = process.env.NODE_ENV;
 
 describe("environment helpers", () => {
@@ -9,12 +8,6 @@ describe("environment helpers", () => {
    });
 
    afterEach(() => {
-      if (originalAppUrl === undefined) {
-         delete process.env.APP_URL;
-      } else {
-         process.env.APP_URL = originalAppUrl;
-      }
-
       if (originalNodeEnv === undefined) {
          delete process.env.NODE_ENV;
       } else {
@@ -22,17 +15,7 @@ describe("environment helpers", () => {
       }
    });
 
-   it("prefers APP_URL when it is set", async () => {
-      process.env.APP_URL = "https://custom.example.com";
-      process.env.NODE_ENV = "development";
-
-      const { getDomain } = await import("../src/helpers");
-
-      expect(getDomain()).toBe("https://custom.example.com");
-   });
-
    it("falls back to the production domain in production", async () => {
-      delete process.env.APP_URL;
       process.env.NODE_ENV = "production";
 
       const { getDomain, isProduction } = await import("../src/helpers");
@@ -42,7 +25,6 @@ describe("environment helpers", () => {
    });
 
    it("falls back to localhost outside production", async () => {
-      delete process.env.APP_URL;
       process.env.NODE_ENV = "development";
 
       const { getDomain, isProduction } = await import("../src/helpers");

@@ -19,6 +19,7 @@ import { useMediaQuery } from "foxact/use-media-query";
 import { Menu } from "lucide-react";
 import type * as React from "react";
 import { useSheet } from "@/hooks/use-sheet";
+import { RouteTransition } from "@/components/route-transition";
 import { Route } from "@/routes/_authenticated/$slug/$teamSlug/_dashboard/chat";
 import { ChatSidebar } from "./chat-sidebar";
 
@@ -57,7 +58,9 @@ function ChatLayoutDesktop({ children }: ChatLayoutProps) {
             </Sidebar>
          </SidebarManager>
          <SidebarInset className="flex-1 overflow-hidden">
-            <main className="flex h-full justify-center">{children}</main>
+            <main className="flex h-full justify-center">
+               <RouteTransition>{children}</RouteTransition>
+            </main>
          </SidebarInset>
       </SidebarProvider>
    );
@@ -82,7 +85,9 @@ function ChatLayoutMobile({ children }: ChatLayoutProps) {
             <Menu className="size-4" />
             Conversas
          </Button>
-         <div className="flex-1 min-h-0">{children}</div>
+         <div className="flex-1 min-h-0">
+            <RouteTransition>{children}</RouteTransition>
+         </div>
       </div>
    );
 }
