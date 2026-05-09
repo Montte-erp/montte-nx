@@ -12,7 +12,6 @@ export const env = createEnv({
 
       POSTHOG_HOST: z.url(),
       POSTHOG_KEY: z.string().min(1),
-      POSTHOG_PUBLIC_KEY: z.string().optional(),
       POSTHOG_PROJECT_ID: z.string(),
       POSTHOG_PERSONAL_API_KEY: z.string().min(1),
 
