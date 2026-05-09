@@ -11,48 +11,37 @@ if (existsSync(ENV_FILE)) {
 }
 
 const {
-   AWS_ENDPOINT_URL,
    AWS_S3_BUCKET_NAME,
    AWS_ACCESS_KEY_ID,
    AWS_SECRET_ACCESS_KEY,
    AWS_DEFAULT_REGION = "us-east-1",
 } = process.env;
 
-if (
-   !AWS_ENDPOINT_URL ||
-   !AWS_S3_BUCKET_NAME ||
-   !AWS_ACCESS_KEY_ID ||
-   !AWS_SECRET_ACCESS_KEY
-) {
+const CORS_ENDPOINT_URL =
+   process.env.CORS_ENDPOINT_URL ?? "https://storage.railway.app";
+
+if (!AWS_S3_BUCKET_NAME || !AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY) {
    console.error(
       "Missing AWS_* env vars. Set in apps/web/.env.production or shell.",
    );
    process.exit(1);
 }
 
-const ALLOWED_ORIGINS = (
-   process.env.CORS_ALLOWED_ORIGINS ?? "https://app.montte.com.br"
-)
-   .split(",")
-   .map((o) => o.trim())
-   .filter(Boolean);
-
 const { S3Client, PutBucketCorsCommand, GetBucketCorsCommand } =
    await import("@aws-sdk/client-s3");
 
 const client = new S3Client({
-   endpoint: AWS_ENDPOINT_URL,
+   endpoint: CORS_ENDPOINT_URL,
    region: AWS_DEFAULT_REGION,
    credentials: {
       accessKeyId: AWS_ACCESS_KEY_ID,
       secretAccessKey: AWS_SECRET_ACCESS_KEY,
    },
-   forcePathStyle: false,
+   forcePathStyle: true,
 });
 
 console.log(`Bucket:    ${AWS_S3_BUCKET_NAME}`);
-console.log(`Endpoint:  ${AWS_ENDPOINT_URL}`);
-console.log(`Origins:   ${ALLOWED_ORIGINS.join(", ")}`);
+console.log(`Endpoint:  ${CORS_ENDPOINT_URL}`);
 console.log("");
 
 await client.send(
@@ -62,9 +51,8 @@ await client.send(
          CORSRules: [
             {
                AllowedHeaders: ["*"],
-               AllowedMethods: ["GET", "HEAD", "PUT", "POST"],
-               AllowedOrigins: ALLOWED_ORIGINS,
-               ExposeHeaders: ["ETag"],
+               AllowedMethods: ["*"],
+               AllowedOrigins: ["*"],
                MaxAgeSeconds: 3000,
             },
          ],

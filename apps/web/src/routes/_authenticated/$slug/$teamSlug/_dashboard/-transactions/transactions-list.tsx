@@ -409,18 +409,32 @@ export function TransactionsList() {
                   const amount = String(r.amount ?? "");
                   if (!date || !amount)
                      return Promise.reject(new Error("skip"));
+                  const bankAccountId = r.bankAccountId
+                     ? String(r.bankAccountId)
+                     : r.bankAccountName
+                       ? String(r.bankAccountName)
+                       : null;
+                  const creditCardId = r.creditCardId
+                     ? String(r.creditCardId)
+                     : r.creditCardName
+                       ? String(r.creditCardName)
+                       : null;
+                  if (!bankAccountId && !creditCardId)
+                     return Promise.reject(
+                        new Error("Selecione conta ou cartão."),
+                     );
                   return importMutation.mutateAsync({
                      type: (r.type as "income" | "expense") ?? "expense",
                      amount,
                      date,
                      name: r.name ? String(r.name) : null,
-                     bankAccountId: null,
+                     bankAccountId,
                      destinationBankAccountId: null,
                      categoryId: null,
                      attachments: [],
                      description: null,
                      contactId: null,
-                     creditCardId: null,
+                     creditCardId,
                      paymentMethod: null,
                      status: "pending",
                      dueDate: null,
@@ -434,11 +448,16 @@ export function TransactionsList() {
                   r.status === "rejected" &&
                   (r.reason as Error)?.message !== "skip",
             ).length;
-            if (ok > 0) toast.success(`${ok} lançamento(s) importado(s).`);
-            if (failed > 0) toast.error(`${failed} lançamento(s) com erro.`);
             await queryClient.invalidateQueries({
                queryKey: orpc.transactions.getAll.queryKey(),
             });
+            if (failed > 0) {
+               throw new Error(
+                  ok > 0
+                     ? `${ok} importado(s), ${failed} com erro.`
+                     : `${failed} lançamento(s) com erro. Defina conta bancária ou cartão.`,
+               );
+            }
          },
       }),
       [parseCsv, parseXlsx, parseOfx, importMutation, queryClient],

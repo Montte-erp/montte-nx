@@ -24,15 +24,27 @@ const year = dayjs().year();
                Montte
             </span>
          </a>
-         <p class="text-sm max-w-md leading-relaxed text-muted-foreground">
-            A plataforma operacional para empresas brasileiras.          </p>
+         <p class="text-sm max-w-md leading-relaxed text-foreground/80">
+            A plataforma operacional para empresas brasileiras.
+         </p>
+         <nav
+            class="flex items-center justify-center gap-4 pt-2 text-sm"
+            aria-label="Links legais"
+         >
+            <a
+               href="/privacidade"
+               class="text-foreground/80 transition-colors hover:text-foreground"
+            >
+               Política de Privacidade
+            </a>
+         </nav>
          <div class="flex items-center justify-center gap-2 pt-2">
             <a
                href="https://github.com/Montte-erp/montte-nx"
                target="_blank"
                rel="noreferrer"
                aria-label="GitHub"
-               class="text-muted-foreground transition-colors hover:text-foreground"
+               class="text-foreground/80 transition-colors hover:text-foreground"
             >
                <svg
                   viewBox="0 0 24 24"
@@ -48,7 +60,7 @@ const year = dayjs().year();
             <a
                href="mailto:suporte@montte.co"
                aria-label="E-mail"
-               class="text-muted-foreground transition-colors hover:text-foreground"
+               class="text-foreground/80 transition-colors hover:text-foreground"
             >
                <svg
                   viewBox="0 0 24 24"
@@ -65,7 +77,7 @@ const year = dayjs().year();
                </svg>
             </a>
          </div>
-      <div class="text-sm text-muted-foreground">
+      <div class="text-sm text-foreground/80">
          <span>© {year} Montte</span>
       </div>
    </div>
