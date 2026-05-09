@@ -85,6 +85,7 @@
       "@tanstack/router-plugin": "catalog:tanstack",
       "@tanstack/store": "catalog:tanstack",
       "better-auth": "catalog:auth",
+      "browser-image-compression": "^2.0.2",
       "clsx": "catalog:ui",
       "color": "catalog:ui",
       "drizzle-orm": "catalog:database",
