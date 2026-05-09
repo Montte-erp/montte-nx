@@ -1,0 +1,319 @@
+---
+export const prerender = true;
+import BaseLayout from "../layouts/base-layout.astro";
+import FooterBlock from "../blocks/footer-block.astro";
+
+const lastUpdated = "08 de maio de 2026";
+---
+
+<BaseLayout
+   title="Política de Privacidade — Montte"
+   description="Como o Montte coleta, usa e protege seus dados pessoais conforme a LGPD (Lei nº 13.709/2018)."
+>
+   <section
+      class="relative isolate min-h-screen overflow-hidden bg-background pt-32 pb-16"
+      aria-label="Política de Privacidade"
+   >
+      <div class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 sm:px-4">
+         <header class="flex flex-col gap-4">
+            <p class="text-sm text-muted-foreground">
+               Última atualização: {lastUpdated}
+            </p>
+            <h1
+               class="text-3xl leading-tight font-black text-foreground text-balance sm:text-4xl md:text-5xl"
+            >
+               Política de Privacidade
+            </h1>
+            <p
+               class="text-base leading-relaxed text-muted-foreground text-balance sm:text-lg"
+            >
+               Sua privacidade importa. Aqui está, em português claro, o que
+               coletamos, por que coletamos e como você pode controlar seus
+               dados no Montte.
+            </p>
+         </header>
+
+         <div
+            class="prose-invert flex flex-col gap-8 text-foreground/90 [&_a]:font-semibold [&_a]:text-primary [&_a]:underline-offset-4 [&_a]:hover:underline [&_h2]:font-serif [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-foreground [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-foreground [&_li]:leading-relaxed [&_p]:leading-relaxed [&_ul]:flex [&_ul]:list-disc [&_ul]:flex-col [&_ul]:gap-2 [&_ul]:pl-6"
+         >
+            <section class="flex flex-col gap-4">
+               <h2>1. Quem somos</h2>
+               <p>
+                  O Montte é uma plataforma operacional para empresas
+                  brasileiras: financeiro, contatos, serviços, cobranças e IA
+                  nativa. Operamos sob legislação brasileira e nos submetemos à
+                  Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018 —
+                  LGPD).
+               </p>
+            </section>
+
+            <section class="flex flex-col gap-4">
+               <h2>2. Quais dados coletamos</h2>
+
+               <h3>Dados que você fornece</h3>
+               <ul>
+                  <li>
+                     E-mail, ao entrar na lista de espera (waitlist)
+                  </li>
+                  <li>
+                     Nome, CNPJ, telefone e dados da empresa, ao se cadastrar no
+                     produto
+                  </li>
+                  <li>
+                     Mensagens enviadas via formulários de contato ou suporte
+                  </li>
+               </ul>
+
+               <h3>Dados coletados automaticamente</h3>
+               <p>
+                  Quando você navega pelo site ou usa o produto, podemos
+                  registrar:
+               </p>
+               <ul>
+                  <li>
+                     Páginas visitadas, eventos de clique e tempo na página
+                  </li>
+                  <li>
+                     Tipo de navegador, sistema operacional, idioma e resolução
+                     de tela
+                  </li>
+                  <li>
+                     Endereço IP aproximado e país de origem (não armazenamos IP
+                     completo)
+                  </li>
+                  <li>
+                     Gravações de sessão (replay) que mostram interações com o
+                     site — campos sensíveis (senhas, dados financeiros) são
+                     mascarados automaticamente
+                  </li>
+                  <li>Erros e exceções de JavaScript, para diagnóstico</li>
+               </ul>
+               <p>
+                  Esses dados só são coletados se você consentir através do
+                  banner de cookies. Se recusar, paramos de capturar
+                  imediatamente.
+               </p>
+            </section>
+
+            <section class="flex flex-col gap-4">
+               <h2>3. Por que coletamos</h2>
+               <ul>
+                  <li>
+                     <strong>Operar o produto.</strong> Sem dados de cadastro,
+                     não conseguimos entregar o serviço.
+                  </li>
+                  <li>
+                     <strong>Melhorar a experiência.</strong> Entender quais
+                     fluxos travam usuários nos guia em onde investir.
+                  </li>
+                  <li>
+                     <strong>Suporte.</strong> Diagnosticar problemas
+                     reportados.
+                  </li>
+                  <li>
+                     <strong>Comunicação.</strong> Avisar sobre o lançamento e
+                     novos lotes da waitlist.
+                  </li>
+                  <li>
+                     <strong>Obrigação legal.</strong> Cumprir com Receita
+                     Federal, ANPD e demais autoridades quando aplicável.
+                  </li>
+               </ul>
+            </section>
+
+            <section class="flex flex-col gap-4">
+               <h2>4. Base legal (LGPD)</h2>
+               <p>
+                  Tratamos seus dados com base em uma das seguintes hipóteses do
+                  Art. 7º da LGPD, conforme o caso:
+               </p>
+               <ul>
+                  <li>
+                     <strong>Consentimento</strong> — para analytics, gravação
+                     de sessão e marketing
+                  </li>
+                  <li>
+                     <strong>Execução de contrato</strong> — para entregar o
+                     produto que você contratou
+                  </li>
+                  <li>
+                     <strong>Cumprimento de obrigação legal</strong> — para
+                     atender exigências fiscais e regulatórias
+                  </li>
+                  <li>
+                     <strong>Legítimo interesse</strong> — para prevenir fraude
+                     e abuso (rate limiting, detecção de bots)
+                  </li>
+               </ul>
+            </section>
+
+            <section class="flex flex-col gap-4">
+               <h2>5. Com quem compartilhamos</h2>
+               <p>
+                  Não vendemos seus dados. Compartilhamos com prestadores
+                  estritamente necessários, todos sob contrato de tratamento:
+               </p>
+               <ul>
+                  <li>
+                     <strong>PostHog</strong> — analytics de produto, gravação
+                     de sessão e mapas de calor (operador)
+                  </li>
+                  <li>
+                     <strong>Arcjet</strong> — proteção contra bots e abuso de
+                     formulários
+                  </li>
+                  <li>
+                     <strong>Resend</strong> — envio de e-mails transacionais
+                  </li>
+                  <li>
+                     <strong>Railway</strong> — hospedagem da infraestrutura
+                  </li>
+                  <li>
+                     <strong>Autoridades públicas</strong> — somente quando
+                     obrigatório por lei ou ordem judicial
+                  </li>
+               </ul>
+            </section>
+
+            <section class="flex flex-col gap-4">
+               <h2>6. Cookies e tecnologias similares</h2>
+               <p>Usamos dois tipos:</p>
+               <ul>
+                  <li>
+                     <strong>Essenciais</strong> — autenticação, preferência de
+                     consentimento. Não dá pra desligar; o site não funciona sem
+                     eles.
+                  </li>
+                  <li>
+                     <strong>Analytics</strong> — PostHog. Só ativam após você
+                     clicar em "Aceitar" no banner.
+                  </li>
+               </ul>
+               <p>
+                  Você pode revogar o consentimento a qualquer momento limpando
+                  o cookie <code>montte:cookie-consent</code> do seu navegador,
+                  que faz o banner reaparecer.
+               </p>
+            </section>
+
+            <section class="flex flex-col gap-4">
+               <h2>7. Retenção</h2>
+               <ul>
+                  <li>
+                     <strong>Dados de cadastro</strong> — enquanto sua conta
+                     existir, mais 5 anos para fins fiscais
+                  </li>
+                  <li>
+                     <strong>Eventos de analytics</strong> — 12 meses
+                  </li>
+                  <li>
+                     <strong>Gravações de sessão</strong> — 30 dias
+                  </li>
+                  <li>
+                     <strong>Logs de erro</strong> — 90 dias
+                  </li>
+                  <li>
+                     <strong>Backups</strong> — sobrescritos em até 90 dias
+                  </li>
+               </ul>
+            </section>
+
+            <section class="flex flex-col gap-4">
+               <h2>8. Seus direitos</h2>
+               <p>
+                  Como titular dos dados, a LGPD garante (Art. 18) que você
+                  pode, a qualquer momento:
+               </p>
+               <ul>
+                  <li>Confirmar se tratamos seus dados</li>
+                  <li>Acessar os dados que temos sobre você</li>
+                  <li>Corrigir dados incompletos ou desatualizados</li>
+                  <li>
+                     Solicitar anonimização, bloqueio ou eliminação de dados
+                     desnecessários
+                  </li>
+                  <li>
+                     Pedir portabilidade dos dados para outro fornecedor
+                  </li>
+                  <li>Eliminar dados tratados com seu consentimento</li>
+                  <li>Saber com quem compartilhamos seus dados</li>
+                  <li>Revogar o consentimento a qualquer momento</li>
+                  <li>Opor-se a tratamento que viole a LGPD</li>
+               </ul>
+               <p>
+                  Pra exercer qualquer um, manda e-mail pro encarregado (DPO)
+                  abaixo. Respondemos em até 15 dias.
+               </p>
+            </section>
+
+            <section class="flex flex-col gap-4">
+               <h2>9. Segurança</h2>
+               <p>
+                  Adotamos medidas técnicas e organizacionais proporcionais ao
+                  risco: TLS em todas as conexões, criptografia em repouso,
+                  controle de acesso por papel, logs de auditoria, backup
+                  criptografado e revisão periódica de fornecedores. Nenhum
+                  sistema é 100% seguro — em caso de incidente que afete dados
+                  pessoais, comunicaremos a ANPD e os titulares afetados
+                  conforme Art. 48 da LGPD.
+               </p>
+            </section>
+
+            <section class="flex flex-col gap-4">
+               <h2>10. Transferência internacional</h2>
+               <p>
+                  Alguns operadores (PostHog, Resend, Railway) processam dados
+                  fora do Brasil, em países que oferecem grau de proteção
+                  adequado ou sob cláusulas contratuais padrão. Você consente
+                  com essa transferência ao usar o serviço.
+               </p>
+            </section>
+
+            <section class="flex flex-col gap-4">
+               <h2>11. Crianças e adolescentes</h2>
+               <p>
+                  O Montte é destinado a empresas. Não coletamos
+                  intencionalmente dados de menores de 18 anos. Se identificar
+                  que isso aconteceu, removeremos os dados imediatamente.
+               </p>
+            </section>
+
+            <section class="flex flex-col gap-4">
+               <h2>12. Mudanças nesta política</h2>
+               <p>
+                  Podemos atualizar esta política para refletir mudanças legais
+                  ou de produto. Quando a alteração for material, avisamos por
+                  e-mail e mostramos a versão antiga acessível. A data acima
+                  indica a versão vigente.
+               </p>
+            </section>
+
+            <section class="flex flex-col gap-4">
+               <h2>13. Encarregado (DPO) e contato</h2>
+               <p>
+                  Pra dúvidas, exercer direitos ou reportar incidente:
+               </p>
+               <ul>
+                  <li>
+                     <strong>E-mail:</strong>{" "}
+                     <a href="mailto:privacidade@montte.co"
+                        >privacidade@montte.co</a
+                     >
+                  </li>
+                  <li>
+                     <strong>ANPD</strong> — você também pode reclamar
+                     diretamente à Autoridade Nacional de Proteção de Dados em{" "}
+                     <a
+                        href="https://www.gov.br/anpd"
+                        target="_blank"
+                        rel="noreferrer">gov.br/anpd</a
+                     >
+                  </li>
+               </ul>
+            </section>
+         </div>
+      </div>
+   </section>
+
+   <FooterBlock />
+</BaseLayout>

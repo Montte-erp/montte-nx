@@ -2,6 +2,7 @@
 import "@tooling/css/globals.css";
 
 import PostHog from "../components/posthog.astro";
+import { CookieConsent } from "../components/cookie-consent";
 import NavbarBlock from "../blocks/navbar-block.astro";
 
 interface Props {
@@ -59,5 +60,6 @@ const jsonLd = JSON.stringify({
       <main class="relative">
          <slot />
       </main>
+      <CookieConsent client:load />
    </body>
 </html>

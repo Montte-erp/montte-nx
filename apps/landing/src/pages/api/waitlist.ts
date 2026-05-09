@@ -1,11 +1,13 @@
 import type { APIRoute } from "astro";
 import { detectBot, tokenBucket, validateEmail } from "arcjet";
 import arcjet from "arcjet:client";
-import { POSTHOG_HOST, POSTHOG_KEY } from "astro:env/client";
 import { fromPromise } from "neverthrow";
 import { PostHog } from "posthog-node";
 
 export const prerender = false;
+
+const POSTHOG_KEY = process.env.POSTHOG_KEY ?? "";
+const POSTHOG_HOST = process.env.POSTHOG_HOST ?? "";
 
 let posthogClient: PostHog | null = null;
 function getPosthog() {

@@ -1,60 +1,15 @@
 ---
-import { Picture } from "astro:assets";
-
-const logos = [
-   {
-      href: "https://licitei.com.br",
-      label: "Licitei",
-      src: "/logos/licitei.svg",
-      width: 102,
-      height: 22,
-      formats: ["svg"],
-      fallbackFormat: "svg",
-   },
-   {
-      href: "https://www.somahub.net.br/",
-      label: "Soma Hub",
-      src: "/logos/somahub.webp",
-      width: 167,
-      height: 40,
-      formats: ["webp"],
-      fallbackFormat: "webp",
-   },
-];
+import { SocialProofMarquee } from "../components/social-proof-marquee";
 ---
 
 <section
-   class="flex min-h-[50vh] flex-col justify-center bg-transparent sm:min-h-[15vh]"
+   class="flex min-h-[20vh] flex-col justify-center bg-transparent sm:min-h-[15vh]"
    aria-label="Cliente"
 >
    <div class="mx-auto flex w-full max-w-7xl flex-col items-center gap-8 px-2 sm:px-4">
       <p class="text-center text-sm text-muted-foreground/70">
          Em pilotos com empresas brasileiras de verdade
       </p>
-      <div class="grid w-full grid-cols-1 items-center gap-4 sm:grid-cols-2">
-         {
-            logos.map((logo) => (
-               <a
-                  href={logo.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  class="flex justify-center opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0"
-                  aria-label={logo.label}
-               >
-                  <Picture
-                     src={logo.src}
-                     alt={logo.label}
-                     width={logo.width}
-                     height={logo.height}
-                     formats={logo.formats}
-                     fallbackFormat={logo.fallbackFormat}
-                     loading="lazy"
-                     decoding="async"
-                     class="h-8 w-auto"
-                  />
-               </a>
-            ))
-         }
-      </div>
+      <SocialProofMarquee client:visible />
    </div>
 </section>

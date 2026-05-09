@@ -16,7 +16,7 @@ import { z } from "zod";
 const STORAGE_KEY = "montte:waitlist:email";
 
 const waitlistSchema = z.object({
-   email: z.email("E-mail inválido.").min(1, "E-mail obrigatório."),
+   email: z.email("E-mail inválido."),
 });
 
 const errorMessages: Record<string, string> = {
