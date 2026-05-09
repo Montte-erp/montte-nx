@@ -1,6 +1,6 @@
 import { fromPromise } from "neverthrow";
-import { useState, useTransition } from "react";
-import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
+import { useCallback, useState, useTransition } from "react";
+import { Download, FileDown, FileSpreadsheet, Loader2 } from "lucide-react";
 import {
    Popover,
    PopoverContent,
@@ -14,6 +14,7 @@ import {
 import { Button } from "@packages/ui/components/button";
 import { toast } from "sonner";
 import { useDataTable } from "./data-table-root";
+import { useFileDownload } from "@/hooks/use-file-download";
 
 export type RawImportData = {
    headers: string[];
@@ -28,6 +29,12 @@ export interface DataTableImportConfig {
       index: number,
    ) => Record<string, unknown>;
    onImport: (rows: Record<string, unknown>[]) => Promise<void>;
+   template?: {
+      filename: string;
+      label?: string;
+      description?: string;
+      createBlob: () => Blob;
+   };
 }
 
 const DEFAULT_ACCEPT = {
@@ -70,6 +77,7 @@ export function DataTableImportButton({
    importConfig: DataTableImportConfig;
 }) {
    const { table, store } = useDataTable();
+   const { download } = useFileDownload();
 
    const importableColumns = table
       .getAllColumns()
@@ -91,6 +99,12 @@ export function DataTableImportButton({
    const [open, setOpen] = useState(false);
    const [isParsing, startParsing] = useTransition();
    const [selectedFile, setSelectedFile] = useState<File>();
+
+   const handleDownloadTemplate = useCallback(() => {
+      const template = importConfig.template;
+      if (!template) return;
+      download(template.createBlob(), template.filename);
+   }, [download, importConfig.template]);
 
    function handleDrop([file]: File[]) {
       if (!file) return;
@@ -157,6 +171,25 @@ export function DataTableImportButton({
                   Selecione um arquivo para começar
                </p>
             </div>
+            {importConfig.template && (
+               <Button
+                  className="justify-start h-auto"
+                  onClick={handleDownloadTemplate}
+                  type="button"
+                  variant="outline"
+               >
+                  <FileDown data-icon="inline-start" />
+                  <span className="flex flex-col items-start gap-2 text-left">
+                     <span className="text-sm font-medium">
+                        {importConfig.template.label ?? "Baixar modelo"}
+                     </span>
+                     <span className="text-xs text-muted-foreground">
+                        {importConfig.template.description ??
+                           "Use o arquivo modelo para conferir as colunas esperadas."}
+                     </span>
+                  </span>
+               </Button>
+            )}
             <Dropzone
                accept={importConfig.accept ?? DEFAULT_ACCEPT}
                disabled={isParsing}
