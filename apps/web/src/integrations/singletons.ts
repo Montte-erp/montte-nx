@@ -1,10 +1,5 @@
-import dns from "node:dns";
 import { env } from "@core/environment/web";
 import { createDb } from "@core/database/client";
-
-if (process.env.NODE_ENV === "development") {
-   dns.setDefaultResultOrder("ipv4first");
-}
 import { createRedis } from "@core/redis/connection";
 import { createPostHog, createPromptsClient } from "@core/posthog/server";
 import { createS3Client } from "@core/files/client";
@@ -25,9 +20,10 @@ export const posthogPrompts = createPromptsClient({
    host: env.POSTHOG_HOST,
 });
 export const s3Client = createS3Client({
-   endpoint: env.MINIO_ENDPOINT,
-   accessKey: env.MINIO_ACCESS_KEY,
-   secretKey: env.MINIO_SECRET_KEY,
+   endpointUrl: env.AWS_ENDPOINT_URL,
+   accessKeyId: env.AWS_ACCESS_KEY_ID,
+   secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+   region: env.AWS_DEFAULT_REGION,
 });
 export const resendClient = createResendClient(env.RESEND_API_KEY);
 export const auth = createAuth({

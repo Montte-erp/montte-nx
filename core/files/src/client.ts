@@ -33,20 +33,19 @@ export function parseEndpoint(endpoint: string): ParsedEndpoint {
 }
 
 export function createS3Client(opts: {
-   endpoint: string;
-   accessKey: string;
-   secretKey: string;
+   endpointUrl: string;
+   accessKeyId: string;
+   secretAccessKey: string;
    region?: string;
-   forcePathStyle?: boolean;
 }): S3Client {
-   const { host, useSSL } = parseEndpoint(opts.endpoint);
+   const { host, useSSL } = parseEndpoint(opts.endpointUrl);
    return custom({
       host,
-      accessKeyId: opts.accessKey,
-      secretAccessKey: opts.secretKey,
+      accessKeyId: opts.accessKeyId,
+      secretAccessKey: opts.secretAccessKey,
       region: opts.region ?? "us-east-1",
       secure: useSSL,
-      forcePathStyle: opts.forcePathStyle ?? false,
+      forcePathStyle: false,
    });
 }
 

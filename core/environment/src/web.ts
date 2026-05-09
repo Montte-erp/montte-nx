@@ -18,10 +18,11 @@ export const env = createEnv({
 
       RESEND_API_KEY: z.string(),
 
-      MINIO_ENDPOINT: z.string().min(1),
-      MINIO_ACCESS_KEY: z.string().min(1),
-      MINIO_SECRET_KEY: z.string().min(1),
-      MINIO_BUCKET: z.string().min(1).default("montte"),
+      AWS_ENDPOINT_URL: z.string().min(1),
+      AWS_S3_BUCKET_NAME: z.string().min(1).default("montte"),
+      AWS_DEFAULT_REGION: z.string().min(1).default("us-east-1"),
+      AWS_ACCESS_KEY_ID: z.string().min(1),
+      AWS_SECRET_ACCESS_KEY: z.string().min(1),
 
       OPENROUTER_API_KEY: z.string().optional(),
       TAVILY_API_KEYS: z.string().optional(),

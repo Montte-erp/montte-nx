@@ -12,7 +12,6 @@ services:
          MINIO_ROOT_USER: minioadmin
          MINIO_ROOT_PASSWORD: minioadmin123
          MINIO_DEFAULT_BUCKETS: montte-documents
-         MINIO_DOMAIN: localhost
       volumes:
          - miniodata:/data
       ports:
