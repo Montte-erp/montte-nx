@@ -114,39 +114,8 @@ function TagsList() {
    const navigate = Route.useNavigate();
    const { search, includeArchived, page, pageSize } = Route.useSearch();
    const [isDraftActive, setIsDraftActive] = useState(false);
-   const { parse: parseCsv } = useCsvFile();
+   const { generate: generateCsv, parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
-
-   const importConfig: DataTableImportConfig = useMemo(
-      () => ({
-         accept: {
-            "text/csv": [".csv"],
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-               [".xlsx"],
-            "application/vnd.ms-excel": [".xls"],
-         },
-         parseFile: async (file: File) => {
-            const ext = file.name.split(".").pop()?.toLowerCase();
-            if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
-            return parseCsv(file);
-         },
-         mapRow: (row, i) => ({
-            id: `__import_${i}`,
-            name: row.name ?? "",
-            description: row.description?.trim() || null,
-            isArchived: false,
-            isDefault: false,
-         }),
-         onImport: async (rows) => {
-            const items = rows.map((r) => ({
-               name: String(r.name ?? ""),
-               description: r.description ? String(r.description).trim() : null,
-            }));
-            await bulkCreateMutation.mutateAsync({ items });
-         },
-      }),
-      [parseCsv, parseXlsx],
-   );
 
    const { data: result } = useSuspenseQuery(
       orpc.tags.getAll.queryOptions({
@@ -223,6 +192,57 @@ function TagsList() {
          onError: (e) =>
             toast.error(e.message || "Erro ao atualizar centro de custo."),
       }),
+   );
+
+   const importConfig: DataTableImportConfig = useMemo(
+      () => ({
+         accept: {
+            "text/csv": [".csv"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+               [".xlsx"],
+            "application/vnd.ms-excel": [".xls"],
+         },
+         parseFile: async (file: File) => {
+            const ext = file.name.split(".").pop()?.toLowerCase();
+            if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
+            return parseCsv(file);
+         },
+         mapRow: (row, i) => ({
+            id: `__import_${i}`,
+            name: row.name ?? "",
+            description: row.description?.trim() || null,
+            isArchived: false,
+            isDefault: false,
+         }),
+         template: {
+            filename: "modelo-centros-de-custo.csv",
+            label: "Baixar modelo CSV",
+            description:
+               "Inclui as colunas Nome e Descrição com exemplos de preenchimento.",
+            createBlob: () =>
+               generateCsv(
+                  [
+                     {
+                        Nome: "Marketing",
+                        Descrição: "Campanhas, mídia paga e eventos",
+                     },
+                     {
+                        Nome: "Operações",
+                        Descrição: "Custos recorrentes da operação",
+                     },
+                  ],
+                  ["Nome", "Descrição"],
+               ),
+         },
+         onImport: async (rows) => {
+            const items = rows.map((r) => ({
+               name: String(r.name ?? ""),
+               description: r.description ? String(r.description).trim() : null,
+            }));
+            await bulkCreateMutation.mutateAsync({ items });
+         },
+      }),
+      [bulkCreateMutation, generateCsv, parseCsv, parseXlsx],
    );
 
    const handleCreate = useCallback(() => {
