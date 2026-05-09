@@ -60,7 +60,7 @@ if (!fs.existsSync(envLocalPath)) {
    console.log(colors.yellow("  Fill in your values in apps/web/.env.local:"));
    console.log(colors.yellow("    - DATABASE_URL"));
    console.log(colors.yellow("    - REDIS_URL"));
-   console.log(colors.yellow("    - MINIO_* credentials"));
+   console.log(colors.yellow("    - AWS_* (S3) credentials"));
    console.log(colors.yellow("    - Any other required secrets"));
    console.log("");
    console.log(

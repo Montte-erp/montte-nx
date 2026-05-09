@@ -45,9 +45,10 @@ const auth = createAuth({
 });
 const workflowClient = createWorkflowClient(env.DATABASE_URL);
 const s3Client = createS3Client({
-   endpoint: env.MINIO_ENDPOINT,
-   accessKey: env.MINIO_ACCESS_KEY,
-   secretKey: env.MINIO_SECRET_KEY,
+   endpointUrl: env.AWS_ENDPOINT_URL,
+   accessKeyId: env.AWS_ACCESS_KEY_ID,
+   secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+   region: env.AWS_DEFAULT_REGION,
 });
 
 const otelLogger = logs.getLogger("montte-web-orpc");

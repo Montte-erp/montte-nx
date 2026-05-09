@@ -1,17 +1,14 @@
 import type { APIRoute } from "astro";
 import { detectBot, tokenBucket, validateEmail } from "arcjet";
 import arcjet from "arcjet:client";
+import { POSTHOG_HOST, POSTHOG_KEY } from "astro:env/client";
 import { fromPromise } from "neverthrow";
 import { PostHog } from "posthog-node";
 
 export const prerender = false;
 
-const POSTHOG_HOST = process.env.PUBLIC_POSTHOG_HOST;
-const POSTHOG_KEY = process.env.PUBLIC_POSTHOG_KEY;
-
 let posthogClient: PostHog | null = null;
 function getPosthog() {
-   if (!POSTHOG_KEY || !POSTHOG_HOST) return null;
    if (!posthogClient) {
       posthogClient = new PostHog(POSTHOG_KEY, {
          host: POSTHOG_HOST,
@@ -77,18 +74,16 @@ export const POST: APIRoute = async (context) => {
    }
 
    const posthog = getPosthog();
-   if (posthog) {
-      posthog.identify({
-         distinctId,
-         properties: { email, waitlist_source: "landing" },
-      });
-      posthog.capture({
-         distinctId,
-         event: "waitlist",
-         properties: { email, source: "landing" },
-      });
-      await posthog.flush().catch(() => {});
-   }
+   posthog.identify({
+      distinctId,
+      properties: { email, waitlist_source: "landing" },
+   });
+   posthog.capture({
+      distinctId,
+      event: "waitlist",
+      properties: { email, source: "landing" },
+   });
+   await posthog.flush().catch(() => {});
 
    return Response.json({ ok: true });
 };

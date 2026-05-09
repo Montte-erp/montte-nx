@@ -11,11 +11,11 @@ export default defineConfig({
    adapter: node({ mode: "standalone" }),
    env: {
       schema: {
-         PUBLIC_POSTHOG_KEY: envField.string({
+         POSTHOG_KEY: envField.string({
             context: "client",
             access: "public",
          }),
-         PUBLIC_POSTHOG_HOST: envField.string({
+         POSTHOG_HOST: envField.string({
             context: "client",
             access: "public",
          }),
