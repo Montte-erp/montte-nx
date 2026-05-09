@@ -5,23 +5,20 @@
 
 name: montte_web
 services:
-   minio:
-      image: docker.io/minio/minio:latest
-      command: server /data --console-address ":9001"
+   rustfs:
+      image: docker.io/rustfs/rustfs:latest
       environment:
-         MINIO_ROOT_USER: minioadmin
-         MINIO_ROOT_PASSWORD: minioadmin123
-         MINIO_DEFAULT_BUCKETS: montte-documents
+         RUSTFS_ACCESS_KEY: rustfsadmin
+         RUSTFS_SECRET_KEY: rustfsadmin123
+         RUSTFS_VOLUMES: /data
+         RUSTFS_ADDRESS: ":9000"
+         RUSTFS_CONSOLE_ENABLE: "true"
+         RUSTFS_CONSOLE_ADDRESS: ":9001"
       volumes:
-         - miniodata:/data
+         - rustfsdata:/data
       ports:
          - "9000:9000" # S3 API
          - "9001:9001" # Web Console
-      healthcheck:
-         test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-         interval: 30s
-         timeout: 20s
-         retries: 3
 
    montte-db:
       image: docker.io/library/postgres:17
@@ -55,5 +52,5 @@ services:
 
 volumes:
    montte_pgdata:
-   miniodata:
+   rustfsdata:
    redis_data:

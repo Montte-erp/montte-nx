@@ -18,7 +18,9 @@ export default defineConfig({
          POSTHOG_PERSONAL_API_KEY: "phx_test_personal_key",
          RESEND_API_KEY: "re_test_dummy",
          HYPRPAY_API_KEY: "hyprpay_test",
-         MINIO_ENDPOINT: "localhost:9000",
+         AWS_ENDPOINT_URL: "http://localhost:9000",
+         AWS_ACCESS_KEY_ID: "test",
+         AWS_SECRET_ACCESS_KEY: "test",
       },
    },
 });
