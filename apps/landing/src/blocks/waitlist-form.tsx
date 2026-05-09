@@ -1,5 +1,6 @@
 import type { FormEvent } from "react";
 import { useForm } from "@tanstack/react-form";
+import { useLocalStorage } from "foxact/use-local-storage";
 import { motion, AnimatePresence } from "motion/react";
 import { fromPromise } from "neverthrow";
 import { Button } from "@packages/ui/components/button";
@@ -11,6 +12,8 @@ import {
 } from "@packages/ui/components/input-group";
 import { ArrowRight, Check } from "lucide-react";
 import { z } from "zod";
+
+const STORAGE_KEY = "montte:waitlist:email";
 
 const waitlistSchema = z.object({
    email: z.email("E-mail inválido.").min(1, "E-mail obrigatório."),
@@ -25,6 +28,11 @@ const errorMessages: Record<string, string> = {
 };
 
 export function WaitlistForm() {
+   const [storedEmail, setStoredEmail] = useLocalStorage<string | null>(
+      STORAGE_KEY,
+      null,
+   );
+
    const form = useForm({
       defaultValues: { email: "" },
       validators: { onSubmit: waitlistSchema },
@@ -69,13 +77,17 @@ export function WaitlistForm() {
             });
             ph.capture("waitlist", { email: trimmed, source: "landing" });
          }
+
+         setStoredEmail(trimmed);
       },
    });
+
+   const alreadyJoined = storedEmail !== null;
 
    return (
       <div className="flex w-full flex-col gap-8">
          <AnimatePresence mode="wait" initial={false}>
-            {form.state.isSubmitSuccessful ? (
+            {alreadyJoined ? (
                <motion.div
                   key="success"
                   initial={{ opacity: 0, y: 8 }}
@@ -88,9 +100,15 @@ export function WaitlistForm() {
                      className="size-4 shrink-0 text-primary"
                      aria-hidden="true"
                   />
-                  <p className="text-sm text-foreground">
-                     Pronto. Você está na lista para os próximos convites.
-                  </p>
+                  <div className="flex flex-col gap-1">
+                     <p className="text-sm font-medium text-foreground">
+                        Você já está na lista.
+                     </p>
+                     <p className="text-xs text-muted-foreground">
+                        Avisaremos {storedEmail} quando os próximos convites
+                        saírem.
+                     </p>
+                  </div>
                </motion.div>
             ) : (
                <motion.form
@@ -121,6 +139,7 @@ export function WaitlistForm() {
                                     placeholder="seu@email.com.br"
                                     aria-label="Seu e-mail"
                                     aria-invalid={isInvalid}
+                                    disabled={form.state.isSubmitting}
                                     value={field.state.value}
                                     onInput={(e: FormEvent<HTMLInputElement>) =>
                                        field.handleChange(e.currentTarget.value)

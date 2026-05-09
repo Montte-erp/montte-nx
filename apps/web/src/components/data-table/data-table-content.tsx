@@ -942,7 +942,7 @@ function ImportSectionInner() {
          }
          const result = await fromPromise(
             onSave(toImport),
-            () => "Erro ao importar dados.",
+            (e) => (e as Error)?.message || "Erro ao importar dados.",
          );
          result.match(
             () => {
