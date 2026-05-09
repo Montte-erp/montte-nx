@@ -19,7 +19,6 @@ export default mergeConfig(
             STRIPE_WEBHOOK_SECRET: "whsec_test_xxx",
             POSTHOG_HOST: "https://us.i.posthog.com",
             POSTHOG_KEY: "phc_test",
-            POSTHOG_PROJECT_ID: "12345",
             RESEND_API_KEY: "re_test_xxx",
             AWS_ENDPOINT_URL: "http://localhost:9000",
             AWS_ACCESS_KEY_ID: "test",

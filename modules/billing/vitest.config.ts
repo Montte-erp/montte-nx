@@ -12,7 +12,6 @@ export default defineConfig({
          REDIS_URL: "redis://localhost:6379",
          POSTHOG_HOST: "https://us.i.posthog.com",
          POSTHOG_KEY: "phc_test",
-         POSTHOG_PROJECT_ID: "1",
          POSTHOG_PERSONAL_API_KEY: "phx_test",
          STRIPE_SECRET_KEY: "sk_test_xxx",
          STRIPE_WEBHOOK_SECRET: "whsec_test",

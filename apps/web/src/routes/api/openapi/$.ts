@@ -32,7 +32,7 @@ const handler = new OpenAPIHandler(router, {
          specPath: "/spec.json",
          specGenerateOptions: {
             info: { title: "Montte API", version: "1.0.0" },
-            servers: [{ url: env.APP_URL ?? env.BETTER_AUTH_URL }],
+            servers: [{ url: env.BETTER_AUTH_URL }],
             components: {
                securitySchemes: {
                   apiKey: { type: "apiKey", in: "header", name: "x-api-key" },

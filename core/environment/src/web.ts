@@ -12,7 +12,6 @@ export const env = createEnv({
 
       POSTHOG_HOST: z.url(),
       POSTHOG_KEY: z.string().min(1),
-      POSTHOG_PROJECT_ID: z.string(),
       POSTHOG_PERSONAL_API_KEY: z.string().min(1),
 
       RESEND_API_KEY: z.string(),
@@ -24,29 +23,15 @@ export const env = createEnv({
       AWS_SECRET_ACCESS_KEY: z.string().min(1),
 
       OPENROUTER_API_KEY: z.string().optional(),
-      TAVILY_API_KEYS: z.string().optional(),
-      EXA_API_KEYS: z.string().optional(),
-      FIRECRAWL_API_KEYS: z.string().optional(),
 
       NODE_ENV: z
          .enum(["development", "production", "test"])
          .optional()
          .default("development"),
-      APP_URL: z.url().optional(),
-      SERVER_URL: z.url().optional(),
-      SDK_SERVER_URL: z.url().optional().default("http://localhost:9877"),
       LOG_LEVEL: z
          .enum(["trace", "debug", "info", "warn", "error", "fatal"])
          .optional()
          .default("info"),
-
-      WORKER_CONCURRENCY: z.coerce.number().optional().default(5),
-
-      DISCORD_FEEDBACK_WEBHOOK_URL: z.url().optional(),
-
-      GITHUB_FEEDBACK_TOKEN: z.string().optional(),
-      GITHUB_FEEDBACK_OWNER: z.string().optional(),
-      GITHUB_FEEDBACK_REPO: z.string().optional(),
    },
    runtimeEnv: process.env,
 });
