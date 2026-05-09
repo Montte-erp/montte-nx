@@ -2,7 +2,11 @@ import type { FormEvent } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useLocalStorage } from "foxact/use-local-storage";
 import { motion, AnimatePresence } from "motion/react";
-import { fromPromise } from "neverthrow";
+import {
+   Alert,
+   AlertDescription,
+   AlertTitle,
+} from "@packages/ui/components/alert";
 import { Button } from "@packages/ui/components/button";
 import { Field, FieldError } from "@packages/ui/components/field";
 import {
@@ -19,14 +23,6 @@ const waitlistSchema = z.object({
    email: z.email("E-mail inválido."),
 });
 
-const errorMessages: Record<string, string> = {
-   rate_limited: "Muitas tentativas. Espera um pouco.",
-   email_rejected: "E-mail descartável ou inválido — usa um e-mail real.",
-   bot: "Detectamos atividade suspeita.",
-   blocked: "Não conseguimos processar agora.",
-   network: "Falha de rede. Tenta de novo.",
-};
-
 export function WaitlistForm() {
    const [storedEmail, setStoredEmail] = useLocalStorage<string | null>(
       STORAGE_KEY,
@@ -36,49 +32,16 @@ export function WaitlistForm() {
    const form = useForm({
       defaultValues: { email: "" },
       validators: { onSubmit: waitlistSchema },
-      onSubmit: async ({ value }) => {
-         const trimmed = value.email.trim().toLowerCase();
-         const ph = typeof window !== "undefined" ? window.posthog : undefined;
-         const distinctId = ph?.__loaded ? ph.get_distinct_id() : trimmed;
-
-         const fetched = await fromPromise(
-            fetch("/api/waitlist", {
-               method: "POST",
-               headers: { "content-type": "application/json" },
-               body: JSON.stringify({ email: trimmed, distinctId }),
-            }),
-            () => "network" as const,
-         );
-         if (fetched.isErr()) {
-            ph?.capture("waitlist_rejected", {
-               reason: "network",
-               source: "landing",
-            });
-            return { fields: { email: errorMessages.network } };
-         }
-         const res = fetched.value;
-         const parsed = await fromPromise(res.json(), () => null);
-         const json: { ok?: boolean; reason?: string } =
-            parsed.unwrapOr(null) ?? {};
-         if (!res.ok || !json.ok) {
-            const reason = json.reason ?? "blocked";
-            ph?.capture("waitlist_rejected", { reason, source: "landing" });
-            return {
-               fields: {
-                  email: errorMessages[reason] ?? errorMessages.blocked,
-               },
-            };
-         }
+      onSubmit: ({ value }) => {
+         const email = value.email.trim().toLowerCase();
+         const ph = window.posthog;
 
          if (ph?.__loaded) {
-            ph.identify(trimmed, {
-               email: trimmed,
-               waitlist_source: "landing",
-            });
-            ph.capture("waitlist", { email: trimmed, source: "landing" });
+            ph.identify(email, { email, waitlist_source: "landing" });
+            ph.capture("waitlist", { email, source: "landing" });
          }
 
-         setStoredEmail(trimmed);
+         setStoredEmail(email);
       },
    });
 
@@ -94,21 +57,26 @@ export function WaitlistForm() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
-                  className="flex min-h-12 items-center gap-2 border border-primary/50 bg-primary/10 px-4 py-2"
                >
-                  <Check
-                     className="size-4 shrink-0 text-primary"
-                     aria-hidden="true"
-                  />
-                  <div className="flex flex-col gap-1">
-                     <p className="text-sm font-medium text-foreground">
-                        Você já está na lista.
-                     </p>
-                     <p className="text-xs text-muted-foreground">
-                        Avisaremos {storedEmail} quando os próximos convites
-                        saírem.
-                     </p>
-                  </div>
+                  <Alert
+                     aria-live="polite"
+                     className="rounded-2xl border-border/40 bg-background/80 text-left shadow-2xl shadow-background/40 backdrop-blur-xl [&>svg]:text-primary"
+                  >
+                     <Check strokeWidth={2.25} aria-hidden="true" />
+                     <AlertTitle className="font-sans">
+                        Lugar reservado
+                     </AlertTitle>
+                     <AlertDescription>
+                        <p>
+                           Avisamos{" "}
+                           <span className="font-semibold text-foreground">
+                              {storedEmail}
+                           </span>{" "}
+                           assim que o próximo lote abrir. Sem spam, só o
+                           convite.
+                        </p>
+                     </AlertDescription>
+                  </Alert>
                </motion.div>
             ) : (
                <motion.form

@@ -13,17 +13,17 @@
             "posthog-node": "^5.29.2"
          },
          "astro": {
-            "@astrojs/check": "0.9.6-alpha.0",
-            "@astrojs/mdx": "11.0.0-alpha.0",
+            "@astrojs/check": "0.9.9",
+            "@astrojs/mdx": "5.0.4",
             "@astrojs/node": "^10.0.6",
-            "@astrojs/react": "6.0.0-alpha.0",
-            "@astrojs/rss": "4.0.15-alpha.0",
-            "@astrojs/sitemap": "3.6.1-alpha.1",
+            "@astrojs/react": "5.0.4",
+            "@astrojs/rss": "4.0.18",
+            "@astrojs/sitemap": "3.7.2",
             "@astrojs/starlight": "0.38.4",
             "@astrojs/starlight-tailwind": "5.0.0",
             "@astrojs/ts-plugin": "^1.10.7",
             "@lucide/astro": "^1.14.0",
-            "astro": "7.0.0-alpha.0"
+            "astro": "6.3.1"
          },
          "auth": {
             "better-auth": "1.6.5",
@@ -253,6 +253,9 @@
       "web:start": "bun run --filter=web start",
       "worker:build": "nx run worker:build",
       "worker:start": "bun run --filter=worker start"
+   },
+   "dependencies": {
+      "@arcjet/node": "^1.4.0"
    },
    "devDependencies": {
       "@aws-sdk/client-s3": "^3.1045.0",

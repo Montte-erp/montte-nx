@@ -1,4 +1,3 @@
-import arcjet, { shield } from "@arcjet/astro";
 import node from "@astrojs/node";
 import react from "@astrojs/react";
 import sitemap from "@astrojs/sitemap";
@@ -9,11 +8,7 @@ export default defineConfig({
    site: "https://montte.co",
    output: "static",
    adapter: node({ mode: "standalone" }),
-   integrations: [
-      react(),
-      sitemap(),
-      arcjet({ rules: [shield({ mode: "LIVE" })] }),
-   ],
+   integrations: [react(), sitemap()],
    prefetch: { defaultStrategy: "viewport" },
    vite: {
       plugins: [tailwindcss()],
