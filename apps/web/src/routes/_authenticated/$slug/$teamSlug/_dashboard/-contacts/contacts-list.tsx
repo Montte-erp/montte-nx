@@ -44,7 +44,7 @@ export function ContactsList() {
    const queryClient = useQueryClient();
    const slug = useOrgSlug();
    const teamSlug = useTeamSlug();
-   const { parse: parseCsv } = useCsvFile();
+   const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
    const [isDraftActive, setIsDraftActive] = useState(false);
 
@@ -174,6 +174,39 @@ export function ContactsList() {
             phone: String(row.phone ?? "").trim() || null,
             document: String(row.document ?? "").trim() || null,
          }),
+         template: {
+            filename: "modelo-contatos.csv",
+            label: "Baixar modelo CSV",
+            description:
+               "Inclui Nome, Tipo, Documento, Email e Telefone com exemplos de preenchimento.",
+            createBlob: () =>
+               generateCsv(
+                  [
+                     {
+                        name: "Maria Oliveira",
+                        type: "cliente",
+                        document: "12345678901",
+                        email: "maria@exemplo.com",
+                        phone: "(11) 99999-0000",
+                     },
+                     {
+                        name: "Fornecedor Alfa Ltda",
+                        type: "fornecedor",
+                        document: "12345678000190",
+                        email: "financeiro@fornecedoralfa.com.br",
+                        phone: "(11) 3333-4444",
+                     },
+                     {
+                        name: "João Souza",
+                        type: "ambos",
+                        document: "98765432100",
+                        email: "joao@exemplo.com",
+                        phone: "(21) 98888-1111",
+                     },
+                  ],
+                  ["name", "type", "document", "email", "phone"],
+               ),
+         },
          onImport: async (rows) => {
             const results = await Promise.allSettled(
                rows.map((r) => {
@@ -207,7 +240,7 @@ export function ContactsList() {
             });
          },
       }),
-      [parseCsv, parseXlsx, importMutation, queryClient],
+      [parseCsv, parseXlsx, generateCsv, importMutation, queryClient],
    );
 
    const handleUpdate = useCallback(
