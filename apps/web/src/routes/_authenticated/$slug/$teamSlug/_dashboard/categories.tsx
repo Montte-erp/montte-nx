@@ -337,7 +337,7 @@ function CategoriesList() {
                       : "Outros"
             }
             renderActions={({ row }) => {
-               if (row.original.isDefault) return null;
+               const isDefault = row.original.isDefault;
                const isArchived = row.original.isArchived;
 
                if (isArchived) {
@@ -380,7 +380,7 @@ function CategoriesList() {
                            <RefreshCw />
                         </Button>
                      )}
-                     {!isSub && (
+                     {!isDefault && !isSub && (
                         <Button
                            onClick={() => handleArchive(row.original)}
                            tooltip="Arquivar"
@@ -524,9 +524,7 @@ function CategoriesList() {
                   const archivableIds = selectedRows
                      .filter((r) => !r.isDefault && !r.isArchived)
                      .map((r) => r.id);
-                  const deletableIds = selectedRows
-                     .filter((r) => !r.isDefault)
-                     .map((r) => r.id);
+                  const deletableIds = selectedRows.map((r) => r.id);
                   return (
                      <>
                         {archivableIds.length > 0 && (

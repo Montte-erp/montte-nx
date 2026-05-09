@@ -108,10 +108,6 @@ export const importBatch = protectedProcedure
 export const bulkRemove = protectedProcedure
    .input(idsSchema)
    .use(requireOwnedCategoryIds, (input) => input.ids)
-   .use(
-      blockDefaultCategories,
-      () => "Categorias padrão não podem ser excluídas.",
-   )
    .use(withExpandedCategoryIds, (input) => input.ids)
    .use(requireNoTransactionsForExpandedIds)
    .handler(async ({ context, input }) => {

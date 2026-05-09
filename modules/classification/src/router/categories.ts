@@ -226,11 +226,6 @@ export const update = protectedProcedure
       parentId: input.parentId,
    }))
    .handler(async ({ context, input }) => {
-      if (context.category.isDefault)
-         throw WebAppError.conflict(
-            "Categorias padrão não podem ser editadas.",
-         );
-
       const { id, ...data } = input;
       const { resolvedParent } = context;
 
@@ -380,11 +375,6 @@ export const remove = protectedProcedure
    .use(requireCategory, (input) => input.id)
    .use(requireEmptyCategoryTree, (input) => input.id)
    .handler(async ({ context, input }) => {
-      if (context.category.isDefault)
-         throw WebAppError.conflict(
-            "Categorias padrão não podem ser excluídas.",
-         );
-
       const result = await fromPromise(
          context.db
             .delete(categories)
