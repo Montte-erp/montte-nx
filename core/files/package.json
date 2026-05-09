@@ -12,9 +12,9 @@
          "types": "./dist/client.d.ts",
          "default": "./dist/client.js"
       },
-      "./text-file-helper": {
-         "types": "./dist/text-file-helpers.d.ts",
-         "default": "./dist/text-file-helpers.js"
+      "./keys": {
+         "types": "./dist/keys.d.ts",
+         "default": "./dist/keys.js"
       }
    },
    "scripts": {
@@ -26,12 +26,7 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@better-upload/server": "catalog:files",
-      "@core/environment": "workspace:*",
-      "@core/logging": "workspace:*",
-      "dayjs": "catalog:ui",
-      "fflate": "catalog:files",
-      "neverthrow": "catalog:validation"
+      "@better-upload/server": "catalog:files"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",

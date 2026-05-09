@@ -34,7 +34,7 @@ import { useCallback, useState, useTransition } from "react";
 import type { FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
 import { z } from "zod";
-import { useUploadFile } from "@better-upload/client";
+import { useUploadImage } from "@/hooks/use-upload-image";
 import { useFileUpload } from "@/features/file-upload/lib/use-file-upload";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { authClient } from "@/integrations/better-auth/auth-client";
@@ -71,7 +71,7 @@ function AvatarUploadSection({
       maxSize: 5 * 1024 * 1024,
    });
 
-   const { upload, isPending } = useUploadFile({
+   const { upload, isPending } = useUploadImage({
       route: "userAvatar",
       api: "/api/upload",
       onUploadComplete: async ({ metadata }) => {

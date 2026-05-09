@@ -19,10 +19,10 @@ import {
 } from "@packages/ui/components/item";
 import { Separator } from "@packages/ui/components/separator";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { useUploadFile } from "@better-upload/client";
+import { useUploadImage } from "@/hooks/use-upload-image";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useCopyToClipboard } from "@uidotdev/usehooks";
+import { useClipboard } from "foxact/use-clipboard";
 import {
    Building2,
    Calendar,
@@ -133,7 +133,7 @@ function LogoSection({
       maxSize: 5 * 1024 * 1024,
    });
 
-   const { upload, isPending } = useUploadFile({
+   const { upload, isPending } = useUploadImage({
       route: "organizationLogo",
       api: "/api/upload",
       onUploadComplete: async ({ metadata }) => {
@@ -231,8 +231,7 @@ function OrganizationDetailsSection({
    memberCount: number;
    createdAt: Date | string | null;
 }) {
-   const [lastCopied, copy] = useCopyToClipboard();
-   const copied = lastCopied === slug;
+   const { copied, copy } = useClipboard({ timeout: 2000 });
 
    const handleCopySlug = () => {
       copy(slug);
