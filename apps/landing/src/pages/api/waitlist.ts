@@ -6,8 +6,8 @@ import { PostHog } from "posthog-node";
 
 export const prerender = false;
 
-const POSTHOG_KEY = process.env.POSTHOG_KEY ?? "";
-const POSTHOG_HOST = process.env.POSTHOG_HOST ?? "";
+const POSTHOG_KEY = import.meta.env.PUBLIC_POSTHOG_KEY ?? "";
+const POSTHOG_HOST = import.meta.env.PUBLIC_POSTHOG_HOST ?? "";
 
 let posthogClient: PostHog | null = null;
 function getPosthog() {
