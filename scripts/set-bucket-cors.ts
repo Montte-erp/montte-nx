@@ -15,6 +15,7 @@ const {
    AWS_S3_BUCKET_NAME,
    AWS_ACCESS_KEY_ID,
    AWS_SECRET_ACCESS_KEY,
+   AWS_DEFAULT_REGION = "us-east-1",
 } = process.env;
 
 if (
@@ -36,56 +37,45 @@ const ALLOWED_ORIGINS = (
    .map((o) => o.trim())
    .filter(Boolean);
 
-const corsConfig = {
-   CORSRules: [
-      {
-         AllowedHeaders: ["*"],
-         AllowedMethods: ["GET", "HEAD", "PUT", "POST"],
-         AllowedOrigins: ALLOWED_ORIGINS,
-         ExposeHeaders: ["ETag"],
-         MaxAgeSeconds: 3000,
-      },
-   ],
-};
+const { S3Client, PutBucketCorsCommand, GetBucketCorsCommand } =
+   await import("@aws-sdk/client-s3");
+
+const client = new S3Client({
+   endpoint: AWS_ENDPOINT_URL,
+   region: AWS_DEFAULT_REGION,
+   credentials: {
+      accessKeyId: AWS_ACCESS_KEY_ID,
+      secretAccessKey: AWS_SECRET_ACCESS_KEY,
+   },
+   forcePathStyle: false,
+});
 
 console.log(`Bucket:    ${AWS_S3_BUCKET_NAME}`);
 console.log(`Endpoint:  ${AWS_ENDPOINT_URL}`);
 console.log(`Origins:   ${ALLOWED_ORIGINS.join(", ")}`);
 console.log("");
 
-const proc = Bun.spawn(
-   [
-      "aws",
-      "s3api",
-      "put-bucket-cors",
-      "--bucket",
-      AWS_S3_BUCKET_NAME,
-      "--endpoint-url",
-      AWS_ENDPOINT_URL,
-      "--cors-configuration",
-      JSON.stringify(corsConfig),
-   ],
-   {
-      env: {
-         ...process.env,
-         AWS_ACCESS_KEY_ID,
-         AWS_SECRET_ACCESS_KEY,
-         AWS_DEFAULT_REGION: process.env.AWS_DEFAULT_REGION ?? "us-east-1",
+await client.send(
+   new PutBucketCorsCommand({
+      Bucket: AWS_S3_BUCKET_NAME,
+      CORSConfiguration: {
+         CORSRules: [
+            {
+               AllowedHeaders: ["*"],
+               AllowedMethods: ["GET", "HEAD", "PUT", "POST"],
+               AllowedOrigins: ALLOWED_ORIGINS,
+               ExposeHeaders: ["ETag"],
+               MaxAgeSeconds: 3000,
+            },
+         ],
       },
-      stdout: "inherit",
-      stderr: "inherit",
-   },
+   }),
 );
 
-const exitCode = await proc.exited;
-if (exitCode !== 0) {
-   console.error(
-      "\nFailed. Check 'aws' CLI installed: brew install awscli (or pacman -S aws-cli-v2)",
-   );
-   process.exit(exitCode);
-}
+console.log("✅ CORS applied.\n");
 
-console.log("\n✅ CORS applied. Verify:");
-console.log(
-   `  aws s3api get-bucket-cors --bucket ${AWS_S3_BUCKET_NAME} --endpoint-url ${AWS_ENDPOINT_URL}`,
+const verify = await client.send(
+   new GetBucketCorsCommand({ Bucket: AWS_S3_BUCKET_NAME }),
 );
+console.log("Current CORS config:");
+console.log(JSON.stringify(verify.CORSRules, null, 2));
