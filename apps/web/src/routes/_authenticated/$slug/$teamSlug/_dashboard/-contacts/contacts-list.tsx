@@ -44,7 +44,7 @@ export function ContactsList() {
    const queryClient = useQueryClient();
    const slug = useOrgSlug();
    const teamSlug = useTeamSlug();
-   const { parse: parseCsv } = useCsvFile();
+   const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
    const [isDraftActive, setIsDraftActive] = useState(false);
 
@@ -174,6 +174,39 @@ export function ContactsList() {
             phone: String(row.phone ?? "").trim() || null,
             document: String(row.document ?? "").trim() || null,
          }),
+         template: {
+            filename: "modelo-contatos.csv",
+            label: "Baixar modelo CSV",
+            description:
+               "Inclui Nome, Tipo, Documento, Email e Telefone com exemplos de preenchimento.",
+            createBlob: () =>
+               generateCsv(
+                  [
+                     {
+                        Nome: "Maria Oliveira",
+                        Tipo: "cliente",
+                        Documento: "12345678901",
+                        Email: "maria@exemplo.com",
+                        Telefone: "(11) 99999-0000",
+                     },
+                     {
+                        Nome: "Fornecedor Alfa Ltda",
+                        Tipo: "fornecedor",
+                        Documento: "12345678000190",
+                        Email: "financeiro@fornecedoralfa.com.br",
+                        Telefone: "(11) 3333-4444",
+                     },
+                     {
+                        Nome: "João Souza",
+                        Tipo: "ambos",
+                        Documento: "98765432100",
+                        Email: "joao@exemplo.com",
+                        Telefone: "(21) 98888-1111",
+                     },
+                  ],
+                  ["Nome", "Tipo", "Documento", "Email", "Telefone"],
+               ),
+         },
          onImport: async (rows) => {
             const results = await Promise.allSettled(
                rows.map((r) => {
@@ -207,7 +240,7 @@ export function ContactsList() {
             });
          },
       }),
-      [parseCsv, parseXlsx, importMutation, queryClient],
+      [parseCsv, parseXlsx, generateCsv, importMutation, queryClient],
    );
 
    const handleUpdate = useCallback(
