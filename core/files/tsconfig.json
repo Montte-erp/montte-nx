@@ -16,12 +16,5 @@
       }
    },
    "include": ["src"],
-   "references": [
-      {
-         "path": "../logging"
-      },
-      {
-         "path": "../environment"
-      }
-   ]
+   "references": []
 }

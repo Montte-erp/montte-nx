@@ -1,4 +1,4 @@
-import { trace, type Tracer } from "@opentelemetry/api";
+import { trace } from "@opentelemetry/api";
 import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { resourceFromAttributes } from "@opentelemetry/resources";
@@ -45,7 +45,7 @@ export function initOtel(config: OtelConfig): NodeSDK {
    return sdk;
 }
 
-export function getAiTracer(): Tracer {
+export function getAiTracer() {
    return trace.getTracer("montte-ai");
 }
 

@@ -12,12 +12,12 @@ export interface AiObservabilityContext {
    customProperties?: Record<string, string | number | boolean>;
 }
 
-const MAX_CONTENT_BYTES = 8000;
+const MAX_CONTENT_CHARS = 8000;
 
 function redact(text: string): string {
-   return text.length <= MAX_CONTENT_BYTES
+   return text.length <= MAX_CONTENT_CHARS
       ? text
-      : text.slice(0, MAX_CONTENT_BYTES) + "…[truncated]";
+      : text.slice(0, MAX_CONTENT_CHARS) + "…[truncated]";
 }
 
 export function createAiObservabilityMiddleware(

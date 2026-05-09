@@ -153,6 +153,8 @@ async function handlePost({ request }: { request: Request }) {
    const stream = await createAgentChat({
       prompts: ctx.posthogPrompts,
       userId: ctx.userId,
+      organizationId: ctx.organizationId,
+      teamId: ctx.teamId,
       headers: ctx.headers,
       request: ctx.request,
       threadId: input.threadId,

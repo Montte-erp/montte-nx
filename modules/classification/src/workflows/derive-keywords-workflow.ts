@@ -70,7 +70,7 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsWorkflowInput) {
                   siblingKeywords,
                },
                {
-                  distinctId: input.teamId,
+                  distinctId: input.userId ?? input.teamId,
                   organizationId: input.organizationId,
                   teamId: input.teamId,
                },

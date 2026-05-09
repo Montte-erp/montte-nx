@@ -28,6 +28,7 @@ import {
 const AI_CHUNK_SIZE = 20;
 
 export type ClassifyTransactionsBatchInput = {
+   organizationId: string;
    teamId: string;
    transactionIds: string[];
 };
@@ -136,6 +137,7 @@ const stepAiChunk = (
    chunkItems: (LoadedTransaction & { name: string })[],
    options: CategoryRow[],
    teamId: string,
+   organizationId: string,
    index: number,
 ) =>
    DBOS.runStep(
@@ -153,7 +155,7 @@ const stepAiChunk = (
             getClassificationPrompts(),
             aiInput,
             options,
-            { distinctId: teamId, teamId },
+            { distinctId: teamId, teamId, organizationId },
          );
          if (ai.isErr()) throw ai.error;
          return ai.value;
@@ -358,7 +360,13 @@ async function classifyTransactionsBatchWorkflowFn(
          const chunkItems = chunks[i];
          if (!chunkItems) continue;
          const ai = await fromPromise(
-            stepAiChunk(chunkItems, loaded.categories, input.teamId, i),
+            stepAiChunk(
+               chunkItems,
+               loaded.categories,
+               input.teamId,
+               input.organizationId,
+               i,
+            ),
             (e) =>
                WorkflowError.internal(
                   "Falha ao classificar transações com IA.",

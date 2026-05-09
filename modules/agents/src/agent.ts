@@ -20,6 +20,8 @@ import { buildServicesTools } from "@modules/agents/tools/services";
 export interface AgentChatOptions {
    prompts: Prompts;
    userId: string;
+   organizationId: string;
+   teamId: string;
    headers: Headers;
    request: Request;
    threadId?: string;
@@ -67,6 +69,8 @@ async function buildAgentChatArgs(options: AgentChatOptions) {
       buildAdvisorTool({
          prompts: options.prompts,
          distinctId: options.userId,
+         organizationId: options.organizationId,
+         teamId: options.teamId,
          threadId: options.threadId,
          turnId,
       }),
@@ -98,10 +102,14 @@ async function buildAgentChatArgs(options: AgentChatOptions) {
       middleware: [
          createAiObservabilityMiddleware({
             distinctId: options.userId,
+            organizationId: options.organizationId,
+            teamId: options.teamId,
             conversationId: options.threadId,
             promptName: AGENT_PROMPTS.root,
             customProperties: {
                agent_role: "executor",
+               agent_organization_id: options.organizationId,
+               agent_team_id: options.teamId,
                ...(options.threadId && { agent_thread_id: options.threadId }),
                agent_turn_id: turnId,
                ...(options.pageContext?.skillHint && {

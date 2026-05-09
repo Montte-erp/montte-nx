@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { Page } from "@playwright/test";
 import { expect, test as base, type E2ESession } from "../fixtures";
 import {
@@ -8,7 +9,7 @@ import {
    insertTag,
 } from "../helpers/db";
 
-const stamp = () => `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+const stamp = () => randomUUID();
 
 const test = base.extend<{ createdTagIds: string[] }>({
    createdTagIds: async ({}, use) => {
@@ -102,6 +103,7 @@ test("nome curto exibe erro de validação no popover", async ({
       .fill(original);
 
    const row = page.getByRole("row").filter({ hasText: original });
+   await expect(row).toBeVisible();
    await row.getByRole("button", { name: "Editar Nome" }).click();
 
    const input = page.getByRole("textbox", { name: "Editar Nome" });

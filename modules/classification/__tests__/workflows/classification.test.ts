@@ -81,10 +81,11 @@ async function getTransaction(id: string) {
 
 describe("classifyTransactionsBatchWorkflow", () => {
    it("returns early on empty input — no DB writes, no LLM call, no SSE", async () => {
-      const { teamId } = await seedTeam(testDb.db);
+      const { teamId, organizationId } = await seedTeam(testDb.db);
 
       await classifyTransactionsBatchWorkflow({
          teamId,
+         organizationId,
          transactionIds: [],
       });
 
@@ -92,7 +93,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
    });
 
    it("classifies all by keyword match — no LLM call, suggestedCategoryId set, tag auto-resolved via category.dreGroupId", async () => {
-      const { teamId } = await seedTeam(testDb.db);
+      const { teamId, organizationId } = await seedTeam(testDb.db);
       const ops = await makeTag(testDb.db, teamId, { name: "Operacional" });
       const food = await makeCategory(testDb.db, teamId, {
          name: "Alimentação",
@@ -112,6 +113,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
 
       await classifyTransactionsBatchWorkflow({
          teamId,
+         organizationId,
          transactionIds: [tx1.id, tx2.id, tx3.id],
       });
 
@@ -142,7 +144,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
    });
 
    it("classifies by AI when no keyword match — tag resolved from category.dreGroupId, null when category has no group", async () => {
-      const { teamId } = await seedTeam(testDb.db);
+      const { teamId, organizationId } = await seedTeam(testDb.db);
       const ops = await makeTag(testDb.db, teamId, { name: "Operacional" });
       const food = await makeCategory(testDb.db, teamId, {
          name: "Alimentação",
@@ -172,6 +174,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
 
       await classifyTransactionsBatchWorkflow({
          teamId,
+         organizationId,
          transactionIds: [tx1.id, tx2.id],
       });
 
@@ -186,7 +189,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
    });
 
    it("mixes keyword + AI — keyword writes 2, AI writes 3, all 5 go through", async () => {
-      const { teamId } = await seedTeam(testDb.db);
+      const { teamId, organizationId } = await seedTeam(testDb.db);
       const ops = await makeTag(testDb.db, teamId, { name: "Operacional" });
       const food = await makeCategory(testDb.db, teamId, {
          name: "Alimentação",
@@ -227,6 +230,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
 
       await classifyTransactionsBatchWorkflow({
          teamId,
+         organizationId,
          transactionIds: [txKw1.id, txKw2.id, txAi1.id, txAi2.id, txAi3.id],
       });
 
@@ -241,7 +245,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
    });
 
    it("idempotency — skips transactions that already have categoryId set", async () => {
-      const { teamId } = await seedTeam(testDb.db);
+      const { teamId, organizationId } = await seedTeam(testDb.db);
       const food = await makeCategory(testDb.db, teamId, {
          name: "Alimentação",
          keywords: ["uber eats", "burger"],
@@ -260,6 +264,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
 
       await classifyTransactionsBatchWorkflow({
          teamId,
+         organizationId,
          transactionIds: [txDone.id, txPending.id],
       });
 
@@ -273,7 +278,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
    });
 
    it("chunks AI calls when unmatched > 20 — makes 2 distinct LLM calls for 25 unmatched", async () => {
-      const { teamId } = await seedTeam(testDb.db);
+      const { teamId, organizationId } = await seedTeam(testDb.db);
       const food = await makeCategory(testDb.db, teamId, {
          name: "Alimentação",
       });
@@ -341,6 +346,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
 
       await classifyTransactionsBatchWorkflow({
          teamId,
+         organizationId,
          transactionIds: allIds,
       });
 
@@ -369,7 +375,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
    });
 
    it("handles AI returning fewer results than requested — only returned IDs get suggestedCategoryId", async () => {
-      const { teamId } = await seedTeam(testDb.db);
+      const { teamId, organizationId } = await seedTeam(testDb.db);
       const food = await makeCategory(testDb.db, teamId, {
          name: "Alimentação",
       });
@@ -396,6 +402,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
 
       await classifyTransactionsBatchWorkflow({
          teamId,
+         organizationId,
          transactionIds: [tx1.id, tx2.id, tx3.id],
       });
 
