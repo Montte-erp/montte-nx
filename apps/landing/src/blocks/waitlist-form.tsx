@@ -42,6 +42,10 @@ export function WaitlistForm() {
             () => "network" as const,
          );
          if (fetched.isErr()) {
+            ph?.capture("waitlist_rejected", {
+               reason: "network",
+               source: "landing",
+            });
             return { fields: { email: errorMessages.network } };
          }
          const res = fetched.value;
@@ -50,6 +54,7 @@ export function WaitlistForm() {
             parsed.unwrapOr(null) ?? {};
          if (!res.ok || !json.ok) {
             const reason = json.reason ?? "blocked";
+            ph?.capture("waitlist_rejected", { reason, source: "landing" });
             return {
                fields: {
                   email: errorMessages[reason] ?? errorMessages.blocked,
@@ -127,6 +132,7 @@ export function WaitlistForm() {
                                     <Button
                                        type="submit"
                                        disabled={form.state.isSubmitting}
+                                       data-ph-cta="waitlist_submit"
                                     >
                                        {form.state.isSubmitting
                                           ? "Enviando…"
