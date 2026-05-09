@@ -212,11 +212,9 @@
       "name": "@core/ai",
       "version": "0.1.0",
       "dependencies": {
-        "@core/posthog": "workspace:*",
+        "@core/logging": "workspace:*",
         "@tanstack/ai": "catalog:tanstack-ai",
         "@tanstack/ai-openrouter": "catalog:tanstack-ai",
-        "neverthrow": "catalog:validation",
-        "zod": "catalog:validation",
       },
       "devDependencies": {
         "@tooling/typescript": "workspace:*",
@@ -321,8 +319,10 @@
       "name": "@core/logging",
       "version": "0.1.0",
       "dependencies": {
+        "@opentelemetry/api": "catalog:telemetry",
         "@opentelemetry/api-logs": "catalog:telemetry",
         "@opentelemetry/exporter-logs-otlp-http": "catalog:telemetry",
+        "@opentelemetry/exporter-trace-otlp-http": "catalog:telemetry",
         "@opentelemetry/resources": "catalog:telemetry",
         "@opentelemetry/sdk-logs": "catalog:telemetry",
         "@opentelemetry/sdk-node": "catalog:telemetry",
@@ -863,8 +863,10 @@
       "@tanstack/ai-react": "^0.8.1",
     },
     "telemetry": {
+      "@opentelemetry/api": "^1.9.0",
       "@opentelemetry/api-logs": "^0.215.0",
       "@opentelemetry/exporter-logs-otlp-http": "^0.215.0",
+      "@opentelemetry/exporter-trace-otlp-http": "^0.215.0",
       "@opentelemetry/resources": "^2.7.0",
       "@opentelemetry/sdk-logs": "^0.215.0",
       "@opentelemetry/sdk-node": "^0.215.0",

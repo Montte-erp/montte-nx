@@ -9,7 +9,7 @@ import { CLASSIFICATION_PROMPTS } from "@modules/classification/constants";
 import { flashModel } from "@core/ai/models";
 import {
    type AiObservabilityContext,
-   createPosthogAiMiddleware,
+   createAiObservabilityMiddleware,
 } from "@core/ai/middleware";
 
 const MAX_BATCH_SIZE = 20;
@@ -123,7 +123,7 @@ export function classifyTransactionsBatch(
                outputSchema,
                stream: false,
                middleware: [
-                  createPosthogAiMiddleware({
+                  createAiObservabilityMiddleware({
                      ...observability,
                      promptName: name,
                      promptVersion: version,

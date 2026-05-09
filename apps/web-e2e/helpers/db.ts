@@ -15,6 +15,7 @@ import {
 } from "@core/database/schemas/auth";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
+import { tags } from "@core/database/schemas/tags";
 import { transactions } from "@core/database/schemas/transactions";
 
 loadEnv({
@@ -250,6 +251,37 @@ export async function deleteCategoryById(teamId: string, id: string) {
    await db()
       .delete(categories)
       .where(and(eq(categories.teamId, teamId), eq(categories.id, id)));
+}
+
+export async function findTagByName(teamId: string, name: string) {
+   return db().query.tags.findFirst({
+      where: (f, { and, eq }) => and(eq(f.teamId, teamId), eq(f.name, name)),
+   });
+}
+
+export async function findTagById(id: string) {
+   return db().query.tags.findFirst({
+      where: (f, { eq }) => eq(f.id, id),
+   });
+}
+
+export async function insertTag(
+   teamId: string,
+   name: string,
+   description: string | null = null,
+) {
+   const [row] = await db()
+      .insert(tags)
+      .values({ teamId, name, description })
+      .returning();
+   if (!row) throw new Error("Failed to insert tag");
+   return row;
+}
+
+export async function deleteTagById(teamId: string, id: string) {
+   await db()
+      .delete(tags)
+      .where(and(eq(tags.teamId, teamId), eq(tags.id, id)));
 }
 
 export async function countMemberOrgsByEmail(email: string) {

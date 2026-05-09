@@ -20,7 +20,6 @@ import {
 } from "@modules/classification/utils";
 import {
    classificationDataSource,
-   getClassificationPosthog,
    getClassificationPrompts,
    getClassificationRedis,
    registerWorkflowOnce,
@@ -154,7 +153,7 @@ const stepAiChunk = (
             getClassificationPrompts(),
             aiInput,
             options,
-            { posthog: getClassificationPosthog(), distinctId: teamId },
+            { distinctId: teamId, teamId },
          );
          if (ai.isErr()) throw ai.error;
          return ai.value;

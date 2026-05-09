@@ -46,8 +46,10 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
+      "@opentelemetry/api": "catalog:telemetry",
       "@opentelemetry/api-logs": "catalog:telemetry",
       "@opentelemetry/exporter-logs-otlp-http": "catalog:telemetry",
+      "@opentelemetry/exporter-trace-otlp-http": "catalog:telemetry",
       "@opentelemetry/resources": "catalog:telemetry",
       "@opentelemetry/sdk-logs": "catalog:telemetry",
       "@opentelemetry/sdk-node": "catalog:telemetry",

@@ -4,7 +4,7 @@ import { chat } from "@tanstack/ai";
 import { asc, eq } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { flashModel } from "@core/ai/models";
-import { createPosthogAiMiddleware } from "@core/ai/middleware";
+import { createAiObservabilityMiddleware } from "@core/ai/middleware";
 import { WorkflowError } from "@core/dbos/errors";
 import { messages } from "@core/database/schemas/messages";
 import { threads } from "@core/database/schemas/threads";
@@ -17,7 +17,6 @@ import {
 import {
    agentsDataSource,
    createEnqueuer,
-   getAgentsPosthog,
    getAgentsPrompts,
    getAgentsRedis,
    registerWorkflowOnce,
@@ -95,17 +94,17 @@ async function generateThreadTitleFn(input: GenerateTitleInput) {
                stream: false,
                conversationId: input.threadId,
                middleware: [
-                  createPosthogAiMiddleware({
-                     posthog: getAgentsPosthog(),
+                  createAiObservabilityMiddleware({
                      distinctId: input.teamId,
+                     organizationId: input.organizationId,
+                     teamId: input.teamId,
+                     conversationId: input.threadId,
                      promptName: name,
                      promptVersion: version,
                      customProperties: {
                         agent_role: "workflow",
                         agent_workflow: "generate-title",
                         agent_thread_id: input.threadId,
-                        agent_team_id: input.teamId,
-                        agent_organization_id: input.organizationId,
                      },
                   }),
                ],

@@ -8,7 +8,6 @@ import {
    vi,
 } from "vitest";
 import { LLMock } from "@copilotkit/aimock";
-import { PostHog } from "posthog-node";
 import type { AiObservabilityContext } from "@core/ai/middleware";
 import type { Prompts } from "@core/posthog/server";
 
@@ -27,13 +26,7 @@ const promptsMock = {
 const mock = new LLMock({ port: 14010 });
 
 function makeObservability(): AiObservabilityContext {
-   const posthog = new PostHog("phc_test", {
-      host: "https://us.i.posthog.com",
-      flushAt: Number.POSITIVE_INFINITY,
-      disableGeoip: true,
-   });
-   vi.spyOn(posthog, "capture").mockImplementation(() => undefined);
-   return { posthog, distinctId: "team-1" };
+   return { distinctId: "team-1" };
 }
 
 beforeAll(async () => {

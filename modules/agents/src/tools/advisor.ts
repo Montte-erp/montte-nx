@@ -3,13 +3,12 @@ import { z } from "zod";
 import { fromPromise } from "neverthrow";
 import { proModel } from "@core/ai/models";
 import { WebAppError } from "@core/logging/errors";
-import { createPosthogAiMiddleware } from "@core/ai/middleware";
-import type { PostHog, Prompts } from "@core/posthog/server";
+import { createAiObservabilityMiddleware } from "@core/ai/middleware";
+import type { Prompts } from "@core/posthog/server";
 import { AGENT_PROMPTS } from "@modules/agents/constants";
 
 export interface AdvisorToolDeps {
    prompts: Prompts;
-   posthog: PostHog;
    distinctId: string;
    threadId?: string;
    turnId?: string;
@@ -83,9 +82,9 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
             stream: false,
             abortController: advisorController,
             middleware: [
-               createPosthogAiMiddleware({
-                  posthog: deps.posthog,
+               createAiObservabilityMiddleware({
                   distinctId: deps.distinctId,
+                  conversationId: deps.threadId,
                   promptName: AGENT_PROMPTS.advisor,
                   customProperties: {
                      agent_role: "advisor",

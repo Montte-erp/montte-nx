@@ -1,165 +1,50 @@
-import { fromThrowable } from "neverthrow";
-import { z } from "zod";
-import type { PostHog } from "@core/posthog/server";
-import type {
-   AfterToolCallInfo,
-   ChatMiddleware,
-   ChatMiddlewareContext,
-   StreamChunk,
-} from "@tanstack/ai";
+import { otelMiddleware } from "@tanstack/ai/middlewares/otel";
+import { getAiTracer } from "@core/logging/otel";
+import type { ChatMiddleware } from "@tanstack/ai";
 
-const observabilityContextSchema = z.object({
-   posthog: z.custom<PostHog>(),
-   distinctId: z.string(),
-   promptName: z.string().optional(),
-   promptVersion: z.number().optional(),
-   customProperties: z.record(z.string(), z.unknown()).optional(),
-});
-
-const toolCallSummarySchema = z.object({
-   id: z.string(),
-   name: z.string(),
-   ok: z.boolean(),
-   durationMs: z.number(),
-   error: z.string().optional(),
-});
-
-const errorWithMessageSchema = z.object({ message: z.string() });
-
-const generationOptionsSchema = z.object({
-   temperature: z.number().optional(),
-   maxTokens: z.number().optional(),
-   topP: z.number().optional(),
-});
-
-export type AiObservabilityContext = z.infer<typeof observabilityContextSchema>;
-type ToolCallSummary = z.infer<typeof toolCallSummarySchema>;
-
-function toMessage(error: unknown): string {
-   return (
-      errorWithMessageSchema.safeParse(error).data?.message ?? String(error)
-   );
+export interface AiObservabilityContext {
+   distinctId: string;
+   organizationId?: string;
+   teamId?: string;
+   conversationId?: string;
+   promptName?: string;
+   promptVersion?: number;
+   customProperties?: Record<string, string | number | boolean>;
 }
 
-function toolsSpec(toolNames?: ReadonlyArray<string>) {
-   return toolNames?.length
-      ? toolNames.map((name) => ({
-           type: "function" as const,
-           function: { name, parameters: {} },
-        }))
-      : undefined;
+const MAX_CONTENT_BYTES = 8000;
+
+function redact(text: string): string {
+   return text.length <= MAX_CONTENT_BYTES
+      ? text
+      : text.slice(0, MAX_CONTENT_BYTES) + "…[truncated]";
 }
 
-export function createPosthogAiMiddleware(
+export function createAiObservabilityMiddleware(
    obs: AiObservabilityContext,
 ): ChatMiddleware {
-   const toolCalls: ToolCallSummary[] = [];
-   const safeCapture = fromThrowable(obs.posthog.capture.bind(obs.posthog));
-
-   let startTime = 0;
-   let firstTokenTime = 0;
-
-   const baseProps = (ctx: ChatMiddlewareContext) => {
-      const opts = generationOptionsSchema.safeParse(ctx.options).data ?? {};
-      return {
-         $ai_trace_id: ctx.requestId,
-         $ai_span_id: ctx.streamId,
-         $ai_model: ctx.model,
-         $ai_provider: ctx.provider,
-         $ai_stream: ctx.streaming,
-         ...(ctx.conversationId && { $ai_session_id: ctx.conversationId }),
-         ...(obs.promptName && { $ai_span_name: obs.promptName }),
-         ...(opts.temperature !== undefined && {
-            $ai_temperature: opts.temperature,
+   return otelMiddleware({
+      tracer: getAiTracer(),
+      captureContent: true,
+      redact,
+      spanNameFormatter: (info) =>
+         info.kind === "chat" && obs.promptName
+            ? `chat ${obs.promptName}`
+            : `${info.kind}`,
+      attributeEnricher: () => ({
+         "posthog.distinct_id": obs.distinctId,
+         ...(obs.organizationId && {
+            "$groups.organization": obs.organizationId,
          }),
-         ...(opts.maxTokens !== undefined && {
-            $ai_max_tokens: opts.maxTokens,
+         ...(obs.teamId && { "$groups.team": obs.teamId }),
+         ...(obs.conversationId && {
+            "gen_ai.conversation.id": obs.conversationId,
          }),
-         ...(toolsSpec(ctx.toolNames) && {
-            $ai_tools: toolsSpec(ctx.toolNames),
-         }),
+         ...(obs.promptName && { "tanstack.ai.prompt.name": obs.promptName }),
          ...(obs.promptVersion !== undefined && {
-            prompt_version: obs.promptVersion,
+            "tanstack.ai.prompt.version": obs.promptVersion,
          }),
          ...obs.customProperties,
-      };
-   };
-
-   const captureGeneration = (
-      ctx: ChatMiddlewareContext,
-      extra: Record<string, unknown>,
-   ) => {
-      safeCapture({
-         distinctId: obs.distinctId,
-         event: "$ai_generation",
-         properties: {
-            ...baseProps(ctx),
-            agent_tool_calls: toolCalls,
-            agent_tool_call_count: toolCalls.length,
-            ...extra,
-         },
-      });
-   };
-
-   return {
-      name: "posthog-ai-observability",
-
-      onStart: () => {
-         startTime = Date.now();
-      },
-
-      onChunk: (_ctx, chunk: StreamChunk) => {
-         if (firstTokenTime === 0 && chunk.type === "TEXT_MESSAGE_CONTENT") {
-            firstTokenTime = Date.now();
-         }
-      },
-
-      onAfterToolCall: (_ctx, info: AfterToolCallInfo) => {
-         toolCalls.push({
-            id: info.toolCallId,
-            name: info.toolName,
-            ok: info.ok,
-            durationMs: info.duration,
-            error:
-               info.ok || info.error == null
-                  ? undefined
-                  : toMessage(info.error),
-         });
-      },
-
-      onFinish: (ctx, info) => {
-         captureGeneration(ctx, {
-            $ai_input: [
-               ...ctx.systemPrompts.map((content) => ({
-                  role: "system",
-                  content,
-               })),
-               ...ctx.messages.map((m) => ({
-                  role: m.role,
-                  content: m.content,
-               })),
-            ],
-            $ai_input_tokens: info.usage?.promptTokens,
-            $ai_output_choices: info.content
-               ? [{ role: "assistant", content: info.content }]
-               : undefined,
-            $ai_output_tokens: info.usage?.completionTokens,
-            $ai_latency: info.duration / 1000,
-            ...(info.finishReason && { $ai_stop_reason: info.finishReason }),
-            ...(ctx.streaming &&
-               firstTokenTime > 0 &&
-               startTime > 0 && {
-                  $ai_time_to_first_token: (firstTokenTime - startTime) / 1000,
-               }),
-         });
-      },
-
-      onError: (ctx, info) => {
-         captureGeneration(ctx, {
-            $ai_is_error: true,
-            $ai_error: toMessage(info.error),
-            $ai_latency: info.duration / 1000,
-         });
-      },
-   };
+      }),
+   });
 }
