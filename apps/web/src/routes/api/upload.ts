@@ -13,8 +13,7 @@ const ORG_LOGO_PREFIX = "organization-logos";
 const USER_AVATAR_PREFIX = "user-avatars";
 
 function publicUrlFor(objectKey: string) {
-   const endpoint = new URL(env.AWS_ENDPOINT_URL);
-   return `${endpoint.protocol}//${BUCKET}.${endpoint.host}/${objectKey}`;
+   return `/api/files/${BUCKET}/${objectKey}`;
 }
 
 function fileExtension(name: string) {
