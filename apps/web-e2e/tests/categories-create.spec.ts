@@ -101,6 +101,7 @@ test("cria categoria vinculada a uma categoria pai", async ({
    await page.getByRole("button", { name: "Nova Categoria" }).click();
 
    let sheet = page.getByRole("dialog");
+   await sheet.getByRole("radio", { name: "Ícone Carteira" }).click();
    await sheet.getByLabel("Nome").fill(parentName);
    await sheet.getByRole("button", { name: "Criar categoria" }).click();
    await expect(page.getByText("Categoria criada com sucesso.")).toBeVisible();
@@ -111,6 +112,7 @@ test("cria categoria vinculada a uma categoria pai", async ({
    sheet = page.getByRole("dialog");
    await sheet.getByLabel("Categoria pai").click();
    await page.getByRole("option", { name: parentName }).click();
+   await expect(sheet.getByText("Ícone")).not.toBeVisible();
    await sheet.getByLabel("Nome").fill(childName);
    await sheet.getByRole("button", { name: "Criar categoria" }).click();
    await expect(page.getByText("Categoria criada com sucesso.")).toBeVisible();
@@ -125,7 +127,9 @@ test("cria categoria vinculada a uma categoria pai", async ({
    const parent = await findCategoryByName(team.id, parentName);
    const child = await findCategoryByName(team.id, childName);
    expect(parent).not.toBeNull();
+   expect(parent?.icon).toBe("wallet");
    expect(child?.parentId).toBe(parent?.id);
+   expect(child?.icon).toBeNull();
 
    await page
       .getByRole("textbox", { name: "Buscar categorias..." })
@@ -136,6 +140,50 @@ test("cria categoria vinculada a uma categoria pai", async ({
          .filter({ hasText: childName })
          .filter({ hasText: parentName }),
    ).toBeVisible();
+});
+
+test("permite escolher ícone na categoria pai e subcategoria herda sem persistir ícone", async ({
+   page,
+   e2eSession,
+   createdCategoryIds,
+}) => {
+   const parentName = `Pai Ícone E2E ${stamp()}`;
+   const childName = `Filha Ícone E2E ${stamp()}`;
+
+   await gotoCategories(page, e2eSession);
+   await page.getByRole("button", { name: "Nova Categoria" }).click();
+
+   let sheet = page.getByRole("dialog");
+   await expect(sheet.getByRole("radiogroup", { name: "Ícone" })).toBeVisible();
+   await sheet.getByRole("radio", { name: "Ícone Tecnologia" }).click();
+   await sheet.getByLabel("Nome").fill(parentName);
+   await sheet.getByRole("button", { name: "Criar categoria" }).click();
+   await expect(page.getByText("Categoria criada com sucesso.")).toBeVisible();
+   await rememberCreatedCategory(e2eSession, parentName, createdCategoryIds);
+
+   await page.getByRole("button", { name: "Nova Categoria" }).click();
+   sheet = page.getByRole("dialog");
+   await sheet.getByLabel("Categoria pai").click();
+   await page.getByRole("option", { name: parentName }).click();
+   await expect(
+      sheet.getByRole("radiogroup", { name: "Ícone" }),
+   ).not.toBeVisible();
+   await sheet.getByLabel("Nome").fill(childName);
+   await sheet.getByRole("button", { name: "Criar categoria" }).click();
+   await expect(page.getByText("Categoria criada com sucesso.")).toBeVisible();
+   await rememberCreatedCategory(e2eSession, childName, createdCategoryIds);
+
+   const team = await findTeamByOrgAndSlug(
+      e2eSession.orgSlug,
+      e2eSession.teamSlug,
+   );
+   expect(team).not.toBeNull();
+   if (!team) return;
+   const parent = await findCategoryByName(team.id, parentName);
+   const child = await findCategoryByName(team.id, childName);
+   expect(parent?.icon).toBe("smartphone");
+   expect(child?.parentId).toBe(parent?.id);
+   expect(child?.icon).toBeNull();
 });
 
 test("cria categoria sem categoria pai", async ({

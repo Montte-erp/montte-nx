@@ -16,12 +16,18 @@ import {
    SheetTitle,
 } from "@packages/ui/components/sheet";
 import { toast } from "@packages/ui/components/sonner";
+import {
+   Tooltip,
+   TooltipContent,
+   TooltipTrigger,
+} from "@packages/ui/components/tooltip";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc, type Outputs } from "@/integrations/orpc/client";
+import { CATEGORY_ICON_OPTIONS } from "./category-icons";
 
 const CATEGORY_TYPES = ["income", "expense", "transfer"] as const;
 type CategoryType = (typeof CATEGORY_TYPES)[number];
@@ -47,6 +53,7 @@ const formSchema = z.object({
       .min(2, "Nome deve ter no mínimo 2 caracteres.")
       .max(120, "Nome deve ter no máximo 120 caracteres."),
    parentId: z.string().min(1).optional().nullable(),
+   icon: z.string().min(1),
 });
 
 type FormValues = z.input<typeof formSchema>;
@@ -55,6 +62,7 @@ const DEFAULT_VALUES: FormValues = {
    type: "expense",
    name: "",
    parentId: NO_PARENT_VALUE,
+   icon: "briefcase",
 };
 
 function isFieldInvalid(field: {
@@ -96,6 +104,7 @@ export function CategoryFormSheet({
                name: value.name.trim(),
                type: value.type,
                parentId: selectedParent?.id ?? null,
+               icon: selectedParent ? null : value.icon,
                participatesDre: false,
             }),
             (e) => e,
@@ -186,6 +195,70 @@ export function CategoryFormSheet({
                                     ))}
                                  </SelectContent>
                               </Select>
+                           </Field>
+                        )}
+                     />
+                  );
+               }}
+            </form.Subscribe>
+
+            <form.Subscribe selector={(s) => s.values.parentId}>
+               {(parentId) => {
+                  if (parentId && parentId !== NO_PARENT_VALUE) return null;
+
+                  return (
+                     <form.Field
+                        name="icon"
+                        children={(field) => (
+                           <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                 Ícone
+                              </FieldLabel>
+                              <div
+                                 aria-label="Ícone"
+                                 className="grid grid-cols-5 gap-2"
+                                 role="radiogroup"
+                              >
+                                 {CATEGORY_ICON_OPTIONS.map((option) => {
+                                    const Icon = option.icon;
+                                    const checked =
+                                       field.state.value === option.value;
+                                    return (
+                                       <Tooltip key={option.value}>
+                                          <TooltipTrigger asChild>
+                                             <Button
+                                                aria-checked={checked}
+                                                aria-label={`Ícone ${option.label}`}
+                                                id={
+                                                   checked
+                                                      ? field.name
+                                                      : undefined
+                                                }
+                                                role="radio"
+                                                size="icon-sm"
+                                                type="button"
+                                                variant={
+                                                   checked
+                                                      ? "default"
+                                                      : "outline"
+                                                }
+                                                onBlur={field.handleBlur}
+                                                onClick={() =>
+                                                   field.handleChange(
+                                                      option.value,
+                                                   )
+                                                }
+                                             >
+                                                <Icon className="size-4" />
+                                             </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                             {option.label}
+                                          </TooltipContent>
+                                       </Tooltip>
+                                    );
+                                 })}
+                              </div>
                            </Field>
                         )}
                      />

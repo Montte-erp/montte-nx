@@ -81,6 +81,7 @@ export const create = protectedProcedure
                .insert(categories)
                .values({
                   ...data,
+                  icon: data.parentId ? null : data.icon,
                   teamId: context.teamId,
                   level: resolvedParent.level,
                   type: resolvedParent.type,
@@ -228,6 +229,9 @@ export const update = protectedProcedure
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
       const { resolvedParent } = context;
+      const nextParentId = resolvedParent.updateParent
+         ? (data.parentId ?? null)
+         : context.category.parentId;
 
       const conflictResult = await fromPromise(
          (async () => {
@@ -303,6 +307,7 @@ export const update = protectedProcedure
                .update(categories)
                .set({
                   ...data,
+                  icon: nextParentId ? null : data.icon,
                   ...(resolvedParent.updateParent
                      ? {
                           level: resolvedParent.level,
