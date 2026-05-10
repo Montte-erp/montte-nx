@@ -126,7 +126,7 @@ function CategoriesList() {
    const navigate = Route.useNavigate();
    const { search, type, includeArchived, groupBy, page, pageSize } =
       Route.useSearch();
-   const { parse: parseCsv } = useCsvFile();
+   const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
 
    const [{ data: result }, { data: categoryOptions }] = useSuspenseQueries({
@@ -250,6 +250,21 @@ function CategoriesList() {
             name: String(row.name ?? "").trim(),
             type: parseCategoryType(row.type),
          }),
+         template: {
+            filename: "modelo-categorias.csv",
+            label: "Baixar modelo CSV",
+            description:
+               "Inclui name e type. Use type como income, expense ou transfer.",
+            createBlob: () =>
+               generateCsv(
+                  [
+                     { name: "Vendas", type: "income" },
+                     { name: "Aluguel", type: "expense" },
+                     { name: "Transferência entre contas", type: "transfer" },
+                  ],
+                  ["name", "type"],
+               ),
+         },
          onImport: async (importedRows) => {
             await importBatchMutation.mutateAsync({
                categories: importedRows.map((r) => ({
@@ -260,7 +275,7 @@ function CategoriesList() {
             });
          },
       }),
-      [importBatchMutation, parseCsv, parseXlsx],
+      [importBatchMutation, generateCsv, parseCsv, parseXlsx],
    );
 
    const handleDelete = useCallback(
