@@ -20,7 +20,7 @@ import type { DataTableImportConfig } from "@/components/data-table/data-table-i
 import { DataTableExternalFilter } from "@/components/data-table/data-table-root";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
-import { useCallback, useMemo, useState } from "react";
+import { startTransition, useCallback, useMemo, useState } from "react";
 
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { z } from "zod";
@@ -395,9 +395,11 @@ function TagsList() {
                searchPlaceholder="Buscar centros de custo..."
                searchDefaultValue={search}
                onSearch={(value) =>
-                  navigate({
-                     search: (prev) => ({ ...prev, search: value, page: 1 }),
-                     replace: true,
+                  startTransition(() => {
+                     navigate({
+                        search: (prev) => ({ ...prev, search: value, page: 1 }),
+                        replace: true,
+                     });
                   })
                }
             >
