@@ -1,4 +1,9 @@
 import { Button } from "@packages/ui/components/button";
+import {
+   Collapsible,
+   CollapsibleContent,
+   CollapsibleTrigger,
+} from "@packages/ui/components/collapsible";
 import { Combobox } from "@packages/ui/components/combobox";
 import { DatePicker } from "@packages/ui/components/date-picker";
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
@@ -19,9 +24,12 @@ import {
    SheetTitle,
 } from "@packages/ui/components/sheet";
 import { toast } from "@packages/ui/components/sonner";
+import { Textarea } from "@packages/ui/components/textarea";
+import { uploadFile } from "@better-upload/client";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
+import { ChevronDown } from "lucide-react";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { QueryBoundary } from "@/components/query-boundary";
@@ -47,10 +55,20 @@ const STATUS_OPTIONS = [
    { value: "cancelled" as const, label: "Cancelado" },
 ];
 
+const ATTACHMENT_MAX_SIZE = 10 * 1024 * 1024;
+const ATTACHMENT_TYPES = ["application/pdf"] as const;
+
 function parseStatus(
    value: string,
 ): "pending" | "paid" | "cancelled" | undefined {
    return STATUS_OPTIONS.find((s) => s.value === value)?.value;
+}
+
+function extractPublicUrl(metadata: unknown): string | null {
+   if (typeof metadata !== "object" || metadata === null) return null;
+   if (!("publicUrl" in metadata)) return null;
+   const url = metadata.publicUrl;
+   return typeof url === "string" ? url : null;
 }
 
 const formSchema = z
@@ -65,11 +83,32 @@ const formSchema = z
       dueDate: z.string(),
       bankAccountId: z.string(),
       destinationBankAccountId: z.string(),
-      creditCardId: z.string(),
       categoryId: z.string(),
       contactId: z.string(),
+      description: z
+         .string()
+         .max(500, "Observações deve ter no máximo 500 caracteres."),
+      attachment: z.custom<File | null>(),
    })
    .superRefine((v, ctx) => {
+      if (v.attachment && v.attachment.size > ATTACHMENT_MAX_SIZE) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["attachment"],
+            message: "Comprovante deve ter no máximo 10MB.",
+         });
+      }
+      if (
+         v.attachment &&
+         !v.attachment.type.startsWith("image/") &&
+         !ATTACHMENT_TYPES.some((type) => type === v.attachment?.type)
+      ) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["attachment"],
+            message: "Comprovante deve ser imagem ou PDF.",
+         });
+      }
       if (v.type === "transfer") {
          if (!v.bankAccountId) {
             ctx.addIssue({
@@ -98,12 +137,11 @@ const formSchema = z
          }
       }
       if (v.type === "expense") {
-         if (!v.bankAccountId && !v.creditCardId) {
+         if (!v.bankAccountId) {
             ctx.addIssue({
                code: z.ZodIssueCode.custom,
                path: ["bankAccountId"],
-               message:
-                  "Despesas exigem uma conta bancária ou cartão de crédito.",
+               message: "Despesas exigem uma conta bancária.",
             });
          }
       }
@@ -129,15 +167,37 @@ const DEFAULT_VALUES: FormValues = {
    dueDate: "",
    bankAccountId: "",
    destinationBankAccountId: "",
-   creditCardId: "",
    categoryId: "",
    contactId: "",
+   description: "",
+   attachment: null,
 };
 
 function isFieldInvalid(field: {
    state: { meta: { isTouched: boolean; errors: unknown[] } };
 }) {
    return field.state.meta.isTouched && field.state.meta.errors.length > 0;
+}
+
+function uploadErrorMessage(error: unknown) {
+   if (error instanceof Error) return error.message;
+   if (typeof error === "object" && error && "message" in error) {
+      const message = error.message;
+      if (typeof message === "string") return message;
+   }
+   return "Falha ao enviar comprovante.";
+}
+
+function useTransactionAttachmentUpload() {
+   return useMutation({
+      mutationFn: (file: File) =>
+         uploadFile({
+            api: "/api/upload",
+            route: "transactionAttachment",
+            file,
+         }),
+      onError: (error) => toast.error(uploadErrorMessage(error)),
+   });
 }
 
 export function TransactionFormSheet() {
@@ -170,19 +230,12 @@ function TransactionFormSheetContent() {
    const { data: contacts } = useSuspenseQuery(
       orpc.contacts.getAll.queryOptions({}),
    );
-   const { data: creditCardsResult } = useSuspenseQuery(
-      orpc.creditCards.getAll.queryOptions({ input: { pageSize: 100 } }),
-   );
 
    const bankOptions = bankAccounts.map((b) => ({
       value: b.id,
       label: b.name,
    }));
    const contactOptions = contacts.map((c) => ({ value: c.id, label: c.name }));
-   const creditCardOptions = creditCardsResult.data.map((c) => ({
-      value: c.id,
-      label: c.name,
-   }));
 
    const createMutation = useMutation(
       orpc.transactions.create.mutationOptions({
@@ -193,11 +246,42 @@ function TransactionFormSheetContent() {
          onError: (e) => toast.error(e.message),
       }),
    );
+   const attachmentUpload = useTransactionAttachmentUpload();
 
    const form = useForm({
       defaultValues: DEFAULT_VALUES,
       validators: { onMount: formSchema, onChange: formSchema },
       onSubmit: async ({ value }) => {
+         const attachmentResult = value.attachment
+            ? await fromPromise(
+                 attachmentUpload.mutateAsync(value.attachment),
+                 uploadErrorMessage,
+              )
+            : null;
+         if (attachmentResult?.isErr()) {
+            toast.error(attachmentResult.error);
+            return;
+         }
+         const uploadedAttachment =
+            attachmentResult?.isOk() === true ? attachmentResult.value : null;
+         const attachmentUrl = uploadedAttachment
+            ? extractPublicUrl(uploadedAttachment.metadata)
+            : null;
+         if (uploadedAttachment && !attachmentUrl) {
+            toast.error("Falha ao enviar comprovante.");
+            return;
+         }
+         const attachments =
+            uploadedAttachment && attachmentUrl
+               ? [
+                    {
+                       url: attachmentUrl,
+                       filename: uploadedAttachment.file.name,
+                       size: uploadedAttachment.file.size,
+                       mimeType: uploadedAttachment.file.type || undefined,
+                    },
+                 ]
+               : [];
          const result = await fromPromise(
             createMutation.mutateAsync({
                type: value.type,
@@ -211,13 +295,11 @@ function TransactionFormSheetContent() {
                   value.type === "transfer"
                      ? value.destinationBankAccountId || null
                      : null,
-               creditCardId:
-                  value.type === "expense" ? value.creditCardId || null : null,
                categoryId:
                   value.type === "transfer" ? null : value.categoryId || null,
                contactId: value.contactId || null,
-               attachments: [],
-               description: null,
+               attachments,
+               description: value.description.trim() || null,
                paymentMethod: null,
             }),
             (e) => e,
@@ -259,128 +341,6 @@ function TransactionFormSheetContent() {
                         </SelectTrigger>
                         <SelectContent>
                            {TYPE_OPTIONS.map((o) => (
-                              <SelectItem key={o.value} value={o.value}>
-                                 {o.label}
-                              </SelectItem>
-                           ))}
-                        </SelectContent>
-                     </Select>
-                  </Field>
-               )}
-            </form.Field>
-
-            <form.Field name="name">
-               {(field) => (
-                  <Field data-invalid={isFieldInvalid(field) || undefined}>
-                     <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
-                     <Input
-                        aria-invalid={isFieldInvalid(field)}
-                        id={field.name}
-                        name={field.name}
-                        placeholder="Ex.: Aluguel de maio"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                     />
-                     {isFieldInvalid(field) ? (
-                        <FieldError>
-                           {field.state.meta.errors[0]?.message}
-                        </FieldError>
-                     ) : null}
-                  </Field>
-               )}
-            </form.Field>
-
-            <form.Field name="amount">
-               {(field) => (
-                  <Field data-invalid={isFieldInvalid(field) || undefined}>
-                     <FieldLabel htmlFor={field.name}>Valor</FieldLabel>
-                     <MoneyInput
-                        aria-invalid={isFieldInvalid(field)}
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        valueInCents={false}
-                        onBlur={field.handleBlur}
-                        onChange={(v) => field.handleChange(v ?? 0)}
-                     />
-                     {isFieldInvalid(field) ? (
-                        <FieldError>
-                           {field.state.meta.errors[0]?.message}
-                        </FieldError>
-                     ) : null}
-                  </Field>
-               )}
-            </form.Field>
-
-            <div className="grid grid-cols-2 gap-4">
-               <form.Field name="date">
-                  {(field) => (
-                     <Field data-invalid={isFieldInvalid(field) || undefined}>
-                        <FieldLabel htmlFor={field.name}>Data</FieldLabel>
-                        <DatePicker
-                           className="w-full overflow-hidden [&>span]:truncate"
-                           date={
-                              field.state.value
-                                 ? dayjs(field.state.value).toDate()
-                                 : undefined
-                           }
-                           placeholder="Selecionar"
-                           onSelect={(d) =>
-                              field.handleChange(
-                                 d ? dayjs(d).format("YYYY-MM-DD") : "",
-                              )
-                           }
-                        />
-                        {isFieldInvalid(field) ? (
-                           <FieldError>
-                              {field.state.meta.errors[0]?.message}
-                           </FieldError>
-                        ) : null}
-                     </Field>
-                  )}
-               </form.Field>
-
-               <form.Field name="dueDate">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel htmlFor={field.name}>Vencimento</FieldLabel>
-                        <DatePicker
-                           className="w-full overflow-hidden [&>span]:truncate"
-                           date={
-                              field.state.value
-                                 ? dayjs(field.state.value).toDate()
-                                 : undefined
-                           }
-                           placeholder="Selecionar"
-                           onSelect={(d) =>
-                              field.handleChange(
-                                 d ? dayjs(d).format("YYYY-MM-DD") : "",
-                              )
-                           }
-                        />
-                     </Field>
-                  )}
-               </form.Field>
-            </div>
-
-            <form.Field name="status">
-               {(field) => (
-                  <Field>
-                     <FieldLabel htmlFor={field.name}>Status</FieldLabel>
-                     <Select
-                        value={field.state.value}
-                        onValueChange={(v) => {
-                           const parsed = parseStatus(v);
-                           if (!parsed) return;
-                           field.handleChange(parsed);
-                        }}
-                     >
-                        <SelectTrigger id={field.name} name={field.name}>
-                           <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                           {STATUS_OPTIONS.map((o) => (
                               <SelectItem key={o.value} value={o.value}>
                                  {o.label}
                               </SelectItem>
@@ -468,30 +428,6 @@ function TransactionFormSheetContent() {
                            </form.Field>
                         ) : null}
 
-                        {type === "expense" ? (
-                           <form.Field name="creditCardId">
-                              {(field) => (
-                                 <Field>
-                                    <FieldLabel htmlFor={field.name}>
-                                       Cartão de crédito
-                                    </FieldLabel>
-                                    <Combobox
-                                       emptyMessage="Nenhum cartão."
-                                       id={field.name}
-                                       options={creditCardOptions}
-                                       placeholder="Selecionar cartão..."
-                                       searchPlaceholder="Buscar cartão..."
-                                       value={field.state.value}
-                                       onBlur={field.handleBlur}
-                                       onValueChange={(v) =>
-                                          field.handleChange(v)
-                                       }
-                                    />
-                                 </Field>
-                              )}
-                           </form.Field>
-                        ) : null}
-
                         {type !== "transfer" ? (
                            <form.Field name="categoryId">
                               {(field) => (
@@ -523,9 +459,7 @@ function TransactionFormSheetContent() {
             <form.Field name="contactId">
                {(field) => (
                   <Field>
-                     <FieldLabel htmlFor={field.name}>
-                        Fornecedor/Cliente
-                     </FieldLabel>
+                     <FieldLabel htmlFor={field.name}>Contato</FieldLabel>
                      <Combobox
                         emptyMessage="Nenhum contato."
                         id={field.name}
@@ -539,6 +473,196 @@ function TransactionFormSheetContent() {
                   </Field>
                )}
             </form.Field>
+
+            <div className="grid grid-cols-2 gap-4">
+               <form.Field name="date">
+                  {(field) => (
+                     <Field data-invalid={isFieldInvalid(field) || undefined}>
+                        <FieldLabel htmlFor={field.name}>Data</FieldLabel>
+                        <DatePicker
+                           className="w-full overflow-hidden [&>span]:truncate"
+                           date={
+                              field.state.value
+                                 ? dayjs(field.state.value).toDate()
+                                 : undefined
+                           }
+                           placeholder="Selecionar"
+                           onSelect={(d) =>
+                              field.handleChange(
+                                 d ? dayjs(d).format("YYYY-MM-DD") : "",
+                              )
+                           }
+                        />
+                        {isFieldInvalid(field) ? (
+                           <FieldError>
+                              {field.state.meta.errors[0]?.message}
+                           </FieldError>
+                        ) : null}
+                     </Field>
+                  )}
+               </form.Field>
+
+               <form.Field name="amount">
+                  {(field) => (
+                     <Field data-invalid={isFieldInvalid(field) || undefined}>
+                        <FieldLabel htmlFor={field.name}>Valor</FieldLabel>
+                        <MoneyInput
+                           aria-invalid={isFieldInvalid(field)}
+                           id={field.name}
+                           name={field.name}
+                           value={field.state.value}
+                           valueInCents={false}
+                           onBlur={field.handleBlur}
+                           onChange={(v) => field.handleChange(v ?? 0)}
+                        />
+                        {isFieldInvalid(field) ? (
+                           <FieldError>
+                              {field.state.meta.errors[0]?.message}
+                           </FieldError>
+                        ) : null}
+                     </Field>
+                  )}
+               </form.Field>
+            </div>
+
+            <form.Field name="dueDate">
+               {(field) => (
+                  <Field>
+                     <FieldLabel htmlFor={field.name}>Vencimento</FieldLabel>
+                     <DatePicker
+                        className="w-full overflow-hidden [&>span]:truncate"
+                        date={
+                           field.state.value
+                              ? dayjs(field.state.value).toDate()
+                              : undefined
+                        }
+                        placeholder="Selecionar"
+                        onSelect={(d) =>
+                           field.handleChange(
+                              d ? dayjs(d).format("YYYY-MM-DD") : "",
+                           )
+                        }
+                     />
+                  </Field>
+               )}
+            </form.Field>
+
+            <form.Field name="name">
+               {(field) => (
+                  <Field data-invalid={isFieldInvalid(field) || undefined}>
+                     <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
+                     <Input
+                        aria-invalid={isFieldInvalid(field)}
+                        id={field.name}
+                        name={field.name}
+                        placeholder="Ex.: Aluguel de maio"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                     />
+                     {isFieldInvalid(field) ? (
+                        <FieldError>
+                           {field.state.meta.errors[0]?.message}
+                        </FieldError>
+                     ) : null}
+                  </Field>
+               )}
+            </form.Field>
+
+            <Collapsible className="flex flex-col gap-4">
+               <CollapsibleTrigger asChild>
+                  <Button
+                     className="justify-between px-4"
+                     type="button"
+                     variant="outline"
+                  >
+                     Mais detalhes
+                     <ChevronDown className="size-4" />
+                  </Button>
+               </CollapsibleTrigger>
+               <CollapsibleContent className="flex flex-col gap-4">
+                  <form.Field name="status">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel htmlFor={field.name}>Status</FieldLabel>
+                           <Select
+                              value={field.state.value}
+                              onValueChange={(v) => {
+                                 const parsed = parseStatus(v);
+                                 if (!parsed) return;
+                                 field.handleChange(parsed);
+                              }}
+                           >
+                              <SelectTrigger id={field.name} name={field.name}>
+                                 <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 {STATUS_OPTIONS.map((o) => (
+                                    <SelectItem key={o.value} value={o.value}>
+                                       {o.label}
+                                    </SelectItem>
+                                 ))}
+                              </SelectContent>
+                           </Select>
+                        </Field>
+                     )}
+                  </form.Field>
+
+                  <form.Field name="description">
+                     {(field) => (
+                        <Field
+                           data-invalid={isFieldInvalid(field) || undefined}
+                        >
+                           <FieldLabel htmlFor={field.name}>
+                              Observações
+                           </FieldLabel>
+                           <Textarea
+                              aria-invalid={isFieldInvalid(field)}
+                              id={field.name}
+                              name={field.name}
+                              placeholder="Observações sobre o lançamento"
+                              value={field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                           />
+                           {isFieldInvalid(field) ? (
+                              <FieldError>
+                                 {field.state.meta.errors[0]?.message}
+                              </FieldError>
+                           ) : null}
+                        </Field>
+                     )}
+                  </form.Field>
+
+                  <form.Field name="attachment">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel htmlFor={field.name}>
+                              Comprovante
+                           </FieldLabel>
+                           <Input
+                              accept="image/*,application/pdf"
+                              aria-invalid={isFieldInvalid(field)}
+                              id={field.name}
+                              name={field.name}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.files?.[0] ?? null)
+                              }
+                              type="file"
+                           />
+                           {isFieldInvalid(field) ? (
+                              <FieldError>
+                                 {field.state.meta.errors[0]?.message}
+                              </FieldError>
+                           ) : null}
+                        </Field>
+                     )}
+                  </form.Field>
+               </CollapsibleContent>
+            </Collapsible>
          </form>
 
          <SheetFooter>
@@ -553,7 +677,9 @@ function TransactionFormSheetContent() {
             >
                {({ canSubmit, isSubmitting }) => (
                   <Button
-                     disabled={!canSubmit || isSubmitting}
+                     disabled={
+                        !canSubmit || isSubmitting || attachmentUpload.isPending
+                     }
                      onClick={() => form.handleSubmit()}
                   >
                      Criar lançamento
