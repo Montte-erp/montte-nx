@@ -119,7 +119,7 @@ function BankAccountsList() {
       Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
-   const { parse: parseCsv } = useCsvFile();
+   const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
 
    const { data: result } = useSuspenseQuery(
@@ -194,6 +194,33 @@ function BankAccountsList() {
             createdAt: dayjs().toISOString(),
             updatedAt: dayjs().toISOString(),
          }),
+         template: {
+            filename: "modelo-contas-bancarias.csv",
+            label: "Baixar modelo CSV",
+            description:
+               "Inclui name, type e initialBalance. Use type como checking, savings, investment, payment ou cash.",
+            createBlob: () =>
+               generateCsv(
+                  [
+                     {
+                        name: "Conta Corrente Principal",
+                        type: "checking",
+                        initialBalance: "1500.00",
+                     },
+                     {
+                        name: "Reserva de Emergência",
+                        type: "savings",
+                        initialBalance: "2500.00",
+                     },
+                     {
+                        name: "Caixa da Loja",
+                        type: "cash",
+                        initialBalance: "300.00",
+                     },
+                  ],
+                  ["name", "type", "initialBalance"],
+               ),
+         },
          onImport: async (rows) => {
             const invalidType = rows.some((r) => !resolveType(r.type));
             if (invalidType) {
@@ -218,7 +245,7 @@ function BankAccountsList() {
             });
          },
       }),
-      [bulkCreateMutation, parseCsv, parseXlsx],
+      [bulkCreateMutation, generateCsv, parseCsv, parseXlsx],
    );
 
    const handleDelete = useCallback(
