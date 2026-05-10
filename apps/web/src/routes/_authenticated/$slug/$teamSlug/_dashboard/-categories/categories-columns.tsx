@@ -14,54 +14,13 @@ import {
 import type { ColumnDef } from "@tanstack/react-table";
 import {
    Archive,
-   Baby,
-   BookOpen,
-   Briefcase,
-   Car,
-   Coffee,
    CornerDownRight,
-   CreditCard,
-   Dumbbell,
-   Fuel,
-   Gift,
-   Heart,
-   Home,
-   type LucideIcon,
-   Music,
-   Package,
-   Plane,
-   ShoppingCart,
-   Smartphone,
    ShieldCheck,
    Star,
    Tags,
    TriangleAlert,
-   Utensils,
-   Wallet,
-   Zap,
 } from "lucide-react";
-
-const ICON_MAP: Record<string, LucideIcon> = {
-   wallet: Wallet,
-   "credit-card": CreditCard,
-   home: Home,
-   car: Car,
-   "shopping-cart": ShoppingCart,
-   utensils: Utensils,
-   plane: Plane,
-   heart: Heart,
-   "book-open": BookOpen,
-   briefcase: Briefcase,
-   package: Package,
-   music: Music,
-   coffee: Coffee,
-   smartphone: Smartphone,
-   dumbbell: Dumbbell,
-   baby: Baby,
-   gift: Gift,
-   zap: Zap,
-   fuel: Fuel,
-};
+import { CATEGORY_ICON_MAP } from "./category-icons";
 
 export type CategoryRow = Outputs["categories"]["getPaginated"]["data"][number];
 type CategoryType = "income" | "expense" | "transfer";
@@ -69,6 +28,41 @@ const NO_PARENT_VALUE = "sem-categoria-pai";
 
 function isCategoryType(value: unknown): value is CategoryType {
    return value === "income" || value === "expense" || value === "transfer";
+}
+
+function getCategoryParentChain(
+   category: CategoryRow,
+   categoriesById: Map<string, CategoryRow>,
+) {
+   const chain: CategoryRow[] = [];
+   const visited = new Set<string>();
+   let current = category;
+
+   while (current.parentId && !visited.has(current.parentId)) {
+      visited.add(current.parentId);
+      const parent = categoriesById.get(current.parentId);
+      if (!parent) return chain;
+      chain.push(parent);
+      current = parent;
+   }
+
+   return chain;
+}
+
+function getInheritedVisual(
+   category: CategoryRow,
+   categoriesById: Map<string, CategoryRow>,
+) {
+   if (!category.parentId) {
+      return { color: category.color, icon: category.icon };
+   }
+
+   const chain = getCategoryParentChain(category, categoriesById);
+   const root = chain[chain.length - 1];
+   return {
+      color: root && !root.parentId ? root.color : null,
+      icon: root && !root.parentId ? root.icon : null,
+   };
 }
 
 export function buildCategoryColumns(options?: {
@@ -109,8 +103,12 @@ export function buildCategoryColumns(options?: {
                : undefined,
          },
          cell: ({ row }) => {
-            const { name, color, icon, isDefault } = row.original;
-            const IconComponent = icon ? ICON_MAP[icon] : null;
+            const { name, isDefault } = row.original;
+            const { color, icon } = getInheritedVisual(
+               row.original,
+               categoriesById,
+            );
+            const IconComponent = icon ? CATEGORY_ICON_MAP[icon] : null;
 
             const archivedIndicator = row.original.isArchived ? (
                <Tooltip>
@@ -166,6 +164,12 @@ export function buildCategoryColumns(options?: {
                      <CornerDownRight
                         aria-hidden="true"
                         className="size-4 shrink-0 text-muted-foreground/60"
+                     />
+                  )}
+                  {IconComponent && (
+                     <IconComponent
+                        className="size-4 shrink-0 text-muted-foreground"
+                        style={{ color: color ?? undefined }}
                      />
                   )}
                   <span

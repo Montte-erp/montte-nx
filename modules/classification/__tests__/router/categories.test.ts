@@ -54,6 +54,7 @@ describe("categories router", () => {
          {
             name: "Marketing",
             type: "expense",
+            icon: "briefcase",
             participatesDre: false,
          },
          { context: ctx },
@@ -62,12 +63,14 @@ describe("categories router", () => {
       expect(result.teamId).toBe(teamId);
       expect(result.name).toBe("Marketing");
       expect(result.type).toBe("expense");
+      expect(result.icon).toBe("briefcase");
 
       const [persisted] = await testDb.db
          .select()
          .from(categories)
          .where(eq(categories.id, result.id));
       expect(persisted?.name).toBe("Marketing");
+      expect(persisted?.icon).toBe("briefcase");
 
       expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(1);
       const [, payload] = enqueueDeriveKeywordsSpy.mock.calls[0] ?? [];
@@ -88,6 +91,7 @@ describe("categories router", () => {
          {
             name: "Vendas",
             type: "income",
+            icon: "briefcase",
             participatesDre: false,
             subcategories: [{ name: "Produtos" }, { name: "Serviços" }],
          },
@@ -99,7 +103,9 @@ describe("categories router", () => {
          .from(categories)
          .where(eq(categories.teamId, teamId));
       expect(allRows).toHaveLength(3);
-      expect(allRows.filter((r) => r.parentId === result.id)).toHaveLength(2);
+      const childRows = allRows.filter((r) => r.parentId === result.id);
+      expect(childRows).toHaveLength(2);
+      expect(childRows.every((r) => r.icon === null)).toBe(true);
 
       expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(1);
    });
@@ -132,6 +138,37 @@ describe("categories router", () => {
          .from(categories)
          .where(eq(categories.id, result.id));
       expect(persisted?.parentId).toBe(parent.id);
+   });
+
+   it("create with parentId does not persist a subcategory icon", async () => {
+      const { teamId } = await seedTeam(testDb.db);
+      const parent = await makeCategory(testDb.db, teamId, {
+         icon: "briefcase",
+         name: "Operacional",
+         type: "expense",
+      });
+      const ctx = createTestContext(testDb.db, { teamId });
+
+      const result = await call(
+         categoriesRouter.create,
+         {
+            name: "Aluguel",
+            type: "expense",
+            parentId: parent.id,
+            icon: "wallet",
+            participatesDre: false,
+         },
+         { context: ctx },
+      );
+
+      expect(result.parentId).toBe(parent.id);
+      expect(result.icon).toBeNull();
+
+      const [persisted] = await testDb.db
+         .select()
+         .from(categories)
+         .where(eq(categories.id, result.id));
+      expect(persisted?.icon).toBeNull();
    });
 
    it("update on cross-team category throws NOT_FOUND", async () => {
@@ -209,6 +246,34 @@ describe("categories router", () => {
          .from(categories)
          .where(eq(categories.id, cat.id));
       expect(persisted?.parentId).toBe(newParent.id);
+   });
+
+   it("update clears icon when moving a root category under a parent", async () => {
+      const { teamId } = await seedTeam(testDb.db);
+      const parent = await makeCategory(testDb.db, teamId, {
+         name: "Pai",
+         icon: "briefcase",
+      });
+      const cat = await makeCategory(testDb.db, teamId, {
+         name: "Filha",
+         icon: "wallet",
+      });
+      const ctx = createTestContext(testDb.db, { teamId });
+
+      const result = await call(
+         categoriesRouter.update,
+         { id: cat.id, parentId: parent.id, participatesDre: false },
+         { context: ctx },
+      );
+
+      expect(result.parentId).toBe(parent.id);
+      expect(result.icon).toBeNull();
+
+      const [persisted] = await testDb.db
+         .select()
+         .from(categories)
+         .where(eq(categories.id, cat.id));
+      expect(persisted?.icon).toBeNull();
    });
 
    it("update accepts null parentId and promotes category to root", async () => {
