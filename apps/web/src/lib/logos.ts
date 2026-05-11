@@ -35,6 +35,7 @@ const BRAND_LOGO_SLUG: Record<string, string> = {
 const BANK_DOMAIN: Record<string, string> = {
    "001": "bb.com.br",
    "033": "santander.com.br",
+   "070": "brb.com.br",
    "077": "bancointer.com.br",
    "104": "caixa.gov.br",
    "208": "btgpactual.com",
@@ -65,21 +66,27 @@ export function bankDomain(
    return BANK_DOMAIN[bankCode.padStart(3, "0")];
 }
 
-const DEFAULT_LOGO_DEV_TOKEN = "pk_P3xoj_JDT9ub1E6jZ_j7fw";
-
 export function bankLogoUrl(
    bankCode: string | null | undefined,
    logoDevToken?: string,
 ): string | undefined {
    const domain = bankDomain(bankCode);
    if (!domain) return undefined;
-   const token = logoDevToken ?? DEFAULT_LOGO_DEV_TOKEN;
-   return `https://img.logo.dev/${domain}?token=${token}&size=64&format=webp&retina=true`;
+   const token = logoDevToken?.trim();
+   const params = new URLSearchParams({
+      fallback: "monogram",
+      format: "webp",
+      retina: "true",
+      size: "128",
+   });
+   if (token) params.set("token", token);
+   return `https://img.logo.dev/${domain}?${params.toString()}`;
 }
 
 export const LOGO_DEV_ATTRIBUTION = {
    url: "https://logo.dev",
-   text: "Logos by Logo.dev",
+   text: "Logos por Logo.dev",
+   logoUrl: "https://www.logo.dev/favicon.ico",
 } as const;
 
 export function brandLogoUrl(brand: string): string | undefined {

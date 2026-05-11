@@ -41,7 +41,6 @@ import type { ReactNode } from "react";
 import { z } from "zod";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
-import { LogoDevAttribution } from "@/components/logo-dev-attribution";
 import { QueryBoundary } from "@/components/query-boundary";
 import { bankInitials, bankLogoUrl } from "@/lib/logos";
 
@@ -482,9 +481,6 @@ function BankAccountFormSheetContent() {
             </form.Field>
          </form>
 
-         <div className="px-4">
-            <LogoDevAttribution className="text-xs text-muted-foreground hover:underline" />
-         </div>
          <SheetFooter>
             <SheetClose asChild>
                <Button variant="outline">Cancelar</Button>

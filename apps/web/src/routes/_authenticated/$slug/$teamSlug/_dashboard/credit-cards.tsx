@@ -15,7 +15,6 @@ import { z } from "zod";
 import { DefaultHeader } from "../-layout/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
-import { LogoDevAttribution } from "@/components/logo-dev-attribution";
 import { CreditCardFormSheet } from "./-credit-cards/credit-card-form-sheet";
 import {
    DataTableBulkActions,
@@ -340,7 +339,6 @@ function CreditCardsList() {
                }
             />
          </DataTableRoot>
-         <LogoDevAttribution />
       </div>
    );
 }

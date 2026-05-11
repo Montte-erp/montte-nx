@@ -34,6 +34,11 @@ function formatBRL(value: string | number): string {
    return format(of(String(value), "BRL"), "pt-BR");
 }
 
+function formatBankIssuerName(name: string): string {
+   const parts = name.split(" - ");
+   return parts.at(-1)?.trim() || name;
+}
+
 type BankAccountOption = {
    id: string;
    name: string;
@@ -70,21 +75,13 @@ export function buildCreditCardColumns(options?: {
          accessorKey: "name",
          header: "Nome",
          cell: ({ row }) => (
-            <div className="flex items-center gap-2 min-w-0">
-               <span
-                  className="size-2 rounded-full shrink-0"
-                  style={{ backgroundColor: row.original.color }}
-               />
-               <div className="flex min-w-0 flex-col">
-                  <span className="font-medium truncate">
-                     {row.original.name}
+            <div className="flex min-w-0 flex-col">
+               <span className="font-medium truncate">{row.original.name}</span>
+               {row.original.last4 ? (
+                  <span className="text-xs text-muted-foreground/90 tabular-nums">
+                     Final {row.original.last4}
                   </span>
-                  {row.original.last4 ? (
-                     <span className="text-xs text-muted-foreground tabular-nums">
-                        Final {row.original.last4}
-                     </span>
-                  ) : null}
-               </div>
+               ) : null}
             </div>
          ),
          meta: {
@@ -103,7 +100,7 @@ export function buildCreditCardColumns(options?: {
             const logo = brandLogoUrl(brand);
             return (
                <div className="flex items-center gap-2 min-w-0">
-                  <Avatar className="size-4 shrink-0 rounded-md bg-white p-2 ring-1 ring-border">
+                  <Avatar className="size-4 shrink-0 rounded-md bg-white ring-1 ring-border">
                      {logo ? (
                         <AvatarImage
                            alt={BRAND_LABEL[brand] ?? brand}
@@ -131,10 +128,10 @@ export function buildCreditCardColumns(options?: {
          header: "Limite",
          cell: ({ row }) => (
             <Announcement>
-               <AnnouncementTag className="flex items-center text-muted-foreground">
-                  <Banknote className="size-2" />
+               <AnnouncementTag>
+                  <Banknote className="size-2 text-emerald-500" />
                </AnnouncementTag>
-               <AnnouncementTitle className="tabular-nums">
+               <AnnouncementTitle>
                   {formatBRL(row.original.creditLimit)}
                </AnnouncementTitle>
             </Announcement>
@@ -146,8 +143,8 @@ export function buildCreditCardColumns(options?: {
          header: "Fechamento",
          cell: ({ row }) => (
             <Announcement>
-               <AnnouncementTag className="flex items-center text-muted-foreground">
-                  <CalendarClock className="size-2" />
+               <AnnouncementTag>
+                  <CalendarClock className="size-2 text-amber-500" />
                </AnnouncementTag>
                <AnnouncementTitle>
                   Dia {row.original.closingDay}
@@ -165,8 +162,8 @@ export function buildCreditCardColumns(options?: {
          header: "Vencimento",
          cell: ({ row }) => (
             <Announcement>
-               <AnnouncementTag className="flex items-center text-muted-foreground">
-                  <Calendar className="size-2" />
+               <AnnouncementTag>
+                  <Calendar className="size-2 text-sky-500" />
                </AnnouncementTag>
                <AnnouncementTitle>Dia {row.original.dueDay}</AnnouncementTitle>
             </Announcement>
@@ -185,6 +182,7 @@ export function buildCreditCardColumns(options?: {
             if (!account)
                return <span className="text-muted-foreground">—</span>;
             const issuer = account.bankName?.trim() || account.name;
+            const issuerName = formatBankIssuerName(issuer);
             const logo = bankLogoUrl(account.bankCode, logoDevToken);
             return (
                <div className="flex items-center gap-2 min-w-0">
@@ -192,7 +190,7 @@ export function buildCreditCardColumns(options?: {
                      {logo ? (
                         <AvatarImage
                            alt={issuer}
-                           className="object-contain p-2"
+                           className="object-contain"
                            src={logo}
                         />
                      ) : null}
@@ -209,14 +207,7 @@ export function buildCreditCardColumns(options?: {
                         )}
                      </AvatarFallback>
                   </Avatar>
-                  <div className="flex min-w-0 flex-col">
-                     <span className="text-sm truncate">{issuer}</span>
-                     {account.bankCode ? (
-                        <span className="text-xs text-muted-foreground tabular-nums">
-                           {account.bankCode}
-                        </span>
-                     ) : null}
-                  </div>
+                  <span className="text-sm truncate">{issuerName}</span>
                </div>
             );
          },

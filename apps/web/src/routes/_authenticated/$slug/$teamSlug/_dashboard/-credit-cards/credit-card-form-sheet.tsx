@@ -1,8 +1,14 @@
 import { of, toMajorUnitsString } from "@f-o-t/money";
+import {
+   Avatar,
+   AvatarFallback,
+   AvatarImage,
+} from "@packages/ui/components/avatar";
 import { Button } from "@packages/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { MoneyInput } from "@packages/ui/components/money-input";
+import { NumberInput } from "@packages/ui/components/number-input";
 import {
    Select,
    SelectContent,
@@ -25,7 +31,11 @@ import { z } from "zod";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
-import { BRAND_LABEL, creditCardBrandFromPrefix } from "@/lib/logos";
+import {
+   BRAND_LABEL,
+   brandLogoUrl,
+   creditCardBrandFromPrefix,
+} from "@/lib/logos";
 
 const daySchema = z
    .number({ error: "Dia é obrigatório." })
@@ -47,7 +57,7 @@ const formSchema = z.object({
          (value) => value === "" || /^\d{4}$/.test(value),
          "Informe os 4 últimos dígitos.",
       ),
-   creditLimit: z.number().min(0, "Limite não pode ser negativo."),
+   creditLimit: z.number().min(0.01, "Limite é obrigatório."),
    closingDay: daySchema,
    dueDay: daySchema,
 });
@@ -149,7 +159,9 @@ function CreditCardFormSheetContent() {
             <form.Field name="name">
                {(field) => (
                   <Field data-invalid={isFieldInvalid(field) || undefined}>
-                     <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
+                     <FieldLabel htmlFor={field.name} required>
+                        Nome
+                     </FieldLabel>
                      <Input
                         aria-invalid={isFieldInvalid(field)}
                         id={field.name}
@@ -171,7 +183,7 @@ function CreditCardFormSheetContent() {
             <form.Field name="bankAccountId">
                {(field) => (
                   <Field data-invalid={isFieldInvalid(field) || undefined}>
-                     <FieldLabel htmlFor={field.name}>
+                     <FieldLabel htmlFor={field.name} required>
                         Conta vinculada
                      </FieldLabel>
                      <Select
@@ -214,37 +226,71 @@ function CreditCardFormSheetContent() {
                   const detectedBrand = creditCardBrandFromPrefix(
                      field.state.value,
                   );
+                  const detectedBrandLogo = detectedBrand
+                     ? brandLogoUrl(detectedBrand)
+                     : undefined;
                   return (
                      <Field data-invalid={isFieldInvalid(field) || undefined}>
-                        <FieldLabel htmlFor={field.name}>
-                           4 primeiros dígitos
-                        </FieldLabel>
-                        <Input
-                           aria-invalid={isFieldInvalid(field)}
-                           id={field.name}
-                           inputMode="numeric"
-                           maxLength={4}
-                           name={field.name}
-                           placeholder="Ex.: 4111"
-                           value={field.state.value}
-                           onBlur={field.handleBlur}
-                           onChange={(e) =>
-                              field.handleChange(
-                                 e.target.value.replace(/\D/g, "").slice(0, 4),
-                              )
-                           }
-                        />
-                        {isFieldInvalid(field) ? (
+                        {detectedBrand ? (
+                           <>
+                              <FieldLabel required>Bandeira</FieldLabel>
+                              <div className="flex items-center justify-between rounded-md bg-muted px-4 py-2">
+                                 <div className="flex min-w-0 items-center gap-2">
+                                    {detectedBrandLogo ? (
+                                       <Avatar className="size-4 shrink-0 rounded-md bg-white ring-1 ring-border">
+                                          <AvatarImage
+                                             alt={BRAND_LABEL[detectedBrand]}
+                                             className="object-contain"
+                                             src={detectedBrandLogo}
+                                          />
+                                          <AvatarFallback className="rounded-md text-[10px]">
+                                             {BRAND_LABEL[detectedBrand][0]}
+                                          </AvatarFallback>
+                                       </Avatar>
+                                    ) : null}
+                                    <span className="truncate text-sm font-medium text-foreground">
+                                       {BRAND_LABEL[detectedBrand]}
+                                    </span>
+                                 </div>
+                                 <Button
+                                    size="sm"
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => field.handleChange("")}
+                                 >
+                                    Alterar
+                                 </Button>
+                              </div>
+                           </>
+                        ) : (
+                           <>
+                              <FieldLabel htmlFor={field.name} required>
+                                 4 primeiros dígitos
+                              </FieldLabel>
+                              <Input
+                                 aria-invalid={isFieldInvalid(field)}
+                                 id={field.name}
+                                 inputMode="numeric"
+                                 maxLength={4}
+                                 name={field.name}
+                                 placeholder="Ex.: 4111"
+                                 value={field.state.value}
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(
+                                       e.target.value
+                                          .replace(/\D/g, "")
+                                          .slice(0, 4),
+                                    )
+                                 }
+                              />
+                           </>
+                        )}
+                        {isFieldInvalid(field) && !detectedBrand ? (
                            <FieldError>
                               {field.state.meta.errors[0]?.message}
                            </FieldError>
-                        ) : (
-                           <span className="text-xs text-muted-foreground">
-                              {detectedBrand
-                                 ? `Bandeira: ${BRAND_LABEL[detectedBrand]}`
-                                 : "Bandeira não identificada"}
-                           </span>
-                        )}
+                        ) : null}
                      </Field>
                   );
                }}
@@ -283,7 +329,9 @@ function CreditCardFormSheetContent() {
             <form.Field name="creditLimit">
                {(field) => (
                   <Field data-invalid={isFieldInvalid(field) || undefined}>
-                     <FieldLabel htmlFor={field.name}>Limite</FieldLabel>
+                     <FieldLabel htmlFor={field.name} required>
+                        Limite
+                     </FieldLabel>
                      <MoneyInput
                         aria-invalid={isFieldInvalid(field)}
                         id={field.name}
@@ -305,27 +353,19 @@ function CreditCardFormSheetContent() {
                <form.Field name="closingDay">
                   {(field) => (
                      <Field data-invalid={isFieldInvalid(field) || undefined}>
-                        <FieldLabel htmlFor={field.name}>
+                        <FieldLabel htmlFor={field.name} required>
                            Dia de fechamento
                         </FieldLabel>
-                        <Input
+                        <NumberInput
                            aria-invalid={isFieldInvalid(field)}
                            id={field.name}
-                           inputMode="numeric"
                            max={31}
                            min={1}
                            name={field.name}
                            placeholder="1"
-                           type="number"
                            value={field.state.value}
                            onBlur={field.handleBlur}
-                           onChange={(e) =>
-                              field.handleChange(
-                                 e.target.value === ""
-                                    ? 0
-                                    : Number(e.target.value),
-                              )
-                           }
+                           onChange={(value) => field.handleChange(value)}
                         />
                         {isFieldInvalid(field) ? (
                            <FieldError>
@@ -339,27 +379,19 @@ function CreditCardFormSheetContent() {
                <form.Field name="dueDay">
                   {(field) => (
                      <Field data-invalid={isFieldInvalid(field) || undefined}>
-                        <FieldLabel htmlFor={field.name}>
+                        <FieldLabel htmlFor={field.name} required>
                            Dia de vencimento
                         </FieldLabel>
-                        <Input
+                        <NumberInput
                            aria-invalid={isFieldInvalid(field)}
                            id={field.name}
-                           inputMode="numeric"
                            max={31}
                            min={1}
                            name={field.name}
                            placeholder="10"
-                           type="number"
                            value={field.state.value}
                            onBlur={field.handleBlur}
-                           onChange={(e) =>
-                              field.handleChange(
-                                 e.target.value === ""
-                                    ? 0
-                                    : Number(e.target.value),
-                              )
-                           }
+                           onChange={(value) => field.handleChange(value)}
                         />
                         {isFieldInvalid(field) ? (
                            <FieldError>
