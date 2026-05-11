@@ -213,10 +213,13 @@ function CreditCardsList() {
    const columns = useMemo(
       () =>
          buildCreditCardColumns({
-            bankAccounts: (bankAccounts ?? []) as Array<{
-               id: string;
-               name: string;
-            }>,
+            bankAccounts: (bankAccounts ?? []).map((b) => ({
+               id: b.id,
+               name: b.name,
+               bankName: b.bankName,
+               bankCode: b.bankCode,
+               color: b.color,
+            })),
          }),
       [bankAccounts],
    );

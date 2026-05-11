@@ -1,4 +1,5 @@
 import { format, of } from "@f-o-t/money";
+import { Avatar, AvatarFallback } from "@packages/ui/components/avatar";
 import { Badge } from "@packages/ui/components/badge";
 import {
    Announcement,
@@ -6,7 +7,13 @@ import {
    AnnouncementTitle,
 } from "@/components/blocks/announcement";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Banknote, Calendar, CalendarClock } from "lucide-react";
+import {
+   Banknote,
+   Calendar,
+   CalendarClock,
+   CreditCard as CreditCardIcon,
+   Landmark,
+} from "lucide-react";
 import { z } from "zod";
 import type { Outputs } from "@/integrations/orpc/client";
 
@@ -25,6 +32,30 @@ const BRAND_LABEL: Record<string, string> = {
    other: "Outra",
 };
 
+const BRAND_COLOR: Record<string, string> = {
+   visa: "#1A1F71",
+   mastercard: "#EB001B",
+   elo: "#000000",
+   amex: "#2E77BC",
+   hipercard: "#822124",
+   other: "#6B7280",
+};
+
+function bankInitials(name: string): string {
+   const parts = name.trim().split(/\s+/).filter(Boolean);
+   if (parts.length === 0) return "?";
+   if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+   return (parts[0]![0]! + parts[1]![0]!).toUpperCase();
+}
+
+type BankAccountOption = {
+   id: string;
+   name: string;
+   bankName?: string | null;
+   bankCode?: string | null;
+   color?: string | null;
+};
+
 const STATUS_VARIANT = {
    active: "success",
    blocked: "secondary",
@@ -38,8 +69,11 @@ const STATUS_LABEL = {
 } as const;
 
 export function buildCreditCardColumns(options?: {
-   bankAccounts?: Array<{ id: string; name: string }>;
+   bankAccounts?: Array<BankAccountOption>;
 }): ColumnDef<CreditCardRow>[] {
+   const bankAccountsById = new Map(
+      (options?.bankAccounts ?? []).map((b) => [b.id, b] as const),
+   );
    return [
       {
          accessorKey: "name",
@@ -65,8 +99,19 @@ export function buildCreditCardColumns(options?: {
          cell: ({ row }) => {
             const brand = row.original.brand;
             if (!brand) return <span className="text-muted-foreground">—</span>;
+            const color = BRAND_COLOR[brand] ?? BRAND_COLOR.other!;
             return (
-               <span className="text-sm">{BRAND_LABEL[brand] ?? brand}</span>
+               <Announcement>
+                  <AnnouncementTag
+                     className="flex items-center text-white"
+                     style={{ backgroundColor: color }}
+                  >
+                     <CreditCardIcon className="size-3" />
+                  </AnnouncementTag>
+                  <AnnouncementTitle>
+                     {BRAND_LABEL[brand] ?? brand}
+                  </AnnouncementTitle>
+               </Announcement>
             );
          },
          meta: { label: "Bandeira" },
@@ -125,7 +170,38 @@ export function buildCreditCardColumns(options?: {
       {
          accessorKey: "bankAccountId",
          header: "Conta Bancária",
-         cell: () => <span className="text-muted-foreground">—</span>,
+         cell: ({ row }) => {
+            const account = bankAccountsById.get(row.original.bankAccountId);
+            if (!account)
+               return <span className="text-muted-foreground">—</span>;
+            const issuer = account.bankName?.trim() || account.name;
+            return (
+               <div className="flex items-center gap-2 min-w-0">
+                  <Avatar className="size-6 shrink-0">
+                     <AvatarFallback
+                        className="text-[10px] font-semibold text-white"
+                        style={{
+                           backgroundColor: account.color ?? "#6366f1",
+                        }}
+                     >
+                        {account.bankName ? (
+                           bankInitials(account.bankName)
+                        ) : (
+                           <Landmark className="size-3" />
+                        )}
+                     </AvatarFallback>
+                  </Avatar>
+                  <div className="flex min-w-0 flex-col">
+                     <span className="text-sm truncate">{issuer}</span>
+                     {account.bankCode ? (
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                           {account.bankCode}
+                        </span>
+                     ) : null}
+                  </div>
+               </div>
+            );
+         },
          meta: {
             label: "Conta Bancária",
             cellComponent: "combobox" as const,
