@@ -10,7 +10,6 @@ import {
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import {
-   blockDefaultCategories,
    requireNoTransactionsForExpandedIds,
    requireOwnedCategoryIds,
    withExpandedCategoryIds,
@@ -125,10 +124,6 @@ export const bulkRemove = protectedProcedure
 export const bulkArchive = protectedProcedure
    .input(idsSchema)
    .use(requireOwnedCategoryIds, (input) => input.ids)
-   .use(
-      blockDefaultCategories,
-      () => "Categorias padrão não podem ser arquivadas.",
-   )
    .use(withExpandedCategoryIds, (input) => input.ids)
    .handler(async ({ context }) => {
       const result = await fromPromise(

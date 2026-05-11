@@ -381,16 +381,18 @@ describe("categories router", () => {
       expect(childRow?.isArchived).toBe(true);
    });
 
-   it("archive on default category throws CONFLICT", async () => {
+   it("archive allows default category", async () => {
       const { teamId } = await seedTeam(testDb.db);
       const cat = await makeCategory(testDb.db, teamId, { isDefault: true });
       const ctx = createTestContext(testDb.db, { teamId });
 
-      await expect(
-         call(categoriesRouter.archive, { id: cat.id }, { context: ctx }),
-      ).rejects.toSatisfy(
-         (e: Error & { code?: string }) => e.code === "CONFLICT",
+      const result = await call(
+         categoriesRouter.archive,
+         { id: cat.id },
+         { context: ctx },
       );
+      expect(result.isDefault).toBe(true);
+      expect(result.isArchived).toBe(true);
    });
 
    it("unarchive sets isArchived to false", async () => {
@@ -406,10 +408,13 @@ describe("categories router", () => {
       expect(result.isArchived).toBe(false);
    });
 
-   it("bulkArchive archives all selected non-default categories", async () => {
+   it("bulkArchive archives all selected categories", async () => {
       const { teamId } = await seedTeam(testDb.db);
       const a = await makeCategory(testDb.db, teamId, { name: "A" });
-      const b = await makeCategory(testDb.db, teamId, { name: "B" });
+      const b = await makeCategory(testDb.db, teamId, {
+         name: "B",
+         isDefault: true,
+      });
       const c = await makeCategory(testDb.db, teamId, { name: "C" });
 
       const ctx = createTestContext(testDb.db, { teamId });
@@ -425,26 +430,6 @@ describe("categories router", () => {
          .from(categories)
          .where(eq(categories.teamId, teamId));
       expect(rows.every((r) => r.isArchived)).toBe(true);
-   });
-
-   it("bulkArchive throws CONFLICT when any selected is default", async () => {
-      const { teamId } = await seedTeam(testDb.db);
-      const a = await makeCategory(testDb.db, teamId, { name: "A" });
-      const b = await makeCategory(testDb.db, teamId, {
-         name: "B",
-         isDefault: true,
-      });
-
-      const ctx = createTestContext(testDb.db, { teamId });
-      await expect(
-         call(
-            categoriesBulkRouter.bulkArchive,
-            { ids: [a.id, b.id] },
-            { context: ctx },
-         ),
-      ).rejects.toSatisfy(
-         (e: Error & { code?: string }) => e.code === "CONFLICT",
-      );
    });
 
    it("bulkRemove deletes selected categories including default ones without transactions", async () => {

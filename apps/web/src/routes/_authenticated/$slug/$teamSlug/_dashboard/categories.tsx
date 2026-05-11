@@ -352,7 +352,6 @@ function CategoriesList() {
                       : "Outros"
             }
             renderActions={({ row }) => {
-               const isDefault = row.original.isDefault;
                const isArchived = row.original.isArchived;
 
                if (isArchived) {
@@ -393,15 +392,13 @@ function CategoriesList() {
                            <RefreshCw />
                         </Button>
                      )}
-                     {!isDefault && (
-                        <Button
-                           onClick={() => handleArchive(row.original)}
-                           tooltip="Arquivar"
-                           variant="outline"
-                        >
-                           <Archive />
-                        </Button>
-                     )}
+                     <Button
+                        onClick={() => handleArchive(row.original)}
+                        tooltip="Arquivar"
+                        variant="outline"
+                     >
+                        <Archive />
+                     </Button>
                      <Button
                         className="text-destructive hover:text-destructive"
                         onClick={() => handleDelete(row.original)}
@@ -535,7 +532,7 @@ function CategoriesList() {
             <DataTableBulkActions<CategoryRow>>
                {({ selectedRows, clearSelection }) => {
                   const archivableIds = selectedRows
-                     .filter((r) => !r.isDefault && !r.isArchived)
+                     .filter((r) => !r.isArchived)
                      .map((r) => r.id);
                   const deletableIds = selectedRows.map((r) => r.id);
                   return (

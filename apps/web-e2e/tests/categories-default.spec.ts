@@ -104,19 +104,19 @@ test("permite excluir categoria padrão", async ({
    defaultCategoryIds.length = 0;
 });
 
-test("categoria padrão não exibe botão Arquivar", async ({
+test("categoria padrão exibe botão Arquivar", async ({
    page,
    e2eSession,
    defaultCategoryIds,
 }) => {
-   const name = `Padrão Sem Arquivar ${stamp()}`;
+   const name = `Padrão Arquivar ${stamp()}`;
    await seedDefault(e2eSession, defaultCategoryIds, name);
 
    await gotoCategories(page, e2eSession);
    await searchFor(page, name);
 
    const row = page.getByRole("row").filter({ hasText: name });
-   await expect(row.getByRole("button", { name: "Arquivar" })).toHaveCount(0);
+   await expect(row.getByRole("button", { name: "Arquivar" })).toBeVisible();
    await expect(row.getByRole("button", { name: "Excluir" })).toBeVisible();
 });
 
