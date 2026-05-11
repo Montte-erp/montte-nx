@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { custom } from "@better-upload/server/clients";
 import chalk from "chalk";
 
 const colors = {
@@ -96,7 +97,6 @@ async function ensureBucket() {
    if (!endpoint || !bucket || !accessKeyId || !secretAccessKey) {
       throw new Error("Missing AWS_* env vars in .env.local");
    }
-   const { custom } = await import("@better-upload/server/clients");
    const url = new URL(
       endpoint.startsWith("http") ? endpoint : `http://${endpoint}`,
    );

@@ -321,7 +321,7 @@ async function fetchBanks(
    if (cached.isErr()) {
       logger.warn(
          { err: cached.error, key: BANKS_REDIS_KEY },
-         "Failed to read bank list cache",
+         "Falha ao ler cache da lista de bancos",
       );
    }
    if (cached.isOk() && cached.value) {
@@ -333,7 +333,7 @@ async function fetchBanks(
       if (parsed.isOk()) return withFallbackBanks(parsed.value);
       logger.warn(
          { err: parsed.error, key: BANKS_REDIS_KEY },
-         "Failed to parse cached bank list with BrasilApiBankArraySchema",
+         "Falha ao interpretar cache da lista de bancos com BrasilApiBankArraySchema",
       );
    }
 
@@ -346,7 +346,7 @@ async function fetchBanks(
    if (responseResult.isErr()) {
       logger.error(
          { err: responseResult.error, fallbackCount: FALLBACK_BANKS.length },
-         "Failed to fetch banks from BrasilAPI, returning FALLBACK_BANKS",
+         "Falha ao buscar bancos na BrasilAPI, retornando FALLBACK_BANKS",
       );
       return FALLBACK_BANKS;
    }
@@ -357,7 +357,7 @@ async function fetchBanks(
             statusText: responseResult.value.statusText,
             fallbackCount: FALLBACK_BANKS.length,
          },
-         "BrasilAPI bank list returned non-ok response, returning FALLBACK_BANKS",
+         "Lista de bancos da BrasilAPI retornou resposta sem sucesso, retornando FALLBACK_BANKS",
       );
       return FALLBACK_BANKS;
    }
@@ -366,7 +366,7 @@ async function fetchBanks(
    if (jsonResult.isErr()) {
       logger.error(
          { err: jsonResult.error, fallbackCount: FALLBACK_BANKS.length },
-         "Failed to parse BrasilAPI bank list response JSON, returning FALLBACK_BANKS",
+         "Falha ao interpretar JSON da lista de bancos da BrasilAPI, retornando FALLBACK_BANKS",
       );
       return FALLBACK_BANKS;
    }
@@ -379,7 +379,7 @@ async function fetchBanks(
             schema: "BrasilApiBankArraySchema",
             fallbackCount: FALLBACK_BANKS.length,
          },
-         "BrasilAPI bank list failed schema validation, returning FALLBACK_BANKS",
+         "Lista de bancos da BrasilAPI falhou na validação de schema, retornando FALLBACK_BANKS",
       );
       return FALLBACK_BANKS;
    }
@@ -396,7 +396,7 @@ async function fetchBanks(
    if (cacheResult.isErr()) {
       logger.warn(
          { err: cacheResult.error, key: BANKS_REDIS_KEY },
-         "Failed to persist BrasilAPI bank list with redis.set",
+         "Falha ao persistir lista de bancos da BrasilAPI com redis.set",
       );
    }
    return withFallbackBanks(parsed.data);
