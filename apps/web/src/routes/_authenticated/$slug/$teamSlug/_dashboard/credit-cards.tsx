@@ -9,11 +9,13 @@ import {
 import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { CreditCard, Plus, Trash2 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "../-layout/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
+import { useSheet } from "@/hooks/use-sheet";
+import { CreditCardFormSheet } from "./-credit-cards/credit-card-form-sheet";
 import {
    DataTableBulkActions,
    SelectionActionButton,
@@ -45,8 +47,7 @@ const creditCardsSearchSchema = z.object({
       .default([]),
    search: z.string().max(100).catch("").default(""),
    status: z
-      .enum(["active", "blocked", "cancelled"])
-      .optional()
+      .union([z.enum(["active", "blocked", "cancelled"]), z.undefined()])
       .catch(undefined),
    page: z.number().int().min(1).catch(1).default(1),
    pageSize: z.number().int().catch(20).default(20),
@@ -95,6 +96,8 @@ function CreditCardsList() {
    const navigate = Route.useNavigate();
    const { columnFilters, page, pageSize, search, status } = Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
+   const { openSheet } = useSheet();
+   const { publicEnv } = Route.useRouteContext();
    const { parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
 
@@ -106,13 +109,6 @@ function CreditCardsList() {
          orpc.bankAccounts.getAll.queryOptions({}),
       ],
    });
-
-   const createMutation = useMutation(
-      orpc.creditCards.create.mutationOptions({
-         onSuccess: () => toast.success("Cartão criado com sucesso."),
-         onError: (e) => toast.error(e.message),
-      }),
-   );
 
    const deleteMutation = useMutation(
       orpc.creditCards.remove.mutationOptions({
@@ -144,29 +140,9 @@ function CreditCardsList() {
       }),
    );
 
-   const [isDraftActive, setIsDraftActive] = useState(false);
-
-   const handleDiscardDraft = useCallback(() => setIsDraftActive(false), []);
-
-   const handleAddCard = useCallback(
-      async (data: Record<string, string | string[]>) => {
-         const name = String(data.name ?? "").trim();
-         const closingDay = parseInt(String(data.closingDay ?? ""), 10);
-         const dueDay = parseInt(String(data.dueDay ?? ""), 10);
-         const bankAccountId = String(data.bankAccountId ?? "").trim();
-         if (!name || !closingDay || !dueDay || !bankAccountId) return;
-         await createMutation.mutateAsync({
-            name,
-            closingDay,
-            dueDay,
-            bankAccountId,
-            color: "#6366f1",
-            creditLimit: "0",
-         });
-         setIsDraftActive(false);
-      },
-      [createMutation],
-   );
+   const handleOpenCreate = useCallback(() => {
+      openSheet({ renderChildren: () => <CreditCardFormSheet /> });
+   }, [openSheet]);
 
    const importConfig: DataTableImportConfig = useMemo(
       () => ({
@@ -185,6 +161,9 @@ function CreditCardsList() {
             id: `__import_${i}`,
             name: String(row.name ?? "").trim(),
             brand: String(row.brand ?? "") || null,
+            last4: String(row.last4 ?? row.final ?? "")
+               .replace(/\D/g, "")
+               .slice(0, 4),
             color: "#6366f1",
             creditLimit: String(row.creditLimit ?? row.limite ?? "0"),
             closingDay:
@@ -211,6 +190,7 @@ function CreditCardsList() {
                   bankAccountId: firstBankAccountId,
                   color: "#6366f1",
                   creditLimit: String(r.creditLimit ?? "0"),
+                  last4: String(r.last4 ?? "") || null,
                })),
             });
          },
@@ -237,12 +217,16 @@ function CreditCardsList() {
    const columns = useMemo(
       () =>
          buildCreditCardColumns({
-            bankAccounts: (bankAccounts ?? []) as Array<{
-               id: string;
-               name: string;
-            }>,
+            bankAccounts: (bankAccounts ?? []).map((b) => ({
+               id: b.id,
+               name: b.name,
+               bankName: b.bankName,
+               bankCode: b.bankCode,
+               color: b.color,
+            })),
+            logoDevToken: publicEnv?.LOGO_DEV_TOKEN,
          }),
-      [bankAccounts],
+      [bankAccounts, publicEnv?.LOGO_DEV_TOKEN],
    );
 
    return (
@@ -271,9 +255,6 @@ function CreditCardsList() {
                   replace: true,
                });
             }}
-            isDraftRowActive={isDraftActive}
-            onAddRow={handleAddCard}
-            onDiscardAddRow={handleDiscardDraft}
             renderExpandedRow={(props) => (
                <CreditCardFaturaRow creditCardId={props.row.original.id} />
             )}
@@ -291,7 +272,7 @@ function CreditCardsList() {
             <DataTableToolbar>
                <DataTableImportButton importConfig={importConfig} />
                <Button
-                  onClick={() => setIsDraftActive(true)}
+                  onClick={handleOpenCreate}
                   size="icon-sm"
                   tooltip="Novo Cartão"
                   variant="outline"

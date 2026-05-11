@@ -15,6 +15,7 @@ import {
 import { useSelector } from "@tanstack/react-store";
 import { Ellipsis, ExternalLink, Keyboard, Sparkles, X } from "lucide-react";
 import { POSTHOG_SURVEYS } from "@core/posthog/config";
+import { LogoDevAttribution } from "@/components/logo-dev-attribution";
 import { useSurveyModal } from "@/hooks/use-survey-modal";
 import { openKeyboardShortcuts } from "../-layout/keyboard-shortcuts-sheet";
 import { contextPanelStore, TAB_METAS } from "./context-panel-store";
@@ -65,6 +66,10 @@ function RailMenuButton() {
                      <ExternalLink className="size-4" />
                      Documentação
                   </a>
+               </DropdownMenuItem>
+               <DropdownMenuSeparator />
+               <DropdownMenuItem asChild className="cursor-pointer gap-2">
+                  <LogoDevAttribution className="flex items-center gap-2" />
                </DropdownMenuItem>
             </DropdownMenuContent>
          </DropdownMenu>

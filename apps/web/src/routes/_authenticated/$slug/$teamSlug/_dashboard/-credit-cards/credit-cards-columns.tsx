@@ -1,4 +1,9 @@
 import { format, of } from "@f-o-t/money";
+import {
+   Avatar,
+   AvatarFallback,
+   AvatarImage,
+} from "@packages/ui/components/avatar";
 import { Badge } from "@packages/ui/components/badge";
 import {
    Announcement,
@@ -6,9 +11,22 @@ import {
    AnnouncementTitle,
 } from "@/components/blocks/announcement";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Banknote, Calendar, CalendarClock } from "lucide-react";
+import {
+   Banknote,
+   Calendar,
+   CalendarClock,
+   CreditCard as CreditCardIcon,
+   Landmark,
+} from "lucide-react";
 import { z } from "zod";
 import type { Outputs } from "@/integrations/orpc/client";
+import {
+   BRAND_COLOR,
+   BRAND_LABEL,
+   bankInitials,
+   bankLogoUrl,
+   brandLogoUrl,
+} from "@/lib/logos";
 
 export type CreditCardRow = Outputs["creditCards"]["getAll"]["data"][number];
 
@@ -16,13 +34,17 @@ function formatBRL(value: string | number): string {
    return format(of(String(value), "BRL"), "pt-BR");
 }
 
-const BRAND_LABEL: Record<string, string> = {
-   visa: "Visa",
-   mastercard: "Mastercard",
-   elo: "Elo",
-   amex: "Amex",
-   hipercard: "Hipercard",
-   other: "Outra",
+function formatBankIssuerName(name: string): string {
+   const parts = name.split(" - ");
+   return parts.at(-1)?.trim() || name;
+}
+
+type BankAccountOption = {
+   id: string;
+   name: string;
+   bankName?: string | null;
+   bankCode?: string | null;
+   color?: string | null;
 };
 
 const STATUS_VARIANT = {
@@ -38,19 +60,28 @@ const STATUS_LABEL = {
 } as const;
 
 export function buildCreditCardColumns(options?: {
-   bankAccounts?: Array<{ id: string; name: string }>;
+   bankAccounts?: Array<BankAccountOption>;
+   logoDevToken?: string;
 }): ColumnDef<CreditCardRow>[] {
+   const bankAccountEntries: Array<
+      [BankAccountOption["id"], BankAccountOption]
+   > = (options?.bankAccounts ?? []).map((b) => [b.id, b]);
+   const bankAccountsById = new Map<BankAccountOption["id"], BankAccountOption>(
+      bankAccountEntries,
+   );
+   const logoDevToken = options?.logoDevToken;
    return [
       {
          accessorKey: "name",
          header: "Nome",
          cell: ({ row }) => (
-            <div className="flex items-center gap-2 min-w-0">
-               <span
-                  className="size-3 rounded-full shrink-0"
-                  style={{ backgroundColor: row.original.color }}
-               />
+            <div className="flex min-w-0 flex-col">
                <span className="font-medium truncate">{row.original.name}</span>
+               {row.original.last4 ? (
+                  <span className="text-xs text-muted-foreground/90 tabular-nums">
+                     Final {row.original.last4}
+                  </span>
+               ) : null}
             </div>
          ),
          meta: {
@@ -65,8 +96,29 @@ export function buildCreditCardColumns(options?: {
          cell: ({ row }) => {
             const brand = row.original.brand;
             if (!brand) return <span className="text-muted-foreground">—</span>;
+            const color = BRAND_COLOR[brand] ?? BRAND_COLOR.other ?? "#000000";
+            const logo = brandLogoUrl(brand);
             return (
-               <span className="text-sm">{BRAND_LABEL[brand] ?? brand}</span>
+               <div className="flex items-center gap-2 min-w-0">
+                  <Avatar className="size-4 shrink-0 rounded-lg bg-white ring-1 ring-border">
+                     {logo ? (
+                        <AvatarImage
+                           alt={BRAND_LABEL[brand] ?? brand}
+                           className="object-contain"
+                           src={logo}
+                        />
+                     ) : null}
+                     <AvatarFallback
+                        className="rounded-lg text-xs font-semibold text-white"
+                        style={{ backgroundColor: color }}
+                     >
+                        <CreditCardIcon className="size-2" />
+                     </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm truncate">
+                     {BRAND_LABEL[brand] ?? brand}
+                  </span>
+               </div>
             );
          },
          meta: { label: "Bandeira" },
@@ -76,10 +128,10 @@ export function buildCreditCardColumns(options?: {
          header: "Limite",
          cell: ({ row }) => (
             <Announcement>
-               <AnnouncementTag className="flex items-center text-muted-foreground">
-                  <Banknote className="size-3" />
+               <AnnouncementTag>
+                  <Banknote className="size-2 text-emerald-500" />
                </AnnouncementTag>
-               <AnnouncementTitle className="tabular-nums">
+               <AnnouncementTitle>
                   {formatBRL(row.original.creditLimit)}
                </AnnouncementTitle>
             </Announcement>
@@ -91,8 +143,8 @@ export function buildCreditCardColumns(options?: {
          header: "Fechamento",
          cell: ({ row }) => (
             <Announcement>
-               <AnnouncementTag className="flex items-center text-muted-foreground">
-                  <CalendarClock className="size-3" />
+               <AnnouncementTag>
+                  <CalendarClock className="size-2 text-amber-500" />
                </AnnouncementTag>
                <AnnouncementTitle>
                   Dia {row.original.closingDay}
@@ -110,8 +162,8 @@ export function buildCreditCardColumns(options?: {
          header: "Vencimento",
          cell: ({ row }) => (
             <Announcement>
-               <AnnouncementTag className="flex items-center text-muted-foreground">
-                  <Calendar className="size-3" />
+               <AnnouncementTag>
+                  <Calendar className="size-2 text-sky-500" />
                </AnnouncementTag>
                <AnnouncementTitle>Dia {row.original.dueDay}</AnnouncementTitle>
             </Announcement>
@@ -125,7 +177,40 @@ export function buildCreditCardColumns(options?: {
       {
          accessorKey: "bankAccountId",
          header: "Conta Bancária",
-         cell: () => <span className="text-muted-foreground">—</span>,
+         cell: ({ row }) => {
+            const account = bankAccountsById.get(row.original.bankAccountId);
+            if (!account)
+               return <span className="text-muted-foreground">—</span>;
+            const issuer = account.bankName?.trim() || account.name;
+            const issuerName = formatBankIssuerName(issuer);
+            const logo = bankLogoUrl(account.bankCode, logoDevToken);
+            return (
+               <div className="flex items-center gap-2 min-w-0">
+                  <Avatar className="size-4 shrink-0 rounded-lg bg-white ring-1 ring-border">
+                     {logo ? (
+                        <AvatarImage
+                           alt={issuer}
+                           className="object-contain"
+                           src={logo}
+                        />
+                     ) : null}
+                     <AvatarFallback
+                        className="rounded-lg text-xs font-semibold text-white"
+                        style={{
+                           backgroundColor: account.color ?? "#6366f1",
+                        }}
+                     >
+                        {account.bankName ? (
+                           bankInitials(account.bankName)
+                        ) : (
+                           <Landmark className="size-2" />
+                        )}
+                     </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm truncate">{issuerName}</span>
+               </div>
+            );
+         },
          meta: {
             label: "Conta Bancária",
             cellComponent: "combobox" as const,

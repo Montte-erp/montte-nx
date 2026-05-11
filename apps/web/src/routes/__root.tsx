@@ -62,7 +62,21 @@ export const Route = createRootRouteWithContext<RouterContext>()({
             href: "/favicon.svg",
             rel: "icon",
          },
-
+         {
+            rel: "preconnect",
+            href: "https://img.logo.dev",
+            crossOrigin: "anonymous",
+         },
+         {
+            rel: "preconnect",
+            href: "https://cdn.simpleicons.org",
+            crossOrigin: "anonymous",
+         },
+         {
+            rel: "preconnect",
+            href: "https://icons.duckduckgo.com",
+            crossOrigin: "anonymous",
+         },
          {
             rel: "stylesheet",
             href: appCss,

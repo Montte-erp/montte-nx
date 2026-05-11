@@ -40,6 +40,7 @@ export const creditCards = financeSchema.table(
       creditLimit: numeric("credit_limit", { precision: 12, scale: 2 })
          .notNull()
          .default("0"),
+      last4: text("last4"),
       closingDay: integer("closing_day").notNull(),
       dueDay: integer("due_day").notNull(),
       bankAccountId: uuid("bank_account_id")
@@ -89,6 +90,12 @@ const colorSchema = z
    .string()
    .regex(HEX_COLOR_REGEX, "Cor inválida. Use formato hex (#RRGGBB).");
 
+const last4Schema = z
+   .string()
+   .regex(/^\d{4}$/, "Final do cartão deve ter 4 dígitos.")
+   .nullable()
+   .optional();
+
 const daySchema = z
    .number()
    .int("Dia deve ser um número inteiro.")
@@ -100,6 +107,7 @@ const baseCreditCardSchema = createInsertSchema(creditCards).pick({
    color: true,
    iconUrl: true,
    creditLimit: true,
+   last4: true,
    closingDay: true,
    dueDay: true,
    bankAccountId: true,
@@ -110,6 +118,7 @@ export const createCreditCardSchema = baseCreditCardSchema.extend({
    name: nameSchema,
    color: colorSchema.default("#6366f1"),
    creditLimit: creditLimitSchema.default("0"),
+   last4: last4Schema,
    closingDay: daySchema,
    dueDay: daySchema,
    bankAccountId: z.string().uuid("Conta vinculada inválida."),
@@ -124,6 +133,7 @@ export const updateCreditCardSchema = baseCreditCardSchema
       name: nameSchema.optional(),
       color: colorSchema.optional(),
       creditLimit: creditLimitSchema.optional(),
+      last4: last4Schema,
       closingDay: daySchema.optional(),
       dueDay: daySchema.optional(),
       bankAccountId: z.string().uuid("Conta vinculada inválida.").optional(),

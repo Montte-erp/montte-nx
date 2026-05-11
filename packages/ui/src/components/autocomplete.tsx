@@ -13,6 +13,7 @@ import { Command as CommandPrimitive } from "cmdk";
 import { Check } from "lucide-react";
 import {
    type KeyboardEvent,
+   type ReactNode,
    useCallback,
    useMemo,
    useRef,
@@ -31,6 +32,7 @@ interface AutocompleteProps {
    disabled?: boolean;
    placeholder?: string;
    onBlur?: () => void;
+   renderOption?: (option: AutocompleteOption) => ReactNode;
 }
 
 export function Autocomplete({
@@ -42,6 +44,7 @@ export function Autocomplete({
    disabled,
    isLoading = false,
    onBlur,
+   renderOption,
 }: AutocompleteProps) {
    const inputRef = useRef<HTMLInputElement>(null);
    const [parentNode, setParentNode] = useState<HTMLDivElement | null>(null);
@@ -237,9 +240,13 @@ export function Autocomplete({
                                              {isSelected ? (
                                                 <Check className="w-4 shrink-0 mt-0.5" />
                                              ) : null}
-                                             <span className="break-words">
-                                                {option.label}
-                                             </span>
+                                             {renderOption ? (
+                                                renderOption(option)
+                                             ) : (
+                                                <span className="break-words">
+                                                   {option.label}
+                                                </span>
+                                             )}
                                           </CommandItem>
                                        );
                                     })}

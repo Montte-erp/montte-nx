@@ -47,6 +47,14 @@ describe("createCreditCardSchema", () => {
       expectPass({ ...validCard, brand: null });
    });
 
+   it("accepts card with last4", () => {
+      expectPass({ ...validCard, last4: "1234" });
+   });
+
+   it("rejects invalid last4", () => {
+      expectFail({ ...validCard, last4: "123" }, "last4");
+   });
+
    it("rejects name shorter than 2 characters", () => {
       expectFail({ ...validCard, name: "A" }, "name");
    });
@@ -146,6 +154,14 @@ describe("updateCreditCardSchema", () => {
 
    it("accepts valid brand on update", () => {
       expect(parse({ brand: "mastercard" }).success).toBe(true);
+   });
+
+   it("accepts valid last4 on update", () => {
+      expect(parse({ last4: "9876" }).success).toBe(true);
+   });
+
+   it("rejects invalid last4 on update", () => {
+      expect(parse({ last4: "abcd" }).success).toBe(false);
    });
 
    it("rejects closingDay out of range on update", () => {
