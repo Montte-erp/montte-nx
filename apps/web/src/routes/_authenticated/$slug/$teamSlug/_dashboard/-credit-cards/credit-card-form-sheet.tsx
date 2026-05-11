@@ -97,7 +97,11 @@ function isCreditCardBrand(value: string): value is CreditCardBrand {
    return CARD_BRANDS.some((brand) => brand === value);
 }
 
-function CreditCardBrandOption({ brand }: { brand: CreditCardBrand }) {
+interface CreditCardBrandOptionProps {
+   brand: CreditCardBrand;
+}
+
+function CreditCardBrandOption({ brand }: CreditCardBrandOptionProps) {
    const logo = brandLogoUrl(brand);
 
    return (
@@ -260,8 +264,9 @@ function CreditCardFormSheetContent() {
                )}
             </form.Field>
 
-            <form.Field name="brand">
-               {(field) => (
+            <form.Field
+               name="brand"
+               children={(field) => (
                   <Field data-invalid={isFieldInvalid(field) || undefined}>
                      <FieldLabel htmlFor={field.name} required>
                         Bandeira
@@ -295,7 +300,7 @@ function CreditCardFormSheetContent() {
                      ) : null}
                   </Field>
                )}
-            </form.Field>
+            />
 
             <form.Field name="last4">
                {(field) => (
