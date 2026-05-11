@@ -20,6 +20,7 @@ import { authClient } from "@/integrations/better-auth/auth-client";
 
 const searchParams = z.object({
    email: z.email(),
+   redirect: z.string().startsWith("/").optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/auth/email-verification")({
@@ -33,7 +34,7 @@ const emailVerificationSchema = z.object({
 });
 
 function EmailVerificationPage() {
-   const { email } = Route.useSearch();
+   const { email, redirect: redirectTo } = Route.useSearch();
    const router = useRouter();
 
    const handleResendEmail = useCallback(async () => {
@@ -66,12 +67,12 @@ function EmailVerificationPage() {
                },
                onSuccess: () => {
                   toast.success("Email verificado!");
-                  router.navigate({ to: "/auth/callback" });
+                  router.navigate({ to: redirectTo ?? "/auth/callback" });
                },
             },
          );
       },
-      [email, router],
+      [email, redirectTo, router],
    );
 
    const form = useForm({

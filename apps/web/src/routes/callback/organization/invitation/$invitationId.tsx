@@ -1,75 +1,52 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
-import { useLocalStorage } from "foxact/use-local-storage";
-import { toast } from "sonner";
-import { authClient } from "@/integrations/better-auth/auth-client";
-import { PENDING_INVITATION_KEY } from "@/features/organization/constants";
+import { fromPromise } from "neverthrow";
+import { client } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
    "/callback/organization/invitation/$invitationId",
 )({
    head: () => ({ meta: [{ title: "Aceitar Convite — Montte" }] }),
+   beforeLoad: async ({ context, params, location }) => {
+      const session = await context.queryClient
+         .fetchQuery(context.orpc.session.getSession.queryOptions({}))
+         .catch(() => null);
+
+      if (!session?.user?.id) {
+         throw redirect({
+            to: "/auth/sign-in",
+            search: { redirect: location.href },
+         });
+      }
+
+      const accepted = await fromPromise(
+         client.organization.acceptInvitation({
+            invitationId: params.invitationId,
+         }),
+         (e) => e,
+      );
+
+      if (accepted.isErr()) {
+         throw redirect({ to: "/auth/callback" });
+      }
+
+      const value = accepted.value;
+      if (value.teamSlug) {
+         throw redirect({
+            to: "/$slug/$teamSlug/inbox",
+            params: {
+               slug: value.organizationSlug,
+               teamSlug: value.teamSlug,
+            },
+         });
+      }
+
+      throw redirect({ to: "/auth/callback" });
+   },
    component: AcceptInvitationPage,
 });
 
 function AcceptInvitationPage() {
-   const { invitationId } = Route.useParams();
-   const router = useRouter();
-   const [, setPendingInvitation] = useLocalStorage<string | null>(
-      PENDING_INVITATION_KEY,
-      null,
-   );
-
-   useEffect(() => {
-      const run = async () => {
-         const { data: session } = await authClient.getSession();
-
-         if (!session?.user?.id) {
-            setPendingInvitation(invitationId);
-            router.navigate({ to: "/auth/sign-in" });
-            return;
-         }
-
-         const { data, error: err } =
-            await authClient.organization.acceptInvitation({ invitationId });
-
-         if (err) {
-            toast.error(err.message ?? "Convite inválido ou expirado.");
-            const isRecipientMismatch =
-               err.status === 403 ||
-               /recipient|destinatário/i.test(err.message ?? "");
-            if (isRecipientMismatch) {
-               setPendingInvitation(invitationId);
-               await authClient.signOut();
-               router.navigate({ to: "/auth/sign-in" });
-               return;
-            }
-            router.navigate({ to: "/auth/callback" });
-            return;
-         }
-
-         if (data?.invitation?.organizationId) {
-            await authClient.organization.setActive({
-               organizationId: data.invitation.organizationId,
-            });
-            const teams = await authClient.organization.listTeams({
-               query: { organizationId: data.invitation.organizationId },
-            });
-            const firstTeam = teams.data?.[0];
-            if (firstTeam) {
-               await authClient.organization.setActiveTeam({
-                  teamId: firstTeam.id,
-               });
-            }
-         }
-
-         router.navigate({ to: "/auth/callback" });
-      };
-
-      run();
-   }, [invitationId, router, setPendingInvitation]);
-
    return (
       <div className="flex min-h-screen items-center justify-center bg-background">
          <div className="text-center flex flex-col gap-4">

@@ -16,8 +16,13 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
+const magicLinkSearchSchema = z.object({
+   redirect: z.string().startsWith("/").optional().catch(undefined),
+});
+
 export const Route = createFileRoute("/auth/magic-link")({
    head: () => ({ meta: [{ title: "Link mágico — Montte" }] }),
+   validateSearch: magicLinkSearchSchema,
    component: MagicLinkPage,
 });
 
@@ -26,40 +31,44 @@ const magicLinkSchema = z.object({
 });
 
 function MagicLinkPage() {
+   const { redirect: redirectTo } = Route.useSearch();
    const [isSent, setIsSent] = useState(false);
 
-   const handleMagicLinkSignIn = useCallback(async (email: string) => {
-      await authClient.signIn.magicLink(
-         {
-            email,
-            callbackURL: `${window.location.origin}/auth/callback`,
-         },
-         {
-            onError: ({ error }) => {
-               toast.error(error.message);
+   const handleMagicLinkSignIn = useCallback(
+      async (email: string) => {
+         await authClient.signIn.magicLink(
+            {
+               email,
+               callbackURL: `${window.location.origin}${redirectTo ?? "/auth/callback"}`,
             },
-            onRequest: () => {
-               toast.loading("Enviando link de acesso...");
-            },
-            onSuccess: async () => {
-               try {
-                  const res = await fetch(
-                     `/api/auth/dev/magic-link?email=${encodeURIComponent(email)}`,
-                  );
-                  const data = await res.json();
-                  if (data.url) {
-                     window.location.href = data.url;
-                     return;
+            {
+               onError: ({ error }) => {
+                  toast.error(error.message);
+               },
+               onRequest: () => {
+                  toast.loading("Enviando link de acesso...");
+               },
+               onSuccess: async () => {
+                  try {
+                     const res = await fetch(
+                        `/api/auth/dev/magic-link?email=${encodeURIComponent(email)}`,
+                     );
+                     const data = await res.json();
+                     if (data.url) {
+                        window.location.href = data.url;
+                        return;
+                     }
+                  } catch {
+                     // dev endpoint indisponível — fluxo normal
                   }
-               } catch {
-                  // dev endpoint indisponível — fluxo normal
-               }
-               setIsSent(true);
-               toast.success("Link enviado! Verifique seu e-mail.");
+                  setIsSent(true);
+                  toast.success("Link enviado! Verifique seu e-mail.");
+               },
             },
-         },
-      );
-   }, []);
+         );
+      },
+      [redirectTo],
+   );
 
    const form = useForm({
       defaultValues: {

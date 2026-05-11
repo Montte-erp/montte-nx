@@ -1,5 +1,6 @@
 import { chromium, type Page } from "@playwright/test";
 import { expect, test } from "../fixtures";
+import { signUpViaApi } from "../features/auth";
 import {
    deleteInvitationsByEmail,
    deleteUserByEmail,
@@ -8,9 +9,9 @@ import {
 } from "../helpers/db";
 
 const RUN_ID = `${process.pid}-${Math.floor(Math.random() * 1e9)}`;
-const INVITEE_EMAIL = `invitee-ui-${RUN_ID}@example.com`;
-const INVITEE_PASSWORD = "Test12345!";
-const INVITEE_NAME = "Invitee UI Tester";
+const INVITEE_EMAIL = `invitee-ml-${RUN_ID}@example.com`;
+const OTHER_USER_EMAIL = `other-ml-${RUN_ID}@example.com`;
+const OTHER_USER_PASSWORD = "Test12345!";
 
 test.describe.configure({ mode: "serial" });
 
@@ -22,6 +23,7 @@ test.beforeEach(async () => {
 test.afterAll(async () => {
    await deleteInvitationsByEmail(INVITEE_EMAIL);
    await deleteUserByEmail(INVITEE_EMAIL);
+   await deleteUserByEmail(OTHER_USER_EMAIL);
 });
 
 async function sendInviteViaModal(page: Page, email: string) {
@@ -35,7 +37,41 @@ async function sendInviteViaModal(page: Page, email: string) {
    await expect(page.getByRole("cell", { name: email })).toBeVisible();
 }
 
-test("usuário sem conta abre invite, cria conta e entra na org", async ({
+async function openIsolatedContext(baseURL: string | undefined) {
+   const browser = await chromium.launch();
+   const context = await browser.newContext({
+      baseURL,
+      storageState: { cookies: [], origins: [] },
+      extraHTTPHeaders: { Origin: baseURL ?? "" },
+   });
+   const page = await context.newPage();
+   return { browser, context, page };
+}
+
+async function signInViaMagicLink(
+   page: Page,
+   context: import("@playwright/test").BrowserContext,
+   email: string,
+   callbackURL: string,
+) {
+   const origin = new URL(callbackURL).origin;
+   const sendRes = await context.request.post("/api/auth/sign-in/magic-link", {
+      data: { email, callbackURL },
+      headers: { Origin: origin },
+   });
+   expect(
+      sendRes.ok(),
+      `magic-link send failed ${sendRes.status()}: ${await sendRes.text()}`,
+   ).toBeTruthy();
+   const linkRes = await context.request.get(
+      `/api/auth/dev/magic-link?email=${encodeURIComponent(email)}`,
+   );
+   const { url } = await linkRes.json();
+   expect(url).toBeTruthy();
+   await page.goto(url);
+}
+
+test("invite + magic link: usuário sem conta cria conta e entra na org", async ({
    page,
    e2eSession,
    baseURL,
@@ -50,36 +86,43 @@ test("usuário sem conta abre invite, cria conta e entra na org", async ({
    const invite = await findPendingInvitationByEmail(INVITEE_EMAIL);
    expect(invite).toBeTruthy();
 
-   const browser = await chromium.launch();
-   const inviteeContext = await browser.newContext({ baseURL });
-   const inviteePage = await inviteeContext.newPage();
+   const inviteUrl = `/callback/organization/invitation/${invite!.id}`;
+   const {
+      browser,
+      context,
+      page: inviteePage,
+   } = await openIsolatedContext(baseURL);
 
-   await inviteePage.goto(`/callback/organization/invitation/${invite!.id}`);
-   await inviteePage.waitForURL(/\/auth\/sign-in/, { timeout: 15_000 });
+   await inviteePage.goto(inviteUrl);
+   await inviteePage.waitForURL(
+      (url) =>
+         url.pathname === "/auth/sign-in" &&
+         url.searchParams.get("redirect") === inviteUrl,
+      { timeout: 15_000 },
+   );
 
    await inviteePage
-      .getByRole("link", { name: /criar conta|cadastr/i })
+      .getByRole("link", { name: /Continuar com link mágico/i })
       .click();
-   await inviteePage.waitForURL(/\/auth\/sign-up/, { timeout: 10_000 });
+   await inviteePage.waitForURL(
+      (url) =>
+         url.pathname === "/auth/magic-link" &&
+         url.searchParams.get("redirect") === inviteUrl,
+      { timeout: 10_000 },
+   );
 
-   await inviteePage.getByLabel("Nome", { exact: true }).fill(INVITEE_NAME);
-   await inviteePage.getByLabel("Email", { exact: true }).fill(INVITEE_EMAIL);
-   await inviteePage.getByRole("button", { name: "Continuar" }).click();
-
-   await inviteePage
-      .getByLabel("Senha", { exact: true })
-      .fill(INVITEE_PASSWORD);
-   await inviteePage
-      .getByLabel(/Confirmar senha|Repita a senha/i)
-      .fill(INVITEE_PASSWORD);
-   await inviteePage.getByRole("button", { name: "Criar conta" }).click();
+   await signInViaMagicLink(
+      inviteePage,
+      context,
+      INVITEE_EMAIL,
+      `${baseURL}${inviteUrl}`,
+   );
 
    await inviteePage.waitForURL(
       (url) =>
-         /\/[^/]+\/[^/]+\//.test(url.pathname) &&
+         /^\/[^/]+\/[^/]+\//.test(url.pathname) &&
          !url.pathname.startsWith("/auth/") &&
-         !url.pathname.startsWith("/callback/") &&
-         !url.pathname.startsWith("/onboarding"),
+         !url.pathname.startsWith("/callback/"),
       { timeout: 30_000 },
    );
 
@@ -97,6 +140,194 @@ test("usuário sem conta abre invite, cria conta e entra na org", async ({
    await expect(
       inviteePage.getByRole("cell", { name: INVITEE_EMAIL }).first(),
    ).toBeVisible({ timeout: 15_000 });
+
+   await browser.close();
+});
+
+test("invite + magic link: usuário com conta loga e aceita", async ({
+   page,
+   e2eSession,
+   baseURL,
+}) => {
+   test.setTimeout(120_000);
+
+   await page.goto(
+      `/${e2eSession.orgSlug}/${e2eSession.teamSlug}/settings/organization/members`,
+   );
+   await sendInviteViaModal(page, INVITEE_EMAIL);
+
+   const invite = await findPendingInvitationByEmail(INVITEE_EMAIL);
+   expect(invite).toBeTruthy();
+   const inviteUrl = `/callback/organization/invitation/${invite!.id}`;
+
+   const {
+      browser,
+      context,
+      page: inviteePage,
+   } = await openIsolatedContext(baseURL);
+   const status = await signUpViaApi(context.request, {
+      email: INVITEE_EMAIL,
+      password: "Test12345!",
+      name: "Invitee ML",
+      workspace: "Invitee Workspace",
+   });
+   expect(status).toBe("created");
+   await context.clearCookies();
+   await inviteePage.goto(inviteUrl);
+
+   await inviteePage.waitForURL((url) => url.pathname === "/auth/sign-in", {
+      timeout: 15_000,
+   });
+
+   await inviteePage
+      .getByRole("link", { name: /Continuar com link mágico/i })
+      .click();
+   await signInViaMagicLink(
+      inviteePage,
+      context,
+      INVITEE_EMAIL,
+      `${baseURL}${inviteUrl}`,
+   );
+
+   await inviteePage.waitForURL(
+      (url) =>
+         /^\/[^/]+\/[^/]+\//.test(url.pathname) &&
+         !url.pathname.startsWith("/auth/") &&
+         !url.pathname.startsWith("/callback/"),
+      { timeout: 30_000 },
+   );
+
+   await expect
+      .poll(
+         async () =>
+            (await findInvitationByEmail(INVITEE_EMAIL))?.status ?? "pending",
+         { timeout: 10_000 },
+      )
+      .toBe("accepted");
+
+   await browser.close();
+});
+
+test("invite: usuário com conta já logado aceita direto pelo URL", async ({
+   page,
+   e2eSession,
+   baseURL,
+}) => {
+   test.setTimeout(120_000);
+
+   await page.goto(
+      `/${e2eSession.orgSlug}/${e2eSession.teamSlug}/settings/organization/members`,
+   );
+   await sendInviteViaModal(page, INVITEE_EMAIL);
+
+   const invite = await findPendingInvitationByEmail(INVITEE_EMAIL);
+   expect(invite).toBeTruthy();
+   const inviteUrl = `/callback/organization/invitation/${invite!.id}`;
+
+   const {
+      browser,
+      context,
+      page: inviteePage,
+   } = await openIsolatedContext(baseURL);
+   const status = await signUpViaApi(context.request, {
+      email: INVITEE_EMAIL,
+      password: "Test12345!",
+      name: "Invitee Direct",
+      workspace: "Invitee Workspace",
+   });
+   expect(status).toBe("created");
+   await context.request.post("/api/auth/sign-in/email", {
+      data: { email: INVITEE_EMAIL, password: "Test12345!" },
+   });
+
+   await inviteePage.goto(inviteUrl);
+   await inviteePage.waitForURL(
+      (url) =>
+         /^\/[^/]+\/[^/]+\//.test(url.pathname) &&
+         !url.pathname.startsWith("/auth/") &&
+         !url.pathname.startsWith("/callback/"),
+      { timeout: 20_000 },
+   );
+
+   await expect
+      .poll(
+         async () =>
+            (await findInvitationByEmail(INVITEE_EMAIL))?.status ?? "pending",
+         { timeout: 10_000 },
+      )
+      .toBe("accepted");
+
+   await browser.close();
+});
+
+test("invite: logado com email errado é redirecionado e convite continua pendente", async ({
+   page,
+   e2eSession,
+   baseURL,
+}) => {
+   test.setTimeout(120_000);
+
+   await page.goto(
+      `/${e2eSession.orgSlug}/${e2eSession.teamSlug}/settings/organization/members`,
+   );
+   await sendInviteViaModal(page, INVITEE_EMAIL);
+
+   const invite = await findPendingInvitationByEmail(INVITEE_EMAIL);
+   expect(invite).toBeTruthy();
+   const inviteUrl = `/callback/organization/invitation/${invite!.id}`;
+
+   const {
+      browser,
+      context,
+      page: otherPage,
+   } = await openIsolatedContext(baseURL);
+   await signUpViaApi(context.request, {
+      email: OTHER_USER_EMAIL,
+      password: OTHER_USER_PASSWORD,
+      name: "Other User",
+      workspace: "Other Workspace",
+   });
+   await context.request.post("/api/auth/sign-in/email", {
+      data: { email: OTHER_USER_EMAIL, password: OTHER_USER_PASSWORD },
+   });
+
+   await otherPage.goto(inviteUrl);
+   await otherPage.waitForURL((url) => !url.pathname.startsWith("/callback/"), {
+      timeout: 20_000,
+   });
+
+   expect(
+      (await findInvitationByEmail(INVITEE_EMAIL))?.status ?? "pending",
+   ).toBe("pending");
+
+   await browser.close();
+});
+
+test("invite inválido: ID inexistente redireciona sem quebrar", async ({
+   baseURL,
+}) => {
+   test.setTimeout(60_000);
+
+   const {
+      browser,
+      context,
+      page: otherPage,
+   } = await openIsolatedContext(baseURL);
+   await signUpViaApi(context.request, {
+      email: OTHER_USER_EMAIL,
+      password: OTHER_USER_PASSWORD,
+      name: "Other User",
+      workspace: "Other Workspace",
+   });
+   await context.request.post("/api/auth/sign-in/email", {
+      data: { email: OTHER_USER_EMAIL, password: OTHER_USER_PASSWORD },
+   });
+
+   await otherPage.goto("/callback/organization/invitation/nonexistent-id");
+   await otherPage.waitForURL(
+      (url) => !url.pathname.startsWith("/callback/organization/invitation/"),
+      { timeout: 15_000 },
+   );
 
    await browser.close();
 });
