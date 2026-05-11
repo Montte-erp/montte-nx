@@ -196,7 +196,11 @@ function CreditCardFormSheetContent() {
                         value={field.state.value || undefined}
                         onValueChange={(v) => field.handleChange(v)}
                      >
-                        <SelectTrigger id={field.name} name={field.name}>
+                        <SelectTrigger
+                           aria-invalid={isFieldInvalid(field)}
+                           id={field.name}
+                           name={field.name}
+                        >
                            <SelectValue
                               placeholder={
                                  hasBankAccounts

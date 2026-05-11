@@ -57,7 +57,7 @@ test("exibe logo do banco emissor e da bandeira na listagem", async ({
    page,
    e2eSession,
 }) => {
-   await setupItauAccount(e2eSession);
+   const account = await setupItauAccount(e2eSession);
    const name = `Cartão Logo ${stamp()}`;
 
    await gotoCreditCards(page, e2eSession);
@@ -66,7 +66,7 @@ test("exibe logo do banco emissor e da bandeira na listagem", async ({
    const sheet = page.getByRole("dialog");
    await sheet.getByLabel("Nome").fill(name);
    await sheet.getByLabel("Conta vinculada").click();
-   await page.getByRole("option").first().click();
+   await page.getByRole("option", { name: account.name }).click();
    await sheet.getByLabel("Bandeira").click();
    await page.getByRole("option", { name: "Visa" }).click();
    await sheet.getByRole("button", { name: "Criar cartão" }).click();
@@ -77,17 +77,14 @@ test("exibe logo do banco emissor e da bandeira na listagem", async ({
 
    const row = page.getByRole("row", { name: new RegExp(name) });
 
-   // bandeira via simple-icons
    await expect(
       row.locator('img[src*="cdn.simpleicons.org/visa"]'),
    ).toBeVisible();
 
-   // banco emissor via logo.dev (domain itau.com.br)
    await expect(
       row.locator('img[src*="img.logo.dev/itau.com.br"]'),
    ).toBeVisible();
 
-   // atribuição Logo.dev exigida pela licença
    await expect(
       page.getByRole("link", { name: "Logos by Logo.dev" }),
    ).toBeVisible();
@@ -108,7 +105,7 @@ test("autocomplete de banco mostra logos nas opções", async ({
    const sheet = page.getByRole("dialog");
    await sheet.getByPlaceholder("Digite o nome ou código").fill("itau");
 
-   const option = page.getByRole("option").first();
+   const option = page.getByRole("option", { name: /341/ });
    await expect(option).toBeVisible();
    await expect(
       option.locator('img[src*="img.logo.dev/itau.com.br"]'),

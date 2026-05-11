@@ -186,11 +186,11 @@ function BankAccountFormSheetContent() {
       const logo = bankLogoUrl(option.value, logoDevToken);
       return (
          <div className="flex min-w-0 items-center gap-2">
-            <Avatar className="size-5 shrink-0 bg-white ring-1 ring-border">
+            <Avatar className="size-4 shrink-0 bg-white ring-1 ring-border">
                {logo ? (
                   <AvatarImage
                      alt={option.label}
-                     className="object-contain p-0.5"
+                     className="object-contain p-2"
                      src={logo}
                   />
                ) : null}

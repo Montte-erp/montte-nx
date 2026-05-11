@@ -48,8 +48,7 @@ const creditCardsSearchSchema = z.object({
       .default([]),
    search: z.string().max(100).catch("").default(""),
    status: z
-      .enum(["active", "blocked", "cancelled"])
-      .optional()
+      .union([z.enum(["active", "blocked", "cancelled"]), z.undefined()])
       .catch(undefined),
    page: z.number().int().min(1).catch(1).default(1),
    pageSize: z.number().int().catch(20).default(20),

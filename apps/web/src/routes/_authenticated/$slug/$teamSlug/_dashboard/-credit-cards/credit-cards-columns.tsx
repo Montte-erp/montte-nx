@@ -58,8 +58,11 @@ export function buildCreditCardColumns(options?: {
    bankAccounts?: Array<BankAccountOption>;
    logoDevToken?: string;
 }): ColumnDef<CreditCardRow>[] {
-   const bankAccountsById = new Map(
-      (options?.bankAccounts ?? []).map((b) => [b.id, b] as const),
+   const bankAccountEntries: Array<
+      [BankAccountOption["id"], BankAccountOption]
+   > = (options?.bankAccounts ?? []).map((b) => [b.id, b]);
+   const bankAccountsById = new Map<BankAccountOption["id"], BankAccountOption>(
+      bankAccountEntries,
    );
    const logoDevToken = options?.logoDevToken;
    return [
@@ -69,7 +72,7 @@ export function buildCreditCardColumns(options?: {
          cell: ({ row }) => (
             <div className="flex items-center gap-2 min-w-0">
                <span
-                  className="size-3 rounded-full shrink-0"
+                  className="size-2 rounded-full shrink-0"
                   style={{ backgroundColor: row.original.color }}
                />
                <span className="font-medium truncate">{row.original.name}</span>
@@ -91,7 +94,7 @@ export function buildCreditCardColumns(options?: {
             const logo = brandLogoUrl(brand);
             return (
                <div className="flex items-center gap-2 min-w-0">
-                  <Avatar className="size-6 shrink-0 rounded-md bg-white p-0.5 ring-1 ring-border">
+                  <Avatar className="size-4 shrink-0 rounded-md bg-white p-2 ring-1 ring-border">
                      {logo ? (
                         <AvatarImage
                            alt={BRAND_LABEL[brand] ?? brand}
@@ -103,7 +106,7 @@ export function buildCreditCardColumns(options?: {
                         className="rounded-md text-[10px] font-semibold text-white"
                         style={{ backgroundColor: color }}
                      >
-                        <CreditCardIcon className="size-3" />
+                        <CreditCardIcon className="size-2" />
                      </AvatarFallback>
                   </Avatar>
                   <span className="text-sm truncate">
@@ -120,7 +123,7 @@ export function buildCreditCardColumns(options?: {
          cell: ({ row }) => (
             <Announcement>
                <AnnouncementTag className="flex items-center text-muted-foreground">
-                  <Banknote className="size-3" />
+                  <Banknote className="size-2" />
                </AnnouncementTag>
                <AnnouncementTitle className="tabular-nums">
                   {formatBRL(row.original.creditLimit)}
@@ -135,7 +138,7 @@ export function buildCreditCardColumns(options?: {
          cell: ({ row }) => (
             <Announcement>
                <AnnouncementTag className="flex items-center text-muted-foreground">
-                  <CalendarClock className="size-3" />
+                  <CalendarClock className="size-2" />
                </AnnouncementTag>
                <AnnouncementTitle>
                   Dia {row.original.closingDay}
@@ -154,7 +157,7 @@ export function buildCreditCardColumns(options?: {
          cell: ({ row }) => (
             <Announcement>
                <AnnouncementTag className="flex items-center text-muted-foreground">
-                  <Calendar className="size-3" />
+                  <Calendar className="size-2" />
                </AnnouncementTag>
                <AnnouncementTitle>Dia {row.original.dueDay}</AnnouncementTitle>
             </Announcement>
@@ -176,11 +179,11 @@ export function buildCreditCardColumns(options?: {
             const logo = bankLogoUrl(account.bankCode, logoDevToken);
             return (
                <div className="flex items-center gap-2 min-w-0">
-                  <Avatar className="size-6 shrink-0 bg-white ring-1 ring-border">
+                  <Avatar className="size-4 shrink-0 bg-white ring-1 ring-border">
                      {logo ? (
                         <AvatarImage
                            alt={issuer}
-                           className="object-contain p-0.5"
+                           className="object-contain p-2"
                            src={logo}
                         />
                      ) : null}
@@ -193,7 +196,7 @@ export function buildCreditCardColumns(options?: {
                         {account.bankName ? (
                            bankInitials(account.bankName)
                         ) : (
-                           <Landmark className="size-3" />
+                           <Landmark className="size-2" />
                         )}
                      </AvatarFallback>
                   </Avatar>
