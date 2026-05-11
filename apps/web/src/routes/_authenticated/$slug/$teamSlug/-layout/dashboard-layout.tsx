@@ -68,7 +68,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   <AppSidebar />
                </SidebarManager>
 
-               <SidebarInset className="flex flex-col overflow-hidden bg-sidebar">
+               <SidebarInset className="flex flex-col gap-2 overflow-hidden bg-sidebar">
                   <div className="flex flex-1 overflow-hidden">
                      <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-background">
                         <main
@@ -81,9 +81,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         >
                            {children}
                         </main>
-                        {!hasDedicatedSidebar ? <AppFooter /> : null}
                      </div>
                   </div>
+                  {!hasDedicatedSidebar ? <AppFooter /> : null}
                   <AutoBugReporter />
                   <MonthlySatisfactionSurvey />
                </SidebarInset>

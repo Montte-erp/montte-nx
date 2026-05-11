@@ -1,4 +1,4 @@
-name: Oaky Documentation
+name: Project Documentation
 
 on:
    workflow_run:
@@ -15,7 +15,7 @@ on:
             description: "Project name used in the generated documentation"
             required: false
             type: string
-            default: "Oaky"
+            default: "Montte"
 
 permissions:
    contents: write
@@ -44,7 +44,7 @@ jobs:
            run: |
               VERSION=$(date -u '+%Y.%m.%d')
               TAG="v${VERSION}"
-              PROJECT_NAME="${INPUT_PROJECT_NAME:-Oaky}"
+              PROJECT_NAME="${INPUT_PROJECT_NAME:-Montte}"
 
               if git rev-parse "$TAG" >/dev/null 2>&1; then
                 CURRENT_REF="$TAG"
@@ -107,7 +107,7 @@ jobs:
               } > documentation-context.md
 
          - name: Prepare documentation directory
-           run: mkdir -p docs/oaky
+           run: mkdir -p docs/project
 
          - name: Generate project documentation via opencode
            continue-on-error: true
@@ -115,7 +115,7 @@ jobs:
            env:
               OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
               CONTEXT_FILE: documentation-context.md
-              OUTPUT_FILE: docs/oaky/PROJECT_DOCUMENTATION.md
+              OUTPUT_FILE: docs/project/PROJECT_DOCUMENTATION.md
               PROJECT_NAME: ${{ steps.context.outputs.project_name }}
               RELEASE_VERSION: ${{ steps.context.outputs.version }}
            with:
@@ -181,8 +181,8 @@ jobs:
 
          - name: Verify project documentation
            run: |
-              if [ ! -s docs/oaky/PROJECT_DOCUMENTATION.md ]; then
-                echo "docs/oaky/PROJECT_DOCUMENTATION.md missing or empty" >&2
+              if [ ! -s docs/project/PROJECT_DOCUMENTATION.md ]; then
+                echo "docs/project/PROJECT_DOCUMENTATION.md missing or empty" >&2
                 exit 1
               fi
 
@@ -193,40 +193,40 @@ jobs:
               GH_REPO: ${{ github.repository }}
               VERSION: ${{ steps.context.outputs.version }}
            run: |
-              BRANCH="automation/oaky-docs-${VERSION}"
+              BRANCH="automation/project-docs-${VERSION}"
               BASE_BRANCH="${GITHUB_REF_NAME}"
 
               git config user.name "github-actions[bot]"
               git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
               git checkout -B "$BRANCH"
-              git add docs/oaky/PROJECT_DOCUMENTATION.md
+              git add docs/project/PROJECT_DOCUMENTATION.md
 
               if git diff --cached --quiet; then
                 echo "No documentation changes to publish"
                 exit 0
               fi
 
-              git commit -m "docs: update oaky project documentation"
+              git commit -m "docs: update project documentation"
               git push "https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git" "$BRANCH" --force-with-lease
 
               PR_URL=$(gh pr list --repo "$GH_REPO" --head "$BRANCH" --json url --jq '.[0].url')
               if [ -n "$PR_URL" ]; then
                 gh pr edit "$PR_URL" --repo "$GH_REPO" \
-                  --title "docs: atualizar documentação do projeto Oaky" \
-                  --body "Atualiza a documentação técnica do projeto Oaky gerada junto ao ciclo de release ${VERSION}."
+                  --title "docs: atualizar documentação do projeto Okay" \
+                  --body "Atualiza a documentação técnica do projeto gerada junto ao ciclo de release ${VERSION}."
               else
                 gh pr create --repo "$GH_REPO" \
                   --base "$BASE_BRANCH" \
                   --head "$BRANCH" \
-                  --title "docs: atualizar documentação do projeto Oaky" \
-                  --body "Atualiza a documentação técnica do projeto Oaky gerada junto ao ciclo de release ${VERSION}."
+                  --title "docs: atualizar documentação do projeto" \
+                  --body "Atualiza a documentação técnica do projeto gerada junto ao ciclo de release ${VERSION}."
               fi
 
          - name: Upload documentation artifact
            uses: actions/upload-artifact@v4
            with:
-              name: oaky-documentation-${{ steps.context.outputs.version }}
+              name: project-documentation-${{ steps.context.outputs.version }}
               path: |
                  documentation-context.md
-                 docs/oaky/PROJECT_DOCUMENTATION.md
+                 docs/project/PROJECT_DOCUMENTATION.md

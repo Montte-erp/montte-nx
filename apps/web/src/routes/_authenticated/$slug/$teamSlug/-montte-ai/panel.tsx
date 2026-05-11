@@ -11,7 +11,7 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { Maximize2 } from "lucide-react";
+import { Maximize2, Minus, X } from "lucide-react";
 import { useEffect } from "react";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
@@ -33,7 +33,12 @@ import { Composer } from "./composer";
 import { EmptyState } from "./empty-state";
 import { MessageList } from "./message-list";
 
-export function AgentPanel() {
+interface AgentPanelProps {
+   onMinimize?: () => void;
+   onClose?: () => void;
+}
+
+export function AgentPanel({ onMinimize, onClose }: AgentPanelProps = {}) {
    useHotkey("Mod+J", togglePanel);
    useHotkey("Mod+Shift+J", () => {
       setActiveThread(null);
@@ -44,7 +49,7 @@ export function AgentPanel() {
          fallback={<PanelSkeleton />}
          errorTitle="Falha ao carregar Montte AI"
       >
-         <AgentPanelContent />
+         <AgentPanelContent onClose={onClose} onMinimize={onMinimize} />
       </QueryBoundary>
    );
 }
@@ -60,7 +65,7 @@ function PanelSkeleton() {
    );
 }
 
-function AgentPanelContent() {
+function AgentPanelContent({ onMinimize, onClose }: AgentPanelProps) {
    const activeThreadId = useActiveThreadId();
    const { slug, teamSlug } = useDashboardSlugs();
    const messageCount = useMontteMessageCount();
@@ -106,6 +111,28 @@ function AgentPanelContent() {
                      <Maximize2 className="size-4" />
                   </Link>
                </Button>
+               {onMinimize ? (
+                  <Button
+                     aria-label="Minimizar"
+                     className="size-7"
+                     onClick={onMinimize}
+                     size="icon"
+                     variant="ghost"
+                  >
+                     <Minus className="size-4" />
+                  </Button>
+               ) : null}
+               {onClose ? (
+                  <Button
+                     aria-label="Fechar"
+                     className="size-7"
+                     onClick={onClose}
+                     size="icon"
+                     variant="ghost"
+                  >
+                     <X className="size-4" />
+                  </Button>
+               ) : null}
             </ContextPanelHeaderActions>
          </ContextPanelHeader>
 
