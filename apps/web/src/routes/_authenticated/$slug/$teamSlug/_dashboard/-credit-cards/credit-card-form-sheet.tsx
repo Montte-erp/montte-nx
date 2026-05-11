@@ -31,11 +31,16 @@ import { z } from "zod";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
-import {
-   BRAND_LABEL,
-   brandLogoUrl,
-   creditCardBrandFromPrefix,
-} from "@/lib/logos";
+import { BRAND_LABEL, brandLogoUrl, type CreditCardBrand } from "@/lib/logos";
+
+const CARD_BRANDS = [
+   "visa",
+   "mastercard",
+   "elo",
+   "amex",
+   "hipercard",
+   "other",
+] satisfies [CreditCardBrand, ...CreditCardBrand[]];
 
 const daySchema = z
    .number({ error: "Dia é obrigatório." })
@@ -50,7 +55,7 @@ const formSchema = z.object({
       .min(2, "Nome deve ter no mínimo 2 caracteres.")
       .max(80, "Nome deve ter no máximo 80 caracteres."),
    bankAccountId: z.string().uuid("Selecione uma conta vinculada."),
-   cardPrefix: z.string().regex(/^\d{4}$/, "Informe os 4 primeiros dígitos."),
+   brand: z.enum(CARD_BRANDS, { error: "Selecione a bandeira." }),
    last4: z
       .string()
       .refine(
@@ -62,12 +67,20 @@ const formSchema = z.object({
    dueDay: daySchema,
 });
 
-type FormValues = z.input<typeof formSchema>;
+interface FormValues {
+   name: string;
+   bankAccountId: string;
+   brand: CreditCardBrand | "";
+   last4: string;
+   creditLimit: number;
+   closingDay: number;
+   dueDay: number;
+}
 
 const DEFAULT_VALUES: FormValues = {
    name: "",
    bankAccountId: "",
-   cardPrefix: "",
+   brand: "",
    last4: "",
    creditLimit: 0,
    closingDay: 1,
@@ -78,6 +91,36 @@ function isFieldInvalid(field: {
    state: { meta: { isTouched: boolean; errors: unknown[] } };
 }) {
    return field.state.meta.isTouched && field.state.meta.errors.length > 0;
+}
+
+function isCreditCardBrand(value: string): value is CreditCardBrand {
+   return CARD_BRANDS.some((brand) => brand === value);
+}
+
+interface CreditCardBrandOptionProps {
+   brand: CreditCardBrand;
+}
+
+function CreditCardBrandOption({ brand }: CreditCardBrandOptionProps) {
+   const logo = brandLogoUrl(brand);
+
+   return (
+      <span className="flex min-w-0 items-center gap-2">
+         <Avatar className="size-4 shrink-0 rounded-lg bg-white ring-1 ring-border">
+            {logo ? (
+               <AvatarImage
+                  alt={BRAND_LABEL[brand]}
+                  className="object-contain"
+                  src={logo}
+               />
+            ) : null}
+            <AvatarFallback className="rounded-lg text-xs">
+               {BRAND_LABEL[brand][0]}
+            </AvatarFallback>
+         </Avatar>
+         <span className="truncate">{BRAND_LABEL[brand]}</span>
+      </span>
+   );
 }
 
 export function CreditCardFormSheet() {
@@ -123,7 +166,7 @@ function CreditCardFormSheetContent() {
             createMutation.mutateAsync({
                name: value.name.trim(),
                bankAccountId: value.bankAccountId,
-               brand: creditCardBrandFromPrefix(value.cardPrefix) ?? null,
+               brand: value.brand || null,
                last4: value.last4 || null,
                color: "#6366f1",
                creditLimit: toMajorUnitsString(
@@ -221,80 +264,43 @@ function CreditCardFormSheetContent() {
                )}
             </form.Field>
 
-            <form.Field name="cardPrefix">
-               {(field) => {
-                  const detectedBrand = creditCardBrandFromPrefix(
-                     field.state.value,
-                  );
-                  const detectedBrandLogo = detectedBrand
-                     ? brandLogoUrl(detectedBrand)
-                     : undefined;
-                  return (
-                     <Field data-invalid={isFieldInvalid(field) || undefined}>
-                        {detectedBrand ? (
-                           <>
-                              <FieldLabel required>Bandeira</FieldLabel>
-                              <div className="flex items-center justify-between rounded-md bg-muted px-4 py-2">
-                                 <div className="flex min-w-0 items-center gap-2">
-                                    {detectedBrandLogo ? (
-                                       <Avatar className="size-4 shrink-0 rounded-lg bg-white ring-1 ring-border">
-                                          <AvatarImage
-                                             alt={BRAND_LABEL[detectedBrand]}
-                                             className="object-contain"
-                                             src={detectedBrandLogo}
-                                          />
-                                          <AvatarFallback className="rounded-lg text-xs">
-                                             {BRAND_LABEL[detectedBrand][0]}
-                                          </AvatarFallback>
-                                       </Avatar>
-                                    ) : null}
-                                    <span className="truncate text-sm font-medium text-foreground">
-                                       {BRAND_LABEL[detectedBrand]}
-                                    </span>
-                                 </div>
-                                 <Button
-                                    size="sm"
-                                    type="button"
-                                    variant="ghost"
-                                    onClick={() => field.handleChange("")}
-                                 >
-                                    Alterar
-                                 </Button>
-                              </div>
-                           </>
-                        ) : (
-                           <>
-                              <FieldLabel htmlFor={field.name} required>
-                                 4 primeiros dígitos
-                              </FieldLabel>
-                              <Input
-                                 aria-invalid={isFieldInvalid(field)}
-                                 id={field.name}
-                                 inputMode="numeric"
-                                 maxLength={4}
-                                 name={field.name}
-                                 placeholder="Ex.: 4111"
-                                 value={field.state.value}
-                                 onBlur={field.handleBlur}
-                                 onChange={(e) =>
-                                    field.handleChange(
-                                       e.target.value
-                                          .replace(/\D/g, "")
-                                          .slice(0, 4),
-                                    )
-                                 }
-                              />
-                           </>
-                        )}
-                        {isFieldInvalid(field) && !detectedBrand ? (
-                           <FieldError>
-                              {field.state.meta.errors[0]?.message}
-                           </FieldError>
-                        ) : null}
-                     </Field>
-                  );
-               }}
-            </form.Field>
+            <form.Field
+               name="brand"
+               children={(field) => (
+                  <Field data-invalid={isFieldInvalid(field) || undefined}>
+                     <FieldLabel htmlFor={field.name} required>
+                        Bandeira
+                     </FieldLabel>
+                     <Select
+                        value={field.state.value || undefined}
+                        onValueChange={(value) => {
+                           if (!isCreditCardBrand(value)) return;
+                           field.handleChange(value);
+                        }}
+                     >
+                        <SelectTrigger
+                           aria-invalid={isFieldInvalid(field)}
+                           id={field.name}
+                           name={field.name}
+                        >
+                           <SelectValue placeholder="Selecione a bandeira" />
+                        </SelectTrigger>
+                        <SelectContent>
+                           {CARD_BRANDS.map((brand) => (
+                              <SelectItem key={brand} value={brand}>
+                                 <CreditCardBrandOption brand={brand} />
+                              </SelectItem>
+                           ))}
+                        </SelectContent>
+                     </Select>
+                     {isFieldInvalid(field) ? (
+                        <FieldError>
+                           {field.state.meta.errors[0]?.message}
+                        </FieldError>
+                     ) : null}
+                  </Field>
+               )}
+            />
 
             <form.Field name="last4">
                {(field) => (

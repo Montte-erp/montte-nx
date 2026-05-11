@@ -78,7 +78,8 @@ test("exibe logo do banco emissor e da bandeira na listagem", async ({
    await sheet.getByLabel("Nome").fill(name);
    await sheet.getByLabel("Conta vinculada").click();
    await page.getByRole("option", { name: account.name }).click();
-   await sheet.getByLabel("4 primeiros dígitos").fill("4111");
+   await sheet.getByLabel("Bandeira").click();
+   await page.getByRole("option", { name: "Visa" }).click();
    await sheet.getByLabel("4 últimos dígitos").fill("1234");
    await sheet.getByLabel("Limite").fill("1000,00");
    await sheet.getByRole("button", { name: "Criar cartão" }).click();
