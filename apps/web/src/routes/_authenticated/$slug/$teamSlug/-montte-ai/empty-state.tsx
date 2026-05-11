@@ -1,6 +1,4 @@
-import { Button } from "@packages/ui/components/button";
 import { cn } from "@packages/ui/lib/utils";
-import { SCOPE_SUGGESTIONS, selectScope } from "./chat-store";
 
 interface EmptyStateProps {
    variant: "panel" | "page";
@@ -37,34 +35,6 @@ export function EmptyState({ variant }: EmptyStateProps) {
             >
                Gerencie seu negócio com inteligência.
             </p>
-         </div>
-         <div className="flex flex-col items-center gap-2">
-            <p className="text-xs text-muted-foreground">
-               Tente o Montte AI para...
-            </p>
-            <div
-               className={cn(
-                  "flex flex-wrap justify-center gap-2",
-                  isPage && "max-w-2xl",
-               )}
-            >
-               {SCOPE_SUGGESTIONS.map((scope) => {
-                  const Icon = scope.icon;
-                  return (
-                     <Button
-                        className="h-7 gap-2 rounded-full px-2 text-xs font-normal"
-                        key={scope.id}
-                        onClick={() => selectScope(scope.id)}
-                        size="sm"
-                        type="button"
-                        variant="outline"
-                     >
-                        <Icon className="size-4" />
-                        {scope.label}
-                     </Button>
-                  );
-               })}
-            </div>
          </div>
       </div>
    );

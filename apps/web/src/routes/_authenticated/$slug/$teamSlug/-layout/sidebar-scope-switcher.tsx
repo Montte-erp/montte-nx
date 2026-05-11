@@ -3,14 +3,6 @@ import {
    AvatarFallback,
    AvatarImage,
 } from "@packages/ui/components/avatar";
-import { Button } from "@packages/ui/components/button";
-import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
 import {
    DropdownMenu,
    DropdownMenuContent,
@@ -118,17 +110,10 @@ function SidebarScopeSwitcherSkeleton() {
    );
 }
 
-function replaceSlugInPath(pathname: string, fromSlug: string, toSlug: string) {
-   const prefix = `/${fromSlug}`;
-   if (!pathname.startsWith(prefix)) return null;
-   return pathname.replace(prefix, `/${toSlug}`);
-}
-
 function SidebarScopeSwitcherContent() {
-   const { activeOrganization, projectLimit, projectCount } =
-      useActiveOrganization();
+   const { activeOrganization } = useActiveOrganization();
    const { activeTeam, teams } = useActiveTeam();
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openCredenza } = useCredenza();
    const queryClient = useQueryClient();
    const router = useRouter();
    const { pathname } = useLocation();
@@ -141,7 +126,7 @@ function SidebarScopeSwitcherContent() {
 
    function switchOrganization(org: Organization) {
       if (org.id === activeOrganization.id || isSwitching) return;
-      const toastId = toast.loading("Switching organization...");
+      const toastId = toast.loading("Trocando organização...");
 
       startSwitching(async () => {
          const result = await authClient.organization.setActive({
@@ -152,12 +137,29 @@ function SidebarScopeSwitcherContent() {
             toast.error(result.error.message, { id: toastId });
             return;
          }
-         toast.success("Organization switched", { id: toastId });
 
-         const nextPath =
-            replaceSlugInPath(pathname, slug, org.slug) ??
-            `/${org.slug}/${teamSlug}/inbox`;
-         router.navigate({ to: nextPath });
+         await queryClient.invalidateQueries();
+
+         const teamsForOrg = await queryClient.fetchQuery(
+            orpc.organization.getOrganizationTeams.queryOptions({}),
+         );
+         const firstTeam = teamsForOrg[0];
+         if (!firstTeam) {
+            toast.error("Organização sem espaços", { id: toastId });
+            router.navigate({ to: "/onboarding" });
+            return;
+         }
+
+         await authClient.organization.setActiveTeam({ teamId: firstTeam.id });
+         await queryClient.invalidateQueries({
+            queryKey: orpc.session.getSession.queryKey({}),
+         });
+
+         toast.success("Organização trocada", { id: toastId });
+         router.navigate({
+            to: "/$slug/$teamSlug/inbox",
+            params: { slug: org.slug, teamSlug: firstTeam.slug },
+         });
       });
    }
 
@@ -179,33 +181,10 @@ function SidebarScopeSwitcherContent() {
    }
 
    function newProject() {
-      if (projectLimit !== null && teams.length >= projectLimit) {
-         openCredenza({
-            renderChildren: () => (
-               <>
-                  <CredenzaHeader>
-                     <CredenzaTitle>Limite de espaços</CredenzaTitle>
-                     <CredenzaDescription>
-                        Você está usando {projectCount} de {projectLimit}{" "}
-                        espaços
-                     </CredenzaDescription>
-                  </CredenzaHeader>
-                  <CredenzaBody className="px-4">
-                     <p className="text-sm text-muted-foreground">
-                        Você atingiu o limite de espaços do seu plano.
-                     </p>
-                  </CredenzaBody>
-                  <CredenzaFooter>
-                     <Button onClick={closeCredenza} variant="outline">
-                        Fechar
-                     </Button>
-                  </CredenzaFooter>
-               </>
-            ),
-         });
-         return;
-      }
-      openCredenza({ renderChildren: () => <CreateTeamForm /> });
+      openCredenza({
+         className: "max-w-md sm:max-w-md",
+         renderChildren: () => <CreateTeamForm />,
+      });
    }
 
    return (
@@ -273,12 +252,7 @@ function SidebarScopeSwitcherContent() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onSelect={newProject}>
                            <Plus className="size-4" />
-                           <span>
-                              {projectLimit !== null &&
-                              projectLimit !== Number.POSITIVE_INFINITY
-                                 ? `Novo espaço (${projectCount}/${projectLimit})`
-                                 : "Novo espaço"}
-                           </span>
+                           <span>Novo espaço</span>
                         </DropdownMenuItem>
                      </DropdownMenuSubContent>
                   </DropdownMenuSub>
