@@ -70,8 +70,16 @@ const routeApi = getRouteApi(
 
 export function TransactionsList() {
    const navigate = routeApi.useNavigate();
-   const { page, pageSize, view, overdueOnly, status, search, contactId } =
-      routeApi.useSearch();
+   const {
+      page,
+      pageSize,
+      view,
+      overdueOnly,
+      status,
+      search,
+      contactId,
+      bankId,
+   } = routeApi.useSearch();
 
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
@@ -94,6 +102,17 @@ export function TransactionsList() {
       (checked: boolean) => {
          navigate({
             search: (prev) => ({ ...prev, overdueOnly: checked, page: 1 }),
+            replace: true,
+         });
+      },
+      [navigate],
+   );
+
+   const handleBankFilterToggle = useCallback(
+      (active: boolean) => {
+         if (active) return;
+         navigate({
+            search: (prev) => ({ ...prev, bankId: "", page: 1 }),
             replace: true,
          });
       },
@@ -130,12 +149,18 @@ export function TransactionsList() {
             page,
             pageSize,
             contactId: contactId || undefined,
+            bankAccountId: bankId || undefined,
          },
       }),
    );
 
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
+   );
+
+   const selectedBankAccount = useMemo(
+      () => bankAccounts.find((account) => account.id === bankId),
+      [bankAccounts, bankId],
    );
 
    const { data: contacts } = useSuspenseQuery(
@@ -561,6 +586,16 @@ export function TransactionsList() {
             }}
             storageKey="montte:datatable:transactions"
          >
+            {bankId ? (
+               <DataTableExternalFilter
+                  id="bankId"
+                  label={selectedBankAccount?.name ?? "Conta selecionada"}
+                  group="Conta"
+                  active
+                  renderIcon={() => <Landmark className="size-4" />}
+                  onToggle={handleBankFilterToggle}
+               />
+            ) : null}
             <DataTableExternalFilter
                id="overdueOnly"
                label="Somente vencidos"
@@ -593,7 +628,7 @@ export function TransactionsList() {
                      </EmptyMedia>
                      <EmptyTitle>Nenhum lançamento</EmptyTitle>
                      <EmptyDescription>
-                        {search
+                        {search || bankId
                            ? "Nenhum lançamento encontrado para os filtros aplicados."
                            : "Registre um novo lançamento para começar a controlar suas finanças."}
                      </EmptyDescription>

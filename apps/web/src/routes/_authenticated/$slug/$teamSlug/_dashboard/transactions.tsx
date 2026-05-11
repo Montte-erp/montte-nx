@@ -25,6 +25,7 @@ const transactionsSearchSchema = z.object({
       .catch([])
       .default([]),
    contactId: z.string().catch("").default(""),
+   bankId: z.string().catch("").default(""),
 });
 
 export const Route = createFileRoute(
@@ -32,7 +33,16 @@ export const Route = createFileRoute(
 )({
    validateSearch: transactionsSearchSchema,
    loaderDeps: ({
-      search: { page, pageSize, view, overdueOnly, status, search, contactId },
+      search: {
+         page,
+         pageSize,
+         view,
+         overdueOnly,
+         status,
+         search,
+         contactId,
+         bankId,
+      },
    }) => ({
       page,
       pageSize,
@@ -41,6 +51,7 @@ export const Route = createFileRoute(
       status,
       search,
       contactId,
+      bankId,
    }),
    loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
@@ -65,6 +76,7 @@ export const Route = createFileRoute(
                status: deps.status.length > 0 ? deps.status : undefined,
                search: deps.search || undefined,
                contactId: deps.contactId || undefined,
+               bankAccountId: deps.bankId || undefined,
             },
          }),
       );

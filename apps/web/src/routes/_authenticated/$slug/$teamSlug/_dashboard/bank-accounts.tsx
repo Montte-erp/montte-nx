@@ -7,9 +7,9 @@ import {
    EmptyTitle,
 } from "@packages/ui/components/empty";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { Landmark, Plus, Trash2 } from "lucide-react";
+import { Landmark, Plus, ReceiptText, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -115,6 +115,7 @@ function BankAccountsSkeleton() {
 
 function BankAccountsList() {
    const navigate = Route.useNavigate();
+   const { slug, teamSlug } = Route.useParams();
    const { sorting, columnFilters, type, search, page, pageSize } =
       Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
@@ -297,14 +298,42 @@ function BankAccountsList() {
                });
             }}
             renderActions={({ row }) => (
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(row.original)}
-                  tooltip="Excluir"
-                  variant="outline"
-               >
-                  <Trash2 className="size-4" />
-               </Button>
+               <>
+                  <Button
+                     asChild
+                     size="icon"
+                     tooltip="Ver lançamentos"
+                     variant="outline"
+                  >
+                     <Link
+                        params={{ slug, teamSlug }}
+                        search={{
+                           bankId: row.original.id,
+                           contactId: "",
+                           overdueOnly: false,
+                           page: 1,
+                           pageSize: 20,
+                           search: "",
+                           status: [],
+                           view: "all",
+                        }}
+                        to="/$slug/$teamSlug/transactions"
+                     >
+                        <ReceiptText className="size-4" />
+                        <span className="sr-only">Ver lançamentos</span>
+                     </Link>
+                  </Button>
+                  <Button
+                     className="text-destructive hover:text-destructive"
+                     onClick={() => handleDelete(row.original)}
+                     size="icon"
+                     tooltip="Excluir"
+                     variant="outline"
+                  >
+                     <Trash2 className="size-4" />
+                     <span className="sr-only">Excluir</span>
+                  </Button>
+               </>
             )}
          >
             {TYPES.map((key) => (
