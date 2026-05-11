@@ -52,7 +52,8 @@ async function expectCreditCardRowVisible(
 
 async function fillRequiredCreditCardFields(page: Page) {
    const sheet = page.getByRole("dialog");
-   await sheet.getByLabel("4 primeiros dígitos").fill("4111");
+   await sheet.getByLabel("Bandeira").click();
+   await page.getByRole("option", { name: "Visa" }).click();
    await sheet.getByLabel("Limite").fill("1000,00");
 }
 
