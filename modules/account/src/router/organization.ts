@@ -140,63 +140,6 @@ export const getPendingInvitations = protectedProcedure.handler(
    },
 );
 
-export const acceptInvitation = authenticatedProcedure
-   .input(z.object({ invitationId: z.string() }))
-   .handler(async ({ context, input }) => {
-      const accepted = await fromPromise(
-         context.auth.api.acceptInvitation({
-            headers: context.headers,
-            body: { invitationId: input.invitationId },
-         }),
-         authError("Falha ao aceitar convite."),
-      );
-      if (accepted.isErr()) throw accepted.error;
-      const value = accepted.value;
-      if (!value?.invitation?.organizationId) {
-         throw WebAppError.internal("Convite inválido.");
-      }
-      const organizationId = value.invitation.organizationId;
-
-      await fromPromise(
-         context.auth.api.setActiveOrganization({
-            headers: context.headers,
-            body: { organizationId },
-         }),
-         authError("Falha ao ativar organização."),
-      );
-
-      const teams = await fromPromise(
-         context.auth.api.listOrganizationTeams({
-            headers: context.headers,
-            query: { organizationId },
-         }),
-         authError("Falha ao listar projetos."),
-      );
-      if (teams.isErr()) throw teams.error;
-
-      const organization = await context.db.query.organization.findFirst({
-         where: (f, { eq }) => eq(f.id, organizationId),
-      });
-      if (!organization)
-         throw WebAppError.internal("Organização não encontrada.");
-
-      const firstTeam = teams.value[0];
-      if (firstTeam) {
-         await fromPromise(
-            context.auth.api.setActiveTeam({
-               headers: context.headers,
-               body: { teamId: firstTeam.id },
-            }),
-            authError("Falha ao ativar projeto."),
-         );
-      }
-
-      return {
-         organizationSlug: organization.slug,
-         teamSlug: firstTeam?.slug ?? null,
-      };
-   });
-
 export const getMemberTeams = protectedProcedure
    .input(z.object({ userId: z.uuid() }))
    .handler(async ({ context, input }) => {
