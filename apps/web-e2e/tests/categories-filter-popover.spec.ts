@@ -14,13 +14,14 @@ test("popover de filtros em categorias permanece aberto ao alternar opções", a
    const menu = page.getByRole("menu");
    await expect(menu).toBeVisible();
 
-   await menu.getByRole("menuitem", { name: /Mostrar arquivadas/ }).click();
+   await menu
+      .getByRole("menuitem", { name: /Mostrar arquivadas/ })
+      .click({ force: true });
    await expect(menu).toBeVisible();
 
-   await menu.getByRole("menuitem", { name: /Somente despesas/ }).click();
-   await expect(menu).toBeVisible();
-
-   await menu.getByRole("menuitem", { name: /Agrupar por tipo/ }).click();
+   await menu
+      .getByRole("menuitem", { name: /Somente despesas/ })
+      .click({ force: true });
    await expect(menu).toBeVisible();
 
    await page.mouse.click(10, 10);

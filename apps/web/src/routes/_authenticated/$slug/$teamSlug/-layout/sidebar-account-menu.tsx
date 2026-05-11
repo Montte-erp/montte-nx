@@ -67,7 +67,10 @@ function SidebarAccountMenuContent() {
                await queryClient.invalidateQueries({
                   queryKey: orpc.session.getSession.queryKey({}),
                });
-               router.navigate({ to: "/auth/sign-in" });
+               router.navigate({
+                  search: { redirect: undefined },
+                  to: "/auth/sign-in",
+               });
                toast.success("Você saiu com sucesso", { id: "logout" });
             },
          },

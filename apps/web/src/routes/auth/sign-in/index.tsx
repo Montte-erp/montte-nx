@@ -9,7 +9,9 @@ import { orpc } from "@/integrations/orpc/client";
 import { TermsAndPrivacyText } from "../-auth/terms-and-privacy-text";
 
 const signInSearchSchema = z.object({
-   redirect: z.string().optional(),
+   redirect: z
+      .union([z.string().startsWith("/"), z.undefined()])
+      .catch(undefined),
 });
 
 export const Route = createFileRoute("/auth/sign-in/")({
@@ -30,6 +32,7 @@ export const Route = createFileRoute("/auth/sign-in/")({
 });
 
 export function SignInPage() {
+   const { redirect: redirectTo } = Route.useSearch();
    const [lastMethod, setLastMethod] = useState<string | null>(null);
 
    useEffect(() => {
@@ -79,7 +82,10 @@ export function SignInPage() {
                   className="h-10 w-full gap-2"
                   variant="secondary"
                >
-                  <Link to="/auth/sign-in/email">
+                  <Link
+                     search={{ redirect: redirectTo }}
+                     to="/auth/sign-in/email"
+                  >
                      <KeyRound className="size-4" />
                      Entrar com email e senha
                   </Link>
@@ -92,6 +98,7 @@ export function SignInPage() {
                <span className="text-muted-foreground">Primeira vez aqui?</span>
                <Link
                   className="font-medium text-foreground hover:underline"
+                  search={{ redirect: redirectTo }}
                   to="/auth/sign-up"
                >
                   Criar conta

@@ -51,7 +51,10 @@ async function continueToCompany(page: Page) {
 async function fillCompanyAndSubmit(page: Page, workspace: string) {
    await page.getByRole("textbox", { name: "Nome da empresa" }).fill(workspace);
    await page.getByRole("button", { name: "Concluir" }).click();
-   await page.waitForURL(/\/[^/]+\/[^/]+\/home/, { timeout: 30_000 });
+   await page.waitForURL((url) => /^\/[^/]+\/[^/]+\//.test(url.pathname), {
+      timeout: 30_000,
+      waitUntil: "commit",
+   });
 }
 
 async function completeFirstOnboarding(
@@ -78,7 +81,7 @@ test("happy path finance: validações dos botões + seed correto", async ({
    await toggleFeature(page, /Finanças/);
    await continueToCompany(page);
    await expect(page).toHaveURL(/step=company/);
-   await expect(page).toHaveURL(/features=finance/);
+   expect(new URL(page.url()).search).toContain(encodeURIComponent("finance"));
 
    const submit = page.getByRole("button", { name: "Concluir" });
    const input = page.getByRole("textbox", { name: "Nome da empresa" });
@@ -88,7 +91,10 @@ test("happy path finance: validações dos botões + seed correto", async ({
    await input.fill(user.workspace);
    await expect(submit).toBeEnabled();
    await submit.click();
-   await page.waitForURL(/\/[^/]+\/[^/]+\/home/, { timeout: 30_000 });
+   await page.waitForURL((url) => /^\/[^/]+\/[^/]+\//.test(url.pathname), {
+      timeout: 30_000,
+      waitUntil: "commit",
+   });
 
    const org = await findFirstOrgByUserEmail(user.email);
    if (!org?.slug) throw new Error("Org não foi criada.");
@@ -176,14 +182,20 @@ test("já onboarded volta para home; estado incompleto é reparado", async ({
    await completeFirstOnboarding(page, user, [/Finanças/]);
 
    await page.goto("/onboarding");
-   await page.waitForURL(/\/[^/]+\/[^/]+\/home/, { timeout: 15_000 });
+   await page.waitForURL((url) => /^\/[^/]+\/[^/]+\//.test(url.pathname), {
+      timeout: 15_000,
+      waitUntil: "commit",
+   });
 
    const org = await findFirstOrgByUserEmail(user.email);
    if (!org?.slug) throw new Error("Org não foi criada.");
    await markOnboardingIncomplete(org.slug);
 
    await page.goto("/onboarding");
-   await page.waitForURL(/\/[^/]+\/[^/]+\/home/, { timeout: 15_000 });
+   await page.waitForURL((url) => /^\/[^/]+\/[^/]+\//.test(url.pathname), {
+      timeout: 15_000,
+      waitUntil: "commit",
+   });
 
    const orgAfter = await findFirstOrgByUserEmail(user.email);
    const teamsAfter = await findTeamsByOrgSlug(org.slug);

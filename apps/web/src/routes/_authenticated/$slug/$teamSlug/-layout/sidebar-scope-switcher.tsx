@@ -118,12 +118,6 @@ function SidebarScopeSwitcherSkeleton() {
    );
 }
 
-function replaceSlugInPath(pathname: string, fromSlug: string, toSlug: string) {
-   const prefix = `/${fromSlug}`;
-   if (!pathname.startsWith(prefix)) return null;
-   return pathname.replace(prefix, `/${toSlug}`);
-}
-
 function SidebarScopeSwitcherContent() {
    const { activeOrganization, projectLimit, projectCount } =
       useActiveOrganization();
@@ -141,7 +135,7 @@ function SidebarScopeSwitcherContent() {
 
    function switchOrganization(org: Organization) {
       if (org.id === activeOrganization.id || isSwitching) return;
-      const toastId = toast.loading("Switching organization...");
+      const toastId = toast.loading("Trocando organização...");
 
       startSwitching(async () => {
          const result = await authClient.organization.setActive({
@@ -152,12 +146,30 @@ function SidebarScopeSwitcherContent() {
             toast.error(result.error.message, { id: toastId });
             return;
          }
-         toast.success("Organization switched", { id: toastId });
+         await queryClient.invalidateQueries();
 
-         const nextPath =
-            replaceSlugInPath(pathname, slug, org.slug) ??
-            `/${org.slug}/${teamSlug}/inbox`;
-         router.navigate({ to: nextPath });
+         const teamsForOrg = await queryClient.fetchQuery(
+            orpc.organization.getOrganizationTeams.queryOptions({
+               input: { orgSlug: org.slug },
+            }),
+         );
+         const firstTeam = teamsForOrg[0];
+         if (!firstTeam) {
+            toast.error("Organização sem espaços", { id: toastId });
+            router.navigate({ to: "/onboarding" });
+            return;
+         }
+
+         await authClient.organization.setActiveTeam({ teamId: firstTeam.id });
+         await queryClient.invalidateQueries({
+            queryKey: orpc.session.getSession.queryKey({}),
+         });
+
+         toast.success("Organização trocada", { id: toastId });
+         router.navigate({
+            to: "/$slug/$teamSlug/inbox",
+            params: { slug: org.slug, teamSlug: firstTeam.slug },
+         });
       });
    }
 

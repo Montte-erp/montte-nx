@@ -21,13 +21,21 @@ const signInSchema = z.object({
    password: z.string().min(8, "O campo deve ter no minimo 8 caracteres."),
 });
 
+const searchParams = z.object({
+   redirect: z
+      .union([z.string().startsWith("/"), z.undefined()])
+      .catch(undefined),
+});
+
 export const Route = createFileRoute("/auth/sign-in/email")({
    head: () => ({ meta: [{ title: "Entrar com email — Montte" }] }),
    component: SignInEmailPage,
+   validateSearch: searchParams,
 });
 
 function SignInEmailPage() {
    const router = useRouter();
+   const { redirect: redirectTo } = Route.useSearch();
 
    const handleSignIn = useCallback(
       async (email: string, password: string) => {
@@ -44,12 +52,15 @@ function SignInEmailPage() {
                },
                onSuccess: () => {
                   toast.success("Bem-vindo de volta!", { id: "sign-in-email" });
-                  router.navigate({ to: "/auth/callback" });
+                  router.navigate({
+                     search: { redirect: redirectTo },
+                     to: "/auth/callback",
+                  });
                },
             },
          );
       },
-      [router],
+      [redirectTo, router],
    );
 
    const form = useForm({
@@ -174,7 +185,7 @@ function SignInEmailPage() {
          </form>
 
          <Button asChild className="h-10" variant="ghost">
-            <Link to="/auth/sign-in">
+            <Link search={{ redirect: redirectTo }} to="/auth/sign-in">
                <ArrowLeft className="size-4" />
                Voltar para login
             </Link>
@@ -184,6 +195,7 @@ function SignInEmailPage() {
             <span className="text-muted-foreground">Primeira vez aqui?</span>
             <Link
                className="font-medium text-foreground hover:underline"
+               search={{ redirect: redirectTo }}
                to="/auth/sign-up"
             >
                Criar conta

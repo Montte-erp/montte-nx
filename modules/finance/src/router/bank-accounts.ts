@@ -264,6 +264,53 @@ const BrasilApiBankArraySchema = z.array(BrasilApiBankSchema);
 
 const BANKS_REDIS_KEY = "finance:brasilapi:banks:v1";
 const BANKS_CACHE_TTL_SEC = 30 * 24 * 60 * 60;
+const FALLBACK_BANKS = [
+   {
+      ispb: "60701190",
+      name: "ITAÚ UNIBANCO S.A.",
+      code: 341,
+      fullName: "ITAÚ UNIBANCO S.A.",
+   },
+   {
+      ispb: "18236120",
+      name: "NUBANK",
+      code: 260,
+      fullName: "NU PAGAMENTOS S.A. - INSTITUIÇÃO DE PAGAMENTO",
+   },
+   {
+      ispb: "90400888",
+      name: "BANCO SANTANDER (BRASIL) S.A.",
+      code: 33,
+      fullName: "BANCO SANTANDER (BRASIL) S.A.",
+   },
+   {
+      ispb: "60746948",
+      name: "BANCO BRADESCO S.A.",
+      code: 237,
+      fullName: "BANCO BRADESCO S.A.",
+   },
+   {
+      ispb: "00000000",
+      name: "BANCO DO BRASIL S.A.",
+      code: 1,
+      fullName: "BANCO DO BRASIL S.A.",
+   },
+   {
+      ispb: "00360305",
+      name: "CAIXA ECONOMICA FEDERAL",
+      code: 104,
+      fullName: "CAIXA ECONOMICA FEDERAL",
+   },
+] satisfies BrasilApiBank[];
+
+function withFallbackBanks(banks: BrasilApiBank[]) {
+   const byCode = new Map<string, BrasilApiBank>();
+   for (const bank of [...FALLBACK_BANKS, ...banks]) {
+      if (!bank.code) continue;
+      byCode.set(String(bank.code).padStart(3, "0"), bank);
+   }
+   return Array.from(byCode.values());
+}
 
 async function fetchBanks(
    redis: import("@core/redis/connection").Redis,
@@ -275,28 +322,29 @@ async function fetchBanks(
          () => BrasilApiBankArraySchema.parse(JSON.parse(cachedPayload)),
          () => null,
       )();
-      if (parsed.isOk()) return parsed.value;
+      if (parsed.isOk()) return withFallbackBanks(parsed.value);
    }
 
    const responseResult = await fromPromise(
       fetch("https://brasilapi.com.br/api/banks/v1", {
          signal: AbortSignal.timeout(5000),
       }),
-      () => WebAppError.internal("Falha ao consultar bancos."),
+      () => null,
    );
-   if (responseResult.isErr()) throw responseResult.error;
+   if (responseResult.isErr()) return FALLBACK_BANKS;
    if (!responseResult.value.ok) {
-      throw WebAppError.internal("Falha ao consultar bancos.");
+      return FALLBACK_BANKS;
    }
 
-   const jsonResult = await fromPromise(responseResult.value.json(), () =>
-      WebAppError.internal("Falha ao ler resposta dos bancos."),
+   const jsonResult = await fromPromise(
+      responseResult.value.json(),
+      () => null,
    );
-   if (jsonResult.isErr()) throw jsonResult.error;
+   if (jsonResult.isErr()) return FALLBACK_BANKS;
 
    const parsed = BrasilApiBankArraySchema.safeParse(jsonResult.value);
    if (!parsed.success) {
-      throw WebAppError.internal("Resposta inválida ao consultar bancos.");
+      return FALLBACK_BANKS;
    }
 
    await fromPromise(
@@ -308,7 +356,7 @@ async function fetchBanks(
       ),
       () => null,
    );
-   return parsed.data;
+   return withFallbackBanks(parsed.data);
 }
 
 export const searchBanks = protectedProcedure

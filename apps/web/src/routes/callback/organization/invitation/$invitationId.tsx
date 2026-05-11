@@ -32,7 +32,12 @@ function AcceptInvitationPage() {
 
          if (!session?.user?.id) {
             setPendingInvitation(invitationId);
-            router.navigate({ to: "/auth/sign-in" });
+            router.navigate({
+               search: {
+                  redirect: `/callback/organization/invitation/${invitationId}`,
+               },
+               to: "/auth/sign-in",
+            });
             return;
          }
 
@@ -47,7 +52,12 @@ function AcceptInvitationPage() {
             if (isRecipientMismatch) {
                setPendingInvitation(invitationId);
                await authClient.signOut();
-               router.navigate({ to: "/auth/sign-in" });
+               router.navigate({
+                  search: {
+                     redirect: `/callback/organization/invitation/${invitationId}`,
+                  },
+                  to: "/auth/sign-in",
+               });
                return;
             }
             router.navigate({ to: "/auth/callback" });

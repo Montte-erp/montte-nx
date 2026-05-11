@@ -6,6 +6,7 @@ import {
    deleteUserByEmail,
    findInvitationByEmail,
    findPendingInvitationByEmail,
+   isUserMemberOfOrgByEmail,
 } from "../helpers/db";
 
 const INVITEE_EMAIL = `invitee-${Date.now()}@e2e.test.local`;
@@ -53,7 +54,7 @@ test("envia convite via modal e atualiza tabela com group pendente", async ({
       .toBe("pending");
 });
 
-test("convite com sessão errada mostra erro em pt-BR e redireciona", async ({
+test("convite com sessão errada mostra erro em pt-BR e mantém convite pendente", async ({
    page,
    e2eSession,
 }) => {
@@ -70,7 +71,23 @@ test("convite com sessão errada mostra erro em pt-BR e redireciona", async ({
    await expect(page.getByText(/destinatário|recipient/i).first()).toBeVisible({
       timeout: 10_000,
    });
-   await page.waitForURL(/\/auth\/sign-in/, { timeout: 15_000 });
+   await page.waitForURL(
+      (url) => !url.pathname.startsWith("/callback/organization/invitation/"),
+      { timeout: 15_000 },
+   );
+   await expect
+      .poll(
+         async () =>
+            (await findInvitationByEmail(INVITEE_EMAIL))?.status ?? "missing",
+         { timeout: 5_000 },
+      )
+      .toBe("pending");
+   await expect
+      .poll(
+         () => isUserMemberOfOrgByEmail(INVITEE_EMAIL, invite!.organizationId),
+         { timeout: 5_000 },
+      )
+      .toBe(false);
 });
 
 test("aceita convite automaticamente após sign-up quando invitee não tem conta", async ({

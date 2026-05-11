@@ -366,6 +366,17 @@ Tests live in `core/*` and `packages/*` — non-trivial logic only (Zod transfor
 
 E2E tests live in `apps/web-e2e/tests/` (Playwright). Auth fixture in `fixtures.ts` injects authenticated `storageState`. For pages that require an unauthenticated session (e.g. `/auth/*`), use raw `import { test } from "@playwright/test"` + `test.use({ storageState: { cookies: [], origins: [] } })`.
 
+E2E flow guidelines:
+
+- Test real user flows, not implementation details. Prefer role/name locators and stable `data-testid` for unavoidable app chrome; never depend on generated classes or icon class names.
+- Do not add `test.skip` to hide failures. If a flow is stale, update the test to current behavior and state why in code only when the reason is not obvious.
+- Always clean up isolated Playwright resources. Any test that launches its own browser/context must close both in `finally`, using null checks or optional chaining.
+- Keep flows deterministic. Avoid external API data in assertions; add local fallbacks, fixtures, or DB helpers when the app otherwise depends on network/cache state.
+- Assert durable outcomes after UI actions: URL changes with `page.waitForURL`, persisted DB state via `helpers/db`, and visible user feedback when relevant.
+- Preserve auth redirects across sign-in/sign-up/magic-link/email flows. When navigating between auth pages, pass the existing `redirect` search param instead of rebuilding it manually.
+- For table/list flows, search or filter for records created by the test before asserting rows; do not assume pagination, ordering, or an empty shared team.
+- E2E reliability comes before speed here: run web-e2e serially when tests share session/global DB state, and prefer explicit cleanup over parallel assumptions.
+
 ---
 
 ## Nx

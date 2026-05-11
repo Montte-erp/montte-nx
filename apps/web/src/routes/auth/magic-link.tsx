@@ -108,7 +108,7 @@ function MagicLinkPage() {
                   Usar outro email
                </Button>
                <Button asChild className="h-10" variant="ghost">
-                  <Link to="/auth/sign-in">
+                  <Link search={{ redirect: undefined }} to="/auth/sign-in">
                      <ArrowLeft className="size-4" />
                      Voltar para login
                   </Link>
@@ -189,7 +189,7 @@ function MagicLinkPage() {
          </FieldDescription>
 
          <Button asChild className="h-10" variant="ghost">
-            <Link to="/auth/sign-in">
+            <Link search={{ redirect: undefined }} to="/auth/sign-in">
                <ArrowLeft className="size-4" />
                Voltar para login
             </Link>

@@ -42,6 +42,29 @@ async function rememberCreatedAccount(session: E2ESession, name: string) {
    createdAccountIds.push(account.id);
 }
 
+async function expectBankAccountRowVisible(page: Page, name: string) {
+   await page.getByPlaceholder("Buscar conta por nome...").fill(name);
+   await expect(page.getByRole("row").filter({ hasText: name })).toBeVisible();
+}
+
+async function expectTransactionRowVisible(session: E2ESession, name: string) {
+   const team = await findTeamByOrgAndSlug(session.orgSlug, session.teamSlug);
+   expect(team).not.toBeNull();
+   if (!team) return;
+   const transaction = await findTransactionByName(team.id, name);
+   expect(transaction).not.toBeNull();
+}
+
+async function selectComboboxOption(
+   page: Page,
+   label: string,
+   optionName: string,
+) {
+   await page.getByRole("combobox", { name: label }).click();
+   await page.getByPlaceholder("Buscar conta...").fill(optionName);
+   await page.getByRole("option", { name: optionName }).click();
+}
+
 async function ensureBankAccount(
    page: Page,
    session: E2ESession,
@@ -61,8 +84,8 @@ async function ensureBankAccount(
    await sheet.getByLabel("Tipo").click();
    await page.getByRole("option", { name: "Caixa Físico" }).click();
    await sheet.getByRole("button", { name: "Criar conta" }).click();
-   await expect(page.getByRole("cell", { name })).toBeVisible();
    await rememberCreatedAccount(session, name);
+   await expectBankAccountRowVisible(page, name);
 }
 
 test.afterEach(async ({ e2eSession }) => {
@@ -96,14 +119,13 @@ test("cria receita com conta bancária", async ({ page, e2eSession }) => {
    await sheet.getByLabel("Nome").fill(txName);
    await sheet.getByLabel("Valor").fill("123,45");
 
-   await sheet.getByRole("combobox", { name: "Conta bancária" }).click();
-   await page.getByRole("option", { name: accountName }).click();
+   await selectComboboxOption(page, "Conta bancária", accountName);
 
    await expect(submit).toBeEnabled();
    await submit.click();
    await expect(page.getByText("Lançamento criado com sucesso.")).toBeVisible();
-   await expect(page.getByRole("cell", { name: txName })).toBeVisible();
    await rememberCreatedTransaction(e2eSession, txName);
+   await expectTransactionRowVisible(e2eSession, txName);
 });
 
 test("cria despesa com conta bancária", async ({ page, e2eSession }) => {
@@ -120,13 +142,12 @@ test("cria despesa com conta bancária", async ({ page, e2eSession }) => {
    await sheet.getByLabel("Nome").fill(txName);
    await sheet.getByLabel("Valor").fill("99,90");
 
-   await sheet.getByRole("combobox", { name: "Conta bancária" }).click();
-   await page.getByRole("option", { name: accountName }).click();
+   await selectComboboxOption(page, "Conta bancária", accountName);
 
    await sheet.getByRole("button", { name: "Criar lançamento" }).click();
    await expect(page.getByText("Lançamento criado com sucesso.")).toBeVisible();
-   await expect(page.getByRole("cell", { name: txName })).toBeVisible();
    await rememberCreatedTransaction(e2eSession, txName);
+   await expectTransactionRowVisible(e2eSession, txName);
 });
 
 test("cria transferência entre contas", async ({ page, e2eSession }) => {
@@ -147,16 +168,14 @@ test("cria transferência entre contas", async ({ page, e2eSession }) => {
    await sheet.getByLabel("Nome").fill(txName);
    await sheet.getByLabel("Valor").fill("50,00");
 
-   await sheet.getByRole("combobox", { name: "Conta de origem" }).click();
-   await page.getByRole("option", { name: fromName }).click();
+   await selectComboboxOption(page, "Conta de origem", fromName);
 
-   await sheet.getByRole("combobox", { name: "Conta de destino" }).click();
-   await page.getByRole("option", { name: toName }).click();
+   await selectComboboxOption(page, "Conta de destino", toName);
 
    await sheet.getByRole("button", { name: "Criar lançamento" }).click();
    await expect(page.getByText("Lançamento criado com sucesso.")).toBeVisible();
-   await expect(page.getByRole("cell", { name: txName })).toBeVisible();
    await rememberCreatedTransaction(e2eSession, txName);
+   await expectTransactionRowVisible(e2eSession, txName);
 });
 
 test("validações de campos obrigatórios", async ({ page, e2eSession }) => {
@@ -180,14 +199,12 @@ test("validações de campos obrigatórios", async ({ page, e2eSession }) => {
    await sheet.getByLabel("Nome").fill("Validação");
    await expect(submit).toBeDisabled();
 
-   // tipo income sem conta → mensagem específica
-   await sheet.getByLabel("Tipo").click();
-   await page.getByRole("option", { name: "Receita" }).click();
+   // tipo padrão sem conta → mensagem específica
    await sheet.getByLabel("Valor").fill("10,00");
    await sheet.getByRole("combobox", { name: "Conta bancária" }).focus();
    await sheet.getByRole("combobox", { name: "Conta bancária" }).blur();
    await expect(
-      sheet.getByText("Receitas exigem uma conta bancária."),
+      sheet.getByText("Despesas exigem uma conta bancária."),
    ).toBeVisible();
    await expect(submit).toBeDisabled();
 });

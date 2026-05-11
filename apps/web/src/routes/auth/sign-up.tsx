@@ -31,9 +31,16 @@ const steps = [
 
 const { Stepper } = defineStepper(...steps);
 
+const searchParams = z.object({
+   redirect: z
+      .union([z.string().startsWith("/"), z.undefined()])
+      .catch(undefined),
+});
+
 export const Route = createFileRoute("/auth/sign-up")({
    head: () => ({ meta: [{ title: "Criar conta — Montte" }] }),
    component: SignUpPage,
+   validateSearch: searchParams,
 });
 
 const signUpSchema = z
@@ -197,6 +204,7 @@ function PasswordStep() {
 
 function SignUpPage() {
    const router = useRouter();
+   const { redirect: redirectTo } = Route.useSearch();
    const [isPending, startTransition] = useTransition();
 
    const handleSignUp = useCallback(
@@ -213,14 +221,14 @@ function SignUpPage() {
                onSuccess: () => {
                   toast.success("Conta criada com sucesso!");
                   router.navigate({
-                     search: { email },
+                     search: { email, redirect: redirectTo },
                      to: "/auth/email-verification",
                   });
                },
             },
          );
       },
-      [router],
+      [redirectTo, router],
    );
 
    const form = useForm({
@@ -348,6 +356,7 @@ function SignUpPage() {
                         </span>
                         <Link
                            className="font-medium text-foreground hover:underline"
+                           search={{ redirect: redirectTo }}
                            to="/auth/sign-in"
                         >
                            Entrar

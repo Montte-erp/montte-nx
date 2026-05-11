@@ -1,12 +1,11 @@
 import path from "node:path";
 import { expect, test } from "../fixtures";
 import { uploadUserAvatar } from "../features/upload";
-import { clearUserAvatarByEmail } from "../helpers/db";
+import { clearUserAvatarByEmail, findUserByEmail } from "../helpers/db";
 
 const FIXTURE = path.join(import.meta.dirname, "fixtures", "logo.png");
 const AVATAR_URL_RX =
    /\/api\/files\/user-avatars\/.+\.(png|jpg|jpeg|webp|gif)$/i;
-
 test.describe.configure({ mode: "serial" });
 
 test.beforeEach(async ({ e2eSession }) => {
@@ -25,9 +24,15 @@ test("upload user avatar via better-upload route", async ({
    expect(status, `upload route status ${status}`).toBe(200);
 
    await expect(page.getByText("Foto de perfil atualizada!")).toBeVisible();
+   await expect
+      .poll(
+         async () => (await findUserByEmail(e2eSession.email))?.image ?? "",
+         { timeout: 10_000 },
+      )
+      .toMatch(AVATAR_URL_RX);
 
-   const avatarImg = page
-      .locator(`img[src*="/api/files/user-avatars/"]`)
-      .first();
-   await expect(avatarImg).toHaveAttribute("src", AVATAR_URL_RX);
+   await page.reload();
+   await expect(
+      page.locator(`img[src*="/api/files/user-avatars/"]`).first(),
+   ).toHaveAttribute("src", AVATAR_URL_RX);
 });

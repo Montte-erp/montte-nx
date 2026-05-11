@@ -66,7 +66,7 @@ test("permite renomear categoria padrão inline", async ({
 
    const cell = page.getByRole("cell").filter({ hasText: name }).first();
    await cell.click();
-   const input = cell.getByRole("textbox");
+   const input = page.getByRole("textbox", { name: "Editar Nome" });
    await expect(input).toBeVisible();
    await input.fill(renamed);
    await input.press("Enter");

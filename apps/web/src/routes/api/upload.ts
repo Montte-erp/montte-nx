@@ -92,24 +92,31 @@ function uploadRouter(organizationId: string, userId: string): Router {
          transactionAttachment: route({
             fileTypes: ["image/*", "application/pdf"],
             maxFileSize: 10 * 1024 * 1024,
+            multipleFiles: true,
+            maxFiles: 5,
             signedUrlExpiresIn: 300,
-            onBeforeUpload: ({ file }) => ({
+            onBeforeUpload: () => ({
                metadata: { organizationId, userId },
-               objectInfo: {
-                  key: `${TRANSACTION_ATTACHMENT_PREFIX}/org-${organizationId}/attachment-${crypto.randomUUID()}.${fileExtension(file.name)}`,
-               },
+               generateObjectInfo: ({ file }) => ({
+                  key: `${TRANSACTION_ATTACHMENT_PREFIX}/attachment-${organizationId}-${crypto.randomUUID()}.${fileExtension(file.name)}`,
+               }),
             }),
-            onAfterSignedUrl: ({ file, metadata }) => {
-               const url = absolutePublicUrlFor(file.objectInfo.key);
+            onAfterSignedUrl: ({ files, metadata }) => {
+               const publicUrls = Object.fromEntries(
+                  files.map((f) => [
+                     f.objectInfo.key,
+                     absolutePublicUrlFor(f.objectInfo.key),
+                  ]),
+               );
                logger.info(
                   {
                      organizationId: metadata.organizationId,
                      userId: metadata.userId,
-                     url,
+                     count: files.length,
                   },
-                  "transaction attachment presigned",
+                  "transaction attachments presigned",
                );
-               return { metadata: { publicUrl: url } };
+               return { metadata: { publicUrls } };
             },
          }),
       },

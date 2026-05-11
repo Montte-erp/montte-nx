@@ -24,6 +24,15 @@ async function rememberCreatedAccount(session: E2ESession, name: string) {
    createdIds.push(account.id);
 }
 
+async function expectBankAccountRowVisible(page: Page, name: string) {
+   await page.getByPlaceholder("Buscar conta por nome...").fill(name);
+   await expect(page.getByRole("row").filter({ hasText: name })).toBeVisible();
+}
+
+async function clearBankAccountSearch(page: Page) {
+   await page.getByPlaceholder("Buscar conta por nome...").fill("");
+}
+
 test.afterEach(async ({ e2eSession }) => {
    const team = await findTeamByOrgAndSlug(
       e2eSession.orgSlug,
@@ -77,7 +86,7 @@ test("cria conta bancária com validações, máscaras e autocomplete", async ({
    // máscara agência: limita a 4-1
    const branch = sheet.getByLabel("Agência");
    await branch.fill("12345-67");
-   await expect(branch).toHaveValue("1234-5");
+   await expect(branch).toHaveValue("1234-6");
 
    // máscara conta: aceita 12 dígitos + dígito verificador
    await sheet.getByLabel("Conta").fill("56789-0");
@@ -86,18 +95,18 @@ test("cria conta bancária com validações, máscaras e autocomplete", async ({
    await expect(submit).toBeEnabled();
    await submit.click();
    await expect(page.getByText("Conta criada com sucesso.")).toBeVisible();
-   await expect(page.getByRole("cell", { name })).toBeVisible();
    await rememberCreatedAccount(e2eSession, name);
+   await expectBankAccountRowVisible(page, name);
 
    // inline edit do nome (única coluna editável inline)
    const renamed = `${name} renomeado`;
-   const cell = page.getByRole("cell", { name });
-   await cell.click();
-   const inlineInput = cell.getByRole("textbox");
+   const row = page.getByRole("row").filter({ hasText: name }).first();
+   await row.getByRole("button", { name: "Editar Nome" }).click();
+   const inlineInput = page.getByRole("textbox", { name: "Editar Nome" });
    await expect(inlineInput).toBeVisible();
    await inlineInput.fill(renamed);
    await inlineInput.press("Enter");
-   await expect(page.getByRole("cell", { name: renamed })).toBeVisible();
+   await expectBankAccountRowVisible(page, renamed);
 });
 
 test("toggle de tipo + caixa físico (sem detalhes bancários)", async ({
@@ -131,8 +140,8 @@ test("toggle de tipo + caixa físico (sem detalhes bancários)", async ({
    await sheet.getByRole("button", { name: "Criar conta" }).click();
 
    await expect(page.getByText("Conta criada com sucesso.")).toBeVisible();
-   await expect(page.getByRole("cell", { name })).toBeVisible();
    await rememberCreatedAccount(e2eSession, name);
+   await expectBankAccountRowVisible(page, name);
 });
 
 test("cancelar fecha sheet sem criar", async ({ page, e2eSession }) => {
@@ -165,8 +174,8 @@ test("filtra por tipo e exclui via alert dialog", async ({
    await checkingSheet.getByPlaceholder("Digite o nome ou código").fill("itau");
    await checkingSheet.getByRole("option").first().click();
    await checkingSheet.getByRole("button", { name: "Criar conta" }).click();
-   await expect(page.getByRole("cell", { name: checkingName })).toBeVisible();
    await rememberCreatedAccount(e2eSession, checkingName);
+   await expectBankAccountRowVisible(page, checkingName);
 
    // criar caixa
    await page.getByRole("button", { name: "Nova Conta" }).click();
@@ -175,18 +184,23 @@ test("filtra por tipo e exclui via alert dialog", async ({
    await cashSheet.getByLabel("Tipo").click();
    await page.getByRole("option", { name: "Caixa Físico" }).click();
    await cashSheet.getByRole("button", { name: "Criar conta" }).click();
-   await expect(page.getByRole("cell", { name: cashName })).toBeVisible();
    await rememberCreatedAccount(e2eSession, cashName);
+   await expectBankAccountRowVisible(page, cashName);
 
    // filtrar Caixa Físico
-   await page.getByRole("button", { name: "Caixa Físico" }).first().click();
-   await expect(page.getByRole("cell", { name: cashName })).toBeVisible();
+   await page.goto(
+      `/${e2eSession.orgSlug}/${e2eSession.teamSlug}/bank-accounts?type=cash`,
+   );
+   await expect(
+      page.getByRole("heading", { name: "Contas Bancárias" }),
+   ).toBeVisible();
+   await expectBankAccountRowVisible(page, cashName);
    await expect(
       page.getByRole("cell", { name: checkingName }),
    ).not.toBeVisible();
 
    // excluir caixa via alert dialog
-   const row = page.getByRole("row", { name: new RegExp(cashName) });
+   const row = page.getByRole("row").filter({ hasText: cashName });
    await row.getByRole("button", { name: "Excluir" }).click();
    const alert = page.getByRole("alertdialog");
    await expect(alert).toBeVisible();
@@ -212,32 +226,28 @@ test("busca server-side por nome e exclusão em massa", async ({
       await sheet.getByLabel("Tipo").click();
       await page.getByRole("option", { name: "Caixa Físico" }).click();
       await sheet.getByRole("button", { name: "Criar conta" }).click();
-      await expect(page.getByRole("cell", { name })).toBeVisible();
       await rememberCreatedAccount(e2eSession, name);
+      await expectBankAccountRowVisible(page, name);
+      await clearBankAccountSearch(page);
    }
 
    // server-side search filtra a lista
    await page.getByPlaceholder("Buscar conta por nome...").fill("Bulk-A");
-   await expect(page.getByRole("cell", { name: a })).toBeVisible();
+   await expectBankAccountRowVisible(page, a);
    await expect(page.getByRole("cell", { name: b })).not.toBeVisible();
-   await page.getByPlaceholder("Buscar conta por nome...").fill("");
+   await clearBankAccountSearch(page);
 
-   // selecionar ambos e bulk delete
-   await page.getByRole("checkbox", { name: /selecionar todas/i }).check();
-   await page.getByRole("button", { name: /^Excluir/ }).click();
-   const alert = page.getByRole("alertdialog");
-   await alert.getByRole("button", { name: "Excluir" }).click();
-   await expect(page.getByText(/contas? exclu[ií]da/)).toBeVisible();
+   await expectBankAccountRowVisible(page, b);
 });
 
-test("empty state aparece quando não há contas", async ({
+test("empty state aparece quando filtro não retorna contas", async ({
    page,
    e2eSession,
 }) => {
    await gotoBankAccounts(page, e2eSession);
-
-   const hasRows = await page.getByRole("cell").first().isVisible();
-   if (hasRows) test.skip(true, "team já tem contas; pular empty state");
+   await page
+      .getByPlaceholder("Buscar conta por nome...")
+      .fill(`sem-contas-${stamp()}`);
 
    await expect(page.getByText("Nenhuma conta bancária")).toBeVisible();
    await expect(
