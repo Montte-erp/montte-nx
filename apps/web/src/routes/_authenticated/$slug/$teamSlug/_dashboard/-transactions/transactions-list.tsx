@@ -506,22 +506,24 @@ export function TransactionsList() {
                            className="text-green-600 hover:text-green-700"
                            onClick={() => handleMarkPaid(tx)}
                            size="icon"
-                           tooltip="Marcar como pago"
+                           tooltip="Marcar como efetivado"
                            variant="ghost"
                         >
                            <CheckCircle2 className="size-4" />
-                           <span className="sr-only">Marcar como pago</span>
+                           <span className="sr-only">
+                              Marcar como efetivado
+                           </span>
                         </Button>
                      )}
                      {rowStatus === "paid" && (
                         <Button
                            onClick={() => handleMarkUnpaid(tx)}
                            size="icon"
-                           tooltip="Desmarcar pago"
+                           tooltip="Marcar como pendente"
                            variant="ghost"
                         >
                            <Undo2 className="size-4" />
-                           <span className="sr-only">Desmarcar pago</span>
+                           <span className="sr-only">Marcar como pendente</span>
                         </Button>
                      )}
                      {rowStatus === "cancelled" && (
@@ -539,11 +541,11 @@ export function TransactionsList() {
                         <Button
                            onClick={() => handleCancel(tx)}
                            size="icon"
-                           tooltip="Cancelar"
+                           tooltip="Ignorar transação"
                            variant="ghost"
                         >
                            <Ban className="size-4" />
-                           <span className="sr-only">Cancelar</span>
+                           <span className="sr-only">Ignorar transação</span>
                         </Button>
                      )}
                      <Button
