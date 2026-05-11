@@ -18,14 +18,82 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import dayjs from "dayjs";
-import { History } from "lucide-react";
+import {
+   ExternalLink,
+   HelpCircle,
+   History,
+   Keyboard,
+   Sparkles,
+} from "lucide-react";
 import { Activity, useState } from "react";
+import { POSTHOG_SURVEYS } from "@core/posthog/config";
+import { LogoDevAttribution } from "@/components/logo-dev-attribution";
+import { useSurveyModal } from "@/hooks/use-survey-modal";
 import {
    setActiveThread,
    useActiveThreadId,
    useRecentThreads,
 } from "../-montte-ai/chat-store";
 import { AgentPanel } from "../-montte-ai/panel";
+import { openKeyboardShortcuts } from "./keyboard-shortcuts-sheet";
+
+function HelpMenu() {
+   const { openSurveyModal } = useSurveyModal();
+
+   return (
+      <DropdownMenu>
+         <Tooltip>
+            <TooltipTrigger asChild>
+               <DropdownMenuTrigger asChild>
+                  <Button
+                     aria-label="Ajuda"
+                     className="size-7"
+                     size="icon"
+                     variant="ghost"
+                  >
+                     <HelpCircle className="size-4" />
+                  </Button>
+               </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="top">Ajuda</TooltipContent>
+         </Tooltip>
+         <DropdownMenuContent align="end" side="top">
+            <DropdownMenuLabel>Ajuda</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+               className="cursor-pointer gap-2"
+               onClick={openKeyboardShortcuts}
+            >
+               <Keyboard className="size-4" />
+               Atalhos de teclado
+            </DropdownMenuItem>
+            <DropdownMenuItem
+               className="cursor-pointer gap-2"
+               onClick={() =>
+                  openSurveyModal(POSTHOG_SURVEYS.featureRequest.id)
+               }
+            >
+               <Sparkles className="size-4" />
+               Dar feedback
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="cursor-pointer gap-2">
+               <a
+                  href="https://montte.co/docs"
+                  rel="noopener noreferrer"
+                  target="_blank"
+               >
+                  <ExternalLink className="size-4" />
+                  Documentação
+               </a>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild className="cursor-pointer gap-2">
+               <LogoDevAttribution className="flex items-center gap-2" />
+            </DropdownMenuItem>
+         </DropdownMenuContent>
+      </DropdownMenu>
+   );
+}
 
 function HistoryMenu({ onOpenThread }: { onOpenThread: (id: string) => void }) {
    const recents = useRecentThreads();
@@ -128,6 +196,7 @@ function MontteAITrigger() {
             </PopoverContent>
          </Popover>
          <HistoryMenu onOpenThread={handleOpenThread} />
+         <HelpMenu />
       </div>
    );
 }
