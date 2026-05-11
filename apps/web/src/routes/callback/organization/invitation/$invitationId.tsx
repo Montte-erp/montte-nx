@@ -1,11 +1,9 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useLocalStorage } from "foxact/use-local-storage";
 import { toast } from "sonner";
 import { authClient } from "@/integrations/better-auth/auth-client";
-import { orpc } from "@/integrations/orpc/client";
 import { PENDING_INVITATION_KEY } from "@/features/organization/constants";
 
 export const Route = createFileRoute(
@@ -18,7 +16,6 @@ export const Route = createFileRoute(
 function AcceptInvitationPage() {
    const { invitationId } = Route.useParams();
    const router = useRouter();
-   const queryClient = useQueryClient();
    const [, setPendingInvitation] = useLocalStorage<string | null>(
       PENDING_INVITATION_KEY,
       null,
@@ -26,9 +23,7 @@ function AcceptInvitationPage() {
 
    useEffect(() => {
       const run = async () => {
-         const session = await queryClient
-            .fetchQuery(orpc.session.getSession.queryOptions())
-            .catch(() => null);
+         const { data: session } = await authClient.getSession();
 
          if (!session?.user?.id) {
             setPendingInvitation(invitationId);
@@ -73,7 +68,7 @@ function AcceptInvitationPage() {
       };
 
       run();
-   }, [invitationId, queryClient, router, setPendingInvitation]);
+   }, [invitationId, router, setPendingInvitation]);
 
    return (
       <div className="flex min-h-screen items-center justify-center bg-background">

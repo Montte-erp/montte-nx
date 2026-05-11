@@ -56,7 +56,7 @@ function createSignUpForm() {
          name: "",
          password: "",
       },
-      validators: { onBlur: signUpSchema },
+      validators: { onChange: signUpSchema },
    });
 }
 type SignUpFormApi = ReturnType<typeof createSignUpForm>;
@@ -210,8 +210,12 @@ function SignUpPage() {
                onRequest: () => {
                   toast.loading("Criando sua conta...");
                },
-               onSuccess: () => {
+               onSuccess: ({ data }) => {
                   toast.success("Conta criada com sucesso!");
+                  if (data?.token) {
+                     router.navigate({ to: "/auth/callback" });
+                     return;
+                  }
                   router.navigate({
                      search: { email },
                      to: "/auth/email-verification",
@@ -235,7 +239,7 @@ function SignUpPage() {
          formApi.reset();
       },
       validators: {
-         onBlur: signUpSchema,
+         onChange: signUpSchema,
       },
    });
 
