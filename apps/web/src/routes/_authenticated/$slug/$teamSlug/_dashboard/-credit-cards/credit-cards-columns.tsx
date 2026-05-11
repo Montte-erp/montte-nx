@@ -121,7 +121,11 @@ export function buildCreditCardColumns(options?: {
                </div>
             );
          },
-         meta: { label: "Bandeira" },
+         meta: {
+            label: "Bandeira",
+            exportValue: (row) =>
+               row.brand ? (BRAND_LABEL[row.brand] ?? row.brand) : "",
+         },
       },
       {
          accessorKey: "creditLimit",
@@ -136,7 +140,10 @@ export function buildCreditCardColumns(options?: {
                </AnnouncementTitle>
             </Announcement>
          ),
-         meta: { label: "Limite" },
+         meta: {
+            label: "Limite",
+            exportValue: (row) => formatBRL(row.creditLimit),
+         },
       },
       {
          accessorKey: "closingDay",
@@ -155,6 +162,7 @@ export function buildCreditCardColumns(options?: {
             label: "Fechamento",
             cellComponent: "text" as const,
             editSchema: z.coerce.number().int().min(1).max(31),
+            exportValue: (row) => `Dia ${row.closingDay}`,
          },
       },
       {
@@ -172,6 +180,7 @@ export function buildCreditCardColumns(options?: {
             label: "Vencimento",
             cellComponent: "text" as const,
             editSchema: z.coerce.number().int().min(1).max(31),
+            exportValue: (row) => `Dia ${row.dueDay}`,
          },
       },
       {
@@ -219,6 +228,12 @@ export function buildCreditCardColumns(options?: {
                value: a.id,
                label: a.name,
             })),
+            exportValue: (row) => {
+               const account = bankAccountsById.get(row.bankAccountId);
+               if (!account) return "";
+               const issuer = account.bankName?.trim() || account.name;
+               return formatBankIssuerName(issuer);
+            },
          },
       },
       {
@@ -232,7 +247,11 @@ export function buildCreditCardColumns(options?: {
                </Badge>
             );
          },
-         meta: { label: "Status", filterVariant: "select" },
+         meta: {
+            label: "Status",
+            filterVariant: "select",
+            exportValue: (row) => STATUS_LABEL[row.status] ?? row.status,
+         },
       },
    ];
 }
