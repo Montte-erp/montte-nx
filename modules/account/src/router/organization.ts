@@ -147,6 +147,7 @@ export const getPendingInvitations = protectedProcedure.handler(
             id: inv.id,
             email: inv.email,
             role: inv.role ?? "member",
+            teamId: inv.teamId ?? null,
             status: inv.status,
             expiresAt: inv.expiresAt,
             createdAt: inv.createdAt,
