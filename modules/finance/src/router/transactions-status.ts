@@ -25,13 +25,11 @@ export const markAsPaid = protectedProcedure
    .use(requireTransaction, (input) => input.id)
    .handler(async ({ context, input }) => {
       const existing = context.transaction;
-      if (existing.status === "paid") {
+      if (existing.status === "paid" && !existing.ignored) {
          throw WebAppError.conflict("Lançamento já está pago.");
       }
-      if (existing.status === "cancelled") {
-         throw WebAppError.badRequest(
-            "Lançamento cancelado não pode ser pago.",
-         );
+      if (existing.status === "cancelled" || existing.ignored) {
+         throw WebAppError.badRequest("Lançamento ignorado não pode ser pago.");
       }
       if (typeof input.bankAccountId === "string") {
          const account = await fromPromise(
@@ -53,6 +51,7 @@ export const markAsPaid = protectedProcedure
                .update(transactions)
                .set({
                   status: "paid",
+                  ignored: false,
                   paidAt: dayjs().toDate(),
                   date: paidDate,
                   ...(input.bankAccountId !== undefined
@@ -74,7 +73,10 @@ export const markAsUnpaid = protectedProcedure
    .input(idSchema)
    .use(requireTransaction, (input) => input.id)
    .handler(async ({ context, input }) => {
-      if (context.transaction.status !== "paid") {
+      if (
+         context.transaction.status !== "paid" ||
+         context.transaction.ignored
+      ) {
          throw WebAppError.conflict(
             "Apenas lançamentos pagos podem ser desmarcados.",
          );
@@ -83,7 +85,7 @@ export const markAsUnpaid = protectedProcedure
          context.db.transaction(async (tx) =>
             tx
                .update(transactions)
-               .set({ status: "pending", paidAt: null })
+               .set({ status: "pending", ignored: false, paidAt: null })
                .where(eq(transactions.id, input.id))
                .returning(),
          ),
@@ -99,18 +101,21 @@ export const cancel = protectedProcedure
    .input(idSchema)
    .use(requireTransaction, (input) => input.id)
    .handler(async ({ context, input }) => {
-      if (context.transaction.status === "cancelled") {
-         throw WebAppError.conflict("Lançamento já está cancelado.");
+      if (
+         context.transaction.status === "cancelled" ||
+         context.transaction.ignored
+      ) {
+         throw WebAppError.conflict("Lançamento já está ignorado.");
       }
       const result = await fromPromise(
          context.db.transaction(async (tx) =>
             tx
                .update(transactions)
-               .set({ status: "cancelled" })
+               .set({ status: "cancelled", ignored: true })
                .where(eq(transactions.id, input.id))
                .returning(),
          ),
-         () => WebAppError.internal("Falha ao cancelar lançamento."),
+         () => WebAppError.internal("Falha ao ignorar lançamento."),
       );
       if (result.isErr()) throw result.error;
       const [row] = result.value;
@@ -122,9 +127,12 @@ export const reactivate = protectedProcedure
    .input(z.object({ id: z.string().uuid(), paid: z.boolean().default(false) }))
    .use(requireTransaction, (input) => input.id)
    .handler(async ({ context, input }) => {
-      if (context.transaction.status !== "cancelled") {
+      if (
+         context.transaction.status !== "cancelled" &&
+         !context.transaction.ignored
+      ) {
          throw WebAppError.conflict(
-            "Apenas lançamentos cancelados podem ser reativados.",
+            "Apenas lançamentos ignorados podem ser reativados.",
          );
       }
       const result = await fromPromise(
@@ -133,6 +141,7 @@ export const reactivate = protectedProcedure
                .update(transactions)
                .set({
                   status: input.paid ? "paid" : "pending",
+                  ignored: false,
                   paidAt: input.paid ? dayjs().toDate() : null,
                })
                .where(eq(transactions.id, input.id))
@@ -176,6 +185,7 @@ export const bulkMarkAsPaid = protectedProcedure
                   .update(transactions)
                   .set({
                      status: "paid",
+                     ignored: false,
                      paidAt: dayjs().toDate(),
                      date: paidDate,
                      ...(input.bankAccountId !== undefined

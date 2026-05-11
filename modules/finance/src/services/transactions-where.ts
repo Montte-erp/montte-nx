@@ -41,6 +41,7 @@ export interface TransactionFilter {
    dueDateTo?: string;
    overdueOnly?: boolean;
    view?: "all" | "payable" | "receivable" | "settled" | "cancelled";
+   includeIgnored?: boolean;
 }
 
 const t = transactions;
@@ -101,6 +102,7 @@ export function buildTransactionWhere(
    includeContactSearch: boolean,
 ): SQL {
    const c: SQL[] = [eq(t.teamId, f.teamId)];
+   if (!f.includeIgnored) c.push(eq(t.ignored, false));
    if (f.type) c.push(eq(t.type, f.type));
    if (f.bankAccountId) c.push(eq(t.bankAccountId, f.bankAccountId));
    if (f.categoryId) c.push(eq(t.categoryId, f.categoryId));

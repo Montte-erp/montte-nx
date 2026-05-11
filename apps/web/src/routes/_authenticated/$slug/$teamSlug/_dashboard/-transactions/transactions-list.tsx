@@ -218,9 +218,9 @@ export function TransactionsList() {
 
    const cancelMutation = useMutation(
       orpc.transactions.cancel.mutationOptions({
-         onSuccess: () => toast.success("Lançamento cancelado."),
+         onSuccess: () => toast.success("Lançamento ignorado."),
          onError: (error) =>
-            toast.error(error.message || "Erro ao cancelar lançamento."),
+            toast.error(error.message || "Erro ao ignorar lançamento."),
       }),
    );
 
@@ -334,10 +334,10 @@ export function TransactionsList() {
    const handleCancel = useCallback(
       (tx: TransactionRow) => {
          openAlertDialog({
-            title: "Cancelar lançamento",
+            title: "Ignorar lançamento",
             description:
-               "Tem certeza que deseja cancelar este lançamento? Ele ficará marcado como cancelado.",
-            actionLabel: "Cancelar lançamento",
+               "Tem certeza que deseja ignorar este lançamento? Ele não entrará nos cálculos financeiros.",
+            actionLabel: "Ignorar lançamento",
             cancelLabel: "Voltar",
             variant: "destructive",
             onAction: async () => {
@@ -566,11 +566,11 @@ export function TransactionsList() {
                         <Button
                            onClick={() => handleCancel(tx)}
                            size="icon"
-                           tooltip="Ignorar transação"
+                           tooltip="Ignorar lançamento"
                            variant="ghost"
                         >
                            <Ban className="size-4" />
-                           <span className="sr-only">Ignorar transação</span>
+                           <span className="sr-only">Ignorar lançamento</span>
                         </Button>
                      )}
                      <Button
@@ -734,7 +734,11 @@ function BulkIgnoreButton({
                onAction: async () => {
                   const results = await Promise.allSettled(
                      ids.map((id) =>
-                        mutation.mutateAsync({ id, status: "cancelled" }),
+                        mutation.mutateAsync({
+                           id,
+                           ignored: true,
+                           status: "cancelled",
+                        }),
                      ),
                   );
                   if (results.every((r) => r.status === "fulfilled")) {

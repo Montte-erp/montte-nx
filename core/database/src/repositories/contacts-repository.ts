@@ -296,6 +296,7 @@ export function getContactTransactions(
          const where = and(
             eq(transactions.contactId, contactId),
             eq(transactions.teamId, teamId),
+            eq(transactions.ignored, false),
          );
          const [totalResult] = await db
             .select({ value: count() })

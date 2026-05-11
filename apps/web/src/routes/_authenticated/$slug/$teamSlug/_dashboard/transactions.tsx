@@ -129,7 +129,7 @@ function TransactionsPage() {
                <TabsTrigger value="payable">A Pagar</TabsTrigger>
                <TabsTrigger value="receivable">A Receber</TabsTrigger>
                <TabsTrigger value="settled">Efetivados</TabsTrigger>
-               <TabsTrigger value="cancelled">Cancelados</TabsTrigger>
+               <TabsTrigger value="cancelled">Ignorados</TabsTrigger>
             </TabsList>
          </Tabs>
          <div className="flex flex-1 flex-col min-h-0">

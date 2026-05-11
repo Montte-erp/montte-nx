@@ -1,4 +1,5 @@
 import { Button } from "@packages/ui/components/button";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import {
    Collapsible,
    CollapsibleContent,
@@ -79,7 +80,7 @@ const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
 const STATUS_OPTIONS = [
    { value: "paid" as const, label: "Efetivado" },
    { value: "pending" as const, label: "Pendente" },
-   { value: "cancelled" as const, label: "Cancelado" },
+   { value: "cancelled" as const, label: "Ignorado" },
 ];
 
 const ATTACHMENT_MAX_FILES = 5;
@@ -111,6 +112,7 @@ const formSchema = z
          .positive("Valor deve ser maior que zero."),
       date: z.string().min(1, "Data é obrigatória."),
       status: z.enum(["pending", "paid", "cancelled"]),
+      ignored: z.boolean(),
       dueDate: z.string(),
       bankAccountId: z.string(),
       destinationBankAccountId: z.string(),
@@ -189,6 +191,7 @@ const DEFAULT_VALUES: FormValues = {
    amount: 0,
    date: dayjs().format("YYYY-MM-DD"),
    status: "paid",
+   ignored: false,
    dueDate: "",
    bankAccountId: "",
    destinationBankAccountId: "",
@@ -463,6 +466,7 @@ function TransactionFormSheetContent() {
                amount: String(value.amount),
                date: value.date,
                status: value.status,
+               ignored: value.ignored,
                dueDate: value.dueDate || null,
                bankAccountId: value.bankAccountId || null,
                destinationBankAccountId:
@@ -825,6 +829,26 @@ function TransactionFormSheetContent() {
                                  ))}
                               </SelectContent>
                            </Select>
+                        </Field>
+                     )}
+                  </form.Field>
+
+                  <form.Field name="ignored">
+                     {(field) => (
+                        <Field className="flex flex-row items-center gap-2 rounded-md border p-4">
+                           <Checkbox
+                              aria-invalid={isFieldInvalid(field)}
+                              checked={field.state.value}
+                              id={field.name}
+                              name={field.name}
+                              onBlur={field.handleBlur}
+                              onCheckedChange={(checked) =>
+                                 field.handleChange(checked === true)
+                              }
+                           />
+                           <FieldLabel htmlFor={field.name}>
+                              Ignorar lançamento
+                           </FieldLabel>
                         </Field>
                      )}
                   </form.Field>

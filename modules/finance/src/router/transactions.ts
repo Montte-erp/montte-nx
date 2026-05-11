@@ -53,6 +53,8 @@ export const create = protectedProcedure
 
       const txData =
          data.type === "transfer" ? { ...data, categoryId: null } : data;
+      const ignored = txData.ignored || txData.status === "cancelled";
+      const status = ignored ? "cancelled" : txData.status;
 
       const created = await fromPromise(
          context.db.transaction(async (tx) => {
@@ -60,6 +62,8 @@ export const create = protectedProcedure
                .insert(transactions)
                .values({
                   ...txData,
+                  status,
+                  ignored,
                   teamId: context.teamId,
                   tagId: tagId ?? null,
                })
@@ -89,6 +93,7 @@ export const create = protectedProcedure
       if (
          autoCategorize &&
          !input.categoryId &&
+         !ignored &&
          (input.type === "income" || input.type === "expense")
       ) {
          await enqueueClassifyTransactionsBatchWorkflow(
@@ -149,6 +154,21 @@ export const update = protectedProcedure
          });
       }
       const { id, tagId, items, ...data } = input;
+      const ignored =
+         data.ignored === true || data.status === "cancelled"
+            ? true
+            : data.ignored === false ||
+                data.status === "pending" ||
+                data.status === "paid"
+              ? false
+              : undefined;
+      const status =
+         ignored === true
+            ? "cancelled"
+            : ignored === false
+              ? (data.status ??
+                (existing.status === "cancelled" ? "pending" : undefined))
+              : data.status;
 
       const updated = await fromPromise(
          context.db.transaction(async (tx) => {
@@ -156,6 +176,8 @@ export const update = protectedProcedure
                .update(transactions)
                .set({
                   ...data,
+                  ...(status !== undefined ? { status } : {}),
+                  ...(ignored !== undefined ? { ignored } : {}),
                   ...(tagId !== undefined
                      ? { tagId, suggestedTagId: null }
                      : {}),

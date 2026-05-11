@@ -89,7 +89,16 @@ function SuggestedCategoryCell({
    );
 }
 
-function StatusBadge({ status }: { status: "pending" | "paid" | "cancelled" }) {
+function StatusBadge({
+   ignored,
+   status,
+}: {
+   ignored: boolean;
+   status: "pending" | "paid" | "cancelled";
+}) {
+   if (ignored) {
+      return <Badge variant="secondary">Ignorado</Badge>;
+   }
    if (status === "pending") {
       return (
          <Badge
@@ -101,7 +110,7 @@ function StatusBadge({ status }: { status: "pending" | "paid" | "cancelled" }) {
       );
    }
    if (status === "cancelled") {
-      return <Badge variant="secondary">Cancelado</Badge>;
+      return <Badge variant="secondary">Ignorado</Badge>;
    }
    return (
       <Badge
@@ -138,13 +147,18 @@ export function buildTransactionColumns(options?: {
             editOptions: [
                { value: "pending", label: "Pendente" },
                { value: "paid", label: "Efetivado" },
-               { value: "cancelled", label: "Cancelado" },
+               { value: "cancelled", label: "Ignorado" },
             ],
             onSave: async (rowId, value) => {
                await options?.onUpdate?.(rowId, { status: value });
             },
          },
-         cell: ({ row }) => <StatusBadge status={row.original.status} />,
+         cell: ({ row }) => (
+            <StatusBadge
+               ignored={row.original.ignored}
+               status={row.original.status}
+            />
+         ),
       },
       {
          accessorKey: "date",

@@ -18,6 +18,8 @@ export const creditCardStatementTotals = financeSchema
             ),
          })
          .from(transactions)
-         .where(sql`${transactions.creditCardId} IS NOT NULL`)
+         .where(
+            sql`${transactions.creditCardId} IS NOT NULL AND ${transactions.ignored} = false`,
+         )
          .groupBy(transactions.creditCardId, transactions.statementPeriod),
    );

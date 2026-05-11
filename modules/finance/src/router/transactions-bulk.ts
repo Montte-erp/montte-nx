@@ -141,6 +141,7 @@ export const checkDuplicates = protectedProcedure
             and(
                eq(f.bankAccountId, input.bankAccountId),
                eq(f.teamId, context.teamId),
+               eq(f.ignored, false),
                inArray(
                   f.date,
                   input.transactions.map((t) => t.date),
@@ -231,12 +232,15 @@ export const importBulk = protectedProcedure
             tagId,
             date: data.date,
          });
+         const ignored = data.ignored || data.status === "cancelled";
          const inserted = await fromPromise(
             context.db.transaction(async (tx) =>
                tx
                   .insert(transactions)
                   .values({
                      ...data,
+                     status: ignored ? "cancelled" : data.status,
+                     ignored,
                      teamId: context.teamId,
                      tagId: tagId ?? null,
                   })
@@ -249,6 +253,7 @@ export const importBulk = protectedProcedure
          if (
             input.autoCategorize &&
             row &&
+            !ignored &&
             !data.categoryId &&
             (data.type === "income" || data.type === "expense")
          ) {
