@@ -286,6 +286,30 @@ export async function insertDefaultCategory(
    return row;
 }
 
+export async function insertCategory(
+   teamId: string,
+   input: {
+      name: string;
+      type: "income" | "expense" | "transfer";
+      parentId?: string;
+      level?: number;
+   },
+) {
+   const [row] = await db()
+      .insert(categories)
+      .values({
+         teamId,
+         name: input.name,
+         type: input.type,
+         parentId: input.parentId,
+         level: input.level ?? (input.parentId ? 2 : 1),
+         isDefault: false,
+         participatesDre: false,
+      })
+      .returning();
+   return row;
+}
+
 export async function deleteCategoryById(teamId: string, id: string) {
    await db()
       .delete(categories)

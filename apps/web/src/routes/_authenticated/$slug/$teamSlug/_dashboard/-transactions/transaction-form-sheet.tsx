@@ -4,11 +4,24 @@ import {
    CollapsibleContent,
    CollapsibleTrigger,
 } from "@packages/ui/components/collapsible";
+import {
+   Command,
+   CommandEmpty,
+   CommandGroup,
+   CommandInput,
+   CommandItem,
+   CommandList,
+} from "@packages/ui/components/command";
 import { Combobox } from "@packages/ui/components/combobox";
 import { DatePicker } from "@packages/ui/components/date-picker";
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { MoneyInput } from "@packages/ui/components/money-input";
+import {
+   Popover,
+   PopoverContent,
+   PopoverTrigger,
+} from "@packages/ui/components/popover";
 import {
    Select,
    SelectContent,
@@ -27,17 +40,28 @@ import { toast } from "@packages/ui/components/sonner";
 import { Textarea } from "@packages/ui/components/textarea";
 import { UploadDropzone } from "@packages/ui/components/upload-dropzone";
 import { UploadProgress } from "@packages/ui/components/upload-progress";
+import { cn } from "@packages/ui/lib/utils";
 import { useUploadFiles } from "@better-upload/client";
 import imageCompression from "browser-image-compression";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { ChevronDown, FileText } from "lucide-react";
+import {
+   CheckIcon,
+   ChevronDown,
+   ChevronRight,
+   ChevronsUpDownIcon,
+   FileText,
+} from "lucide-react";
 import { fromPromise } from "neverthrow";
+import * as React from "react";
 import { z } from "zod";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
+import type { Outputs } from "@/integrations/orpc/client";
+
+type CategoryNode = Outputs["categories"]["getAll"][number];
 
 const TRANSACTION_TYPES = ["income", "expense", "transfer"] as const;
 type TransactionType = (typeof TRANSACTION_TYPES)[number];
@@ -194,6 +218,193 @@ async function compressIfImage(files: File[]) {
    );
 }
 
+interface CategoryPickerProps {
+   categories: CategoryNode[];
+   value: string;
+   onValueChange: (value: string) => void;
+   onBlur?: React.FocusEventHandler<HTMLButtonElement>;
+   id?: string;
+}
+
+function CategoryPicker({
+   categories,
+   value,
+   onValueChange,
+   onBlur,
+   id,
+}: CategoryPickerProps) {
+   const [open, setOpen] = React.useState(false);
+   const [search, setSearch] = React.useState("");
+   const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
+
+   const { roots, childrenByParent, byId } = React.useMemo(() => {
+      const byId = new Map<string, CategoryNode>();
+      const childrenByParent = new Map<string, CategoryNode[]>();
+      const roots: CategoryNode[] = [];
+      for (const c of categories) byId.set(c.id, c);
+      for (const c of categories) {
+         if (c.parentId) {
+            const list = childrenByParent.get(c.parentId) ?? [];
+            list.push(c);
+            childrenByParent.set(c.parentId, list);
+         } else {
+            roots.push(c);
+         }
+      }
+      return { roots, childrenByParent, byId };
+   }, [categories]);
+
+   const selected = value ? byId.get(value) : undefined;
+   const selectedLabel = selected
+      ? selected.parentId
+         ? `${byId.get(selected.parentId)?.name ?? ""} / ${selected.name}`
+         : selected.name
+      : null;
+
+   const term = search.trim().toLowerCase();
+
+   const visibleRoots = React.useMemo(() => {
+      if (!term) return roots;
+      return roots.filter((r) => {
+         if (r.name.toLowerCase().includes(term)) return true;
+         const kids = childrenByParent.get(r.id) ?? [];
+         return kids.some((k) => k.name.toLowerCase().includes(term));
+      });
+   }, [roots, childrenByParent, term]);
+
+   const isRootExpanded = (rootId: string) =>
+      term ? true : expanded.has(rootId);
+
+   const toggleExpanded = (rootId: string) => {
+      setExpanded((prev) => {
+         const next = new Set(prev);
+         if (next.has(rootId)) next.delete(rootId);
+         else next.add(rootId);
+         return next;
+      });
+   };
+
+   const handleSelect = (id: string) => {
+      onValueChange(id === value ? "" : id);
+      setOpen(false);
+      setSearch("");
+   };
+
+   return (
+      <Popover
+         onOpenChange={(o) => {
+            setOpen(o);
+            if (!o) setSearch("");
+         }}
+         open={open}
+      >
+         <PopoverTrigger asChild>
+            <Button
+               aria-expanded={open}
+               className="flex truncate items-center gap-2"
+               id={id}
+               onBlur={onBlur}
+               role="combobox"
+               variant="outline"
+            >
+               {selectedLabel ?? "Selecionar categoria..."}
+               <ChevronsUpDownIcon className="size-4" />
+            </Button>
+         </PopoverTrigger>
+         <PopoverContent className="p-0">
+            <Command shouldFilter={false}>
+               <CommandInput
+                  onValueChange={setSearch}
+                  placeholder="Buscar categoria..."
+                  value={search}
+               />
+               <CommandList>
+                  {visibleRoots.length === 0 ? (
+                     <CommandEmpty>Nenhuma categoria.</CommandEmpty>
+                  ) : null}
+                  <CommandGroup>
+                     {visibleRoots.map((root) => {
+                        const kids = childrenByParent.get(root.id) ?? [];
+                        const expandedNow = isRootExpanded(root.id);
+                        const visibleKids = term
+                           ? kids.filter(
+                                (k) =>
+                                   k.name.toLowerCase().includes(term) ||
+                                   root.name.toLowerCase().includes(term),
+                             )
+                           : kids;
+                        return (
+                           <React.Fragment key={root.id}>
+                              <CommandItem
+                                 value={root.id}
+                                 onSelect={() => handleSelect(root.id)}
+                                 className="gap-2"
+                              >
+                                 {kids.length > 0 ? (
+                                    <button
+                                       aria-label={
+                                          expandedNow ? "Recolher" : "Expandir"
+                                       }
+                                       className="flex size-4 items-center justify-center rounded hover:bg-accent"
+                                       onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleExpanded(root.id);
+                                       }}
+                                       type="button"
+                                    >
+                                       <ChevronRight
+                                          className={cn(
+                                             "size-3 transition-transform",
+                                             expandedNow && "rotate-90",
+                                          )}
+                                       />
+                                    </button>
+                                 ) : (
+                                    <span className="size-4" />
+                                 )}
+                                 <CheckIcon
+                                    className={cn(
+                                       "size-4",
+                                       value === root.id
+                                          ? "opacity-100"
+                                          : "opacity-0",
+                                    )}
+                                 />
+                                 <span className="truncate">{root.name}</span>
+                              </CommandItem>
+                              {expandedNow
+                                 ? visibleKids.map((child) => (
+                                      <CommandItem
+                                         key={child.id}
+                                         value={child.id}
+                                         onSelect={() => handleSelect(child.id)}
+                                         className="gap-2 pl-8"
+                                      >
+                                         <CheckIcon
+                                            className={cn(
+                                               "size-4",
+                                               value === child.id
+                                                  ? "opacity-100"
+                                                  : "opacity-0",
+                                            )}
+                                         />
+                                         <span className="truncate">
+                                            {child.name}
+                                         </span>
+                                      </CommandItem>
+                                   ))
+                                 : null}
+                           </React.Fragment>
+                        );
+                     })}
+                  </CommandGroup>
+               </CommandList>
+            </Command>
+         </PopoverContent>
+      </Popover>
+   );
+}
+
 export function TransactionFormSheet() {
    return (
       <QueryBoundary
@@ -342,6 +553,7 @@ function TransactionFormSheetContent() {
                            const parsed = parseTransactionType(v);
                            if (!parsed) return;
                            field.handleChange(parsed);
+                           form.setFieldValue("categoryId", "");
                         }}
                      >
                         <SelectTrigger id={field.name} name={field.name}>
@@ -361,15 +573,13 @@ function TransactionFormSheetContent() {
 
             <form.Subscribe selector={(s) => s.values.type}>
                {(type) => {
-                  const categoryOptions = categoriesResult
-                     .filter((c) =>
-                        type === "transfer"
-                           ? false
-                           : type === "income"
-                             ? c.type === "income"
-                             : c.type === "expense",
-                     )
-                     .map((c) => ({ value: c.id, label: c.name }));
+                  const filteredCategories = categoriesResult.filter((c) =>
+                     type === "transfer"
+                        ? false
+                        : type === "income"
+                          ? c.type === "income"
+                          : c.type === "expense",
+                  );
                   return (
                      <div className="flex flex-col gap-4">
                         <form.Field name="bankAccountId">
@@ -443,12 +653,9 @@ function TransactionFormSheetContent() {
                                     <FieldLabel htmlFor={field.name}>
                                        Categoria
                                     </FieldLabel>
-                                    <Combobox
-                                       emptyMessage="Nenhuma categoria."
+                                    <CategoryPicker
+                                       categories={filteredCategories}
                                        id={field.name}
-                                       options={categoryOptions}
-                                       placeholder="Selecionar categoria..."
-                                       searchPlaceholder="Buscar categoria..."
                                        value={field.state.value}
                                        onBlur={field.handleBlur}
                                        onValueChange={(v) =>
