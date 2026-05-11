@@ -24,7 +24,6 @@ import { CATEGORY_ICON_MAP } from "./category-icons";
 
 export type CategoryRow = Outputs["categories"]["getPaginated"]["data"][number];
 type CategoryType = "income" | "expense" | "transfer";
-const NO_PARENT_VALUE = "sem-categoria-pai";
 
 function isCategoryType(value: unknown): value is CategoryType {
    return value === "income" || value === "expense" || value === "transfer";
@@ -76,15 +75,6 @@ export function buildCategoryColumns(options?: {
    const categoriesById = new Map(
       (options?.categories ?? []).map((category) => [category.id, category]),
    );
-   const parentOptions = [
-      { value: NO_PARENT_VALUE, label: "Sem categoria pai" },
-      ...(options?.categories ?? [])
-         .filter((category) => !category.isArchived && category.level < 3)
-         .map((category) => ({
-            value: category.id,
-            label: category.level > 1 ? `Sub: ${category.name}` : category.name,
-         })),
-   ];
 
    return [
       {
@@ -197,38 +187,6 @@ export function buildCategoryColumns(options?: {
                   {archivedIndicator}
                </div>
             );
-         },
-      },
-      {
-         accessorKey: "parentId",
-         header: "Categoria pai",
-         meta: {
-            label: "Categoria pai",
-            cellComponent: "combobox" as const,
-            isEditable: true,
-            editMode: "inline" as const,
-            editOptions: parentOptions,
-            isEditableForRow: (row: CategoryRow) => !row.isArchived,
-            onSave: onUpdate
-               ? async (rowId: string, value: unknown) => {
-                    const parentId = String(value);
-                    await onUpdate(rowId, {
-                       parentId: parentId === NO_PARENT_VALUE ? null : parentId,
-                    });
-                 }
-               : undefined,
-            exportValue: (row) =>
-               row.parentId
-                  ? (categoriesById.get(row.parentId)?.name ?? "")
-                  : "",
-         },
-         cell: ({ row }) => {
-            const parentName = row.original.parentId
-               ? categoriesById.get(row.original.parentId)?.name
-               : null;
-            if (!parentName)
-               return <span className="text-sm text-muted-foreground">—</span>;
-            return <span className="text-sm">{parentName}</span>;
          },
       },
       {

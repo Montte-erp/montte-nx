@@ -141,10 +141,10 @@ test("cria categoria vinculada a uma categoria pai", async ({
       .getByRole("textbox", { name: "Buscar categorias..." })
       .fill(childName);
    await expect(
-      page
-         .getByRole("row")
-         .filter({ hasText: childName })
-         .filter({ hasText: parentName }),
+      page.getByRole("columnheader", { name: "Categoria pai" }),
+   ).toHaveCount(0);
+   await expect(
+      page.getByRole("row").filter({ hasText: childName }),
    ).toBeVisible();
 });
 
