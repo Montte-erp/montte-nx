@@ -67,7 +67,7 @@ const formSchema = z.object({
    dueDay: daySchema,
 });
 
-type FormValues = {
+interface FormValues {
    name: string;
    bankAccountId: string;
    brand: CreditCardBrand | "";
@@ -75,7 +75,7 @@ type FormValues = {
    creditLimit: number;
    closingDay: number;
    dueDay: number;
-};
+}
 
 const DEFAULT_VALUES: FormValues = {
    name: "",
