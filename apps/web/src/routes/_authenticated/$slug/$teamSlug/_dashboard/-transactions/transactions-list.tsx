@@ -68,6 +68,84 @@ const routeApi = getRouteApi(
    "/_authenticated/$slug/$teamSlug/_dashboard/transactions",
 );
 
+type ImportLookupItem = { id: string; name: string };
+
+function normalizeImportLookup(value: unknown): string {
+   return String(value ?? "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+}
+
+function resolveImportId(
+   options: ImportLookupItem[],
+   value: unknown,
+): string | null {
+   const normalized = normalizeImportLookup(value);
+   if (!normalized) return null;
+   const option = options.find(
+      (item) =>
+         normalizeImportLookup(item.id) === normalized ||
+         normalizeImportLookup(item.name) === normalized,
+   );
+   return option?.id ?? null;
+}
+
+function parseImportDate(value: unknown): string {
+   const raw = String(value ?? "").trim();
+   const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+   if (!match) return raw;
+   return `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
+}
+
+function parseImportAmount(value: unknown) {
+   const cleaned = String(value ?? "")
+      .replace(/[R$\s]/g, "")
+      .trim();
+   const raw = cleaned.includes(",")
+      ? cleaned.replace(/\./g, "").replace(",", ".")
+      : cleaned;
+   const parsed = Number.parseFloat(raw);
+   if (Number.isNaN(parsed)) return { amount: "", signedAmount: 0 };
+   return { amount: Math.abs(parsed).toFixed(2), signedAmount: parsed };
+}
+
+function parseImportType(
+   value: unknown,
+   signedAmount: number,
+): "income" | "expense" {
+   const normalized = normalizeImportLookup(value);
+   if (
+      normalized === "income" ||
+      normalized.includes("cred") ||
+      normalized.includes("entrada") ||
+      normalized.includes("receita")
+   ) {
+      return "income";
+   }
+   if (
+      normalized === "expense" ||
+      normalized.includes("deb") ||
+      normalized.includes("saida") ||
+      normalized.includes("despesa")
+   ) {
+      return "expense";
+   }
+   return signedAmount < 0 ? "expense" : "income";
+}
+
+function parseImportStatus(value: unknown): "pending" | "paid" | "cancelled" {
+   const normalized = normalizeImportLookup(value);
+   if (normalized === "paid" || normalized.includes("efetivado")) {
+      return "paid";
+   }
+   if (normalized === "cancelled" || normalized.includes("cancelado")) {
+      return "cancelled";
+   }
+   return "pending";
+}
+
 export function TransactionsList() {
    const navigate = routeApi.useNavigate();
    const {
@@ -84,7 +162,7 @@ export function TransactionsList() {
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
    const queryClient = useQueryClient();
-   const { parse: parseCsv } = useCsvFile();
+   const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
    const { parse: parseOfx } = useOfxFile();
 
@@ -180,7 +258,7 @@ export function TransactionsList() {
    const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
    const importMutation = useMutation(
-      orpc.transactions.create.mutationOptions({
+      orpc.transactions.importBulk.mutationOptions({
          meta: { skipGlobalInvalidation: true },
       }),
    );
@@ -371,121 +449,143 @@ export function TransactionsList() {
             return parseCsv(file);
          },
          mapRow: (row, i) => {
-            const rawDate = String(row.date ?? "").trim();
-            const rawAmount = String(row.amount ?? "").trim();
-            const rawType = String(row.type ?? "").trim();
-
-            const dateMatch = rawDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-            const date = dateMatch
-               ? `${dateMatch[3]}-${dateMatch[2].padStart(2, "0")}-${dateMatch[1].padStart(2, "0")}`
-               : rawDate;
-
-            const amountNum = parseFloat(
-               rawAmount.replace(/[R$\s.]/g, "").replace(",", "."),
-            );
-            const amount = Number.isNaN(amountNum)
-               ? ""
-               : Math.abs(amountNum).toString();
-
-            const lower = rawType.toLowerCase();
-            let type: "income" | "expense" = "expense";
-            if (
-               lower.includes("créd") ||
-               lower.includes("cred") ||
-               lower === "c" ||
-               lower.includes("entrada") ||
-               lower.includes("receita")
-            ) {
-               type = "income";
-            } else if (
-               !(
-                  lower.includes("déb") ||
-                  lower.includes("deb") ||
-                  lower === "d" ||
-                  lower.includes("saíd") ||
-                  lower.includes("said") ||
-                  lower.includes("despesa")
-               )
-            ) {
-               type = amountNum < 0 ? "expense" : "income";
-            }
+            const parsedAmount = parseImportAmount(row.amount);
+            const type = parseImportType(row.type, parsedAmount.signedAmount);
 
             return {
                id: `__import_${i}`,
-               date,
-               amount,
+               date: parseImportDate(row.date),
+               amount: parsedAmount.amount,
                type,
                name: String(row.name ?? "").trim() || null,
-               status: "pending",
-               dueDate: null,
-               bankAccountName: null,
-               bankAccountId: null,
-               contactName: null,
-               categoryName: null,
-               creditCardName: null,
+               status: parseImportStatus(row.status),
+               dueDate: row.dueDate ? parseImportDate(row.dueDate) : null,
+               bankAccountName: String(row.bankAccountName ?? "").trim(),
+               bankAccountId: resolveImportId(
+                  bankAccounts,
+                  row.bankAccountName,
+               ),
+               contactName: String(row.contactName ?? "").trim(),
+               contactId: resolveImportId(contacts, row.contactName),
+               categoryName: String(row.categoryName ?? "").trim(),
+               categoryId: resolveImportId(categoriesResult, row.categoryName),
+               creditCardName: String(row.creditCardName ?? "").trim(),
+               creditCardId: resolveImportId(
+                  creditCardsResult.data,
+                  row.creditCardName,
+               ),
                suggestedCategoryId: null,
                suggestedCategoryName: null,
             };
          },
+         template: {
+            filename: "modelo-lancamentos.csv",
+            label: "Baixar modelo CSV",
+            description:
+               "Inclui date, name, type, amount, status e referências por nome ou ID.",
+            createBlob: () =>
+               generateCsv(
+                  [
+                     {
+                        date: dayjs().format("YYYY-MM-DD"),
+                        name: "Venda recebida",
+                        type: "income",
+                        amount: "1500.00",
+                        status: "paid",
+                        dueDate: "",
+                        bankAccountName: bankAccounts[0]?.name ?? "",
+                        creditCardName: "",
+                        categoryName: categoriesResult[0]?.name ?? "",
+                        contactName: contacts[0]?.name ?? "",
+                     },
+                     {
+                        date: dayjs().format("YYYY-MM-DD"),
+                        name: "Compra no cartão",
+                        type: "expense",
+                        amount: "250.00",
+                        status: "pending",
+                        dueDate: dayjs().add(7, "day").format("YYYY-MM-DD"),
+                        bankAccountName: "",
+                        creditCardName: creditCardsResult.data[0]?.name ?? "",
+                        categoryName: categoriesResult[0]?.name ?? "",
+                        contactName: contacts[0]?.name ?? "",
+                     },
+                  ],
+                  [
+                     "date",
+                     "name",
+                     "type",
+                     "amount",
+                     "status",
+                     "dueDate",
+                     "bankAccountName",
+                     "creditCardName",
+                     "categoryName",
+                     "contactName",
+                  ],
+               ),
+         },
          onImport: async (rows) => {
-            const results = await Promise.allSettled(
-               rows.map((r) => {
-                  const date = String(r.date ?? "");
-                  const amount = String(r.amount ?? "");
-                  if (!date || !amount)
-                     return Promise.reject(new Error("skip"));
-                  const bankAccountId = r.bankAccountId
-                     ? String(r.bankAccountId)
-                     : r.bankAccountName
-                       ? String(r.bankAccountName)
-                       : null;
-                  const creditCardId = r.creditCardId
-                     ? String(r.creditCardId)
-                     : r.creditCardName
-                       ? String(r.creditCardName)
-                       : null;
-                  if (!bankAccountId && !creditCardId)
-                     return Promise.reject(
-                        new Error("Selecione conta ou cartão."),
-                     );
-                  return importMutation.mutateAsync({
-                     type: (r.type as "income" | "expense") ?? "expense",
+            const transactions = rows.flatMap((r) => {
+               const date = String(r.date ?? "");
+               const amount = String(r.amount ?? "");
+               if (!date || !amount) return [];
+               const bankAccountId =
+                  resolveImportId(bankAccounts, r.bankAccountId) ??
+                  resolveImportId(bankAccounts, r.bankAccountName);
+               const creditCardId =
+                  resolveImportId(creditCardsResult.data, r.creditCardId) ??
+                  resolveImportId(creditCardsResult.data, r.creditCardName);
+               if (!bankAccountId && !creditCardId) return [];
+               return [
+                  {
+                     type: parseImportType(r.type, 1),
                      amount,
                      date,
                      name: r.name ? String(r.name) : null,
                      bankAccountId,
                      destinationBankAccountId: null,
-                     categoryId: null,
+                     categoryId:
+                        resolveImportId(categoriesResult, r.categoryId) ??
+                        resolveImportId(categoriesResult, r.categoryName),
                      attachments: [],
                      description: null,
-                     contactId: null,
+                     contactId:
+                        resolveImportId(contacts, r.contactId) ??
+                        resolveImportId(contacts, r.contactName),
                      creditCardId,
                      paymentMethod: null,
-                     status: "pending",
-                     dueDate: null,
-                     autoCategorize: true,
-                  });
-               }),
-            );
-            const ok = results.filter((r) => r.status === "fulfilled").length;
-            const failed = results.filter(
-               (r) =>
-                  r.status === "rejected" &&
-                  (r.reason as Error)?.message !== "skip",
-            ).length;
+                     status: parseImportStatus(r.status),
+                     dueDate: r.dueDate ? String(r.dueDate) : null,
+                  },
+               ];
+            });
+            if (transactions.length === 0) {
+               throw new Error(
+                  "Nenhum lançamento válido para importar. Preencha data, valor e conta ou cartão.",
+               );
+            }
+            await importMutation.mutateAsync({
+               transactions,
+               autoCategorize: true,
+            });
             await queryClient.invalidateQueries({
                queryKey: orpc.transactions.getAll.queryKey(),
             });
-            if (failed > 0) {
-               throw new Error(
-                  ok > 0
-                     ? `${ok} importado(s), ${failed} com erro.`
-                     : `${failed} lançamento(s) com erro. Defina conta bancária ou cartão.`,
-               );
-            }
          },
       }),
-      [parseCsv, parseXlsx, parseOfx, importMutation, queryClient],
+      [
+         parseCsv,
+         parseXlsx,
+         parseOfx,
+         generateCsv,
+         bankAccounts,
+         categoriesResult,
+         contacts,
+         creditCardsResult.data,
+         importMutation,
+         queryClient,
+      ],
    );
 
    const columns = useMemo(
