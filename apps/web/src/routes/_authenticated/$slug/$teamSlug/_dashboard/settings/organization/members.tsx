@@ -114,7 +114,7 @@ function toMemberRow(m: Member): MemberRow {
    };
 }
 
-function toOrganizationRole(role: string): OrganizationRole {
+function toOrganizationRole(role: string) {
    if (role === "owner") return "owner";
    if (role === "admin") return "admin";
    return "member";
