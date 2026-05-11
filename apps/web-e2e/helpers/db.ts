@@ -229,15 +229,21 @@ export async function findAnyBankAccount(teamId: string) {
    });
 }
 
-export async function insertBankAccount(teamId: string, name: string) {
+export async function insertBankAccount(
+   teamId: string,
+   name: string,
+   extras?: { bankCode?: string; bankName?: string },
+) {
    const [row] = await db()
       .insert(bankAccounts)
       .values({
          teamId,
          name,
-         type: "cash",
+         type: extras?.bankCode ? "checking" : "cash",
          color: "#6366f1",
          initialBalance: "0",
+         bankCode: extras?.bankCode ?? null,
+         bankName: extras?.bankName ?? null,
       })
       .returning();
    return row;

@@ -20,84 +20,18 @@ import {
 } from "lucide-react";
 import { z } from "zod";
 import type { Outputs } from "@/integrations/orpc/client";
+import {
+   BRAND_COLOR,
+   BRAND_LABEL,
+   bankInitials,
+   bankLogoUrl,
+   brandLogoUrl,
+} from "@/lib/logos";
 
 export type CreditCardRow = Outputs["creditCards"]["getAll"]["data"][number];
 
 function formatBRL(value: string | number): string {
    return format(of(String(value), "BRL"), "pt-BR");
-}
-
-const BRAND_LABEL: Record<string, string> = {
-   visa: "Visa",
-   mastercard: "Mastercard",
-   elo: "Elo",
-   amex: "Amex",
-   hipercard: "Hipercard",
-   other: "Outra",
-};
-
-const BRAND_COLOR: Record<string, string> = {
-   visa: "#1A1F71",
-   mastercard: "#EB001B",
-   elo: "#000000",
-   amex: "#2E77BC",
-   hipercard: "#822124",
-   other: "#6B7280",
-};
-
-const BRAND_LOGO_SLUG: Record<string, string> = {
-   visa: "visa",
-   mastercard: "mastercard",
-   elo: "elo",
-   amex: "americanexpress",
-   hipercard: "hipercard",
-};
-
-const BANK_DOMAIN: Record<string, string> = {
-   "001": "bb.com.br",
-   "033": "santander.com.br",
-   "077": "bancointer.com.br",
-   "104": "caixa.gov.br",
-   "208": "btgpactual.com",
-   "212": "original.com.br",
-   "237": "bradesco.com.br",
-   "246": "abcbrasil.com.br",
-   "260": "nubank.com.br",
-   "290": "pagseguro.com.br",
-   "318": "bancobmg.com.br",
-   "323": "mercadopago.com.br",
-   "336": "bancoc6.com.br",
-   "341": "itau.com.br",
-   "380": "picpay.com",
-   "389": "mercantildobrasil.com.br",
-   "422": "safra.com.br",
-   "623": "pan.com.br",
-   "655": "votorantim.com.br",
-   "735": "banconeon.com.br",
-   "739": "cetelem.com.br",
-   "748": "sicredi.com.br",
-   "756": "sicoobnet.com.br",
-};
-
-function bankLogoUrl(bankCode: string | null | undefined): string | undefined {
-   if (!bankCode) return undefined;
-   const padded = bankCode.padStart(3, "0");
-   const domain = BANK_DOMAIN[padded];
-   if (!domain) return undefined;
-   return `https://logo.clearbit.com/${domain}`;
-}
-
-function brandLogoUrl(brand: string): string | undefined {
-   const slug = BRAND_LOGO_SLUG[brand];
-   if (!slug) return undefined;
-   return `https://cdn.simpleicons.org/${slug}`;
-}
-
-function bankInitials(name: string): string {
-   const parts = name.trim().split(/\s+/).filter(Boolean);
-   if (parts.length === 0) return "?";
-   if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
-   return (parts[0]![0]! + parts[1]![0]!).toUpperCase();
 }
 
 type BankAccountOption = {
@@ -122,10 +56,12 @@ const STATUS_LABEL = {
 
 export function buildCreditCardColumns(options?: {
    bankAccounts?: Array<BankAccountOption>;
+   logoDevToken?: string;
 }): ColumnDef<CreditCardRow>[] {
    const bankAccountsById = new Map(
       (options?.bankAccounts ?? []).map((b) => [b.id, b] as const),
    );
+   const logoDevToken = options?.logoDevToken;
    return [
       {
          accessorKey: "name",
@@ -237,7 +173,7 @@ export function buildCreditCardColumns(options?: {
             if (!account)
                return <span className="text-muted-foreground">—</span>;
             const issuer = account.bankName?.trim() || account.name;
-            const logo = bankLogoUrl(account.bankCode);
+            const logo = bankLogoUrl(account.bankCode, logoDevToken);
             return (
                <div className="flex items-center gap-2 min-w-0">
                   <Avatar className="size-6 shrink-0 bg-white ring-1 ring-border">

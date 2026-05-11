@@ -2,6 +2,11 @@ import { of, toMajorUnitsString } from "@f-o-t/money";
 import type { MaskitoOptions } from "@maskito/core";
 import { useMaskito } from "@maskito/react";
 import { Autocomplete } from "@packages/ui/components/autocomplete";
+import {
+   Avatar,
+   AvatarFallback,
+   AvatarImage,
+} from "@packages/ui/components/avatar";
 import { Button } from "@packages/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
@@ -23,6 +28,7 @@ import {
 import { toast } from "@packages/ui/components/sonner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
 import {
    CreditCard,
    Landmark,
@@ -35,7 +41,9 @@ import type { ReactNode } from "react";
 import { z } from "zod";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
+import { LogoDevAttribution } from "@/components/logo-dev-attribution";
 import { QueryBoundary } from "@/components/query-boundary";
+import { bankInitials, bankLogoUrl } from "@/lib/logos";
 
 const BANK_ACCOUNT_TYPES = [
    "checking",
@@ -159,6 +167,8 @@ export function BankAccountFormSheet() {
 
 function BankAccountFormSheetContent() {
    const { closeTopSheet } = useSheet();
+   const router = useRouter();
+   const logoDevToken = router.options.context.publicEnv?.LOGO_DEV_TOKEN;
    const bankCodeMaskRef = useMaskito({ options: BANK_CODE_MASK });
    const branchMaskRef = useMaskito({ options: BRANCH_MASK });
    const accountNumberMaskRef = useMaskito({ options: ACCOUNT_NUMBER_MASK });
@@ -171,6 +181,30 @@ function BankAccountFormSheetContent() {
       value: b.code,
       label: b.name,
    }));
+
+   const renderBankOption = (option: { value: string; label: string }) => {
+      const logo = bankLogoUrl(option.value, logoDevToken);
+      return (
+         <div className="flex min-w-0 items-center gap-2">
+            <Avatar className="size-5 shrink-0 bg-white ring-1 ring-border">
+               {logo ? (
+                  <AvatarImage
+                     alt={option.label}
+                     className="object-contain p-0.5"
+                     src={logo}
+                  />
+               ) : null}
+               <AvatarFallback className="text-[9px] font-semibold">
+                  {bankInitials(option.label)}
+               </AvatarFallback>
+            </Avatar>
+            <span className="truncate">{option.label}</span>
+            <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+               {option.value}
+            </span>
+         </div>
+      );
+   };
 
    const createMutation = useMutation(
       orpc.bankAccounts.create.mutationOptions({
@@ -315,6 +349,7 @@ function BankAccountFormSheetContent() {
                                           isLoading={false}
                                           options={bankOptions}
                                           placeholder="Digite o nome ou código"
+                                          renderOption={renderBankOption}
                                           value={selectedOption}
                                           onBlur={field.handleBlur}
                                           onValueChange={(opt) => {
@@ -447,6 +482,9 @@ function BankAccountFormSheetContent() {
             </form.Field>
          </form>
 
+         <div className="px-4">
+            <LogoDevAttribution className="text-xs text-muted-foreground hover:underline" />
+         </div>
          <SheetFooter>
             <SheetClose asChild>
                <Button variant="outline">Cancelar</Button>

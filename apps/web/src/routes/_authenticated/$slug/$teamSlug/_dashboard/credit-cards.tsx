@@ -15,6 +15,7 @@ import { z } from "zod";
 import { DefaultHeader } from "../-layout/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
+import { LogoDevAttribution } from "@/components/logo-dev-attribution";
 import { CreditCardFormSheet } from "./-credit-cards/credit-card-form-sheet";
 import {
    DataTableBulkActions,
@@ -98,6 +99,7 @@ function CreditCardsList() {
    const { columnFilters, page, pageSize, search, status } = Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
+   const { publicEnv } = Route.useRouteContext();
    const { parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
 
@@ -220,8 +222,9 @@ function CreditCardsList() {
                bankCode: b.bankCode,
                color: b.color,
             })),
+            logoDevToken: publicEnv?.LOGO_DEV_TOKEN,
          }),
-      [bankAccounts],
+      [bankAccounts, publicEnv?.LOGO_DEV_TOKEN],
    );
 
    return (
@@ -334,6 +337,7 @@ function CreditCardsList() {
                }
             />
          </DataTableRoot>
+         <LogoDevAttribution />
       </div>
    );
 }
