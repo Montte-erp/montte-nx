@@ -14,6 +14,7 @@ import {
    user as userTable,
 } from "@core/database/schemas/auth";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { creditCards } from "@core/database/schemas/credit-cards";
 import { categories } from "@core/database/schemas/categories";
 import { tags } from "@core/database/schemas/tags";
 import { transactions } from "@core/database/schemas/transactions";
@@ -208,6 +209,38 @@ export async function deleteBankAccountById(teamId: string, id: string) {
    await db()
       .delete(bankAccounts)
       .where(and(eq(bankAccounts.teamId, teamId), eq(bankAccounts.id, id)));
+}
+
+export async function findCreditCardByName(teamId: string, name: string) {
+   return db().query.creditCards.findFirst({
+      where: (f, { and, eq }) => and(eq(f.teamId, teamId), eq(f.name, name)),
+   });
+}
+
+export async function deleteCreditCardById(teamId: string, id: string) {
+   await db()
+      .delete(creditCards)
+      .where(and(eq(creditCards.teamId, teamId), eq(creditCards.id, id)));
+}
+
+export async function findAnyBankAccount(teamId: string) {
+   return db().query.bankAccounts.findFirst({
+      where: (f, { eq }) => eq(f.teamId, teamId),
+   });
+}
+
+export async function insertBankAccount(teamId: string, name: string) {
+   const [row] = await db()
+      .insert(bankAccounts)
+      .values({
+         teamId,
+         name,
+         type: "cash",
+         color: "#6366f1",
+         initialBalance: "0",
+      })
+      .returning();
+   return row;
 }
 
 export async function findTransactionByName(teamId: string, name: string) {

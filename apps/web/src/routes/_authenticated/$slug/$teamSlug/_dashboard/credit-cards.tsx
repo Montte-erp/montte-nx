@@ -9,11 +9,13 @@ import {
 import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { CreditCard, Plus, Trash2 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "../-layout/default-header";
 import { QueryBoundary } from "@/components/query-boundary";
+import { useSheet } from "@/hooks/use-sheet";
+import { CreditCardFormSheet } from "./-credit-cards/credit-card-form-sheet";
 import {
    DataTableBulkActions,
    SelectionActionButton,
@@ -95,6 +97,7 @@ function CreditCardsList() {
    const navigate = Route.useNavigate();
    const { columnFilters, page, pageSize, search, status } = Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
+   const { openSheet } = useSheet();
    const { parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
 
@@ -106,13 +109,6 @@ function CreditCardsList() {
          orpc.bankAccounts.getAll.queryOptions({}),
       ],
    });
-
-   const createMutation = useMutation(
-      orpc.creditCards.create.mutationOptions({
-         onSuccess: () => toast.success("Cartão criado com sucesso."),
-         onError: (e) => toast.error(e.message),
-      }),
-   );
 
    const deleteMutation = useMutation(
       orpc.creditCards.remove.mutationOptions({
@@ -144,29 +140,9 @@ function CreditCardsList() {
       }),
    );
 
-   const [isDraftActive, setIsDraftActive] = useState(false);
-
-   const handleDiscardDraft = useCallback(() => setIsDraftActive(false), []);
-
-   const handleAddCard = useCallback(
-      async (data: Record<string, string | string[]>) => {
-         const name = String(data.name ?? "").trim();
-         const closingDay = parseInt(String(data.closingDay ?? ""), 10);
-         const dueDay = parseInt(String(data.dueDay ?? ""), 10);
-         const bankAccountId = String(data.bankAccountId ?? "").trim();
-         if (!name || !closingDay || !dueDay || !bankAccountId) return;
-         await createMutation.mutateAsync({
-            name,
-            closingDay,
-            dueDay,
-            bankAccountId,
-            color: "#6366f1",
-            creditLimit: "0",
-         });
-         setIsDraftActive(false);
-      },
-      [createMutation],
-   );
+   const handleOpenCreate = useCallback(() => {
+      openSheet({ renderChildren: () => <CreditCardFormSheet /> });
+   }, [openSheet]);
 
    const importConfig: DataTableImportConfig = useMemo(
       () => ({
@@ -271,9 +247,6 @@ function CreditCardsList() {
                   replace: true,
                });
             }}
-            isDraftRowActive={isDraftActive}
-            onAddRow={handleAddCard}
-            onDiscardAddRow={handleDiscardDraft}
             renderExpandedRow={(props) => (
                <CreditCardFaturaRow creditCardId={props.row.original.id} />
             )}
@@ -291,7 +264,7 @@ function CreditCardsList() {
             <DataTableToolbar>
                <DataTableImportButton importConfig={importConfig} />
                <Button
-                  onClick={() => setIsDraftActive(true)}
+                  onClick={handleOpenCreate}
                   size="icon-sm"
                   tooltip="Novo Cartão"
                   variant="outline"
