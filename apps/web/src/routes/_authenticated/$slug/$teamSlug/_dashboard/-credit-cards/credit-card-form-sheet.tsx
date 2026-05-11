@@ -237,13 +237,13 @@ function CreditCardFormSheetContent() {
                               <div className="flex items-center justify-between rounded-md bg-muted px-4 py-2">
                                  <div className="flex min-w-0 items-center gap-2">
                                     {detectedBrandLogo ? (
-                                       <Avatar className="size-4 shrink-0 rounded-md bg-white ring-1 ring-border">
+                                       <Avatar className="size-4 shrink-0 rounded-lg bg-white ring-1 ring-border">
                                           <AvatarImage
                                              alt={BRAND_LABEL[detectedBrand]}
                                              className="object-contain"
                                              src={detectedBrandLogo}
                                           />
-                                          <AvatarFallback className="rounded-md text-[10px]">
+                                          <AvatarFallback className="rounded-lg text-xs">
                                              {BRAND_LABEL[detectedBrand][0]}
                                           </AvatarFallback>
                                        </Avatar>

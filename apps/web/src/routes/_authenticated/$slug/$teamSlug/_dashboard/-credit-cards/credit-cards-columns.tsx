@@ -100,7 +100,7 @@ export function buildCreditCardColumns(options?: {
             const logo = brandLogoUrl(brand);
             return (
                <div className="flex items-center gap-2 min-w-0">
-                  <Avatar className="size-4 shrink-0 rounded-md bg-white ring-1 ring-border">
+                  <Avatar className="size-4 shrink-0 rounded-lg bg-white ring-1 ring-border">
                      {logo ? (
                         <AvatarImage
                            alt={BRAND_LABEL[brand] ?? brand}
@@ -109,7 +109,7 @@ export function buildCreditCardColumns(options?: {
                         />
                      ) : null}
                      <AvatarFallback
-                        className="rounded-md text-[10px] font-semibold text-white"
+                        className="rounded-lg text-xs font-semibold text-white"
                         style={{ backgroundColor: color }}
                      >
                         <CreditCardIcon className="size-2" />
@@ -186,7 +186,7 @@ export function buildCreditCardColumns(options?: {
             const logo = bankLogoUrl(account.bankCode, logoDevToken);
             return (
                <div className="flex items-center gap-2 min-w-0">
-                  <Avatar className="size-4 shrink-0 bg-white ring-1 ring-border">
+                  <Avatar className="size-4 shrink-0 rounded-lg bg-white ring-1 ring-border">
                      {logo ? (
                         <AvatarImage
                            alt={issuer}
@@ -195,7 +195,7 @@ export function buildCreditCardColumns(options?: {
                         />
                      ) : null}
                      <AvatarFallback
-                        className="text-[10px] font-semibold text-white"
+                        className="rounded-lg text-xs font-semibold text-white"
                         style={{
                            backgroundColor: account.color ?? "#6366f1",
                         }}
