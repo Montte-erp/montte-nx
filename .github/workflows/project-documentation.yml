@@ -115,7 +115,7 @@ jobs:
            env:
               OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
               CONTEXT_FILE: documentation-context.md
-              OUTPUT_FILE: docs/project/PROJECT_DOCUMENTATION.md
+              OUTPUT_DIR: docs/project
               PROJECT_NAME: ${{ steps.context.outputs.project_name }}
               RELEASE_VERSION: ${{ steps.context.outputs.version }}
            with:
@@ -123,49 +123,46 @@ jobs:
               prompt: |
                  Você é um engenheiro senior documentando o projeto `$PROJECT_NAME` a partir do monorepo Montte.
 
-                 Leia `$CONTEXT_FILE` e escreva `$OUTPUT_FILE` em Markdown pt-BR. Crie diretórios quando necessário.
+                 Leia `$CONTEXT_FILE` e escreva um arquivo Markdown por domínio dentro de `$OUTPUT_DIR`. Crie diretórios quando necessário.
 
                  Objetivo: manter uma documentação técnica de projeto que ajude um dev novo ou um agente de IA a entender arquitetura, comandos, fluxos críticos e pontos de atenção sem precisar garimpar o repositório inteiro.
 
-                 Estrutura obrigatória:
+                 Arquivos obrigatórios:
+                 - `$OUTPUT_DIR/platform.md` — arquitetura do monorepo, apps, core, modules, packages, tooling, oRPC, Drizzle, TanStack Start, PostHog e padrões transversais.
+                 - `$OUTPUT_DIR/auth-organizations.md` — Better Auth, organizações, times, sessão, permissões e onboarding de organização/time.
+                 - `$OUTPUT_DIR/finance.md` — financeiro, transações, categorias, bancos, cartões, configurações financeiras e integrações relacionadas.
+                 - `$OUTPUT_DIR/crm-services.md` — contatos, serviços, benefícios, tags/Centro de Custo, assinaturas e domínio comercial.
+                 - `$OUTPUT_DIR/billing.md` — cobrança, HyprPay, usage events, meters, subscriptions, invoices e regras de billing.
+                 - `$OUTPUT_DIR/ai-agents.md` — Rubi, agentes, ferramentas, skill catalog, OpenRouter/TanStack AI e analytics de IA.
+                 - `$OUTPUT_DIR/frontend.md` — rotas, loaders, TanStack Query, forms, tabelas, estado, UI conventions, SSR e a11y.
+                 - `$OUTPUT_DIR/workflows.md` — DBOS, worker, filas, workflows existentes, startup, scheduling e testes de workflow.
+                 - `$OUTPUT_DIR/operations.md` — setup local, comandos, CI, release weekly, documentação automática, troubleshooting e validações.
+                 - `$OUTPUT_DIR/recent-changes.md` — mudanças recentes desde a última release agrupadas por domínio.
+
+                 Estrutura obrigatória em cada arquivo:
 
                  ```markdown
-                 # $PROJECT_NAME — Documentação do projeto
+                 # <Domínio> — $PROJECT_NAME
 
                  Última atualização: $RELEASE_VERSION
 
-                 ## Visão geral
-                 <3-5 frases sobre o produto, o papel deste projeto e os principais domínios.>
+                 ## Escopo
+                 <O que este domínio cobre e quais partes do repositório pertencem a ele.>
 
-                 ## Arquitetura
-                 <Explique apps, core, modules, packages e tooling. Inclua como o TanStack Start, oRPC, Drizzle, Better Auth, DBOS e PostHog se encaixam.>
-
-                 ## Mapa do repositório
-                 <Tabela com caminho, responsabilidade e observações. Foque só nos caminhos relevantes.>
+                 ## Mapa do código
+                 <Tabela com caminho, responsabilidade e observações. Foque só nos caminhos relevantes ao domínio.>
 
                  ## Fluxos principais
-                 <Liste fluxos de alto valor: autenticação/organizações, onboarding, financeiro, contatos/serviços, IA/Rubi, billing, workflows. Para cada fluxo, explique entrada, processamento e saída.>
+                 <Entrada, processamento e saída dos fluxos relevantes.>
 
                  ## APIs e dados
-                 <Documente o padrão oRPC, contexto, regras de erro, transações, schemas Drizzle e ownership por time/organização.>
+                 <Routers, schemas, tabelas, ownership, transações e contratos importantes quando existirem.>
 
-                 ## Frontend
-                 <Documente rotas, queries, forms, DataTable, UI conventions, estado, URL search params e cuidados de SSR.>
+                 ## Operação e validação
+                 <Comandos, testes, checks, riscos e troubleshooting específicos do domínio.>
 
-                 ## Workflows e jobs
-                 <Documente DBOS, filas existentes, startup do worker, geração de releases e este workflow de documentação.>
-
-                 ## Operação local
-                 <Comandos reais do repo para setup, dev, teste, lint, typecheck, build, banco e troubleshooting.>
-
-                 ## Integrações externas
-                 <Liste serviços externos usados e onde ficam configurados. Não invente chaves nem endpoints secretos.>
-
-                 ## Mudanças recentes
-                 <Resumo das alterações desde a última release, agrupadas por área. Não copie commits literalmente; sintetize o impacto técnico/produto.>
-
-                 ## Checklist para mudanças futuras
-                 <Lista objetiva de validações antes de mexer em rotas, oRPC, banco, auth, billing, workflows e UI.>
+                 ## Checklist de manutenção
+                 <Lista objetiva antes de alterar este domínio.>
                  ```
 
                  Regras:
@@ -178,13 +175,33 @@ jobs:
                  - Não crie documentação genérica: amarre cada seção ao que existe no Montte.
                  - Se uma área não aparecer no contexto, diga que ela não foi identificada no contexto coletado.
                  - Mantenha o arquivo útil para manutenção contínua, não como release notes.
+                 - Não crie `$OUTPUT_DIR/PROJECT_DOCUMENTATION.md`.
+                 - Não concentre tudo em um único arquivo. Cada domínio obrigatório deve ter seu próprio arquivo.
 
          - name: Verify project documentation
            run: |
-              if [ ! -s docs/project/PROJECT_DOCUMENTATION.md ]; then
-                echo "docs/project/PROJECT_DOCUMENTATION.md missing or empty" >&2
+              if [ -e docs/project/PROJECT_DOCUMENTATION.md ]; then
+                echo "docs/project/PROJECT_DOCUMENTATION.md should not exist — documentation must be split by domain" >&2
                 exit 1
               fi
+
+              for file in \
+                platform.md \
+                auth-organizations.md \
+                finance.md \
+                crm-services.md \
+                billing.md \
+                ai-agents.md \
+                frontend.md \
+                workflows.md \
+                operations.md \
+                recent-changes.md
+              do
+                if [ ! -s "docs/project/${file}" ]; then
+                  echo "docs/project/${file} missing or empty" >&2
+                  exit 1
+                fi
+              done
 
          - name: Open documentation pull request
            if: github.event_name == 'workflow_run' || inputs.dry_run != true
@@ -200,7 +217,7 @@ jobs:
               git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
               git checkout -B "$BRANCH"
-              git add docs/project/PROJECT_DOCUMENTATION.md
+              git add docs/project
 
               if git diff --cached --quiet; then
                 echo "No documentation changes to publish"
@@ -213,14 +230,14 @@ jobs:
               PR_URL=$(gh pr list --repo "$GH_REPO" --head "$BRANCH" --json url --jq '.[0].url')
               if [ -n "$PR_URL" ]; then
                 gh pr edit "$PR_URL" --repo "$GH_REPO" \
-                  --title "docs: atualizar documentação do projeto Okay" \
-                  --body "Atualiza a documentação técnica do projeto gerada junto ao ciclo de release ${VERSION}."
+                  --title "docs: atualizar documentação do projeto" \
+                  --body "Atualiza a documentação técnica do projeto, separada por domínio, gerada junto ao ciclo de release ${VERSION}."
               else
                 gh pr create --repo "$GH_REPO" \
                   --base "$BASE_BRANCH" \
                   --head "$BRANCH" \
                   --title "docs: atualizar documentação do projeto" \
-                  --body "Atualiza a documentação técnica do projeto gerada junto ao ciclo de release ${VERSION}."
+                  --body "Atualiza a documentação técnica do projeto, separada por domínio, gerada junto ao ciclo de release ${VERSION}."
               fi
 
          - name: Upload documentation artifact
@@ -229,4 +246,4 @@ jobs:
               name: project-documentation-${{ steps.context.outputs.version }}
               path: |
                  documentation-context.md
-                 docs/project/PROJECT_DOCUMENTATION.md
+                 docs/project/*.md

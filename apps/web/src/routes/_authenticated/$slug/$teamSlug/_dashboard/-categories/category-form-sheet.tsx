@@ -19,6 +19,7 @@ import { toast } from "@packages/ui/components/sonner";
 import {
    Tooltip,
    TooltipContent,
+   TooltipProvider,
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import { useForm } from "@tanstack/react-form";
@@ -114,7 +115,7 @@ export function CategoryFormSheet({
    });
 
    return (
-      <>
+      <TooltipProvider>
          <SheetHeader>
             <SheetTitle>Nova categoria</SheetTitle>
             <SheetDescription>
@@ -309,6 +310,6 @@ export function CategoryFormSheet({
                )}
             </form.Subscribe>
          </SheetFooter>
-      </>
+      </TooltipProvider>
    );
 }
