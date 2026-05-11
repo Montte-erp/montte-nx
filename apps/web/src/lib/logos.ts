@@ -16,6 +16,14 @@ export const BRAND_COLOR: Record<string, string> = {
    other: "#6B7280",
 };
 
+export type CreditCardBrand =
+   | "visa"
+   | "mastercard"
+   | "elo"
+   | "amex"
+   | "hipercard"
+   | "other";
+
 const BRAND_LOGO_SLUG: Record<string, string> = {
    visa: "visa",
    mastercard: "mastercard",
@@ -78,6 +86,43 @@ export function brandLogoUrl(brand: string): string | undefined {
    const slug = BRAND_LOGO_SLUG[brand];
    if (!slug) return undefined;
    return `https://cdn.simpleicons.org/${slug}`;
+}
+
+export function creditCardBrandFromPrefix(
+   prefix: string,
+): CreditCardBrand | undefined {
+   if (!/^\d{4}$/.test(prefix)) return undefined;
+
+   const firstTwo = Number(prefix.slice(0, 2));
+   const firstFour = Number(prefix);
+
+   if (
+      firstFour === 4011 ||
+      firstFour === 4312 ||
+      firstFour === 4389 ||
+      firstFour === 4514 ||
+      firstFour === 4576 ||
+      firstFour === 5041 ||
+      firstFour === 6277 ||
+      firstFour === 6362 ||
+      firstFour === 6363 ||
+      (firstFour >= 5067 && firstFour <= 5090) ||
+      (firstFour >= 6504 && firstFour <= 6505)
+   ) {
+      return "elo";
+   }
+
+   if (firstFour === 6062) return "hipercard";
+   if (firstTwo === 34 || firstTwo === 37) return "amex";
+   if (
+      (firstTwo >= 51 && firstTwo <= 55) ||
+      (firstFour >= 2221 && firstFour <= 2720)
+   ) {
+      return "mastercard";
+   }
+   if (prefix.startsWith("4")) return "visa";
+
+   return undefined;
 }
 
 export function bankInitials(name: string): string {

@@ -196,6 +196,11 @@ const bulkCreateSchema = z.object({
          z.object({
             name: z.string().min(2).max(80),
             creditLimit: z.string(),
+            last4: z
+               .string()
+               .regex(/^\d{4}$/)
+               .nullable()
+               .optional(),
             closingDay: z.number().int().min(1).max(31),
             dueDay: z.number().int().min(1).max(31),
             bankAccountId: z.string().uuid(),
@@ -247,6 +252,7 @@ export const bulkCreate = protectedProcedure
          teamId: context.teamId,
          name: c.name,
          creditLimit: c.creditLimit,
+         last4: c.last4,
          closingDay: c.closingDay,
          dueDay: c.dueDay,
          color: c.color ?? "#6366f1",

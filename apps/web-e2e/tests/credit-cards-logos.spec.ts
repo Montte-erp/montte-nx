@@ -67,8 +67,8 @@ test("exibe logo do banco emissor e da bandeira na listagem", async ({
    await sheet.getByLabel("Nome").fill(name);
    await sheet.getByLabel("Conta vinculada").click();
    await page.getByRole("option", { name: account.name }).click();
-   await sheet.getByLabel("Bandeira").click();
-   await page.getByRole("option", { name: "Visa" }).click();
+   await sheet.getByLabel("4 primeiros dígitos").fill("4111");
+   await sheet.getByLabel("4 últimos dígitos").fill("1234");
    await sheet.getByRole("button", { name: "Criar cartão" }).click();
 
    await expect(page.getByText("Cartão criado com sucesso.")).toBeVisible();
@@ -84,6 +84,8 @@ test("exibe logo do banco emissor e da bandeira na listagem", async ({
    await expect(
       row.locator('img[src*="img.logo.dev/itau.com.br"]'),
    ).toBeVisible();
+
+   await expect(row.getByText("Final 1234")).toBeVisible();
 
    await expect(
       page.getByRole("link", { name: "Logos by Logo.dev" }),

@@ -162,6 +162,9 @@ function CreditCardsList() {
             id: `__import_${i}`,
             name: String(row.name ?? "").trim(),
             brand: String(row.brand ?? "") || null,
+            last4: String(row.last4 ?? row.final ?? "")
+               .replace(/\D/g, "")
+               .slice(0, 4),
             color: "#6366f1",
             creditLimit: String(row.creditLimit ?? row.limite ?? "0"),
             closingDay:
@@ -188,6 +191,7 @@ function CreditCardsList() {
                   bankAccountId: firstBankAccountId,
                   color: "#6366f1",
                   creditLimit: String(r.creditLimit ?? "0"),
+                  last4: String(r.last4 ?? "") || null,
                })),
             });
          },

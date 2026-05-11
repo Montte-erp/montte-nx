@@ -75,7 +75,16 @@ export function buildCreditCardColumns(options?: {
                   className="size-2 rounded-full shrink-0"
                   style={{ backgroundColor: row.original.color }}
                />
-               <span className="font-medium truncate">{row.original.name}</span>
+               <div className="flex min-w-0 flex-col">
+                  <span className="font-medium truncate">
+                     {row.original.name}
+                  </span>
+                  {row.original.last4 ? (
+                     <span className="text-xs text-muted-foreground tabular-nums">
+                        Final {row.original.last4}
+                     </span>
+                  ) : null}
+               </div>
             </div>
          ),
          meta: {
@@ -90,7 +99,7 @@ export function buildCreditCardColumns(options?: {
          cell: ({ row }) => {
             const brand = row.original.brand;
             if (!brand) return <span className="text-muted-foreground">—</span>;
-            const color = BRAND_COLOR[brand] ?? BRAND_COLOR.other!;
+            const color = BRAND_COLOR[brand] ?? BRAND_COLOR.other ?? "#000000";
             const logo = brandLogoUrl(brand);
             return (
                <div className="flex items-center gap-2 min-w-0">

@@ -25,27 +25,7 @@ import { z } from "zod";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
-
-const BRANDS = [
-   "visa",
-   "mastercard",
-   "elo",
-   "amex",
-   "hipercard",
-   "other",
-] as const;
-type Brand = (typeof BRANDS)[number];
-
-const BRAND_LABEL: Record<Brand, string> = {
-   visa: "Visa",
-   mastercard: "Mastercard",
-   elo: "Elo",
-   amex: "Amex",
-   hipercard: "Hipercard",
-   other: "Outra",
-};
-
-const NONE_BRAND = "__none__";
+import { BRAND_LABEL, creditCardBrandFromPrefix } from "@/lib/logos";
 
 const daySchema = z
    .number({ error: "Dia é obrigatório." })
@@ -60,7 +40,13 @@ const formSchema = z.object({
       .min(2, "Nome deve ter no mínimo 2 caracteres.")
       .max(80, "Nome deve ter no máximo 80 caracteres."),
    bankAccountId: z.string().uuid("Selecione uma conta vinculada."),
-   brand: z.enum([NONE_BRAND, ...BRANDS]),
+   cardPrefix: z.string().regex(/^\d{4}$/, "Informe os 4 primeiros dígitos."),
+   last4: z
+      .string()
+      .refine(
+         (value) => value === "" || /^\d{4}$/.test(value),
+         "Informe os 4 últimos dígitos.",
+      ),
    creditLimit: z.number().min(0, "Limite não pode ser negativo."),
    closingDay: daySchema,
    dueDay: daySchema,
@@ -71,7 +57,8 @@ type FormValues = z.input<typeof formSchema>;
 const DEFAULT_VALUES: FormValues = {
    name: "",
    bankAccountId: "",
-   brand: NONE_BRAND,
+   cardPrefix: "",
+   last4: "",
    creditLimit: 0,
    closingDay: 1,
    dueDay: 10,
@@ -81,11 +68,6 @@ function isFieldInvalid(field: {
    state: { meta: { isTouched: boolean; errors: unknown[] } };
 }) {
    return field.state.meta.isTouched && field.state.meta.errors.length > 0;
-}
-
-function parseBrand(value: string): Brand | typeof NONE_BRAND | undefined {
-   if (value === NONE_BRAND) return NONE_BRAND;
-   return BRANDS.find((b) => b === value);
 }
 
 export function CreditCardFormSheet() {
@@ -131,7 +113,8 @@ function CreditCardFormSheetContent() {
             createMutation.mutateAsync({
                name: value.name.trim(),
                bankAccountId: value.bankAccountId,
-               brand: value.brand === NONE_BRAND ? null : value.brand,
+               brand: creditCardBrandFromPrefix(value.cardPrefix) ?? null,
+               last4: value.last4 || null,
                color: "#6366f1",
                creditLimit: toMajorUnitsString(
                   of(String(value.creditLimit), "BRL"),
@@ -226,32 +209,73 @@ function CreditCardFormSheetContent() {
                )}
             </form.Field>
 
-            <form.Field name="brand">
+            <form.Field name="cardPrefix">
+               {(field) => {
+                  const detectedBrand = creditCardBrandFromPrefix(
+                     field.state.value,
+                  );
+                  return (
+                     <Field data-invalid={isFieldInvalid(field) || undefined}>
+                        <FieldLabel htmlFor={field.name}>
+                           4 primeiros dígitos
+                        </FieldLabel>
+                        <Input
+                           aria-invalid={isFieldInvalid(field)}
+                           id={field.name}
+                           inputMode="numeric"
+                           maxLength={4}
+                           name={field.name}
+                           placeholder="Ex.: 4111"
+                           value={field.state.value}
+                           onBlur={field.handleBlur}
+                           onChange={(e) =>
+                              field.handleChange(
+                                 e.target.value.replace(/\D/g, "").slice(0, 4),
+                              )
+                           }
+                        />
+                        {isFieldInvalid(field) ? (
+                           <FieldError>
+                              {field.state.meta.errors[0]?.message}
+                           </FieldError>
+                        ) : (
+                           <span className="text-xs text-muted-foreground">
+                              {detectedBrand
+                                 ? `Bandeira: ${BRAND_LABEL[detectedBrand]}`
+                                 : "Bandeira não identificada"}
+                           </span>
+                        )}
+                     </Field>
+                  );
+               }}
+            </form.Field>
+
+            <form.Field name="last4">
                {(field) => (
-                  <Field>
-                     <FieldLabel htmlFor={field.name}>Bandeira</FieldLabel>
-                     <Select
+                  <Field data-invalid={isFieldInvalid(field) || undefined}>
+                     <FieldLabel htmlFor={field.name}>
+                        4 últimos dígitos
+                     </FieldLabel>
+                     <Input
+                        aria-invalid={isFieldInvalid(field)}
+                        id={field.name}
+                        inputMode="numeric"
+                        maxLength={4}
+                        name={field.name}
+                        placeholder="Opcional"
                         value={field.state.value}
-                        onValueChange={(v) => {
-                           const parsed = parseBrand(v);
-                           if (!parsed) return;
-                           field.handleChange(parsed);
-                        }}
-                     >
-                        <SelectTrigger id={field.name} name={field.name}>
-                           <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                           <SelectItem value={NONE_BRAND}>
-                              Sem bandeira
-                           </SelectItem>
-                           {BRANDS.map((b) => (
-                              <SelectItem key={b} value={b}>
-                                 {BRAND_LABEL[b]}
-                              </SelectItem>
-                           ))}
-                        </SelectContent>
-                     </Select>
+                        onBlur={field.handleBlur}
+                        onChange={(e) =>
+                           field.handleChange(
+                              e.target.value.replace(/\D/g, "").slice(0, 4),
+                           )
+                        }
+                     />
+                     {isFieldInvalid(field) ? (
+                        <FieldError>
+                           {field.state.meta.errors[0]?.message}
+                        </FieldError>
+                     ) : null}
                   </Field>
                )}
             </form.Field>
