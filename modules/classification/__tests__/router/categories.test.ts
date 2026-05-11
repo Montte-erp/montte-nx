@@ -553,6 +553,65 @@ describe("categories router", () => {
       expect(result.map((r) => r.name).sort()).toEqual(["A1", "A2"]);
    });
 
+   it("getAll hides archived categories and subcategories by default", async () => {
+      const { teamId } = await seedTeam(testDb.db);
+      const active = await makeCategory(testDb.db, teamId, {
+         name: "Ativa",
+      });
+      await makeCategory(testDb.db, teamId, {
+         name: "Sub ativa",
+         parentId: active.id,
+         level: 2,
+      });
+      await makeCategory(testDb.db, teamId, {
+         name: "Arquivada",
+         isArchived: true,
+      });
+      await makeCategory(testDb.db, teamId, {
+         name: "Sub arquivada",
+         parentId: active.id,
+         level: 2,
+         isArchived: true,
+      });
+
+      const ctx = createTestContext(testDb.db, { teamId });
+      const result = await call(categoriesRouter.getAll, undefined, {
+         context: ctx,
+      });
+
+      expect(result.map((r) => r.name).sort()).toEqual(["Ativa", "Sub ativa"]);
+   });
+
+   it("getAll includes archived categories and subcategories when requested", async () => {
+      const { teamId } = await seedTeam(testDb.db);
+      const active = await makeCategory(testDb.db, teamId, {
+         name: "Ativa include",
+      });
+      await makeCategory(testDb.db, teamId, {
+         name: "Sub arquivada include",
+         parentId: active.id,
+         level: 2,
+         isArchived: true,
+      });
+      await makeCategory(testDb.db, teamId, {
+         name: "Arquivada include",
+         isArchived: true,
+      });
+
+      const ctx = createTestContext(testDb.db, { teamId });
+      const result = await call(
+         categoriesRouter.getAll,
+         { includeArchived: true },
+         { context: ctx },
+      );
+
+      expect(result.map((r) => r.name).sort()).toEqual([
+         "Arquivada include",
+         "Ativa include",
+         "Sub arquivada include",
+      ]);
+   });
+
    it("exportAll returns all team categories including archived", async () => {
       const { teamId } = await seedTeam(testDb.db);
       await makeCategory(testDb.db, teamId, { name: "Active" });

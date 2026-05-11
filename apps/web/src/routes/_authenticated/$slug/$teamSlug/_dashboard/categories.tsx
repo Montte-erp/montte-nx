@@ -377,11 +377,9 @@ function CategoriesList() {
                   );
                }
 
-               const isSub = row.original.parentId !== null;
-
                return (
                   <>
-                     {!isSub && (
+                     {row.original.parentId === null && (
                         <Button
                            disabled={regenerateKeywordsMutation.isPending}
                            onClick={() =>
@@ -395,7 +393,7 @@ function CategoriesList() {
                            <RefreshCw />
                         </Button>
                      )}
-                     {!isDefault && !isSub && (
+                     {!isDefault && (
                         <Button
                            onClick={() => handleArchive(row.original)}
                            tooltip="Arquivar"

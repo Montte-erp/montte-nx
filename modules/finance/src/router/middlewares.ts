@@ -155,6 +155,9 @@ export async function requireValidFinancialReferences(
       if (!cat || cat.teamId !== teamId) {
          throw WebAppError.badRequest("Categoria inválida.");
       }
+      if (cat.isArchived) {
+         throw WebAppError.badRequest("Categoria arquivada.");
+      }
    }
 
    if (refs.tagId) {
