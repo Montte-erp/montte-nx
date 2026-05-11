@@ -22,7 +22,7 @@ import type {
    ColumnFiltersState,
 } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { Mail, Plus, ShieldCheck, Users, X } from "lucide-react";
+import { Mail, Plus, RotateCw, ShieldCheck, Users, X } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -66,6 +66,7 @@ const searchSchema = z.object({
 
 type Member = Outputs["organization"]["getMembers"][number];
 type Invite = Outputs["organization"]["getPendingInvitations"][number];
+type OrganizationRole = "owner" | "admin" | "member";
 
 type MemberRow = {
    kind: "member";
@@ -84,7 +85,8 @@ type InviteRow = {
    userId: null;
    name: string;
    email: string;
-   role: string;
+   role: OrganizationRole;
+   teamId: string | null;
    image: null;
    createdAt: Date;
 };
@@ -112,6 +114,12 @@ function toMemberRow(m: Member): MemberRow {
    };
 }
 
+function toOrganizationRole(role: string): OrganizationRole {
+   if (role === "owner") return "owner";
+   if (role === "admin") return "admin";
+   return "member";
+}
+
 function toInviteRow(i: Invite): InviteRow {
    return {
       kind: "invite",
@@ -119,7 +127,8 @@ function toInviteRow(i: Invite): InviteRow {
       userId: null,
       name: i.email,
       email: i.email,
-      role: i.role,
+      role: toOrganizationRole(i.role),
+      teamId: i.teamId,
       image: null,
       createdAt: i.createdAt,
    };
@@ -363,6 +372,28 @@ function MembersContent() {
       [openAlertDialog, invalidateInvites],
    );
 
+   const handleResendInvite = useCallback(
+      (invite: InviteRow) => {
+         authClient.organization.inviteMember({
+            email: invite.email,
+            role: invite.role,
+            organizationId,
+            resend: true,
+            ...(invite.teamId ? { teamId: invite.teamId } : {}),
+            fetchOptions: {
+               onSuccess: () => {
+                  invalidateInvites();
+                  toast.success("Convite reenviado");
+               },
+               onError: ({ error }) => {
+                  toast.error(error.message);
+               },
+            },
+         });
+      },
+      [organizationId, invalidateInvites],
+   );
+
    const handleOpenInvite = useCallback(() => {
       if (!organizationId) return;
       openCredenza({
@@ -414,13 +445,25 @@ function MembersContent() {
                const original = row.original;
                if (original.kind === "invite") {
                   return (
-                     <Button
-                        onClick={() => handleCancelInvite(original)}
-                        tooltip="Cancelar convite"
-                        variant="outline"
-                     >
-                        <X className="size-4" />
-                     </Button>
+                     <>
+                        <Button
+                           disabled={!organizationId}
+                           onClick={() => handleResendInvite(original)}
+                           size="icon-sm"
+                           tooltip="Reenviar convite"
+                           variant="outline"
+                        >
+                           <RotateCw className="size-4" />
+                        </Button>
+                        <Button
+                           onClick={() => handleCancelInvite(original)}
+                           size="icon-sm"
+                           tooltip="Cancelar convite"
+                           variant="outline"
+                        >
+                           <X className="size-4" />
+                        </Button>
+                     </>
                   );
                }
                const member = original;

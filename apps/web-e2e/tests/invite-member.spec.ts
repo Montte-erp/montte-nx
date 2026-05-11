@@ -54,6 +54,29 @@ test("envia convite via modal e atualiza tabela com group pendente", async ({
       .toBe("pending");
 });
 
+test("reenvia convite pendente pela lista de membros", async ({
+   page,
+   e2eSession,
+}) => {
+   await page.goto(
+      `/${e2eSession.orgSlug}/${e2eSession.teamSlug}/settings/organization/members`,
+   );
+
+   await sendInviteViaModal(page, INVITEE_EMAIL);
+
+   const inviteRow = page.getByRole("row").filter({ hasText: INVITEE_EMAIL });
+   await inviteRow.getByRole("button", { name: "Reenviar convite" }).click();
+
+   await expect(page.getByText("Convite reenviado")).toBeVisible();
+   await expect
+      .poll(
+         async () =>
+            (await findPendingInvitationByEmail(INVITEE_EMAIL))?.status,
+         { timeout: 5_000 },
+      )
+      .toBe("pending");
+});
+
 test("convite com sessão errada mostra erro em pt-BR e mantém convite pendente", async ({
    page,
    e2eSession,
