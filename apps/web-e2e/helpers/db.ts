@@ -292,7 +292,6 @@ export async function insertCategory(
       name: string;
       type: "income" | "expense" | "transfer";
       parentId?: string;
-      level?: number;
    },
 ) {
    const [row] = await db()
@@ -302,7 +301,7 @@ export async function insertCategory(
          name: input.name,
          type: input.type,
          parentId: input.parentId,
-         level: input.level ?? (input.parentId ? 2 : 1),
+         level: input.parentId ? 2 : 1,
          isDefault: false,
          participatesDre: false,
       })
