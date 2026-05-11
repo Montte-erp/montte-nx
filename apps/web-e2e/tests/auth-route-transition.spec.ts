@@ -42,10 +42,13 @@ test("apenas um h1 visível em qualquer frame durante navegação", async ({
       if (count >= 0) samples.push(count);
    }, 16);
 
-   await page.getByRole("link", { name: /link mágico/i }).click();
-   await page.waitForURL("**/auth/magic-link");
-   await page.waitForTimeout(400);
-   clearInterval(sampler);
+   try {
+      await page.getByRole("link", { name: /link mágico/i }).click();
+      await page.waitForURL("**/auth/magic-link");
+      await page.waitForTimeout(400);
+   } finally {
+      clearInterval(sampler);
+   }
 
    const overlap = samples.filter((c) => c > 1);
    expect(overlap, `h1 duplicado em ${overlap.length} frames`).toHaveLength(0);

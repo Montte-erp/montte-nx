@@ -1,4 +1,9 @@
-import { chromium, type Page } from "@playwright/test";
+import {
+   chromium,
+   type Browser,
+   type BrowserContext,
+   type Page,
+} from "@playwright/test";
 import { expect, test } from "../fixtures";
 import { signUpViaApi } from "../features/auth";
 import {
@@ -30,9 +35,20 @@ async function sendInviteViaModal(page: Page, email: string) {
    ).toBeVisible();
    await page.getByRole("textbox", { name: "E-mail", exact: true }).fill(email);
    await page.getByRole("button", { name: "Enviar convites" }).click();
-   await expect(page.getByText(/[Cc]onvite enviado/)).toBeVisible();
+   await expect(page.getByText(/[Cc]onvite enviado/).first()).toBeVisible();
    await expect(page.getByText("Convites pendentes")).toBeVisible();
    await expect(page.getByRole("cell", { name: email })).toBeVisible();
+}
+
+async function openIsolatedContext(baseURL: string | undefined) {
+   const browser = await chromium.launch();
+   const context = await browser.newContext({
+      baseURL,
+      storageState: { cookies: [], origins: [] },
+      extraHTTPHeaders: { Origin: baseURL ?? "" },
+   });
+   const page = await context.newPage();
+   return { browser, context, page };
 }
 
 test("envia convite via modal e atualiza tabela com group pendente", async ({
@@ -131,57 +147,61 @@ test("aceita convite automaticamente após sign-up quando invitee não tem conta
    const invite = await findPendingInvitationByEmail(INVITEE_EMAIL);
    expect(invite).toBeTruthy();
 
-   const browser = await chromium.launch();
-   const inviteeContext = await browser.newContext({
-      baseURL,
-      extraHTTPHeaders: { Origin: baseURL ?? "" },
-   });
-   const inviteePage = await inviteeContext.newPage();
+   let browser: Browser | null = null;
+   let inviteeContext: BrowserContext | null = null;
+   try {
+      const isolated = await openIsolatedContext(baseURL);
+      browser = isolated.browser;
+      inviteeContext = isolated.context;
+      const inviteePage = isolated.page;
 
-   await inviteePage.goto(`/callback/organization/invitation/${invite!.id}`);
-   await inviteePage.waitForURL(/\/auth\/sign-in/, { timeout: 15_000 });
+      await inviteePage.goto(`/callback/organization/invitation/${invite!.id}`);
+      await inviteePage.waitForURL(/\/auth\/sign-in/, { timeout: 15_000 });
 
-   const status = await signUpViaApi(inviteePage.request, {
-      email: INVITEE_EMAIL,
-      password: "Test12345!",
-      name: "Invitee Tester",
-      workspace: "Invitee Workspace",
-   });
-   expect(status).toBe("created");
+      const status = await signUpViaApi(inviteePage.request, {
+         email: INVITEE_EMAIL,
+         password: "Test12345!",
+         name: "Invitee Tester",
+         workspace: "Invitee Workspace",
+      });
+      expect(status).toBe("created");
 
-   await inviteePage.goto(`/callback/organization/invitation/${invite!.id}`);
-   await inviteePage.waitForURL(
-      (url) => !url.pathname.startsWith("/callback/organization/invitation/"),
-      { timeout: 20_000 },
-   );
+      await inviteePage.goto(`/callback/organization/invitation/${invite!.id}`);
+      await inviteePage.waitForURL(
+         (url) =>
+            !url.pathname.startsWith("/callback/organization/invitation/"),
+         { timeout: 20_000 },
+      );
 
-   await expect
-      .poll(
-         async () =>
-            (await findInvitationByEmail(INVITEE_EMAIL))?.status ?? "pending",
-         { timeout: 5_000 },
-      )
-      .toBe("accepted");
+      await expect
+         .poll(
+            async () =>
+               (await findInvitationByEmail(INVITEE_EMAIL))?.status ??
+               "pending",
+            { timeout: 5_000 },
+         )
+         .toBe("accepted");
 
-   await page.goto(
-      `/${e2eSession.orgSlug}/${e2eSession.teamSlug}/settings/organization/members`,
-   );
-   await expect(page.getByText("Membros").first()).toBeVisible();
-   await expect(
-      page.getByRole("cell", { name: /Invitee Tester/ }).first(),
-   ).toBeVisible();
-   await expect(
-      page.getByRole("cell", { name: INVITEE_EMAIL }).first(),
-   ).toBeVisible();
+      await page.goto(
+         `/${e2eSession.orgSlug}/${e2eSession.teamSlug}/settings/organization/members`,
+      );
+      await expect(page.getByText("Membros").first()).toBeVisible();
+      await expect(
+         page.getByRole("cell", { name: /Invitee Tester/ }).first(),
+      ).toBeVisible();
+      await expect(
+         page.getByRole("cell", { name: INVITEE_EMAIL }).first(),
+      ).toBeVisible();
 
-   await inviteePage.goto(
-      `/${e2eSession.orgSlug}/${e2eSession.teamSlug}/settings/organization/members`,
-   );
-   await expect(
-      inviteePage.getByRole("cell", { name: INVITEE_EMAIL }).first(),
-   ).toBeVisible({ timeout: 15_000 });
-
-   await browser.close();
+      await inviteePage.goto(
+         `/${e2eSession.orgSlug}/${e2eSession.teamSlug}/settings/organization/members`,
+      );
+      await expect(
+         inviteePage.getByRole("cell", { name: INVITEE_EMAIL }).first(),
+      ).toBeVisible({ timeout: 15_000 });
+   } finally {
+      await Promise.allSettled([inviteeContext?.close(), browser?.close()]);
+   }
 });
 
 test("aceita convite com sucesso quando logado com a conta convidada", async ({
@@ -202,53 +222,58 @@ test("aceita convite com sucesso quando logado com a conta convidada", async ({
    const invite = await findPendingInvitationByEmail(INVITEE_EMAIL);
    expect(invite).toBeTruthy();
 
-   const browser = await chromium.launch();
-   const inviteeContext = await browser.newContext({
-      baseURL,
-      extraHTTPHeaders: { Origin: baseURL ?? "" },
-   });
-   const inviteePage = await inviteeContext.newPage();
-   await inviteePage.goto("/");
+   let browser: Browser | null = null;
+   let inviteeContext: BrowserContext | null = null;
+   try {
+      const isolated = await openIsolatedContext(baseURL);
+      browser = isolated.browser;
+      inviteeContext = isolated.context;
+      const inviteePage = isolated.page;
 
-   const status = await signUpViaApi(inviteePage.request, {
-      email: INVITEE_EMAIL,
-      password: "Test12345!",
-      name: "Invitee Tester",
-      workspace: "Invitee Workspace",
-   });
-   expect(status).toBe("created");
+      await inviteePage.goto("/");
 
-   await inviteePage.goto(`/callback/organization/invitation/${invite!.id}`);
-   await inviteePage.waitForURL(
-      (url) => !url.pathname.startsWith("/callback/organization/invitation/"),
-      { timeout: 15_000 },
-   );
+      const status = await signUpViaApi(inviteePage.request, {
+         email: INVITEE_EMAIL,
+         password: "Test12345!",
+         name: "Invitee Tester",
+         workspace: "Invitee Workspace",
+      });
+      expect(status).toBe("created");
 
-   await expect
-      .poll(
-         async () =>
-            (await findInvitationByEmail(INVITEE_EMAIL))?.status ?? "pending",
-         { timeout: 5_000 },
-      )
-      .toBe("accepted");
+      await inviteePage.goto(`/callback/organization/invitation/${invite!.id}`);
+      await inviteePage.waitForURL(
+         (url) =>
+            !url.pathname.startsWith("/callback/organization/invitation/"),
+         { timeout: 15_000 },
+      );
 
-   await page.goto(
-      `/${e2eSession.orgSlug}/${e2eSession.teamSlug}/settings/organization/members`,
-   );
-   await expect(page.getByText("Membros").first()).toBeVisible();
-   await expect(
-      page.getByRole("cell", { name: /Invitee Tester/ }).first(),
-   ).toBeVisible();
-   await expect(
-      page.getByRole("cell", { name: INVITEE_EMAIL }).first(),
-   ).toBeVisible();
+      await expect
+         .poll(
+            async () =>
+               (await findInvitationByEmail(INVITEE_EMAIL))?.status ??
+               "pending",
+            { timeout: 5_000 },
+         )
+         .toBe("accepted");
 
-   await inviteePage.goto(
-      `/${e2eSession.orgSlug}/${e2eSession.teamSlug}/settings/organization/members`,
-   );
-   await expect(
-      inviteePage.getByRole("cell", { name: INVITEE_EMAIL }).first(),
-   ).toBeVisible({ timeout: 15_000 });
+      await page.goto(
+         `/${e2eSession.orgSlug}/${e2eSession.teamSlug}/settings/organization/members`,
+      );
+      await expect(page.getByText("Membros").first()).toBeVisible();
+      await expect(
+         page.getByRole("cell", { name: /Invitee Tester/ }).first(),
+      ).toBeVisible();
+      await expect(
+         page.getByRole("cell", { name: INVITEE_EMAIL }).first(),
+      ).toBeVisible();
 
-   await browser.close();
+      await inviteePage.goto(
+         `/${e2eSession.orgSlug}/${e2eSession.teamSlug}/settings/organization/members`,
+      );
+      await expect(
+         inviteePage.getByRole("cell", { name: INVITEE_EMAIL }).first(),
+      ).toBeVisible({ timeout: 15_000 });
+   } finally {
+      await Promise.allSettled([inviteeContext?.close(), browser?.close()]);
+   }
 });
