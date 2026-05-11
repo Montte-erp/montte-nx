@@ -234,6 +234,8 @@ function CreditCardsList() {
          <DataTableRoot
             columns={columns}
             data={result.data}
+            exportDateFormat="DD-MM-YYYY"
+            exportFileBase="cartoes-de-credito"
             getRowId={(row) => row.id}
             storageKey="montte:datatable:credit-cards"
             columnFilters={columnFilters}
