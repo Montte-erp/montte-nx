@@ -38,7 +38,7 @@ async function sendInviteViaModal(page: Page, email: string) {
    ).toBeVisible();
    await page.getByRole("textbox", { name: "E-mail", exact: true }).fill(email);
    await page.getByRole("button", { name: "Enviar convites" }).click();
-   await expect(page.getByText(/[Cc]onvite enviado/)).toBeVisible();
+   await expect(page.getByText(/[Cc]onvite enviado/).first()).toBeVisible();
    await expect(page.getByRole("cell", { name: email })).toBeVisible();
 }
 
