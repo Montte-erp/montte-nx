@@ -603,22 +603,13 @@ export function TransactionsList() {
             <DataTableContent className="flex-1 overflow-auto min-h-0" />
             <DataTableBulkActions<TransactionRow>>
                {({ selectedRows, clearSelection }) => {
-                  const pendingIds = selectedRows
-                     .filter((r) => r.status === "pending")
-                     .map((r) => r.id);
                   const selectedIds = selectedRows.map((r) => r.id);
-                  const allPending =
-                     pendingIds.length === selectedIds.length &&
-                     selectedIds.length > 0;
                   return (
                      <>
-                        {allPending && (
-                           <BulkMarkPaidButton
-                              bankAccounts={bankAccounts}
-                              ids={selectedIds}
-                              onSuccess={clearSelection}
-                           />
-                        )}
+                        <BulkIgnoreButton
+                           ids={selectedIds}
+                           onSuccess={clearSelection}
+                        />
                         <BulkStatusButton
                            ids={selectedIds}
                            onSuccess={clearSelection}
@@ -678,73 +669,44 @@ export function TransactionsList() {
    );
 }
 
-function BulkMarkPaidButton({
+function BulkIgnoreButton({
    ids,
-   bankAccounts,
    onSuccess,
 }: {
    ids: string[];
-   bankAccounts: BankAccountOption[];
    onSuccess: () => void;
 }) {
-   const [open, setOpen] = useState(false);
-   const [date, setDate] = useState<Date>(() => dayjs().toDate());
-   const [bankAccountId, setBankAccountId] = useState("");
+   const { openAlertDialog } = useAlertDialog();
    const mutation = useMutation(
-      orpc.transactions.bulkMarkAsPaid.mutationOptions({
-         onError: (e) => toast.error(e.message || "Erro ao marcar como pago."),
+      orpc.transactions.update.mutationOptions({
+         onError: (e) =>
+            toast.error(e.message || "Erro ao ignorar lançamentos."),
       }),
    );
 
    return (
-      <Popover open={open} onOpenChange={setOpen}>
-         <PopoverTrigger asChild>
-            <SelectionActionButton icon={<CheckCircle2 />}>
-               Marcar como pagas
-            </SelectionActionButton>
-         </PopoverTrigger>
-         <PopoverContent
-            align="start"
-            className="w-auto flex flex-col gap-4 p-4"
-         >
-            <p className="text-sm font-medium">Data do pagamento</p>
-            <Calendar
-               mode="single"
-               selected={date}
-               onSelect={(d) => d && setDate(d)}
-            />
-            <Combobox
-               emptyMessage="Nenhuma conta."
-               options={bankAccounts.map((a) => ({
-                  value: a.id,
-                  label: a.name,
-               }))}
-               placeholder="Conta bancária (opcional)"
-               searchPlaceholder="Buscar conta..."
-               value={bankAccountId}
-               onValueChange={setBankAccountId}
-            />
-            <Button
-               disabled={mutation.isPending}
-               size="sm"
-               onClick={async () => {
-                  await mutation.mutateAsync({
-                     ids,
-                     paidDate: dayjs(date).format("YYYY-MM-DD"),
-                     bankAccountId: bankAccountId || null,
-                  });
-                  toast.success(
-                     `${ids.length} ${ids.length === 1 ? "lançamento marcado" : "lançamentos marcados"} como pago(s).`,
+      <SelectionActionButton
+         icon={<Ban />}
+         onClick={() =>
+            openAlertDialog({
+               title: `Ignorar ${ids.length} ${ids.length === 1 ? "lançamento" : "lançamentos"}`,
+               description:
+                  "Os lançamentos selecionados serão marcados como ignorados e não entrarão nos cálculos.",
+               actionLabel: "Ignorar",
+               cancelLabel: "Cancelar",
+               onAction: async () => {
+                  await Promise.allSettled(
+                     ids.map((id) =>
+                        mutation.mutateAsync({ id, status: "cancelled" }),
+                     ),
                   );
-                  setOpen(false);
-                  setBankAccountId("");
                   onSuccess();
-               }}
-            >
-               Confirmar pagamento
-            </Button>
-         </PopoverContent>
-      </Popover>
+               },
+            })
+         }
+      >
+         Ignorar lançamentos
+      </SelectionActionButton>
    );
 }
 
@@ -762,7 +724,7 @@ function BulkStatusButton({
       }),
    );
 
-   const apply = async (status: "pending" | "paid" | "cancelled") => {
+   const apply = async (status: "pending" | "paid") => {
       await Promise.allSettled(
          ids.map((id) => mutation.mutateAsync({ id, status })),
       );
@@ -773,7 +735,6 @@ function BulkStatusButton({
    const statusOptions = [
       { value: "pending" as const, label: "Pendente" },
       { value: "paid" as const, label: "Efetivado" },
-      { value: "cancelled" as const, label: "Cancelado" },
    ];
 
    return (
