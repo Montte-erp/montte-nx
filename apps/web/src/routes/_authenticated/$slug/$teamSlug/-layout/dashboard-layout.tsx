@@ -10,12 +10,12 @@ import { useStore } from "@tanstack/react-store";
 import type * as React from "react";
 import { useInboxStream } from "@/features/inbox/use-inbox-stream";
 import { ContextPanelTabContent } from "../-context-panel/context-panel";
-import { ContextPanelRail } from "../-context-panel/context-panel-rail";
 import { contextPanelStore } from "../-context-panel/context-panel-store";
 import { AutoBugReporter } from "./feedback/auto-bug-reporter";
 import { MonthlySatisfactionSurvey } from "./feedback/monthly-satisfaction-survey";
 import { EarlyAccessProvider } from "@/hooks/use-early-access";
 import { setCollapsed, useSidebarCollapsed } from "./hooks/use-sidebar-store";
+import { AppFooter } from "./app-footer";
 import { AppSidebar } from "./app-sidebar";
 
 const SIDEBAR_WIDTH_STYLE = {
@@ -68,7 +68,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   <AppSidebar />
                </SidebarManager>
 
-               <SidebarInset className="flex flex-col overflow-hidden bg-sidebar">
+               <SidebarInset className="flex flex-col gap-2 overflow-hidden bg-sidebar">
                   <div className="flex flex-1 overflow-hidden">
                      <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-background">
                         <main
@@ -83,15 +83,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         </main>
                      </div>
                   </div>
+                  {!hasDedicatedSidebar ? <AppFooter /> : null}
                   <AutoBugReporter />
                   <MonthlySatisfactionSurvey />
                </SidebarInset>
-               {!hasDedicatedSidebar ? (
-                  <>
-                     <InlineContextPanel />
-                     <ContextPanelRail />
-                  </>
-               ) : null}
+               {!hasDedicatedSidebar ? <InlineContextPanel /> : null}
             </SidebarProvider>
          </SidebarManagerProvider>
       </EarlyAccessProvider>

@@ -12,7 +12,7 @@ runs:
         uses: oven-sh/setup-bun@v2
 
       - name: Cache Bun global install dir
-        uses: useblacksmith/cache@v5
+        uses: actions/cache@v4
         with:
            path: ~/.bun/install/cache
            key: ${{ runner.os }}-bun-store-${{ hashFiles('bun.lock') }}
@@ -20,7 +20,7 @@ runs:
               ${{ runner.os }}-bun-store-
 
       - name: Cache node_modules
-        uses: useblacksmith/cache@v5
+        uses: actions/cache@v4
         with:
            path: |
               node_modules
@@ -38,7 +38,7 @@ runs:
         shell: bash
 
       - name: Cache Nx
-        uses: useblacksmith/cache@v5
+        uses: actions/cache@v4
         with:
            path: .nx/cache
            key: ${{ runner.os }}-nx-${{ github.ref_name }}-${{ github.sha }}

@@ -9,7 +9,6 @@ import {
 } from "@packages/ui/components/sidebar";
 import { useSelector } from "@tanstack/react-store";
 import type React from "react";
-import { AgentPanel } from "../-montte-ai/panel";
 import { ContextPanelAction } from "./context-panel-info";
 import { contextPanelStore } from "./context-panel-store";
 import { closeContextPanel, openContextPanel } from "./use-context-panel";
@@ -59,8 +58,6 @@ function InfoContent() {
 }
 
 function ActiveTab() {
-   const activeTabId = useSelector(contextPanelStore, (s) => s.activeTabId);
-   if (activeTabId === "agent") return <AgentPanel />;
    return <InfoContent />;
 }
 

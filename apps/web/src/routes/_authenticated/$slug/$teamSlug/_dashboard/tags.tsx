@@ -20,7 +20,7 @@ import type { DataTableImportConfig } from "@/components/data-table/data-table-i
 import { DataTableExternalFilter } from "@/components/data-table/data-table-root";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
-import { startTransition, useCallback, useMemo, useState } from "react";
+import { startTransition, useCallback, useMemo } from "react";
 
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { z } from "zod";
@@ -38,8 +38,10 @@ import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useContextPanelInfo } from "../-context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
 import { buildTagColumns, type TagRow } from "./-tags/tags-columns";
+import { TagsFormSheet } from "./-tags/tags-form-sheet";
 
 const tagsSearchSchema = z.object({
    sorting: z
@@ -111,9 +113,9 @@ function TagsSkeleton() {
 
 function TagsList() {
    const { openAlertDialog } = useAlertDialog();
+   const { openSheet } = useSheet();
    const navigate = Route.useNavigate();
    const { search, includeArchived, page, pageSize } = Route.useSearch();
-   const [isDraftActive, setIsDraftActive] = useState(false);
    const { generate: generateCsv, parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
 
@@ -169,14 +171,6 @@ function TagsList() {
          onSuccess: () => toast.success("Centro de custo reativado."),
          onError: (e) =>
             toast.error(e.message || "Erro ao reativar centro de custo."),
-      }),
-   );
-
-   const createMutation = useMutation(
-      orpc.tags.create.mutationOptions({
-         onSuccess: () => toast.success("Centro de custo criado com sucesso."),
-         onError: (e) =>
-            toast.error(e.message || "Erro ao criar centro de custo."),
       }),
    );
 
@@ -246,22 +240,10 @@ function TagsList() {
    );
 
    const handleCreate = useCallback(() => {
-      setIsDraftActive(true);
-   }, []);
-
-   const handleDiscardDraft = useCallback(() => {
-      setIsDraftActive(false);
-   }, []);
-
-   const handleCreateTag = useCallback(
-      async (data: Record<string, string | string[]>) => {
-         const name = String(data.name ?? "");
-         const description = String(data.description ?? "").trim() || null;
-         await createMutation.mutateAsync({ name, description });
-         setIsDraftActive(false);
-      },
-      [createMutation],
-   );
+      openSheet({
+         renderChildren: () => <TagsFormSheet />,
+      });
+   }, [openSheet]);
 
    const handleDelete = useCallback(
       (tag: TagRow) => {
@@ -327,9 +309,6 @@ function TagsList() {
             columns={columns}
             data={tags}
             getRowId={(row) => row.id}
-            isDraftRowActive={isDraftActive}
-            onAddRow={handleCreateTag}
-            onDiscardAddRow={handleDiscardDraft}
             renderActions={({ row }) => {
                if (row.original.isArchived) {
                   return (

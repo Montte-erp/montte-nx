@@ -40,6 +40,8 @@ interface ColorPickerContextValue {
    setMode: (mode: string) => void;
 }
 
+type RgbaTuple = [number, number, number, number];
+
 const ColorPickerContext = createContext<ColorPickerContextValue | undefined>(
    undefined,
 );
@@ -55,10 +57,13 @@ export const useColorPicker = () => {
    return context;
 };
 
-export type ColorPickerProps = HTMLAttributes<HTMLDivElement> & {
+export type ColorPickerProps = Omit<
+   HTMLAttributes<HTMLDivElement>,
+   "onChange"
+> & {
    value?: Parameters<typeof Color>[0];
    defaultValue?: Parameters<typeof Color>[0];
-   onChange?: (value: Parameters<typeof Color.rgb>[0]) => void;
+   onChange?: (value: RgbaTuple) => void;
 };
 
 export const ColorPicker = ({
@@ -108,7 +113,7 @@ export const ColorPicker = ({
          if (currentColor !== lastColorRef.current) {
             lastColorRef.current = currentColor;
             const rgba = color.rgb().array();
-            onChange([rgba[0], rgba[1], rgba[2], rgba[3]]);
+            onChange([rgba[0] ?? 0, rgba[1] ?? 0, rgba[2] ?? 0, rgba[3] ?? 1]);
          }
       }
    }, [hue, saturation, lightness, alpha, onChange]);

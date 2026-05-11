@@ -24,24 +24,30 @@ export type AutocompleteOption = Record<"value" | "label", string> &
    Record<string, string>;
 
 interface AutocompleteProps {
+   id?: string;
+   name?: string;
    options: AutocompleteOption[];
    emptyMessage: string;
    value?: AutocompleteOption;
    onValueChange?: (value: AutocompleteOption) => void;
    isLoading?: boolean;
    disabled?: boolean;
+   "aria-invalid"?: boolean;
    placeholder?: string;
    onBlur?: () => void;
    renderOption?: (option: AutocompleteOption) => ReactNode;
 }
 
 export function Autocomplete({
+   id,
+   name,
    options,
    placeholder,
    emptyMessage,
    value,
    onValueChange,
    disabled,
+   "aria-invalid": ariaInvalid,
    isLoading = false,
    onBlur,
    renderOption,
@@ -167,8 +173,11 @@ export function Autocomplete({
       <CommandPrimitive className="relative w-full" onKeyDown={handleKeyDown}>
          <div className="dark:bg-input/30 rounded-md border border-input [&_[data-slot=command-input-wrapper]]:border-b-0">
             <CommandInput
+               aria-invalid={ariaInvalid}
                className="text-base border-0"
                disabled={disabled}
+               id={id}
+               name={name}
                onBlur={handleBlur}
                onFocus={handleFocus}
                onValueChange={isLoading ? undefined : handleInputValueChange}

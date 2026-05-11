@@ -1,0 +1,249 @@
+name: Project Documentation
+
+on:
+   workflow_run:
+      workflows: ["Release Weekly"]
+      types: [completed]
+   workflow_dispatch:
+      inputs:
+         dry_run:
+            description: "Generate documentation only, do not open a PR"
+            required: false
+            type: boolean
+            default: false
+         project_name:
+            description: "Project name used in the generated documentation"
+            required: false
+            type: string
+            default: "Montte"
+
+permissions:
+   contents: write
+   pull-requests: write
+   id-token: write
+
+jobs:
+   documentation:
+      if: |
+         github.event_name == 'workflow_dispatch' ||
+         (github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'schedule')
+      runs-on: ubuntu-latest
+      steps:
+         - name: Checkout
+           uses: actions/checkout@v6
+           with:
+              fetch-depth: 0
+              fetch-tags: true
+              persist-credentials: false
+
+         - name: Resolve documentation context
+           id: context
+           env:
+              INPUT_PROJECT_NAME: ${{ inputs.project_name }}
+           run: |
+              VERSION=$(date -u '+%Y.%m.%d')
+              TAG="v${VERSION}"
+              PROJECT_NAME="${INPUT_PROJECT_NAME:-Montte}"
+
+              if git rev-parse "$TAG" >/dev/null 2>&1; then
+                CURRENT_REF="$TAG"
+                LAST_TAG=$(git tag --list 'v[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]' --sort=-version:refname | grep -v "^${TAG}$" | head -n1 || true)
+              else
+                CURRENT_REF="HEAD"
+                LAST_TAG=$(git tag --list 'v[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]' --sort=-version:refname | head -n1 || true)
+              fi
+
+              if [ -z "$LAST_TAG" ]; then
+                FIRST_COMMIT=$(git rev-list --max-parents=0 HEAD | tail -n1)
+                LAST_TAG="$FIRST_COMMIT"
+              fi
+
+              echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+              echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+              echo "current_ref=${CURRENT_REF}" >> "$GITHUB_OUTPUT"
+              echo "last_tag=${LAST_TAG}" >> "$GITHUB_OUTPUT"
+              echo "project_name=${PROJECT_NAME}" >> "$GITHUB_OUTPUT"
+
+         - name: Collect project context
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
+              CURRENT_REF: ${{ steps.context.outputs.current_ref }}
+              LAST_TAG: ${{ steps.context.outputs.last_tag }}
+              PROJECT_NAME: ${{ steps.context.outputs.project_name }}
+           run: |
+              {
+                echo "# ${PROJECT_NAME} documentation context"
+                echo
+                echo "## Repository"
+                echo "- repository: ${GH_REPO}"
+                echo "- current ref: ${CURRENT_REF}"
+                echo "- previous release base: ${LAST_TAG}"
+                echo
+                echo "## Top-level structure"
+                git ls-tree -d --name-only "$CURRENT_REF"
+                echo
+                echo "## Workspace package files"
+                git ls-tree -r --name-only "$CURRENT_REF" \
+                  | grep -E '(^package.json$|/package.json$|project.json$|nx.json$|tsconfig.base.json$|vite.config.ts$|astro.config.mjs$|drizzle.config.ts$|schema.ts$|router/.*\.ts$|workflows/.*\.ts$)' \
+                  | head -n 250 || true
+                echo
+                echo "## Changed files since previous release"
+                git diff --name-status "${LAST_TAG}..${CURRENT_REF}" | head -n 300 || true
+                echo
+                echo "## Recent commits"
+                git log --pretty=format:'- %s (%h)' "${LAST_TAG}..${CURRENT_REF}" | head -n 120 || true
+                echo
+                echo
+                echo "## Merged PRs since previous release"
+                gh pr list --state merged --limit 100 --search "merged:>$(git log -1 --format=%cI ${LAST_TAG})" --json number,title,labels,url \
+                  --jq '.[] | "- #\(.number) \(.title) — \(.url)"' || true
+                echo
+                echo "## Existing documentation files"
+                git ls-tree -r --name-only "$CURRENT_REF" \
+                  | grep -E '(^README\.md$|^CONTRIBUTING\.md$|^docs/|/README\.md$)' \
+                  | head -n 200 || true
+              } > documentation-context.md
+
+         - name: Prepare documentation directory
+           run: mkdir -p docs/project
+
+         - name: Generate project documentation via opencode
+           continue-on-error: true
+           uses: anomalyco/opencode/github@latest
+           env:
+              OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+              CONTEXT_FILE: documentation-context.md
+              OUTPUT_DIR: docs/project
+              PROJECT_NAME: ${{ steps.context.outputs.project_name }}
+              RELEASE_VERSION: ${{ steps.context.outputs.version }}
+           with:
+              model: opencode-go/deepseek-v4-flash
+              prompt: |
+                 Você é um engenheiro senior documentando o projeto `$PROJECT_NAME` a partir do monorepo Montte.
+
+                 Leia `$CONTEXT_FILE` e escreva um arquivo Markdown por domínio dentro de `$OUTPUT_DIR`. Crie diretórios quando necessário.
+
+                 Objetivo: manter uma documentação técnica de projeto que ajude um dev novo ou um agente de IA a entender arquitetura, comandos, fluxos críticos e pontos de atenção sem precisar garimpar o repositório inteiro.
+
+                 Arquivos obrigatórios:
+                 - `$OUTPUT_DIR/platform.md` — arquitetura do monorepo, apps, core, modules, packages, tooling, oRPC, Drizzle, TanStack Start, PostHog e padrões transversais.
+                 - `$OUTPUT_DIR/auth-organizations.md` — Better Auth, organizações, times, sessão, permissões e onboarding de organização/time.
+                 - `$OUTPUT_DIR/finance.md` — financeiro, transações, categorias, bancos, cartões, configurações financeiras e integrações relacionadas.
+                 - `$OUTPUT_DIR/crm-services.md` — contatos, serviços, benefícios, tags/Centro de Custo, assinaturas e domínio comercial.
+                 - `$OUTPUT_DIR/billing.md` — cobrança, HyprPay, usage events, meters, subscriptions, invoices e regras de billing.
+                 - `$OUTPUT_DIR/ai-agents.md` — Rubi, agentes, ferramentas, skill catalog, OpenRouter/TanStack AI e analytics de IA.
+                 - `$OUTPUT_DIR/frontend.md` — rotas, loaders, TanStack Query, forms, tabelas, estado, UI conventions, SSR e a11y.
+                 - `$OUTPUT_DIR/workflows.md` — DBOS, worker, filas, workflows existentes, startup, scheduling e testes de workflow.
+                 - `$OUTPUT_DIR/operations.md` — setup local, comandos, CI, release weekly, documentação automática, troubleshooting e validações.
+                 - `$OUTPUT_DIR/recent-changes.md` — mudanças recentes desde a última release agrupadas por domínio.
+
+                 Estrutura obrigatória em cada arquivo:
+
+                 ```markdown
+                 # <Domínio> — $PROJECT_NAME
+
+                 Última atualização: $RELEASE_VERSION
+
+                 ## Escopo
+                 <O que este domínio cobre e quais partes do repositório pertencem a ele.>
+
+                 ## Mapa do código
+                 <Tabela com caminho, responsabilidade e observações. Foque só nos caminhos relevantes ao domínio.>
+
+                 ## Fluxos principais
+                 <Entrada, processamento e saída dos fluxos relevantes.>
+
+                 ## APIs e dados
+                 <Routers, schemas, tabelas, ownership, transações e contratos importantes quando existirem.>
+
+                 ## Operação e validação
+                 <Comandos, testes, checks, riscos e troubleshooting específicos do domínio.>
+
+                 ## Checklist de manutenção
+                 <Lista objetiva antes de alterar este domínio.>
+                 ```
+
+                 Regras:
+                 - pt-BR claro e direto.
+                 - Não invente funcionalidades fora do contexto.
+                 - Prefira caminhos reais do repositório.
+                 - Use bullets e tabelas quando melhorarem leitura.
+                 - Não inclua segredos, tokens, valores de env ou conteúdo sensível.
+                 - Não use emojis.
+                 - Não crie documentação genérica: amarre cada seção ao que existe no Montte.
+                 - Se uma área não aparecer no contexto, diga que ela não foi identificada no contexto coletado.
+                 - Mantenha o arquivo útil para manutenção contínua, não como release notes.
+                 - Não crie `$OUTPUT_DIR/PROJECT_DOCUMENTATION.md`.
+                 - Não concentre tudo em um único arquivo. Cada domínio obrigatório deve ter seu próprio arquivo.
+
+         - name: Verify project documentation
+           run: |
+              if [ -e docs/project/PROJECT_DOCUMENTATION.md ]; then
+                echo "docs/project/PROJECT_DOCUMENTATION.md should not exist — documentation must be split by domain" >&2
+                exit 1
+              fi
+
+              for file in \
+                platform.md \
+                auth-organizations.md \
+                finance.md \
+                crm-services.md \
+                billing.md \
+                ai-agents.md \
+                frontend.md \
+                workflows.md \
+                operations.md \
+                recent-changes.md
+              do
+                if [ ! -s "docs/project/${file}" ]; then
+                  echo "docs/project/${file} missing or empty" >&2
+                  exit 1
+                fi
+              done
+
+         - name: Open documentation pull request
+           if: github.event_name == 'workflow_run' || inputs.dry_run != true
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
+              VERSION: ${{ steps.context.outputs.version }}
+           run: |
+              BRANCH="automation/project-docs-${VERSION}"
+              BASE_BRANCH="${GITHUB_REF_NAME}"
+
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+              git checkout -B "$BRANCH"
+              git add docs/project
+
+              if git diff --cached --quiet; then
+                echo "No documentation changes to publish"
+                exit 0
+              fi
+
+              git commit -m "docs: update project documentation"
+              git push "https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git" "$BRANCH" --force-with-lease
+
+              PR_URL=$(gh pr list --repo "$GH_REPO" --head "$BRANCH" --json url --jq '.[0].url')
+              if [ -n "$PR_URL" ]; then
+                gh pr edit "$PR_URL" --repo "$GH_REPO" \
+                  --title "docs: atualizar documentação do projeto" \
+                  --body "Atualiza a documentação técnica do projeto, separada por domínio, gerada junto ao ciclo de release ${VERSION}."
+              else
+                gh pr create --repo "$GH_REPO" \
+                  --base "$BASE_BRANCH" \
+                  --head "$BRANCH" \
+                  --title "docs: atualizar documentação do projeto" \
+                  --body "Atualiza a documentação técnica do projeto, separada por domínio, gerada junto ao ciclo de release ${VERSION}."
+              fi
+
+         - name: Upload documentation artifact
+           uses: actions/upload-artifact@v4
+           with:
+              name: project-documentation-${{ steps.context.outputs.version }}
+              path: |
+                 documentation-context.md
+                 docs/project/*.md
