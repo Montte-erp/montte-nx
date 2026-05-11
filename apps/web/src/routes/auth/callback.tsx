@@ -38,7 +38,9 @@ function TeamResolver({ orgSlug }: { orgSlug: string }) {
    const router = useRouter();
 
    const { data: teams } = useSuspenseQuery(
-      orpc.organization.getOrganizationTeams.queryOptions(),
+      orpc.organization.getOrganizationTeams.queryOptions({
+         input: { orgSlug },
+      }),
    );
 
    useIsomorphicLayoutEffect(() => {

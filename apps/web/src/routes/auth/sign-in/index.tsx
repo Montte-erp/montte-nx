@@ -9,7 +9,7 @@ import { orpc } from "@/integrations/orpc/client";
 import { TermsAndPrivacyText } from "../-auth/terms-and-privacy-text";
 
 const signInSearchSchema = z.object({
-   redirect: z.string().startsWith("/").optional().catch(undefined),
+   redirect: z.string().startsWith("/").catch(undefined),
 });
 
 export const Route = createFileRoute("/auth/sign-in/")({

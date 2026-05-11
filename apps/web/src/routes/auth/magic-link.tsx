@@ -11,13 +11,14 @@ import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Mail } from "lucide-react";
+import { ResultAsync } from "neverthrow";
 import { type FormEvent, useCallback, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
 const magicLinkSearchSchema = z.object({
-   redirect: z.string().startsWith("/").optional().catch(undefined),
+   redirect: z.string().startsWith("/").catch(undefined),
 });
 
 export const Route = createFileRoute("/auth/magic-link")({
@@ -49,18 +50,32 @@ function MagicLinkPage() {
                   toast.loading("Enviando link de acesso...");
                },
                onSuccess: async () => {
-                  try {
-                     const res = await fetch(
+                  const result = await ResultAsync.fromPromise(
+                     fetch(
                         `/api/auth/dev/magic-link?email=${encodeURIComponent(email)}`,
-                     );
-                     const data = await res.json();
-                     if (data.url) {
-                        window.location.href = data.url;
-                        return;
-                     }
-                  } catch {
-                     // dev endpoint indisponível — fluxo normal
+                     ),
+                     (error) => error,
+                  ).andThen((res) =>
+                     ResultAsync.fromPromise(res.json(), (error) => error),
+                  );
+
+                  if (result.isErr()) {
+                     toast.error("Endpoint de desenvolvimento indisponível.");
+                     setIsSent(true);
+                     return;
                   }
+
+                  const data = result.value;
+                  if (
+                     data &&
+                     typeof data === "object" &&
+                     "url" in data &&
+                     typeof data.url === "string"
+                  ) {
+                     window.location.href = data.url;
+                     return;
+                  }
+
                   setIsSent(true);
                   toast.success("Link enviado! Verifique seu e-mail.");
                },
@@ -117,7 +132,7 @@ function MagicLinkPage() {
                   Usar outro email
                </Button>
                <Button asChild className="h-10" variant="ghost">
-                  <Link to="/auth/sign-in">
+                  <Link to="/auth/sign-in" search={{ redirect: redirectTo }}>
                      <ArrowLeft className="size-4" />
                      Voltar para login
                   </Link>

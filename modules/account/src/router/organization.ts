@@ -54,19 +54,34 @@ export const getActiveOrganization = protectedProcedure.handler(
    },
 );
 
-export const getOrganizationTeams = protectedProcedure.handler(
-   async ({ context }) => {
+export const getOrganizationTeams = protectedProcedure
+   .input(z.object({ orgSlug: z.string().optional() }).optional())
+   .handler(async ({ context, input }) => {
+      let organizationId = context.organizationId;
+      if (input?.orgSlug) {
+         const rows = await context.db.query.member.findMany({
+            where: (f, { eq }) => eq(f.userId, context.userId),
+            with: { organization: true },
+         });
+         const scopedOrg = rows.find(
+            (m) => m.organization.slug === input.orgSlug,
+         );
+         if (!scopedOrg) {
+            throw WebAppError.notFound("Organização não encontrada.");
+         }
+         organizationId = scopedOrg.organization.id;
+      }
+
       const result = await fromPromise(
          context.auth.api.listOrganizationTeams({
             headers: context.headers,
-            query: { organizationId: context.organizationId },
+            query: { organizationId },
          }),
          authError("Falha ao listar projetos da organização."),
       );
       if (result.isErr()) throw result.error;
       return result.value;
-   },
-);
+   });
 
 export const createTeam = protectedProcedure
    .input(
@@ -93,7 +108,7 @@ export const createTeam = protectedProcedure
       if (result.isErr()) throw result.error;
       const team = result.value;
       if (!team?.id) throw WebAppError.internal("Falha ao criar espaço.");
-      return { id: team.id, name: team.name, slug };
+      return { id: team.id, name: team.name, slug: team.slug ?? slug };
    });
 
 export const getMembers = protectedProcedure.handler(async ({ context }) => {

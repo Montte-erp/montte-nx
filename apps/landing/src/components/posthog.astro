@@ -22,7 +22,7 @@ const PUBLIC_POSTHOG_HOST = import.meta.env.PUBLIC_POSTHOG_HOST;
       capture_performance: { web_vitals: true },
       session_recording: {
          maskAllInputs: false,
-         maskInputOptions: { password: true, email: false },
+         maskInputOptions: { password: true, email: true },
       },
       enable_heatmaps: true,
       rageclick: true,

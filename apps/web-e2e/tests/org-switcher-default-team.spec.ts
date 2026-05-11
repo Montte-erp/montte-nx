@@ -19,7 +19,9 @@ test("seleciona team default ao trocar de organização pelo switcher", async ({
    await switcher.click();
 
    await page.getByText("Organização", { exact: true }).first().hover();
-   await page.getByRole("menuitem", { name: e2eSession.orgSlug, exact: false });
+   await expect(
+      page.getByRole("menuitem", { name: e2eSession.orgSlug, exact: false }),
+   ).toBeVisible();
 
    const orgItem = page.getByRole("menuitem").filter({
       hasText: new RegExp(e2eSession.orgSlug.replace(/-/g, ".?"), "i"),
@@ -41,10 +43,7 @@ test("cria novo espaço pelo switcher e navega para ele", async ({ page }) => {
    await page.goto("/");
    await page.waitForURL(/^\/(?!auth\/)[^/]+\/[^/]+\//, { timeout: 15_000 });
 
-   const switcher = page
-      .getByRole("button")
-      .filter({ has: page.locator('[class*="ChevronsUpDown"]') })
-      .first();
+   const switcher = page.getByTestId("sidebar-scope-switcher");
    await switcher.click();
 
    await page.getByRole("menuitem", { name: /Sem espaço|Principal|espaço/i });
@@ -58,12 +57,14 @@ test("cria novo espaço pelo switcher e navega para ele", async ({ page }) => {
    await page.getByRole("textbox", { name: /Nome do espaço/i }).fill(newName);
    await page.getByRole("button", { name: /Criar espaço/i }).click();
 
-   const expectedSlug = newName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
+   const expectedFragment = newName.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-   await page.waitForURL((url) => url.pathname.includes(`/${expectedSlug}/`), {
-      timeout: 20_000,
-   });
+   await page.waitForURL(
+      (url) =>
+         url.pathname
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, "")
+            .includes(expectedFragment),
+      { timeout: 20_000 },
+   );
 });

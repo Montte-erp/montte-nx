@@ -194,6 +194,7 @@ function SidebarScopeSwitcherContent() {
                <DropdownMenuTrigger asChild>
                   <SidebarMenuButton
                      className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                     data-testid="sidebar-scope-switcher"
                      size="lg"
                   >
                      <Avatar className="aspect-square size-8 shrink-0 rounded-lg">

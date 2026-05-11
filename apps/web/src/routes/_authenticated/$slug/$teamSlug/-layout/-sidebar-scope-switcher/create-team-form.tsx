@@ -47,17 +47,13 @@ export function CreateTeamForm() {
       defaultValues: { name: "" },
       validators: { onSubmit: createTeamSchema },
       onSubmit: async ({ value }) => {
-         const toastId = toast.loading("Criando espaço...");
-         const created = await createTeam.mutateAsync(
-            { name: value.name },
-            {
-               onError: (error) => {
-                  toast.error(error.message ?? "Erro ao criar espaço", {
-                     id: toastId,
-                  });
-               },
-            },
-         );
+         const created = await toast
+            .promise(createTeam.mutateAsync({ name: value.name }), {
+               loading: "Criando espaço...",
+               success: "Espaço criado",
+               error: (err) => err.message,
+            })
+            .unwrap();
 
          await authClient.organization.setActiveTeam({ teamId: created.id });
          await queryClient.invalidateQueries({
@@ -67,7 +63,6 @@ export function CreateTeamForm() {
             queryKey: orpc.session.getSession.queryKey({}),
          });
 
-         toast.success("Espaço criado", { id: toastId });
          closeCredenza();
          router.navigate({
             to: "/$slug/$teamSlug/inbox",

@@ -31,7 +31,9 @@ export const Route = createFileRoute(
          client.organization.getOrganizationTeams(),
       ]);
       const org = orgs.find((o) => o.id === organizationId);
-      const firstTeam = teams[0];
+      const firstTeam = teams.find(
+         (team) => team.organizationId === organizationId,
+      );
       if (!org || !firstTeam) throw redirect({ to: "/auth/callback" });
 
       await authClient.organization.setActiveTeam({ teamId: firstTeam.id });

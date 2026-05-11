@@ -22,7 +22,7 @@ const signInSchema = z.object({
 });
 
 const signInEmailSearchSchema = z.object({
-   redirect: z.string().startsWith("/").optional().catch(undefined),
+   redirect: z.string().startsWith("/").catch(undefined),
 });
 
 export const Route = createFileRoute("/auth/sign-in/email")({
@@ -180,7 +180,7 @@ function SignInEmailPage() {
          </form>
 
          <Button asChild className="h-10" variant="ghost">
-            <Link to="/auth/sign-in">
+            <Link to="/auth/sign-in" search={{ redirect: redirectTo }}>
                <ArrowLeft className="size-4" />
                Voltar para login
             </Link>
@@ -190,6 +190,7 @@ function SignInEmailPage() {
             <span className="text-muted-foreground">Primeira vez aqui?</span>
             <Link
                className="font-medium text-foreground hover:underline"
+               search={{ redirect: redirectTo }}
                to="/auth/sign-up"
             >
                Criar conta

@@ -20,7 +20,7 @@ import { authClient } from "@/integrations/better-auth/auth-client";
 
 const searchParams = z.object({
    email: z.email(),
-   redirect: z.string().startsWith("/").optional().catch(undefined),
+   redirect: z.string().startsWith("/").catch(undefined),
 });
 
 export const Route = createFileRoute("/auth/email-verification")({

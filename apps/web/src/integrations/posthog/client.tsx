@@ -45,7 +45,7 @@ function getReactPosthogConfig(env: PublicEnv): Partial<PostHogConfig> {
       disable_session_recording: false,
       session_recording: {
          maskAllInputs: false,
-         maskInputOptions: { password: true, email: false },
+         maskInputOptions: { password: true, email: true },
       },
       feature_flag_request_timeout_ms: 3000,
       opt_in_site_apps: true,
