@@ -34,6 +34,7 @@ import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCsvFile } from "@/hooks/use-csv-file";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useSheet } from "@/hooks/use-sheet";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { orpc } from "@/integrations/orpc/client";
@@ -115,7 +116,7 @@ function BankAccountsSkeleton() {
 
 function BankAccountsList() {
    const navigate = Route.useNavigate();
-   const { slug, teamSlug } = Route.useParams();
+   const { slug, teamSlug } = useDashboardSlugs();
    const { sorting, columnFilters, type, search, page, pageSize } =
       Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
