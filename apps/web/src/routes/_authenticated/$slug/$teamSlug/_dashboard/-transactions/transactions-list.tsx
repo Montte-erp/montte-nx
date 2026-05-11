@@ -695,12 +695,14 @@ function BulkIgnoreButton({
                actionLabel: "Ignorar",
                cancelLabel: "Cancelar",
                onAction: async () => {
-                  await Promise.allSettled(
+                  const results = await Promise.allSettled(
                      ids.map((id) =>
                         mutation.mutateAsync({ id, status: "cancelled" }),
                      ),
                   );
-                  onSuccess();
+                  if (results.every((r) => r.status === "fulfilled")) {
+                     onSuccess();
+                  }
                },
             })
          }

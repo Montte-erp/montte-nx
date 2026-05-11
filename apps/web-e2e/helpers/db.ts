@@ -279,6 +279,7 @@ export async function insertExpenseTransaction(
          status,
       })
       .returning();
+   if (!row) throw new Error("Failed to insert transaction");
    return row;
 }
 

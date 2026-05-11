@@ -33,6 +33,7 @@ async function setupTwoTransactions(session: E2ESession) {
 
    const accountName = `Bulk Conta ${stamp()}`;
    const account = await insertBankAccount(team.id, accountName);
+   if (!account) throw new Error("failed to create bank account");
    createdAccountIds.push(account.id);
 
    const tag = `Bulk ${stamp()}`;
