@@ -106,7 +106,7 @@ test("cancelar fecha sheet sem criar", async ({ page, e2eSession }) => {
    await page.getByRole("button", { name: "Novo Centro de Custo" }).click();
    const sheet = page.getByRole("dialog");
 
-   const name = "Não deve criar";
+   const name = `Não deve criar ${stamp()}`;
    await sheet.getByLabel("Nome").fill(name);
    await sheet.getByRole("button", { name: "Cancelar" }).click();
 

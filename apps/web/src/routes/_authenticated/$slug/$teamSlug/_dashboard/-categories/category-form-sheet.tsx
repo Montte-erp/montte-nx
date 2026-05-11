@@ -18,7 +18,6 @@ import {
 } from "@packages/ui/components/command";
 import {
    ColorPicker,
-   ColorPickerAlpha,
    ColorPickerEyeDropper,
    ColorPickerFormat,
    ColorPickerHue,
@@ -288,8 +287,11 @@ export function CategoryFormSheet({
                                        Categoria pai
                                     </FieldLabel>
                                     <Autocomplete
+                                       aria-invalid={isFieldInvalid(field)}
                                        emptyMessage="Nenhuma categoria encontrada."
+                                       id={field.name}
                                        isLoading={false}
+                                       name={field.name}
                                        options={options}
                                        placeholder="Buscar categoria..."
                                        renderOption={renderParentOption}
@@ -531,16 +533,13 @@ function ColorField({
          <PopoverContent align="start" className="w-72 p-4">
             <ColorPicker
                value={display}
-               onChange={(rgba) =>
-                  onChange(rgbaToHex(rgba as [number, number, number, number]))
-               }
+               onChange={(rgba) => onChange(rgbaToHex(rgba))}
             >
                <ColorPickerSelection className="h-40" />
                <div className="flex items-center gap-4">
                   <ColorPickerEyeDropper />
                   <div className="flex w-full flex-col gap-4">
                      <ColorPickerHue />
-                     <ColorPickerAlpha />
                   </div>
                </div>
                <div className="flex items-center gap-2">
