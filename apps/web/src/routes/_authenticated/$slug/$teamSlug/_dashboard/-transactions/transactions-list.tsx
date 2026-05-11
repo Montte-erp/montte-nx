@@ -727,11 +727,13 @@ function BulkStatusButton({
    );
 
    const apply = async (status: "pending" | "paid") => {
-      await Promise.allSettled(
+      const results = await Promise.allSettled(
          ids.map((id) => mutation.mutateAsync({ id, status })),
       );
       setOpen(false);
-      onSuccess();
+      if (results.every((r) => r.status === "fulfilled")) {
+         onSuccess();
+      }
    };
 
    const statusOptions = [

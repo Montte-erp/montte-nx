@@ -91,6 +91,10 @@ test("ação em massa 'Ignorar lançamentos' cancela seleção", async ({
    await expect(dialog).toBeVisible();
    await dialog.getByRole("button", { name: "Ignorar" }).click();
    await expect(dialog).not.toBeVisible();
+   await expect(ignoreBtn).toHaveCount(0);
+   await expect(
+      page.getByRole("checkbox", { name: "Selecionar todos" }),
+   ).not.toBeChecked();
 
    await expect
       .poll(async () => (await findTransactionById(team.id, txAId))?.status)
