@@ -1,3 +1,4 @@
+import { getDomain } from "@core/environment/helpers";
 import type { PublicEnv } from "@/integrations/public-env";
 import type { PostHogConfig } from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
@@ -32,6 +33,7 @@ export function normalizeEarlyAccessStage(
 }
 
 function getReactPosthogConfig(env: PublicEnv): Partial<PostHogConfig> {
+   const isLocalhost = new URL(getDomain()).hostname === "localhost";
    return {
       api_host: env.POSTHOG_HOST,
       defaults: "2026-01-30",
@@ -48,6 +50,9 @@ function getReactPosthogConfig(env: PublicEnv): Partial<PostHogConfig> {
       feature_flag_request_timeout_ms: 3000,
       opt_in_site_apps: true,
       persistence: "localStorage",
+      loaded: (ph) => {
+         if (isLocalhost) ph.opt_out_capturing();
+      },
    };
 }
 
