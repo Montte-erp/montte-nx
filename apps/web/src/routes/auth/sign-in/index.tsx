@@ -61,7 +61,7 @@ export function SignInPage() {
                   </Badge>
                )}
                <Button asChild className="h-10 w-full gap-2" variant="default">
-                  <Link to="/auth/magic-link">
+                  <Link to="/auth/magic-link" search={{ redirect: redirectTo }}>
                      <Sparkles className="size-4" />
                      Continuar com link mágico
                   </Link>

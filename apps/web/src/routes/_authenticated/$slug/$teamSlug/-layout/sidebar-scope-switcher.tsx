@@ -3,14 +3,6 @@ import {
    AvatarFallback,
    AvatarImage,
 } from "@packages/ui/components/avatar";
-import { Button } from "@packages/ui/components/button";
-import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
 import {
    DropdownMenu,
    DropdownMenuContent,
@@ -119,10 +111,9 @@ function SidebarScopeSwitcherSkeleton() {
 }
 
 function SidebarScopeSwitcherContent() {
-   const { activeOrganization, projectLimit, projectCount } =
-      useActiveOrganization();
+   const { activeOrganization } = useActiveOrganization();
    const { activeTeam, teams } = useActiveTeam();
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openCredenza } = useCredenza();
    const queryClient = useQueryClient();
    const router = useRouter();
    const { pathname } = useLocation();
@@ -191,33 +182,10 @@ function SidebarScopeSwitcherContent() {
    }
 
    function newProject() {
-      if (projectLimit !== null && teams.length >= projectLimit) {
-         openCredenza({
-            renderChildren: () => (
-               <>
-                  <CredenzaHeader>
-                     <CredenzaTitle>Limite de espaços</CredenzaTitle>
-                     <CredenzaDescription>
-                        Você está usando {projectCount} de {projectLimit}{" "}
-                        espaços
-                     </CredenzaDescription>
-                  </CredenzaHeader>
-                  <CredenzaBody className="px-4">
-                     <p className="text-sm text-muted-foreground">
-                        Você atingiu o limite de espaços do seu plano.
-                     </p>
-                  </CredenzaBody>
-                  <CredenzaFooter>
-                     <Button onClick={closeCredenza} variant="outline">
-                        Fechar
-                     </Button>
-                  </CredenzaFooter>
-               </>
-            ),
-         });
-         return;
-      }
-      openCredenza({ renderChildren: () => <CreateTeamForm /> });
+      openCredenza({
+         className: "max-w-md sm:max-w-md",
+         renderChildren: () => <CreateTeamForm />,
+      });
    }
 
    return (
@@ -227,6 +195,7 @@ function SidebarScopeSwitcherContent() {
                <DropdownMenuTrigger asChild>
                   <SidebarMenuButton
                      className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                     data-testid="sidebar-scope-switcher"
                      size="lg"
                   >
                      <Avatar className="aspect-square size-8 shrink-0 rounded-lg">
@@ -285,12 +254,7 @@ function SidebarScopeSwitcherContent() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onSelect={newProject}>
                            <Plus className="size-4" />
-                           <span>
-                              {projectLimit !== null &&
-                              projectLimit !== Number.POSITIVE_INFINITY
-                                 ? `Novo espaço (${projectCount}/${projectLimit})`
-                                 : "Novo espaço"}
-                           </span>
+                           <span>Novo espaço</span>
                         </DropdownMenuItem>
                      </DropdownMenuSubContent>
                   </DropdownMenuSub>

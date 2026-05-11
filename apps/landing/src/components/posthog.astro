@@ -12,7 +12,7 @@ const PUBLIC_POSTHOG_HOST = import.meta.env.PUBLIC_POSTHOG_HOST;
    posthog.init(import.meta.env.PUBLIC_POSTHOG_KEY, {
       api_host: import.meta.env.PUBLIC_POSTHOG_HOST,
       defaults: "2026-01-30",
-      opt_out_capturing_by_default: consent !== '"accepted"',
+      opt_out_capturing_by_default: consent === '"rejected"',
       person_profiles: "always",
       capture_pageview: true,
       capture_pageleave: true,
@@ -22,7 +22,7 @@ const PUBLIC_POSTHOG_HOST = import.meta.env.PUBLIC_POSTHOG_HOST;
       capture_performance: { web_vitals: true },
       session_recording: {
          maskAllInputs: false,
-         maskInputOptions: { password: true, email: false },
+         maskInputOptions: { password: true, email: true },
       },
       enable_heatmaps: true,
       rageclick: true,

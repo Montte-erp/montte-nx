@@ -36,7 +36,7 @@ const emailVerificationSchema = z.object({
 });
 
 function EmailVerificationPage() {
-   const { email } = Route.useSearch();
+   const { email, redirect: redirectTo } = Route.useSearch();
    const router = useRouter();
 
    const handleResendEmail = useCallback(async () => {
@@ -69,12 +69,12 @@ function EmailVerificationPage() {
                },
                onSuccess: () => {
                   toast.success("Email verificado!");
-                  router.navigate({ to: "/auth/callback" });
+                  router.navigate({ to: redirectTo ?? "/auth/callback" });
                },
             },
          );
       },
-      [email, router],
+      [email, redirectTo, router],
    );
 
    const form = useForm({

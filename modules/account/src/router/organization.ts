@@ -2,6 +2,7 @@ import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { WebAppError } from "@core/logging/errors";
 import { authenticatedProcedure, protectedProcedure } from "@core/orpc/server";
+import { createSlug } from "@core/utils/text";
 
 const authError = (fallback: string) => (e: unknown) => {
    if (e && typeof e === "object") {
@@ -47,40 +48,68 @@ export const getActiveOrganization = protectedProcedure.handler(
             query: { organizationId: orgId },
          }),
          authError("Falha ao recuperar dados da organização."),
-      ).andThen((org) =>
-         !org
-            ? fromPromise(Promise.resolve(null), () => WebAppError.internal(""))
-            : fromPromise(
-                 context.auth.api.listOrganizationTeams({
-                    headers: context.headers,
-                    query: { organizationId: org.id },
-                 }),
-                 authError("Falha ao recuperar projetos da organização."),
-              ).map((teams) => ({
-                 ...org,
-                 activeSubscription: null,
-                 projectLimit: 1,
-                 projectCount: teams.length,
-              })),
-      );
+      ).map((org) => (org ? { ...org, activeSubscription: null } : null));
       if (result.isErr()) throw result.error;
       return result.value;
    },
 );
 
-export const getOrganizationTeams = protectedProcedure.handler(
-   async ({ context }) => {
+export const getOrganizationTeams = protectedProcedure
+   .input(z.object({ orgSlug: z.string().optional() }).optional())
+   .handler(async ({ context, input }) => {
+      let organizationId = context.organizationId;
+      if (input?.orgSlug) {
+         const rows = await context.db.query.member.findMany({
+            where: (f, { eq }) => eq(f.userId, context.userId),
+            with: { organization: true },
+         });
+         const scopedOrg = rows.find(
+            (m) => m.organization.slug === input.orgSlug,
+         );
+         if (!scopedOrg) {
+            throw WebAppError.notFound("Organização não encontrada.");
+         }
+         organizationId = scopedOrg.organization.id;
+      }
+
       const result = await fromPromise(
          context.auth.api.listOrganizationTeams({
             headers: context.headers,
-            query: { organizationId: context.organizationId },
+            query: { organizationId },
          }),
          authError("Falha ao listar projetos da organização."),
       );
       if (result.isErr()) throw result.error;
       return result.value;
-   },
-);
+   });
+
+export const createTeam = protectedProcedure
+   .input(
+      z.object({
+         name: z
+            .string()
+            .min(1, "Nome do espaço é obrigatório")
+            .max(50, "O nome deve ter menos de 50 caracteres"),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      const slug = createSlug(input.name);
+      const result = await fromPromise(
+         context.auth.api.createTeam({
+            headers: context.headers,
+            body: {
+               name: input.name,
+               organizationId: context.organizationId,
+               slug,
+            },
+         }),
+         authError("Falha ao criar espaço."),
+      );
+      if (result.isErr()) throw result.error;
+      const team = result.value;
+      if (!team?.id) throw WebAppError.internal("Falha ao criar espaço.");
+      return { id: team.id, name: team.name, slug: team.slug ?? slug };
+   });
 
 export const getMembers = protectedProcedure.handler(async ({ context }) => {
    const result = await fromPromise(

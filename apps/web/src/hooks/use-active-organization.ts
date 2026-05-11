@@ -10,14 +10,10 @@ export function useActiveOrganization() {
       throw new Error("No active organization found");
    }
 
-   // Extract activeSubscription from the organization response
-   const { activeSubscription, projectLimit, projectCount, ...organization } =
-      activeOrganization;
+   const { activeSubscription, ...organization } = activeOrganization;
 
    return {
       activeOrganization: organization,
       activeSubscription,
-      projectLimit,
-      projectCount,
    };
 }

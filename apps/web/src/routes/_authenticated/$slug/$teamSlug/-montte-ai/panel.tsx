@@ -1,4 +1,5 @@
 import { Button } from "@packages/ui/components/button";
+import { FeatureStageBadge } from "@/components/blocks/feature-stage-badge";
 import {
    ContextPanel,
    ContextPanelContent,
@@ -80,7 +81,10 @@ function AgentPanelContent({ onMinimize, onClose }: AgentPanelProps) {
    return (
       <ContextPanel className="overflow-hidden">
          <ContextPanelHeader>
-            <ContextPanelTitle>Montte AI</ContextPanelTitle>
+            <ContextPanelTitle className="flex items-center gap-2">
+               Montte AI
+               <FeatureStageBadge stage="alpha" />
+            </ContextPanelTitle>
             <ContextPanelHeaderActions>
                {activeThreadId ? (
                   <Button
