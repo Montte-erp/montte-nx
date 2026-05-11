@@ -307,6 +307,7 @@ export async function insertCategory(
          participatesDre: false,
       })
       .returning();
+   if (!row) throw new Error(`Falha ao inserir categoria "${input.name}".`);
    return row;
 }
 
