@@ -249,10 +249,37 @@ export async function insertBankAccount(
    return row;
 }
 
+export async function findTransactionById(teamId: string, id: string) {
+   return db().query.transactions.findFirst({
+      where: (f, { and, eq }) => and(eq(f.teamId, teamId), eq(f.id, id)),
+   });
+}
+
 export async function findTransactionByName(teamId: string, name: string) {
    return db().query.transactions.findFirst({
       where: (f, { and, eq }) => and(eq(f.teamId, teamId), eq(f.name, name)),
    });
+}
+
+export async function insertExpenseTransaction(
+   teamId: string,
+   bankAccountId: string,
+   name: string,
+   status: "pending" | "paid" | "cancelled" = "pending",
+) {
+   const [row] = await db()
+      .insert(transactions)
+      .values({
+         teamId,
+         name,
+         type: "expense",
+         amount: "10.00",
+         date: new Date().toISOString().slice(0, 10),
+         bankAccountId,
+         status,
+      })
+      .returning();
+   return row;
 }
 
 export async function deleteTransactionById(teamId: string, id: string) {
