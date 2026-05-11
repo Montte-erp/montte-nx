@@ -1,5 +1,9 @@
 import { format, of } from "@f-o-t/money";
-import { Avatar, AvatarFallback } from "@packages/ui/components/avatar";
+import {
+   Avatar,
+   AvatarFallback,
+   AvatarImage,
+} from "@packages/ui/components/avatar";
 import { Badge } from "@packages/ui/components/badge";
 import {
    Announcement,
@@ -40,6 +44,54 @@ const BRAND_COLOR: Record<string, string> = {
    hipercard: "#822124",
    other: "#6B7280",
 };
+
+const BRAND_LOGO_SLUG: Record<string, string> = {
+   visa: "visa",
+   mastercard: "mastercard",
+   elo: "elo",
+   amex: "americanexpress",
+   hipercard: "hipercard",
+};
+
+const BANK_DOMAIN: Record<string, string> = {
+   "001": "bb.com.br",
+   "033": "santander.com.br",
+   "077": "bancointer.com.br",
+   "104": "caixa.gov.br",
+   "208": "btgpactual.com",
+   "212": "original.com.br",
+   "237": "bradesco.com.br",
+   "246": "abcbrasil.com.br",
+   "260": "nubank.com.br",
+   "290": "pagseguro.com.br",
+   "318": "bancobmg.com.br",
+   "323": "mercadopago.com.br",
+   "336": "bancoc6.com.br",
+   "341": "itau.com.br",
+   "380": "picpay.com",
+   "389": "mercantildobrasil.com.br",
+   "422": "safra.com.br",
+   "623": "pan.com.br",
+   "655": "votorantim.com.br",
+   "735": "banconeon.com.br",
+   "739": "cetelem.com.br",
+   "748": "sicredi.com.br",
+   "756": "sicoobnet.com.br",
+};
+
+function bankLogoUrl(bankCode: string | null | undefined): string | undefined {
+   if (!bankCode) return undefined;
+   const padded = bankCode.padStart(3, "0");
+   const domain = BANK_DOMAIN[padded];
+   if (!domain) return undefined;
+   return `https://logo.clearbit.com/${domain}`;
+}
+
+function brandLogoUrl(brand: string): string | undefined {
+   const slug = BRAND_LOGO_SLUG[brand];
+   if (!slug) return undefined;
+   return `https://cdn.simpleicons.org/${slug}`;
+}
 
 function bankInitials(name: string): string {
    const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -100,18 +152,28 @@ export function buildCreditCardColumns(options?: {
             const brand = row.original.brand;
             if (!brand) return <span className="text-muted-foreground">—</span>;
             const color = BRAND_COLOR[brand] ?? BRAND_COLOR.other!;
+            const logo = brandLogoUrl(brand);
             return (
-               <Announcement>
-                  <AnnouncementTag
-                     className="flex items-center text-white"
-                     style={{ backgroundColor: color }}
-                  >
-                     <CreditCardIcon className="size-3" />
-                  </AnnouncementTag>
-                  <AnnouncementTitle>
+               <div className="flex items-center gap-2 min-w-0">
+                  <Avatar className="size-6 shrink-0 rounded-md bg-white p-0.5 ring-1 ring-border">
+                     {logo ? (
+                        <AvatarImage
+                           alt={BRAND_LABEL[brand] ?? brand}
+                           className="object-contain"
+                           src={logo}
+                        />
+                     ) : null}
+                     <AvatarFallback
+                        className="rounded-md text-[10px] font-semibold text-white"
+                        style={{ backgroundColor: color }}
+                     >
+                        <CreditCardIcon className="size-3" />
+                     </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm truncate">
                      {BRAND_LABEL[brand] ?? brand}
-                  </AnnouncementTitle>
-               </Announcement>
+                  </span>
+               </div>
             );
          },
          meta: { label: "Bandeira" },
@@ -175,9 +237,17 @@ export function buildCreditCardColumns(options?: {
             if (!account)
                return <span className="text-muted-foreground">—</span>;
             const issuer = account.bankName?.trim() || account.name;
+            const logo = bankLogoUrl(account.bankCode);
             return (
                <div className="flex items-center gap-2 min-w-0">
-                  <Avatar className="size-6 shrink-0">
+                  <Avatar className="size-6 shrink-0 bg-white ring-1 ring-border">
+                     {logo ? (
+                        <AvatarImage
+                           alt={issuer}
+                           className="object-contain p-0.5"
+                           src={logo}
+                        />
+                     ) : null}
                      <AvatarFallback
                         className="text-[10px] font-semibold text-white"
                         style={{
