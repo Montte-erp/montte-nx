@@ -257,7 +257,10 @@ function ForgotPasswordPage() {
                },
                onSuccess: () => {
                   toast.success("Senha redefinida!");
-                  router.navigate({ to: "/auth/sign-in" });
+                  router.navigate({
+                     search: { redirect: undefined },
+                     to: "/auth/sign-in",
+                  });
                },
             },
          );
@@ -413,7 +416,7 @@ function ForgotPasswordPage() {
                   </form>
 
                   <Button asChild className="h-10" variant="ghost">
-                     <Link to="/auth/sign-in">
+                     <Link search={{ redirect: undefined }} to="/auth/sign-in">
                         <ArrowLeft className="size-4" />
                         Voltar para login
                      </Link>

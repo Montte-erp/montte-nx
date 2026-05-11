@@ -1,8 +1,6 @@
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useLocalStorage } from "foxact/use-local-storage";
-import { PENDING_INVITATION_KEY } from "@/features/organization/constants";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute("/auth/callback")({
@@ -15,40 +13,21 @@ export const Route = createFileRoute("/auth/callback")({
 });
 
 function AuthCallbackPage() {
-   const [pendingInvitation, setPendingInvitation] = useLocalStorage<
-      string | null
-   >(PENDING_INVITATION_KEY, null);
    const router = useRouter();
-
    const { data: organizations } = useSuspenseQuery(
       orpc.organization.getOrganizations.queryOptions(),
    );
 
    useIsomorphicLayoutEffect(() => {
-      if (pendingInvitation) {
-         setPendingInvitation(null);
-         router.navigate({
-            to: "/callback/organization/invitation/$invitationId",
-            params: { invitationId: pendingInvitation },
-         });
-         return;
-      }
-
       const firstOrg = organizations[0];
-
       if (!firstOrg || !firstOrg.onboardingCompleted) {
          router.navigate({ to: "/onboarding" });
          return;
       }
-
-      // Organization exists and onboarding is complete — need to fetch teams
-      // This is handled by the child suspense boundary below
-   }, [pendingInvitation, setPendingInvitation, organizations, router]);
+   }, [organizations, router]);
 
    const firstOrg = organizations[0];
-
-   // Don't render team resolver if no org or pending invitation
-   if (!firstOrg || !firstOrg.onboardingCompleted || pendingInvitation) {
+   if (!firstOrg || !firstOrg.onboardingCompleted) {
       return null;
    }
 
@@ -59,7 +38,9 @@ function TeamResolver({ orgSlug }: { orgSlug: string }) {
    const router = useRouter();
 
    const { data: teams } = useSuspenseQuery(
-      orpc.organization.getOrganizationTeams.queryOptions(),
+      orpc.organization.getOrganizationTeams.queryOptions({
+         input: { orgSlug },
+      }),
    );
 
    useIsomorphicLayoutEffect(() => {

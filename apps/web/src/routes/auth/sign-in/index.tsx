@@ -9,7 +9,9 @@ import { orpc } from "@/integrations/orpc/client";
 import { TermsAndPrivacyText } from "../-auth/terms-and-privacy-text";
 
 const signInSearchSchema = z.object({
-   redirect: z.string().optional(),
+   redirect: z
+      .union([z.string().startsWith("/"), z.undefined()])
+      .catch(undefined),
 });
 
 export const Route = createFileRoute("/auth/sign-in/")({
@@ -30,6 +32,7 @@ export const Route = createFileRoute("/auth/sign-in/")({
 });
 
 export function SignInPage() {
+   const { redirect: redirectTo } = Route.useSearch();
    const [lastMethod, setLastMethod] = useState<string | null>(null);
 
    useEffect(() => {
@@ -58,7 +61,7 @@ export function SignInPage() {
                   </Badge>
                )}
                <Button asChild className="h-10 w-full gap-2" variant="default">
-                  <Link to="/auth/magic-link">
+                  <Link to="/auth/magic-link" search={{ redirect: redirectTo }}>
                      <Sparkles className="size-4" />
                      Continuar com link mágico
                   </Link>
@@ -79,7 +82,10 @@ export function SignInPage() {
                   className="h-10 w-full gap-2"
                   variant="secondary"
                >
-                  <Link to="/auth/sign-in/email">
+                  <Link
+                     to="/auth/sign-in/email"
+                     search={{ redirect: redirectTo }}
+                  >
                      <KeyRound className="size-4" />
                      Entrar com email e senha
                   </Link>
@@ -93,6 +99,7 @@ export function SignInPage() {
                <Link
                   className="font-medium text-foreground hover:underline"
                   to="/auth/sign-up"
+                  search={{ redirect: redirectTo }}
                >
                   Criar conta
                </Link>

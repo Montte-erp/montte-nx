@@ -1,83 +1,54 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
-import { useLocalStorage } from "foxact/use-local-storage";
-import { toast } from "sonner";
 import { authClient } from "@/integrations/better-auth/auth-client";
-import { orpc } from "@/integrations/orpc/client";
-import { PENDING_INVITATION_KEY } from "@/features/organization/constants";
+import { client } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
    "/callback/organization/invitation/$invitationId",
 )({
+   ssr: false,
    head: () => ({ meta: [{ title: "Aceitar Convite — Montte" }] }),
+   beforeLoad: async ({ context, params, location }) => {
+      const session = await context.queryClient
+         .fetchQuery(context.orpc.session.getSession.queryOptions({}))
+         .catch(() => null);
+      if (!session?.user?.id) {
+         throw redirect({
+            to: "/auth/sign-in",
+            search: { redirect: location.href },
+         });
+      }
+
+      const accepted = await authClient.organization.acceptInvitation({
+         invitationId: params.invitationId,
+      });
+      const organizationId = accepted.data?.invitation?.organizationId;
+      if (!organizationId) throw redirect({ to: "/auth/callback" });
+
+      await authClient.organization.setActive({ organizationId });
+      const [orgs, teams] = await Promise.all([
+         client.organization.getOrganizations(),
+         client.organization.getOrganizationTeams(),
+      ]);
+      const org = orgs.find((o) => o.id === organizationId);
+      const firstTeam = teams.find(
+         (team) => team.organizationId === organizationId,
+      );
+      if (!org || !firstTeam) throw redirect({ to: "/auth/callback" });
+
+      await authClient.organization.setActiveTeam({ teamId: firstTeam.id });
+      throw redirect({
+         to: "/$slug/$teamSlug/inbox",
+         params: { slug: org.slug, teamSlug: firstTeam.slug },
+      });
+   },
    component: AcceptInvitationPage,
 });
 
 function AcceptInvitationPage() {
-   const { invitationId } = Route.useParams();
-   const router = useRouter();
-   const queryClient = useQueryClient();
-   const [, setPendingInvitation] = useLocalStorage<string | null>(
-      PENDING_INVITATION_KEY,
-      null,
-   );
-
-   useEffect(() => {
-      const run = async () => {
-         const session = await queryClient
-            .fetchQuery(orpc.session.getSession.queryOptions())
-            .catch(() => null);
-
-         if (!session?.user?.id) {
-            setPendingInvitation(invitationId);
-            router.navigate({ to: "/auth/sign-in" });
-            return;
-         }
-
-         const { data, error: err } =
-            await authClient.organization.acceptInvitation({ invitationId });
-
-         if (err) {
-            toast.error(err.message ?? "Convite inválido ou expirado.");
-            const isRecipientMismatch =
-               err.status === 403 ||
-               /recipient|destinatário/i.test(err.message ?? "");
-            if (isRecipientMismatch) {
-               setPendingInvitation(invitationId);
-               await authClient.signOut();
-               router.navigate({ to: "/auth/sign-in" });
-               return;
-            }
-            router.navigate({ to: "/auth/callback" });
-            return;
-         }
-
-         if (data?.invitation?.organizationId) {
-            await authClient.organization.setActive({
-               organizationId: data.invitation.organizationId,
-            });
-            const teams = await authClient.organization.listTeams({
-               query: { organizationId: data.invitation.organizationId },
-            });
-            const firstTeam = teams.data?.[0];
-            if (firstTeam) {
-               await authClient.organization.setActiveTeam({
-                  teamId: firstTeam.id,
-               });
-            }
-         }
-
-         router.navigate({ to: "/auth/callback" });
-      };
-
-      run();
-   }, [invitationId, queryClient, router, setPendingInvitation]);
-
    return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-         <div className="text-center flex flex-col gap-4">
+         <div className="flex flex-col gap-4 text-center">
             <div className="flex justify-center">
                <Loader2 className="size-8 animate-spin text-primary" />
             </div>

@@ -1,5 +1,6 @@
-import { isClientProduction } from "@core/environment/helpers";
+import { getDomain } from "@core/environment/helpers";
 import type { PublicEnv } from "@/integrations/public-env";
+import type { PostHogConfig } from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
 
 export type EarlyAccessStage =
@@ -31,19 +32,27 @@ export function normalizeEarlyAccessStage(
    return "beta";
 }
 
-function getReactPosthogConfig(env: PublicEnv) {
+function getReactPosthogConfig(env: PublicEnv): Partial<PostHogConfig> {
+   const isLocalhost = new URL(getDomain()).hostname === "localhost";
    return {
       api_host: env.POSTHOG_HOST,
-      api_key: env.POSTHOG_KEY,
+      defaults: "2026-01-30",
       autocapture: true,
       capture_pageview: true,
       capture_pageleave: true,
-      capture_performance: true,
-      enable_exception_autocapture: true,
-      disable_session_recording: !isClientProduction,
+      capture_performance: { web_vitals: true, network_timing: true },
+      capture_exceptions: true,
+      disable_session_recording: false,
+      session_recording: {
+         maskAllInputs: false,
+         maskInputOptions: { password: true, email: true },
+      },
       feature_flag_request_timeout_ms: 3000,
       opt_in_site_apps: true,
-      persistence: "localStorage" as const,
+      persistence: "localStorage",
+      loaded: (ph) => {
+         if (isLocalhost) ph.opt_out_capturing();
+      },
    };
 }
 

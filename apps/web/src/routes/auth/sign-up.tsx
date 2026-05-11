@@ -31,8 +31,15 @@ const steps = [
 
 const { Stepper } = defineStepper(...steps);
 
+const signUpSearchSchema = z.object({
+   redirect: z
+      .union([z.string().startsWith("/"), z.undefined()])
+      .catch(undefined),
+});
+
 export const Route = createFileRoute("/auth/sign-up")({
    head: () => ({ meta: [{ title: "Criar conta — Montte" }] }),
+   validateSearch: signUpSearchSchema,
    component: SignUpPage,
 });
 
@@ -56,7 +63,7 @@ function createSignUpForm() {
          name: "",
          password: "",
       },
-      validators: { onBlur: signUpSchema },
+      validators: { onChange: signUpSchema },
    });
 }
 type SignUpFormApi = ReturnType<typeof createSignUpForm>;
@@ -197,6 +204,7 @@ function PasswordStep() {
 
 function SignUpPage() {
    const router = useRouter();
+   const { redirect: redirectTo } = Route.useSearch();
    const [isPending, startTransition] = useTransition();
 
    const handleSignUp = useCallback(
@@ -210,17 +218,21 @@ function SignUpPage() {
                onRequest: () => {
                   toast.loading("Criando sua conta...");
                },
-               onSuccess: () => {
+               onSuccess: ({ data }) => {
                   toast.success("Conta criada com sucesso!");
+                  if (data?.token) {
+                     router.navigate({ to: redirectTo ?? "/auth/callback" });
+                     return;
+                  }
                   router.navigate({
-                     search: { email },
+                     search: { email, redirect: redirectTo },
                      to: "/auth/email-verification",
                   });
                },
             },
          );
       },
-      [router],
+      [redirectTo, router],
    );
 
    const form = useForm({
@@ -235,7 +247,7 @@ function SignUpPage() {
          formApi.reset();
       },
       validators: {
-         onBlur: signUpSchema,
+         onChange: signUpSchema,
       },
    });
 
@@ -283,24 +295,24 @@ function SignUpPage() {
                   </div>
 
                   <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-                     {methods.flow.switch({
-                        "basic-info": () => <BasicInfoStep />,
-                        password: () => <PasswordStep />,
-                     })}
+                     <div
+                        hidden={methods.state.current.data.id !== "basic-info"}
+                     >
+                        <BasicInfoStep />
+                     </div>
+                     <div hidden={methods.state.current.data.id !== "password"}>
+                        <PasswordStep />
+                     </div>
 
                      {methods.state.isLast ? (
                         <form.Subscribe
-                           selector={(state) =>
-                              [state.canSubmit, state.isSubmitting] as const
-                           }
+                           selector={(state) => state.isSubmitting}
                         >
-                           {([canSubmit, isSubmitting]) => (
+                           {(isSubmitting) => (
                               <div className="flex flex-col gap-2">
                                  <Button
                                     className="h-10"
-                                    disabled={
-                                       !canSubmit || isSubmitting || isPending
-                                    }
+                                    disabled={isSubmitting || isPending}
                                     type="submit"
                                  >
                                     {isPending || isSubmitting ? (
@@ -348,6 +360,7 @@ function SignUpPage() {
                         </span>
                         <Link
                            className="font-medium text-foreground hover:underline"
+                           search={{ redirect: redirectTo }}
                            to="/auth/sign-in"
                         >
                            Entrar
