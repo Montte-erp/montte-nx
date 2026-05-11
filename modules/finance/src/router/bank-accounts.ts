@@ -9,6 +9,7 @@ import {
 } from "@core/database/schemas/bank-accounts";
 import { transactions } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
+import { getLogger } from "@core/logging/root";
 import { protectedProcedure } from "@core/orpc/server";
 import { requireBankAccount } from "@modules/finance/router/middlewares";
 import {
@@ -17,6 +18,7 @@ import {
 } from "@modules/finance/services/bank-account-balance";
 
 const idSchema = z.object({ id: z.string().uuid() });
+const logger = getLogger();
 
 export const create = protectedProcedure
    .input(createBankAccountSchema)
@@ -315,47 +317,88 @@ function withFallbackBanks(banks: BrasilApiBank[]) {
 async function fetchBanks(
    redis: import("@core/redis/connection").Redis,
 ): Promise<BrasilApiBank[]> {
-   const cached = await fromPromise(redis.get(BANKS_REDIS_KEY), () => null);
+   const cached = await fromPromise(redis.get(BANKS_REDIS_KEY), (e) => e);
+   if (cached.isErr()) {
+      logger.warn(
+         { err: cached.error, key: BANKS_REDIS_KEY },
+         "Failed to read bank list cache",
+      );
+   }
    if (cached.isOk() && cached.value) {
       const cachedPayload = cached.value;
       const parsed = fromThrowable(
          () => BrasilApiBankArraySchema.parse(JSON.parse(cachedPayload)),
-         () => null,
+         (e) => e,
       )();
       if (parsed.isOk()) return withFallbackBanks(parsed.value);
+      logger.warn(
+         { err: parsed.error, key: BANKS_REDIS_KEY },
+         "Failed to parse cached bank list with BrasilApiBankArraySchema",
+      );
    }
 
    const responseResult = await fromPromise(
       fetch("https://brasilapi.com.br/api/banks/v1", {
          signal: AbortSignal.timeout(5000),
       }),
-      () => null,
+      (e) => e,
    );
-   if (responseResult.isErr()) return FALLBACK_BANKS;
+   if (responseResult.isErr()) {
+      logger.error(
+         { err: responseResult.error, fallbackCount: FALLBACK_BANKS.length },
+         "Failed to fetch banks from BrasilAPI, returning FALLBACK_BANKS",
+      );
+      return FALLBACK_BANKS;
+   }
    if (!responseResult.value.ok) {
+      logger.warn(
+         {
+            status: responseResult.value.status,
+            statusText: responseResult.value.statusText,
+            fallbackCount: FALLBACK_BANKS.length,
+         },
+         "BrasilAPI bank list returned non-ok response, returning FALLBACK_BANKS",
+      );
       return FALLBACK_BANKS;
    }
 
-   const jsonResult = await fromPromise(
-      responseResult.value.json(),
-      () => null,
-   );
-   if (jsonResult.isErr()) return FALLBACK_BANKS;
+   const jsonResult = await fromPromise(responseResult.value.json(), (e) => e);
+   if (jsonResult.isErr()) {
+      logger.error(
+         { err: jsonResult.error, fallbackCount: FALLBACK_BANKS.length },
+         "Failed to parse BrasilAPI bank list response JSON, returning FALLBACK_BANKS",
+      );
+      return FALLBACK_BANKS;
+   }
 
    const parsed = BrasilApiBankArraySchema.safeParse(jsonResult.value);
    if (!parsed.success) {
+      logger.error(
+         {
+            err: parsed.error,
+            schema: "BrasilApiBankArraySchema",
+            fallbackCount: FALLBACK_BANKS.length,
+         },
+         "BrasilAPI bank list failed schema validation, returning FALLBACK_BANKS",
+      );
       return FALLBACK_BANKS;
    }
 
-   await fromPromise(
+   const cacheResult = await fromPromise(
       redis.set(
          BANKS_REDIS_KEY,
          JSON.stringify(parsed.data),
          "EX",
          BANKS_CACHE_TTL_SEC,
       ),
-      () => null,
+      (e) => e,
    );
+   if (cacheResult.isErr()) {
+      logger.warn(
+         { err: cacheResult.error, key: BANKS_REDIS_KEY },
+         "Failed to persist BrasilAPI bank list with redis.set",
+      );
+   }
    return withFallbackBanks(parsed.data);
 }
 

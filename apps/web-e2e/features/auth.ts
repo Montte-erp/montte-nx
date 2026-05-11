@@ -73,13 +73,7 @@ export async function completeOnboarding(page: Page, workspace: string) {
    await page.getByRole("textbox", { name: "Nome da empresa" }).fill(workspace);
    const submit = page.getByRole("button", { name: "Concluir" });
    await expect(submit).toBeEnabled();
-   await submit.click();
-   await page.waitForTimeout(500);
-   if (new URL(page.url()).pathname === "/onboarding") {
-      await submit.click();
-   }
-
-   await waitForDashboardUrl(page, 30_000);
+   await Promise.all([waitForDashboardUrl(page, 30_000), submit.click()]);
    await page.goto("/");
    await waitForDashboardUrl(page, 15_000);
    return parseSlugsFromUrl(page.url());

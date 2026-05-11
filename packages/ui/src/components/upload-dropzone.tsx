@@ -35,7 +35,8 @@ export function UploadDropzone({
 
    const { getRootProps, getInputProps, isDragActive, inputRef } = useDropzone({
       onDrop: (files) => {
-         if (files.length > 0 && !isPending) {
+         if (isPending) return;
+         if (files.length > 0) {
             if (uploadOverride) {
                uploadOverride(files, { metadata });
             } else {

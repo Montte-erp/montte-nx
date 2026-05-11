@@ -294,7 +294,17 @@ function TransactionFormSheetContent() {
             });
          }
          if (added.length === 0) return;
-         form.setFieldValue("attachments", (prev) => [...prev, ...added]);
+         form.setFieldValue("attachments", (prev) => {
+            const remaining = Math.max(0, ATTACHMENT_MAX_FILES - prev.length);
+            const next = added.slice(0, remaining);
+            const skipped = added.length - next.length;
+            if (skipped > 0) {
+               toast.error(
+                  `${skipped} arquivo${skipped === 1 ? "" : "s"} ignorado${skipped === 1 ? "" : "s"}: limite de ${ATTACHMENT_MAX_FILES} anexos.`,
+               );
+            }
+            return [...prev, ...next];
+         });
       },
       onUploadFail: ({ failedFiles }) => {
          for (const f of failedFiles) {

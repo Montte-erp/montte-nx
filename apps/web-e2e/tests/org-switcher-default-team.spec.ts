@@ -43,7 +43,7 @@ test("cria novo espaço pelo switcher e navega para ele", async ({ page }) => {
    await page.goto("/");
    await page.waitForURL(
       (url) => /^\/(?!auth\/)[^/]+\/[^/]+\//.test(url.pathname),
-      { timeout: 15_000 },
+      { timeout: 15_000, waitUntil: "commit" },
    );
 
    const switcher = page.getByTestId("sidebar-scope-switcher");

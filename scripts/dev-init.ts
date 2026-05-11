@@ -84,7 +84,11 @@ ok("Dev init complete.");
 async function ensureBucket() {
    const envText = fs.readFileSync(envLocalPath, "utf8");
    const get = (key: string) =>
-      envText.match(new RegExp(`^${key}=(.*)$`, "m"))?.[1]?.trim();
+      envText
+         .split("\n")
+         .find((line) => line.startsWith(`${key}=`))
+         ?.slice(key.length + 1)
+         .trim();
    const endpoint = get("AWS_ENDPOINT_URL");
    const bucket = get("AWS_S3_BUCKET_NAME");
    const accessKeyId = get("AWS_ACCESS_KEY_ID");

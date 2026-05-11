@@ -5,7 +5,7 @@ import { clearUserAvatarByEmail, findUserByEmail } from "../helpers/db";
 
 const FIXTURE = path.join(import.meta.dirname, "fixtures", "logo.png");
 const AVATAR_URL_RX =
-   /\/api\/files\/user-avatars\/.+\.(png|jpg|jpeg|webp|gif)$/i;
+   /\/api\/files\/[^/]+\/user-avatars\/.+\.(png|jpg|jpeg|webp|gif)$/i;
 test.describe.configure({ mode: "serial" });
 
 test.beforeEach(async ({ e2eSession }) => {
@@ -33,6 +33,6 @@ test("upload user avatar via better-upload route", async ({
 
    await page.reload();
    await expect(
-      page.locator(`img[src*="/api/files/user-avatars/"]`).first(),
+      page.locator(`img[src*="/api/files/"][src*="/user-avatars/"]`).first(),
    ).toHaveAttribute("src", AVATAR_URL_RX);
 });
