@@ -11,9 +11,14 @@ const logger = getLogger().child({ module: "api:upload" });
 const BUCKET = env.AWS_S3_BUCKET_NAME;
 const ORG_LOGO_PREFIX = "organization-logos";
 const USER_AVATAR_PREFIX = "user-avatars";
+const TRANSACTION_ATTACHMENT_PREFIX = "transaction-attachments";
 
 function publicUrlFor(objectKey: string) {
    return `/api/files/${BUCKET}/${objectKey}`;
+}
+
+function absolutePublicUrlFor(objectKey: string) {
+   return new URL(publicUrlFor(objectKey), env.BETTER_AUTH_URL).href;
 }
 
 function fileExtension(name: string) {
@@ -80,6 +85,29 @@ function uploadRouter(organizationId: string, userId: string): Router {
                logger.info(
                   { userId: metadata.userId, url },
                   "user avatar presigned",
+               );
+               return { metadata: { publicUrl: url } };
+            },
+         }),
+         transactionAttachment: route({
+            fileTypes: ["image/*", "application/pdf"],
+            maxFileSize: 10 * 1024 * 1024,
+            signedUrlExpiresIn: 300,
+            onBeforeUpload: ({ file }) => ({
+               metadata: { organizationId, userId },
+               objectInfo: {
+                  key: `${TRANSACTION_ATTACHMENT_PREFIX}/org-${organizationId}/attachment-${crypto.randomUUID()}.${fileExtension(file.name)}`,
+               },
+            }),
+            onAfterSignedUrl: ({ file, metadata }) => {
+               const url = absolutePublicUrlFor(file.objectInfo.key);
+               logger.info(
+                  {
+                     organizationId: metadata.organizationId,
+                     userId: metadata.userId,
+                     url,
+                  },
+                  "transaction attachment presigned",
                );
                return { metadata: { publicUrl: url } };
             },
