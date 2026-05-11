@@ -149,8 +149,7 @@ test("invite + magic link: usuário sem conta cria conta e entra na org", async 
          inviteePage.getByRole("cell", { name: INVITEE_EMAIL }).first(),
       ).toBeVisible({ timeout: 15_000 });
    } finally {
-      if (context) await context.close();
-      if (browser) await browser.close();
+      await Promise.all([context?.close(), browser?.close()]);
    }
 });
 
@@ -218,8 +217,7 @@ test("invite + magic link: usuário com conta loga e aceita", async ({
          )
          .toBe("accepted");
    } finally {
-      if (context) await context.close();
-      if (browser) await browser.close();
+      await Promise.all([context?.close(), browser?.close()]);
    }
 });
 
@@ -275,8 +273,7 @@ test("invite: usuário com conta já logado aceita direto pelo URL", async ({
          )
          .toBe("accepted");
    } finally {
-      if (context) await context.close();
-      if (browser) await browser.close();
+      await Promise.all([context?.close(), browser?.close()]);
    }
 });
 
@@ -325,8 +322,7 @@ test("invite: logado com email errado é redirecionado e convite continua penden
          (await findInvitationByEmail(INVITEE_EMAIL))?.status ?? "pending",
       ).toBe("pending");
    } finally {
-      if (context) await context.close();
-      if (browser) await browser.close();
+      await Promise.all([context?.close(), browser?.close()]);
    }
 });
 
@@ -359,7 +355,6 @@ test("invite inválido: ID inexistente redireciona sem quebrar", async ({
          { timeout: 15_000 },
       );
    } finally {
-      if (context) await context.close();
-      if (browser) await browser.close();
+      await Promise.all([context?.close(), browser?.close()]);
    }
 });

@@ -35,7 +35,10 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
       );
 
       if (sessionResult.isErr() || !sessionResult.value?.user?.id) {
-         throw redirect({ to: "/auth/sign-in" });
+         throw redirect({
+            search: { redirect: undefined },
+            to: "/auth/sign-in",
+         });
       }
 
       const session = sessionResult.value;

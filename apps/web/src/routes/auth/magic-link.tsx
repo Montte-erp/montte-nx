@@ -18,7 +18,9 @@ import { z } from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
 const magicLinkSearchSchema = z.object({
-   redirect: z.string().startsWith("/").catch(undefined),
+   redirect: z
+      .union([z.string().startsWith("/"), z.undefined()])
+      .catch(undefined),
 });
 
 export const Route = createFileRoute("/auth/magic-link")({
@@ -213,7 +215,7 @@ function MagicLinkPage() {
          </FieldDescription>
 
          <Button asChild className="h-10" variant="ghost">
-            <Link to="/auth/sign-in">
+            <Link to="/auth/sign-in" search={{ redirect: redirectTo }}>
                <ArrowLeft className="size-4" />
                Voltar para login
             </Link>

@@ -32,7 +32,9 @@ const steps = [
 const { Stepper } = defineStepper(...steps);
 
 const signUpSearchSchema = z.object({
-   redirect: z.string().startsWith("/").catch(undefined),
+   redirect: z
+      .union([z.string().startsWith("/"), z.undefined()])
+      .catch(undefined),
 });
 
 export const Route = createFileRoute("/auth/sign-up")({
