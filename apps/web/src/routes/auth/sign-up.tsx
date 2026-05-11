@@ -31,7 +31,7 @@ const steps = [
 
 const { Stepper } = defineStepper(...steps);
 
-const signUpSearchSchema = z.object({
+const searchParams = z.object({
    redirect: z
       .union([z.string().startsWith("/"), z.undefined()])
       .catch(undefined),
@@ -39,8 +39,8 @@ const signUpSearchSchema = z.object({
 
 export const Route = createFileRoute("/auth/sign-up")({
    head: () => ({ meta: [{ title: "Criar conta — Montte" }] }),
-   validateSearch: signUpSearchSchema,
    component: SignUpPage,
+   validateSearch: searchParams,
 });
 
 const signUpSchema = z

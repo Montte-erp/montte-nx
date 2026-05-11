@@ -9,6 +9,7 @@ import {
 } from "@core/database/schemas/bank-accounts";
 import { transactions } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
+import { getLogger } from "@core/logging/root";
 import { protectedProcedure } from "@core/orpc/server";
 import { requireBankAccount } from "@modules/finance/router/middlewares";
 import {
@@ -17,6 +18,7 @@ import {
 } from "@modules/finance/services/bank-account-balance";
 
 const idSchema = z.object({ id: z.string().uuid() });
+const logger = getLogger();
 
 export const create = protectedProcedure
    .input(createBankAccountSchema)
@@ -264,51 +266,140 @@ const BrasilApiBankArraySchema = z.array(BrasilApiBankSchema);
 
 const BANKS_REDIS_KEY = "finance:brasilapi:banks:v1";
 const BANKS_CACHE_TTL_SEC = 30 * 24 * 60 * 60;
+const FALLBACK_BANKS = [
+   {
+      ispb: "60701190",
+      name: "ITAÚ UNIBANCO S.A.",
+      code: 341,
+      fullName: "ITAÚ UNIBANCO S.A.",
+   },
+   {
+      ispb: "18236120",
+      name: "NUBANK",
+      code: 260,
+      fullName: "NU PAGAMENTOS S.A. - INSTITUIÇÃO DE PAGAMENTO",
+   },
+   {
+      ispb: "90400888",
+      name: "BANCO SANTANDER (BRASIL) S.A.",
+      code: 33,
+      fullName: "BANCO SANTANDER (BRASIL) S.A.",
+   },
+   {
+      ispb: "60746948",
+      name: "BANCO BRADESCO S.A.",
+      code: 237,
+      fullName: "BANCO BRADESCO S.A.",
+   },
+   {
+      ispb: "00000000",
+      name: "BANCO DO BRASIL S.A.",
+      code: 1,
+      fullName: "BANCO DO BRASIL S.A.",
+   },
+   {
+      ispb: "00360305",
+      name: "CAIXA ECONOMICA FEDERAL",
+      code: 104,
+      fullName: "CAIXA ECONOMICA FEDERAL",
+   },
+] satisfies BrasilApiBank[];
+
+function withFallbackBanks(banks: BrasilApiBank[]) {
+   const byCode = new Map<string, BrasilApiBank>();
+   for (const bank of [...FALLBACK_BANKS, ...banks]) {
+      if (!bank.code) continue;
+      byCode.set(String(bank.code).padStart(3, "0"), bank);
+   }
+   return Array.from(byCode.values());
+}
 
 async function fetchBanks(
    redis: import("@core/redis/connection").Redis,
 ): Promise<BrasilApiBank[]> {
-   const cached = await fromPromise(redis.get(BANKS_REDIS_KEY), () => null);
+   const cached = await fromPromise(redis.get(BANKS_REDIS_KEY), (e) => e);
+   if (cached.isErr()) {
+      logger.warn(
+         { err: cached.error, key: BANKS_REDIS_KEY },
+         "Falha ao ler cache da lista de bancos",
+      );
+   }
    if (cached.isOk() && cached.value) {
       const cachedPayload = cached.value;
       const parsed = fromThrowable(
          () => BrasilApiBankArraySchema.parse(JSON.parse(cachedPayload)),
-         () => null,
+         (e) => e,
       )();
-      if (parsed.isOk()) return parsed.value;
+      if (parsed.isOk()) return withFallbackBanks(parsed.value);
+      logger.warn(
+         { err: parsed.error, key: BANKS_REDIS_KEY },
+         "Falha ao interpretar cache da lista de bancos com BrasilApiBankArraySchema",
+      );
    }
 
    const responseResult = await fromPromise(
       fetch("https://brasilapi.com.br/api/banks/v1", {
          signal: AbortSignal.timeout(5000),
       }),
-      () => WebAppError.internal("Falha ao consultar bancos."),
+      (e) => e,
    );
-   if (responseResult.isErr()) throw responseResult.error;
+   if (responseResult.isErr()) {
+      logger.error(
+         { err: responseResult.error, fallbackCount: FALLBACK_BANKS.length },
+         "Falha ao buscar bancos na BrasilAPI, retornando FALLBACK_BANKS",
+      );
+      return FALLBACK_BANKS;
+   }
    if (!responseResult.value.ok) {
-      throw WebAppError.internal("Falha ao consultar bancos.");
+      logger.warn(
+         {
+            status: responseResult.value.status,
+            statusText: responseResult.value.statusText,
+            fallbackCount: FALLBACK_BANKS.length,
+         },
+         "Lista de bancos da BrasilAPI retornou resposta sem sucesso, retornando FALLBACK_BANKS",
+      );
+      return FALLBACK_BANKS;
    }
 
-   const jsonResult = await fromPromise(responseResult.value.json(), () =>
-      WebAppError.internal("Falha ao ler resposta dos bancos."),
-   );
-   if (jsonResult.isErr()) throw jsonResult.error;
+   const jsonResult = await fromPromise(responseResult.value.json(), (e) => e);
+   if (jsonResult.isErr()) {
+      logger.error(
+         { err: jsonResult.error, fallbackCount: FALLBACK_BANKS.length },
+         "Falha ao interpretar JSON da lista de bancos da BrasilAPI, retornando FALLBACK_BANKS",
+      );
+      return FALLBACK_BANKS;
+   }
 
    const parsed = BrasilApiBankArraySchema.safeParse(jsonResult.value);
    if (!parsed.success) {
-      throw WebAppError.internal("Resposta inválida ao consultar bancos.");
+      logger.error(
+         {
+            err: parsed.error,
+            schema: "BrasilApiBankArraySchema",
+            fallbackCount: FALLBACK_BANKS.length,
+         },
+         "Lista de bancos da BrasilAPI falhou na validação de schema, retornando FALLBACK_BANKS",
+      );
+      return FALLBACK_BANKS;
    }
 
-   await fromPromise(
+   const cacheResult = await fromPromise(
       redis.set(
          BANKS_REDIS_KEY,
          JSON.stringify(parsed.data),
          "EX",
          BANKS_CACHE_TTL_SEC,
       ),
-      () => null,
+      (e) => e,
    );
-   return parsed.data;
+   if (cacheResult.isErr()) {
+      logger.warn(
+         { err: cacheResult.error, key: BANKS_REDIS_KEY },
+         "Falha ao persistir lista de bancos da BrasilAPI com redis.set",
+      );
+   }
+   return withFallbackBanks(parsed.data);
 }
 
 export const searchBanks = protectedProcedure

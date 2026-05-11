@@ -21,7 +21,7 @@ const signInSchema = z.object({
    password: z.string().min(8, "O campo deve ter no minimo 8 caracteres."),
 });
 
-const signInEmailSearchSchema = z.object({
+const searchParams = z.object({
    redirect: z
       .union([z.string().startsWith("/"), z.undefined()])
       .catch(undefined),
@@ -29,8 +29,8 @@ const signInEmailSearchSchema = z.object({
 
 export const Route = createFileRoute("/auth/sign-in/email")({
    head: () => ({ meta: [{ title: "Entrar com email — Montte" }] }),
-   validateSearch: signInEmailSearchSchema,
    component: SignInEmailPage,
+   validateSearch: searchParams,
 });
 
 function SignInEmailPage() {
@@ -52,7 +52,10 @@ function SignInEmailPage() {
                },
                onSuccess: () => {
                   toast.success("Bem-vindo de volta!", { id: "sign-in-email" });
-                  router.navigate({ to: redirectTo ?? "/auth/callback" });
+                  router.navigate({
+                     search: { redirect: redirectTo },
+                     to: "/auth/callback",
+                  });
                },
             },
          );
@@ -182,7 +185,7 @@ function SignInEmailPage() {
          </form>
 
          <Button asChild className="h-10" variant="ghost">
-            <Link to="/auth/sign-in" search={{ redirect: redirectTo }}>
+            <Link search={{ redirect: redirectTo }} to="/auth/sign-in">
                <ArrowLeft className="size-4" />
                Voltar para login
             </Link>

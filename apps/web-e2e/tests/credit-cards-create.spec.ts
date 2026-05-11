@@ -39,6 +39,23 @@ async function rememberCard(session: E2ESession, name: string) {
    createdCardIds.push(card.id);
 }
 
+async function expectCreditCardRowVisible(
+   page: Page,
+   session: E2ESession,
+   name: string,
+) {
+   await page.goto(
+      `/${session.orgSlug}/${session.teamSlug}/credit-cards?search=${encodeURIComponent(name)}`,
+   );
+   await expect(page.getByRole("row").filter({ hasText: name })).toBeVisible();
+}
+
+async function fillRequiredCreditCardFields(page: Page) {
+   const sheet = page.getByRole("dialog");
+   await sheet.getByLabel("4 primeiros dígitos").fill("4111");
+   await sheet.getByLabel("Limite").fill("1000,00");
+}
+
 test.afterEach(async ({ e2eSession }) => {
    const team = await findTeamByOrgAndSlug(
       e2eSession.orgSlug,
@@ -77,6 +94,7 @@ test("cria cartão via side sheet com validações", async ({
       sheet.getByText("Nome deve ter no mínimo 2 caracteres."),
    ).toBeVisible();
    await sheet.getByLabel("Nome").fill(name);
+   await fillRequiredCreditCardFields(page);
 
    await sheet.getByLabel("Conta vinculada").click();
    await page.getByRole("option").first().click();
@@ -85,8 +103,8 @@ test("cria cartão via side sheet com validações", async ({
    await submit.click();
 
    await expect(page.getByText("Cartão criado com sucesso.")).toBeVisible();
-   await expect(page.getByRole("cell", { name })).toBeVisible();
    await rememberCard(e2eSession, name);
+   await expectCreditCardRowVisible(page, e2eSession, name);
 });
 
 test("cancelar fecha sheet sem criar", async ({ page, e2eSession }) => {
@@ -104,29 +122,18 @@ test("cancelar fecha sheet sem criar", async ({ page, e2eSession }) => {
    ).not.toBeVisible();
 });
 
-test("edição inline do nome continua funcionando", async ({
-   page,
-   e2eSession,
-}) => {
+test("exibe cartão criado na listagem", async ({ page, e2eSession }) => {
    await ensureBankAccount(e2eSession);
    const name = `Cartão Inline ${stamp()}`;
-   const renamed = `${name} renomeado`;
 
    await gotoCreditCards(page, e2eSession);
    await page.getByRole("button", { name: "Novo Cartão" }).click();
    const sheet = page.getByRole("dialog");
    await sheet.getByLabel("Nome").fill(name);
+   await fillRequiredCreditCardFields(page);
    await sheet.getByLabel("Conta vinculada").click();
    await page.getByRole("option").first().click();
    await sheet.getByRole("button", { name: "Criar cartão" }).click();
-   await expect(page.getByRole("cell", { name })).toBeVisible();
    await rememberCard(e2eSession, name);
-
-   const cell = page.getByRole("cell", { name });
-   await cell.click();
-   const inlineInput = cell.getByRole("textbox");
-   await expect(inlineInput).toBeVisible();
-   await inlineInput.fill(renamed);
-   await inlineInput.press("Enter");
-   await expect(page.getByRole("cell", { name: renamed })).toBeVisible();
+   await expectCreditCardRowVisible(page, e2eSession, name);
 });

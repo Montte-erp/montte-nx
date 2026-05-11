@@ -8,7 +8,11 @@ function parseEndpoint(endpoint: string) {
    );
    const useSSL = url.protocol === "https:";
    const port = url.port ? Number(url.port) : useSSL ? 443 : 9000;
-   return { host: `${url.hostname}:${port}`, useSSL };
+   const isLocal =
+      url.hostname === "localhost" ||
+      url.hostname === "127.0.0.1" ||
+      url.hostname.endsWith(".localhost");
+   return { host: `${url.hostname}:${port}`, useSSL, isLocal };
 }
 
 export function createS3Client(opts: {
@@ -17,13 +21,13 @@ export function createS3Client(opts: {
    secretAccessKey: string;
    region?: string;
 }): S3Client {
-   const { host, useSSL } = parseEndpoint(opts.endpointUrl);
+   const { host, useSSL, isLocal } = parseEndpoint(opts.endpointUrl);
    return custom({
       host,
       accessKeyId: opts.accessKeyId,
       secretAccessKey: opts.secretAccessKey,
       region: opts.region ?? "us-east-1",
       secure: useSSL,
-      forcePathStyle: false,
+      forcePathStyle: isLocal,
    });
 }

@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { custom } from "@better-upload/server/clients";
 import chalk from "chalk";
 
 const colors = {
@@ -66,4 +67,72 @@ try {
    );
 }
 
+// ── 5. Ensure S3 bucket + CORS ───────────────────────────────────────────────
+step("Ensuring S3 bucket...");
+try {
+   await ensureBucket();
+   ok("S3 bucket ready.");
+} catch (error) {
+   console.log(
+      colors.yellow(
+         `⚠ Could not ensure S3 bucket — ${error instanceof Error ? error.message : String(error)}`,
+      ),
+   );
+}
+
 ok("Dev init complete.");
+
+async function ensureBucket() {
+   const envText = fs.readFileSync(envLocalPath, "utf8");
+   const get = (key: string) =>
+      envText
+         .split("\n")
+         .find((line) => line.startsWith(`${key}=`))
+         ?.slice(key.length + 1)
+         .trim();
+   const endpoint = get("AWS_ENDPOINT_URL");
+   const bucket = get("AWS_S3_BUCKET_NAME");
+   const accessKeyId = get("AWS_ACCESS_KEY_ID");
+   const secretAccessKey = get("AWS_SECRET_ACCESS_KEY");
+   if (!endpoint || !bucket || !accessKeyId || !secretAccessKey) {
+      throw new Error("Missing AWS_* env vars in .env.local");
+   }
+   const url = new URL(
+      endpoint.startsWith("http") ? endpoint : `http://${endpoint}`,
+   );
+   const client = custom({
+      host: `${url.hostname}:${url.port || (url.protocol === "https:" ? "443" : "9000")}`,
+      accessKeyId,
+      secretAccessKey,
+      region: get("AWS_DEFAULT_REGION") ?? "us-east-1",
+      secure: url.protocol === "https:",
+      forcePathStyle: true,
+   });
+   const bucketUrl = client.buildBucketUrl(bucket);
+   const head = await client.s3.fetch(bucketUrl, { method: "HEAD" });
+   if (head.status === 200) return;
+   const create = await client.s3.fetch(bucketUrl, { method: "PUT" });
+   if (!create.ok && create.status !== 409) {
+      throw new Error(`bucket create failed: ${create.status}`);
+   }
+   const corsBody = `<?xml version="1.0" encoding="UTF-8"?>
+<CORSConfiguration>
+  <CORSRule>
+    <AllowedOrigin>*</AllowedOrigin>
+    <AllowedMethod>GET</AllowedMethod>
+    <AllowedMethod>PUT</AllowedMethod>
+    <AllowedMethod>POST</AllowedMethod>
+    <AllowedMethod>DELETE</AllowedMethod>
+    <AllowedMethod>HEAD</AllowedMethod>
+    <AllowedHeader>*</AllowedHeader>
+    <ExposeHeader>ETag</ExposeHeader>
+    <MaxAgeSeconds>3000</MaxAgeSeconds>
+  </CORSRule>
+</CORSConfiguration>`;
+   const cors = await client.s3.fetch(`${bucketUrl}?cors`, {
+      method: "PUT",
+      headers: { "content-type": "application/xml" },
+      body: corsBody,
+   });
+   if (!cors.ok) throw new Error(`CORS set failed: ${cors.status}`);
+}

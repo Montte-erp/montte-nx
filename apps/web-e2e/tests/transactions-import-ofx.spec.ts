@@ -106,7 +106,8 @@ async function ensureBankAccount(
    await sheet.getByLabel("Tipo").click();
    await page.getByRole("option", { name: "Caixa Físico" }).click();
    await sheet.getByRole("button", { name: "Criar conta" }).click();
-   await expect(page.getByRole("cell", { name })).toBeVisible();
+   await page.getByPlaceholder("Buscar conta por nome...").fill(name);
+   await expect(page.getByRole("row").filter({ hasText: name })).toBeVisible();
    const account = await findBankAccountByName(team.id, name);
    if (account) createdAccountIds.push(account.id);
 }

@@ -83,8 +83,8 @@ export function SignInPage() {
                   variant="secondary"
                >
                   <Link
-                     to="/auth/sign-in/email"
                      search={{ redirect: redirectTo }}
+                     to="/auth/sign-in/email"
                   >
                      <KeyRound className="size-4" />
                      Entrar com email e senha
@@ -98,8 +98,8 @@ export function SignInPage() {
                <span className="text-muted-foreground">Primeira vez aqui?</span>
                <Link
                   className="font-medium text-foreground hover:underline"
-                  to="/auth/sign-up"
                   search={{ redirect: redirectTo }}
+                  to="/auth/sign-up"
                >
                   Criar conta
                </Link>

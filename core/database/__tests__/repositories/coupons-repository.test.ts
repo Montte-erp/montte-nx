@@ -1,7 +1,6 @@
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
-import { seed } from "drizzle-seed";
 import { setupTestDb } from "../../src/testing/setup-test-db";
-import * as schema from "@core/database/schema";
+import { organization, team } from "@core/database/schemas/auth";
 import { contacts } from "@core/database/schemas/contacts";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 import * as repo from "../../src/repositories/coupons-repository";
@@ -15,34 +14,24 @@ afterAll(async () => {
    await testDb.cleanup();
 });
 
-function randomSeed() {
-   return Math.floor(Math.random() * 1_000_000);
-}
-
 async function seedTeam() {
    const orgId = crypto.randomUUID();
    const teamId = crypto.randomUUID();
-   await seed(
-      testDb.db,
-      { organization: schema.organization },
-      { seed: randomSeed() },
-   ).refine((f) => ({
-      organization: {
-         count: 1,
-         columns: { id: f.default({ defaultValue: orgId }) },
-      },
-   }));
-   await seed(testDb.db, { team: schema.team }, { seed: randomSeed() }).refine(
-      (f) => ({
-         team: {
-            count: 1,
-            columns: {
-               id: f.default({ defaultValue: teamId }),
-               organizationId: f.default({ defaultValue: orgId }),
-            },
-         },
-      }),
-   );
+
+   await testDb.db.insert(organization).values({
+      id: orgId,
+      name: `Org ${orgId}`,
+      slug: `org-${orgId}`,
+      createdAt: dayjs().toDate(),
+   });
+   await testDb.db.insert(team).values({
+      id: teamId,
+      organizationId: orgId,
+      name: `Time ${teamId}`,
+      slug: `time-${teamId}`,
+      createdAt: dayjs().toDate(),
+   });
+
    return teamId;
 }
 

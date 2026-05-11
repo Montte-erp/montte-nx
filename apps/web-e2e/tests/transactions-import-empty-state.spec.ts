@@ -20,6 +20,9 @@ test("MON-887: empty state não aparece com lançamentos importados", async ({
    e2eSession,
 }) => {
    await gotoTransactions(page, e2eSession);
+   await expect(
+      page.getByText("Erro ao carregar lançamentos"),
+   ).not.toBeVisible();
 
    // força tabela vazia: filtra por termo improvável
    await page

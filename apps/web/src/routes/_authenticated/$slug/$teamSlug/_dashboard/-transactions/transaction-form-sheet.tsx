@@ -25,11 +25,14 @@ import {
 } from "@packages/ui/components/sheet";
 import { toast } from "@packages/ui/components/sonner";
 import { Textarea } from "@packages/ui/components/textarea";
-import { uploadFile } from "@better-upload/client";
+import { UploadDropzone } from "@packages/ui/components/upload-dropzone";
+import { UploadProgress } from "@packages/ui/components/upload-progress";
+import { useUploadFiles } from "@better-upload/client";
+import imageCompression from "browser-image-compression";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, FileText } from "lucide-react";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { QueryBoundary } from "@/components/query-boundary";
@@ -55,8 +58,7 @@ const STATUS_OPTIONS = [
    { value: "cancelled" as const, label: "Cancelado" },
 ];
 
-const ATTACHMENT_MAX_SIZE = 10 * 1024 * 1024;
-const ATTACHMENT_TYPES = ["application/pdf"] as const;
+const ATTACHMENT_MAX_FILES = 5;
 
 function parseStatus(
    value: string,
@@ -64,11 +66,16 @@ function parseStatus(
    return STATUS_OPTIONS.find((s) => s.value === value)?.value;
 }
 
-function extractPublicUrl(metadata: unknown): string | null {
-   if (typeof metadata !== "object" || metadata === null) return null;
-   if (!("publicUrl" in metadata)) return null;
-   const url = metadata.publicUrl;
-   return typeof url === "string" ? url : null;
+function extractPublicUrls(metadata: unknown): Record<string, string> {
+   if (typeof metadata !== "object" || metadata === null) return {};
+   if (!("publicUrls" in metadata)) return {};
+   const bag = metadata.publicUrls;
+   if (typeof bag !== "object" || bag === null) return {};
+   const out: Record<string, string> = {};
+   for (const [key, value] of Object.entries(bag)) {
+      if (typeof value === "string") out[key] = value;
+   }
+   return out;
 }
 
 const formSchema = z
@@ -88,27 +95,21 @@ const formSchema = z
       description: z
          .string()
          .max(500, "Observações deve ter no máximo 500 caracteres."),
-      attachment: z.custom<File | null>(),
+      attachments: z
+         .array(
+            z.object({
+               url: z.string(),
+               filename: z.string(),
+               size: z.number(),
+               mimeType: z.string().optional(),
+            }),
+         )
+         .max(
+            ATTACHMENT_MAX_FILES,
+            `Máximo de ${ATTACHMENT_MAX_FILES} anexos.`,
+         ),
    })
    .superRefine((v, ctx) => {
-      if (v.attachment && v.attachment.size > ATTACHMENT_MAX_SIZE) {
-         ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["attachment"],
-            message: "Comprovante deve ter no máximo 10MB.",
-         });
-      }
-      if (
-         v.attachment &&
-         !v.attachment.type.startsWith("image/") &&
-         !ATTACHMENT_TYPES.some((type) => type === v.attachment?.type)
-      ) {
-         ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["attachment"],
-            message: "Comprovante deve ser imagem ou PDF.",
-         });
-      }
       if (v.type === "transfer") {
          if (!v.bankAccountId) {
             ctx.addIssue({
@@ -170,7 +171,7 @@ const DEFAULT_VALUES: FormValues = {
    categoryId: "",
    contactId: "",
    description: "",
-   attachment: null,
+   attachments: [],
 };
 
 function isFieldInvalid(field: {
@@ -179,25 +180,18 @@ function isFieldInvalid(field: {
    return field.state.meta.isTouched && field.state.meta.errors.length > 0;
 }
 
-function uploadErrorMessage(error: unknown) {
-   if (error instanceof Error) return error.message;
-   if (typeof error === "object" && error && "message" in error) {
-      const message = error.message;
-      if (typeof message === "string") return message;
-   }
-   return "Falha ao enviar comprovante.";
-}
-
-function useTransactionAttachmentUpload() {
-   return useMutation({
-      mutationFn: (file: File) =>
-         uploadFile({
-            api: "/api/upload",
-            route: "transactionAttachment",
-            file,
-         }),
-      onError: (error) => toast.error(uploadErrorMessage(error)),
-   });
+async function compressIfImage(files: File[]) {
+   return Promise.all(
+      files.map((file) =>
+         file.type.startsWith("image/")
+            ? imageCompression(file, {
+                 maxSizeMB: 1,
+                 maxWidthOrHeight: 2048,
+                 useWebWorker: true,
+              })
+            : file,
+      ),
+   );
 }
 
 export function TransactionFormSheet() {
@@ -246,42 +240,11 @@ function TransactionFormSheetContent() {
          onError: (e) => toast.error(e.message),
       }),
    );
-   const attachmentUpload = useTransactionAttachmentUpload();
-
    const form = useForm({
       defaultValues: DEFAULT_VALUES,
       validators: { onMount: formSchema, onChange: formSchema },
       onSubmit: async ({ value }) => {
-         const attachmentResult = value.attachment
-            ? await fromPromise(
-                 attachmentUpload.mutateAsync(value.attachment),
-                 uploadErrorMessage,
-              )
-            : null;
-         if (attachmentResult?.isErr()) {
-            toast.error(attachmentResult.error);
-            return;
-         }
-         const uploadedAttachment =
-            attachmentResult?.isOk() === true ? attachmentResult.value : null;
-         const attachmentUrl = uploadedAttachment
-            ? extractPublicUrl(uploadedAttachment.metadata)
-            : null;
-         if (uploadedAttachment && !attachmentUrl) {
-            toast.error("Falha ao enviar comprovante.");
-            return;
-         }
-         const attachments =
-            uploadedAttachment && attachmentUrl
-               ? [
-                    {
-                       url: attachmentUrl,
-                       filename: uploadedAttachment.file.name,
-                       size: uploadedAttachment.file.size,
-                       mimeType: uploadedAttachment.file.type || undefined,
-                    },
-                 ]
-               : [];
+         const attachments = value.attachments;
          const result = await fromPromise(
             createMutation.mutateAsync({
                type: value.type,
@@ -308,6 +271,49 @@ function TransactionFormSheetContent() {
       },
    });
 
+   const upload = useUploadFiles({
+      api: "/api/upload",
+      route: "transactionAttachment",
+      onBeforeUpload: ({ files }) => compressIfImage(files),
+      onUploadComplete: ({ files, metadata }) => {
+         const publicUrls = extractPublicUrls(metadata);
+         const added: {
+            url: string;
+            filename: string;
+            size: number;
+            mimeType?: string;
+         }[] = [];
+         for (const f of files) {
+            const url = publicUrls[f.objectInfo.key];
+            if (!url) continue;
+            added.push({
+               url,
+               filename: f.name,
+               size: f.size,
+               mimeType: f.type || undefined,
+            });
+         }
+         if (added.length === 0) return;
+         form.setFieldValue("attachments", (prev) => {
+            const remaining = Math.max(0, ATTACHMENT_MAX_FILES - prev.length);
+            const next = added.slice(0, remaining);
+            const skipped = added.length - next.length;
+            if (skipped > 0) {
+               toast.error(
+                  `${skipped} arquivo${skipped === 1 ? "" : "s"} ignorado${skipped === 1 ? "" : "s"}: limite de ${ATTACHMENT_MAX_FILES} anexos.`,
+               );
+            }
+            return [...prev, ...next];
+         });
+      },
+      onUploadFail: ({ failedFiles }) => {
+         for (const f of failedFiles) {
+            toast.error(`${f.name}: ${f.error.message}`);
+         }
+      },
+      onError: (error) => toast.error(error.message),
+   });
+
    return (
       <>
          <SheetHeader>
@@ -327,7 +333,9 @@ function TransactionFormSheetContent() {
             <form.Field name="type">
                {(field) => (
                   <Field>
-                     <FieldLabel htmlFor={field.name}>Tipo</FieldLabel>
+                     <FieldLabel htmlFor={field.name} required>
+                        Tipo
+                     </FieldLabel>
                      <Select
                         value={field.state.value}
                         onValueChange={(v) => {
@@ -371,7 +379,7 @@ function TransactionFormSheetContent() {
                                     isFieldInvalid(field) || undefined
                                  }
                               >
-                                 <FieldLabel htmlFor={field.name}>
+                                 <FieldLabel htmlFor={field.name} required>
                                     {type === "transfer"
                                        ? "Conta de origem"
                                        : "Conta bancária"}
@@ -403,7 +411,7 @@ function TransactionFormSheetContent() {
                                        isFieldInvalid(field) || undefined
                                     }
                                  >
-                                    <FieldLabel htmlFor={field.name}>
+                                    <FieldLabel htmlFor={field.name} required>
                                        Conta de destino
                                     </FieldLabel>
                                     <Combobox
@@ -478,7 +486,9 @@ function TransactionFormSheetContent() {
                <form.Field name="date">
                   {(field) => (
                      <Field data-invalid={isFieldInvalid(field) || undefined}>
-                        <FieldLabel htmlFor={field.name}>Data</FieldLabel>
+                        <FieldLabel htmlFor={field.name} required>
+                           Data
+                        </FieldLabel>
                         <DatePicker
                            className="w-full overflow-hidden [&>span]:truncate"
                            date={
@@ -505,7 +515,9 @@ function TransactionFormSheetContent() {
                <form.Field name="amount">
                   {(field) => (
                      <Field data-invalid={isFieldInvalid(field) || undefined}>
-                        <FieldLabel htmlFor={field.name}>Valor</FieldLabel>
+                        <FieldLabel htmlFor={field.name} required>
+                           Valor
+                        </FieldLabel>
                         <MoneyInput
                            aria-invalid={isFieldInvalid(field)}
                            id={field.name}
@@ -550,7 +562,9 @@ function TransactionFormSheetContent() {
             <form.Field name="name">
                {(field) => (
                   <Field data-invalid={isFieldInvalid(field) || undefined}>
-                     <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
+                     <FieldLabel htmlFor={field.name} required>
+                        Nome
+                     </FieldLabel>
                      <Input
                         aria-invalid={isFieldInvalid(field)}
                         id={field.name}
@@ -569,18 +583,18 @@ function TransactionFormSheetContent() {
                )}
             </form.Field>
 
-            <Collapsible className="flex flex-col gap-4">
+            <Collapsible>
                <CollapsibleTrigger asChild>
                   <Button
-                     className="justify-between px-4"
+                     className="w-full justify-between [&[data-state=open]>svg]:rotate-180"
                      type="button"
-                     variant="outline"
+                     variant="ghost"
                   >
-                     Mais detalhes
-                     <ChevronDown className="size-4" />
+                     Mais opções
+                     <ChevronDown className="size-4 transition-transform" />
                   </Button>
                </CollapsibleTrigger>
-               <CollapsibleContent className="flex flex-col gap-4">
+               <CollapsibleContent className="flex flex-col gap-4 pt-4">
                   <form.Field name="status">
                      {(field) => (
                         <Field>
@@ -636,28 +650,45 @@ function TransactionFormSheetContent() {
                      )}
                   </form.Field>
 
-                  <form.Field name="attachment">
+                  <form.Field name="attachments">
                      {(field) => (
                         <Field>
-                           <FieldLabel htmlFor={field.name}>
-                              Comprovante
-                           </FieldLabel>
-                           <Input
+                           <FieldLabel>Anexos</FieldLabel>
+                           <UploadDropzone
                               accept="image/*,application/pdf"
-                              aria-invalid={isFieldInvalid(field)}
-                              id={field.name}
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.files?.[0] ?? null)
-                              }
-                              type="file"
+                              control={upload.control}
+                              description={{
+                                 maxFiles: ATTACHMENT_MAX_FILES,
+                                 maxFileSize: "10MB",
+                                 fileTypes: "imagens e PDF",
+                              }}
                            />
-                           {isFieldInvalid(field) ? (
-                              <FieldError>
-                                 {field.state.meta.errors[0]?.message}
-                              </FieldError>
+                           {field.state.value.length > 0 ? (
+                              <div className="grid grid-cols-3 gap-2">
+                                 {field.state.value.map((a, index) => (
+                                    <div
+                                       key={`${a.url}-${index}`}
+                                       className="relative aspect-square overflow-hidden rounded-md border bg-muted"
+                                    >
+                                       {a.mimeType?.startsWith("image/") ? (
+                                          <img
+                                             alt={a.filename}
+                                             className="size-full object-cover"
+                                             src={a.url}
+                                          />
+                                       ) : (
+                                          <div className="flex size-full flex-col items-center justify-center gap-2 p-2 text-muted-foreground">
+                                             <FileText className="size-6" />
+                                             <span className="line-clamp-2 text-center text-xs">
+                                                {a.filename}
+                                             </span>
+                                          </div>
+                                       )}
+                                    </div>
+                                 ))}
+                              </div>
                            ) : null}
+                           <UploadProgress control={upload.control} />
                         </Field>
                      )}
                   </form.Field>
@@ -678,7 +709,7 @@ function TransactionFormSheetContent() {
                {({ canSubmit, isSubmitting }) => (
                   <Button
                      disabled={
-                        !canSubmit || isSubmitting || attachmentUpload.isPending
+                        !canSubmit || isSubmitting || upload.control.isPending
                      }
                      onClick={() => form.handleSubmit()}
                   >

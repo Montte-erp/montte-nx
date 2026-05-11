@@ -23,6 +23,7 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useLocation, useRouter } from "@tanstack/react-router";
 import { Check, ChevronsUpDown, Plus, Settings, UserPlus } from "lucide-react";
+import { fromPromise } from "neverthrow";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { QueryBoundary } from "@/components/query-boundary";
@@ -137,11 +138,12 @@ function SidebarScopeSwitcherContent() {
             toast.error(result.error.message, { id: toastId });
             return;
          }
-
          await queryClient.invalidateQueries();
 
          const teamsForOrg = await queryClient.fetchQuery(
-            orpc.organization.getOrganizationTeams.queryOptions({}),
+            orpc.organization.getOrganizationTeams.queryOptions({
+               input: { orgSlug: org.slug },
+            }),
          );
          const firstTeam = teamsForOrg[0];
          if (!firstTeam) {
@@ -150,7 +152,20 @@ function SidebarScopeSwitcherContent() {
             return;
          }
 
-         await authClient.organization.setActiveTeam({ teamId: firstTeam.id });
+         const activeTeamResult = await fromPromise(
+            authClient.organization.setActiveTeam({ teamId: firstTeam.id }),
+            (e) => e,
+         );
+         if (activeTeamResult.isErr()) {
+            toast.error("Não foi possível trocar o espaço ativo.", {
+               id: toastId,
+            });
+            return;
+         }
+         if (activeTeamResult.value.error) {
+            toast.error(activeTeamResult.value.error.message, { id: toastId });
+            return;
+         }
          await queryClient.invalidateQueries({
             queryKey: orpc.session.getSession.queryKey({}),
          });

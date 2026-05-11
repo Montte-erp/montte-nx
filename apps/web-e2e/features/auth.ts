@@ -42,9 +42,12 @@ function parseSlugsFromUrl(url: string): {
 }
 
 async function waitForDashboardUrl(page: Page, timeout: number) {
+   if (/^\/(?!auth\/)[^/]+\/[^/]+\//.test(new URL(page.url()).pathname)) {
+      return;
+   }
    await page.waitForURL(
       (url) => /^\/(?!auth\/)[^/]+\/[^/]+\//.test(url.pathname),
-      { timeout },
+      { timeout, waitUntil: "commit" },
    );
 }
 
@@ -68,9 +71,9 @@ export async function completeOnboarding(page: Page, workspace: string) {
    await continueButton.click();
 
    await page.getByRole("textbox", { name: "Nome da empresa" }).fill(workspace);
-   await page.getByRole("button", { name: "Concluir" }).click();
-
-   await waitForDashboardUrl(page, 30_000);
+   const submit = page.getByRole("button", { name: "Concluir" });
+   await expect(submit).toBeEnabled();
+   await Promise.all([waitForDashboardUrl(page, 30_000), submit.click()]);
    await page.goto("/");
    await waitForDashboardUrl(page, 15_000);
    return parseSlugsFromUrl(page.url());

@@ -33,7 +33,7 @@ test("seleciona team default ao trocar de organização pelo switcher", async ({
          url.pathname.startsWith(
             `/${e2eSession.orgSlug}/${e2eSession.teamSlug}`,
          ),
-      { timeout: 15_000 },
+      { timeout: 15_000, waitUntil: "commit" },
    );
 
    await expect(page.getByText("Sem espaço")).toHaveCount(0);
@@ -41,7 +41,10 @@ test("seleciona team default ao trocar de organização pelo switcher", async ({
 
 test("cria novo espaço pelo switcher e navega para ele", async ({ page }) => {
    await page.goto("/");
-   await page.waitForURL(/^\/(?!auth\/)[^/]+\/[^/]+\//, { timeout: 15_000 });
+   await page.waitForURL(
+      (url) => /^\/(?!auth\/)[^/]+\/[^/]+\//.test(url.pathname),
+      { timeout: 15_000, waitUntil: "commit" },
+   );
 
    const switcher = page.getByTestId("sidebar-scope-switcher");
    await switcher.click();
@@ -57,7 +60,7 @@ test("cria novo espaço pelo switcher e navega para ele", async ({ page }) => {
    await page.getByRole("textbox", { name: /Nome do espaço/i }).fill(newName);
    await page.getByRole("button", { name: /Criar espaço/i }).click();
 
-   const expectedFragment = newName.toLowerCase().replace(/[^a-z0-9]/g, "");
+   const expectedFragment = newName.split(" ").at(-1) ?? "";
 
    await page.waitForURL(
       (url) =>
@@ -65,6 +68,6 @@ test("cria novo espaço pelo switcher e navega para ele", async ({ page }) => {
             .toLowerCase()
             .replace(/[^a-z0-9]/g, "")
             .includes(expectedFragment),
-      { timeout: 20_000 },
+      { timeout: 20_000, waitUntil: "commit" },
    );
 });

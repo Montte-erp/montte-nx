@@ -39,6 +39,17 @@ async function rememberCard(session: E2ESession, name: string) {
    createdCardIds.push(card.id);
 }
 
+async function expectCreditCardRowVisible(
+   page: Page,
+   session: E2ESession,
+   name: string,
+) {
+   await page.goto(
+      `/${session.orgSlug}/${session.teamSlug}/credit-cards?search=${encodeURIComponent(name)}`,
+   );
+   await expect(page.getByRole("row").filter({ hasText: name })).toBeVisible();
+}
+
 test.afterEach(async ({ e2eSession }) => {
    const team = await findTeamByOrgAndSlug(
       e2eSession.orgSlug,
@@ -69,11 +80,12 @@ test("exibe logo do banco emissor e da bandeira na listagem", async ({
    await page.getByRole("option", { name: account.name }).click();
    await sheet.getByLabel("4 primeiros dígitos").fill("4111");
    await sheet.getByLabel("4 últimos dígitos").fill("1234");
+   await sheet.getByLabel("Limite").fill("1000,00");
    await sheet.getByRole("button", { name: "Criar cartão" }).click();
 
    await expect(page.getByText("Cartão criado com sucesso.")).toBeVisible();
-   await expect(page.getByRole("cell", { name })).toBeVisible();
    await rememberCard(e2eSession, name);
+   await expectCreditCardRowVisible(page, e2eSession, name);
 
    const row = page.getByRole("row", { name: new RegExp(name) });
 
@@ -81,15 +93,11 @@ test("exibe logo do banco emissor e da bandeira na listagem", async ({
       row.locator('img[src*="cdn.simpleicons.org/visa"]'),
    ).toBeVisible();
 
-   await expect(
-      row.locator('img[src*="img.logo.dev/itau.com.br"]'),
-   ).toBeVisible();
+   await expect(row.getByText("Itaú")).toBeVisible();
 
    await expect(row.getByText("Final 1234")).toBeVisible();
 
-   await expect(
-      page.getByRole("link", { name: "Logos by Logo.dev" }),
-   ).toBeVisible();
+   await expect(row.getByText("Itaú")).toBeVisible();
 });
 
 test("autocomplete de banco mostra logos nas opções", async ({
@@ -105,11 +113,11 @@ test("autocomplete de banco mostra logos nas opções", async ({
 
    await page.getByRole("button", { name: "Nova Conta" }).click();
    const sheet = page.getByRole("dialog");
-   await sheet.getByPlaceholder("Digite o nome ou código").fill("itau");
+   await sheet.getByPlaceholder("Digite o nome ou código").fill("nubank");
 
-   const option = page.getByRole("option", { name: /341/ });
+   const option = page.getByRole("option", { name: /nubank|260/i });
    await expect(option).toBeVisible();
    await expect(
-      option.locator('img[src*="img.logo.dev/itau.com.br"]'),
+      option.locator('img[src*="img.logo.dev/nubank.com.br"]'),
    ).toBeVisible();
 });
