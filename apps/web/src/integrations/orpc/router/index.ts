@@ -1,7 +1,6 @@
 import * as accountRouter from "@modules/account/router/profile";
 import * as threadsRouter from "@modules/agents/router/threads";
 import * as agentSettingsRouter from "@modules/account/router/agent-settings";
-import * as analyticsRouter from "@modules/insights/router/analytics";
 import * as apiKeysRouter from "@modules/account/router/api-keys";
 import * as bankAccountsRouter from "@modules/finance/router/bank-accounts";
 import * as categoriesRouter from "@modules/classification/router/categories";
@@ -12,10 +11,8 @@ import * as contactsRouter from "@modules/billing/router/contacts";
 import * as couponsRouter from "@modules/billing/router/coupons";
 import * as creditCardsRouter from "@modules/finance/router/credit-cards";
 import * as customerPortalRouter from "@modules/billing/router/customer-portal";
-import * as dashboardsRouter from "@modules/insights/router/dashboards";
 import * as financialSettingsRouter from "@modules/account/router/financial-settings";
 import * as inboxRouter from "@modules/inbox/router/inbox";
-import * as insightsRouter from "@modules/insights/router/insights";
 import * as onboardingRouter from "@modules/account/router/onboarding";
 import * as organizationRouter from "@modules/account/router/organization";
 import * as benefitsRouter from "@modules/billing/router/benefits";
@@ -60,7 +57,6 @@ const servicesProcedures = {
 export default {
    account: accountRouter,
    agentSettings: agentSettingsRouter,
-   analytics: analyticsRouter,
    apiKeys: apiKeysRouter,
    bankAccounts: bankAccountsRouter,
    creditCards: creditCardsRouter,
@@ -71,10 +67,8 @@ export default {
    contacts: contactsRouter,
    coupons: couponsRouter,
    customerPortal: customerPortalRouter,
-   dashboards: dashboardsRouter,
    financialSettings: financialSettingsRouter,
    inbox: inboxRouter,
-   insights: insightsRouter,
    onboarding: onboardingRouter,
    prices: pricesRouter,
    services: servicesProcedures,

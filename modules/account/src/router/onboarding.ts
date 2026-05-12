@@ -7,7 +7,6 @@ import { organization, team } from "@core/database/schemas/auth";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
 import { contacts } from "@core/database/schemas/contacts";
-import { insights } from "@core/database/schemas/insights";
 import { services } from "@core/database/schemas/services";
 import { transactions } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
@@ -116,9 +115,8 @@ export const getOnboardingStatus = protectedProcedure.handler(
       });
       if (!currentTeam) throw WebAppError.notFound("Projeto não encontrado.");
 
-      const [insightCount, categoryCount, transactionCount, bankAccountCount] =
+      const [categoryCount, transactionCount, bankAccountCount] =
          await Promise.all([
-            db.$count(insights, eq(insights.organizationId, organizationId)),
             db.$count(categories, eq(categories.teamId, teamId)),
             db.$count(transactions, eq(transactions.teamId, teamId)),
             db.$count(bankAccounts, eq(bankAccounts.teamId, teamId)),
@@ -131,7 +129,6 @@ export const getOnboardingStatus = protectedProcedure.handler(
       const stored = currentTeam.onboardingTasks ?? {};
       const auto: Record<string, boolean> = {};
       if (bankAccountCount > 0) auto.connect_bank_account = true;
-      if (insightCount > 0) auto.create_insight = true;
       if (categoryCount > 0) auto.create_category = true;
       if (transactionCount > 0) auto.add_transaction = true;
       if (contactCount > 0) auto.create_contact = true;

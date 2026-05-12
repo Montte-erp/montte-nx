@@ -12,18 +12,6 @@ export const PERMISSIONS = {
    FORM_EDIT: "form:edit",
    FORM_DELETE: "form:delete",
 
-   // Dashboard permissions
-   DASHBOARD_VIEW: "dashboard:view",
-   DASHBOARD_CREATE: "dashboard:create",
-   DASHBOARD_EDIT: "dashboard:edit",
-   DASHBOARD_DELETE: "dashboard:delete",
-
-   // Insight permissions
-   INSIGHT_VIEW: "insight:view",
-   INSIGHT_CREATE: "insight:create",
-   INSIGHT_EDIT: "insight:edit",
-   INSIGHT_DELETE: "insight:delete",
-
    // Team permissions
    TEAM_MANAGE: "team:manage",
    TEAM_SETTINGS: "team:settings",
@@ -55,26 +43,6 @@ export const PERMISSION_GROUPS = [
          { id: PERMISSIONS.FORM_CREATE, label: "Criar" },
          { id: PERMISSIONS.FORM_EDIT, label: "Editar" },
          { id: PERMISSIONS.FORM_DELETE, label: "Deletar" },
-      ],
-   },
-   {
-      id: "dashboards",
-      label: "Dashboards",
-      permissions: [
-         { id: PERMISSIONS.DASHBOARD_VIEW, label: "Visualizar" },
-         { id: PERMISSIONS.DASHBOARD_CREATE, label: "Criar" },
-         { id: PERMISSIONS.DASHBOARD_EDIT, label: "Editar" },
-         { id: PERMISSIONS.DASHBOARD_DELETE, label: "Deletar" },
-      ],
-   },
-   {
-      id: "insights",
-      label: "Insights",
-      permissions: [
-         { id: PERMISSIONS.INSIGHT_VIEW, label: "Visualizar" },
-         { id: PERMISSIONS.INSIGHT_CREATE, label: "Criar" },
-         { id: PERMISSIONS.INSIGHT_EDIT, label: "Editar" },
-         { id: PERMISSIONS.INSIGHT_DELETE, label: "Deletar" },
       ],
    },
    {

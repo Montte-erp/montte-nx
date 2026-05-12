@@ -1,7 +1,6 @@
 export type TaskType = "setup" | "onboarding" | "explore";
 export type ProductId = "finance" | "contacts" | "services";
 export type TaskRoute =
-   | "/$slug/$teamSlug/analytics/dashboards"
    | "/$slug/$teamSlug/bank-accounts"
    | "/$slug/$teamSlug/categories"
    | "/$slug/$teamSlug/contacts"
@@ -51,16 +50,6 @@ export const TASK_DEFINITIONS: TaskDefinition[] = [
       dependsOn: "create_category",
       autoDetect: true,
       route: "/$slug/$teamSlug/transactions",
-   },
-   {
-      id: "create_insight",
-      title: "Veja seus insights financeiros",
-      description: "Explore o dashboard com métricas sobre suas finanças.",
-      type: "explore",
-      product: "finance",
-      dependsOn: "add_transaction",
-      autoDetect: true,
-      route: "/$slug/$teamSlug/analytics/dashboards",
    },
    {
       id: "create_contact",
