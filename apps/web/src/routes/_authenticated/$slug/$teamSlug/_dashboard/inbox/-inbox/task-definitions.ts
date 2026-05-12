@@ -1,11 +1,9 @@
 export type TaskType = "setup" | "onboarding" | "explore";
-export type ProductId = "finance" | "contacts" | "services";
+export type ProductId = "finance" | "contacts";
 export type TaskRoute =
    | "/$slug/$teamSlug/bank-accounts"
    | "/$slug/$teamSlug/categories"
    | "/$slug/$teamSlug/contacts"
-   | "/$slug/$teamSlug/services"
-   | "/$slug/$teamSlug/services/benefits"
    | "/$slug/$teamSlug/transactions";
 
 export interface TaskDefinition {
@@ -60,34 +58,24 @@ export const TASK_DEFINITIONS: TaskDefinition[] = [
       autoDetect: true,
       route: "/$slug/$teamSlug/contacts",
    },
-   {
-      id: "create_service",
-      title: "Cadastre um serviço",
-      description: "Monte seu catálogo inicial de serviços.",
-      type: "setup",
-      product: "services",
-      autoDetect: true,
-      route: "/$slug/$teamSlug/services",
-   },
-   {
-      id: "review_benefits",
-      title: "Revise benefícios",
-      description: "Organize benefícios que podem compor seus serviços.",
-      type: "explore",
-      product: "services",
-      dependsOn: "create_service",
-      autoDetect: false,
-      route: "/$slug/$teamSlug/services/benefits",
-   },
 ];
+
+const VALID_PRODUCT_IDS: ReadonlySet<string> = new Set(
+   TASK_DEFINITIONS.map((task) => task.product),
+);
+
+function isProductId(value: string): value is ProductId {
+   return VALID_PRODUCT_IDS.has(value);
+}
 
 export function getTasksForProducts(
    selectedProducts: string[] | null,
 ): TaskDefinition[] {
    if (selectedProducts === null) return TASK_DEFINITIONS;
-   if (selectedProducts.length === 0) return [];
+   const selectedValidProducts = selectedProducts.filter(isProductId);
+   if (selectedValidProducts.length === 0) return TASK_DEFINITIONS;
    return TASK_DEFINITIONS.filter((task) =>
-      selectedProducts.includes(task.product),
+      selectedValidProducts.includes(task.product),
    );
 }
 
@@ -97,8 +85,6 @@ export function getProductLabel(product: ProductId): string {
          return "Financeiro";
       case "contacts":
          return "Contatos";
-      case "services":
-         return "Serviços";
    }
 }
 

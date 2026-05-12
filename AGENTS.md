@@ -214,7 +214,7 @@ DBOS runs in `apps/worker` — never the web process. Web enqueues via `context.
 - Self-rescheduling: re-check status in tx → do work → compute next wake **inside `DBOS.runStep`** → `DBOS.startWorkflow(self, { workflowID: "<deterministic-per-period>", queueName, enqueueOptions: { delaySeconds } })`.
 - Workflow inputs always carry both `teamId` and `organizationId` — don't look them up inside steps.
 
-Existing queues (modules with workflows: `billing`, `classification`): `workflow:classify`, `workflow:derive-keywords`, `workflow:benefit-lifecycle`, `workflow:period-end-invoice`, `workflow:trial-expiry`. Worker startup (`apps/worker/src/index.ts`): `initOtel` → `setupBillingWorkflows(deps)` + `setupClassificationWorkflows(deps)` → `DBOS.setConfig` → `DBOS.launch()`.
+Existing queues (modules with workflows: `classification`, `agents`): `workflow:classify`, `workflow:derive-keywords` (classification); `workflow:agent-title`, `workflow:agent-suggestions` (agents via `setupAgentsWorkflows(deps)`). Worker startup (`apps/worker/src/index.ts`): `initOtel` → `setupClassificationWorkflows(deps)` → `setupAgentsWorkflows(deps)` → `DBOS.setConfig` → `DBOS.launch()`. Each `setup<Module>Workflows` registers that module's current and future queues/workflows; both must complete before `DBOS.launch()`.
 
 **Testing:** mock `@dbos-inc/dbos-sdk` with `vi.hoisted` + `dbosSdkMockFactory` / `drizzleDataSourceMockFactory` from `@core/dbos/testing/mock-dbos` — `registerWorkflow` must return the function directly. pglite-backed `setupTestDb()` for assertions. Time-mocked: `vi.useFakeTimers()` + `vi.setSystemTime(T0)`. End-to-end real-runtime smoke: `__tests__/integration/dbos-smoke.test.ts` (pglite + `@electric-sql/pglite-socket`). Example: `__tests__/workflows/period-end-invoice.test.ts`.
 
@@ -349,7 +349,7 @@ Surveys: `bugReport`, `featureRequest`, `featureFeedback`, `feedbackContatos`, `
 - Org: `organization.onboardingCompleted`
 - Project: `team.onboardingCompleted`, `team.onboardingProducts`, `team.onboardingTasks`
 - Procedures: `apps/web/src/integrations/orpc/router/onboarding.ts`
-- Step `features` is **multi-select** (PostHog-style). 3 options map 1:1 to `OnboardingProduct`: `finance` (Finanças), `contacts` (Negócios), `services` (Serviços). URL search param: `features` (array). Empty selection is valid → `onboardingProducts: []`. **Don't add a "pick myself" option** — empty array already covers it.
+- Step `features` is **multi-select** (PostHog-style). 2 options map 1:1 to `OnboardingProduct`: `finance` (Finanças), `contacts` (Negócios). URL search param: `features` (array). Empty selection is valid → `onboardingProducts: []`. **Don't add a "pick myself" option** — empty array already covers it.
 - **Brand gender:** Montte é masculino. Sempre "no Montte" / "do Montte" / "o Montte" — nunca "na Montte".
 - E2E coverage: `apps/web-e2e/tests/onboarding.spec.ts` + `multi-org-onboarding.spec.ts`. Helpers in `features/auth.ts` (`completeOnboarding`, `createAdditionalOrganization`, `pickFeature`).
 

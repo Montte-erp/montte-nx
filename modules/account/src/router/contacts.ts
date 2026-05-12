@@ -12,10 +12,20 @@ import {
 import { transactions } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
-import {
-   contactByIdRefSchema,
-   type ContactRef,
-} from "@modules/billing/router/middlewares";
+
+const contactByIdRefSchema = z.union([
+   z.object({ id: z.string().uuid() }),
+   z.object({ externalId: z.string().min(1) }),
+]);
+
+const contactFkRefSchema = z.union([
+   z.object({ contactId: z.string().uuid() }),
+   z.object({ externalId: z.string().min(1) }),
+]);
+
+type ContactByIdRef = z.infer<typeof contactByIdRefSchema>;
+type ContactFkRef = z.infer<typeof contactFkRefSchema>;
+type ContactRef = ContactByIdRef | ContactFkRef;
 
 const listInputSchema = z
    .object({

@@ -45,7 +45,6 @@
       "@maskito/react": "catalog:ui",
       "@modules/account": "workspace:*",
       "@modules/agents": "workspace:*",
-      "@modules/billing": "workspace:*",
       "@modules/classification": "workspace:*",
       "@modules/finance": "workspace:*",
       "@modules/inbox": "workspace:*",

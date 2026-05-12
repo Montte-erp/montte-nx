@@ -1,10 +1,4 @@
-export const FEATURE_FLAG_KEYS = [
-   "contatos",
-   "servicos-catalogo",
-   "servicos-medidores",
-   "servicos-beneficios",
-   "servicos-cupons",
-] as const;
+export const FEATURE_FLAG_KEYS: readonly ["contatos"] = ["contatos"];
 
 export type FeatureFlagKey = (typeof FEATURE_FLAG_KEYS)[number];
 

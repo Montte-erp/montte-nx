@@ -5,9 +5,7 @@ import { initOtel, shutdownOtel } from "@core/logging/otel";
 import { createDb } from "@core/database/client";
 import { createRedis } from "@core/redis/connection";
 import { createPostHog, createPromptsClient } from "@core/posthog/server";
-import { createResendClient } from "@core/transactional/utils";
 import { setupAgentsWorkflows } from "@modules/agents/workflows/setup";
-import { setupBillingWorkflows } from "@modules/billing/workflows/setup";
 import { setupClassificationWorkflows } from "@modules/classification/workflows/setup";
 
 initOtel({
@@ -27,15 +25,9 @@ const promptsClient = createPromptsClient({
    projectApiKey: env.POSTHOG_KEY,
    host: env.POSTHOG_HOST,
 });
-const resendClient = createResendClient(env.RESEND_API_KEY);
 
 logger.info("Starting worker");
 
-await setupBillingWorkflows({
-   redis,
-   resendClient,
-   workerConcurrency: 10,
-});
 await setupClassificationWorkflows({
    redis,
    posthog,

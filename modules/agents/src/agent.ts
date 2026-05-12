@@ -9,13 +9,8 @@ import type { Prompts } from "@core/posthog/server";
 import { flashModel } from "@core/ai/models";
 import { createAiObservabilityMiddleware } from "@core/ai/middleware";
 import { AGENT_PROMPTS, type PageContext } from "@modules/agents/constants";
-import { createAgentToolClient } from "@modules/agents/orpc-tool-router";
-import {
-   buildSkillCatalog,
-   buildSkillDiscoverTool,
-} from "@modules/agents/skills";
+import { buildSkillCatalog } from "@modules/agents/skills";
 import { buildAdvisorTool } from "@modules/agents/tools/advisor";
-import { buildServicesTools } from "@modules/agents/tools/services";
 
 export interface AgentChatOptions {
    prompts: Prompts;
@@ -63,9 +58,7 @@ function abortControllerFromSignal(signal: AbortSignal) {
 
 async function buildAgentChatArgs(options: AgentChatOptions) {
    const turnId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-   const orpcClient = createAgentToolClient(options.headers, options.request);
    const tools = [
-      buildSkillDiscoverTool(options.prompts),
       buildAdvisorTool({
          prompts: options.prompts,
          distinctId: options.userId,
@@ -74,7 +67,6 @@ async function buildAgentChatArgs(options: AgentChatOptions) {
          threadId: options.threadId,
          turnId,
       }),
-      ...buildServicesTools({ orpcClient }),
    ];
 
    const rootTemplate = await options.prompts.get(AGENT_PROMPTS.root, {

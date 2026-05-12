@@ -7,7 +7,6 @@ import { organization, team } from "@core/database/schemas/auth";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
 import { contacts } from "@core/database/schemas/contacts";
-import { services } from "@core/database/schemas/services";
 import { transactions } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
 import { authenticatedProcedure, protectedProcedure } from "@core/orpc/server";
@@ -18,7 +17,7 @@ import {
    type OnboardingProduct,
 } from "@modules/account/onboarding-seed";
 
-const onboardingFeatureSchema = z.enum(["finance", "contacts", "services"]);
+const onboardingFeatureSchema = z.enum(["finance", "contacts"]);
 
 export const createWorkspace = authenticatedProcedure
    .input(
@@ -115,16 +114,13 @@ export const getOnboardingStatus = protectedProcedure.handler(
       });
       if (!currentTeam) throw WebAppError.notFound("Projeto não encontrado.");
 
-      const [categoryCount, transactionCount, bankAccountCount] =
+      const [categoryCount, transactionCount, bankAccountCount, contactCount] =
          await Promise.all([
             db.$count(categories, eq(categories.teamId, teamId)),
             db.$count(transactions, eq(transactions.teamId, teamId)),
             db.$count(bankAccounts, eq(bankAccounts.teamId, teamId)),
+            db.$count(contacts, eq(contacts.teamId, teamId)),
          ]);
-      const [contactCount, serviceCount] = await Promise.all([
-         db.$count(contacts, eq(contacts.teamId, teamId)),
-         db.$count(services, eq(services.teamId, teamId)),
-      ]);
 
       const stored = currentTeam.onboardingTasks ?? {};
       const auto: Record<string, boolean> = {};
@@ -132,7 +128,6 @@ export const getOnboardingStatus = protectedProcedure.handler(
       if (categoryCount > 0) auto.create_category = true;
       if (transactionCount > 0) auto.add_transaction = true;
       if (contactCount > 0) auto.create_contact = true;
-      if (serviceCount > 0) auto.create_service = true;
       const tasks = { ...stored, ...auto };
 
       return {
@@ -237,7 +232,7 @@ export const skipTask = protectedProcedure
 export const completeOnboarding = protectedProcedure
    .input(
       z.object({
-         products: z.array(z.enum(["finance", "contacts", "services"])),
+         products: z.array(z.enum(["finance", "contacts"])),
       }),
    )
    .handler(async ({ context, input }) => {
