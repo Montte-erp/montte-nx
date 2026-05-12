@@ -2,7 +2,7 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { Button } from "@packages/ui/components/button";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Suspense, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 import {
    Archive,
@@ -21,11 +21,6 @@ import {
 } from "../../-context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
-import {
-   Popover,
-   PopoverContent,
-   PopoverTrigger,
-} from "@packages/ui/components/popover";
 import { orpc } from "@/integrations/orpc/client";
 import {
    Tabs,
@@ -33,14 +28,13 @@ import {
    TabsTrigger,
    TabsContent,
 } from "@packages/ui/components/tabs";
-import { AddSubscriptionForm } from "../-contacts/add-subscription-form";
-import { ContactAssinaturasTab } from "../-contacts/contact-assinaturas-tab";
 import { ContactPropertiesPanel } from "../-contacts/contact-properties-panel";
 import { ContactTransacoesTab } from "../-contacts/contact-transacoes-tab";
 import { TransactionFormSheet } from "../-transactions/transaction-form-sheet";
 import { useSheet } from "@/hooks/use-sheet";
 
-const VALID_TABS = ["transacoes", "servicos"] as const;
+type ContactTab = "transacoes";
+const VALID_TABS: readonly [ContactTab] = ["transacoes"];
 
 const searchSchema = z.object({
    tab: z.enum(VALID_TABS).catch("transacoes").default("transacoes"),
@@ -74,11 +68,6 @@ export const Route = createFileRoute(
       );
       context.queryClient.prefetchQuery(
          orpc.creditCards.getAll.queryOptions({ input: { pageSize: 100 } }),
-      );
-      context.queryClient.prefetchQuery(
-         orpc.subscriptions.getContactSubscriptions.queryOptions({
-            input: { contactId: params.contactId },
-         }),
       );
    },
    pendingMs: 300,
@@ -122,8 +111,18 @@ function ContactDetailContent() {
    const teamSlug = useTeamSlug();
    const { openAlertDialog } = useAlertDialog();
    const { tab: activeTab } = Route.useSearch();
-   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
    const { openSheet } = useSheet();
+
+   const handleValueChange = useCallback(
+      (value: string) => {
+         if (value !== "transacoes") return;
+         navigate({
+            search: (prev) => ({ ...prev, tab: value }),
+            replace: true,
+         });
+      },
+      [navigate],
+   );
 
    const { data: contact } = useSuspenseQuery(
       orpc.contacts.getById.queryOptions({ input: { id: contactId } }),
@@ -234,21 +233,10 @@ function ContactDetailContent() {
             }
          />
 
-         <Tabs
-            value={activeTab}
-            onValueChange={(v) => {
-               if (v === "transacoes" || v === "servicos") {
-                  navigate({
-                     search: (prev) => ({ ...prev, tab: v }),
-                     replace: true,
-                  });
-               }
-            }}
-         >
+         <Tabs value={activeTab} onValueChange={handleValueChange}>
             <div className="flex items-center gap-2">
                <TabsList>
                   <TabsTrigger value="transacoes">Transações</TabsTrigger>
-                  <TabsTrigger value="servicos">Serviços</TabsTrigger>
                </TabsList>
                <div className="ml-auto flex items-center gap-2">
                   {activeTab === "transacoes" && (
@@ -312,31 +300,6 @@ function ContactDetailContent() {
                         </Button>
                      </>
                   )}
-                  {activeTab === "servicos" && (
-                     <Popover
-                        open={subscriptionOpen}
-                        onOpenChange={setSubscriptionOpen}
-                     >
-                        <PopoverTrigger asChild>
-                           <Button
-                              tooltip="Vincular serviço"
-                              variant="outline"
-                              size="icon-sm"
-                           >
-                              <Plus />
-                              <span className="sr-only">Vincular serviço</span>
-                           </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-96 p-0" align="end">
-                           <Suspense fallback={null}>
-                              <AddSubscriptionForm
-                                 contactId={contactId}
-                                 onSuccess={() => setSubscriptionOpen(false)}
-                              />
-                           </Suspense>
-                        </PopoverContent>
-                     </Popover>
-                  )}
                </div>
             </div>
 
@@ -346,11 +309,6 @@ function ContactDetailContent() {
                      contactId={contactId}
                      contact={contact}
                   />
-               </QueryBoundary>
-            </TabsContent>
-            <TabsContent value="servicos">
-               <QueryBoundary fallback={null}>
-                  <ContactAssinaturasTab contactId={contactId} />
                </QueryBoundary>
             </TabsContent>
          </Tabs>

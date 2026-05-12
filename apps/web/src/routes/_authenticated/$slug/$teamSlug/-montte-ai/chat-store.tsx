@@ -13,7 +13,6 @@ import type { UIMessage } from "@tanstack/ai-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { usePostHog } from "posthog-js/react";
 import {
-   Briefcase,
    Contact,
    FolderTree,
    Gauge,
@@ -43,7 +42,6 @@ type UiMessagePart = UIMessage["parts"][number];
 
 export type AgentScopeId =
    | "auto"
-   | "servicos"
    | "contatos"
    | "categorias"
    | "estoque"
@@ -61,12 +59,6 @@ const AUTO_SCOPE: AgentScope = { id: "auto", label: "Auto", icon: Sparkles };
 
 export const SCOPES: AgentScope[] = [
    AUTO_SCOPE,
-   {
-      id: "servicos",
-      label: "Serviços",
-      icon: Briefcase,
-      skillHint: "services",
-   },
    { id: "contatos", label: "Contatos", icon: Contact },
    { id: "categorias", label: "Centro de Custo", icon: FolderTree },
    { id: "estoque", label: "Estoque", icon: Tag },

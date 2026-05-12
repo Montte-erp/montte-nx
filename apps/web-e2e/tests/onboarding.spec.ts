@@ -25,9 +25,7 @@ const test = base.extend<{ user: TestUser }>({
    },
 });
 
-const onboardingProductsSchema = z.array(
-   z.enum(["finance", "contacts", "services"]),
-);
+const onboardingProductsSchema = z.array(z.enum(["finance", "contacts"]));
 
 async function toggleFeature(page: Page, label: RegExp) {
    const card = page.getByRole("button", { name: label });
@@ -104,12 +102,9 @@ test("happy path finance: validações dos botões + seed correto", async ({
    expect(team?.onboardingProducts).toEqual(["finance"]);
 });
 
-test("contacts + services + multi-org via ?new=true", async ({
-   page,
-   user,
-}) => {
+test("contacts + multi-org via ?new=true", async ({ page, user }) => {
    await signUpViaApi(page.request, user);
-   await completeFirstOnboarding(page, user, [/Negócios/, /Serviços/]);
+   await completeFirstOnboarding(page, user, [/Negócios/]);
 
    const firstOrg = await findFirstOrgByUserEmail(user.email);
    if (!firstOrg?.slug) throw new Error("Primeira org não foi criada.");
@@ -119,7 +114,7 @@ test("contacts + services + multi-org via ?new=true", async ({
    const onboardingProducts = onboardingProductsSchema.parse(
       firstTeam.onboardingProducts,
    );
-   expect([...onboardingProducts].sort()).toEqual(["contacts", "services"]);
+   expect([...onboardingProducts].sort()).toEqual(["contacts"]);
 
    await page.goto("/onboarding?new=true");
    await toggleFeature(page, /Finanças/);
@@ -133,17 +128,12 @@ test("Voltar preserva as features selecionadas", async ({ page, user }) => {
    await signUpViaApi(page.request, user);
    await page.goto("/");
    await toggleFeature(page, /Negócios/);
-   await toggleFeature(page, /Serviços/);
    await continueToCompany(page);
    await expect(page).toHaveURL(/step=company/);
 
    await page.getByRole("button", { name: "Voltar" }).click();
    await expect(page).toHaveURL(/step=features/);
    await expect(page.getByRole("button", { name: /Negócios/ })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-   );
-   await expect(page.getByRole("button", { name: /Serviços/ })).toHaveAttribute(
       "aria-pressed",
       "true",
    );

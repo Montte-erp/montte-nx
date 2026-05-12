@@ -29,7 +29,6 @@
       "@core/sse": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers",
       "@dbos-inc/drizzle-datasource": "catalog:workers",
-      "@modules/billing": "workspace:*",
       "@orpc/server": "catalog:orpc",
       "@tanstack/ai": "catalog:tanstack-ai",
       "@tanstack/ai-openrouter": "catalog:tanstack-ai",

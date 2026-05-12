@@ -34,7 +34,6 @@ import { useMontteActions, useMontteIsRunning } from "./chat-store";
 
 const TOOL_LABELS: Record<string, string> = {
    advisor_consult: "Consultando advisor sênior",
-   skill_discover: "Carregando playbook",
    __lazy__tool__discovery__: "Carregando ferramentas",
    catalog_search: "Consultando catálogo",
    benefit_create: "Criando benefício",
@@ -55,13 +54,6 @@ const TOOL_LABELS: Record<string, string> = {
    price_create: "Criando preço",
    price_remove: "Removendo preço",
    price_update: "Atualizando preço",
-   service_benefit_attach: "Anexando benefício",
-   service_benefit_create_attach: "Criando e anexando benefício",
-   service_benefit_detach: "Removendo benefício do serviço",
-   service_details: "Detalhando serviço",
-   service_setup: "Configurando serviço completo",
-   service_update: "Atualizando serviço",
-   services_set_active: "Ativando ou arquivando serviços",
 };
 
 const toolArtifactSchema = z.object({

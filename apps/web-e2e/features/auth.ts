@@ -86,7 +86,6 @@ export async function createAdditionalOrganization(
    await page.goto("/onboarding?new=true");
 
    await pickFeature(page, /Negócios/);
-   await pickFeature(page, /Serviços/);
    const continueButton = page.getByRole("button", { name: "Continuar" });
    await expect(continueButton).toBeEnabled();
    await continueButton.click();

@@ -7,20 +7,21 @@ import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 
 const settingsOutput = z.object({
-   teamId: z.string().uuid(),
    modelId: z.string().default("openrouter/moonshotai/kimi-k2.5"),
    reasoningEffort: z.enum(["high", "xhigh"]).default("high"),
    language: z.string().default("pt-BR"),
    tone: z.string().default("formal"),
    dataSourceTransactions: z.boolean().default(true),
    dataSourceContacts: z.boolean().default(true),
-   dataSourceServices: z.boolean().default(true),
-   createdAt: z.date().default(() => dayjs().toDate()),
-   updatedAt: z.date().default(() => dayjs().toDate()),
 });
 
 const upsertInput = createInsertSchema(agentSettings)
-   .omit({ teamId: true, createdAt: true, updatedAt: true })
+   .omit({
+      teamId: true,
+      dataSourceServices: true,
+      createdAt: true,
+      updatedAt: true,
+   })
    .extend({ modelId: z.string().startsWith("openrouter/").optional() })
    .partial();
 
@@ -32,10 +33,7 @@ export const getSettings = protectedProcedure.handler(async ({ context }) => {
       () => WebAppError.internal("Falha ao buscar configurações."),
    );
    if (result.isErr()) throw result.error;
-   return settingsOutput.parse({
-      teamId: context.teamId,
-      ...result.value,
-   });
+   return settingsOutput.parse(result.value ?? {});
 });
 
 export const upsertSettings = protectedProcedure
@@ -60,5 +58,5 @@ export const upsertSettings = protectedProcedure
          throw WebAppError.internal(
             "Falha ao salvar configurações: upsert vazio.",
          );
-      return result.value;
+      return settingsOutput.parse(result.value);
    });
