@@ -22,9 +22,6 @@ import {
    useReactTable,
    type ColumnDef,
    type ColumnFiltersState,
-   type PaginationState,
-   type RowSelectionState,
-   type SortingState,
 } from "@tanstack/react-table";
 import {
    ChevronDown,
@@ -33,7 +30,7 @@ import {
    Plus,
    Trash2,
 } from "lucide-react";
-import { startTransition, useCallback, useMemo, useState } from "react";
+import { startTransition, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "../-layout/default-header";
@@ -44,6 +41,7 @@ import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
 import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
 import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
+import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
 import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
 import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
@@ -473,20 +471,6 @@ function CreditCardsList() {
       return [selectColumn, expandColumn, ...base, actionsColumn];
    }, [bankAccounts, publicEnv?.LOGO_DEV_TOKEN, handleDelete]);
 
-   const handleSortingChange = useCallback(
-      (updater: SortingState | ((prev: SortingState) => SortingState)) => {
-         const next =
-            typeof updater === "function" ? updater(sorting) : updater;
-         startTransition(() => {
-            navigate({
-               search: (prev) => ({ ...prev, sorting: next, page: 1 }),
-               replace: true,
-            });
-         });
-      },
-      [navigate, sorting],
-   );
-
    const handleColumnFiltersChange = useCallback(
       (
          updater:
@@ -513,49 +497,29 @@ function CreditCardsList() {
       [navigate, columnFilters],
    );
 
-   const handlePaginationChange = useCallback(
-      (
-         updater:
-            | PaginationState
-            | ((prev: PaginationState) => PaginationState),
-      ) => {
-         const current: PaginationState = { pageIndex: page - 1, pageSize };
-         const next =
-            typeof updater === "function" ? updater(current) : updater;
-         startTransition(() => {
-            navigate({
-               search: (prev) => ({
-                  ...prev,
-                  page: next.pageIndex + 1,
-                  pageSize: next.pageSize,
-               }),
-               replace: true,
-            });
-         });
-      },
-      [navigate, page, pageSize],
-   );
-
-   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+   const urlState = useTableUrlState({
+      search: { sorting, columnFilters, page, pageSize },
+      onUpdate: (next) =>
+         navigate({
+            search: (prev) => ({ ...prev, ...next }),
+            replace: true,
+         }),
+      totalRows: result.totalCount,
+   });
 
    const table = useReactTable({
       data: result.data,
       columns,
       getRowId: (row) => row.id,
-      pageCount: result.totalPages,
+      pageCount: urlState.pageCount,
       manualPagination: true,
       manualSorting: true,
       manualFiltering: true,
-      state: {
-         sorting,
-         columnFilters,
-         pagination: { pageIndex: page - 1, pageSize },
-         rowSelection,
-      },
-      onSortingChange: handleSortingChange,
+      state: urlState.state,
+      onSortingChange: urlState.onSortingChange,
       onColumnFiltersChange: handleColumnFiltersChange,
-      onPaginationChange: handlePaginationChange,
-      onRowSelectionChange: setRowSelection,
+      onPaginationChange: urlState.onPaginationChange,
+      onRowSelectionChange: urlState.onRowSelectionChange,
       onColumnSizingChange: layout.onColumnSizingChange,
       onColumnOrderChange: layout.onColumnOrderChange,
       onColumnVisibilityChange: layout.onColumnVisibilityChange,

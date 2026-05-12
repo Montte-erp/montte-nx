@@ -22,7 +22,6 @@ import {
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import {
    getCoreRowModel,
-   getFilteredRowModel,
    getSortedRowModel,
    useReactTable,
    type ColumnDef,
@@ -332,7 +331,6 @@ export function ContactsList() {
       },
       getCoreRowModel: getCoreRowModel(),
       getSortedRowModel: getSortedRowModel(),
-      getFilteredRowModel: getFilteredRowModel(),
    });
 
    const importApi = useDataImport({ table, config: importConfig });
