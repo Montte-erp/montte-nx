@@ -39,6 +39,7 @@ export function fetchDuePayments(db: DatabaseInstance, teamId: string) {
          .where(
             and(
                eq(transactions.teamId, teamId),
+               eq(transactions.ignored, false),
                eq(transactions.status, "pending"),
                lte(transactions.dueDate, horizon),
             ),

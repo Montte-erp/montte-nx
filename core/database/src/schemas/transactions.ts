@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import {
+   boolean,
    date,
    index,
    jsonb,
@@ -83,6 +84,7 @@ export const transactions = financeSchema.table(
       attachments: jsonb("attachments").$type<Attachment[]>(),
       paymentMethod: paymentMethodEnum("payment_method"),
       status: transactionStatusEnum("status").notNull().default("paid"),
+      ignored: boolean("ignored").notNull().default(false),
       dueDate: date("due_date"),
       paidAt: timestamp("paid_at", { withTimezone: true }),
       statementPeriod: text("statement_period"),
@@ -120,6 +122,7 @@ export const transactions = financeSchema.table(
       index("transactions_tag_id_idx").on(table.tagId),
       index("transactions_suggested_tag_id_idx").on(table.suggestedTagId),
       index("transactions_status_idx").on(table.status),
+      index("transactions_ignored_idx").on(table.ignored),
       index("transactions_due_date_idx").on(table.dueDate),
       index("transactions_status_type_idx").on(table.status, table.type),
    ],
@@ -182,6 +185,7 @@ const baseTransactionSchema = createInsertSchema(transactions).pick({
    attachments: true,
    statementPeriod: true,
    status: true,
+   ignored: true,
    dueDate: true,
    paidAt: true,
 });
@@ -216,6 +220,7 @@ export const createTransactionSchema = baseTransactionSchema
          .enum(["pending", "paid", "cancelled"])
          .optional()
          .default("paid"),
+      ignored: z.boolean().optional().default(false),
       dueDate: dateSchema.nullable().optional(),
       paidAt: z.date().nullable().optional(),
    })
@@ -293,6 +298,7 @@ export const updateTransactionSchema = baseTransactionSchema
       contactId: z.string().uuid().nullable().optional(),
       attachments: z.array(attachmentSchema).nullable().optional(),
       status: z.enum(["pending", "paid", "cancelled"]).optional(),
+      ignored: z.boolean().optional(),
       dueDate: dateSchema.nullable().optional(),
       paidAt: z.date().nullable().optional(),
    })

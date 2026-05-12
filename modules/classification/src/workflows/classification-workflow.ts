@@ -87,6 +87,7 @@ const stepLoadInputs = (input: ClassifyTransactionsBatchInput) =>
                   where: (f, { and, eq, inArray, isNull }) =>
                      and(
                         eq(f.teamId, input.teamId),
+                        eq(f.ignored, false),
                         inArray(f.id, input.transactionIds),
                         isNull(f.categoryId),
                         isNull(f.suggestedCategoryId),
@@ -180,6 +181,7 @@ const stepWrite = (writes: ClassificationWrite[], teamId: string) =>
                         and(
                            eq(transactions.id, w.transactionId),
                            eq(transactions.teamId, teamId),
+                           eq(transactions.ignored, false),
                            isNull(transactions.categoryId),
                            isNull(transactions.suggestedCategoryId),
                         ),

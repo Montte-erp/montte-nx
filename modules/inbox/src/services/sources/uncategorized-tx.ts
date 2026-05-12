@@ -14,6 +14,7 @@ export function fetchUncategorized(db: DatabaseInstance, teamId: string) {
          .where(
             and(
                eq(transactions.teamId, teamId),
+               eq(transactions.ignored, false),
                isNull(transactions.categoryId),
             ),
          ),

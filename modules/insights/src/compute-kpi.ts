@@ -89,6 +89,7 @@ export function buildConditions(
 
    const conditions = [
       eq(transactions.teamId, teamId),
+      eq(transactions.ignored, false),
       gte(transactions.date, startStr),
       lte(transactions.date, endStr),
    ];

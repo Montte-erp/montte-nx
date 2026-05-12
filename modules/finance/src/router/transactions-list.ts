@@ -45,7 +45,15 @@ const filterSchema = z
 export const getAll = protectedProcedure
    .input(filterSchema)
    .handler(async ({ context, input }) => {
-      const filter: TransactionFilter = { teamId: context.teamId, ...input };
+      const filtersIgnored =
+         input?.view === "cancelled" ||
+         input?.status === "cancelled" ||
+         (Array.isArray(input?.status) && input.status.includes("cancelled"));
+      const filter: TransactionFilter = {
+         teamId: context.teamId,
+         ...input,
+         includeIgnored: filtersIgnored,
+      };
       const page = filter.page ?? 1;
       const pageSize = filter.pageSize ?? 50;
       const where = buildTransactionWhere(filter, true);
@@ -87,7 +95,15 @@ export const getAll = protectedProcedure
 export const getSummary = protectedProcedure
    .input(filterSchema)
    .handler(async ({ context, input }) => {
-      const filter: TransactionFilter = { teamId: context.teamId, ...input };
+      const filtersIgnored =
+         input?.view === "cancelled" ||
+         input?.status === "cancelled" ||
+         (Array.isArray(input?.status) && input.status.includes("cancelled"));
+      const filter: TransactionFilter = {
+         teamId: context.teamId,
+         ...input,
+         includeIgnored: filtersIgnored,
+      };
       const where = buildTransactionWhere(filter, false);
       const t = transactions;
       const [row] = await context.db

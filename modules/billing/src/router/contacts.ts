@@ -297,6 +297,7 @@ export const getStats = protectedProcedure
          const where = and(
             eq(transactions.contactId, contact.id),
             eq(transactions.teamId, context.teamId),
+            eq(transactions.ignored, false),
          );
          const stats = yield* fromPromise(
             Promise.all([
@@ -341,6 +342,7 @@ export const getTransactions = protectedProcedure
          const where = and(
             eq(transactions.contactId, contact.id),
             eq(transactions.teamId, context.teamId),
+            eq(transactions.ignored, false),
          );
          const data = yield* fromPromise(
             Promise.all([

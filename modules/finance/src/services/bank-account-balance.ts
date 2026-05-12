@@ -1,5 +1,5 @@
 import { of, toDecimal } from "@f-o-t/money";
-import { eq, inArray, or, sql } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { transactions } from "@core/database/schemas/transactions";
@@ -35,9 +35,12 @@ export async function computeBankAccountBalance(
       })
       .from(t)
       .where(
-         or(
-            eq(t.bankAccountId, accountId),
-            eq(t.destinationBankAccountId, accountId),
+         and(
+            or(
+               eq(t.bankAccountId, accountId),
+               eq(t.destinationBankAccountId, accountId),
+            ),
+            eq(t.ignored, false),
          ),
       );
 
@@ -97,7 +100,10 @@ export async function computeBankAccountBalances(
       .from(a)
       .leftJoin(
          t,
-         or(eq(t.bankAccountId, a.id), eq(t.destinationBankAccountId, a.id)),
+         and(
+            or(eq(t.bankAccountId, a.id), eq(t.destinationBankAccountId, a.id)),
+            eq(t.ignored, false),
+         ),
       )
       .where(inArray(a.id, ids))
       .groupBy(a.id, a.initialBalance);
