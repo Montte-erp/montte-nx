@@ -100,8 +100,12 @@ function parseCreditCardBrand(value: unknown): CreditCardBrand | undefined {
 
 function parseCreditCardStatus(value: unknown): CreditCardStatus {
    const normalized = normalizeImportLookup(value);
-   if (normalized === "blocked") return "blocked";
-   if (normalized === "cancelled") return "cancelled";
+   if (normalized === "blocked" || normalized === "bloqueado") {
+      return "blocked";
+   }
+   if (normalized === "cancelled" || normalized === "cancelado") {
+      return "cancelled";
+   }
    return "active";
 }
 
@@ -162,7 +166,7 @@ function CreditCardsList() {
    const { openSheet } = useSheet();
    const { publicEnv } = Route.useRouteContext();
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
-   const { parse: parseXlsx } = useXlsxFile();
+   const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
 
    const [{ data: result }, { data: bankAccounts }] = useSuspenseQueries({
       queries: [
@@ -220,6 +224,7 @@ function CreditCardsList() {
             if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
             return parseCsv(file);
          },
+         importColumns: [{ key: "last4", label: "Final" }],
          mapRow: (row, i): Record<string, unknown> => ({
             id: `__import_${i}`,
             name: String(row.name ?? "").trim(),
@@ -236,35 +241,69 @@ function CreditCardsList() {
             status: parseCreditCardStatus(row.status),
          }),
          template: {
-            filename: "modelo-cartoes-credito.csv",
-            label: "Baixar modelo CSV",
+            label: "Baixar modelo",
             description:
-               "Inclui name, brand, last4, creditLimit, closingDay, dueDay, bankAccountId e status.",
-            createBlob: () =>
-               generateCsv(
-                  [
-                     {
-                        name: "Cartão Principal",
-                        brand: "visa",
-                        last4: "1234",
-                        creditLimit: "5000.00",
-                        closingDay: "10",
-                        dueDay: "20",
-                        bankAccountId: bankAccounts?.[0]?.name ?? "",
-                        status: "active",
-                     },
-                  ],
-                  [
-                     "name",
-                     "brand",
-                     "last4",
-                     "creditLimit",
-                     "closingDay",
-                     "dueDay",
-                     "bankAccountId",
-                     "status",
-                  ],
-               ),
+               "Inclui Nome, Bandeira, Final, Limite, Fechamento, Vencimento, Conta Bancária e Status.",
+            formats: [
+               {
+                  filename: "modelo-cartoes-credito.csv",
+                  label: "CSV",
+                  createBlob: () =>
+                     generateCsv(
+                        [
+                           {
+                              Nome: "Cartão Principal",
+                              Bandeira: "visa",
+                              Final: "1234",
+                              Limite: "5000.00",
+                              Fechamento: "10",
+                              Vencimento: "20",
+                              "Conta Bancária": bankAccounts?.[0]?.name ?? "",
+                              Status: "Ativo",
+                           },
+                        ],
+                        [
+                           "Nome",
+                           "Bandeira",
+                           "Final",
+                           "Limite",
+                           "Fechamento",
+                           "Vencimento",
+                           "Conta Bancária",
+                           "Status",
+                        ],
+                     ),
+               },
+               {
+                  filename: "modelo-cartoes-credito.xlsx",
+                  label: "XLSX",
+                  createBlob: () =>
+                     generateXlsx(
+                        [
+                           {
+                              Nome: "Cartão Principal",
+                              Bandeira: "visa",
+                              Final: "1234",
+                              Limite: "5000.00",
+                              Fechamento: "10",
+                              Vencimento: "20",
+                              "Conta Bancária": bankAccounts?.[0]?.name ?? "",
+                              Status: "Ativo",
+                           },
+                        ],
+                        [
+                           "Nome",
+                           "Bandeira",
+                           "Final",
+                           "Limite",
+                           "Fechamento",
+                           "Vencimento",
+                           "Conta Bancária",
+                           "Status",
+                        ],
+                     ),
+               },
+            ],
          },
          onImport: async (rows) => {
             const firstBankAccountId = bankAccounts?.[0]?.id;
@@ -294,7 +333,14 @@ function CreditCardsList() {
             });
          },
       }),
-      [bulkCreateMutation, generateCsv, parseCsv, parseXlsx, bankAccounts],
+      [
+         bulkCreateMutation,
+         generateCsv,
+         generateXlsx,
+         parseCsv,
+         parseXlsx,
+         bankAccounts,
+      ],
    );
 
    const handleDelete = useCallback(

@@ -163,7 +163,7 @@ export function TransactionsList() {
    const { openSheet } = useSheet();
    const queryClient = useQueryClient();
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
-   const { parse: parseXlsx } = useXlsxFile();
+   const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
    const { parse: parseOfx } = useOfxFile();
 
    const handleSearch = useCallback(
@@ -479,51 +479,105 @@ export function TransactionsList() {
             };
          },
          template: {
-            filename: "modelo-lancamentos.csv",
-            label: "Baixar modelo CSV",
+            label: "Baixar modelo",
             description:
-               "Inclui date, name, type, amount, status e referências por nome ou ID.",
-            createBlob: () =>
-               generateCsv(
-                  [
-                     {
-                        date: dayjs().format("YYYY-MM-DD"),
-                        name: "Venda recebida",
-                        type: "income",
-                        amount: "1500.00",
-                        status: "paid",
-                        dueDate: "",
-                        bankAccountName: bankAccounts[0]?.name ?? "",
-                        creditCardName: "",
-                        categoryName: categoriesResult[0]?.name ?? "",
-                        contactName: contacts[0]?.name ?? "",
-                     },
-                     {
-                        date: dayjs().format("YYYY-MM-DD"),
-                        name: "Compra no cartão",
-                        type: "expense",
-                        amount: "250.00",
-                        status: "pending",
-                        dueDate: dayjs().add(7, "day").format("YYYY-MM-DD"),
-                        bankAccountName: "",
-                        creditCardName: creditCardsResult.data[0]?.name ?? "",
-                        categoryName: categoriesResult[0]?.name ?? "",
-                        contactName: contacts[0]?.name ?? "",
-                     },
-                  ],
-                  [
-                     "date",
-                     "name",
-                     "type",
-                     "amount",
-                     "status",
-                     "dueDate",
-                     "bankAccountName",
-                     "creditCardName",
-                     "categoryName",
-                     "contactName",
-                  ],
-               ),
+               "Inclui Data, Nome, Tipo, Valor, Status e referências por nome.",
+            formats: [
+               {
+                  filename: "modelo-lancamentos.csv",
+                  label: "CSV",
+                  createBlob: () =>
+                     generateCsv(
+                        [
+                           {
+                              Data: dayjs().format("YYYY-MM-DD"),
+                              Nome: "Venda recebida",
+                              Tipo: "Receita",
+                              Valor: "1500.00",
+                              Status: "Efetivado",
+                              Vencimento: "",
+                              Conta: bankAccounts[0]?.name ?? "",
+                              Cartão: "",
+                              Categoria: categoriesResult[0]?.name ?? "",
+                              "Fornecedor/Cliente": contacts[0]?.name ?? "",
+                           },
+                           {
+                              Data: dayjs().format("YYYY-MM-DD"),
+                              Nome: "Compra no cartão",
+                              Tipo: "Despesa",
+                              Valor: "250.00",
+                              Status: "Pendente",
+                              Vencimento: dayjs()
+                                 .add(7, "day")
+                                 .format("YYYY-MM-DD"),
+                              Conta: "",
+                              Cartão: creditCardsResult.data[0]?.name ?? "",
+                              Categoria: categoriesResult[0]?.name ?? "",
+                              "Fornecedor/Cliente": contacts[0]?.name ?? "",
+                           },
+                        ],
+                        [
+                           "Data",
+                           "Nome",
+                           "Tipo",
+                           "Valor",
+                           "Status",
+                           "Vencimento",
+                           "Conta",
+                           "Cartão",
+                           "Categoria",
+                           "Fornecedor/Cliente",
+                        ],
+                     ),
+               },
+               {
+                  filename: "modelo-lancamentos.xlsx",
+                  label: "XLSX",
+                  createBlob: () =>
+                     generateXlsx(
+                        [
+                           {
+                              Data: dayjs().format("YYYY-MM-DD"),
+                              Nome: "Venda recebida",
+                              Tipo: "Receita",
+                              Valor: "1500.00",
+                              Status: "Efetivado",
+                              Vencimento: "",
+                              Conta: bankAccounts[0]?.name ?? "",
+                              Cartão: "",
+                              Categoria: categoriesResult[0]?.name ?? "",
+                              "Fornecedor/Cliente": contacts[0]?.name ?? "",
+                           },
+                           {
+                              Data: dayjs().format("YYYY-MM-DD"),
+                              Nome: "Compra no cartão",
+                              Tipo: "Despesa",
+                              Valor: "250.00",
+                              Status: "Pendente",
+                              Vencimento: dayjs()
+                                 .add(7, "day")
+                                 .format("YYYY-MM-DD"),
+                              Conta: "",
+                              Cartão: creditCardsResult.data[0]?.name ?? "",
+                              Categoria: categoriesResult[0]?.name ?? "",
+                              "Fornecedor/Cliente": contacts[0]?.name ?? "",
+                           },
+                        ],
+                        [
+                           "Data",
+                           "Nome",
+                           "Tipo",
+                           "Valor",
+                           "Status",
+                           "Vencimento",
+                           "Conta",
+                           "Cartão",
+                           "Categoria",
+                           "Fornecedor/Cliente",
+                        ],
+                     ),
+               },
+            ],
          },
          onImport: async (rows) => {
             const transactions = rows.flatMap((r) => {
@@ -579,6 +633,7 @@ export function TransactionsList() {
          parseXlsx,
          parseOfx,
          generateCsv,
+         generateXlsx,
          bankAccounts,
          categoriesResult,
          contacts,

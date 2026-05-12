@@ -55,12 +55,28 @@ const TYPE_LABELS: Record<(typeof TYPES)[number], string> = {
    cash: "Caixa Físico",
 };
 
+function normalizeImportLabel(raw: unknown): string {
+   return String(raw ?? "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+}
+
 function resolveType(raw: unknown): BankAccountRow["type"] | undefined {
    if (raw === null || raw === undefined || raw === "") return "checking";
-   const str = String(raw).trim();
+   const str = normalizeImportLabel(raw);
    if (!str) return "checking";
    const parsed = typeSchema.safeParse(str);
-   return parsed.success ? parsed.data : undefined;
+   if (parsed.success) return parsed.data;
+   if (normalizeImportLabel(TYPE_LABELS.checking) === str) return "checking";
+   if (normalizeImportLabel(TYPE_LABELS.savings) === str) return "savings";
+   if (normalizeImportLabel(TYPE_LABELS.investment) === str) {
+      return "investment";
+   }
+   if (normalizeImportLabel(TYPE_LABELS.payment) === str) return "payment";
+   if (normalizeImportLabel(TYPE_LABELS.cash) === str) return "cash";
+   return undefined;
 }
 
 const searchSchema = z.object({
@@ -123,7 +139,7 @@ function BankAccountsList() {
    const { openSheet } = useSheet();
    const { publicEnv } = Route.useRouteContext();
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
-   const { parse: parseXlsx } = useXlsxFile();
+   const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
 
    const { data: result } = useSuspenseQuery(
       orpc.bankAccounts.list.queryOptions({
@@ -200,37 +216,67 @@ function BankAccountsList() {
             updatedAt: dayjs().toISOString(),
          }),
          template: {
-            filename: "modelo-contas-bancarias.csv",
-            label: "Baixar modelo CSV",
+            label: "Baixar modelo",
             description:
-               "Inclui name, type e initialBalance. Use type como checking, savings, investment, payment ou cash.",
-            createBlob: () =>
-               generateCsv(
-                  [
-                     {
-                        name: "Conta Corrente Principal",
-                        type: "checking",
-                        initialBalance: "1500.00",
-                     },
-                     {
-                        name: "Reserva de Emergência",
-                        type: "savings",
-                        initialBalance: "2500.00",
-                     },
-                     {
-                        name: "Caixa da Loja",
-                        type: "cash",
-                        initialBalance: "300.00",
-                     },
-                  ],
-                  ["name", "type", "initialBalance"],
-               ),
+               "Inclui Nome, Tipo e Saldo Inicial. Use Tipo como Conta Corrente, Conta Poupança, Conta Investimento, Conta Pagamento ou Caixa Físico.",
+            formats: [
+               {
+                  filename: "modelo-contas-bancarias.csv",
+                  label: "CSV",
+                  createBlob: () =>
+                     generateCsv(
+                        [
+                           {
+                              Nome: "Conta Corrente Principal",
+                              Tipo: "Conta Corrente",
+                              "Saldo Inicial": "1500.00",
+                           },
+                           {
+                              Nome: "Reserva de Emergência",
+                              Tipo: "Conta Poupança",
+                              "Saldo Inicial": "2500.00",
+                           },
+                           {
+                              Nome: "Caixa da Loja",
+                              Tipo: "Caixa Físico",
+                              "Saldo Inicial": "300.00",
+                           },
+                        ],
+                        ["Nome", "Tipo", "Saldo Inicial"],
+                     ),
+               },
+               {
+                  filename: "modelo-contas-bancarias.xlsx",
+                  label: "XLSX",
+                  createBlob: () =>
+                     generateXlsx(
+                        [
+                           {
+                              Nome: "Conta Corrente Principal",
+                              Tipo: "Conta Corrente",
+                              "Saldo Inicial": "1500.00",
+                           },
+                           {
+                              Nome: "Reserva de Emergência",
+                              Tipo: "Conta Poupança",
+                              "Saldo Inicial": "2500.00",
+                           },
+                           {
+                              Nome: "Caixa da Loja",
+                              Tipo: "Caixa Físico",
+                              "Saldo Inicial": "300.00",
+                           },
+                        ],
+                        ["Nome", "Tipo", "Saldo Inicial"],
+                     ),
+               },
+            ],
          },
          onImport: async (rows) => {
             const invalidType = rows.some((r) => !resolveType(r.type));
             if (invalidType) {
                throw new Error(
-                  "Arquivo contém tipo de conta inválido. Use checking, savings, investment, payment ou cash.",
+                  "Arquivo contém tipo de conta inválido. Use Conta Corrente, Conta Poupança, Conta Investimento, Conta Pagamento ou Caixa Físico.",
                );
             }
             const accounts = rows.flatMap((r) => {
@@ -250,7 +296,7 @@ function BankAccountsList() {
             });
          },
       }),
-      [bulkCreateMutation, generateCsv, parseCsv, parseXlsx],
+      [bulkCreateMutation, generateCsv, generateXlsx, parseCsv, parseXlsx],
    );
 
    const handleDelete = useCallback(
