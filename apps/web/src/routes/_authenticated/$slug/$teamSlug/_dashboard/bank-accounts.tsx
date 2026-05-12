@@ -1,4 +1,5 @@
 import { Button } from "@packages/ui/components/button";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import {
    Empty,
    EmptyDescription,
@@ -6,38 +7,52 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import { SelectionActionButton } from "@packages/ui/components/selection-action-bar";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+   getCoreRowModel,
+   useReactTable,
+   type ColumnDef,
+   type PaginationState,
+   type RowSelectionState,
+   type SortingState,
+} from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Landmark, Plus, ReceiptText, Trash2 } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { startTransition, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+
+import { DataTableBody } from "@/components/data-table-v2/data-table-body";
+import { DataTableBulkActionBar } from "@/components/data-table-v2/data-table-bulk-action-bar";
+import { DataTableColumnVisibility } from "@/components/data-table-v2/data-table-column-visibility";
+import { DataTableContainer } from "@/components/data-table-v2/data-table-container";
+import { DataTableEmptyState } from "@/components/data-table-v2/data-table-empty-state";
+import { DataTableHeader } from "@/components/data-table-v2/data-table-header";
+import { DataTablePagination } from "@/components/data-table-v2/data-table-pagination";
+import { DataTableRoot } from "@/components/data-table-v2/data-table-root";
+import { DataTableSearch } from "@/components/data-table-v2/data-table-search";
+import { DataTableSkeleton } from "@/components/data-table-v2/data-table-skeleton";
+import {
+   DataTableToolbar,
+   DataTableToolbarGroup,
+} from "@/components/data-table-v2/data-table-toolbar";
+import { useDataTableLayout } from "@/components/data-table-v2/use-data-table-layout";
+import { DataImportButton } from "@/features/data-import/data-import-button";
+import { DataImportSection } from "@/features/data-import/data-import-section";
+import { useDataImport } from "@/features/data-import/use-data-import";
+import type { DataImportConfig } from "@/features/data-import/types";
+import { PageFilters } from "@/components/page-filters/page-filters";
+import { PageFilter } from "@/components/page-filters/page-filter";
 import { QueryBoundary } from "@/components/query-boundary";
-import { DefaultHeader } from "../-layout/default-header";
-import {
-   DataTableBulkActions,
-   SelectionActionButton,
-} from "@/components/data-table/data-table-bulk-actions";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
-import {
-   DataTableImportButton,
-   type DataTableImportConfig,
-} from "@/components/data-table/data-table-import";
-import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import {
-   DataTableExternalFilter,
-   DataTableRoot,
-} from "@/components/data-table/data-table-root";
-import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useSheet } from "@/hooks/use-sheet";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { orpc } from "@/integrations/orpc/client";
+import { DefaultHeader } from "../-layout/default-header";
 import { BankAccountFormSheet } from "./-bank-accounts/bank-account-form-sheet";
 import {
    buildBankAccountColumns,
@@ -60,7 +75,7 @@ function normalizeImportLabel(raw: unknown): string {
       .trim()
       .toLowerCase()
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
+      .replace(/[̀-ͯ]/g, "");
 }
 
 function resolveType(raw: unknown): BankAccountRow["type"] | undefined {
@@ -71,9 +86,8 @@ function resolveType(raw: unknown): BankAccountRow["type"] | undefined {
    if (parsed.success) return parsed.data;
    if (normalizeImportLabel(TYPE_LABELS.checking) === str) return "checking";
    if (normalizeImportLabel(TYPE_LABELS.savings) === str) return "savings";
-   if (normalizeImportLabel(TYPE_LABELS.investment) === str) {
+   if (normalizeImportLabel(TYPE_LABELS.investment) === str)
       return "investment";
-   }
    if (normalizeImportLabel(TYPE_LABELS.payment) === str) return "payment";
    if (normalizeImportLabel(TYPE_LABELS.cash) === str) return "cash";
    return undefined;
@@ -140,6 +154,7 @@ function BankAccountsList() {
    const { publicEnv } = Route.useRouteContext();
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
+   const layout = useDataTableLayout("bank-accounts");
 
    const { data: result } = useSuspenseQuery(
       orpc.bankAccounts.list.queryOptions({
@@ -152,20 +167,17 @@ function BankAccountsList() {
          onError: (e) => toast.error(e.message),
       }),
    );
-
    const updateMutation = useMutation(
       orpc.bankAccounts.update.mutationOptions({
          onError: (e) => toast.error(e.message),
       }),
    );
-
    const deleteMutation = useMutation(
       orpc.bankAccounts.remove.mutationOptions({
          onSuccess: () => toast.success("Conta excluída com sucesso."),
          onError: (e) => toast.error(e.message),
       }),
    );
-
    const bulkDeleteMutation = useMutation(
       orpc.bankAccounts.bulkRemove.mutationOptions({
          onSuccess: ({ deleted }) =>
@@ -187,21 +199,15 @@ function BankAccountsList() {
       openSheet({ renderChildren: () => <BankAccountFormSheet /> });
    }, [openSheet]);
 
-   const importConfig: DataTableImportConfig = useMemo(
+   const importConfig: DataImportConfig = useMemo(
       () => ({
-         accept: {
-            "text/csv": [".csv"],
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-               [".xlsx"],
-            "application/vnd.ms-excel": [".xls"],
-         },
          parseFile: async (file: File) => {
             const ext = file.name.split(".").pop()?.toLowerCase();
             if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
             return parseCsv(file);
          },
          mapRow: (row, i) => ({
-            id: `__import_${i}`,
+            id: `__import_${i + 1}`,
             teamId: "",
             name: String(row.name ?? "").trim(),
             type: resolveType(row.type),
@@ -280,20 +286,18 @@ function BankAccountsList() {
                );
             }
             const accounts = rows.flatMap((r) => {
-               const type = resolveType(r.type);
-               if (!type) return [];
+               const t = resolveType(r.type);
+               if (!t) return [];
                return [
                   {
                      name: String(r.name ?? "").trim(),
-                     type,
+                     type: t,
                      color: "#6366f1",
                      initialBalance: String(r.initialBalance ?? "0"),
                   },
                ];
             });
-            await bulkCreateMutation.mutateAsync({
-               accounts,
-            });
+            await bulkCreateMutation.mutateAsync({ accounts });
          },
       }),
       [bulkCreateMutation, generateCsv, generateXlsx, parseCsv, parseXlsx],
@@ -315,121 +319,230 @@ function BankAccountsList() {
       [openAlertDialog, deleteMutation],
    );
 
-   const columns = useMemo(
-      () =>
-         buildBankAccountColumns({
-            logoDevToken: publicEnv?.LOGO_DEV_TOKEN,
-            onRenameAccount: handleRenameAccount,
-         }),
-      [handleRenameAccount, publicEnv?.LOGO_DEV_TOKEN],
+   const columns = useMemo<ColumnDef<BankAccountRow>[]>(() => {
+      const base = buildBankAccountColumns({
+         logoDevToken: publicEnv?.LOGO_DEV_TOKEN,
+         onRenameAccount: handleRenameAccount,
+      });
+      const selectColumn: ColumnDef<BankAccountRow> = {
+         id: "__select",
+         size: 40,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { importIgnore: true },
+         header: ({ table }) => (
+            <Checkbox
+               aria-label="Selecionar todas"
+               checked={
+                  table.getIsAllPageRowsSelected()
+                     ? true
+                     : table.getIsSomePageRowsSelected()
+                       ? "indeterminate"
+                       : false
+               }
+               onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+            />
+         ),
+         cell: ({ row }) => (
+            <Checkbox
+               aria-label="Selecionar linha"
+               checked={row.getIsSelected()}
+               disabled={!row.getCanSelect()}
+               onCheckedChange={(v) => row.toggleSelected(!!v)}
+            />
+         ),
+      };
+      const actionsColumn: ColumnDef<BankAccountRow> = {
+         id: "__actions",
+         size: 100,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { importIgnore: true, align: "right" },
+         cell: ({ row }) => (
+            <div className="flex justify-end gap-2">
+               <Button
+                  asChild
+                  size="icon-sm"
+                  tooltip="Ver lançamentos"
+                  variant="outline"
+               >
+                  <Link
+                     params={{ slug, teamSlug }}
+                     search={{
+                        bankId: row.original.id,
+                        contactId: "",
+                        overdueOnly: false,
+                        page: 1,
+                        pageSize: 20,
+                        search: "",
+                        status: [],
+                        view: "all",
+                     }}
+                     to="/$slug/$teamSlug/transactions"
+                  >
+                     <ReceiptText className="size-4" />
+                     <span className="sr-only">Ver lançamentos</span>
+                  </Link>
+               </Button>
+               <Button
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => handleDelete(row.original)}
+                  size="icon-sm"
+                  tooltip="Excluir"
+                  variant="outline"
+               >
+                  <Trash2 className="size-4" />
+                  <span className="sr-only">Excluir</span>
+               </Button>
+            </div>
+         ),
+      };
+      return [selectColumn, ...base, actionsColumn];
+   }, [
+      handleDelete,
+      handleRenameAccount,
+      publicEnv?.LOGO_DEV_TOKEN,
+      slug,
+      teamSlug,
+   ]);
+
+   const handleSortingChange = useCallback(
+      (updater: SortingState | ((prev: SortingState) => SortingState)) => {
+         const next =
+            typeof updater === "function" ? updater(sorting) : updater;
+         startTransition(() => {
+            navigate({
+               search: (prev) => ({ ...prev, sorting: next, page: 1 }),
+               replace: true,
+            });
+         });
+      },
+      [navigate, sorting],
    );
+
+   const handlePaginationChange = useCallback(
+      (
+         updater:
+            | PaginationState
+            | ((prev: PaginationState) => PaginationState),
+      ) => {
+         const current: PaginationState = {
+            pageIndex: page - 1,
+            pageSize,
+         };
+         const next =
+            typeof updater === "function" ? updater(current) : updater;
+         startTransition(() => {
+            navigate({
+               search: (prev) => ({
+                  ...prev,
+                  page: next.pageIndex + 1,
+                  pageSize: next.pageSize,
+               }),
+               replace: true,
+            });
+         });
+      },
+      [navigate, page, pageSize],
+   );
+
+   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
+   const table = useReactTable({
+      data: result.data,
+      columns,
+      getRowId: (row) => row.id,
+      pageCount: result.totalPages || 1,
+      manualPagination: true,
+      manualSorting: true,
+      manualFiltering: true,
+      state: {
+         sorting,
+         columnFilters,
+         pagination: { pageIndex: page - 1, pageSize },
+         rowSelection,
+      },
+      onSortingChange: handleSortingChange,
+      onPaginationChange: handlePaginationChange,
+      onRowSelectionChange: setRowSelection,
+      onColumnSizingChange: layout.onColumnSizingChange,
+      onColumnOrderChange: layout.onColumnOrderChange,
+      onColumnVisibilityChange: layout.onColumnVisibilityChange,
+      onColumnPinningChange: layout.onColumnPinningChange,
+      initialState: {
+         columnSizing: layout.initialState.columnSizing,
+         columnOrder: layout.initialState.columnOrder,
+         columnVisibility: layout.initialState.columnVisibility,
+         columnPinning: layout.initialState.columnPinning,
+      },
+      getCoreRowModel: getCoreRowModel(),
+   });
+
+   const importApi = useDataImport({ table, config: importConfig });
 
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <DataTableRoot
-            columns={columns}
-            data={result.data}
-            getRowId={(row) => row.id}
-            storageKey="montte:datatable:bank-accounts"
-            sorting={sorting}
-            onSortingChange={(updater) => {
-               const next =
-                  typeof updater === "function" ? updater(sorting) : updater;
-               navigate({
-                  search: (prev) => ({ ...prev, sorting: next }),
-                  replace: true,
-               });
-            }}
-            columnFilters={columnFilters}
-            onColumnFiltersChange={(updater) => {
-               const next =
-                  typeof updater === "function"
-                     ? updater(columnFilters)
-                     : updater;
-               navigate({
-                  search: (prev) => ({ ...prev, columnFilters: next, page: 1 }),
-                  replace: true,
-               });
-            }}
-            renderActions={({ row }) => (
-               <>
-                  <Button
-                     asChild
-                     size="icon"
-                     tooltip="Ver lançamentos"
-                     variant="outline"
-                  >
-                     <Link
-                        params={{ slug, teamSlug }}
-                        search={{
-                           bankId: row.original.id,
-                           contactId: "",
-                           overdueOnly: false,
-                           page: 1,
-                           pageSize: 20,
-                           search: "",
-                           status: [],
-                           view: "all",
-                        }}
-                        to="/$slug/$teamSlug/transactions"
-                     >
-                        <ReceiptText className="size-4" />
-                        <span className="sr-only">Ver lançamentos</span>
-                     </Link>
-                  </Button>
-                  <Button
-                     className="text-destructive hover:text-destructive"
-                     onClick={() => handleDelete(row.original)}
-                     size="icon"
-                     tooltip="Excluir"
-                     variant="outline"
-                  >
-                     <Trash2 className="size-4" />
-                     <span className="sr-only">Excluir</span>
-                  </Button>
-               </>
-            )}
-         >
-            {TYPES.map((key) => (
-               <DataTableExternalFilter
-                  key={key}
-                  id={`type:${key}`}
-                  label={TYPE_LABELS[key]}
-                  group="Tipo"
-                  active={type === key}
-                  onToggle={(active) =>
-                     navigate({
-                        search: (prev) => ({
-                           ...prev,
-                           type: active ? key : undefined,
-                           page: 1,
-                        }),
-                        replace: true,
+         <DataTableRoot table={table}>
+            <DataTableToolbar>
+               <DataTableSearch
+                  onChange={(value) =>
+                     startTransition(() => {
+                        navigate({
+                           search: (prev) => ({
+                              ...prev,
+                              search: value,
+                              page: 1,
+                           }),
+                           replace: true,
+                        });
                      })
                   }
+                  placeholder="Buscar conta por nome..."
+                  value={search}
                />
-            ))}
-            <DataTableToolbar
-               searchPlaceholder="Buscar conta por nome..."
-               searchDefaultValue={search}
-               onSearch={(value) =>
-                  navigate({
-                     search: (prev) => ({ ...prev, search: value, page: 1 }),
-                     replace: true,
-                  })
-               }
-            >
-               <DataTableImportButton importConfig={importConfig} />
-               <Button
-                  onClick={handleOpenCreate}
-                  size="icon-sm"
-                  tooltip="Nova Conta"
-                  variant="outline"
-               >
-                  <Plus />
-               </Button>
+               <DataTableToolbarGroup>
+                  <PageFilters>
+                     {TYPES.map((key) => (
+                        <PageFilter
+                           active={type === key}
+                           group="Tipo"
+                           id={`type:${key}`}
+                           key={key}
+                           label={TYPE_LABELS[key]}
+                           onToggle={(active) =>
+                              navigate({
+                                 search: (prev) => ({
+                                    ...prev,
+                                    type: active ? key : undefined,
+                                    page: 1,
+                                 }),
+                                 replace: true,
+                              })
+                           }
+                        />
+                     ))}
+                  </PageFilters>
+                  <DataTableColumnVisibility />
+                  <DataImportButton api={importApi} config={importConfig} />
+                  <Button
+                     onClick={handleOpenCreate}
+                     size="icon-sm"
+                     tooltip="Nova Conta"
+                     variant="outline"
+                  >
+                     <Plus />
+                  </Button>
+               </DataTableToolbarGroup>
             </DataTableToolbar>
-            <DataTableContent className="flex-1 overflow-auto min-h-0" />
+            <DataTableContainer>
+               <DataTableHeader />
+               <DataTableBody<BankAccountRow> />
+            </DataTableContainer>
+            <DataImportSection
+               api={importApi}
+               config={importConfig}
+               table={table}
+            />
             <DataTableEmptyState>
                <Empty>
                   <EmptyMedia>
@@ -444,13 +557,13 @@ function BankAccountsList() {
                   </EmptyHeader>
                </Empty>
             </DataTableEmptyState>
-            <DataTableBulkActions<BankAccountRow>>
-               {({ selectedRows, clearSelection }) => (
+            {result.totalCount > 0 && <DataTablePagination />}
+            <DataTableBulkActionBar<BankAccountRow>>
+               {({ rows, clear }) => (
                   <SelectionActionButton
                      icon={<Trash2 className="size-4" />}
-                     variant="destructive"
                      onClick={() => {
-                        const ids = selectedRows.map((r) => r.id);
+                        const ids = rows.map((r) => r.original.id);
                         openAlertDialog({
                            title: `Excluir ${ids.length} ${ids.length === 1 ? "conta" : "contas"}`,
                            description:
@@ -460,36 +573,17 @@ function BankAccountsList() {
                            variant: "destructive",
                            onAction: async () => {
                               await bulkDeleteMutation.mutateAsync({ ids });
-                              clearSelection();
+                              clear();
                            },
                         });
                      }}
+                     variant="destructive"
                   >
                      Excluir
                   </SelectionActionButton>
                )}
-            </DataTableBulkActions>
+            </DataTableBulkActionBar>
          </DataTableRoot>
-         {result.totalCount > 0 && (
-            <DataTablePagination
-               currentPage={page}
-               pageSize={pageSize}
-               totalPages={result.totalPages}
-               totalCount={result.totalCount}
-               onPageChange={(p) =>
-                  navigate({
-                     search: (prev) => ({ ...prev, page: p }),
-                     replace: true,
-                  })
-               }
-               onPageSizeChange={(s) =>
-                  navigate({
-                     search: (prev) => ({ ...prev, pageSize: s, page: 1 }),
-                     replace: true,
-                  })
-               }
-            />
-         )}
       </div>
    );
 }
