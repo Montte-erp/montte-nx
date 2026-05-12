@@ -1,4 +1,6 @@
+import { createSlug } from "@core/utils/text";
 import { Button } from "@packages/ui/components/button";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import {
    Empty,
    EmptyContent,
@@ -7,6 +9,7 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import { SelectionActionButton } from "@packages/ui/components/selection-action-bar";
 import {
    useMutation,
    useQueryClient,
@@ -14,11 +17,15 @@ import {
 } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
-   formatCostBRL,
-   summarizeByAggregation,
-   totalUnitCost,
-   type MeterForAggregate,
-} from "@modules/billing/services/meters-aggregates";
+   getCoreRowModel,
+   getFilteredRowModel,
+   getSortedRowModel,
+   useReactTable,
+   type ColumnDef,
+   type ColumnFiltersState,
+   type RowSelectionState,
+   type SortingState,
+} from "@tanstack/react-table";
 import {
    Activity,
    CheckCircle2,
@@ -29,25 +36,29 @@ import {
    Trash2,
    XCircle,
 } from "lucide-react";
-import {
-   DataTableBulkActions,
-   SelectionActionButton,
-} from "@/components/data-table/data-table-bulk-actions";
-import { useCallback, useMemo } from "react";
+import { startTransition, useCallback, useMemo, useState } from "react";
 import { toast } from "@packages/ui/components/sonner";
 import { z } from "zod";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
+import { DataTableBody } from "@/components/data-table-v2/data-table-body";
+import { DataTableBulkActionBar } from "@/components/data-table-v2/data-table-bulk-action-bar";
+import { DataTableColumnVisibility } from "@/components/data-table-v2/data-table-column-visibility";
+import { DataTableContainer } from "@/components/data-table-v2/data-table-container";
+import { DataTableEmptyState } from "@/components/data-table-v2/data-table-empty-state";
+import { DataTableHeader } from "@/components/data-table-v2/data-table-header";
+import { DataTableRoot } from "@/components/data-table-v2/data-table-root";
+import { DataTableSearch } from "@/components/data-table-v2/data-table-search";
+import { DataTableSkeleton } from "@/components/data-table-v2/data-table-skeleton";
 import {
-   DataTableImportButton,
-   type DataTableImportConfig,
-} from "@/components/data-table/data-table-import";
-import {
-   DataTableExternalFilter,
-   DataTableRoot,
-} from "@/components/data-table/data-table-root";
-import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+   DataTableToolbar,
+   DataTableToolbarGroup,
+} from "@/components/data-table-v2/data-table-toolbar";
+import { useDataTableLayout } from "@/components/data-table-v2/use-data-table-layout";
+import { DataImportButton } from "@/features/data-import/data-import-button";
+import { DataImportSection } from "@/features/data-import/data-import-section";
+import { useDataImport } from "@/features/data-import/use-data-import";
+import type { DataImportConfig } from "@/features/data-import/types";
+import { PageFilters } from "@/components/page-filters/page-filters";
+import { PageFilter } from "@/components/page-filters/page-filter";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { DefaultHeader } from "../../-layout/default-header";
@@ -57,25 +68,29 @@ import { QueryBoundary } from "@/components/query-boundary";
 import { useContextPanelInfo } from "../../-context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
-import { createSlug } from "@core/utils/text";
+import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
 import {
    buildMeterColumns,
    type MeterRow,
 } from "./-meters/build-meter-columns";
+import { MeterFormSheet } from "./-meters/meter-form-sheet";
 import { MeterUsagePanel } from "./-meters/meter-usage-panel";
 import { MetersAnalytics } from "./-meters/meters-analytics";
-import {
-   AGG_ICON,
-   AGG_LABEL,
-   type MeterAggregationKey,
-} from "./-meters/labels";
+import { type MeterAggregationKey } from "./-meters/labels";
 
 const AGGREGATIONS = ["sum", "count", "count_unique", "max", "last"] as const;
 
 const searchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .catch([])
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .catch([])
+      .default([]),
    search: z.string().catch("").default(""),
-   add: z.boolean().catch(false).default(false),
    isActive: z
       .union([z.literal(true), z.literal(false)])
       .optional()
@@ -147,8 +162,10 @@ function MetersList() {
    const queryClient = useQueryClient();
    const { openAlertDialog } = useAlertDialog();
    const { openCredenza } = useCredenza();
+   const { openSheet } = useSheet();
    const { parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
+   const layout = useDataTableLayout("meters");
 
    const queryInput = {
       search: search.search || undefined,
@@ -171,10 +188,6 @@ function MetersList() {
 
    const createMutation = useMutation(
       orpc.meters.createMeter.mutationOptions({
-         onSuccess: () => {
-            toast.success("Medidor criado.");
-            navigate({ search: (s) => ({ ...s, add: false }), replace: true });
-         },
          onError: (e) => toast.error(e.message),
       }),
    );
@@ -209,30 +222,11 @@ function MetersList() {
       [updateMutation],
    );
 
-   const handleAdd = useCallback(
-      async (data: Record<string, string | string[]>) => {
-         const name = String(data.name ?? "").trim();
-         if (!name) {
-            toast.error("Nome é obrigatório.");
-            return;
-         }
-         const eventName = createSlug(name).replace(/-/g, "_") || "evento";
-         const unitCostStr = String(data.unitCost ?? "0");
-         const unitCost = Number.isFinite(Number(unitCostStr))
-            ? Number(unitCostStr).toFixed(4)
-            : "0";
-         await createMutation.mutateAsync({
-            name,
-            eventName,
-            aggregation: "sum",
-            filters: {},
-            unitCost,
-         });
-      },
-      [createMutation],
-   );
+   const handleOpenCreate = useCallback(() => {
+      openSheet({ renderChildren: () => <MeterFormSheet /> });
+   }, [openSheet]);
 
-   const importConfig: DataTableImportConfig = useMemo(
+   const importConfig: DataImportConfig = useMemo(
       () => ({
          parseFile: async (file: File) => {
             const ext = file.name.split(".").pop()?.toLowerCase();
@@ -344,167 +338,184 @@ function MetersList() {
       [openCredenza],
    );
 
-   const columns = useMemo(
-      () =>
-         buildMeterColumns({
-            onSaveCell: handleSaveCell,
-            onOpenUsage: handleOpenUsage,
-            includeUsedIn: true,
-         }),
-      [handleSaveCell, handleOpenUsage],
-   );
+   const columns = useMemo<ColumnDef<MeterRow>[]>(() => {
+      const base = buildMeterColumns({
+         onSaveCell: handleSaveCell,
+         onOpenUsage: handleOpenUsage,
+         includeUsedIn: true,
+      });
+      const selectColumn: ColumnDef<MeterRow> = {
+         id: "__select",
+         size: 40,
+         enableSorting: false,
+         enableHiding: false,
+         header: ({ table }) => (
+            <Checkbox
+               aria-label="Selecionar todos"
+               checked={
+                  table.getIsAllPageRowsSelected()
+                     ? true
+                     : table.getIsSomePageRowsSelected()
+                       ? "indeterminate"
+                       : false
+               }
+               onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+            />
+         ),
+         cell: ({ row }) => (
+            <Checkbox
+               aria-label="Selecionar linha"
+               checked={row.getIsSelected()}
+               disabled={!row.getCanSelect()}
+               onCheckedChange={(v) => row.toggleSelected(!!v)}
+            />
+         ),
+      };
+      const actionsColumn: ColumnDef<MeterRow> = {
+         id: "__actions",
+         size: 60,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { align: "right" },
+         cell: ({ row }) => (
+            <div className="flex justify-end gap-2">
+               <Button
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => handleDelete(row.original)}
+                  size="icon-sm"
+                  tooltip="Excluir"
+                  variant="ghost"
+               >
+                  <Trash2 />
+                  <span className="sr-only">Excluir</span>
+               </Button>
+            </div>
+         ),
+      };
+      return [selectColumn, ...base, actionsColumn];
+   }, [handleSaveCell, handleOpenUsage, handleDelete]);
 
-   const renderActions = useCallback(
-      ({ row }: { row: { original: MeterRow } }) => (
-         <Button
-            className="text-destructive hover:text-destructive"
-            onClick={() => handleDelete(row.original)}
-            size="icon-sm"
-            tooltip="Excluir"
-            variant="ghost"
-         >
-            <span className="sr-only">Excluir</span>×
-         </Button>
-      ),
-      [handleDelete],
+   const [sorting, setSorting] = useState<SortingState>(search.sorting);
+   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
+      search.columnFilters,
    );
+   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
-   const groupBy = useCallback(
-      (row: MeterRow) => (row.isActive ? row.aggregation : "__inactive__"),
-      [],
-   );
-
-   const renderGroupHeader = useCallback(
-      (key: string, rows: { original: MeterRow }[]) => {
-         if (key === "__inactive__") {
-            return (
-               <span className="inline-flex items-center gap-2 text-muted-foreground">
-                  <PauseCircle className="size-4" />
-                  <span className="font-semibold">Pausados</span>
-                  <span>· {rows.length}</span>
-               </span>
-            );
-         }
-         const agg = key as MeterAggregationKey;
-         const Icon = AGG_ICON[agg];
-         const aggregates: MeterForAggregate[] = rows.map((r) => ({
-            id: r.original.id,
-            name: r.original.name,
-            aggregation: r.original.aggregation,
-            unitCost: r.original.unitCost,
-            isActive: r.original.isActive,
-            usedIn: r.original.usedIn,
-         }));
-         const summary = summarizeByAggregation(aggregates)[0];
-         const total = totalUnitCost(aggregates);
-         return (
-            <span className="inline-flex items-center gap-2">
-               <Icon className="size-4" />
-               <span className="font-semibold">{AGG_LABEL[agg]}</span>
-               <span className="text-muted-foreground">
-                  · {summary?.activeCount ?? 0} ativos · {formatCostBRL(total)}
-                  {summary?.topByCost
-                     ? ` · top: "${summary.topByCost.name}"`
-                     : ""}
-               </span>
-            </span>
-         );
+   const table = useReactTable({
+      data: meters,
+      columns,
+      getRowId: (r) => r.id,
+      state: { sorting, columnFilters, rowSelection },
+      onSortingChange: setSorting,
+      onColumnFiltersChange: setColumnFilters,
+      onRowSelectionChange: setRowSelection,
+      onColumnSizingChange: layout.onColumnSizingChange,
+      onColumnOrderChange: layout.onColumnOrderChange,
+      onColumnVisibilityChange: layout.onColumnVisibilityChange,
+      onColumnPinningChange: layout.onColumnPinningChange,
+      initialState: {
+         columnSizing: layout.initialState.columnSizing,
+         columnOrder: layout.initialState.columnOrder,
+         columnVisibility: layout.initialState.columnVisibility,
+         columnPinning: layout.initialState.columnPinning,
       },
-      [],
-   );
+      getCoreRowModel: getCoreRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+      getFilteredRowModel: getFilteredRowModel(),
+   });
+
+   const importApi = useDataImport({ table, config: importConfig });
 
    return (
-      <DataTableRoot
-         columns={columns}
-         data={meters}
-         getRowId={(r) => r.id}
-         groupBy={groupBy}
-         renderGroupHeader={renderGroupHeader}
-         renderActions={renderActions}
-         isDraftRowActive={search.add}
-         onAddRow={handleAdd}
-         onDiscardAddRow={() =>
-            navigate({ search: (s) => ({ ...s, add: false }), replace: true })
-         }
-         storageKey="montte:datatable:meters"
-      >
-         <DataTableExternalFilter
-            id="onlyActive"
-            label="Somente ativos"
-            group="Status"
-            active={search.isActive === true}
-            renderIcon={() => <Activity className="size-4" />}
-            onToggle={(active) =>
-               navigate({
-                  search: (s) => ({
-                     ...s,
-                     isActive: active ? true : undefined,
-                  }),
-                  replace: true,
-               })
-            }
-         />
-         <DataTableExternalFilter
-            id="onlyPaused"
-            label="Somente pausados"
-            group="Status"
-            active={search.isActive === false}
-            renderIcon={() => <PauseCircle className="size-4" />}
-            onToggle={(active) =>
-               navigate({
-                  search: (s) => ({
-                     ...s,
-                     isActive: active ? false : undefined,
-                  }),
-                  replace: true,
-               })
-            }
-         />
-         <DataTableExternalFilter
-            id="onlyInUse"
-            label="Em uso"
-            group="Uso"
-            active={search.onlyInUse}
-            renderIcon={() => <Link2 className="size-4" />}
-            onToggle={(active) =>
-               navigate({
-                  search: (s) => ({ ...s, onlyInUse: active }),
-                  replace: true,
-               })
-            }
-         />
+      <DataTableRoot table={table}>
          <div className="flex flex-col gap-4">
-            <DataTableToolbar
-               searchPlaceholder="Buscar medidor..."
-               searchDefaultValue={search.search}
-               onSearch={(v) =>
-                  navigate({
-                     search: (s) => ({ ...s, search: v }),
-                     replace: true,
-                  })
-               }
-            >
-               <DataTableImportButton importConfig={importConfig} />
-               <Button
-                  id="tour-meters-create"
-                  onClick={() =>
-                     navigate({
-                        search: (s) => ({ ...s, add: true }),
-                        replace: true,
+            <DataTableToolbar>
+               <DataTableSearch
+                  onChange={(v) =>
+                     startTransition(() => {
+                        navigate({
+                           search: (s) => ({ ...s, search: v }),
+                           replace: true,
+                        });
                      })
                   }
-                  size="icon-sm"
-                  tooltip="Novo medidor"
-                  variant="outline"
-               >
-                  <Plus />
-                  <span className="sr-only">Novo medidor</span>
-               </Button>
+                  placeholder="Buscar medidor..."
+                  value={search.search}
+               />
+               <DataTableToolbarGroup>
+                  <PageFilters>
+                     <PageFilter
+                        active={search.isActive === true}
+                        group="Status"
+                        icon={<Activity className="size-4" />}
+                        id="onlyActive"
+                        label="Somente ativos"
+                        onToggle={(active) =>
+                           navigate({
+                              search: (s) => ({
+                                 ...s,
+                                 isActive: active ? true : undefined,
+                              }),
+                              replace: true,
+                           })
+                        }
+                     />
+                     <PageFilter
+                        active={search.isActive === false}
+                        group="Status"
+                        icon={<PauseCircle className="size-4" />}
+                        id="onlyPaused"
+                        label="Somente pausados"
+                        onToggle={(active) =>
+                           navigate({
+                              search: (s) => ({
+                                 ...s,
+                                 isActive: active ? false : undefined,
+                              }),
+                              replace: true,
+                           })
+                        }
+                     />
+                     <PageFilter
+                        active={search.onlyInUse}
+                        group="Uso"
+                        icon={<Link2 className="size-4" />}
+                        id="onlyInUse"
+                        label="Em uso"
+                        onToggle={(active) =>
+                           navigate({
+                              search: (s) => ({ ...s, onlyInUse: active }),
+                              replace: true,
+                           })
+                        }
+                     />
+                  </PageFilters>
+                  <DataTableColumnVisibility />
+                  <DataImportButton api={importApi} config={importConfig} />
+                  <Button
+                     id="tour-meters-create"
+                     onClick={handleOpenCreate}
+                     size="icon-sm"
+                     tooltip="Novo medidor"
+                     variant="outline"
+                  >
+                     <Plus />
+                     <span className="sr-only">Novo medidor</span>
+                  </Button>
+               </DataTableToolbarGroup>
             </DataTableToolbar>
-            <DataTableContent />
-            <DataTableBulkActions<MeterRow>>
-               {({ selectedRows, clearSelection }) => {
-                  const ids = selectedRows.map((r) => r.id);
+            <DataTableContainer>
+               <DataTableHeader />
+               <DataTableBody<MeterRow> />
+            </DataTableContainer>
+            <DataImportSection
+               api={importApi}
+               config={importConfig}
+               table={table}
+            />
+            <DataTableBulkActionBar<MeterRow>>
+               {({ rows, clear }) => {
+                  const ids = rows.map((r) => r.original.id);
                   return (
                      <>
                         <SelectionActionButton
@@ -517,7 +528,7 @@ function MetersList() {
                                  toast.success(
                                     `${res.updated} medidor(es) ativado(s).`,
                                  );
-                              clearSelection();
+                              clear();
                            }}
                         >
                            Ativar
@@ -532,7 +543,7 @@ function MetersList() {
                                  toast.success(
                                     `${res.updated} medidor(es) desativado(s).`,
                                  );
-                              clearSelection();
+                              clear();
                            }}
                         >
                            Desativar
@@ -554,7 +565,7 @@ function MetersList() {
                                           removeMutation.mutateAsync({ id }),
                                        ),
                                     );
-                                    clearSelection();
+                                    clear();
                                  },
                               })
                            }
@@ -564,7 +575,7 @@ function MetersList() {
                      </>
                   );
                }}
-            </DataTableBulkActions>
+            </DataTableBulkActionBar>
             <DataTableEmptyState>
                <Empty>
                   <EmptyHeader>
@@ -578,14 +589,7 @@ function MetersList() {
                      </EmptyDescription>
                   </EmptyHeader>
                   <EmptyContent>
-                     <Button
-                        onClick={() =>
-                           navigate({
-                              search: (s) => ({ ...s, add: true }),
-                              replace: true,
-                           })
-                        }
-                     >
+                     <Button onClick={handleOpenCreate}>
                         <Plus />
                         Novo medidor
                      </Button>
