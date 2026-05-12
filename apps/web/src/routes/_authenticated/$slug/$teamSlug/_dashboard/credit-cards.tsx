@@ -36,6 +36,7 @@ import { z } from "zod";
 import { DefaultHeader } from "../-layout/default-header";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { ExportButton } from "@/components/export-button/export-button";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
 import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
@@ -515,7 +516,9 @@ function CreditCardsList() {
       manualPagination: true,
       manualSorting: true,
       manualFiltering: true,
-      state: urlState.state,
+      columnResizeMode: "onChange",
+      defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      state: { ...urlState.state, ...layout.state },
       onSortingChange: urlState.onSortingChange,
       onColumnFiltersChange: handleColumnFiltersChange,
       onPaginationChange: urlState.onPaginationChange,
@@ -524,12 +527,6 @@ function CreditCardsList() {
       onColumnOrderChange: layout.onColumnOrderChange,
       onColumnVisibilityChange: layout.onColumnVisibilityChange,
       onColumnPinningChange: layout.onColumnPinningChange,
-      initialState: {
-         columnSizing: layout.initialState.columnSizing,
-         columnOrder: layout.initialState.columnOrder,
-         columnVisibility: layout.initialState.columnVisibility,
-         columnPinning: layout.initialState.columnPinning,
-      },
       getCoreRowModel: getCoreRowModel(),
       getExpandedRowModel: getExpandedRowModel(),
       getRowCanExpand: () => true,
@@ -569,9 +566,10 @@ function CreditCardsList() {
 
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <div className="flex flex-col gap-4">
+         <div className="flex flex-1 flex-col gap-4 min-h-0">
             <div className="flex flex-wrap items-center gap-2 justify-between">
                <SearchInput
+                  className="max-w-sm"
                   aria-label="Buscar cartões..."
                   onChange={(e) => searchInput.onChange(e.target.value)}
                   placeholder="Buscar cartões..."
@@ -579,6 +577,7 @@ function CreditCardsList() {
                />
                <div className="flex flex-wrap items-center gap-2">
                   <DataTableColumnVisibility table={table} />
+                  <ExportButton table={table} fileBase="cartoes-credito" />
                   <DataImportButton api={importApi} config={importConfig} />
                   <Button
                      onClick={handleOpenCreate}
@@ -591,7 +590,7 @@ function CreditCardsList() {
                   </Button>
                </div>
             </div>
-            <ScrollArea className="rounded-md border bg-card">
+            <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
                <Table>
                   <DataTableHeader table={table} />
                   <DataTableBody<CreditCardRow>
@@ -601,26 +600,26 @@ function CreditCardsList() {
                      )}
                   />
                </Table>
+               <DataImportSection
+                  api={importApi}
+                  config={importConfig}
+                  table={table}
+               />
+               {table.getRowCount() === 0 && (
+                  <Empty>
+                     <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                           <CreditCard className="size-6" />
+                        </EmptyMedia>
+                        <EmptyTitle>Nenhum cartão de crédito</EmptyTitle>
+                        <EmptyDescription>
+                           Adicione um cartão de crédito para controlar seus
+                           gastos.
+                        </EmptyDescription>
+                     </EmptyHeader>
+                  </Empty>
+               )}
             </ScrollArea>
-            <DataImportSection
-               api={importApi}
-               config={importConfig}
-               table={table}
-            />
-            {table.getRowCount() === 0 && (
-               <Empty>
-                  <EmptyHeader>
-                     <EmptyMedia variant="icon">
-                        <CreditCard className="size-6" />
-                     </EmptyMedia>
-                     <EmptyTitle>Nenhum cartão de crédito</EmptyTitle>
-                     <EmptyDescription>
-                        Adicione um cartão de crédito para controlar seus
-                        gastos.
-                     </EmptyDescription>
-                  </EmptyHeader>
-               </Empty>
-            )}
             <DataTablePagination table={table} />
          </div>
       </div>
@@ -629,7 +628,7 @@ function CreditCardsList() {
 
 function CreditCardsPage() {
    return (
-      <main className="flex h-full flex-col gap-4">
+      <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden">
          <DefaultHeader
             description="Gerencie seus cartões de crédito"
             title="Cartões de Crédito"

@@ -17,13 +17,16 @@ import {
    buildExportPayload,
    collectExportColumns,
    downloadCsvExport,
+   downloadJsonExport,
    downloadXlsxExport,
    type ExportOptions,
 } from "@/lib/export-rows";
 
-const EXPORT_FORMATS: { format: "csv" | "xlsx"; label: string }[] = [
+type ExportFormat = "csv" | "xlsx" | "json";
+const EXPORT_FORMATS: { format: ExportFormat; label: string }[] = [
    { format: "csv", label: "CSV" },
    { format: "xlsx", label: "XLSX" },
+   { format: "json", label: "JSON" },
 ];
 
 interface ExportButtonProps<TData> {
@@ -45,7 +48,7 @@ export function ExportButton<TData>({
    const { generate: generateXlsx } = useXlsxFile();
 
    const handleExport = useCallback(
-      (format: "csv" | "xlsx") => {
+      (format: ExportFormat) => {
          const rows = onlySelected
             ? table.getSelectedRowModel().rows
             : table.getRowModel().rows;
@@ -58,6 +61,10 @@ export function ExportButton<TData>({
          };
          if (format === "csv") {
             downloadCsvExport(generateCsv(data, headers), opts);
+            return;
+         }
+         if (format === "json") {
+            downloadJsonExport(data, opts);
             return;
          }
          downloadXlsxExport(generateXlsx(data, headers), opts);

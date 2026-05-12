@@ -34,6 +34,7 @@ import { z } from "zod";
 
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { ExportButton } from "@/components/export-button/export-button";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
 import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
@@ -407,7 +408,9 @@ function TagsList() {
       manualPagination: true,
       manualSorting: true,
       manualFiltering: true,
-      state: urlState.state,
+      columnResizeMode: "onChange",
+      defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      state: { ...urlState.state, ...layout.state },
       onSortingChange: urlState.onSortingChange,
       onColumnFiltersChange: urlState.onColumnFiltersChange,
       onPaginationChange: urlState.onPaginationChange,
@@ -416,12 +419,6 @@ function TagsList() {
       onColumnOrderChange: layout.onColumnOrderChange,
       onColumnVisibilityChange: layout.onColumnVisibilityChange,
       onColumnPinningChange: layout.onColumnPinningChange,
-      initialState: {
-         columnSizing: layout.initialState.columnSizing,
-         columnOrder: layout.initialState.columnOrder,
-         columnVisibility: layout.initialState.columnVisibility,
-         columnPinning: layout.initialState.columnPinning,
-      },
       getCoreRowModel: getCoreRowModel(),
    });
 
@@ -492,9 +489,10 @@ function TagsList() {
 
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <div className="flex flex-col gap-4">
+         <div className="flex flex-1 flex-col gap-4 min-h-0">
             <div className="flex flex-wrap items-center gap-2 justify-between">
                <SearchInput
+                  className="max-w-sm"
                   aria-label="Buscar centros de custo"
                   onChange={(e) => searchInput.onChange(e.target.value)}
                   placeholder="Buscar centros de custo..."
@@ -521,6 +519,7 @@ function TagsList() {
                      />
                   </PageFilters>
                   <DataTableColumnVisibility table={table} />
+                  <ExportButton table={table} fileBase="centros-custo" />
                   <DataImportButton api={importApi} config={importConfig} />
                   <Button
                      onClick={handleCreate}
@@ -533,31 +532,31 @@ function TagsList() {
                   </Button>
                </div>
             </div>
-            <ScrollArea className="rounded-md border bg-card">
+            <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
                <Table>
                   <DataTableHeader table={table} />
                   <DataTableBody<TagRow> table={table} />
                </Table>
+               <DataImportSection
+                  api={importApi}
+                  config={importConfig}
+                  table={table}
+               />
+               {table.getRowCount() === 0 && (
+                  <Empty>
+                     <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                           <Tag className="size-6" />
+                        </EmptyMedia>
+                        <EmptyTitle>Nenhum centro de custo</EmptyTitle>
+                        <EmptyDescription>
+                           Adicione um centro de custo para categorizar suas
+                           transações.
+                        </EmptyDescription>
+                     </EmptyHeader>
+                  </Empty>
+               )}
             </ScrollArea>
-            <DataImportSection
-               api={importApi}
-               config={importConfig}
-               table={table}
-            />
-            {table.getRowCount() === 0 && (
-               <Empty>
-                  <EmptyHeader>
-                     <EmptyMedia variant="icon">
-                        <Tag className="size-6" />
-                     </EmptyMedia>
-                     <EmptyTitle>Nenhum centro de custo</EmptyTitle>
-                     <EmptyDescription>
-                        Adicione um centro de custo para categorizar suas
-                        transações.
-                     </EmptyDescription>
-                  </EmptyHeader>
-               </Empty>
-            )}
             <DataTablePagination table={table} />
          </div>
       </div>
@@ -566,7 +565,7 @@ function TagsList() {
 
 function TagsPage() {
    return (
-      <main className="flex h-full flex-col gap-4">
+      <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden">
          <DefaultHeader
             description="Gerencie seus centros de custo para categorizar transações"
             title="Centros de Custo"

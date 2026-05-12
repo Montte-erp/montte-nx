@@ -471,6 +471,8 @@ function MembersContent() {
       data,
       columns,
       getRowId: (row) => `${row.kind}:${row.id}`,
+      columnResizeMode: "onChange",
+      defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
       state: { sorting, columnFilters },
       onSortingChange: handleSortingChange,
       onColumnFiltersChange: handleColumnFiltersChange,
@@ -489,6 +491,7 @@ function MembersContent() {
          <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-2 justify-between">
                <SearchInput
+                  className="max-w-sm"
                   aria-label="Buscar membros"
                   onChange={(e) => searchInput.onChange(e.target.value)}
                   placeholder="Pesquisar por nome ou e-mail..."

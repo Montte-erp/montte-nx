@@ -60,7 +60,7 @@ export interface ExportOptions {
 }
 
 export function buildExportFilename(
-   format: "csv" | "xlsx",
+   format: "csv" | "xlsx" | "json",
    opts: ExportOptions,
 ): string {
    const dateStr = dayjs().format(opts.dateFormat ?? "YYYY-MM-DD");
@@ -73,4 +73,14 @@ export function downloadCsvExport(blob: Blob, opts: ExportOptions): void {
 
 export function downloadXlsxExport(blob: Blob, opts: ExportOptions): void {
    downloadBlob(blob, buildExportFilename("xlsx", opts));
+}
+
+export function downloadJsonExport(
+   data: Record<string, string>[],
+   opts: ExportOptions,
+): void {
+   const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+   });
+   downloadBlob(blob, buildExportFilename("json", opts));
 }

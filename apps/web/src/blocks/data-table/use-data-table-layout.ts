@@ -42,6 +42,7 @@ function getHook(storageKey: string): LayoutHook {
 }
 
 export interface UseDataTableLayoutResult {
+   state: DataTableLayoutState;
    initialState: DataTableLayoutState;
    onColumnSizingChange: OnChangeFn<ColumnSizingState>;
    onColumnOrderChange: OnChangeFn<ColumnOrderState>;
@@ -114,6 +115,7 @@ export function useDataTableLayout(
    );
 
    return {
+      state: current,
       initialState: current,
       onColumnSizingChange,
       onColumnOrderChange,

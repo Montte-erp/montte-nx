@@ -30,7 +30,7 @@ export const Route = createFileRoute(
 
 function InboxPageSkeleton() {
    return (
-      <main className="flex flex-col gap-4">
+      <main className="flex flex-1 flex-col gap-4 overflow-y-auto">
          <Skeleton className="h-9 w-72" />
          <Skeleton className="h-9 w-96" />
          <Skeleton className="h-32" />
@@ -53,7 +53,7 @@ function InboxPageContent() {
    };
 
    return (
-      <main className="flex flex-col gap-4">
+      <main className="flex flex-1 flex-col gap-4 overflow-y-auto">
          <header className="flex flex-col gap-2">
             <h1 className="text-2xl font-semibold">Inbox</h1>
             <p className="text-muted-foreground text-sm">

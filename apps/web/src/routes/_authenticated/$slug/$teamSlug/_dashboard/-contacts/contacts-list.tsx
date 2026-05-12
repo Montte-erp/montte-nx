@@ -38,6 +38,7 @@ import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
 import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
 import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
+import { ExportButton } from "@/components/export-button/export-button";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
 import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -316,19 +317,15 @@ export function ContactsList() {
       data: filteredContacts,
       columns,
       getRowId: (row) => row.id,
-      state: { sorting, rowSelection },
+      columnResizeMode: "onChange",
+      defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      state: { sorting, rowSelection, ...layout.state },
       onSortingChange: setSorting,
       onRowSelectionChange: setRowSelection,
       onColumnSizingChange: layout.onColumnSizingChange,
       onColumnOrderChange: layout.onColumnOrderChange,
       onColumnVisibilityChange: layout.onColumnVisibilityChange,
       onColumnPinningChange: layout.onColumnPinningChange,
-      initialState: {
-         columnSizing: layout.initialState.columnSizing,
-         columnOrder: layout.initialState.columnOrder,
-         columnVisibility: layout.initialState.columnVisibility,
-         columnPinning: layout.initialState.columnPinning,
-      },
       getCoreRowModel: getCoreRowModel(),
       getSortedRowModel: getSortedRowModel(),
    });
@@ -367,9 +364,10 @@ export function ContactsList() {
 
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <div className="flex flex-col gap-4">
+         <div className="flex flex-1 flex-col gap-4 min-h-0">
             <div className="flex flex-wrap items-center gap-2 justify-between">
                <SearchInput
+                  className="max-w-sm"
                   aria-label="Buscar contatos"
                   onChange={(e) => searchInput.onChange(e.target.value)}
                   placeholder="Buscar por nome, email ou telefone..."
@@ -377,6 +375,7 @@ export function ContactsList() {
                />
                <div className="flex flex-wrap items-center gap-2">
                   <DataTableColumnVisibility table={table} />
+                  <ExportButton table={table} fileBase="contatos" />
                   <DataImportButton api={importApi} config={importConfig} />
                   <Button
                      onClick={handleOpenCreate}
@@ -389,32 +388,32 @@ export function ContactsList() {
                   </Button>
                </div>
             </div>
-            <ScrollArea className="rounded-md border bg-card">
+            <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
                <Table>
                   <DataTableHeader table={table} />
                   <DataTableBody<ContactRow> table={table} />
                </Table>
+               <DataImportSection
+                  api={importApi}
+                  config={importConfig}
+                  table={table}
+               />
+               {table.getRowCount() === 0 && (
+                  <Empty>
+                     <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                           <Users className="size-6" />
+                        </EmptyMedia>
+                        <EmptyTitle>Nenhum contato</EmptyTitle>
+                        <EmptyDescription>
+                           {search
+                              ? "Nenhum contato encontrado para a busca."
+                              : "Cadastre clientes e fornecedores para organizar suas transações."}
+                        </EmptyDescription>
+                     </EmptyHeader>
+                  </Empty>
+               )}
             </ScrollArea>
-            <DataImportSection
-               api={importApi}
-               config={importConfig}
-               table={table}
-            />
-            {table.getRowCount() === 0 && (
-               <Empty>
-                  <EmptyHeader>
-                     <EmptyMedia variant="icon">
-                        <Users className="size-6" />
-                     </EmptyMedia>
-                     <EmptyTitle>Nenhum contato</EmptyTitle>
-                     <EmptyDescription>
-                        {search
-                           ? "Nenhum contato encontrado para a busca."
-                           : "Cadastre clientes e fornecedores para organizar suas transações."}
-                     </EmptyDescription>
-                  </EmptyHeader>
-               </Empty>
-            )}
          </div>
       </div>
    );

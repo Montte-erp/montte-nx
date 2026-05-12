@@ -71,14 +71,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                <SidebarInset className="flex flex-col gap-2 overflow-hidden bg-sidebar">
                   <div className="flex flex-1 overflow-hidden">
                      <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-background">
-                        <main
-                           className={cn(
-                              "relative flex flex-1 flex-col p-4",
-                              hasDedicatedSidebar
-                                 ? "overflow-hidden"
-                                 : "overflow-y-auto",
-                           )}
-                        >
+                        <main className="relative flex flex-1 flex-col p-4 overflow-hidden">
                            {children}
                         </main>
                      </div>

@@ -221,7 +221,7 @@ function ContactDetailContent() {
    }
 
    return (
-      <main className="flex flex-col gap-4">
+      <main className="flex flex-1 flex-col gap-4 overflow-y-auto">
          <DefaultHeader
             title={contact.name}
             description={documentDescription}

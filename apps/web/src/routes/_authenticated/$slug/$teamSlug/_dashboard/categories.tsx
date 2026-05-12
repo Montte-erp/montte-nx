@@ -18,13 +18,17 @@ import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
    getCoreRowModel,
+   getExpandedRowModel,
    useReactTable,
    type ColumnDef,
+   type ExpandedState,
 } from "@tanstack/react-table";
 import {
    Archive,
    ArchiveRestore,
    ArrowLeftRight,
+   ChevronDown,
+   ChevronRight,
    FolderOpen,
    Plus,
    RefreshCw,
@@ -33,12 +37,13 @@ import {
    TrendingUp,
 } from "lucide-react";
 import { fromPromise } from "neverthrow";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "../-layout/default-header";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { ExportButton } from "@/components/export-button/export-button";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
 import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
@@ -100,13 +105,7 @@ export const Route = createFileRoute(
    validateSearch: categoriesSearchSchema,
    loaderDeps: ({
       search: { type, includeArchived, search, page, pageSize },
-   }) => ({
-      type,
-      includeArchived,
-      search,
-      page,
-      pageSize,
-   }),
+   }) => ({ type, includeArchived, search, page, pageSize }),
    loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
          orpc.categories.getPaginated.queryOptions({
@@ -175,7 +174,24 @@ function CategoriesList() {
          orpc.categories.getAll.queryOptions({}),
       ],
    });
-   const { data: categories, total } = result;
+   const { data: rows, total } = result;
+
+   const rootCategories = useMemo(
+      () => rows.filter((c) => !c.parentId),
+      [rows],
+   );
+   const childrenByParent = useMemo(() => {
+      const m = new Map<string, CategoryRow[]>();
+      for (const cat of rows) {
+         if (!cat.parentId) continue;
+         const list = m.get(cat.parentId);
+         if (list) list.push(cat);
+         else m.set(cat.parentId, [cat]);
+      }
+      return m;
+   }, [rows]);
+
+   const [expanded, setExpanded] = useState<ExpandedState>({});
 
    const deleteMutation = useMutation(
       orpc.categories.remove.mutationOptions({
@@ -383,6 +399,30 @@ function CategoriesList() {
          categories: categoryOptions,
          onUpdate: handleUpdateCategory,
       });
+      const expandColumn: ColumnDef<CategoryRow> = {
+         id: "__expand",
+         size: 36,
+         enableSorting: false,
+         enableHiding: false,
+         header: () => null,
+         cell: ({ row }) =>
+            row.getCanExpand() ? (
+               <Button
+                  aria-label={row.getIsExpanded() ? "Recolher" : "Expandir"}
+                  onClick={row.getToggleExpandedHandler()}
+                  size="icon-sm"
+                  variant="ghost"
+               >
+                  {row.getIsExpanded() ? (
+                     <ChevronDown className="size-4" />
+                  ) : (
+                     <ChevronRight className="size-4" />
+                  )}
+               </Button>
+            ) : (
+               <span className="inline-block size-7" aria-hidden />
+            ),
+      };
       const selectColumn: ColumnDef<CategoryRow> = {
          id: "__select",
          size: 40,
@@ -479,7 +519,7 @@ function CategoriesList() {
             );
          },
       };
-      return [selectColumn, ...base, actionsColumn];
+      return [selectColumn, expandColumn, ...base, actionsColumn];
    }, [
       categoryOptions,
       handleUpdateCategory,
@@ -500,14 +540,16 @@ function CategoriesList() {
    });
 
    const table = useReactTable({
-      data: categories,
+      data: rootCategories,
       columns,
       getRowId: (row) => row.id,
       pageCount: urlState.pageCount,
       manualPagination: true,
       manualSorting: true,
       manualFiltering: true,
-      state: urlState.state,
+      columnResizeMode: "onChange",
+      defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      state: { ...urlState.state, ...layout.state, expanded },
       onSortingChange: urlState.onSortingChange,
       onColumnFiltersChange: urlState.onColumnFiltersChange,
       onPaginationChange: urlState.onPaginationChange,
@@ -516,13 +558,11 @@ function CategoriesList() {
       onColumnOrderChange: layout.onColumnOrderChange,
       onColumnVisibilityChange: layout.onColumnVisibilityChange,
       onColumnPinningChange: layout.onColumnPinningChange,
-      initialState: {
-         columnSizing: layout.initialState.columnSizing,
-         columnOrder: layout.initialState.columnOrder,
-         columnVisibility: layout.initialState.columnVisibility,
-         columnPinning: layout.initialState.columnPinning,
-      },
+      onExpandedChange: setExpanded,
+      getSubRows: (row) => childrenByParent.get(row.id),
+      getRowCanExpand: (row) => (childrenByParent.get(row.id)?.length ?? 0) > 0,
       getCoreRowModel: getCoreRowModel(),
+      getExpandedRowModel: getExpandedRowModel(),
    });
 
    const importApi = useDataImport({ table, config: importConfig });
@@ -589,9 +629,10 @@ function CategoriesList() {
 
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <div className="flex flex-col gap-4">
+         <div className="flex flex-1 flex-col gap-4 min-h-0">
             <div className="flex flex-wrap items-center gap-2 justify-between">
                <SearchInput
+                  className="max-w-sm"
                   aria-label="Buscar categorias..."
                   onChange={(e) => searchInput.onChange(e.target.value)}
                   placeholder="Buscar categorias..."
@@ -669,6 +710,7 @@ function CategoriesList() {
                      />
                   </PageFilters>
                   <DataTableColumnVisibility table={table} />
+                  <ExportButton table={table} fileBase="categorias" />
                   <DataImportButton api={importApi} config={importConfig} />
                   <Button
                      onClick={handleCreate}
@@ -681,32 +723,32 @@ function CategoriesList() {
                   </Button>
                </div>
             </div>
-            <ScrollArea className="rounded-md border bg-card">
+            <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
                <Table>
                   <DataTableHeader table={table} />
                   <DataTableBody<CategoryRow> table={table} />
                </Table>
+               <DataImportSection
+                  api={importApi}
+                  config={importConfig}
+                  table={table}
+               />
+               {table.getRowCount() === 0 && (
+                  <Empty>
+                     <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                           <FolderOpen className="size-6" />
+                        </EmptyMedia>
+                        <EmptyTitle>Nenhuma categoria</EmptyTitle>
+                        <EmptyDescription>
+                           {type || search
+                              ? "Nenhuma categoria encontrada com os filtros atuais."
+                              : "Adicione uma categoria para organizar suas transações."}
+                        </EmptyDescription>
+                     </EmptyHeader>
+                  </Empty>
+               )}
             </ScrollArea>
-            <DataImportSection
-               api={importApi}
-               config={importConfig}
-               table={table}
-            />
-            {table.getRowCount() === 0 && (
-               <Empty>
-                  <EmptyHeader>
-                     <EmptyMedia variant="icon">
-                        <FolderOpen className="size-6" />
-                     </EmptyMedia>
-                     <EmptyTitle>Nenhuma categoria</EmptyTitle>
-                     <EmptyDescription>
-                        {type || search
-                           ? "Nenhuma categoria encontrada com os filtros atuais."
-                           : "Adicione uma categoria para organizar suas transações."}
-                     </EmptyDescription>
-                  </EmptyHeader>
-               </Empty>
-            )}
             <DataTablePagination table={table} />
          </div>
       </div>

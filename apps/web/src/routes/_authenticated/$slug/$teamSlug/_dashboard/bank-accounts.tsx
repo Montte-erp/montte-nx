@@ -29,6 +29,7 @@ import { z } from "zod";
 
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { ExportButton } from "@/components/export-button/export-button";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
 import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
@@ -429,7 +430,9 @@ function BankAccountsList() {
       manualPagination: true,
       manualSorting: true,
       manualFiltering: true,
-      state: urlState.state,
+      columnResizeMode: "onChange",
+      defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      state: { ...urlState.state, ...layout.state },
       onSortingChange: urlState.onSortingChange,
       onColumnFiltersChange: urlState.onColumnFiltersChange,
       onPaginationChange: urlState.onPaginationChange,
@@ -438,12 +441,6 @@ function BankAccountsList() {
       onColumnOrderChange: layout.onColumnOrderChange,
       onColumnVisibilityChange: layout.onColumnVisibilityChange,
       onColumnPinningChange: layout.onColumnPinningChange,
-      initialState: {
-         columnSizing: layout.initialState.columnSizing,
-         columnOrder: layout.initialState.columnOrder,
-         columnVisibility: layout.initialState.columnVisibility,
-         columnPinning: layout.initialState.columnPinning,
-      },
       getCoreRowModel: getCoreRowModel(),
    });
 
@@ -481,9 +478,10 @@ function BankAccountsList() {
 
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <div className="flex flex-col gap-4">
+         <div className="flex flex-1 flex-col gap-4 min-h-0">
             <div className="flex flex-wrap items-center gap-2 justify-between">
                <SearchInput
+                  className="max-w-sm"
                   aria-label="Buscar conta por nome..."
                   onChange={(e) => searchInput.onChange(e.target.value)}
                   placeholder="Buscar conta por nome..."
@@ -512,6 +510,7 @@ function BankAccountsList() {
                      ))}
                   </PageFilters>
                   <DataTableColumnVisibility table={table} />
+                  <ExportButton table={table} fileBase="contas-bancarias" />
                   <DataImportButton api={importApi} config={importConfig} />
                   <Button
                      onClick={handleOpenCreate}
@@ -523,31 +522,31 @@ function BankAccountsList() {
                   </Button>
                </div>
             </div>
-            <ScrollArea className="rounded-md border bg-card">
+            <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
                <Table>
                   <DataTableHeader table={table} />
                   <DataTableBody<BankAccountRow> table={table} />
                </Table>
+               <DataImportSection
+                  api={importApi}
+                  config={importConfig}
+                  table={table}
+               />
+               {table.getRowCount() === 0 && (
+                  <Empty>
+                     <EmptyMedia>
+                        <Landmark className="size-10" />
+                     </EmptyMedia>
+                     <EmptyHeader>
+                        <EmptyTitle>Nenhuma conta bancária</EmptyTitle>
+                        <EmptyDescription>
+                           Adicione uma conta para começar a gerenciar suas
+                           finanças.
+                        </EmptyDescription>
+                     </EmptyHeader>
+                  </Empty>
+               )}
             </ScrollArea>
-            <DataImportSection
-               api={importApi}
-               config={importConfig}
-               table={table}
-            />
-            {table.getRowCount() === 0 && (
-               <Empty>
-                  <EmptyMedia>
-                     <Landmark className="size-10" />
-                  </EmptyMedia>
-                  <EmptyHeader>
-                     <EmptyTitle>Nenhuma conta bancária</EmptyTitle>
-                     <EmptyDescription>
-                        Adicione uma conta para começar a gerenciar suas
-                        finanças.
-                     </EmptyDescription>
-                  </EmptyHeader>
-               </Empty>
-            )}
             {result.totalCount > 0 && <DataTablePagination table={table} />}
          </div>
       </div>

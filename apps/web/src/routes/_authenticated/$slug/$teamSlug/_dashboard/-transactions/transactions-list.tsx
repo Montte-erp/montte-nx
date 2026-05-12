@@ -58,6 +58,7 @@ import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
 import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
 import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
+import { ExportButton } from "@/components/export-button/export-button";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
 import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
 import { PageFilters } from "@/components/page-filters/page-filters";
@@ -753,7 +754,9 @@ export function TransactionsList() {
       manualPagination: true,
       manualSorting: true,
       manualFiltering: true,
-      state: urlState.state,
+      columnResizeMode: "onChange",
+      defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      state: { ...urlState.state, ...layout.state },
       onSortingChange: urlState.onSortingChange,
       onColumnFiltersChange: urlState.onColumnFiltersChange,
       onPaginationChange: urlState.onPaginationChange,
@@ -762,12 +765,6 @@ export function TransactionsList() {
       onColumnOrderChange: layout.onColumnOrderChange,
       onColumnVisibilityChange: layout.onColumnVisibilityChange,
       onColumnPinningChange: layout.onColumnPinningChange,
-      initialState: {
-         columnSizing: layout.initialState.columnSizing,
-         columnOrder: layout.initialState.columnOrder,
-         columnVisibility: layout.initialState.columnVisibility,
-         columnPinning: layout.initialState.columnPinning,
-      },
       getCoreRowModel: getCoreRowModel(),
    });
 
@@ -825,9 +822,10 @@ export function TransactionsList() {
 
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <div className="flex flex-col gap-4">
+         <div className="flex flex-1 flex-col gap-4 min-h-0">
             <div className="flex flex-wrap items-center gap-2 justify-between">
                <SearchInput
+                  className="max-w-sm"
                   aria-label="Buscar lançamentos"
                   onChange={(e) => searchInput.onChange(e.target.value)}
                   placeholder="Buscar por nome, descrição ou contato..."
@@ -857,6 +855,7 @@ export function TransactionsList() {
                      ) : null}
                   </PageFilters>
                   <DataTableColumnVisibility table={table} />
+                  <ExportButton table={table} fileBase="lancamentos" />
                   <DataImportButton api={importApi} config={importConfig} />
                   <Button
                      onClick={handleCreate}
@@ -869,32 +868,32 @@ export function TransactionsList() {
                   </Button>
                </div>
             </div>
-            <ScrollArea className="rounded-md border bg-card">
+            <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
                <Table>
                   <DataTableHeader table={table} />
                   <DataTableBody<TransactionRow> table={table} />
                </Table>
+               <DataImportSection
+                  api={importApi}
+                  config={importConfig}
+                  table={table}
+               />
+               {table.getRowCount() === 0 && (
+                  <Empty>
+                     <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                           <ArrowLeftRight className="size-6" />
+                        </EmptyMedia>
+                        <EmptyTitle>Nenhum lançamento</EmptyTitle>
+                        <EmptyDescription>
+                           {search || bankId
+                              ? "Nenhum lançamento encontrado para os filtros aplicados."
+                              : "Registre um novo lançamento para começar a controlar suas finanças."}
+                        </EmptyDescription>
+                     </EmptyHeader>
+                  </Empty>
+               )}
             </ScrollArea>
-            <DataImportSection
-               api={importApi}
-               config={importConfig}
-               table={table}
-            />
-            {table.getRowCount() === 0 && (
-               <Empty>
-                  <EmptyHeader>
-                     <EmptyMedia variant="icon">
-                        <ArrowLeftRight className="size-6" />
-                     </EmptyMedia>
-                     <EmptyTitle>Nenhum lançamento</EmptyTitle>
-                     <EmptyDescription>
-                        {search || bankId
-                           ? "Nenhum lançamento encontrado para os filtros aplicados."
-                           : "Registre um novo lançamento para começar a controlar suas finanças."}
-                     </EmptyDescription>
-                  </EmptyHeader>
-               </Empty>
-            )}
             <DataTablePagination table={table} />
          </div>
       </div>

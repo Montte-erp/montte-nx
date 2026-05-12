@@ -1,6 +1,5 @@
 import dayjs from "dayjs";
-import { and, asc, eq, ilike, inArray, sql } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
+import { and, asc, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { errAsync, fromPromise, okAsync } from "neverthrow";
 import { z } from "zod";
@@ -165,11 +164,13 @@ export const getPaginated = protectedProcedure
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
          (async () => {
-            const parentCat = alias(categories, "parent_cat");
-            const base: SQL[] = [eq(categories.teamId, context.teamId)];
-            if (input.type) base.push(eq(categories.type, input.type));
+            const rootFilter: SQL[] = [
+               eq(categories.teamId, context.teamId),
+               isNull(categories.parentId),
+            ];
+            if (input.type) rootFilter.push(eq(categories.type, input.type));
             if (!input.includeArchived)
-               base.push(eq(categories.isArchived, false));
+               rootFilter.push(eq(categories.isArchived, false));
 
             const trimmed = input.search?.trim();
             const pattern = trimmed
@@ -182,33 +183,57 @@ export const getPaginated = protectedProcedure
                      rootId: sql<string>`COALESCE(${categories.parentId}, ${categories.id})`,
                   })
                   .from(categories)
-                  .where(and(...base, ilike(categories.name, pattern)));
-               const rootIds = matched.map((r) => r.rootId);
-               if (rootIds.length === 0) return { data: [], total: 0 };
-               base.push(
-                  sql`COALESCE(${categories.parentId}, ${categories.id}) IN ${rootIds}`,
-               );
+                  .where(
+                     and(
+                        eq(categories.teamId, context.teamId),
+                        input.type
+                           ? eq(categories.type, input.type)
+                           : undefined,
+                        input.includeArchived
+                           ? undefined
+                           : eq(categories.isArchived, false),
+                        ilike(categories.name, pattern),
+                     ),
+                  );
+               const matchedRootIds = matched.map((r) => r.rootId);
+               if (matchedRootIds.length === 0) return { data: [], total: 0 };
+               rootFilter.push(sql`${categories.id} IN ${matchedRootIds}`);
             }
 
             const countRows = await context.db
                .select({ count: sql<number>`count(*)::int` })
                .from(categories)
-               .where(and(...base));
+               .where(and(...rootFilter));
             const total = countRows[0]?.count ?? 0;
+            if (total === 0) return { data: [], total: 0 };
 
-            const sortKey = sql`COALESCE(${parentCat.name}, ${categories.name})`;
-            const depthKey = sql`CASE WHEN ${categories.parentId} IS NULL THEN 0 ELSE 1 END`;
             const offset = Math.max(0, (input.page - 1) * input.pageSize);
-            const rows = await context.db
-               .select({ c: categories })
+            const rootRows = await context.db
+               .select()
                .from(categories)
-               .leftJoin(parentCat, eq(parentCat.id, categories.parentId))
-               .where(and(...base))
-               .orderBy(asc(sortKey), asc(depthKey), asc(categories.name))
+               .where(and(...rootFilter))
+               .orderBy(asc(categories.name))
                .limit(input.pageSize)
                .offset(offset);
 
-            return { data: rows.map((r) => r.c), total };
+            const rootIds = rootRows.map((r) => r.id);
+            const childRows = rootIds.length
+               ? await context.db
+                    .select()
+                    .from(categories)
+                    .where(
+                       and(
+                          eq(categories.teamId, context.teamId),
+                          sql`${categories.parentId} IN ${rootIds}`,
+                          input.includeArchived
+                             ? undefined
+                             : eq(categories.isArchived, false),
+                       ),
+                    )
+                    .orderBy(asc(categories.name))
+               : [];
+
+            return { data: [...rootRows, ...childRows], total };
          })(),
          () => WebAppError.internal("Falha ao listar categorias."),
       );

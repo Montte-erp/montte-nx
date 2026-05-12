@@ -91,7 +91,7 @@ export const Route = createFileRoute(
    },
    pendingMs: 300,
    pendingComponent: () => (
-      <main className="flex h-full flex-col gap-4">
+      <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden">
          <DataTableSkeleton columns={skeletonColumns} />
       </main>
    ),
@@ -126,7 +126,7 @@ function TransactionsPage() {
    const { view } = Route.useSearch();
 
    return (
-      <main className="flex h-full flex-col gap-4">
+      <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden">
          <DefaultHeader
             description="Gerencie receitas, despesas e transferências"
             title="Lançamentos"
