@@ -131,7 +131,7 @@ export function buildBenefitColumns({
          meta: {
             label: "Quantidade",
             isEditable: true,
-            cellComponent: "numeric",
+            cellComponent: "text",
             editMode: "inline",
             isEditableForRow: (row: BenefitRow) => row.type === "credits",
             editSchema: z

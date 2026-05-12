@@ -173,7 +173,7 @@ export function buildCouponColumns({
          meta: {
             label: "Valor",
             isEditable: true,
-            cellComponent: "numeric",
+            cellComponent: "text",
             editMode: "inline",
             editSchema: z
                .string()
@@ -305,7 +305,7 @@ export function buildCouponColumns({
          meta: {
             label: "Meses",
             isEditable: true,
-            cellComponent: "numeric",
+            cellComponent: "text",
             editMode: "inline",
             isEditableForRow: (row: CouponRow) => row.duration === "repeating",
             editSchema: z
@@ -353,7 +353,7 @@ export function buildCouponColumns({
          meta: {
             label: "Limite",
             isEditable: true,
-            cellComponent: "numeric",
+            cellComponent: "text",
             editMode: "inline",
             editSchema: z
                .string()

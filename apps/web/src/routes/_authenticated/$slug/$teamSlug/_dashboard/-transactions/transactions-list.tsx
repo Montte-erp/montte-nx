@@ -1,5 +1,6 @@
 import { Button } from "@packages/ui/components/button";
 import { Calendar } from "@packages/ui/components/calendar";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
    Empty,
@@ -13,12 +14,21 @@ import {
    PopoverContent,
    PopoverTrigger,
 } from "@packages/ui/components/popover";
+import { SelectionActionButton } from "@packages/ui/components/selection-action-bar";
 import {
    useMutation,
    useQueryClient,
    useSuspenseQuery,
 } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
+import {
+   getCoreRowModel,
+   useReactTable,
+   type ColumnDef,
+   type PaginationState,
+   type RowSelectionState,
+   type SortingState,
+} from "@tanstack/react-table";
 import dayjs from "dayjs";
 import {
    AlertTriangle,
@@ -34,24 +44,30 @@ import {
    Trash2,
    Undo2,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { startTransition, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { DataTableBody } from "@/components/data-table-v2/data-table-body";
+import { DataTableBulkActionBar } from "@/components/data-table-v2/data-table-bulk-action-bar";
+import { DataTableColumnVisibility } from "@/components/data-table-v2/data-table-column-visibility";
+import { DataTableContainer } from "@/components/data-table-v2/data-table-container";
+import { DataTableEmptyState } from "@/components/data-table-v2/data-table-empty-state";
+import { DataTableHeader } from "@/components/data-table-v2/data-table-header";
+import { DataTablePagination } from "@/components/data-table-v2/data-table-pagination";
+import { DataTableRoot } from "@/components/data-table-v2/data-table-root";
+import { DataTableSearch } from "@/components/data-table-v2/data-table-search";
+import {
+   DataTableToolbar,
+   DataTableToolbarGroup,
+} from "@/components/data-table-v2/data-table-toolbar";
+import { useDataTableLayout } from "@/components/data-table-v2/use-data-table-layout";
+import { DataImportButton } from "@/features/data-import/data-import-button";
+import { DataImportSection } from "@/features/data-import/data-import-section";
+import { useDataImport } from "@/features/data-import/use-data-import";
+import type { DataImportConfig } from "@/features/data-import/types";
+import { PageFilters } from "@/components/page-filters/page-filters";
+import { PageFilter } from "@/components/page-filters/page-filter";
 import { useSheet } from "@/hooks/use-sheet";
 import { TransactionFormSheet } from "./transaction-form-sheet";
-import {
-   DataTableBulkActions,
-   SelectionActionButton,
-} from "@/components/data-table/data-table-bulk-actions";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
-import { DataTableImportButton } from "@/components/data-table/data-table-import";
-import type { DataTableImportConfig } from "@/components/data-table/data-table-import";
-import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import {
-   DataTableExternalFilter,
-   DataTableRoot,
-} from "@/components/data-table/data-table-root";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useOfxFile } from "@/hooks/use-ofx-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
@@ -75,7 +91,7 @@ function normalizeImportLookup(value: unknown): string {
       .trim()
       .toLowerCase()
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
+      .replace(/[̀-ͯ]/g, "");
 }
 
 function resolveImportId(
@@ -149,6 +165,8 @@ function parseImportStatus(value: unknown): "pending" | "paid" | "cancelled" {
 export function TransactionsList() {
    const navigate = routeApi.useNavigate();
    const {
+      sorting,
+      columnFilters,
       page,
       pageSize,
       view,
@@ -165,12 +183,15 @@ export function TransactionsList() {
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
    const { parse: parseOfx } = useOfxFile();
+   const layout = useDataTableLayout("transactions");
 
    const handleSearch = useCallback(
       (value: string) => {
-         navigate({
-            search: (prev) => ({ ...prev, search: value, page: 1 }),
-            replace: true,
+         startTransition(() => {
+            navigate({
+               search: (prev) => ({ ...prev, search: value, page: 1 }),
+               replace: true,
+            });
          });
       },
       [navigate],
@@ -191,26 +212,6 @@ export function TransactionsList() {
          if (active) return;
          navigate({
             search: (prev) => ({ ...prev, bankId: "", page: 1 }),
-            replace: true,
-         });
-      },
-      [navigate],
-   );
-
-   const handlePageChange = useCallback(
-      (newPage: number) => {
-         navigate({
-            search: (prev) => ({ ...prev, page: newPage }),
-            replace: true,
-         });
-      },
-      [navigate],
-   );
-
-   const handlePageSizeChange = useCallback(
-      (newPageSize: number) => {
-         navigate({
-            search: (prev) => ({ ...prev, pageSize: newPageSize, page: 1 }),
             replace: true,
          });
       },
@@ -255,7 +256,7 @@ export function TransactionsList() {
 
    const transactionData = result.data;
    const total = result.total;
-   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+   const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
    const importMutation = useMutation(
       orpc.transactions.importBulk.mutationOptions({
@@ -340,33 +341,33 @@ export function TransactionsList() {
 
    const handleCreateBankAccount = useCallback(
       async (name: string): Promise<string> => {
-         const result = await createBankAccountMutation.mutateAsync({
+         const created = await createBankAccountMutation.mutateAsync({
             name,
             type: "checking",
          });
-         return result.id;
+         return created.id;
       },
       [createBankAccountMutation],
    );
 
    const handleCreateContact = useCallback(
       async (name: string): Promise<string> => {
-         const result = await createContactMutation.mutateAsync({
+         const created = await createContactMutation.mutateAsync({
             name,
             type: "ambos",
          });
-         return result.id;
+         return created.id;
       },
       [createContactMutation],
    );
 
    const handleCreateCategory = useCallback(
       async (name: string): Promise<string> => {
-         const result = await createCategoryMutation.mutateAsync({
+         const created = await createCategoryMutation.mutateAsync({
             name,
             type: "expense",
          });
-         return result.id;
+         return created.id;
       },
       [createCategoryMutation],
    );
@@ -433,7 +434,7 @@ export function TransactionsList() {
       [reactivateMutation],
    );
 
-   const importConfig: DataTableImportConfig = useMemo(
+   const importConfig: DataImportConfig = useMemo(
       () => ({
          accept: {
             "text/csv": [".csv"],
@@ -501,20 +502,6 @@ export function TransactionsList() {
                               Categoria: categoriesResult[0]?.name ?? "",
                               "Fornecedor/Cliente": contacts[0]?.name ?? "",
                            },
-                           {
-                              Data: dayjs().format("YYYY-MM-DD"),
-                              Nome: "Compra no cartão",
-                              Tipo: "Despesa",
-                              Valor: "250.00",
-                              Status: "Pendente",
-                              Vencimento: dayjs()
-                                 .add(7, "day")
-                                 .format("YYYY-MM-DD"),
-                              Conta: "",
-                              Cartão: creditCardsResult.data[0]?.name ?? "",
-                              Categoria: categoriesResult[0]?.name ?? "",
-                              "Fornecedor/Cliente": contacts[0]?.name ?? "",
-                           },
                         ],
                         [
                            "Data",
@@ -545,20 +532,6 @@ export function TransactionsList() {
                               Vencimento: "",
                               Conta: bankAccounts[0]?.name ?? "",
                               Cartão: "",
-                              Categoria: categoriesResult[0]?.name ?? "",
-                              "Fornecedor/Cliente": contacts[0]?.name ?? "",
-                           },
-                           {
-                              Data: dayjs().format("YYYY-MM-DD"),
-                              Nome: "Compra no cartão",
-                              Tipo: "Despesa",
-                              Valor: "250.00",
-                              Status: "Pendente",
-                              Vencimento: dayjs()
-                                 .add(7, "day")
-                                 .format("YYYY-MM-DD"),
-                              Conta: "",
-                              Cartão: creditCardsResult.data[0]?.name ?? "",
                               Categoria: categoriesResult[0]?.name ?? "",
                               "Fornecedor/Cliente": contacts[0]?.name ?? "",
                            },
@@ -643,140 +616,258 @@ export function TransactionsList() {
       ],
    );
 
-   const columns = useMemo(
-      () =>
-         buildTransactionColumns({
-            bankAccounts,
-            contacts,
-            categories: categoriesResult,
-            creditCards: creditCardsResult.data,
-            onUpdate: handleUpdate,
-            onCreateBankAccount: handleCreateBankAccount,
-            onCreateContact: handleCreateContact,
-            onCreateCategory: handleCreateCategory,
-            getRowStatus: (id) =>
-               transactionData.find((t) => t.id === id)?.status,
-         }),
-      [
+   const columns = useMemo<ColumnDef<TransactionRow>[]>(() => {
+      const base = buildTransactionColumns({
          bankAccounts,
          contacts,
-         categoriesResult,
-         creditCardsResult,
-         transactionData,
-         handleUpdate,
-         handleCreateBankAccount,
-         handleCreateContact,
-         handleCreateCategory,
-      ],
+         categories: categoriesResult,
+         creditCards: creditCardsResult.data,
+         onUpdate: handleUpdate,
+         onCreateBankAccount: handleCreateBankAccount,
+         onCreateContact: handleCreateContact,
+         onCreateCategory: handleCreateCategory,
+         getRowStatus: (id) => transactionData.find((t) => t.id === id)?.status,
+      });
+      const selectColumn: ColumnDef<TransactionRow> = {
+         id: "__select",
+         size: 40,
+         enableSorting: false,
+         enableHiding: false,
+         header: ({ table }) => (
+            <Checkbox
+               aria-label="Selecionar todos"
+               checked={
+                  table.getIsAllPageRowsSelected()
+                     ? true
+                     : table.getIsSomePageRowsSelected()
+                       ? "indeterminate"
+                       : false
+               }
+               onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+            />
+         ),
+         cell: ({ row }) => (
+            <Checkbox
+               aria-label="Selecionar linha"
+               checked={row.getIsSelected()}
+               disabled={!row.getCanSelect()}
+               onCheckedChange={(v) => row.toggleSelected(!!v)}
+            />
+         ),
+      };
+      const actionsColumn: ColumnDef<TransactionRow> = {
+         id: "__actions",
+         size: 180,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { align: "right" },
+         cell: ({ row }) => {
+            const tx = row.original;
+            const { status: rowStatus } = tx;
+            return (
+               <div className="flex justify-end gap-2">
+                  {rowStatus === "pending" && (
+                     <Button
+                        className="text-green-600 hover:text-green-700"
+                        onClick={() => handleMarkPaid(tx)}
+                        size="icon-sm"
+                        tooltip="Marcar como efetivado"
+                        variant="ghost"
+                     >
+                        <CheckCircle2 />
+                        <span className="sr-only">Marcar como efetivado</span>
+                     </Button>
+                  )}
+                  {rowStatus === "paid" && (
+                     <Button
+                        onClick={() => handleMarkUnpaid(tx)}
+                        size="icon-sm"
+                        tooltip="Marcar como pendente"
+                        variant="ghost"
+                     >
+                        <Undo2 />
+                        <span className="sr-only">Marcar como pendente</span>
+                     </Button>
+                  )}
+                  {rowStatus === "cancelled" && (
+                     <Button
+                        onClick={() => handleReactivate(tx)}
+                        size="icon-sm"
+                        tooltip="Reativar"
+                        variant="ghost"
+                     >
+                        <RotateCcw />
+                        <span className="sr-only">Reativar</span>
+                     </Button>
+                  )}
+                  {(rowStatus === "pending" || rowStatus === "paid") && (
+                     <Button
+                        onClick={() => handleCancel(tx)}
+                        size="icon-sm"
+                        tooltip="Ignorar lançamento"
+                        variant="ghost"
+                     >
+                        <Ban />
+                        <span className="sr-only">Ignorar lançamento</span>
+                     </Button>
+                  )}
+                  <Button
+                     className="text-destructive hover:text-destructive"
+                     onClick={() => handleDelete(tx)}
+                     size="icon-sm"
+                     tooltip="Excluir"
+                     variant="ghost"
+                  >
+                     <Trash2 />
+                     <span className="sr-only">Excluir</span>
+                  </Button>
+               </div>
+            );
+         },
+      };
+      return [selectColumn, ...base, actionsColumn];
+   }, [
+      bankAccounts,
+      contacts,
+      categoriesResult,
+      creditCardsResult,
+      transactionData,
+      handleUpdate,
+      handleCreateBankAccount,
+      handleCreateContact,
+      handleCreateCategory,
+      handleMarkPaid,
+      handleMarkUnpaid,
+      handleReactivate,
+      handleCancel,
+      handleDelete,
+   ]);
+
+   const handleSortingChange = useCallback(
+      (updater: SortingState | ((prev: SortingState) => SortingState)) => {
+         const next =
+            typeof updater === "function" ? updater(sorting) : updater;
+         startTransition(() => {
+            navigate({
+               search: (prev) => ({ ...prev, sorting: next, page: 1 }),
+               replace: true,
+            });
+         });
+      },
+      [navigate, sorting],
    );
+
+   const handlePaginationChange = useCallback(
+      (
+         updater:
+            | PaginationState
+            | ((prev: PaginationState) => PaginationState),
+      ) => {
+         const current: PaginationState = { pageIndex: page - 1, pageSize };
+         const next =
+            typeof updater === "function" ? updater(current) : updater;
+         startTransition(() => {
+            navigate({
+               search: (prev) => ({
+                  ...prev,
+                  page: next.pageIndex + 1,
+                  pageSize: next.pageSize,
+               }),
+               replace: true,
+            });
+         });
+      },
+      [navigate, page, pageSize],
+   );
+
+   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
+   const table = useReactTable({
+      data: transactionData,
+      columns,
+      getRowId: (row) => row.id,
+      pageCount,
+      manualPagination: true,
+      manualSorting: true,
+      manualFiltering: true,
+      state: {
+         sorting,
+         columnFilters,
+         pagination: { pageIndex: page - 1, pageSize },
+         rowSelection,
+      },
+      onSortingChange: handleSortingChange,
+      onPaginationChange: handlePaginationChange,
+      onRowSelectionChange: setRowSelection,
+      onColumnSizingChange: layout.onColumnSizingChange,
+      onColumnOrderChange: layout.onColumnOrderChange,
+      onColumnVisibilityChange: layout.onColumnVisibilityChange,
+      onColumnPinningChange: layout.onColumnPinningChange,
+      initialState: {
+         columnSizing: layout.initialState.columnSizing,
+         columnOrder: layout.initialState.columnOrder,
+         columnVisibility: layout.initialState.columnVisibility,
+         columnPinning: layout.initialState.columnPinning,
+      },
+      getCoreRowModel: getCoreRowModel(),
+   });
+
+   const importApi = useDataImport({ table, config: importConfig });
 
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <DataTableRoot
-            columns={columns}
-            data={transactionData}
-            getRowId={(row) => row.id}
-            renderActions={({ row }) => {
-               const tx = row.original;
-               const { status: rowStatus } = tx;
-               return (
-                  <>
-                     {rowStatus === "pending" && (
-                        <Button
-                           className="text-green-600 hover:text-green-700"
-                           onClick={() => handleMarkPaid(tx)}
-                           size="icon"
-                           tooltip="Marcar como efetivado"
-                           variant="ghost"
-                        >
-                           <CheckCircle2 className="size-4" />
-                           <span className="sr-only">
-                              Marcar como efetivado
-                           </span>
-                        </Button>
-                     )}
-                     {rowStatus === "paid" && (
-                        <Button
-                           onClick={() => handleMarkUnpaid(tx)}
-                           size="icon"
-                           tooltip="Marcar como pendente"
-                           variant="ghost"
-                        >
-                           <Undo2 className="size-4" />
-                           <span className="sr-only">Marcar como pendente</span>
-                        </Button>
-                     )}
-                     {rowStatus === "cancelled" && (
-                        <Button
-                           onClick={() => handleReactivate(tx)}
-                           size="icon"
-                           tooltip="Reativar"
-                           variant="ghost"
-                        >
-                           <RotateCcw className="size-4" />
-                           <span className="sr-only">Reativar</span>
-                        </Button>
-                     )}
-                     {(rowStatus === "pending" || rowStatus === "paid") && (
-                        <Button
-                           onClick={() => handleCancel(tx)}
-                           size="icon"
-                           tooltip="Ignorar lançamento"
-                           variant="ghost"
-                        >
-                           <Ban className="size-4" />
-                           <span className="sr-only">Ignorar lançamento</span>
-                        </Button>
-                     )}
-                     <Button
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(tx)}
-                        size="icon"
-                        tooltip="Excluir"
-                        variant="ghost"
-                     >
-                        <Trash2 className="size-4" />
-                        <span className="sr-only">Excluir</span>
-                     </Button>
-                  </>
-               );
-            }}
-            storageKey="montte:datatable:transactions"
-         >
-            {bankId ? (
-               <DataTableExternalFilter
-                  id="bankId"
-                  label={selectedBankAccount?.name ?? "Conta selecionada"}
-                  group="Conta"
-                  active
-                  renderIcon={() => <Landmark className="size-4" />}
-                  onToggle={handleBankFilterToggle}
+         <DataTableRoot table={table}>
+            <DataTableToolbar>
+               <DataTableSearch
+                  onChange={handleSearch}
+                  placeholder="Buscar por nome, descrição ou contato..."
+                  value={search}
                />
-            ) : null}
-            <DataTableExternalFilter
-               id="overdueOnly"
-               label="Somente vencidos"
-               group="Filtros"
-               active={overdueOnly}
-               renderIcon={() => <AlertTriangle className="size-4" />}
-               onToggle={handleOverdueToggle}
-            />
-            <DataTableToolbar
-               searchPlaceholder="Buscar por nome, descrição ou contato..."
-               searchDefaultValue={search}
-               onSearch={handleSearch}
-            >
-               <DataTableImportButton importConfig={importConfig} />
-               <Button
-                  onClick={handleCreate}
-                  tooltip="Novo Lançamento"
-                  variant="outline"
-                  size="icon-sm"
-               >
-                  <Plus />
-                  <span className="sr-only">Novo Lançamento</span>
-               </Button>
+               <DataTableToolbarGroup>
+                  <PageFilters>
+                     <PageFilter
+                        active={overdueOnly}
+                        group="Filtros"
+                        icon={<AlertTriangle className="size-4" />}
+                        id="overdueOnly"
+                        label="Somente vencidos"
+                        onToggle={handleOverdueToggle}
+                     />
+                     {bankId ? (
+                        <PageFilter
+                           active
+                           group="Conta"
+                           icon={<Landmark className="size-4" />}
+                           id="bankId"
+                           label={
+                              selectedBankAccount?.name ?? "Conta selecionada"
+                           }
+                           onToggle={handleBankFilterToggle}
+                        />
+                     ) : null}
+                  </PageFilters>
+                  <DataTableColumnVisibility />
+                  <DataImportButton api={importApi} config={importConfig} />
+                  <Button
+                     onClick={handleCreate}
+                     tooltip="Novo Lançamento"
+                     variant="outline"
+                     size="icon-sm"
+                  >
+                     <Plus />
+                     <span className="sr-only">Novo Lançamento</span>
+                  </Button>
+               </DataTableToolbarGroup>
             </DataTableToolbar>
+            <DataTableContainer>
+               <DataTableHeader />
+               <DataTableBody<TransactionRow> />
+            </DataTableContainer>
+            <DataImportSection
+               api={importApi}
+               config={importConfig}
+               table={table}
+            />
             <DataTableEmptyState>
                <Empty>
                   <EmptyHeader>
@@ -792,33 +883,24 @@ export function TransactionsList() {
                   </EmptyHeader>
                </Empty>
             </DataTableEmptyState>
-            <DataTableContent className="flex-1 overflow-auto min-h-0" />
-            <DataTableBulkActions<TransactionRow>>
-               {({ selectedRows, clearSelection }) => {
-                  const selectedIds = selectedRows.map((r) => r.id);
+            <DataTablePagination />
+            <DataTableBulkActionBar<TransactionRow>>
+               {({ rows, clear }) => {
+                  const selectedIds = rows.map((r) => r.original.id);
                   return (
                      <>
-                        <BulkIgnoreButton
-                           ids={selectedIds}
-                           onSuccess={clearSelection}
-                        />
-                        <BulkStatusButton
-                           ids={selectedIds}
-                           onSuccess={clearSelection}
-                        />
-                        <BulkDateButton
-                           ids={selectedIds}
-                           onSuccess={clearSelection}
-                        />
+                        <BulkIgnoreButton ids={selectedIds} onSuccess={clear} />
+                        <BulkStatusButton ids={selectedIds} onSuccess={clear} />
+                        <BulkDateButton ids={selectedIds} onSuccess={clear} />
                         <BulkCategoryButton
                            categories={categoriesResult ?? []}
                            ids={selectedIds}
-                           onSuccess={clearSelection}
+                           onSuccess={clear}
                         />
                         <BulkAccountButton
                            bankAccounts={bankAccounts}
                            ids={selectedIds}
-                           onSuccess={clearSelection}
+                           onSuccess={clear}
                         />
                         <SelectionActionButton
                            icon={<Trash2 />}
@@ -837,7 +919,7 @@ export function TransactionsList() {
                                           deleteMutation.mutateAsync({ id }),
                                        ),
                                     );
-                                    clearSelection();
+                                    clear();
                                  },
                               })
                            }
@@ -847,16 +929,8 @@ export function TransactionsList() {
                      </>
                   );
                }}
-            </DataTableBulkActions>
+            </DataTableBulkActionBar>
          </DataTableRoot>
-         <DataTablePagination
-            currentPage={page}
-            totalPages={totalPages}
-            totalCount={total}
-            pageSize={pageSize}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-         />
       </div>
    );
 }

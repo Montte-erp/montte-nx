@@ -253,7 +253,7 @@ export function buildPriceColumns({
             label: "Trial (dias)",
             align: "right" as const,
             isEditable: true,
-            cellComponent: "numeric",
+            cellComponent: "text",
             editMode: "inline",
             isEditableForRow: (row: ServicePrice) =>
                row.interval !== "one_time",

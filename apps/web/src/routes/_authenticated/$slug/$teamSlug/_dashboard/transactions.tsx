@@ -12,6 +12,14 @@ import { orpc } from "@/integrations/orpc/client";
 const skeletonColumns = buildTransactionColumns();
 
 const transactionsSearchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .catch([])
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .catch([])
+      .default([]),
    page: z.number().int().min(1).catch(1).default(1),
    pageSize: z.number().int().catch(20).default(20),
    search: z.string().catch("").default(""),
