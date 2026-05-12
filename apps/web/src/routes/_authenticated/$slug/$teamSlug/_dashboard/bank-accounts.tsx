@@ -121,6 +121,7 @@ function BankAccountsList() {
       Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
+   const { publicEnv } = Route.useRouteContext();
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
 
@@ -190,6 +191,8 @@ function BankAccountsList() {
             type: resolveType(row.type),
             color: "#6366f1",
             iconUrl: null,
+            bankCode: null,
+            bankName: null,
             initialBalance: String(row.initialBalance ?? "0"),
             currentBalance: "0",
             projectedBalance: "0",
@@ -267,8 +270,12 @@ function BankAccountsList() {
    );
 
    const columns = useMemo(
-      () => buildBankAccountColumns({ onRenameAccount: handleRenameAccount }),
-      [handleRenameAccount],
+      () =>
+         buildBankAccountColumns({
+            logoDevToken: publicEnv?.LOGO_DEV_TOKEN,
+            onRenameAccount: handleRenameAccount,
+         }),
+      [handleRenameAccount, publicEnv?.LOGO_DEV_TOKEN],
    );
 
    return (
