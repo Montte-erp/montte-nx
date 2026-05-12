@@ -8,6 +8,8 @@ declare module "@tanstack/react-table" {
       resizable?: boolean;
       pinnable?: boolean;
       reorderable?: boolean;
+      exportValue?: (row: TData, value: TValue) => string;
+      exportIgnore?: boolean;
    }
 }
 

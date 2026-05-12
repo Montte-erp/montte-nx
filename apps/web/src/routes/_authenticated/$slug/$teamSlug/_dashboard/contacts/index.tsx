@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { z } from "zod";
 import { Users } from "lucide-react";
 import { DefaultHeader } from "../../-layout/default-header";
-import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
+import { DataTableSkeleton } from "@/components/data-table-v2/data-table-skeleton";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
