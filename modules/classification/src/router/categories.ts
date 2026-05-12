@@ -396,11 +396,6 @@ export const archive = protectedProcedure
    .use(requireCategory, (input) => input.id)
    .use(withCategoryDescendants, (input) => input.id)
    .handler(async ({ context, input }) => {
-      if (context.category.isDefault)
-         throw WebAppError.conflict(
-            "Categorias padrão não podem ser arquivadas.",
-         );
-
       const allIds = [input.id, ...context.descendantCategoryIds];
       const result = await fromPromise(
          (async () => {
