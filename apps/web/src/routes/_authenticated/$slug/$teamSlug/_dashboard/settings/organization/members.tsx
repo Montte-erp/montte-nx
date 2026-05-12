@@ -15,15 +15,18 @@ import {
 import { getInitials } from "@core/utils/text";
 import { useSuspenseQueries, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import type {
-   ColumnDef,
-   OnChangeFn,
-   SortingState,
-   ColumnFiltersState,
+import {
+   getCoreRowModel,
+   getFilteredRowModel,
+   getSortedRowModel,
+   useReactTable,
+   type ColumnDef,
+   type ColumnFiltersState,
+   type SortingState,
 } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Mail, Plus, RotateCw, ShieldCheck, Users, X } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { startTransition, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
@@ -31,10 +34,16 @@ import { orpc } from "@/integrations/orpc/client";
 import type { Outputs } from "@/integrations/orpc/client";
 import { QueryBoundary } from "@/components/query-boundary";
 import { DefaultHeader } from "../../../-layout/default-header";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
-import { DataTableRoot } from "@/components/data-table/data-table-root";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { DataTableBody } from "@/components/data-table-v2/data-table-body";
+import { DataTableContainer } from "@/components/data-table-v2/data-table-container";
+import { DataTableEmptyState } from "@/components/data-table-v2/data-table-empty-state";
+import { DataTableHeader } from "@/components/data-table-v2/data-table-header";
+import { DataTableRoot } from "@/components/data-table-v2/data-table-root";
+import { DataTableSearch } from "@/components/data-table-v2/data-table-search";
+import {
+   DataTableToolbar,
+   DataTableToolbarGroup,
+} from "@/components/data-table-v2/data-table-toolbar";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { InviteMembersForm } from "./-members/invite-members-form";
@@ -45,13 +54,6 @@ const ROLE_LABELS: Record<string, string> = {
    admin: "Administrador",
    member: "Membro",
 };
-
-const ROLE_OPTIONS = [
-   { label: "Membro", value: "member" },
-   { label: "Administrador", value: "admin" },
-];
-
-const emailSchema = z.email("E-mail inválido");
 
 const searchSchema = z.object({
    sorting: z
@@ -139,9 +141,14 @@ function buildColumns(currentUserId: string | undefined): ColumnDef<Row>[] {
       {
          accessorKey: "name",
          header: "Nome",
-         meta: {
-            label: "Nome",
-            isEditable: false,
+         meta: { label: "Nome" },
+         filterFn: (row, _id, value) => {
+            const query = String(value ?? "").toLowerCase();
+            if (!query) return true;
+            return (
+               row.original.name.toLowerCase().includes(query) ||
+               row.original.email.toLowerCase().includes(query)
+            );
          },
          cell: ({ row }) => {
             if (row.original.kind === "invite") {
@@ -178,13 +185,7 @@ function buildColumns(currentUserId: string | undefined): ColumnDef<Row>[] {
       {
          accessorKey: "email",
          header: "E-mail",
-         meta: {
-            label: "E-mail",
-            isEditable: true,
-            cellComponent: "text",
-            editSchema: emailSchema,
-            isEditableForRow: () => false,
-         },
+         meta: { label: "E-mail" },
          cell: ({ row }) => (
             <span className="text-muted-foreground">{row.original.email}</span>
          ),
@@ -192,14 +193,7 @@ function buildColumns(currentUserId: string | undefined): ColumnDef<Row>[] {
       {
          accessorKey: "role",
          header: "Função",
-         meta: {
-            label: "Função",
-            isEditable: true,
-            cellComponent: "select",
-            editOptions: ROLE_OPTIONS,
-            exportValue: (row) => ROLE_LABELS[row.role] ?? row.role,
-            isEditableForRow: () => false,
-         },
+         meta: { label: "Função" },
          cell: ({ row }) => (
             <Badge variant={getRoleBadgeVariant(row.original.role)}>
                {ROLE_LABELS[row.original.role] ?? row.original.role}
@@ -209,10 +203,7 @@ function buildColumns(currentUserId: string | undefined): ColumnDef<Row>[] {
       {
          accessorKey: "createdAt",
          header: "Desde",
-         meta: {
-            label: "Desde",
-            exportValue: (row) => dayjs(row.createdAt).format("DD/MM/YYYY"),
-         },
+         meta: { label: "Desde" },
          cell: ({ row }) => (
             <span className="text-muted-foreground text-sm">
                {dayjs(row.original.createdAt).format("DD/MM/YYYY")}
@@ -263,61 +254,6 @@ function MembersContent() {
       [members, invites],
    );
 
-   const filteredData = useMemo(() => {
-      const searchValue = columnFilters.find((f) => f.id === "name")?.value;
-      const query =
-         typeof searchValue === "string" ? searchValue.toLowerCase() : "";
-      if (!query) return data;
-      return data.filter(
-         (r) =>
-            r.name.toLowerCase().includes(query) ||
-            r.email.toLowerCase().includes(query),
-      );
-   }, [data, columnFilters]);
-
-   const columns = useMemo(() => buildColumns(currentUserId), [currentUserId]);
-
-   const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
-      const next = typeof updater === "function" ? updater(sorting) : updater;
-      navigate({
-         search: (prev: z.infer<typeof searchSchema>) => ({
-            ...prev,
-            sorting: next,
-         }),
-         replace: true,
-      });
-   };
-
-   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = (
-      updater,
-   ) => {
-      const next =
-         typeof updater === "function" ? updater(columnFilters) : updater;
-      navigate({
-         search: (prev: z.infer<typeof searchSchema>) => ({
-            ...prev,
-            columnFilters: next,
-         }),
-         replace: true,
-      });
-   };
-
-   const handleSearch = (value: string) => {
-      const next = value
-         ? [
-              ...columnFilters.filter((f) => f.id !== "name"),
-              { id: "name", value },
-           ]
-         : columnFilters.filter((f) => f.id !== "name");
-      navigate({
-         search: (prev: z.infer<typeof searchSchema>) => ({
-            ...prev,
-            columnFilters: next,
-         }),
-         replace: true,
-      });
-   };
-
    const invalidateInvites = useCallback(() => {
       queryClient.invalidateQueries({
          queryKey: orpc.organization.getPendingInvitations.queryOptions({})
@@ -325,25 +261,28 @@ function MembersContent() {
       });
    }, [queryClient]);
 
-   function handleUpdateRole(member: MemberRow, newRole: string) {
-      authClient.organization.updateMemberRole({
-         memberId: member.id,
-         role: newRole,
-         organizationId,
-         fetchOptions: {
-            onSuccess: () => {
-               queryClient.invalidateQueries({
-                  queryKey: orpc.organization.getMembers.queryOptions({})
-                     .queryKey,
-               });
-               toast.success("Função atualizada com sucesso");
+   const handleUpdateRole = useCallback(
+      (member: MemberRow, newRole: string) => {
+         authClient.organization.updateMemberRole({
+            memberId: member.id,
+            role: newRole,
+            organizationId,
+            fetchOptions: {
+               onSuccess: () => {
+                  queryClient.invalidateQueries({
+                     queryKey: orpc.organization.getMembers.queryOptions({})
+                        .queryKey,
+                  });
+                  toast.success("Função atualizada com sucesso");
+               },
+               onError: ({ error }) => {
+                  toast.error(error.message ?? "Erro ao alterar função");
+               },
             },
-            onError: ({ error }) => {
-               toast.error(error.message ?? "Erro ao alterar função");
-            },
-         },
-      });
-   }
+         });
+      },
+      [organizationId, queryClient],
+   );
 
    const handleCancelInvite = useCallback(
       (invite: InviteRow) => {
@@ -411,70 +350,49 @@ function MembersContent() {
       });
    }, [openCredenza, closeCredenza, organizationId, teamId, invalidateInvites]);
 
-   const searchValue = columnFilters.find((f) => f.id === "name")?.value;
-   const searchDefaultValue =
-      typeof searchValue === "string" ? searchValue : "";
-
-   return (
-      <div className="flex flex-col gap-4">
-         <DefaultHeader
-            description="Gerencie os membros da sua organização."
-            title="Membros"
-         />
-
-         <DataTableRoot
-            columnFilters={columnFilters}
-            columns={columns}
-            data={filteredData}
-            exportDateFormat="DD-MM-YYYY"
-            exportFileBase="membros"
-            getRowId={(row) => `${row.kind}:${row.id}`}
-            groupBy={(row) =>
-               row.kind === "member" ? "Membros" : "Convites pendentes"
-            }
-            onColumnFiltersChange={handleColumnFiltersChange}
-            onSortingChange={handleSortingChange}
-            sorting={sorting}
-            renderGroupHeader={(key, rows) => (
-               <span className="flex items-center gap-2">
-                  {key}
-                  <Badge variant="outline">{rows.length}</Badge>
-               </span>
-            )}
-            renderActions={({ row }) => {
-               const original = row.original;
-               if (original.kind === "invite") {
-                  return (
-                     <>
-                        <Button
-                           disabled={!organizationId}
-                           onClick={() => handleResendInvite(original)}
-                           size="icon-sm"
-                           tooltip="Reenviar convite"
-                           variant="outline"
-                        >
-                           <RotateCw className="size-4" />
-                        </Button>
-                        <Button
-                           onClick={() => handleCancelInvite(original)}
-                           size="icon-sm"
-                           tooltip="Cancelar convite"
-                           variant="outline"
-                        >
-                           <X className="size-4" />
-                        </Button>
-                     </>
-                  );
-               }
-               const member = original;
-               const isSelf = member.userId === currentUserId;
-               const isOwner = member.role === "owner";
-               const isDisabled = isSelf || isOwner;
-               const roleLabel =
-                  member.role === "admin"
-                     ? "Alterar para membro"
-                     : "Alterar para administrador";
+   const columns = useMemo<ColumnDef<Row>[]>(() => {
+      const base = buildColumns(currentUserId);
+      const actionsColumn: ColumnDef<Row> = {
+         id: "__actions",
+         size: 100,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { align: "right" },
+         cell: ({ row }) => {
+            const original = row.original;
+            if (original.kind === "invite") {
                return (
+                  <div className="flex justify-end gap-2">
+                     <Button
+                        disabled={!organizationId}
+                        onClick={() => handleResendInvite(original)}
+                        size="icon-sm"
+                        tooltip="Reenviar convite"
+                        variant="outline"
+                     >
+                        <RotateCw />
+                     </Button>
+                     <Button
+                        onClick={() => handleCancelInvite(original)}
+                        size="icon-sm"
+                        tooltip="Cancelar convite"
+                        variant="outline"
+                     >
+                        <X />
+                     </Button>
+                  </div>
+               );
+            }
+            const member = original;
+            const isSelf = member.userId === currentUserId;
+            const isOwner = member.role === "owner";
+            const isDisabled = isSelf || isOwner;
+            const roleLabel =
+               member.role === "admin"
+                  ? "Alterar para membro"
+                  : "Alterar para administrador";
+            return (
+               <div className="flex justify-end gap-2">
                   <Button
                      disabled={isDisabled}
                      onClick={() =>
@@ -483,31 +401,121 @@ function MembersContent() {
                            member.role === "admin" ? "member" : "admin",
                         )
                      }
+                     size="icon-sm"
                      tooltip={roleLabel}
                      variant="outline"
                   >
-                     <ShieldCheck className="size-4" />
+                     <ShieldCheck />
                   </Button>
-               );
-            }}
-            storageKey="montte:datatable:members"
-         >
-            <DataTableToolbar
-               onSearch={handleSearch}
-               searchDefaultValue={searchDefaultValue}
-               searchPlaceholder="Pesquisar por nome ou e-mail..."
-            >
-               <Button
-                  disabled={!organizationId}
-                  onClick={handleOpenInvite}
-                  size="icon-sm"
-                  tooltip="Convidar membro"
-                  variant="outline"
-               >
-                  <Plus />
-                  <span className="sr-only">Convidar membro</span>
-               </Button>
+               </div>
+            );
+         },
+      };
+      return [...base, actionsColumn];
+   }, [
+      currentUserId,
+      organizationId,
+      handleResendInvite,
+      handleCancelInvite,
+      handleUpdateRole,
+   ]);
+
+   const handleSortingChange = useCallback(
+      (updater: SortingState | ((prev: SortingState) => SortingState)) => {
+         const next =
+            typeof updater === "function" ? updater(sorting) : updater;
+         startTransition(() => {
+            navigate({
+               search: (prev) => ({ ...prev, sorting: next }),
+               replace: true,
+            });
+         });
+      },
+      [navigate, sorting],
+   );
+
+   const handleColumnFiltersChange = useCallback(
+      (
+         updater:
+            | ColumnFiltersState
+            | ((prev: ColumnFiltersState) => ColumnFiltersState),
+      ) => {
+         const next =
+            typeof updater === "function" ? updater(columnFilters) : updater;
+         startTransition(() => {
+            navigate({
+               search: (prev) => ({ ...prev, columnFilters: next }),
+               replace: true,
+            });
+         });
+      },
+      [navigate, columnFilters],
+   );
+
+   const searchValue = columnFilters.find((f) => f.id === "name")?.value;
+   const searchString = typeof searchValue === "string" ? searchValue : "";
+
+   const handleSearch = useCallback(
+      (value: string) => {
+         const next = value
+            ? [
+                 ...columnFilters.filter((f) => f.id !== "name"),
+                 { id: "name", value },
+              ]
+            : columnFilters.filter((f) => f.id !== "name");
+         startTransition(() => {
+            navigate({
+               search: (prev) => ({ ...prev, columnFilters: next }),
+               replace: true,
+            });
+         });
+      },
+      [navigate, columnFilters],
+   );
+
+   const table = useReactTable({
+      data,
+      columns,
+      getRowId: (row) => `${row.kind}:${row.id}`,
+      state: { sorting, columnFilters },
+      onSortingChange: handleSortingChange,
+      onColumnFiltersChange: handleColumnFiltersChange,
+      getCoreRowModel: getCoreRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+      getFilteredRowModel: getFilteredRowModel(),
+   });
+
+   return (
+      <div className="flex flex-col gap-4">
+         <DefaultHeader
+            description="Gerencie os membros da sua organização."
+            title="Membros"
+         />
+
+         <DataTableRoot table={table}>
+            <DataTableToolbar>
+               <DataTableSearch
+                  onChange={handleSearch}
+                  placeholder="Pesquisar por nome ou e-mail..."
+                  value={searchString}
+               />
+               <DataTableToolbarGroup>
+                  <Button
+                     disabled={!organizationId}
+                     onClick={handleOpenInvite}
+                     size="icon-sm"
+                     tooltip="Convidar membro"
+                     variant="outline"
+                  >
+                     <Plus />
+                     <span className="sr-only">Convidar membro</span>
+                  </Button>
+               </DataTableToolbarGroup>
             </DataTableToolbar>
+            <DataTableContainer>
+               <DataTableHeader />
+               <DataTableBody<Row> />
+            </DataTableContainer>
             <DataTableEmptyState>
                <Empty>
                   <EmptyHeader>
@@ -521,7 +529,6 @@ function MembersContent() {
                   </EmptyHeader>
                </Empty>
             </DataTableEmptyState>
-            <DataTableContent />
          </DataTableRoot>
       </div>
    );

@@ -1,4 +1,5 @@
 import { Button } from "@packages/ui/components/button";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import {
    Empty,
    EmptyDescription,
@@ -6,34 +7,56 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import { SelectionActionButton } from "@packages/ui/components/selection-action-bar";
 import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { CreditCard, Plus, Trash2 } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import {
+   getCoreRowModel,
+   getExpandedRowModel,
+   useReactTable,
+   type ColumnDef,
+   type ColumnFiltersState,
+   type PaginationState,
+   type RowSelectionState,
+   type SortingState,
+} from "@tanstack/react-table";
+import {
+   ChevronDown,
+   ChevronRight,
+   CreditCard,
+   Plus,
+   Trash2,
+} from "lucide-react";
+import { startTransition, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "../-layout/default-header";
+import { DataTableBody } from "@/components/data-table-v2/data-table-body";
+import { DataTableBulkActionBar } from "@/components/data-table-v2/data-table-bulk-action-bar";
+import { DataTableColumnVisibility } from "@/components/data-table-v2/data-table-column-visibility";
+import { DataTableContainer } from "@/components/data-table-v2/data-table-container";
+import { DataTableEmptyState } from "@/components/data-table-v2/data-table-empty-state";
+import { DataTableHeader } from "@/components/data-table-v2/data-table-header";
+import { DataTablePagination } from "@/components/data-table-v2/data-table-pagination";
+import { DataTableRoot } from "@/components/data-table-v2/data-table-root";
+import { DataTableSearch } from "@/components/data-table-v2/data-table-search";
+import { DataTableSkeleton } from "@/components/data-table-v2/data-table-skeleton";
+import {
+   DataTableToolbar,
+   DataTableToolbarGroup,
+} from "@/components/data-table-v2/data-table-toolbar";
+import { useDataTableLayout } from "@/components/data-table-v2/use-data-table-layout";
+import { DataImportButton } from "@/features/data-import/data-import-button";
+import { DataImportSection } from "@/features/data-import/data-import-section";
+import { useDataImport } from "@/features/data-import/use-data-import";
+import type { DataImportConfig } from "@/features/data-import/types";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
-import { CreditCardFormSheet } from "./-credit-cards/credit-card-form-sheet";
-import {
-   DataTableBulkActions,
-   SelectionActionButton,
-} from "@/components/data-table/data-table-bulk-actions";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
-import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import { DataTableRoot } from "@/components/data-table/data-table-root";
-import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import {
-   DataTableImportButton,
-   type DataTableImportConfig,
-} from "@/components/data-table/data-table-import";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
+import { CreditCardFormSheet } from "./-credit-cards/credit-card-form-sheet";
 import {
    buildCreditCardColumns,
    type CreditCardRow,
@@ -41,6 +64,10 @@ import {
 import { CreditCardFaturaRow } from "./-credit-cards/credit-card-fatura-row";
 
 const creditCardsSearchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .catch([])
+      .default([]),
    columnFilters: z
       .array(z.object({ id: z.string(), value: z.unknown() }))
       .catch([])
@@ -70,7 +97,7 @@ function normalizeImportLookup(value: unknown): string {
       .trim()
       .toLowerCase()
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
+      .replace(/[̀-ͯ]/g, "");
 }
 
 function resolveBankAccountId(
@@ -161,12 +188,14 @@ function CreditCardsSkeleton() {
 
 function CreditCardsList() {
    const navigate = Route.useNavigate();
-   const { columnFilters, page, pageSize, search, status } = Route.useSearch();
+   const { sorting, columnFilters, page, pageSize, search, status } =
+      Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
    const { publicEnv } = Route.useRouteContext();
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
+   const layout = useDataTableLayout("credit-cards");
 
    const [{ data: result }, { data: bankAccounts }] = useSuspenseQueries({
       queries: [
@@ -211,7 +240,7 @@ function CreditCardsList() {
       openSheet({ renderChildren: () => <CreditCardFormSheet /> });
    }, [openSheet]);
 
-   const importConfig: DataTableImportConfig = useMemo(
+   const importConfig: DataImportConfig = useMemo(
       () => ({
          accept: {
             "text/csv": [".csv"],
@@ -225,7 +254,7 @@ function CreditCardsList() {
             return parseCsv(file);
          },
          importColumns: [{ key: "last4", label: "Final" }],
-         mapRow: (row, i): Record<string, unknown> => ({
+         mapRow: (row, i) => ({
             id: `__import_${i}`,
             name: String(row.name ?? "").trim(),
             brand: parseCreditCardBrand(row.brand),
@@ -359,74 +388,231 @@ function CreditCardsList() {
       [openAlertDialog, deleteMutation],
    );
 
-   const columns = useMemo(
-      () =>
-         buildCreditCardColumns({
-            bankAccounts: (bankAccounts ?? []).map((b) => ({
-               id: b.id,
-               name: b.name,
-               bankName: b.bankName,
-               bankCode: b.bankCode,
-               color: b.color,
-            })),
-            logoDevToken: publicEnv?.LOGO_DEV_TOKEN,
-         }),
-      [bankAccounts, publicEnv?.LOGO_DEV_TOKEN],
-   );
-
-   return (
-      <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <DataTableRoot
-            columns={columns}
-            data={result.data}
-            exportDateFormat="DD-MM-YYYY"
-            exportFileBase="cartoes-de-credito"
-            getRowId={(row) => row.id}
-            storageKey="montte:datatable:credit-cards"
-            columnFilters={columnFilters}
-            onColumnFiltersChange={(updater) => {
-               const next =
-                  typeof updater === "function"
-                     ? updater(columnFilters)
-                     : updater;
-               const statusFilter = next.find((f) => f.id === "status");
-               navigate({
-                  search: (prev) => ({
-                     ...prev,
-                     columnFilters: next,
-                     status: creditCardsSearchSchema.shape.status.parse(
-                        statusFilter?.value,
-                     ),
-                     page: 1,
-                  }),
-                  replace: true,
-               });
-            }}
-            renderExpandedRow={(props) => (
-               <CreditCardFaturaRow creditCardId={props.row.original.id} />
-            )}
-            renderActions={({ row }) => (
+   const columns = useMemo<ColumnDef<CreditCardRow>[]>(() => {
+      const base = buildCreditCardColumns({
+         bankAccounts: (bankAccounts ?? []).map((b) => ({
+            id: b.id,
+            name: b.name,
+            bankName: b.bankName,
+            bankCode: b.bankCode,
+            color: b.color,
+         })),
+         logoDevToken: publicEnv?.LOGO_DEV_TOKEN,
+      });
+      const selectColumn: ColumnDef<CreditCardRow> = {
+         id: "__select",
+         size: 40,
+         enableSorting: false,
+         enableHiding: false,
+         header: ({ table }) => (
+            <Checkbox
+               aria-label="Selecionar todos"
+               checked={
+                  table.getIsAllPageRowsSelected()
+                     ? true
+                     : table.getIsSomePageRowsSelected()
+                       ? "indeterminate"
+                       : false
+               }
+               onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+            />
+         ),
+         cell: ({ row }) => (
+            <Checkbox
+               aria-label="Selecionar linha"
+               checked={row.getIsSelected()}
+               disabled={!row.getCanSelect()}
+               onCheckedChange={(v) => row.toggleSelected(!!v)}
+            />
+         ),
+      };
+      const expandColumn: ColumnDef<CreditCardRow> = {
+         id: "__expand",
+         size: 40,
+         enableSorting: false,
+         enableHiding: false,
+         cell: ({ row }) => (
+            <Button
+               aria-label={row.getIsExpanded() ? "Recolher" : "Expandir"}
+               onClick={() => row.toggleExpanded()}
+               size="icon-sm"
+               tooltip={row.getIsExpanded() ? "Recolher fatura" : "Ver fatura"}
+               variant="ghost"
+            >
+               {row.getIsExpanded() ? <ChevronDown /> : <ChevronRight />}
+            </Button>
+         ),
+      };
+      const actionsColumn: ColumnDef<CreditCardRow> = {
+         id: "__actions",
+         size: 60,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { align: "right" },
+         cell: ({ row }) => (
+            <div className="flex justify-end gap-2">
                <Button
                   className="text-destructive hover:text-destructive"
                   onClick={() => handleDelete(row.original)}
+                  size="icon-sm"
                   tooltip="Excluir"
                   variant="outline"
                >
-                  <Trash2 className="size-4" />
+                  <Trash2 />
                </Button>
-            )}
-         >
+            </div>
+         ),
+      };
+      return [selectColumn, expandColumn, ...base, actionsColumn];
+   }, [bankAccounts, publicEnv?.LOGO_DEV_TOKEN, handleDelete]);
+
+   const handleSortingChange = useCallback(
+      (updater: SortingState | ((prev: SortingState) => SortingState)) => {
+         const next =
+            typeof updater === "function" ? updater(sorting) : updater;
+         startTransition(() => {
+            navigate({
+               search: (prev) => ({ ...prev, sorting: next, page: 1 }),
+               replace: true,
+            });
+         });
+      },
+      [navigate, sorting],
+   );
+
+   const handleColumnFiltersChange = useCallback(
+      (
+         updater:
+            | ColumnFiltersState
+            | ((prev: ColumnFiltersState) => ColumnFiltersState),
+      ) => {
+         const next =
+            typeof updater === "function" ? updater(columnFilters) : updater;
+         const statusFilter = next.find((f) => f.id === "status");
+         startTransition(() => {
+            navigate({
+               search: (prev) => ({
+                  ...prev,
+                  columnFilters: next,
+                  status: creditCardsSearchSchema.shape.status.parse(
+                     statusFilter?.value,
+                  ),
+                  page: 1,
+               }),
+               replace: true,
+            });
+         });
+      },
+      [navigate, columnFilters],
+   );
+
+   const handlePaginationChange = useCallback(
+      (
+         updater:
+            | PaginationState
+            | ((prev: PaginationState) => PaginationState),
+      ) => {
+         const current: PaginationState = { pageIndex: page - 1, pageSize };
+         const next =
+            typeof updater === "function" ? updater(current) : updater;
+         startTransition(() => {
+            navigate({
+               search: (prev) => ({
+                  ...prev,
+                  page: next.pageIndex + 1,
+                  pageSize: next.pageSize,
+               }),
+               replace: true,
+            });
+         });
+      },
+      [navigate, page, pageSize],
+   );
+
+   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
+   const table = useReactTable({
+      data: result.data,
+      columns,
+      getRowId: (row) => row.id,
+      pageCount: result.totalPages,
+      manualPagination: true,
+      manualSorting: true,
+      manualFiltering: true,
+      state: {
+         sorting,
+         columnFilters,
+         pagination: { pageIndex: page - 1, pageSize },
+         rowSelection,
+      },
+      onSortingChange: handleSortingChange,
+      onColumnFiltersChange: handleColumnFiltersChange,
+      onPaginationChange: handlePaginationChange,
+      onRowSelectionChange: setRowSelection,
+      onColumnSizingChange: layout.onColumnSizingChange,
+      onColumnOrderChange: layout.onColumnOrderChange,
+      onColumnVisibilityChange: layout.onColumnVisibilityChange,
+      onColumnPinningChange: layout.onColumnPinningChange,
+      initialState: {
+         columnSizing: layout.initialState.columnSizing,
+         columnOrder: layout.initialState.columnOrder,
+         columnVisibility: layout.initialState.columnVisibility,
+         columnPinning: layout.initialState.columnPinning,
+      },
+      getCoreRowModel: getCoreRowModel(),
+      getExpandedRowModel: getExpandedRowModel(),
+      getRowCanExpand: () => true,
+   });
+
+   const importApi = useDataImport({ table, config: importConfig });
+
+   return (
+      <div className="flex flex-1 flex-col gap-4 min-h-0">
+         <DataTableRoot table={table}>
             <DataTableToolbar>
-               <DataTableImportButton importConfig={importConfig} />
-               <Button
-                  onClick={handleOpenCreate}
-                  size="icon-sm"
-                  tooltip="Novo Cartão"
-                  variant="outline"
-               >
-                  <Plus />
-               </Button>
+               <DataTableSearch
+                  onChange={(value) =>
+                     startTransition(() => {
+                        navigate({
+                           search: (prev) => ({
+                              ...prev,
+                              search: value,
+                              page: 1,
+                           }),
+                           replace: true,
+                        });
+                     })
+                  }
+                  placeholder="Buscar cartões..."
+                  value={search}
+               />
+               <DataTableToolbarGroup>
+                  <DataTableColumnVisibility />
+                  <DataImportButton api={importApi} config={importConfig} />
+                  <Button
+                     onClick={handleOpenCreate}
+                     size="icon-sm"
+                     tooltip="Novo Cartão"
+                     variant="outline"
+                  >
+                     <Plus />
+                     <span className="sr-only">Novo Cartão</span>
+                  </Button>
+               </DataTableToolbarGroup>
             </DataTableToolbar>
+            <DataTableContainer>
+               <DataTableHeader />
+               <DataTableBody<CreditCardRow>
+                  renderExpandedRow={({ row }) => (
+                     <CreditCardFaturaRow creditCardId={row.original.id} />
+                  )}
+               />
+            </DataTableContainer>
+            <DataImportSection
+               api={importApi}
+               config={importConfig}
+               table={table}
+            />
             <DataTableEmptyState>
                <Empty>
                   <EmptyHeader>
@@ -441,14 +627,14 @@ function CreditCardsList() {
                   </EmptyHeader>
                </Empty>
             </DataTableEmptyState>
-            <DataTableContent className="flex-1 overflow-auto min-h-0" />
-            <DataTableBulkActions<CreditCardRow>>
-               {({ selectedRows, clearSelection }) => (
+            <DataTablePagination />
+            <DataTableBulkActionBar<CreditCardRow>>
+               {({ rows, clear }) => (
                   <SelectionActionButton
-                     icon={<Trash2 className="size-4" />}
+                     icon={<Trash2 />}
                      variant="destructive"
                      onClick={() => {
-                        const ids = selectedRows.map((r) => r.id);
+                        const ids = rows.map((r) => r.original.id);
                         openAlertDialog({
                            title: `Excluir ${ids.length} ${ids.length === 1 ? "cartão" : "cartões"}`,
                            description:
@@ -458,7 +644,7 @@ function CreditCardsList() {
                            variant: "destructive",
                            onAction: async () => {
                               await bulkDeleteMutation.mutateAsync({ ids });
-                              clearSelection();
+                              clear();
                            },
                         });
                      }}
@@ -466,25 +652,7 @@ function CreditCardsList() {
                      Excluir
                   </SelectionActionButton>
                )}
-            </DataTableBulkActions>
-            <DataTablePagination
-               currentPage={page}
-               pageSize={pageSize}
-               totalPages={result.totalPages}
-               totalCount={result.totalCount}
-               onPageChange={(p) =>
-                  navigate({
-                     search: (prev) => ({ ...prev, page: p }),
-                     replace: true,
-                  })
-               }
-               onPageSizeChange={(s) =>
-                  navigate({
-                     search: (prev) => ({ ...prev, pageSize: s, page: 1 }),
-                     replace: true,
-                  })
-               }
-            />
+            </DataTableBulkActionBar>
          </DataTableRoot>
       </div>
    );
