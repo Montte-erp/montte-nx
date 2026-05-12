@@ -13,7 +13,7 @@ import {
    type SortingState,
 } from "@tanstack/react-table";
 import { Receipt } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableContainer } from "@/blocks/data-table/data-table-container";
@@ -21,10 +21,8 @@ import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state"
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTableRoot } from "@/blocks/data-table/data-table-root";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
-import { useSheet } from "@/hooks/use-sheet";
 import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
-import { TransactionFormSheet } from "../-transactions/transaction-form-sheet";
 import { buildTransactionColumns } from "../-transactions/transactions-columns";
 
 type Contact = Outputs["contacts"]["getById"];
@@ -32,15 +30,10 @@ type Contact = Outputs["contacts"]["getById"];
 export function ContactTransacoesTab({
    contactId,
    contact,
-   isDraftActive,
-   onDiscardDraft,
 }: {
    contactId: string;
    contact: Contact;
-   isDraftActive: boolean;
-   onDiscardDraft: () => void;
 }) {
-   const { openSheet } = useSheet();
    const layout = useDataTableLayout("contact-transactions");
 
    const { data: result } = useSuspenseQuery(
@@ -73,12 +66,6 @@ export function ContactTransacoesTab({
       },
       [updateMutation],
    );
-
-   useEffect(() => {
-      if (!isDraftActive) return;
-      openSheet({ renderChildren: () => <TransactionFormSheet /> });
-      onDiscardDraft();
-   }, [isDraftActive, openSheet, onDiscardDraft]);
 
    const columns = useMemo(
       () =>

@@ -1,23 +1,14 @@
 import { MoneyInput } from "@packages/ui/components/money-input";
 import { EditableTrigger, type EditableTriggerProps } from "./editable-trigger";
 
-interface EditableMoneyProps extends Omit<
-   EditableTriggerProps<string>,
-   "children"
-> {
-   currency?: "BRL" | "USD";
-}
+type EditableMoneyProps = Omit<EditableTriggerProps<string>, "children">;
 
-export function EditableMoney({
-   currency = "BRL",
-   ...rest
-}: EditableMoneyProps) {
+export function EditableMoney(props: EditableMoneyProps) {
    return (
-      <EditableTrigger<string> {...rest}>
+      <EditableTrigger<string> {...props}>
          {({ value, setValue, commit }) => (
             <MoneyInput
                autoFocus
-               currency={currency}
                onBlur={commit}
                onChange={(v) => setValue(v !== undefined ? String(v) : "")}
                value={value ? Number(value) : undefined}

@@ -7,7 +7,7 @@ import {
 import { cn } from "@packages/ui/lib/utils";
 import { Pencil } from "lucide-react";
 import { fromPromise } from "neverthrow";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type React from "react";
 
 export interface EditableApi<T> {
@@ -40,7 +40,15 @@ export function EditableTrigger<T>({
 }: EditableTriggerProps<T>) {
    const [open, setOpen] = useState(false);
    const [draft, setDraft] = useState<T>(committed);
-   const [displayed, setDisplayed] = useState<T>(committed);
+   const [pending, setPending] = useState<{ value: T } | null>(null);
+   const lastCommittedRef = useRef(committed);
+
+   if (!Object.is(lastCommittedRef.current, committed)) {
+      lastCommittedRef.current = committed;
+      if (pending) setPending(null);
+   }
+
+   const displayed = pending ? pending.value : committed;
 
    const beginEdit = useCallback(() => {
       setDraft(committed);
@@ -53,11 +61,10 @@ export function EditableTrigger<T>({
 
    const commit = useCallback(async () => {
       setOpen(false);
-      const previous = displayed;
-      setDisplayed(draft);
+      setPending({ value: draft });
       const result = await fromPromise(onSave(draft), (e) => e);
-      if (result.isErr()) setDisplayed(previous);
-   }, [draft, displayed, onSave]);
+      if (result.isErr()) setPending(null);
+   }, [draft, onSave]);
 
    const renderedDisplay = renderDisplay
       ? renderDisplay(displayed)

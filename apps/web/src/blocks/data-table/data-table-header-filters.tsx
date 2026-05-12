@@ -7,7 +7,16 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
+import type { Column } from "@tanstack/react-table";
 import { useDataTableContext } from "./data-table-root";
+
+function isString(v: unknown): v is string {
+   return typeof v === "string";
+}
+
+function isRangeTuple(v: unknown): v is [number?, number?] {
+   return Array.isArray(v) && v.length === 2;
+}
 
 export function DataTableHeaderFilters() {
    const { table } = useDataTableContext();
@@ -25,7 +34,7 @@ export function DataTableHeaderFilters() {
          {lastGroup.headers.map((header) => {
             const col = header.column;
             const variant = col.columnDef.meta?.filterVariant;
-            const value = col.getFilterValue();
+            const raw = col.getFilterValue();
 
             return (
                <TableHead key={header.id} style={{ width: header.getSize() }}>
@@ -36,19 +45,19 @@ export function DataTableHeaderFilters() {
                            col.setFilterValue(e.target.value || undefined)
                         }
                         placeholder="Filtrar..."
-                        value={(value as string) ?? ""}
+                        value={isString(raw) ? raw : ""}
                      />
                   )}
                   {variant === "select" && (
                      <SelectFilterCell
                         column={col}
-                        value={value as string | undefined}
+                        value={isString(raw) ? raw : undefined}
                      />
                   )}
                   {variant === "range" && (
                      <RangeFilterCell
                         column={col}
-                        value={value as [number?, number?] | undefined}
+                        value={isRangeTuple(raw) ? raw : undefined}
                      />
                   )}
                   {variant === "date" && (
@@ -58,7 +67,7 @@ export function DataTableHeaderFilters() {
                            col.setFilterValue(e.target.value || undefined)
                         }
                         type="date"
-                        value={(value as string) ?? ""}
+                        value={isString(raw) ? raw : ""}
                      />
                   )}
                </TableHead>
@@ -68,15 +77,19 @@ export function DataTableHeaderFilters() {
    );
 }
 
-interface SelectFilterCellProps {
-   // oxlint-ignore no-explicit-any
-   column: any;
+interface SelectFilterCellProps<TData> {
+   column: Column<TData>;
    value: string | undefined;
 }
 
-function SelectFilterCell({ column, value }: SelectFilterCellProps) {
-   const facets = column.getFacetedUniqueValues() as Map<string, number>;
-   const options = Array.from(facets.keys()).filter(Boolean).sort();
+function SelectFilterCell<TData>({
+   column,
+   value,
+}: SelectFilterCellProps<TData>) {
+   const facets = column.getFacetedUniqueValues();
+   const options = Array.from(facets.keys())
+      .filter((k): k is string => typeof k === "string" && k.length > 0)
+      .sort();
 
    return (
       <Select
@@ -100,13 +113,15 @@ function SelectFilterCell({ column, value }: SelectFilterCellProps) {
    );
 }
 
-interface RangeFilterCellProps {
-   // oxlint-ignore no-explicit-any
-   column: any;
+interface RangeFilterCellProps<TData> {
+   column: Column<TData>;
    value: [number?, number?] | undefined;
 }
 
-function RangeFilterCell({ column, value }: RangeFilterCellProps) {
+function RangeFilterCell<TData>({
+   column,
+   value,
+}: RangeFilterCellProps<TData>) {
    const [min, max] = value ?? [undefined, undefined];
    return (
       <div className="flex gap-1">

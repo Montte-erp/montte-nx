@@ -3,7 +3,6 @@ import { createContext, useContext, useMemo } from "react";
 import type React from "react";
 
 declare module "@tanstack/react-table" {
-   // oxlint-ignore @typescript-eslint/no-unused-vars
    interface ColumnMeta<TData extends RowData, TValue> {
       resizable?: boolean;
       pinnable?: boolean;
@@ -13,14 +12,16 @@ declare module "@tanstack/react-table" {
    }
 }
 
-interface DataTableContextValue<TData> {
-   table: Table<TData>;
+// `unknown` here is type-erasure at the context boundary: each callsite reifies
+// `TData` via `useDataTableContext<MyRow>()`. There's no safe way to encode an
+// existential generic in React.createContext, so the read site narrows.
+interface DataTableContextValue {
+   table: Table<unknown>;
    scrollContainerId?: string;
    enableReorder?: boolean;
 }
 
-// oxlint-ignore no-explicit-any
-const DataTableContext = createContext<DataTableContextValue<any> | null>(null);
+const DataTableContext = createContext<DataTableContextValue | null>(null);
 
 interface DataTableRootProps<TData> {
    children: React.ReactNode;
@@ -35,8 +36,12 @@ export function DataTableRoot<TData>({
    scrollContainerId,
    enableReorder,
 }: DataTableRootProps<TData>) {
-   const value = useMemo(
-      () => ({ table, scrollContainerId, enableReorder }),
+   const value = useMemo<DataTableContextValue>(
+      () => ({
+         table: table as unknown as Table<unknown>,
+         scrollContainerId,
+         enableReorder,
+      }),
       [table, scrollContainerId, enableReorder],
    );
    return (
@@ -46,8 +51,16 @@ export function DataTableRoot<TData>({
    );
 }
 
-export function useDataTableContext<TData>(): DataTableContextValue<TData> {
+export function useDataTableContext<TData>(): {
+   table: Table<TData>;
+   scrollContainerId?: string;
+   enableReorder?: boolean;
+} {
    const ctx = useContext(DataTableContext);
    if (!ctx) throw new Error("useDataTableContext outside DataTableRoot");
-   return ctx as DataTableContextValue<TData>;
+   return {
+      table: ctx.table as unknown as Table<TData>,
+      scrollContainerId: ctx.scrollContainerId,
+      enableReorder: ctx.enableReorder,
+   };
 }

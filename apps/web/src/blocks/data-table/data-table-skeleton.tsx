@@ -10,16 +10,15 @@ import {
    TableRow,
 } from "@packages/ui/components/table";
 
-interface DataTableSkeletonProps {
-   // oxlint-ignore no-explicit-any
-   columns: ColumnDef<any, any>[];
+interface DataTableSkeletonProps<TData, TValue> {
+   columns: ColumnDef<TData, TValue>[];
    rows?: number;
 }
 
-export function DataTableSkeleton({
+export function DataTableSkeleton<TData, TValue>({
    columns,
    rows = 5,
-}: DataTableSkeletonProps) {
+}: DataTableSkeletonProps<TData, TValue>) {
    return (
       <div className="rounded-md border overflow-hidden" aria-hidden="true">
          <Table className="border-separate border-spacing-0">

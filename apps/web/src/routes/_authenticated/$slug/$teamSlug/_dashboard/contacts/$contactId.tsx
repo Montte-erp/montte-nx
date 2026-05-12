@@ -37,6 +37,8 @@ import { AddSubscriptionForm } from "../-contacts/add-subscription-form";
 import { ContactAssinaturasTab } from "../-contacts/contact-assinaturas-tab";
 import { ContactPropertiesPanel } from "../-contacts/contact-properties-panel";
 import { ContactTransacoesTab } from "../-contacts/contact-transacoes-tab";
+import { TransactionFormSheet } from "../-transactions/transaction-form-sheet";
+import { useSheet } from "@/hooks/use-sheet";
 
 const VALID_TABS = ["transacoes", "servicos"] as const;
 
@@ -121,7 +123,7 @@ function ContactDetailContent() {
    const { openAlertDialog } = useAlertDialog();
    const { tab: activeTab } = Route.useSearch();
    const [subscriptionOpen, setSubscriptionOpen] = useState(false);
-   const [isDraftActive, setIsDraftActive] = useState(false);
+   const { openSheet } = useSheet();
 
    const { data: contact } = useSuspenseQuery(
       orpc.contacts.getById.queryOptions({ input: { id: contactId } }),
@@ -252,7 +254,11 @@ function ContactDetailContent() {
                   {activeTab === "transacoes" && (
                      <>
                         <Button
-                           onClick={() => setIsDraftActive(true)}
+                           onClick={() =>
+                              openSheet({
+                                 renderChildren: () => <TransactionFormSheet />,
+                              })
+                           }
                            tooltip="Novo lançamento"
                            variant="outline"
                            size="icon-sm"
@@ -339,8 +345,6 @@ function ContactDetailContent() {
                   <ContactTransacoesTab
                      contactId={contactId}
                      contact={contact}
-                     isDraftActive={isDraftActive}
-                     onDiscardDraft={() => setIsDraftActive(false)}
                   />
                </QueryBoundary>
             </TabsContent>
