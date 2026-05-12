@@ -142,7 +142,7 @@ function parseImportDay(value: unknown, fallback: number): number {
 function normalizeLast4(value: unknown): string | null {
    const digits = String(value ?? "")
       .replace(/\D/g, "")
-      .slice(0, 4);
+      .slice(-4);
    return digits.length === 4 ? digits : null;
 }
 

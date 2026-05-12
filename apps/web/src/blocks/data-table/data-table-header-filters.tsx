@@ -132,24 +132,26 @@ function RangeFilterCell<TData>({
       <div className="flex gap-2">
          <Input
             className="h-8"
-            onChange={(e) =>
+            onChange={(e) => {
+               const n = Number(e.target.value);
                column.setFilterValue([
-                  e.target.value === "" ? undefined : Number(e.target.value),
+                  e.target.value === "" || !Number.isFinite(n) ? undefined : n,
                   max,
-               ])
-            }
+               ]);
+            }}
             placeholder="Min"
             type="number"
             value={min ?? ""}
          />
          <Input
             className="h-8"
-            onChange={(e) =>
+            onChange={(e) => {
+               const n = Number(e.target.value);
                column.setFilterValue([
                   min,
-                  e.target.value === "" ? undefined : Number(e.target.value),
-               ])
-            }
+                  e.target.value === "" || !Number.isFinite(n) ? undefined : n,
+               ]);
+            }}
             placeholder="Max"
             type="number"
             value={max ?? ""}

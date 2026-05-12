@@ -41,7 +41,15 @@ export function DataTableFilterChips<TData>({
                   </span>
                   <Button
                      className="size-4"
-                     onClick={() => col?.setFilterValue(undefined)}
+                     onClick={() => {
+                        if (col) {
+                           col.setFilterValue(undefined);
+                           return;
+                        }
+                        table.setColumnFilters((prev) =>
+                           prev.filter((x) => x.id !== f.id),
+                        );
+                     }}
                      size="icon"
                      type="button"
                      variant="ghost"
