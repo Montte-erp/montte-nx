@@ -1,11 +1,12 @@
 import fs from "node:fs";
 import type { Page } from "@playwright/test";
+import { read as readXlsx, utils as xlsxUtils } from "xlsx";
 import { expect, test, type E2ESession } from "../fixtures";
 
 type TemplateCase = {
    path: string;
    heading: string;
-   filename: string;
+   filenameBase: string;
    headers: string[];
 };
 
@@ -13,45 +14,45 @@ const cases: TemplateCase[] = [
    {
       path: "categories",
       heading: "Categorias",
-      filename: "modelo-categorias.csv",
-      headers: ["name", "type"],
+      filenameBase: "modelo-categorias",
+      headers: ["Nome", "Tipo"],
    },
    {
       path: "transactions",
       heading: "Lançamentos",
-      filename: "modelo-lancamentos.csv",
+      filenameBase: "modelo-lancamentos",
       headers: [
-         "date",
-         "name",
-         "type",
-         "amount",
-         "status",
-         "dueDate",
-         "bankAccountName",
-         "creditCardName",
-         "categoryName",
-         "contactName",
+         "Data",
+         "Nome",
+         "Tipo",
+         "Valor",
+         "Status",
+         "Vencimento",
+         "Conta",
+         "Cartão",
+         "Categoria",
+         "Fornecedor/Cliente",
       ],
    },
    {
       path: "bank-accounts",
       heading: "Contas Bancárias",
-      filename: "modelo-contas-bancarias.csv",
-      headers: ["name", "type", "initialBalance"],
+      filenameBase: "modelo-contas-bancarias",
+      headers: ["Nome", "Tipo", "Saldo Inicial"],
    },
    {
       path: "credit-cards",
       heading: "Cartões de Crédito",
-      filename: "modelo-cartoes-credito.csv",
+      filenameBase: "modelo-cartoes-credito",
       headers: [
-         "name",
-         "brand",
-         "last4",
-         "creditLimit",
-         "closingDay",
-         "dueDay",
-         "bankAccountId",
-         "status",
+         "Nome",
+         "Bandeira",
+         "Final",
+         "Limite",
+         "Fechamento",
+         "Vencimento",
+         "Conta Bancária",
+         "Status",
       ],
    },
 ];
@@ -67,7 +68,49 @@ async function gotoImportFlow(
    ).toBeVisible();
 }
 
-test("MON-958: disponibiliza modelos CSV nos fluxos de importação", async ({
+async function downloadTemplate(page: Page, label: "CSV" | "XLSX") {
+   const downloadPromise = page.waitForEvent("download");
+   await page.getByRole("button", { exact: true, name: label }).click();
+   return downloadPromise;
+}
+
+async function expectCsvTemplate(page: Page, item: TemplateCase) {
+   const download = await downloadTemplate(page, "CSV");
+   expect(download.suggestedFilename()).toBe(`${item.filenameBase}.csv`);
+   const filePath = await download.path();
+   expect(filePath).toBeTruthy();
+   if (!filePath) throw new Error("Download CSV sem arquivo temporário.");
+   const content = fs.readFileSync(filePath, "utf8");
+   const headerLine = content.split(/\r?\n/)[0] ?? "";
+   for (const header of item.headers) {
+      expect(headerLine).toContain(header);
+   }
+}
+
+async function expectXlsxTemplate(page: Page, item: TemplateCase) {
+   const download = await downloadTemplate(page, "XLSX");
+   expect(download.suggestedFilename()).toBe(`${item.filenameBase}.xlsx`);
+   const filePath = await download.path();
+   expect(filePath).toBeTruthy();
+   if (!filePath) throw new Error("Download XLSX sem arquivo temporário.");
+   const workbook = readXlsx(fs.readFileSync(filePath), { type: "buffer" });
+   const firstSheetName = workbook.SheetNames[0];
+   expect(firstSheetName).toBeTruthy();
+   const worksheet = firstSheetName ? workbook.Sheets[firstSheetName] : null;
+   expect(worksheet).toBeTruthy();
+   if (!worksheet) throw new Error("Modelo XLSX sem planilha.");
+   const rows = xlsxUtils.sheet_to_json<unknown[]>(worksheet, {
+      header: 1,
+      defval: "",
+   });
+   const firstRow = rows[0];
+   const headerRow = Array.isArray(firstRow) ? firstRow.map(String) : [];
+   for (const header of item.headers) {
+      expect(headerRow).toContain(header);
+   }
+}
+
+test("MON-958: disponibiliza modelos CSV e XLSX nos fluxos de importação", async ({
    page,
    e2eSession,
 }) => {
@@ -75,17 +118,7 @@ test("MON-958: disponibiliza modelos CSV nos fluxos de importação", async ({
       await gotoImportFlow(page, e2eSession, item);
       await page.getByRole("button", { name: "Importar dados" }).click();
 
-      const downloadPromise = page.waitForEvent("download");
-      await page.getByRole("button", { name: "Baixar modelo CSV" }).click();
-      const download = await downloadPromise;
-
-      expect(download.suggestedFilename()).toBe(item.filename);
-      const filePath = await download.path();
-      expect(filePath).toBeTruthy();
-      const content = fs.readFileSync(filePath ?? "", "utf8");
-      const headerLine = content.split(/\r?\n/)[0] ?? "";
-      for (const header of item.headers) {
-         expect(headerLine).toContain(header);
-      }
+      await expectCsvTemplate(page, item);
+      await expectXlsxTemplate(page, item);
    }
 });

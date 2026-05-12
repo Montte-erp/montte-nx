@@ -72,8 +72,15 @@ const categoriesSearchSchema = z.object({
 });
 
 function parseCategoryType(raw: unknown): "income" | "expense" | "transfer" {
-   const str = String(raw ?? "").toLowerCase();
+   const str = String(raw ?? "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
    if (str === "income" || str === "expense" || str === "transfer") return str;
+   if (str === "receita") return "income";
+   if (str === "despesa") return "expense";
+   if (str === "transferencia") return "transfer";
    return "expense";
 }
 
@@ -127,7 +134,7 @@ function CategoriesList() {
    const { search, type, includeArchived, groupBy, page, pageSize } =
       Route.useSearch();
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
-   const { parse: parseXlsx } = useXlsxFile();
+   const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
 
    const [{ data: result }, { data: categoryOptions }] = useSuspenseQueries({
       queries: [
@@ -251,19 +258,43 @@ function CategoriesList() {
             type: parseCategoryType(row.type),
          }),
          template: {
-            filename: "modelo-categorias.csv",
-            label: "Baixar modelo CSV",
+            label: "Baixar modelo",
             description:
-               "Inclui name e type. Use type como income, expense ou transfer.",
-            createBlob: () =>
-               generateCsv(
-                  [
-                     { name: "Vendas", type: "income" },
-                     { name: "Aluguel", type: "expense" },
-                     { name: "Transferência entre contas", type: "transfer" },
-                  ],
-                  ["name", "type"],
-               ),
+               "Inclui Nome e Tipo. Use Tipo como Receita, Despesa ou Transferência.",
+            formats: [
+               {
+                  filename: "modelo-categorias.csv",
+                  label: "CSV",
+                  createBlob: () =>
+                     generateCsv(
+                        [
+                           { Nome: "Vendas", Tipo: "Receita" },
+                           { Nome: "Aluguel", Tipo: "Despesa" },
+                           {
+                              Nome: "Transferência entre contas",
+                              Tipo: "Transferência",
+                           },
+                        ],
+                        ["Nome", "Tipo"],
+                     ),
+               },
+               {
+                  filename: "modelo-categorias.xlsx",
+                  label: "XLSX",
+                  createBlob: () =>
+                     generateXlsx(
+                        [
+                           { Nome: "Vendas", Tipo: "Receita" },
+                           { Nome: "Aluguel", Tipo: "Despesa" },
+                           {
+                              Nome: "Transferência entre contas",
+                              Tipo: "Transferência",
+                           },
+                        ],
+                        ["Nome", "Tipo"],
+                     ),
+               },
+            ],
          },
          onImport: async (importedRows) => {
             await importBatchMutation.mutateAsync({
@@ -275,7 +306,7 @@ function CategoriesList() {
             });
          },
       }),
-      [importBatchMutation, generateCsv, parseCsv, parseXlsx],
+      [importBatchMutation, generateCsv, generateXlsx, parseCsv, parseXlsx],
    );
 
    const handleDelete = useCallback(

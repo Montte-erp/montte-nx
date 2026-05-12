@@ -233,6 +233,7 @@ export function buildBankAccountColumns(
       {
          accessorKey: "initialBalance",
          header: "Saldo Inicial",
+         meta: { label: "Saldo Inicial" },
          cell: ({ row }) => (
             <Announcement>
                <AnnouncementTag className="flex items-center text-muted-foreground">

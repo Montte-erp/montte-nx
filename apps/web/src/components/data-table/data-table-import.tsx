@@ -1,6 +1,6 @@
 import { fromPromise } from "neverthrow";
 import { useCallback, useState, useTransition } from "react";
-import { Download, FileDown, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import {
    Popover,
    PopoverContent,
@@ -21,19 +21,27 @@ export type RawImportData = {
    rows: string[][];
 };
 
+type DataTableImportTemplateFile = {
+   filename: string;
+   label: string;
+   createBlob: () => Blob;
+};
+
 export interface DataTableImportConfig {
    accept?: Record<string, string[]>;
    parseFile: (file: File) => Promise<RawImportData>;
+   importColumns?: Array<{ key: string; label: string }>;
    mapRow?: (
       row: Record<string, string>,
       index: number,
    ) => Record<string, unknown>;
    onImport: (rows: Record<string, unknown>[]) => Promise<void>;
    template?: {
-      filename: string;
       label?: string;
       description?: string;
-      createBlob: () => Blob;
+      filename?: string;
+      createBlob?: () => Blob;
+      formats?: DataTableImportTemplateFile[];
    };
 }
 
@@ -44,9 +52,14 @@ const DEFAULT_ACCEPT = {
    ],
    "application/vnd.ms-excel": [".xls"],
 };
+const TEMPLATE_FORMAT_LABELS = new Set(["CSV", "XLSX"]);
 
 function normalize(s: string) {
-   return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+   return s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "");
 }
 
 function autoMatch(
@@ -79,32 +92,47 @@ export function DataTableImportButton({
    const { table, store } = useDataTable();
    const { download } = useFileDownload();
 
-   const importableColumns = table
-      .getAllColumns()
-      .filter(
-         (col) =>
-            col.id !== "__select" &&
-            col.id !== "__actions" &&
-            !col.columnDef.meta?.importIgnore,
-      )
-      .map((col) => {
-         const def = col.columnDef;
-         const rawKey =
-            "accessorKey" in def && def.accessorKey != null
-               ? String(def.accessorKey)
-               : col.id;
-         return { key: rawKey, label: col.columnDef.meta?.label ?? col.id };
-      });
+   const importableColumns = [
+      ...table
+         .getAllColumns()
+         .filter(
+            (col) =>
+               col.id !== "__select" &&
+               col.id !== "__actions" &&
+               !col.columnDef.meta?.importIgnore,
+         )
+         .map((col) => {
+            const def = col.columnDef;
+            const rawKey =
+               "accessorKey" in def && def.accessorKey != null
+                  ? String(def.accessorKey)
+                  : col.id;
+            return { key: rawKey, label: col.columnDef.meta?.label ?? col.id };
+         }),
+      ...(importConfig.importColumns ?? []),
+   ];
 
    const [open, setOpen] = useState(false);
    const [isParsing, startParsing] = useTransition();
    const [selectedFile, setSelectedFile] = useState<File>();
+   const templateFormats =
+      importConfig.template?.formats ??
+      (importConfig.template?.filename && importConfig.template.createBlob
+         ? [
+              {
+                 filename: importConfig.template.filename,
+                 label: importConfig.template.label ?? "Baixar modelo",
+                 createBlob: importConfig.template.createBlob,
+              },
+           ]
+         : []);
 
-   const handleDownloadTemplate = useCallback(() => {
-      const template = importConfig.template;
-      if (!template) return;
-      download(template.createBlob(), template.filename);
-   }, [download, importConfig.template]);
+   const handleDownloadTemplate = useCallback(
+      (template: DataTableImportTemplateFile) => {
+         download(template.createBlob(), template.filename);
+      },
+      [download],
+   );
 
    function handleDrop([file]: File[]) {
       if (!file) return;
@@ -171,24 +199,25 @@ export function DataTableImportButton({
                   Selecione um arquivo para começar
                </p>
             </div>
-            {importConfig.template && (
-               <Button
-                  className="justify-start h-auto"
-                  onClick={handleDownloadTemplate}
-                  type="button"
-                  variant="outline"
-               >
-                  <FileDown data-icon="inline-start" />
-                  <span className="flex flex-col items-start gap-2 text-left">
-                     <span className="text-sm font-medium">
-                        {importConfig.template.label ?? "Baixar modelo"}
-                     </span>
-                     <span className="text-xs text-muted-foreground">
-                        {importConfig.template.description ??
-                           "Use o arquivo modelo para conferir as colunas esperadas."}
-                     </span>
+            {importConfig.template && templateFormats.length > 0 && (
+               <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="text-muted-foreground">
+                     Precisa de um modelo?
                   </span>
-               </Button>
+                  {templateFormats.map((template) => (
+                     <Button
+                        className="h-auto p-0 text-xs"
+                        key={template.filename}
+                        onClick={() => handleDownloadTemplate(template)}
+                        type="button"
+                        variant="link"
+                     >
+                        {TEMPLATE_FORMAT_LABELS.has(template.label)
+                           ? template.label
+                           : `Baixar modelo ${template.label}`}
+                     </Button>
+                  ))}
+               </div>
             )}
             <Dropzone
                accept={importConfig.accept ?? DEFAULT_ACCEPT}
