@@ -55,6 +55,69 @@ const creditCardsSearchSchema = z.object({
 
 const skeletonColumns = buildCreditCardColumns();
 
+type CreditCardBrand =
+   | "visa"
+   | "mastercard"
+   | "elo"
+   | "amex"
+   | "hipercard"
+   | "other";
+
+type CreditCardStatus = "active" | "blocked" | "cancelled";
+
+function normalizeImportLookup(value: unknown): string {
+   return String(value ?? "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+}
+
+function resolveBankAccountId(
+   bankAccounts: Array<{ id: string; name: string }>,
+   value: unknown,
+): string | null {
+   const normalized = normalizeImportLookup(value);
+   if (!normalized) return null;
+   const bankAccount = bankAccounts.find(
+      (item) =>
+         normalizeImportLookup(item.id) === normalized ||
+         normalizeImportLookup(item.name) === normalized,
+   );
+   return bankAccount?.id ?? null;
+}
+
+function parseCreditCardBrand(value: unknown): CreditCardBrand | undefined {
+   const normalized = normalizeImportLookup(value);
+   if (normalized === "visa") return "visa";
+   if (normalized === "mastercard") return "mastercard";
+   if (normalized === "elo") return "elo";
+   if (normalized === "amex") return "amex";
+   if (normalized === "hipercard") return "hipercard";
+   if (normalized === "other") return "other";
+   return undefined;
+}
+
+function parseCreditCardStatus(value: unknown): CreditCardStatus {
+   const normalized = normalizeImportLookup(value);
+   if (normalized === "blocked") return "blocked";
+   if (normalized === "cancelled") return "cancelled";
+   return "active";
+}
+
+function parseImportDay(value: unknown, fallback: number): number {
+   const parsed = Number.parseInt(String(value ?? ""), 10);
+   if (Number.isNaN(parsed) || parsed < 1 || parsed > 31) return fallback;
+   return parsed;
+}
+
+function normalizeLast4(value: unknown): string | null {
+   const digits = String(value ?? "")
+      .replace(/\D/g, "")
+      .slice(0, 4);
+   return digits.length === 4 ? digits : null;
+}
+
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/credit-cards",
 )({
@@ -98,7 +161,7 @@ function CreditCardsList() {
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
    const { publicEnv } = Route.useRouteContext();
-   const { parse: parseCsv } = useCsvFile();
+   const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
 
    const [{ data: result }, { data: bankAccounts }] = useSuspenseQueries({
@@ -160,19 +223,49 @@ function CreditCardsList() {
          mapRow: (row, i): Record<string, unknown> => ({
             id: `__import_${i}`,
             name: String(row.name ?? "").trim(),
-            brand: String(row.brand ?? "") || null,
-            last4: String(row.last4 ?? row.final ?? "")
-               .replace(/\D/g, "")
-               .slice(0, 4),
+            brand: parseCreditCardBrand(row.brand),
+            last4: normalizeLast4(row.last4 ?? row.final),
             color: "#6366f1",
             creditLimit: String(row.creditLimit ?? row.limite ?? "0"),
-            closingDay:
-               parseInt(String(row.closingDay ?? row.fechamento ?? "1"), 10) ||
-               1,
-            dueDay:
-               parseInt(String(row.dueDay ?? row.vencimento ?? "1"), 10) || 1,
-            status: "active",
+            closingDay: parseImportDay(row.closingDay ?? row.fechamento, 1),
+            dueDay: parseImportDay(row.dueDay ?? row.vencimento, 1),
+            bankAccountId: resolveBankAccountId(
+               bankAccounts ?? [],
+               row.bankAccountId,
+            ),
+            status: parseCreditCardStatus(row.status),
          }),
+         template: {
+            filename: "modelo-cartoes-credito.csv",
+            label: "Baixar modelo CSV",
+            description:
+               "Inclui name, brand, last4, creditLimit, closingDay, dueDay, bankAccountId e status.",
+            createBlob: () =>
+               generateCsv(
+                  [
+                     {
+                        name: "Cartão Principal",
+                        brand: "visa",
+                        last4: "1234",
+                        creditLimit: "5000.00",
+                        closingDay: "10",
+                        dueDay: "20",
+                        bankAccountId: bankAccounts?.[0]?.name ?? "",
+                        status: "active",
+                     },
+                  ],
+                  [
+                     "name",
+                     "brand",
+                     "last4",
+                     "creditLimit",
+                     "closingDay",
+                     "dueDay",
+                     "bankAccountId",
+                     "status",
+                  ],
+               ),
+         },
          onImport: async (rows) => {
             const firstBankAccountId = bankAccounts?.[0]?.id;
             if (!firstBankAccountId) {
@@ -187,15 +280,21 @@ function CreditCardsList() {
                   closingDay:
                      typeof r.closingDay === "number" ? r.closingDay : 1,
                   dueDay: typeof r.dueDay === "number" ? r.dueDay : 1,
-                  bankAccountId: firstBankAccountId,
+                  bankAccountId:
+                     resolveBankAccountId(
+                        bankAccounts ?? [],
+                        r.bankAccountId,
+                     ) ?? firstBankAccountId,
                   color: "#6366f1",
                   creditLimit: String(r.creditLimit ?? "0"),
-                  last4: String(r.last4 ?? "") || null,
+                  last4: normalizeLast4(r.last4),
+                  brand: parseCreditCardBrand(r.brand),
+                  status: parseCreditCardStatus(r.status),
                })),
             });
          },
       }),
-      [bulkCreateMutation, parseCsv, parseXlsx, bankAccounts],
+      [bulkCreateMutation, generateCsv, parseCsv, parseXlsx, bankAccounts],
    );
 
    const handleDelete = useCallback(

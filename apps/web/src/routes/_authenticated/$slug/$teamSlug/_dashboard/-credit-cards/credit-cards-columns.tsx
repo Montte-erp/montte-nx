@@ -223,7 +223,6 @@ export function buildCreditCardColumns(options?: {
          meta: {
             label: "Conta Bancária",
             cellComponent: "combobox" as const,
-            importIgnore: true,
             editOptions: options?.bankAccounts?.map((a) => ({
                value: a.id,
                label: a.name,

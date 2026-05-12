@@ -43,6 +43,16 @@ OLDFILEUID:NONE
 NEWFILEUID:NONE
 
 <OFX>
+<SIGNONMSGSRSV1>
+<SONRS>
+<STATUS>
+<CODE>0
+<SEVERITY>INFO
+</STATUS>
+<DTSERVER>20260131120000
+<LANGUAGE>POR
+</SONRS>
+</SIGNONMSGSRSV1>
 <BANKMSGSRSV1>
 <STMTTRNRS>
 <TRNUID>1
@@ -173,14 +183,23 @@ test("MON-888: importa OFX selecionando conta em bulk salva lançamentos com toa
       });
 
    await expect(page.getByText("Importando")).toBeVisible();
-   await expect(page.getByRole("cell", { name: txA })).toBeVisible();
-   await expect(page.getByRole("cell", { name: txB })).toBeVisible();
+   await expect(page.getByRole("row").filter({ hasText: txA })).toBeVisible();
+   await expect(page.getByRole("row").filter({ hasText: txB })).toBeVisible();
 
-   await page.getByLabel("Selecionar todos").first().check();
+   await page
+      .getByRole("row")
+      .filter({ hasText: txA })
+      .getByLabel("Selecionar linha")
+      .click();
+   await page
+      .getByRole("row")
+      .filter({ hasText: txB })
+      .getByLabel("Selecionar linha")
+      .click();
    await page.getByRole("button", { name: "Definir conta" }).click();
    await page.getByRole("option", { name: accountName }).click();
 
-   await page.getByRole("button", { name: "Salvar importação" }).click();
+   await page.getByRole("button", { name: /Salvar 2 linha/ }).click();
    await page.getByRole("button", { name: "Salvar" }).click();
 
    await expect(
@@ -188,8 +207,8 @@ test("MON-888: importa OFX selecionando conta em bulk salva lançamentos com toa
    ).toBeVisible();
    await expect(page.getByText(/com erro/)).toHaveCount(0);
 
-   await expect(page.getByRole("cell", { name: txA })).toBeVisible();
-   await expect(page.getByRole("cell", { name: txB })).toBeVisible();
+   await expect(page.getByRole("row").filter({ hasText: txA })).toBeVisible();
+   await expect(page.getByRole("row").filter({ hasText: txB })).toBeVisible();
 
    await rememberTx(e2eSession, txA);
    await rememberTx(e2eSession, txB);
@@ -224,12 +243,16 @@ test("MON-888: importa OFX sem conta exibe erro e não dispara toast de sucesso"
          buffer: Buffer.from(ofx, "utf8"),
       });
 
-   await expect(page.getByRole("cell", { name: txA })).toBeVisible();
+   await expect(page.getByRole("row").filter({ hasText: txA })).toBeVisible();
 
-   await page.getByRole("button", { name: "Salvar importação" }).click();
+   await page.getByRole("button", { name: /Salvar 1 linha/ }).click();
    await page.getByRole("button", { name: "Salvar" }).click();
 
-   await expect(page.getByText(/com erro/)).toBeVisible();
+   await expect(
+      page.getByText(
+         "Nenhum lançamento válido para importar. Preencha data, valor e conta ou cartão.",
+      ),
+   ).toBeVisible();
    await expect(
       page.getByText(/linha\(s\) importada\(s\) com sucesso/),
    ).toHaveCount(0);
