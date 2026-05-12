@@ -1,3 +1,5 @@
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { Table } from "@packages/ui/components/table";
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
@@ -23,10 +25,7 @@ import { Plus, Sparkles } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { toast } from "@packages/ui/components/sonner";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
-import { DataTableContainer } from "@/blocks/data-table/data-table-container";
-import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
-import { DataTableRoot } from "@/blocks/data-table/data-table-root";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
 import { useContextPanelInfo } from "../../../-context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -175,7 +174,7 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
    });
 
    return (
-      <DataTableRoot table={table}>
+      <div className="flex flex-col gap-4">
          <ServiceTabToolbar>
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                <PopoverTrigger asChild>
@@ -200,11 +199,13 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
                </PopoverContent>
             </Popover>
          </ServiceTabToolbar>
-         <DataTableContainer>
-            <DataTableHeader />
-            <DataTableBody<BenefitRow> />
-         </DataTableContainer>
-         <DataTableEmptyState>
+         <ScrollArea className="rounded-md border bg-card">
+            <Table>
+               <DataTableHeader table={table} />
+               <DataTableBody<BenefitRow> table={table} />
+            </Table>
+         </ScrollArea>
+         {table.getRowCount() === 0 && (
             <Empty>
                <EmptyHeader>
                   <EmptyMedia variant="icon">
@@ -217,7 +218,7 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
                   </EmptyDescription>
                </EmptyHeader>
             </Empty>
-         </DataTableEmptyState>
-      </DataTableRoot>
+         )}
+      </div>
    );
 }

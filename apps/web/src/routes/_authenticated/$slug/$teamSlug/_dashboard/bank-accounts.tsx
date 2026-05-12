@@ -1,3 +1,6 @@
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { SearchInput } from "@packages/ui/components/search-input";
+import { Table } from "@packages/ui/components/table";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import {
@@ -7,7 +10,10 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { SelectionActionButton } from "@packages/ui/components/selection-action-bar";
+import {
+   SelectionActionButton,
+   useTableBulkActions,
+} from "@/hooks/use-selection-toolbar";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
@@ -25,20 +31,12 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
-import { DataTableBulkActionBar } from "@/blocks/data-table/data-table-bulk-action-bar";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
-import { DataTableContainer } from "@/blocks/data-table/data-table-container";
-import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
-import { DataTableRoot } from "@/blocks/data-table/data-table-root";
-import { DataTableSearch } from "@/blocks/data-table/data-table-search";
 import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
-import {
-   DataTableToolbar,
-   DataTableToolbarGroup,
-} from "@/blocks/data-table/data-table-toolbar";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
+import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
 import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
@@ -155,6 +153,15 @@ function BankAccountsList() {
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
    const layout = useDataTableLayout("bank-accounts");
+
+   const searchInput = useDebouncedSearch({
+      value: search,
+      onCommit: (value) =>
+         navigate({
+            search: (prev) => ({ ...prev, search: value, page: 1 }),
+            replace: true,
+         }),
+   });
 
    const { data: result } = useSuspenseQuery(
       orpc.bankAccounts.list.queryOptions({
@@ -480,27 +487,47 @@ function BankAccountsList() {
 
    const importApi = useDataImport({ table, config: importConfig });
 
+   const selectedRows = table.getSelectedRowModel().rows;
+   const selectedIds = selectedRows.map((r) => r.original.id);
+
+   useTableBulkActions({
+      selectedCount: selectedRows.length,
+      onClear: () => table.resetRowSelection(),
+      children: (
+         <SelectionActionButton
+            icon={<Trash2 className="size-4" />}
+            onClick={() => {
+               openAlertDialog({
+                  title: `Excluir ${selectedIds.length} ${selectedIds.length === 1 ? "conta" : "contas"}`,
+                  description:
+                     "Tem certeza que deseja excluir as contas selecionadas? Esta ação não pode ser desfeita.",
+                  actionLabel: "Excluir",
+                  cancelLabel: "Cancelar",
+                  variant: "destructive",
+                  onAction: async () => {
+                     await bulkDeleteMutation.mutateAsync({ ids: selectedIds });
+                     table.resetRowSelection();
+                  },
+               });
+            }}
+            variant="destructive"
+         >
+            Excluir
+         </SelectionActionButton>
+      ),
+   });
+
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <DataTableRoot table={table}>
-            <DataTableToolbar>
-               <DataTableSearch
-                  onChange={(value) =>
-                     startTransition(() => {
-                        navigate({
-                           search: (prev) => ({
-                              ...prev,
-                              search: value,
-                              page: 1,
-                           }),
-                           replace: true,
-                        });
-                     })
-                  }
+         <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-2 justify-between">
+               <SearchInput
+                  aria-label="Buscar conta por nome..."
+                  onChange={(e) => searchInput.onChange(e.target.value)}
                   placeholder="Buscar conta por nome..."
-                  value={search}
+                  value={searchInput.value}
                />
-               <DataTableToolbarGroup>
+               <div className="flex flex-wrap items-center gap-2">
                   <PageFilters>
                      {TYPES.map((key) => (
                         <PageFilter
@@ -522,7 +549,7 @@ function BankAccountsList() {
                         />
                      ))}
                   </PageFilters>
-                  <DataTableColumnVisibility />
+                  <DataTableColumnVisibility table={table} />
                   <DataImportButton api={importApi} config={importConfig} />
                   <Button
                      onClick={handleOpenCreate}
@@ -532,18 +559,20 @@ function BankAccountsList() {
                   >
                      <Plus />
                   </Button>
-               </DataTableToolbarGroup>
-            </DataTableToolbar>
-            <DataTableContainer>
-               <DataTableHeader />
-               <DataTableBody<BankAccountRow> />
-            </DataTableContainer>
+               </div>
+            </div>
+            <ScrollArea className="rounded-md border bg-card">
+               <Table>
+                  <DataTableHeader table={table} />
+                  <DataTableBody<BankAccountRow> table={table} />
+               </Table>
+            </ScrollArea>
             <DataImportSection
                api={importApi}
                config={importConfig}
                table={table}
             />
-            <DataTableEmptyState>
+            {table.getRowCount() === 0 && (
                <Empty>
                   <EmptyMedia>
                      <Landmark className="size-10" />
@@ -556,34 +585,9 @@ function BankAccountsList() {
                      </EmptyDescription>
                   </EmptyHeader>
                </Empty>
-            </DataTableEmptyState>
-            {result.totalCount > 0 && <DataTablePagination />}
-            <DataTableBulkActionBar<BankAccountRow>>
-               {({ rows, clear }) => (
-                  <SelectionActionButton
-                     icon={<Trash2 className="size-4" />}
-                     onClick={() => {
-                        const ids = rows.map((r) => r.original.id);
-                        openAlertDialog({
-                           title: `Excluir ${ids.length} ${ids.length === 1 ? "conta" : "contas"}`,
-                           description:
-                              "Tem certeza que deseja excluir as contas selecionadas? Esta ação não pode ser desfeita.",
-                           actionLabel: "Excluir",
-                           cancelLabel: "Cancelar",
-                           variant: "destructive",
-                           onAction: async () => {
-                              await bulkDeleteMutation.mutateAsync({ ids });
-                              clear();
-                           },
-                        });
-                     }}
-                     variant="destructive"
-                  >
-                     Excluir
-                  </SelectionActionButton>
-               )}
-            </DataTableBulkActionBar>
-         </DataTableRoot>
+            )}
+            {result.totalCount > 0 && <DataTablePagination table={table} />}
+         </div>
       </div>
    );
 }

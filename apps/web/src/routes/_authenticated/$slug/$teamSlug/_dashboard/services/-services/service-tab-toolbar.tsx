@@ -1,8 +1,4 @@
 import type { ReactNode } from "react";
-import {
-   DataTableToolbar,
-   DataTableToolbarGroup,
-} from "@/blocks/data-table/data-table-toolbar";
 
 interface ServiceTabToolbarProps {
    children?: ReactNode;
@@ -10,9 +6,9 @@ interface ServiceTabToolbarProps {
 
 export function ServiceTabToolbar({ children }: ServiceTabToolbarProps) {
    return (
-      <DataTableToolbar>
+      <div className="flex flex-wrap items-center gap-2 justify-between">
          <div />
-         <DataTableToolbarGroup>{children}</DataTableToolbarGroup>
-      </DataTableToolbar>
+         <div className="flex flex-wrap items-center gap-2">{children}</div>
+      </div>
    );
 }

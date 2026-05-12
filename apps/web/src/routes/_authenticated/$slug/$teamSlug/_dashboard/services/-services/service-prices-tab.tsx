@@ -1,3 +1,5 @@
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { Table } from "@packages/ui/components/table";
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
@@ -19,10 +21,7 @@ import { CircleDollarSign, Copy, Plus, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "@packages/ui/components/sonner";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
-import { DataTableContainer } from "@/blocks/data-table/data-table-container";
-import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
-import { DataTableRoot } from "@/blocks/data-table/data-table-root";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useSheet } from "@/hooks/use-sheet";
@@ -172,7 +171,7 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
    });
 
    return (
-      <DataTableRoot table={table}>
+      <div className="flex flex-col gap-4">
          <div className="flex flex-col gap-4">
             <ServiceTabToolbar>
                <Button
@@ -185,11 +184,13 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
                   <span className="sr-only">Novo preço</span>
                </Button>
             </ServiceTabToolbar>
-            <DataTableContainer>
-               <DataTableHeader />
-               <DataTableBody<ServicePrice> />
-            </DataTableContainer>
-            <DataTableEmptyState>
+            <ScrollArea className="rounded-md border bg-card">
+               <Table>
+                  <DataTableHeader table={table} />
+                  <DataTableBody<ServicePrice> table={table} />
+               </Table>
+            </ScrollArea>
+            {table.getRowCount() === 0 && (
                <Empty>
                   <EmptyHeader>
                      <EmptyMedia variant="icon">
@@ -207,8 +208,8 @@ export function ServicePricesTab({ serviceId }: { serviceId: string }) {
                      </Button>
                   </EmptyContent>
                </Empty>
-            </DataTableEmptyState>
+            )}
          </div>
-      </DataTableRoot>
+      </div>
    );
 }

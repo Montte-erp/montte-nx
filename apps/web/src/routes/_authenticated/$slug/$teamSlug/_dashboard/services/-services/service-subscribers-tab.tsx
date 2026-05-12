@@ -5,6 +5,8 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { Table } from "@packages/ui/components/table";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -16,17 +18,11 @@ import {
 import { Users } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
-import { DataTableContainer } from "@/blocks/data-table/data-table-container";
-import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
-import { DataTableRoot } from "@/blocks/data-table/data-table-root";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { orpc } from "@/integrations/orpc/client";
-import {
-   buildSubscriberColumns,
-   type SubscriberRow,
-} from "./service-subscribers-columns";
+import { buildSubscriberColumns } from "./service-subscribers-columns";
 import { ServiceTabToolbar } from "./service-tab-toolbar";
 
 export function ServiceSubscribersTab({ serviceId }: { serviceId: string }) {
@@ -77,14 +73,10 @@ export function ServiceSubscribersTab({ serviceId }: { serviceId: string }) {
       getSortedRowModel: getSortedRowModel(),
    });
 
-   return (
-      <DataTableRoot table={table}>
-         <ServiceTabToolbar />
-         <DataTableContainer>
-            <DataTableHeader />
-            <DataTableBody<SubscriberRow> />
-         </DataTableContainer>
-         <DataTableEmptyState>
+   if (rows.length === 0) {
+      return (
+         <div className="flex flex-col gap-4">
+            <ServiceTabToolbar />
             <Empty>
                <EmptyHeader>
                   <EmptyMedia variant="icon">
@@ -96,7 +88,19 @@ export function ServiceSubscribersTab({ serviceId }: { serviceId: string }) {
                   </EmptyDescription>
                </EmptyHeader>
             </Empty>
-         </DataTableEmptyState>
-      </DataTableRoot>
+         </div>
+      );
+   }
+
+   return (
+      <div className="flex flex-col gap-4">
+         <ServiceTabToolbar />
+         <ScrollArea className="rounded-md border bg-card">
+            <Table>
+               <DataTableHeader table={table} />
+               <DataTableBody table={table} />
+            </Table>
+         </ScrollArea>
+      </div>
    );
 }

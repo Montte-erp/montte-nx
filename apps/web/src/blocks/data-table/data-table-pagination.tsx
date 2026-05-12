@@ -6,24 +6,25 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
+import type { Table } from "@tanstack/react-table";
 import {
    ChevronFirst,
    ChevronLast,
    ChevronLeft,
    ChevronRight,
 } from "lucide-react";
-import { useDataTableContext } from "./data-table-root";
 
 const DEFAULT_PAGE_SIZES = [10, 20, 50, 100];
 
-interface DataTablePaginationProps {
+interface DataTablePaginationProps<TData> {
+   table: Table<TData>;
    pageSizes?: number[];
 }
 
-export function DataTablePagination({
+export function DataTablePagination<TData>({
+   table,
    pageSizes = DEFAULT_PAGE_SIZES,
-}: DataTablePaginationProps = {}) {
-   const { table } = useDataTableContext();
+}: DataTablePaginationProps<TData>) {
    const { pageIndex, pageSize } = table.getState().pagination;
    const total = table.getRowCount();
    const pageCount = table.getPageCount();

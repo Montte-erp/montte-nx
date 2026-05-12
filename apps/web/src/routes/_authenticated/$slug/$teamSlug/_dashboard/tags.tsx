@@ -1,5 +1,8 @@
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { SearchInput } from "@packages/ui/components/search-input";
+import { Table } from "@packages/ui/components/table";
 import {
    ContextPanel,
    ContextPanelContent,
@@ -13,7 +16,10 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { SelectionActionButton } from "@packages/ui/components/selection-action-bar";
+import {
+   SelectionActionButton,
+   useTableBulkActions,
+} from "@/hooks/use-selection-toolbar";
 import {
    getCoreRowModel,
    useReactTable,
@@ -30,20 +36,12 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
-import { DataTableBulkActionBar } from "@/blocks/data-table/data-table-bulk-action-bar";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
-import { DataTableContainer } from "@/blocks/data-table/data-table-container";
-import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
-import { DataTableRoot } from "@/blocks/data-table/data-table-root";
-import { DataTableSearch } from "@/blocks/data-table/data-table-search";
 import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
-import {
-   DataTableToolbar,
-   DataTableToolbarGroup,
-} from "@/blocks/data-table/data-table-toolbar";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
+import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
 import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
@@ -138,6 +136,15 @@ function TagsList() {
    const { generate: generateCsv, parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
    const layout = useDataTableLayout("tags");
+
+   const searchInput = useDebouncedSearch({
+      value: search,
+      onCommit: (value) =>
+         navigate({
+            search: (prev) => ({ ...prev, search: value, page: 1 }),
+            replace: true,
+         }),
+   });
 
    const { data: result } = useSuspenseQuery(
       orpc.tags.getAll.queryOptions({
@@ -459,29 +466,80 @@ function TagsList() {
 
    const importApi = useDataImport({ table, config: importConfig });
 
+   const selectedRows = table.getSelectedRowModel().rows;
+   const clearSelection = () => table.resetRowSelection();
+   const archivableIds = selectedRows
+      .filter((r) => !r.original.isDefault && !r.original.isArchived)
+      .map((r) => r.original.id);
+   const deletableIds = selectedRows
+      .filter((r) => !r.original.isDefault)
+      .map((r) => r.original.id);
+
+   useTableBulkActions({
+      selectedCount: selectedRows.length,
+      onClear: clearSelection,
+      children: (
+         <>
+            {archivableIds.length > 0 && (
+               <SelectionActionButton
+                  icon={<Archive />}
+                  onClick={async () => {
+                     await bulkArchiveMutation.mutateAsync({
+                        ids: archivableIds,
+                     });
+                     toast.success(
+                        `${archivableIds.length} ${archivableIds.length === 1 ? "centro de custo arquivado" : "centros de custo arquivados"}.`,
+                     );
+                     clearSelection();
+                  }}
+               >
+                  Arquivar
+               </SelectionActionButton>
+            )}
+            {deletableIds.length > 0 && (
+               <SelectionActionButton
+                  icon={<Trash2 />}
+                  onClick={() => {
+                     openAlertDialog({
+                        title: `Excluir ${deletableIds.length} ${deletableIds.length === 1 ? "centro de custo" : "centros de custo"}`,
+                        description:
+                           "Tem certeza que deseja excluir os centros de custo selecionados? Esta ação não pode ser desfeita.",
+                        actionLabel: "Excluir",
+                        cancelLabel: "Cancelar",
+                        variant: "destructive",
+                        onAction: async () => {
+                           await bulkDeleteMutation.mutateAsync({
+                              ids: deletableIds,
+                           });
+                           toast.success(
+                              `${deletableIds.length} ${deletableIds.length === 1 ? "centro de custo excluído" : "centros de custo excluídos"} com sucesso.`,
+                           );
+                           clearSelection();
+                        },
+                     });
+                  }}
+                  variant="destructive"
+               >
+                  Excluir
+               </SelectionActionButton>
+            )}
+         </>
+      ),
+   });
+
    useContextPanelInfo(() => <TagsInfoContent />);
 
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <DataTableRoot table={table}>
-            <DataTableToolbar>
-               <DataTableSearch
-                  onChange={(value) =>
-                     startTransition(() => {
-                        navigate({
-                           search: (prev) => ({
-                              ...prev,
-                              search: value,
-                              page: 1,
-                           }),
-                           replace: true,
-                        });
-                     })
-                  }
+         <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-2 justify-between">
+               <SearchInput
+                  aria-label="Buscar centros de custo"
+                  onChange={(e) => searchInput.onChange(e.target.value)}
                   placeholder="Buscar centros de custo..."
-                  value={search}
+                  value={searchInput.value}
                />
-               <DataTableToolbarGroup>
+               <div className="flex flex-wrap items-center gap-2">
                   <PageFilters>
                      <PageFilter
                         active={includeArchived}
@@ -501,7 +559,7 @@ function TagsList() {
                         }
                      />
                   </PageFilters>
-                  <DataTableColumnVisibility />
+                  <DataTableColumnVisibility table={table} />
                   <DataImportButton api={importApi} config={importConfig} />
                   <Button
                      onClick={handleCreate}
@@ -512,18 +570,20 @@ function TagsList() {
                      <Plus />
                      <span className="sr-only">Novo Centro de Custo</span>
                   </Button>
-               </DataTableToolbarGroup>
-            </DataTableToolbar>
-            <DataTableContainer>
-               <DataTableHeader />
-               <DataTableBody<TagRow> />
-            </DataTableContainer>
+               </div>
+            </div>
+            <ScrollArea className="rounded-md border bg-card">
+               <Table>
+                  <DataTableHeader table={table} />
+                  <DataTableBody<TagRow> table={table} />
+               </Table>
+            </ScrollArea>
             <DataImportSection
                api={importApi}
                config={importConfig}
                table={table}
             />
-            <DataTableEmptyState>
+            {table.getRowCount() === 0 && (
                <Empty>
                   <EmptyHeader>
                      <EmptyMedia variant="icon">
@@ -536,68 +596,9 @@ function TagsList() {
                      </EmptyDescription>
                   </EmptyHeader>
                </Empty>
-            </DataTableEmptyState>
-            <DataTablePagination />
-            <DataTableBulkActionBar<TagRow>>
-               {({ rows, clear }) => {
-                  const archivableIds = rows
-                     .filter(
-                        (r) => !r.original.isDefault && !r.original.isArchived,
-                     )
-                     .map((r) => r.original.id);
-                  const deletableIds = rows
-                     .filter((r) => !r.original.isDefault)
-                     .map((r) => r.original.id);
-                  return (
-                     <>
-                        {archivableIds.length > 0 && (
-                           <SelectionActionButton
-                              icon={<Archive />}
-                              onClick={async () => {
-                                 await bulkArchiveMutation.mutateAsync({
-                                    ids: archivableIds,
-                                 });
-                                 toast.success(
-                                    `${archivableIds.length} ${archivableIds.length === 1 ? "centro de custo arquivado" : "centros de custo arquivados"}.`,
-                                 );
-                                 clear();
-                              }}
-                           >
-                              Arquivar
-                           </SelectionActionButton>
-                        )}
-                        {deletableIds.length > 0 && (
-                           <SelectionActionButton
-                              icon={<Trash2 />}
-                              onClick={() => {
-                                 openAlertDialog({
-                                    title: `Excluir ${deletableIds.length} ${deletableIds.length === 1 ? "centro de custo" : "centros de custo"}`,
-                                    description:
-                                       "Tem certeza que deseja excluir os centros de custo selecionados? Esta ação não pode ser desfeita.",
-                                    actionLabel: "Excluir",
-                                    cancelLabel: "Cancelar",
-                                    variant: "destructive",
-                                    onAction: async () => {
-                                       await bulkDeleteMutation.mutateAsync({
-                                          ids: deletableIds,
-                                       });
-                                       toast.success(
-                                          `${deletableIds.length} ${deletableIds.length === 1 ? "centro de custo excluído" : "centros de custo excluídos"} com sucesso.`,
-                                       );
-                                       clear();
-                                    },
-                                 });
-                              }}
-                              variant="destructive"
-                           >
-                              Excluir
-                           </SelectionActionButton>
-                        )}
-                     </>
-                  );
-               }}
-            </DataTableBulkActionBar>
-         </DataTableRoot>
+            )}
+            <DataTablePagination table={table} />
+         </div>
       </div>
    );
 }

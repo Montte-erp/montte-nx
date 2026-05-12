@@ -1,3 +1,6 @@
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { SearchInput } from "@packages/ui/components/search-input";
+import { Table } from "@packages/ui/components/table";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import {
@@ -8,7 +11,10 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { SelectionActionButton } from "@packages/ui/components/selection-action-bar";
+import {
+   SelectionActionButton,
+   useTableBulkActions,
+} from "@/hooks/use-selection-toolbar";
 import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
@@ -32,23 +38,15 @@ import {
    TrendingUp,
    XCircle,
 } from "lucide-react";
-import { startTransition, useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "@packages/ui/components/sonner";
 import { z } from "zod";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
-import { DataTableBulkActionBar } from "@/blocks/data-table/data-table-bulk-action-bar";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
-import { DataTableContainer } from "@/blocks/data-table/data-table-container";
-import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
-import { DataTableRoot } from "@/blocks/data-table/data-table-root";
-import { DataTableSearch } from "@/blocks/data-table/data-table-search";
 import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
-import {
-   DataTableToolbar,
-   DataTableToolbarGroup,
-} from "@/blocks/data-table/data-table-toolbar";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
+import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { PageFilters } from "@/components/page-filters/page-filters";
 import { PageFilter } from "@/components/page-filters/page-filter";
 import { QueryBoundary } from "@/components/query-boundary";
@@ -133,6 +131,15 @@ function CouponsList() {
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
    const layout = useDataTableLayout("coupons");
+
+   const searchInput = useDebouncedSearch({
+      value: search.search,
+      onCommit: (value) =>
+         navigate({
+            search: (s) => ({ ...s, search: value }),
+            replace: true,
+         }),
+   });
 
    const [{ data: coupons }, { data: meters }] = useSuspenseQueries({
       queries: [
@@ -348,23 +355,54 @@ function CouponsList() {
       getFilteredRowModel: getFilteredRowModel(),
    });
 
+   const selectedRows = table.getSelectedRowModel().rows;
+   const selectedIds = selectedRows.map((r) => r.original.id);
+
+   useTableBulkActions({
+      selectedCount: selectedRows.length,
+      onClear: () => table.resetRowSelection(),
+      children: (
+         <>
+            <SelectionActionButton
+               icon={<CheckCircle2 />}
+               onClick={async () => {
+                  const res = await bulkSetActiveMutation
+                     .mutateAsync({ ids: selectedIds, isActive: true })
+                     .catch(() => null);
+                  if (res) toast.success(`${res.updated} cupom(s) ativado(s).`);
+                  table.resetRowSelection();
+               }}
+            >
+               Ativar
+            </SelectionActionButton>
+            <SelectionActionButton
+               icon={<XCircle />}
+               onClick={async () => {
+                  const res = await bulkSetActiveMutation
+                     .mutateAsync({ ids: selectedIds, isActive: false })
+                     .catch(() => null);
+                  if (res)
+                     toast.success(`${res.updated} cupom(s) desativado(s).`);
+                  table.resetRowSelection();
+               }}
+            >
+               Desativar
+            </SelectionActionButton>
+         </>
+      ),
+   });
+
    return (
-      <DataTableRoot table={table}>
+      <div className="flex flex-col gap-4">
          <div className="flex flex-col gap-4">
-            <DataTableToolbar>
-               <DataTableSearch
-                  onChange={(v) =>
-                     startTransition(() => {
-                        navigate({
-                           search: (s) => ({ ...s, search: v }),
-                           replace: true,
-                        });
-                     })
-                  }
+            <div className="flex flex-wrap items-center gap-2 justify-between">
+               <SearchInput
+                  aria-label="Buscar cupom"
+                  onChange={(e) => searchInput.onChange(e.target.value)}
                   placeholder="Buscar cupom..."
-                  value={search.search}
+                  value={searchInput.value}
                />
-               <DataTableToolbarGroup>
+               <div className="flex flex-wrap items-center gap-2">
                   <PageFilters>
                      <PageFilter
                         active={search.isActive === true}
@@ -431,7 +469,7 @@ function CouponsList() {
                         }
                      />
                   </PageFilters>
-                  <DataTableColumnVisibility />
+                  <DataTableColumnVisibility table={table} />
                   <Button
                      id="tour-coupons-create"
                      onClick={handleOpenCreate}
@@ -442,52 +480,15 @@ function CouponsList() {
                      <Plus />
                      <span className="sr-only">Novo cupom</span>
                   </Button>
-               </DataTableToolbarGroup>
-            </DataTableToolbar>
-            <DataTableContainer>
-               <DataTableHeader />
-               <DataTableBody<CouponRow> />
-            </DataTableContainer>
-            <DataTableBulkActionBar<CouponRow>>
-               {({ rows, clear }) => {
-                  const ids = rows.map((r) => r.original.id);
-                  return (
-                     <>
-                        <SelectionActionButton
-                           icon={<CheckCircle2 />}
-                           onClick={async () => {
-                              const res = await bulkSetActiveMutation
-                                 .mutateAsync({ ids, isActive: true })
-                                 .catch(() => null);
-                              if (res)
-                                 toast.success(
-                                    `${res.updated} cupom(s) ativado(s).`,
-                                 );
-                              clear();
-                           }}
-                        >
-                           Ativar
-                        </SelectionActionButton>
-                        <SelectionActionButton
-                           icon={<XCircle />}
-                           onClick={async () => {
-                              const res = await bulkSetActiveMutation
-                                 .mutateAsync({ ids, isActive: false })
-                                 .catch(() => null);
-                              if (res)
-                                 toast.success(
-                                    `${res.updated} cupom(s) desativado(s).`,
-                                 );
-                              clear();
-                           }}
-                        >
-                           Desativar
-                        </SelectionActionButton>
-                     </>
-                  );
-               }}
-            </DataTableBulkActionBar>
-            <DataTableEmptyState>
+               </div>
+            </div>
+            <ScrollArea className="rounded-md border bg-card">
+               <Table>
+                  <DataTableHeader table={table} />
+                  <DataTableBody<CouponRow> table={table} />
+               </Table>
+            </ScrollArea>
+            {table.getRowCount() === 0 && (
                <Empty>
                   <EmptyHeader>
                      <EmptyMedia variant="icon">
@@ -514,8 +515,8 @@ function CouponsList() {
                      </Button>
                   </EmptyContent>
                </Empty>
-            </DataTableEmptyState>
+            )}
          </div>
-      </DataTableRoot>
+      </div>
    );
 }

@@ -1,3 +1,6 @@
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { SearchInput } from "@packages/ui/components/search-input";
+import { Table } from "@packages/ui/components/table";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import {
@@ -7,7 +10,10 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { SelectionActionButton } from "@packages/ui/components/selection-action-bar";
+import {
+   SelectionActionButton,
+   useTableBulkActions,
+} from "@/hooks/use-selection-toolbar";
 import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -35,20 +41,12 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "../-layout/default-header";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
-import { DataTableBulkActionBar } from "@/blocks/data-table/data-table-bulk-action-bar";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
-import { DataTableContainer } from "@/blocks/data-table/data-table-container";
-import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
-import { DataTableRoot } from "@/blocks/data-table/data-table-root";
-import { DataTableSearch } from "@/blocks/data-table/data-table-search";
 import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
-import {
-   DataTableToolbar,
-   DataTableToolbarGroup,
-} from "@/blocks/data-table/data-table-toolbar";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
+import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
 import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
@@ -155,6 +153,15 @@ function CategoriesList() {
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
    const layout = useDataTableLayout("categories");
+
+   const searchInput = useDebouncedSearch({
+      value: search,
+      onCommit: (value) =>
+         navigate({
+            search: (prev) => ({ ...prev, search: value, page: 1 }),
+            replace: true,
+         }),
+   });
 
    const [{ data: result }, { data: categoryOptions }] = useSuspenseQueries({
       queries: [
@@ -559,27 +566,77 @@ function CategoriesList() {
 
    const importApi = useDataImport({ table, config: importConfig });
 
+   const selectedRows = table.getSelectedRowModel().rows;
+   const archivableIds = selectedRows
+      .filter((r) => !r.original.isArchived)
+      .map((r) => r.original.id);
+   const deletableIds = selectedRows.map((r) => r.original.id);
+
+   useTableBulkActions({
+      selectedCount: selectedRows.length,
+      onClear: () => table.resetRowSelection(),
+      children: (
+         <>
+            {archivableIds.length > 0 && (
+               <SelectionActionButton
+                  icon={<Archive />}
+                  onClick={async () => {
+                     const res = await fromPromise(
+                        bulkArchiveMutation.mutateAsync({ ids: archivableIds }),
+                        (e) => e,
+                     );
+                     if (res.isErr()) return;
+                     toast.success(
+                        `${archivableIds.length} ${archivableIds.length === 1 ? "categoria arquivada" : "categorias arquivadas"}.`,
+                     );
+                     table.resetRowSelection();
+                  }}
+               >
+                  Arquivar
+               </SelectionActionButton>
+            )}
+            {deletableIds.length > 0 && (
+               <SelectionActionButton
+                  icon={<Trash2 />}
+                  onClick={() => {
+                     openAlertDialog({
+                        title: `Excluir ${deletableIds.length} ${deletableIds.length === 1 ? "categoria" : "categorias"}`,
+                        description:
+                           "Tem certeza que deseja excluir as categorias selecionadas? Esta ação não pode ser desfeita.",
+                        actionLabel: "Excluir",
+                        cancelLabel: "Cancelar",
+                        variant: "destructive",
+                        onAction: async () => {
+                           await bulkDeleteMutation.mutateAsync({
+                              ids: deletableIds,
+                           });
+                           toast.success(
+                              `${deletableIds.length} ${deletableIds.length === 1 ? "categoria excluída" : "categorias excluídas"} com sucesso.`,
+                           );
+                           table.resetRowSelection();
+                        },
+                     });
+                  }}
+                  variant="destructive"
+               >
+                  Excluir
+               </SelectionActionButton>
+            )}
+         </>
+      ),
+   });
+
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <DataTableRoot table={table}>
-            <DataTableToolbar>
-               <DataTableSearch
-                  onChange={(value) =>
-                     startTransition(() => {
-                        navigate({
-                           search: (prev) => ({
-                              ...prev,
-                              search: value,
-                              page: 1,
-                           }),
-                           replace: true,
-                        });
-                     })
-                  }
+         <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-2 justify-between">
+               <SearchInput
+                  aria-label="Buscar categorias..."
+                  onChange={(e) => searchInput.onChange(e.target.value)}
                   placeholder="Buscar categorias..."
-                  value={search}
+                  value={searchInput.value}
                />
-               <DataTableToolbarGroup>
+               <div className="flex flex-wrap items-center gap-2">
                   <PageFilters>
                      <PageFilter
                         active={includeArchived}
@@ -650,7 +707,7 @@ function CategoriesList() {
                         }
                      />
                   </PageFilters>
-                  <DataTableColumnVisibility />
+                  <DataTableColumnVisibility table={table} />
                   <DataImportButton api={importApi} config={importConfig} />
                   <Button
                      onClick={handleCreate}
@@ -661,18 +718,20 @@ function CategoriesList() {
                      <Plus />
                      <span className="sr-only">Nova Categoria</span>
                   </Button>
-               </DataTableToolbarGroup>
-            </DataTableToolbar>
-            <DataTableContainer>
-               <DataTableHeader />
-               <DataTableBody<CategoryRow> />
-            </DataTableContainer>
+               </div>
+            </div>
+            <ScrollArea className="rounded-md border bg-card">
+               <Table>
+                  <DataTableHeader table={table} />
+                  <DataTableBody<CategoryRow> table={table} />
+               </Table>
+            </ScrollArea>
             <DataImportSection
                api={importApi}
                config={importConfig}
                table={table}
             />
-            <DataTableEmptyState>
+            {table.getRowCount() === 0 && (
                <Empty>
                   <EmptyHeader>
                      <EmptyMedia variant="icon">
@@ -686,68 +745,9 @@ function CategoriesList() {
                      </EmptyDescription>
                   </EmptyHeader>
                </Empty>
-            </DataTableEmptyState>
-            <DataTablePagination />
-            <DataTableBulkActionBar<CategoryRow>>
-               {({ rows, clear }) => {
-                  const archivableIds = rows
-                     .filter((r) => !r.original.isArchived)
-                     .map((r) => r.original.id);
-                  const deletableIds = rows.map((r) => r.original.id);
-                  return (
-                     <>
-                        {archivableIds.length > 0 && (
-                           <SelectionActionButton
-                              icon={<Archive />}
-                              onClick={async () => {
-                                 const res = await fromPromise(
-                                    bulkArchiveMutation.mutateAsync({
-                                       ids: archivableIds,
-                                    }),
-                                    (e) => e,
-                                 );
-                                 if (res.isErr()) return;
-                                 toast.success(
-                                    `${archivableIds.length} ${archivableIds.length === 1 ? "categoria arquivada" : "categorias arquivadas"}.`,
-                                 );
-                                 clear();
-                              }}
-                           >
-                              Arquivar
-                           </SelectionActionButton>
-                        )}
-                        {deletableIds.length > 0 && (
-                           <SelectionActionButton
-                              icon={<Trash2 />}
-                              onClick={() => {
-                                 openAlertDialog({
-                                    title: `Excluir ${deletableIds.length} ${deletableIds.length === 1 ? "categoria" : "categorias"}`,
-                                    description:
-                                       "Tem certeza que deseja excluir as categorias selecionadas? Esta ação não pode ser desfeita.",
-                                    actionLabel: "Excluir",
-                                    cancelLabel: "Cancelar",
-                                    variant: "destructive",
-                                    onAction: async () => {
-                                       await bulkDeleteMutation.mutateAsync({
-                                          ids: deletableIds,
-                                       });
-                                       toast.success(
-                                          `${deletableIds.length} ${deletableIds.length === 1 ? "categoria excluída" : "categorias excluídas"} com sucesso.`,
-                                       );
-                                       clear();
-                                    },
-                                 });
-                              }}
-                              variant="destructive"
-                           >
-                              Excluir
-                           </SelectionActionButton>
-                        )}
-                     </>
-                  );
-               }}
-            </DataTableBulkActionBar>
-         </DataTableRoot>
+            )}
+            <DataTablePagination table={table} />
+         </div>
       </div>
    );
 }

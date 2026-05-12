@@ -1,3 +1,6 @@
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { SearchInput } from "@packages/ui/components/search-input";
+import { Table } from "@packages/ui/components/table";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import {
@@ -8,7 +11,10 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { SelectionActionButton } from "@packages/ui/components/selection-action-bar";
+import {
+   SelectionActionButton,
+   useTableBulkActions,
+} from "@/hooks/use-selection-toolbar";
 import {
    useMutation,
    useQueryClient,
@@ -36,23 +42,15 @@ import {
    Trash2,
    XCircle,
 } from "lucide-react";
-import { startTransition, useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "@packages/ui/components/sonner";
 import { z } from "zod";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
-import { DataTableBulkActionBar } from "@/blocks/data-table/data-table-bulk-action-bar";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
-import { DataTableContainer } from "@/blocks/data-table/data-table-container";
-import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
-import { DataTableRoot } from "@/blocks/data-table/data-table-root";
-import { DataTableSearch } from "@/blocks/data-table/data-table-search";
 import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
-import {
-   DataTableToolbar,
-   DataTableToolbarGroup,
-} from "@/blocks/data-table/data-table-toolbar";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
+import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
 import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
@@ -169,6 +167,15 @@ function BenefitsList() {
    const { parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
    const layout = useDataTableLayout("benefits");
+
+   const searchInput = useDebouncedSearch({
+      value: search.search,
+      onCommit: (value) =>
+         navigate({
+            search: (s) => ({ ...s, search: value }),
+            replace: true,
+         }),
+   });
 
    const queryInput = {
       search: search.search || undefined,
@@ -460,23 +467,82 @@ function BenefitsList() {
 
    const importApi = useDataImport({ table, config: importConfig });
 
+   const selectedRows = table.getSelectedRowModel().rows;
+   const selectedIds = selectedRows.map((r) => r.original.id);
+   const resetSelection = () => table.resetRowSelection();
+
+   useTableBulkActions({
+      selectedCount: selectedRows.length,
+      onClear: resetSelection,
+      children: (
+         <>
+            <SelectionActionButton
+               icon={<CheckCircle2 />}
+               onClick={async () => {
+                  const res = await bulkSetActiveMutation
+                     .mutateAsync({ ids: selectedIds, isActive: true })
+                     .catch(() => null);
+                  if (res)
+                     toast.success(`${res.updated} benefício(s) ativado(s).`);
+                  resetSelection();
+               }}
+            >
+               Ativar
+            </SelectionActionButton>
+            <SelectionActionButton
+               icon={<XCircle />}
+               onClick={async () => {
+                  const res = await bulkSetActiveMutation
+                     .mutateAsync({ ids: selectedIds, isActive: false })
+                     .catch(() => null);
+                  if (res)
+                     toast.success(
+                        `${res.updated} benefício(s) desativado(s).`,
+                     );
+                  resetSelection();
+               }}
+            >
+               Desativar
+            </SelectionActionButton>
+            <SelectionActionButton
+               icon={<Trash2 />}
+               variant="destructive"
+               onClick={() =>
+                  openAlertDialog({
+                     title: `Excluir ${selectedIds.length} benefício(s)`,
+                     description:
+                        "Serão removidos de todos os serviços vinculados. Não pode ser desfeito.",
+                     actionLabel: "Excluir",
+                     cancelLabel: "Cancelar",
+                     variant: "destructive",
+                     onAction: async () => {
+                        await Promise.allSettled(
+                           selectedIds.map((id) =>
+                              removeMutation.mutateAsync({ id }),
+                           ),
+                        );
+                        resetSelection();
+                     },
+                  })
+               }
+            >
+               Excluir
+            </SelectionActionButton>
+         </>
+      ),
+   });
+
    return (
-      <DataTableRoot table={table}>
+      <div className="flex flex-col gap-4">
          <div className="flex flex-col gap-4">
-            <DataTableToolbar>
-               <DataTableSearch
-                  onChange={(v) =>
-                     startTransition(() => {
-                        navigate({
-                           search: (s) => ({ ...s, search: v }),
-                           replace: true,
-                        });
-                     })
-                  }
+            <div className="flex flex-wrap items-center gap-2 justify-between">
+               <SearchInput
+                  aria-label="Buscar benefício"
+                  onChange={(e) => searchInput.onChange(e.target.value)}
                   placeholder="Buscar benefício..."
-                  value={search.search}
+                  value={searchInput.value}
                />
-               <DataTableToolbarGroup>
+               <div className="flex flex-wrap items-center gap-2">
                   <PageFilters>
                      <PageFilter
                         active={search.isActive === true}
@@ -524,7 +590,7 @@ function BenefitsList() {
                         }
                      />
                   </PageFilters>
-                  <DataTableColumnVisibility />
+                  <DataTableColumnVisibility table={table} />
                   <DataImportButton api={importApi} config={importConfig} />
                   <Button
                      id="tour-benefits-create"
@@ -536,81 +602,20 @@ function BenefitsList() {
                      <Plus />
                      <span className="sr-only">Novo benefício</span>
                   </Button>
-               </DataTableToolbarGroup>
-            </DataTableToolbar>
-            <DataTableContainer>
-               <DataTableHeader />
-               <DataTableBody<BenefitRow> />
-            </DataTableContainer>
+               </div>
+            </div>
+            <ScrollArea className="rounded-md border bg-card">
+               <Table>
+                  <DataTableHeader table={table} />
+                  <DataTableBody<BenefitRow> table={table} />
+               </Table>
+            </ScrollArea>
             <DataImportSection
                api={importApi}
                config={importConfig}
                table={table}
             />
-            <DataTableBulkActionBar<BenefitRow>>
-               {({ rows, clear }) => {
-                  const ids = rows.map((r) => r.original.id);
-                  return (
-                     <>
-                        <SelectionActionButton
-                           icon={<CheckCircle2 />}
-                           onClick={async () => {
-                              const res = await bulkSetActiveMutation
-                                 .mutateAsync({ ids, isActive: true })
-                                 .catch(() => null);
-                              if (res)
-                                 toast.success(
-                                    `${res.updated} benefício(s) ativado(s).`,
-                                 );
-                              clear();
-                           }}
-                        >
-                           Ativar
-                        </SelectionActionButton>
-                        <SelectionActionButton
-                           icon={<XCircle />}
-                           onClick={async () => {
-                              const res = await bulkSetActiveMutation
-                                 .mutateAsync({ ids, isActive: false })
-                                 .catch(() => null);
-                              if (res)
-                                 toast.success(
-                                    `${res.updated} benefício(s) desativado(s).`,
-                                 );
-                              clear();
-                           }}
-                        >
-                           Desativar
-                        </SelectionActionButton>
-                        <SelectionActionButton
-                           icon={<Trash2 />}
-                           variant="destructive"
-                           onClick={() =>
-                              openAlertDialog({
-                                 title: `Excluir ${ids.length} benefício(s)`,
-                                 description:
-                                    "Serão removidos de todos os serviços vinculados. Não pode ser desfeito.",
-                                 actionLabel: "Excluir",
-                                 cancelLabel: "Cancelar",
-                                 variant: "destructive",
-                                 onAction: async () => {
-                                    await Promise.allSettled(
-                                       ids.map((id) =>
-                                          removeMutation.mutateAsync({ id }),
-                                       ),
-                                    );
-                                    clear();
-                                 },
-                              })
-                           }
-                        >
-                           Excluir
-                        </SelectionActionButton>
-                     </>
-                  );
-               }}
-            </DataTableBulkActionBar>
-            <DataTableEmptyState>
+            {table.getRowCount() === 0 && (
                <Empty>
                   <EmptyHeader>
                      <EmptyMedia variant="icon">
@@ -637,8 +642,8 @@ function BenefitsList() {
                      </Button>
                   </EmptyContent>
                </Empty>
-            </DataTableEmptyState>
+            )}
          </div>
-      </DataTableRoot>
+      </div>
    );
 }

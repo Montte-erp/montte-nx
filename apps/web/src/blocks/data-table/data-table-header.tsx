@@ -5,9 +5,23 @@ import {
 } from "@packages/ui/components/table";
 import { Button } from "@packages/ui/components/button";
 import { cn } from "@packages/ui/lib/utils";
-import { flexRender, type Column } from "@tanstack/react-table";
+import {
+   flexRender,
+   type Column,
+   type RowData,
+   type Table,
+} from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown, Pin, PinOff } from "lucide-react";
-import { useDataTableContext } from "./data-table-root";
+
+declare module "@tanstack/react-table" {
+   interface ColumnMeta<TData extends RowData, TValue> {
+      resizable?: boolean;
+      pinnable?: boolean;
+      reorderable?: boolean;
+      exportValue?: (row: TData, value: TValue) => string;
+      exportIgnore?: boolean;
+   }
+}
 
 function getPinStyles<TData>(column: Column<TData>): React.CSSProperties {
    const pin = column.getIsPinned();
@@ -22,9 +36,11 @@ function getPinStyles<TData>(column: Column<TData>): React.CSSProperties {
    };
 }
 
-export function DataTableHeader() {
-   const { table } = useDataTableContext();
+interface DataTableHeaderProps<TData> {
+   table: Table<TData>;
+}
 
+export function DataTableHeader<TData>({ table }: DataTableHeaderProps<TData>) {
    return (
       <TableHeader className="sticky top-0 z-10 bg-card">
          {table.getHeaderGroups().map((group) => (

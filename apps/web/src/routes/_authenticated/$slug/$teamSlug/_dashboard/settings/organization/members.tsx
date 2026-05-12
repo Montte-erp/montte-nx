@@ -1,3 +1,6 @@
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { SearchInput } from "@packages/ui/components/search-input";
+import { Table } from "@packages/ui/components/table";
 import {
    Avatar,
    AvatarFallback,
@@ -35,15 +38,8 @@ import type { Outputs } from "@/integrations/orpc/client";
 import { QueryBoundary } from "@/components/query-boundary";
 import { DefaultHeader } from "../../../-layout/default-header";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
-import { DataTableContainer } from "@/blocks/data-table/data-table-container";
-import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
-import { DataTableRoot } from "@/blocks/data-table/data-table-root";
-import { DataTableSearch } from "@/blocks/data-table/data-table-search";
-import {
-   DataTableToolbar,
-   DataTableToolbarGroup,
-} from "@/blocks/data-table/data-table-toolbar";
+import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { InviteMembersForm } from "./-members/invite-members-form";
@@ -455,23 +451,21 @@ function MembersContent() {
    const searchValue = columnFilters.find((f) => f.id === "name")?.value;
    const searchString = typeof searchValue === "string" ? searchValue : "";
 
-   const handleSearch = useCallback(
-      (value: string) => {
+   const searchInput = useDebouncedSearch({
+      value: searchString,
+      onCommit: (value) => {
          const next = value
             ? [
                  ...columnFilters.filter((f) => f.id !== "name"),
                  { id: "name", value },
               ]
             : columnFilters.filter((f) => f.id !== "name");
-         startTransition(() => {
-            navigate({
-               search: (prev) => ({ ...prev, columnFilters: next }),
-               replace: true,
-            });
+         navigate({
+            search: (prev) => ({ ...prev, columnFilters: next }),
+            replace: true,
          });
       },
-      [navigate, columnFilters],
-   );
+   });
 
    const table = useReactTable({
       data,
@@ -492,14 +486,15 @@ function MembersContent() {
             title="Membros"
          />
 
-         <DataTableRoot table={table}>
-            <DataTableToolbar>
-               <DataTableSearch
-                  onChange={handleSearch}
+         <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-2 justify-between">
+               <SearchInput
+                  aria-label="Buscar membros"
+                  onChange={(e) => searchInput.onChange(e.target.value)}
                   placeholder="Pesquisar por nome ou e-mail..."
-                  value={searchString}
+                  value={searchInput.value}
                />
-               <DataTableToolbarGroup>
+               <div className="flex flex-wrap items-center gap-2">
                   <Button
                      disabled={!organizationId}
                      onClick={handleOpenInvite}
@@ -510,13 +505,15 @@ function MembersContent() {
                      <Plus />
                      <span className="sr-only">Convidar membro</span>
                   </Button>
-               </DataTableToolbarGroup>
-            </DataTableToolbar>
-            <DataTableContainer>
-               <DataTableHeader />
-               <DataTableBody<Row> />
-            </DataTableContainer>
-            <DataTableEmptyState>
+               </div>
+            </div>
+            <ScrollArea className="rounded-md border bg-card">
+               <Table>
+                  <DataTableHeader table={table} />
+                  <DataTableBody<Row> table={table} />
+               </Table>
+            </ScrollArea>
+            {table.getRowCount() === 0 && (
                <Empty>
                   <EmptyHeader>
                      <EmptyMedia variant="icon">
@@ -528,8 +525,8 @@ function MembersContent() {
                      </EmptyDescription>
                   </EmptyHeader>
                </Empty>
-            </DataTableEmptyState>
-         </DataTableRoot>
+            )}
+         </div>
       </div>
    );
 }

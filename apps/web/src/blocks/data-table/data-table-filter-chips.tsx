@@ -1,23 +1,29 @@
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import type { Table } from "@tanstack/react-table";
 import { X } from "lucide-react";
-import { useDataTableContext } from "./data-table-root";
+
+function isRangeObject(v: unknown): v is { from?: unknown; to?: unknown } {
+   return typeof v === "object" && v !== null && ("from" in v || "to" in v);
+}
 
 function formatValue(value: unknown): string {
    if (value == null) return "";
    if (Array.isArray(value)) return value.map(formatValue).join(", ");
-   if (typeof value === "object") {
-      const v = value as { from?: unknown; to?: unknown };
-      if ("from" in v || "to" in v) {
-         return `${formatValue(v.from)} – ${formatValue(v.to)}`;
-      }
-      return JSON.stringify(value);
+   if (isRangeObject(value)) {
+      return `${formatValue(value.from)} – ${formatValue(value.to)}`;
    }
+   if (typeof value === "object") return JSON.stringify(value);
    return String(value);
 }
 
-export function DataTableFilterChips() {
-   const { table } = useDataTableContext();
+interface DataTableFilterChipsProps<TData> {
+   table: Table<TData>;
+}
+
+export function DataTableFilterChips<TData>({
+   table,
+}: DataTableFilterChipsProps<TData>) {
    const filters = table.getState().columnFilters;
 
    if (filters.length === 0) return null;

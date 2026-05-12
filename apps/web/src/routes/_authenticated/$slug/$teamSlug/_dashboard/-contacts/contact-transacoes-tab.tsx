@@ -5,6 +5,8 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { Table } from "@packages/ui/components/table";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import {
    getCoreRowModel,
@@ -16,10 +18,7 @@ import { Receipt } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
-import { DataTableContainer } from "@/blocks/data-table/data-table-container";
-import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
-import { DataTableRoot } from "@/blocks/data-table/data-table-root";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
 import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
@@ -110,12 +109,14 @@ export function ContactTransacoesTab({
    });
 
    return (
-      <DataTableRoot table={table}>
-         <DataTableContainer>
-            <DataTableHeader />
-            <DataTableBody />
-         </DataTableContainer>
-         <DataTableEmptyState>
+      <div className="flex flex-col gap-4">
+         <ScrollArea className="rounded-md border bg-card">
+            <Table>
+               <DataTableHeader table={table} />
+               <DataTableBody table={table} />
+            </Table>
+         </ScrollArea>
+         {result.data.length === 0 && (
             <Empty>
                <EmptyHeader>
                   <EmptyMedia variant="icon">
@@ -127,7 +128,7 @@ export function ContactTransacoesTab({
                   </EmptyDescription>
                </EmptyHeader>
             </Empty>
-         </DataTableEmptyState>
-      </DataTableRoot>
+         )}
+      </div>
    );
 }

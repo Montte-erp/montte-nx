@@ -1,3 +1,6 @@
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { SearchInput } from "@packages/ui/components/search-input";
+import { Table } from "@packages/ui/components/table";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import {
@@ -7,7 +10,10 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { SelectionActionButton } from "@packages/ui/components/selection-action-bar";
+import {
+   SelectionActionButton,
+   useTableBulkActions,
+} from "@/hooks/use-selection-toolbar";
 import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -32,20 +38,12 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "../-layout/default-header";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
-import { DataTableBulkActionBar } from "@/blocks/data-table/data-table-bulk-action-bar";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
-import { DataTableContainer } from "@/blocks/data-table/data-table-container";
-import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
-import { DataTableRoot } from "@/blocks/data-table/data-table-root";
-import { DataTableSearch } from "@/blocks/data-table/data-table-search";
 import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
-import {
-   DataTableToolbar,
-   DataTableToolbarGroup,
-} from "@/blocks/data-table/data-table-toolbar";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
+import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
 import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
@@ -196,6 +194,15 @@ function CreditCardsList() {
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
    const layout = useDataTableLayout("credit-cards");
+
+   const searchInput = useDebouncedSearch({
+      value: search,
+      onCommit: (value) =>
+         navigate({
+            search: (prev) => ({ ...prev, search: value, page: 1 }),
+            replace: true,
+         }),
+   });
 
    const [{ data: result }, { data: bankAccounts }] = useSuspenseQueries({
       queries: [
@@ -566,28 +573,48 @@ function CreditCardsList() {
 
    const importApi = useDataImport({ table, config: importConfig });
 
+   const selectedRows = table.getSelectedRowModel().rows;
+   const selectedIds = selectedRows.map((r) => r.original.id);
+
+   useTableBulkActions({
+      selectedCount: selectedRows.length,
+      onClear: () => table.resetRowSelection(),
+      children: (
+         <SelectionActionButton
+            icon={<Trash2 />}
+            variant="destructive"
+            onClick={() => {
+               openAlertDialog({
+                  title: `Excluir ${selectedIds.length} ${selectedIds.length === 1 ? "cartão" : "cartões"}`,
+                  description:
+                     "Tem certeza que deseja excluir os cartões selecionados? Esta ação não pode ser desfeita.",
+                  actionLabel: "Excluir",
+                  cancelLabel: "Cancelar",
+                  variant: "destructive",
+                  onAction: async () => {
+                     await bulkDeleteMutation.mutateAsync({ ids: selectedIds });
+                     table.resetRowSelection();
+                  },
+               });
+            }}
+         >
+            Excluir
+         </SelectionActionButton>
+      ),
+   });
+
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <DataTableRoot table={table}>
-            <DataTableToolbar>
-               <DataTableSearch
-                  onChange={(value) =>
-                     startTransition(() => {
-                        navigate({
-                           search: (prev) => ({
-                              ...prev,
-                              search: value,
-                              page: 1,
-                           }),
-                           replace: true,
-                        });
-                     })
-                  }
+         <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-2 justify-between">
+               <SearchInput
+                  aria-label="Buscar cartões..."
+                  onChange={(e) => searchInput.onChange(e.target.value)}
                   placeholder="Buscar cartões..."
-                  value={search}
+                  value={searchInput.value}
                />
-               <DataTableToolbarGroup>
-                  <DataTableColumnVisibility />
+               <div className="flex flex-wrap items-center gap-2">
+                  <DataTableColumnVisibility table={table} />
                   <DataImportButton api={importApi} config={importConfig} />
                   <Button
                      onClick={handleOpenCreate}
@@ -598,22 +625,25 @@ function CreditCardsList() {
                      <Plus />
                      <span className="sr-only">Novo Cartão</span>
                   </Button>
-               </DataTableToolbarGroup>
-            </DataTableToolbar>
-            <DataTableContainer>
-               <DataTableHeader />
-               <DataTableBody<CreditCardRow>
-                  renderExpandedRow={({ row }) => (
-                     <CreditCardFaturaRow creditCardId={row.original.id} />
-                  )}
-               />
-            </DataTableContainer>
+               </div>
+            </div>
+            <ScrollArea className="rounded-md border bg-card">
+               <Table>
+                  <DataTableHeader table={table} />
+                  <DataTableBody<CreditCardRow>
+                     table={table}
+                     renderExpandedRow={({ row }) => (
+                        <CreditCardFaturaRow creditCardId={row.original.id} />
+                     )}
+                  />
+               </Table>
+            </ScrollArea>
             <DataImportSection
                api={importApi}
                config={importConfig}
                table={table}
             />
-            <DataTableEmptyState>
+            {table.getRowCount() === 0 && (
                <Empty>
                   <EmptyHeader>
                      <EmptyMedia variant="icon">
@@ -626,34 +656,9 @@ function CreditCardsList() {
                      </EmptyDescription>
                   </EmptyHeader>
                </Empty>
-            </DataTableEmptyState>
-            <DataTablePagination />
-            <DataTableBulkActionBar<CreditCardRow>>
-               {({ rows, clear }) => (
-                  <SelectionActionButton
-                     icon={<Trash2 />}
-                     variant="destructive"
-                     onClick={() => {
-                        const ids = rows.map((r) => r.original.id);
-                        openAlertDialog({
-                           title: `Excluir ${ids.length} ${ids.length === 1 ? "cartão" : "cartões"}`,
-                           description:
-                              "Tem certeza que deseja excluir os cartões selecionados? Esta ação não pode ser desfeita.",
-                           actionLabel: "Excluir",
-                           cancelLabel: "Cancelar",
-                           variant: "destructive",
-                           onAction: async () => {
-                              await bulkDeleteMutation.mutateAsync({ ids });
-                              clear();
-                           },
-                        });
-                     }}
-                  >
-                     Excluir
-                  </SelectionActionButton>
-               )}
-            </DataTableBulkActionBar>
-         </DataTableRoot>
+            )}
+            <DataTablePagination table={table} />
+         </div>
       </div>
    );
 }

@@ -7,8 +7,7 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
-import type { Column } from "@tanstack/react-table";
-import { useDataTableContext } from "./data-table-root";
+import type { Column, Table } from "@tanstack/react-table";
 
 function isString(v: unknown): v is string {
    return typeof v === "string";
@@ -18,8 +17,13 @@ function isRangeTuple(v: unknown): v is [number?, number?] {
    return Array.isArray(v) && v.length === 2;
 }
 
-export function DataTableHeaderFilters() {
-   const { table } = useDataTableContext();
+interface DataTableHeaderFiltersProps<TData> {
+   table: Table<TData>;
+}
+
+export function DataTableHeaderFilters<TData>({
+   table,
+}: DataTableHeaderFiltersProps<TData>) {
    const groups = table.getHeaderGroups();
    const lastGroup = groups[groups.length - 1];
    if (!lastGroup) return null;

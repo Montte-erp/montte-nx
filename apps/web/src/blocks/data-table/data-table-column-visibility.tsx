@@ -8,11 +8,16 @@ import {
    DropdownMenuSeparator,
    DropdownMenuTrigger,
 } from "@packages/ui/components/dropdown-menu";
+import type { Table } from "@tanstack/react-table";
 import { Columns3 } from "lucide-react";
-import { useDataTableContext } from "./data-table-root";
 
-export function DataTableColumnVisibility() {
-   const { table } = useDataTableContext();
+interface DataTableColumnVisibilityProps<TData> {
+   table: Table<TData>;
+}
+
+export function DataTableColumnVisibility<TData>({
+   table,
+}: DataTableColumnVisibilityProps<TData>) {
    const cols = table
       .getAllLeafColumns()
       .filter(

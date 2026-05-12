@@ -1,8 +1,12 @@
 import { TableBody, TableCell, TableRow } from "@packages/ui/components/table";
 import { cn } from "@packages/ui/lib/utils";
-import { flexRender, type Column, type Row } from "@tanstack/react-table";
+import {
+   flexRender,
+   type Column,
+   type Row,
+   type Table,
+} from "@tanstack/react-table";
 import { Fragment } from "react";
-import { useDataTableContext } from "./data-table-root";
 
 function getPinStyles<TData>(column: Column<TData>): React.CSSProperties {
    const pin = column.getIsPinned();
@@ -18,15 +22,16 @@ function getPinStyles<TData>(column: Column<TData>): React.CSSProperties {
 }
 
 interface DataTableBodyProps<TData> {
+   table: Table<TData>;
    renderRow?: (props: { row: Row<TData> }) => React.ReactNode;
    renderExpandedRow?: (props: { row: Row<TData> }) => React.ReactNode;
 }
 
 export function DataTableBody<TData>({
+   table,
    renderRow,
    renderExpandedRow,
 }: DataTableBodyProps<TData>) {
-   const { table } = useDataTableContext<TData>();
    const rows = table.getRowModel().rows;
 
    return (

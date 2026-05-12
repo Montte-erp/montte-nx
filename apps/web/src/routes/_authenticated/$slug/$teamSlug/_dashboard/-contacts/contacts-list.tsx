@@ -1,3 +1,6 @@
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { SearchInput } from "@packages/ui/components/search-input";
+import { Table } from "@packages/ui/components/table";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import {
@@ -7,7 +10,10 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { SelectionActionButton } from "@packages/ui/components/selection-action-bar";
+import {
+   SelectionActionButton,
+   useTableBulkActions,
+} from "@/hooks/use-selection-toolbar";
 import {
    useMutation,
    useQueryClient,
@@ -24,21 +30,13 @@ import {
    type SortingState,
 } from "@tanstack/react-table";
 import { ExternalLink, Plus, Trash2, Users } from "lucide-react";
-import { startTransition, useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
-import { DataTableBulkActionBar } from "@/blocks/data-table/data-table-bulk-action-bar";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
-import { DataTableContainer } from "@/blocks/data-table/data-table-container";
-import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
-import { DataTableRoot } from "@/blocks/data-table/data-table-root";
-import { DataTableSearch } from "@/blocks/data-table/data-table-search";
-import {
-   DataTableToolbar,
-   DataTableToolbarGroup,
-} from "@/blocks/data-table/data-table-toolbar";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
+import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
 import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
@@ -69,17 +67,14 @@ export function ContactsList() {
    const { parse: parseXlsx } = useXlsxFile();
    const layout = useDataTableLayout("contacts");
 
-   const handleSearch = useCallback(
-      (value: string) => {
-         startTransition(() => {
-            routeNavigate({
-               search: (prev) => ({ ...prev, search: value }),
-               replace: true,
-            });
-         });
-      },
-      [routeNavigate],
-   );
+   const searchInput = useDebouncedSearch({
+      value: search,
+      onCommit: (value) =>
+         routeNavigate({
+            search: (prev) => ({ ...prev, search: value }),
+            replace: true,
+         }),
+   });
 
    const { data: contacts } = useSuspenseQuery(
       orpc.contacts.getAll.queryOptions({
@@ -342,17 +337,48 @@ export function ContactsList() {
 
    const importApi = useDataImport({ table, config: importConfig });
 
+   const selectedRows = table.getSelectedRowModel().rows;
+   const selectedIds = selectedRows.map((r) => r.original.id);
+
+   useTableBulkActions({
+      selectedCount: selectedRows.length,
+      onClear: () => table.resetRowSelection(),
+      children: (
+         <SelectionActionButton
+            icon={<Trash2 />}
+            variant="destructive"
+            onClick={() =>
+               openAlertDialog({
+                  title: `Excluir ${selectedIds.length} ${selectedIds.length === 1 ? "contato" : "contatos"}`,
+                  description:
+                     "Tem certeza que deseja excluir os contatos selecionados? Esta ação não pode ser desfeita.",
+                  actionLabel: "Excluir",
+                  cancelLabel: "Cancelar",
+                  variant: "destructive",
+                  onAction: async () => {
+                     await bulkDeleteMutation.mutateAsync({ ids: selectedIds });
+                     table.resetRowSelection();
+                  },
+               })
+            }
+         >
+            Excluir
+         </SelectionActionButton>
+      ),
+   });
+
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <DataTableRoot table={table}>
-            <DataTableToolbar>
-               <DataTableSearch
-                  onChange={handleSearch}
+         <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-2 justify-between">
+               <SearchInput
+                  aria-label="Buscar contatos"
+                  onChange={(e) => searchInput.onChange(e.target.value)}
                   placeholder="Buscar por nome, email ou telefone..."
-                  value={search}
+                  value={searchInput.value}
                />
-               <DataTableToolbarGroup>
-                  <DataTableColumnVisibility />
+               <div className="flex flex-wrap items-center gap-2">
+                  <DataTableColumnVisibility table={table} />
                   <DataImportButton api={importApi} config={importConfig} />
                   <Button
                      onClick={handleOpenCreate}
@@ -363,18 +389,20 @@ export function ContactsList() {
                      <Plus />
                      <span className="sr-only">Novo Contato</span>
                   </Button>
-               </DataTableToolbarGroup>
-            </DataTableToolbar>
-            <DataTableContainer>
-               <DataTableHeader />
-               <DataTableBody<ContactRow> />
-            </DataTableContainer>
+               </div>
+            </div>
+            <ScrollArea className="rounded-md border bg-card">
+               <Table>
+                  <DataTableHeader table={table} />
+                  <DataTableBody<ContactRow> table={table} />
+               </Table>
+            </ScrollArea>
             <DataImportSection
                api={importApi}
                config={importConfig}
                table={table}
             />
-            <DataTableEmptyState>
+            {table.getRowCount() === 0 && (
                <Empty>
                   <EmptyHeader>
                      <EmptyMedia variant="icon">
@@ -388,35 +416,8 @@ export function ContactsList() {
                      </EmptyDescription>
                   </EmptyHeader>
                </Empty>
-            </DataTableEmptyState>
-            <DataTableBulkActionBar<ContactRow>>
-               {({ rows, clear }) => {
-                  const ids = rows.map((r) => r.original.id);
-                  return (
-                     <SelectionActionButton
-                        icon={<Trash2 />}
-                        variant="destructive"
-                        onClick={() =>
-                           openAlertDialog({
-                              title: `Excluir ${ids.length} ${ids.length === 1 ? "contato" : "contatos"}`,
-                              description:
-                                 "Tem certeza que deseja excluir os contatos selecionados? Esta ação não pode ser desfeita.",
-                              actionLabel: "Excluir",
-                              cancelLabel: "Cancelar",
-                              variant: "destructive",
-                              onAction: async () => {
-                                 await bulkDeleteMutation.mutateAsync({ ids });
-                                 clear();
-                              },
-                           })
-                        }
-                     >
-                        Excluir
-                     </SelectionActionButton>
-                  );
-               }}
-            </DataTableBulkActionBar>
-         </DataTableRoot>
+            )}
+         </div>
       </div>
    );
 }
