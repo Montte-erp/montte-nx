@@ -21,9 +21,10 @@ export function InlineEditText({
    const [draft, setDraft] = useState(value);
    const [pending, setPending] = useState<string | null>(null);
    const lastCommittedRef = useRef(value);
+   const cancelledRef = useRef(false);
 
    useEffect(() => {
-      if (!Object.is(lastCommittedRef.current, value)) {
+      if (lastCommittedRef.current !== value) {
          lastCommittedRef.current = value;
          setDraft(value);
          setPending(null);
@@ -46,12 +47,13 @@ export function InlineEditText({
    function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
       if (e.key === "Enter") {
          e.preventDefault();
-         (e.target as HTMLInputElement).blur();
+         e.currentTarget.blur();
          return;
       }
       if (e.key === "Escape") {
+         cancelledRef.current = true;
          setDraft(value);
-         (e.target as HTMLInputElement).blur();
+         e.currentTarget.blur();
       }
    }
 
@@ -62,7 +64,13 @@ export function InlineEditText({
             "h-8 w-full border-0 bg-transparent px-1 shadow-none focus-visible:ring-1 focus-visible:ring-ring",
             className,
          )}
-         onBlur={(e) => commit(e.target.value)}
+         onBlur={(e) => {
+            if (cancelledRef.current) {
+               cancelledRef.current = false;
+               return;
+            }
+            commit(e.target.value);
+         }}
          onChange={(e) => setDraft(e.target.value)}
          onKeyDown={handleKeyDown}
          placeholder={placeholder}

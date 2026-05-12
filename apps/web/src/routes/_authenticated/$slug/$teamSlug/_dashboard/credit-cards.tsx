@@ -261,7 +261,7 @@ function CreditCardsList() {
          },
          importColumns: [{ key: "last4", label: "Final" }],
          mapRow: (row, i) => ({
-            id: `__import_${i}`,
+            id: `__import_${i + 1}`,
             name: String(row.name ?? "").trim(),
             brand: parseCreditCardBrand(row.brand),
             last4: normalizeLast4(row.last4 ?? row.final),
@@ -437,6 +437,7 @@ function CreditCardsList() {
          size: 40,
          enableSorting: false,
          enableHiding: false,
+         meta: { exportIgnore: true },
          cell: ({ row }) => (
             <Button
                aria-label={row.getIsExpanded() ? "Recolher" : "Expandir"}
@@ -620,7 +621,7 @@ function CreditCardsList() {
                   </Empty>
                )}
             </ScrollArea>
-            <DataTablePagination table={table} />
+            {result.totalCount > 0 && <DataTablePagination table={table} />}
          </div>
       </div>
    );

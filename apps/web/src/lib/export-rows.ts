@@ -20,7 +20,7 @@ export function collectExportColumns<TData>(
    table: Table<TData>,
 ): ExportableColumn<TData>[] {
    return table
-      .getAllColumns()
+      .getAllLeafColumns()
       .filter(
          (col) =>
             col.id !== "__select" &&

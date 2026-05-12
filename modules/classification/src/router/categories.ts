@@ -197,7 +197,7 @@ export const getPaginated = protectedProcedure
                   );
                const matchedRootIds = matched.map((r) => r.rootId);
                if (matchedRootIds.length === 0) return { data: [], total: 0 };
-               rootFilter.push(sql`${categories.id} IN ${matchedRootIds}`);
+               rootFilter.push(inArray(categories.id, matchedRootIds));
             }
 
             const countRows = await context.db
@@ -224,7 +224,7 @@ export const getPaginated = protectedProcedure
                     .where(
                        and(
                           eq(categories.teamId, context.teamId),
-                          sql`${categories.parentId} IN ${rootIds}`,
+                          inArray(categories.parentId, rootIds),
                           input.includeArchived
                              ? undefined
                              : eq(categories.isArchived, false),

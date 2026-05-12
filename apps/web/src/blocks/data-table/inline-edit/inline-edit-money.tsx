@@ -25,7 +25,7 @@ export function InlineEditMoney({
    const lastCommittedRef = useRef(value);
 
    useEffect(() => {
-      if (!Object.is(lastCommittedRef.current, value)) {
+      if (lastCommittedRef.current !== value) {
          lastCommittedRef.current = value;
          setDraft(value);
          setPending(null);

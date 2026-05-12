@@ -14,7 +14,8 @@ function isString(v: unknown): v is string {
 }
 
 function isRangeTuple(v: unknown): v is [number?, number?] {
-   return Array.isArray(v) && v.length === 2;
+   if (!Array.isArray(v) || v.length !== 2) return false;
+   return v.every((x) => typeof x === "number" || x === undefined);
 }
 
 interface DataTableHeaderFiltersProps<TData> {
@@ -133,7 +134,7 @@ function RangeFilterCell<TData>({
             className="h-8"
             onChange={(e) =>
                column.setFilterValue([
-                  e.target.value ? Number(e.target.value) : undefined,
+                  e.target.value === "" ? undefined : Number(e.target.value),
                   max,
                ])
             }
@@ -146,7 +147,7 @@ function RangeFilterCell<TData>({
             onChange={(e) =>
                column.setFilterValue([
                   min,
-                  e.target.value ? Number(e.target.value) : undefined,
+                  e.target.value === "" ? undefined : Number(e.target.value),
                ])
             }
             placeholder="Max"

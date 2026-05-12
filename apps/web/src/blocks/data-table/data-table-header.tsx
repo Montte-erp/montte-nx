@@ -177,21 +177,21 @@ function SortableTableHead<TData>({ header }: SortableTableHeadProps<TData>) {
          )}
       >
          {header.isPlaceholder ? null : (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
                {reorderable && (
                   <button
                      {...attributes}
                      {...listeners}
                      type="button"
                      aria-label="Arrastar para reordenar coluna"
-                     className="size-5 shrink-0 inline-flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                     className="size-4 shrink-0 inline-flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                     <GripVertical className="size-3" />
+                     <GripVertical className="size-4" />
                   </button>
                )}
                <div
                   className={cn(
-                     "flex flex-1 items-center gap-1 truncate",
+                     "flex flex-1 items-center gap-2 truncate",
                      canSort &&
                         "cursor-pointer select-none rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   )}
@@ -209,15 +209,15 @@ function SortableTableHead<TData>({ header }: SortableTableHeadProps<TData>) {
                      {flexRender(col.columnDef.header, header.getContext())}
                   </span>
                   {canSort && sortDir === "asc" && (
-                     <ChevronUp className="size-3 shrink-0 text-muted-foreground" />
+                     <ChevronUp className="size-4 shrink-0 text-muted-foreground" />
                   )}
                   {canSort && sortDir === "desc" && (
-                     <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
+                     <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
                   )}
                </div>
                {meta?.pinnable && col.getCanPin() && (
                   <Button
-                     className="size-5"
+                     className="size-4"
                      onClick={() => col.pin(col.getIsPinned() ? false : "left")}
                      size="icon"
                      tooltip={
@@ -227,9 +227,9 @@ function SortableTableHead<TData>({ header }: SortableTableHeadProps<TData>) {
                      variant="ghost"
                   >
                      {col.getIsPinned() ? (
-                        <PinOff className="size-3" />
+                        <PinOff className="size-4" />
                      ) : (
-                        <Pin className="size-3" />
+                        <Pin className="size-4" />
                      )}
                   </Button>
                )}

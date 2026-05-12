@@ -11,6 +11,7 @@ function formatValue(value: unknown): string {
    if (value == null) return "";
    if (Array.isArray(value)) return value.map(formatValue).join(", ");
    if (isRangeObject(value)) {
+      if (value.from == null && value.to == null) return "";
       return `${formatValue(value.from)} – ${formatValue(value.to)}`;
    }
    if (typeof value === "object") return JSON.stringify(value);
