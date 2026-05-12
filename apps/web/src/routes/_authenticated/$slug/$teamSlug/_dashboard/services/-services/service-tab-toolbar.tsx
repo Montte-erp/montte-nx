@@ -1,18 +1,18 @@
 import type { ReactNode } from "react";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import {
+   DataTableToolbar,
+   DataTableToolbarGroup,
+} from "@/components/data-table-v2/data-table-toolbar";
 
 interface ServiceTabToolbarProps {
-   searchPlaceholder: string;
    children?: ReactNode;
 }
 
-export function ServiceTabToolbar({
-   searchPlaceholder,
-   children,
-}: ServiceTabToolbarProps) {
+export function ServiceTabToolbar({ children }: ServiceTabToolbarProps) {
    return (
-      <DataTableToolbar searchPlaceholder={searchPlaceholder}>
-         {children}
+      <DataTableToolbar>
+         <div />
+         <DataTableToolbarGroup>{children}</DataTableToolbarGroup>
       </DataTableToolbar>
    );
 }

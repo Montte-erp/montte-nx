@@ -13,21 +13,27 @@ import {
 } from "@packages/ui/components/popover";
 import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import {
-   formatCostBRL,
-   summarizeByType,
-   totalCostPerCycle,
-   type BenefitForAggregate,
-} from "@modules/billing/services/benefits-aggregates";
-import { PauseCircle, Plus, Sparkles } from "lucide-react";
+   getCoreRowModel,
+   getSortedRowModel,
+   useReactTable,
+   type ColumnDef,
+   type SortingState,
+} from "@tanstack/react-table";
+import { Plus, Sparkles } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { toast } from "@packages/ui/components/sonner";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
-import { DataTableRoot } from "@/components/data-table/data-table-root";
+import { DataTableBody } from "@/components/data-table-v2/data-table-body";
+import { DataTableContainer } from "@/components/data-table-v2/data-table-container";
+import { DataTableEmptyState } from "@/components/data-table-v2/data-table-empty-state";
+import { DataTableHeader } from "@/components/data-table-v2/data-table-header";
+import { DataTableRoot } from "@/components/data-table-v2/data-table-root";
+import { useDataTableLayout } from "@/components/data-table-v2/use-data-table-layout";
 import { useContextPanelInfo } from "../../../-context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
 import { BenefitAttachPopover } from "./benefit-attach-popover";
+import { ServiceBenefitCreateSheet } from "./service-benefit-create-sheet";
 import { ServiceMarginPanel } from "./service-margin-panel";
 import { ServiceTabToolbar } from "./service-tab-toolbar";
 import { useCreateMeterFromName } from "./use-create-meter";
@@ -35,16 +41,12 @@ import {
    buildBenefitColumns,
    type BenefitRow,
 } from "../-benefits/build-benefit-columns";
-import {
-   BENEFIT_TYPE_ICON,
-   BENEFIT_TYPE_LABEL,
-   type BenefitTypeKey,
-} from "../-benefits/labels";
 
 export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
    const { openAlertDialog } = useAlertDialog();
+   const { openSheet } = useSheet();
    const [popoverOpen, setPopoverOpen] = useState(false);
-   const [draftActive, setDraftActive] = useState(false);
+   const layout = useDataTableLayout("service-benefits");
 
    useContextPanelInfo(() => <ServiceMarginPanel serviceId={serviceId} />);
 
@@ -76,16 +78,6 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
 
    const updateMutation = useMutation(
       orpc.benefits.updateBenefitById.mutationOptions({
-         onError: (e) => toast.error(e.message),
-      }),
-   );
-
-   const createAndAttachMutation = useMutation(
-      orpc.benefits.createAndAttachBenefit.mutationOptions({
-         onSuccess: () => {
-            toast.success("Benefício criado e vinculado.");
-            setDraftActive(false);
-         },
          onError: (e) => toast.error(e.message),
       }),
    );
@@ -129,43 +121,14 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
       [openAlertDialog, detachMutation, serviceId],
    );
 
-   const handleAdd = useCallback(
-      async (data: Record<string, string | string[]>) => {
-         const name = String(data.name ?? "").trim();
-         if (!name) {
-            toast.error("Nome é obrigatório.");
-            return;
-         }
-         const type = String(data.type ?? "credits") as BenefitTypeKey;
-         const creditAmountStr = String(data.creditAmount ?? "");
-         const creditAmount =
-            type === "credits" && creditAmountStr
-               ? Number.parseInt(creditAmountStr, 10)
-               : null;
-         const unitCostStr = String(data.unitCost ?? "0");
-         const unitCost = Number.isFinite(Number(unitCostStr))
-            ? Number(unitCostStr).toFixed(4)
-            : "0";
-         await createAndAttachMutation.mutateAsync({
-            serviceId,
-            name,
-            type,
-            creditAmount,
-            meterId:
-               typeof data.meterId === "string" && data.meterId
-                  ? data.meterId
-                  : null,
-            rollover: data.rollover === "true",
-            unitCost,
-         });
-      },
-      [createAndAttachMutation, serviceId],
-   );
-
    const handleCreateNew = useCallback(() => {
       setPopoverOpen(false);
-      setDraftActive(true);
-   }, []);
+      openSheet({
+         renderChildren: () => (
+            <ServiceBenefitCreateSheet serviceId={serviceId} />
+         ),
+      });
+   }, [openSheet, serviceId]);
 
    const linkedAsRows = useMemo<BenefitRow[]>(
       () =>
@@ -176,7 +139,7 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
       [linked],
    );
 
-   const columns = useMemo(
+   const columns = useMemo<ColumnDef<BenefitRow>[]>(
       () =>
          buildBenefitColumns({
             meterOptions,
@@ -189,62 +152,31 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
       [meterOptions, handleSaveCell, handleCreateMeter, handleDetach],
    );
 
-   const groupBy = useCallback(
-      (row: BenefitRow) => (row.isActive ? row.type : "__inactive__"),
-      [],
-   );
+   const [sorting, setSorting] = useState<SortingState>([]);
 
-   const renderGroupHeader = useCallback(
-      (key: string, rows: { original: BenefitRow }[]) => {
-         if (key === "__inactive__") {
-            return (
-               <span className="inline-flex items-center gap-2 text-muted-foreground">
-                  <PauseCircle className="size-4" />
-                  <span className="font-semibold">Pausados</span>
-                  <span>· {rows.length}</span>
-               </span>
-            );
-         }
-         const type = key as BenefitTypeKey;
-         const Icon = BENEFIT_TYPE_ICON[type];
-         const aggregates: BenefitForAggregate[] = rows.map((r) => ({
-            id: r.original.id,
-            name: r.original.name,
-            type: r.original.type,
-            creditAmount: r.original.creditAmount,
-            unitCost: r.original.unitCost,
-            isActive: r.original.isActive,
-            usedInServices: 1,
-         }));
-         const total = totalCostPerCycle(aggregates);
-         const summary = summarizeByType(aggregates)[0];
-         return (
-            <span className="inline-flex items-center gap-2">
-               <Icon className="size-4" />
-               <span className="font-semibold">{BENEFIT_TYPE_LABEL[type]}</span>
-               <span className="text-muted-foreground">
-                  · {summary?.activeCount ?? 0} ativos · {formatCostBRL(total)}
-                  /ciclo
-               </span>
-            </span>
-         );
+   const table = useReactTable({
+      data: linkedAsRows,
+      columns,
+      getRowId: (r) => r.id,
+      state: { sorting },
+      onSortingChange: setSorting,
+      onColumnSizingChange: layout.onColumnSizingChange,
+      onColumnOrderChange: layout.onColumnOrderChange,
+      onColumnVisibilityChange: layout.onColumnVisibilityChange,
+      onColumnPinningChange: layout.onColumnPinningChange,
+      initialState: {
+         columnSizing: layout.initialState.columnSizing,
+         columnOrder: layout.initialState.columnOrder,
+         columnVisibility: layout.initialState.columnVisibility,
+         columnPinning: layout.initialState.columnPinning,
       },
-      [],
-   );
+      getCoreRowModel: getCoreRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+   });
 
    return (
-      <DataTableRoot
-         columns={columns}
-         data={linkedAsRows}
-         getRowId={(r) => r.id}
-         groupBy={groupBy}
-         renderGroupHeader={renderGroupHeader}
-         isDraftRowActive={draftActive}
-         onAddRow={handleAdd}
-         onDiscardAddRow={() => setDraftActive(false)}
-         storageKey="montte:datatable:service-benefits"
-      >
-         <ServiceTabToolbar searchPlaceholder="Buscar benefício...">
+      <DataTableRoot table={table}>
+         <ServiceTabToolbar>
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                <PopoverTrigger asChild>
                   <Button
@@ -268,7 +200,10 @@ export function ServiceBenefitsTab({ serviceId }: { serviceId: string }) {
                </PopoverContent>
             </Popover>
          </ServiceTabToolbar>
-         <DataTableContent />
+         <DataTableContainer>
+            <DataTableHeader />
+            <DataTableBody<BenefitRow> />
+         </DataTableContainer>
          <DataTableEmptyState>
             <Empty>
                <EmptyHeader>

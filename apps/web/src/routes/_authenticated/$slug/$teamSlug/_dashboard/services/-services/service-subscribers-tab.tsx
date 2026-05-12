@@ -7,16 +7,24 @@ import {
 } from "@packages/ui/components/empty";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import {
+   getCoreRowModel,
+   getSortedRowModel,
+   useReactTable,
+   type SortingState,
+} from "@tanstack/react-table";
 import { Users } from "lucide-react";
-import { useCallback, useMemo } from "react";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
-import { DataTableRoot } from "@/components/data-table/data-table-root";
+import { useCallback, useMemo, useState } from "react";
+import { DataTableBody } from "@/components/data-table-v2/data-table-body";
+import { DataTableContainer } from "@/components/data-table-v2/data-table-container";
+import { DataTableEmptyState } from "@/components/data-table-v2/data-table-empty-state";
+import { DataTableHeader } from "@/components/data-table-v2/data-table-header";
+import { DataTableRoot } from "@/components/data-table-v2/data-table-root";
+import { useDataTableLayout } from "@/components/data-table-v2/use-data-table-layout";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { orpc } from "@/integrations/orpc/client";
 import {
    buildSubscriberColumns,
-   SUBSCRIPTION_STATUS_LABEL,
    type SubscriberRow,
 } from "./service-subscribers-columns";
 import { ServiceTabToolbar } from "./service-tab-toolbar";
@@ -25,6 +33,7 @@ export function ServiceSubscribersTab({ serviceId }: { serviceId: string }) {
    const navigate = useNavigate();
    const slug = useOrgSlug();
    const teamSlug = useTeamSlug();
+   const layout = useDataTableLayout("service-subscribers");
 
    const { data: rows } = useSuspenseQuery(
       orpc.services.getSubscribers.queryOptions({ input: { serviceId } }),
@@ -46,21 +55,35 @@ export function ServiceSubscribersTab({ serviceId }: { serviceId: string }) {
       [handleOpenContact],
    );
 
-   const groupBy = useCallback(
-      (row: SubscriberRow) => SUBSCRIPTION_STATUS_LABEL[row.status],
-      [],
-   );
+   const [sorting, setSorting] = useState<SortingState>([]);
+
+   const table = useReactTable({
+      data: rows,
+      columns,
+      getRowId: (r) => r.itemId,
+      state: { sorting },
+      onSortingChange: setSorting,
+      onColumnSizingChange: layout.onColumnSizingChange,
+      onColumnOrderChange: layout.onColumnOrderChange,
+      onColumnVisibilityChange: layout.onColumnVisibilityChange,
+      onColumnPinningChange: layout.onColumnPinningChange,
+      initialState: {
+         columnSizing: layout.initialState.columnSizing,
+         columnOrder: layout.initialState.columnOrder,
+         columnVisibility: layout.initialState.columnVisibility,
+         columnPinning: layout.initialState.columnPinning,
+      },
+      getCoreRowModel: getCoreRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+   });
 
    return (
-      <DataTableRoot
-         columns={columns}
-         data={rows}
-         getRowId={(r) => r.itemId}
-         groupBy={groupBy}
-         storageKey="montte:datatable:service-subscribers"
-      >
-         <ServiceTabToolbar searchPlaceholder="Buscar contato..." />
-         <DataTableContent />
+      <DataTableRoot table={table}>
+         <ServiceTabToolbar />
+         <DataTableContainer>
+            <DataTableHeader />
+            <DataTableBody<SubscriberRow> />
+         </DataTableContainer>
          <DataTableEmptyState>
             <Empty>
                <EmptyHeader>
