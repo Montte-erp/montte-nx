@@ -5,6 +5,11 @@ import {
    AnnouncementTitle,
 } from "@/components/blocks/announcement";
 import {
+   Avatar,
+   AvatarFallback,
+   AvatarImage,
+} from "@packages/ui/components/avatar";
+import {
    Tooltip,
    TooltipContent,
    TooltipProvider,
@@ -23,6 +28,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { z } from "zod";
+import { bankInitials, bankLogoUrl } from "@/lib/logos";
 
 export type BankAccountRow = {
    id: string;
@@ -31,6 +37,8 @@ export type BankAccountRow = {
    type: "checking" | "savings" | "investment" | "payment" | "cash";
    color: string;
    iconUrl?: string | null;
+   bankCode?: string | null;
+   bankName?: string | null;
    initialBalance: string;
    currentBalance: string;
    projectedBalance: string;
@@ -66,6 +74,7 @@ function formatBRL(value: string | number): string {
 }
 
 interface BuildBankAccountColumnsOptions {
+   logoDevToken?: string;
    onRenameAccount?: (id: string, name: string) => Promise<void>;
 }
 
@@ -73,6 +82,7 @@ export function buildBankAccountColumns(
    options?: BuildBankAccountColumnsOptions,
 ): ColumnDef<BankAccountRow>[] {
    const canRenameAccount = Boolean(options?.onRenameAccount);
+   const logoDevToken = options?.logoDevToken;
    return [
       {
          accessorKey: "name",
@@ -91,9 +101,35 @@ export function buildBankAccountColumns(
                await options.onRenameAccount(rowId, String(value).trim());
             },
          },
-         cell: ({ row }) => (
-            <span className="font-medium truncate">{row.original.name}</span>
-         ),
+         cell: ({ row }) => {
+            const account = row.original;
+            const issuer = account.bankName?.trim() || account.name;
+            const logo = bankLogoUrl(account.bankCode, logoDevToken);
+            return (
+               <div className="flex min-w-0 items-center gap-2">
+                  <Avatar className="size-4 shrink-0 rounded-lg bg-white ring-1 ring-border">
+                     {logo ? (
+                        <AvatarImage
+                           alt={issuer}
+                           className="object-contain"
+                           src={logo}
+                        />
+                     ) : null}
+                     <AvatarFallback
+                        className="rounded-lg text-xs font-semibold text-white"
+                        style={{ backgroundColor: account.color }}
+                     >
+                        {account.bankName ? (
+                           bankInitials(account.bankName)
+                        ) : (
+                           <Landmark className="size-2" />
+                        )}
+                     </AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium truncate">{account.name}</span>
+               </div>
+            );
+         },
       },
       {
          accessorKey: "currentBalance",
