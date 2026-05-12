@@ -39,7 +39,7 @@ import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
 import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
-import type { DataImportConfig } from "@/blocks/data-table/data-import/types";
+import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { useCsvFile } from "@/hooks/use-csv-file";

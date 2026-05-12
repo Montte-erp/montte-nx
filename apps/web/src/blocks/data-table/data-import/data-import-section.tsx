@@ -11,7 +11,7 @@ import { fromPromise } from "neverthrow";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import type { DataImportConfig } from "./types";
+import type { DataImportConfig } from "./use-data-import";
 import type { UseDataImportApi } from "./use-data-import";
 
 interface DataImportSectionProps<TData> {

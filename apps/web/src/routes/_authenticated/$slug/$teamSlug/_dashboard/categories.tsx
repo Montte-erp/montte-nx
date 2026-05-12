@@ -48,7 +48,7 @@ import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
 import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
 import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
-import type { DataImportConfig } from "@/blocks/data-table/data-import/types";
+import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
 import { PageFilters } from "@/components/page-filters/page-filters";
 import { PageFilter } from "@/components/page-filters/page-filter";
 import { QueryBoundary } from "@/components/query-boundary";

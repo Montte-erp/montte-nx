@@ -14,7 +14,7 @@ import { fromPromise } from "neverthrow";
 import { useCallback, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useFileDownload } from "@/hooks/use-file-download";
-import type { DataImportConfig, ImportTemplateFile } from "./types";
+import type { DataImportConfig, ImportTemplateFile } from "./use-data-import";
 import type { UseDataImportApi } from "./use-data-import";
 
 const DEFAULT_ACCEPT = {

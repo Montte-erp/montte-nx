@@ -2,10 +2,112 @@ import type { Table } from "@tanstack/react-table";
 import { SelectionActionButton } from "@packages/ui/components/selection-action-bar";
 import { EyeOff } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { z } from "zod";
 import { useSelectionToolbar } from "@/hooks/use-selection-toolbar";
 import { DataImportBulkEdit } from "./data-import-bulk-edit";
-import { autoMatch, getImportableColumns } from "./match-headers";
-import type { DataImportConfig, ImportState, RawImportData } from "./types";
+
+export const rawImportDataSchema = z.object({
+   headers: z.array(z.string()),
+   rows: z.array(z.array(z.string())),
+});
+export type RawImportData = z.infer<typeof rawImportDataSchema>;
+
+export const importableColumnSchema = z.object({
+   key: z.string(),
+   label: z.string(),
+});
+export type ImportableColumn = z.infer<typeof importableColumnSchema>;
+
+export interface ImportTemplateFile {
+   filename: string;
+   label: string;
+   createBlob: () => Blob;
+}
+
+export interface ImportTemplate {
+   label?: string;
+   description?: string;
+   filename?: string;
+   createBlob?: () => Blob;
+   formats?: ImportTemplateFile[];
+}
+
+export interface DataImportConfig {
+   accept?: Record<string, string[]>;
+   parseFile: (file: File) => Promise<RawImportData>;
+   importColumns?: ImportableColumn[];
+   mapRow?: (
+      row: Record<string, string>,
+      index: number,
+   ) => Record<string, unknown>;
+   onImport: (rows: Record<string, unknown>[]) => Promise<void>;
+   template?: ImportTemplate;
+}
+
+export interface ImportState {
+   rawHeaders: string[];
+   rawRows: string[][];
+   mapping: Record<string, string>;
+   importRows: Record<string, unknown>[];
+}
+
+function normalizeHeader(s: string) {
+   return s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]/g, "");
+}
+
+function autoMatch(
+   fileHeaders: string[],
+   cols: ImportableColumn[],
+): Record<string, string> {
+   const mapping: Record<string, string> = {};
+   for (const col of cols) {
+      const normLabel = normalizeHeader(col.label);
+      const normKey = normalizeHeader(col.key);
+      const match = fileHeaders.find((h) => {
+         const normH = normalizeHeader(h);
+         return (
+            normH === normLabel ||
+            normH === normKey ||
+            normH.includes(normLabel) ||
+            normH.includes(normKey)
+         );
+      });
+      if (match) mapping[col.key] = match;
+   }
+   return mapping;
+}
+
+function getImportableColumns<TData>(
+   table: Table<TData>,
+   extra: ImportableColumn[] = [],
+): ImportableColumn[] {
+   return [
+      ...table
+         .getAllColumns()
+         .filter(
+            (col) =>
+               col.id !== "__select" &&
+               col.id !== "__actions" &&
+               !col.columnDef.meta?.importIgnore,
+         )
+         .map((col) => {
+            const def = col.columnDef;
+            const accessorKey =
+               "accessorKey" in def && def.accessorKey != null
+                  ? String(def.accessorKey)
+                  : col.id;
+            return {
+               key: accessorKey,
+               label: col.columnDef.meta?.label ?? col.id,
+            };
+         }),
+      ...extra,
+   ];
+}
 
 export interface UseDataImportApi {
    state: ImportState | null;

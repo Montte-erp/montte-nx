@@ -45,7 +45,7 @@ import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
 import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
 import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
-import type { DataImportConfig } from "@/blocks/data-table/data-import/types";
+import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
 import { useCsvFile } from "@/hooks/use-csv-file";
