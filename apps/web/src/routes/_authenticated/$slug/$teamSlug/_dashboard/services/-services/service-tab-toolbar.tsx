@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import {
    DataTableToolbar,
    DataTableToolbarGroup,
-} from "@/components/data-table-v2/data-table-toolbar";
+} from "@/blocks/data-table/data-table-toolbar";
 
 interface ServiceTabToolbarProps {
    children?: ReactNode;

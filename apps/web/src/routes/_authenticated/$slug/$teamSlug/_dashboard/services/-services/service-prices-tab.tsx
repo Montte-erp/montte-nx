@@ -18,12 +18,12 @@ import {
 import { CircleDollarSign, Copy, Plus, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "@packages/ui/components/sonner";
-import { DataTableBody } from "@/components/data-table-v2/data-table-body";
-import { DataTableContainer } from "@/components/data-table-v2/data-table-container";
-import { DataTableEmptyState } from "@/components/data-table-v2/data-table-empty-state";
-import { DataTableHeader } from "@/components/data-table-v2/data-table-header";
-import { DataTableRoot } from "@/components/data-table-v2/data-table-root";
-import { useDataTableLayout } from "@/components/data-table-v2/use-data-table-layout";
+import { DataTableBody } from "@/blocks/data-table/data-table-body";
+import { DataTableContainer } from "@/blocks/data-table/data-table-container";
+import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state";
+import { DataTableHeader } from "@/blocks/data-table/data-table-header";
+import { DataTableRoot } from "@/blocks/data-table/data-table-root";
+import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";

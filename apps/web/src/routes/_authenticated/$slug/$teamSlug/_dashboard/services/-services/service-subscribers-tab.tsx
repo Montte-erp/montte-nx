@@ -15,12 +15,12 @@ import {
 } from "@tanstack/react-table";
 import { Users } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { DataTableBody } from "@/components/data-table-v2/data-table-body";
-import { DataTableContainer } from "@/components/data-table-v2/data-table-container";
-import { DataTableEmptyState } from "@/components/data-table-v2/data-table-empty-state";
-import { DataTableHeader } from "@/components/data-table-v2/data-table-header";
-import { DataTableRoot } from "@/components/data-table-v2/data-table-root";
-import { useDataTableLayout } from "@/components/data-table-v2/use-data-table-layout";
+import { DataTableBody } from "@/blocks/data-table/data-table-body";
+import { DataTableContainer } from "@/blocks/data-table/data-table-container";
+import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state";
+import { DataTableHeader } from "@/blocks/data-table/data-table-header";
+import { DataTableRoot } from "@/blocks/data-table/data-table-root";
+import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { orpc } from "@/integrations/orpc/client";
 import {

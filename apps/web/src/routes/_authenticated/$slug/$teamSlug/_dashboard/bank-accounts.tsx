@@ -24,25 +24,25 @@ import { startTransition, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { DataTableBody } from "@/components/data-table-v2/data-table-body";
-import { DataTableBulkActionBar } from "@/components/data-table-v2/data-table-bulk-action-bar";
-import { DataTableColumnVisibility } from "@/components/data-table-v2/data-table-column-visibility";
-import { DataTableContainer } from "@/components/data-table-v2/data-table-container";
-import { DataTableEmptyState } from "@/components/data-table-v2/data-table-empty-state";
-import { DataTableHeader } from "@/components/data-table-v2/data-table-header";
-import { DataTablePagination } from "@/components/data-table-v2/data-table-pagination";
-import { DataTableRoot } from "@/components/data-table-v2/data-table-root";
-import { DataTableSearch } from "@/components/data-table-v2/data-table-search";
-import { DataTableSkeleton } from "@/components/data-table-v2/data-table-skeleton";
+import { DataTableBody } from "@/blocks/data-table/data-table-body";
+import { DataTableBulkActionBar } from "@/blocks/data-table/data-table-bulk-action-bar";
+import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { DataTableContainer } from "@/blocks/data-table/data-table-container";
+import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state";
+import { DataTableHeader } from "@/blocks/data-table/data-table-header";
+import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
+import { DataTableRoot } from "@/blocks/data-table/data-table-root";
+import { DataTableSearch } from "@/blocks/data-table/data-table-search";
+import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
 import {
    DataTableToolbar,
    DataTableToolbarGroup,
-} from "@/components/data-table-v2/data-table-toolbar";
-import { useDataTableLayout } from "@/components/data-table-v2/use-data-table-layout";
-import { DataImportButton } from "@/features/data-import/data-import-button";
-import { DataImportSection } from "@/features/data-import/data-import-section";
-import { useDataImport } from "@/features/data-import/use-data-import";
-import type { DataImportConfig } from "@/features/data-import/types";
+} from "@/blocks/data-table/data-table-toolbar";
+import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
+import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
+import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
+import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
+import type { DataImportConfig } from "@/blocks/data-table/data-import/types";
 import { PageFilters } from "@/components/page-filters/page-filters";
 import { PageFilter } from "@/components/page-filters/page-filter";
 import { QueryBoundary } from "@/components/query-boundary";

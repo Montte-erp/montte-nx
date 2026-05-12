@@ -34,16 +34,16 @@ import { orpc } from "@/integrations/orpc/client";
 import type { Outputs } from "@/integrations/orpc/client";
 import { QueryBoundary } from "@/components/query-boundary";
 import { DefaultHeader } from "../../../-layout/default-header";
-import { DataTableBody } from "@/components/data-table-v2/data-table-body";
-import { DataTableContainer } from "@/components/data-table-v2/data-table-container";
-import { DataTableEmptyState } from "@/components/data-table-v2/data-table-empty-state";
-import { DataTableHeader } from "@/components/data-table-v2/data-table-header";
-import { DataTableRoot } from "@/components/data-table-v2/data-table-root";
-import { DataTableSearch } from "@/components/data-table-v2/data-table-search";
+import { DataTableBody } from "@/blocks/data-table/data-table-body";
+import { DataTableContainer } from "@/blocks/data-table/data-table-container";
+import { DataTableEmptyState } from "@/blocks/data-table/data-table-empty-state";
+import { DataTableHeader } from "@/blocks/data-table/data-table-header";
+import { DataTableRoot } from "@/blocks/data-table/data-table-root";
+import { DataTableSearch } from "@/blocks/data-table/data-table-search";
 import {
    DataTableToolbar,
    DataTableToolbarGroup,
-} from "@/components/data-table-v2/data-table-toolbar";
+} from "@/blocks/data-table/data-table-toolbar";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { InviteMembersForm } from "./-members/invite-members-form";
