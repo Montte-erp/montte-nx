@@ -1,4 +1,5 @@
 import { Button } from "@packages/ui/components/button";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import {
    Empty,
    EmptyContent,
@@ -7,55 +8,81 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import { SelectionActionButton } from "@packages/ui/components/selection-action-bar";
 import {
    useMutation,
    useQueryClient,
    useSuspenseQueries,
 } from "@tanstack/react-query";
 import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
+import {
+   getCoreRowModel,
+   getFilteredRowModel,
+   getSortedRowModel,
+   useReactTable,
+   type ColumnDef,
+   type ColumnFiltersState,
+   type RowSelectionState,
+   type SortingState,
+} from "@tanstack/react-table";
 import { Briefcase, ExternalLink, Plus, Trash2 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { startTransition, useCallback, useMemo, useState } from "react";
 import { toast } from "@packages/ui/components/sonner";
+import { DataTableBody } from "@/components/data-table-v2/data-table-body";
+import { DataTableBulkActionBar } from "@/components/data-table-v2/data-table-bulk-action-bar";
+import { DataTableColumnVisibility } from "@/components/data-table-v2/data-table-column-visibility";
+import { DataTableContainer } from "@/components/data-table-v2/data-table-container";
+import { DataTableEmptyState } from "@/components/data-table-v2/data-table-empty-state";
+import { DataTableHeader } from "@/components/data-table-v2/data-table-header";
+import { DataTableRoot } from "@/components/data-table-v2/data-table-root";
+import { DataTableSearch } from "@/components/data-table-v2/data-table-search";
 import {
-   DataTableBulkActions,
-   SelectionActionButton,
-} from "@/components/data-table/data-table-bulk-actions";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
-import {
-   DataTableImportButton,
-   type DataTableImportConfig,
-} from "@/components/data-table/data-table-import";
-import { DataTableRoot } from "@/components/data-table/data-table-root";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+   DataTableToolbar,
+   DataTableToolbarGroup,
+} from "@/components/data-table-v2/data-table-toolbar";
+import { useDataTableLayout } from "@/components/data-table-v2/use-data-table-layout";
+import { DataImportButton } from "@/features/data-import/data-import-button";
+import { DataImportSection } from "@/features/data-import/data-import-section";
+import { useDataImport } from "@/features/data-import/use-data-import";
+import type { DataImportConfig } from "@/features/data-import/types";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
+import { useSheet } from "@/hooks/use-sheet";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { orpc } from "@/integrations/orpc/client";
+import { ServiceFormSheet } from "./service-form-sheet";
 import { buildServiceColumns, type ServiceRow } from "./services-columns";
 
 const routeApi = getRouteApi(
    "/_authenticated/$slug/$teamSlug/_dashboard/services/",
 );
 
+const servicesListSearchSchema = {
+   sorting: [] as SortingState,
+   columnFilters: [] as ColumnFiltersState,
+};
+
 export function ServicesList() {
    const routeNavigate = routeApi.useNavigate();
    const navigate = useNavigate();
    const { search, view } = routeApi.useSearch();
    const { openAlertDialog } = useAlertDialog();
+   const { openSheet } = useSheet();
    const queryClient = useQueryClient();
    const slug = useOrgSlug();
    const teamSlug = useTeamSlug();
    const { parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
-   const [isDraftActive, setIsDraftActive] = useState(false);
+   const layout = useDataTableLayout("services");
 
    const handleSearch = useCallback(
       (value: string) => {
-         routeNavigate({
-            search: (prev) => ({ ...prev, search: value }),
-            replace: true,
+         startTransition(() => {
+            routeNavigate({
+               search: (prev) => ({ ...prev, search: value }),
+               replace: true,
+            });
          });
       },
       [routeNavigate],
@@ -122,13 +149,6 @@ export function ServicesList() {
       return result;
    }, [servicesList, statsById, search, view]);
 
-   const createMutation = useMutation(
-      orpc.services.create.mutationOptions({
-         onSuccess: () => toast.success("Serviço criado com sucesso."),
-         onError: (e) => toast.error(e.message),
-      }),
-   );
-
    const importMutation = useMutation(
       orpc.services.bulkCreate.mutationOptions({
          meta: { skipGlobalInvalidation: true },
@@ -148,19 +168,11 @@ export function ServicesList() {
       }),
    );
 
-   const handleDiscardDraft = useCallback(() => setIsDraftActive(false), []);
+   const handleOpenCreate = useCallback(() => {
+      openSheet({ renderChildren: () => <ServiceFormSheet /> });
+   }, [openSheet]);
 
-   const handleAddService = useCallback(
-      async (data: Record<string, string | string[]>) => {
-         const name = String(data.name ?? "").trim();
-         if (!name) return;
-         await createMutation.mutateAsync({ name });
-         setIsDraftActive(false);
-      },
-      [createMutation],
-   );
-
-   const importConfig: DataTableImportConfig = useMemo(
+   const importConfig: DataImportConfig = useMemo(
       () => ({
          accept: {
             "text/csv": [".csv"],
@@ -173,7 +185,7 @@ export function ServicesList() {
             if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
             return parseCsv(file);
          },
-         mapRow: (row, i): Record<string, unknown> => ({
+         mapRow: (row, i) => ({
             id: `__import_${i}`,
             name: String(row.name ?? "").trim(),
             description: String(row.description ?? "").trim() || null,
@@ -228,24 +240,43 @@ export function ServicesList() {
       [openAlertDialog, deleteMutation],
    );
 
-   const columns = useMemo(() => buildServiceColumns(), []);
-
-   const groupBy = useCallback(
-      (row: ServiceRow) => row.categoryName ?? "Sem categoria",
-      [],
-   );
-
-   return (
-      <DataTableRoot
-         columns={columns}
-         data={filtered}
-         getRowId={(r) => r.id}
-         groupBy={groupBy}
-         isDraftRowActive={isDraftActive}
-         onAddRow={handleAddService}
-         onDiscardAddRow={handleDiscardDraft}
-         renderActions={({ row }) => (
-            <>
+   const columns = useMemo<ColumnDef<ServiceRow>[]>(() => {
+      const base = buildServiceColumns();
+      const selectColumn: ColumnDef<ServiceRow> = {
+         id: "__select",
+         size: 40,
+         enableSorting: false,
+         enableHiding: false,
+         header: ({ table }) => (
+            <Checkbox
+               aria-label="Selecionar todos"
+               checked={
+                  table.getIsAllPageRowsSelected()
+                     ? true
+                     : table.getIsSomePageRowsSelected()
+                       ? "indeterminate"
+                       : false
+               }
+               onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+            />
+         ),
+         cell: ({ row }) => (
+            <Checkbox
+               aria-label="Selecionar linha"
+               checked={row.getIsSelected()}
+               disabled={!row.getCanSelect()}
+               onCheckedChange={(v) => row.toggleSelected(!!v)}
+            />
+         ),
+      };
+      const actionsColumn: ColumnDef<ServiceRow> = {
+         id: "__actions",
+         size: 100,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { align: "right" },
+         cell: ({ row }) => (
+            <div className="flex justify-end gap-2">
                <Button
                   onClick={() =>
                      navigate({
@@ -257,46 +288,95 @@ export function ServicesList() {
                         },
                      })
                   }
-                  size="icon"
+                  size="icon-sm"
                   tooltip="Ver detalhes"
                   variant="ghost"
                >
-                  <ExternalLink className="size-4" />
+                  <ExternalLink />
                   <span className="sr-only">Ver detalhes</span>
                </Button>
                <Button
                   className="text-destructive hover:text-destructive"
                   onClick={() => handleDelete(row.original)}
-                  size="icon"
+                  size="icon-sm"
                   tooltip="Excluir"
                   variant="ghost"
                >
-                  <Trash2 className="size-4" />
+                  <Trash2 />
                   <span className="sr-only">Excluir</span>
                </Button>
-            </>
-         )}
-         storageKey="montte:datatable:services"
-      >
+            </div>
+         ),
+      };
+      return [selectColumn, ...base, actionsColumn];
+   }, [navigate, slug, teamSlug, handleDelete]);
+
+   const [sorting, setSorting] = useState<SortingState>(
+      servicesListSearchSchema.sorting,
+   );
+   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
+      servicesListSearchSchema.columnFilters,
+   );
+   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
+   const table = useReactTable({
+      data: filtered,
+      columns,
+      getRowId: (r) => r.id,
+      state: { sorting, columnFilters, rowSelection },
+      onSortingChange: setSorting,
+      onColumnFiltersChange: setColumnFilters,
+      onRowSelectionChange: setRowSelection,
+      onColumnSizingChange: layout.onColumnSizingChange,
+      onColumnOrderChange: layout.onColumnOrderChange,
+      onColumnVisibilityChange: layout.onColumnVisibilityChange,
+      onColumnPinningChange: layout.onColumnPinningChange,
+      initialState: {
+         columnSizing: layout.initialState.columnSizing,
+         columnOrder: layout.initialState.columnOrder,
+         columnVisibility: layout.initialState.columnVisibility,
+         columnPinning: layout.initialState.columnPinning,
+      },
+      getCoreRowModel: getCoreRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+      getFilteredRowModel: getFilteredRowModel(),
+   });
+
+   const importApi = useDataImport({ table, config: importConfig });
+
+   return (
+      <DataTableRoot table={table}>
          <div className="flex flex-col gap-4">
-            <DataTableToolbar
-               searchPlaceholder="Buscar serviços..."
-               searchDefaultValue={search}
-               onSearch={handleSearch}
-            >
-               <DataTableImportButton importConfig={importConfig} />
-               <Button
-                  id="tour-services-create"
-                  onClick={() => setIsDraftActive(true)}
-                  size="icon-sm"
-                  tooltip="Novo Serviço"
-                  variant="outline"
-               >
-                  <Plus />
-                  <span className="sr-only">Novo Serviço</span>
-               </Button>
+            <DataTableToolbar>
+               <DataTableSearch
+                  onChange={handleSearch}
+                  placeholder="Buscar serviços..."
+                  value={search}
+               />
+               <DataTableToolbarGroup>
+                  <DataTableColumnVisibility />
+                  <DataImportButton api={importApi} config={importConfig} />
+                  <Button
+                     id="tour-services-create"
+                     onClick={handleOpenCreate}
+                     size="icon-sm"
+                     tooltip="Novo Serviço"
+                     variant="outline"
+                  >
+                     <Plus />
+                     <span className="sr-only">Novo Serviço</span>
+                  </Button>
+               </DataTableToolbarGroup>
             </DataTableToolbar>
-            <DataTableContent />
+            <DataTableContainer>
+               <DataTableHeader />
+               <DataTableBody<ServiceRow> />
+            </DataTableContainer>
+            <DataImportSection
+               api={importApi}
+               config={importConfig}
+               table={table}
+            />
             <DataTableEmptyState>
                <Empty>
                   <EmptyHeader>
@@ -324,7 +404,7 @@ export function ServicesList() {
                   </EmptyHeader>
                   {!search && (
                      <EmptyContent>
-                        <Button onClick={() => setIsDraftActive(true)}>
+                        <Button onClick={handleOpenCreate}>
                            <Plus />
                            Novo serviço
                         </Button>
@@ -332,9 +412,9 @@ export function ServicesList() {
                   )}
                </Empty>
             </DataTableEmptyState>
-            <DataTableBulkActions<ServiceRow>>
-               {({ selectedRows, clearSelection }) => {
-                  const ids = selectedRows.map((r) => r.id);
+            <DataTableBulkActionBar<ServiceRow>>
+               {({ rows, clear }) => {
+                  const ids = rows.map((r) => r.original.id);
                   return (
                      <SelectionActionButton
                         icon={<Trash2 />}
@@ -361,7 +441,7 @@ export function ServicesList() {
                                           `${res.failed} serviço(s) com erro.`,
                                        );
                                  }
-                                 clearSelection();
+                                 clear();
                               },
                            })
                         }
@@ -370,7 +450,7 @@ export function ServicesList() {
                      </SelectionActionButton>
                   );
                }}
-            </DataTableBulkActions>
+            </DataTableBulkActionBar>
          </div>
       </DataTableRoot>
    );
