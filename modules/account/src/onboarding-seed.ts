@@ -6,7 +6,7 @@ import { organization, team, teamMember } from "@core/database/schemas/auth";
 import { AppError } from "@core/logging/errors";
 import { seedClassificationDefaults } from "@modules/classification/seeds";
 
-const EARLY_ACCESS_FLAGS = ["contacts", "services", "advanced-analytics"];
+const EARLY_ACCESS_FLAGS = ["contacts", "services"];
 const ONBOARDING_PRODUCTS = new Set<string>([
    "finance",
    "contacts",
@@ -73,7 +73,4 @@ export async function runOnboardingCompletion(args: {
          .set({ onboardingCompleted: true })
          .where(eq(organization.id, organizationId));
    });
-
-   // TODO(MON-566 / modules/insights): seed default insights + dashboard.
-   // Lives outside account scope — analytics module owns dashboard/insight seeds.
 }

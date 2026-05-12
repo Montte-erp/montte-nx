@@ -18,8 +18,6 @@ import { contacts } from "@core/database/schemas/contacts";
 import { coupons, couponRedemptions } from "@core/database/schemas/coupons";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
-import { dashboards } from "@core/database/schemas/dashboards";
-import { insights } from "@core/database/schemas/insights";
 import { meters } from "@core/database/schemas/meters";
 import {
    resources,
@@ -126,36 +124,6 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
 export const contactsRelations = relations(contacts, ({ many }) => ({
    transactions: many(transactions),
    contactSubscriptions: many(contactSubscriptions),
-}));
-
-export const dashboardsRelations = relations(dashboards, ({ one }) => ({
-   organization: one(organization, {
-      fields: [dashboards.organizationId],
-      references: [organization.id],
-   }),
-   team: one(team, {
-      fields: [dashboards.teamId],
-      references: [team.id],
-   }),
-   createdByUser: one(user, {
-      fields: [dashboards.createdBy],
-      references: [user.id],
-   }),
-}));
-
-export const insightsRelations = relations(insights, ({ one }) => ({
-   organization: one(organization, {
-      fields: [insights.organizationId],
-      references: [organization.id],
-   }),
-   team: one(team, {
-      fields: [insights.teamId],
-      references: [team.id],
-   }),
-   createdByUser: one(user, {
-      fields: [insights.createdBy],
-      references: [user.id],
-   }),
 }));
 
 export const metersRelations = relations(meters, ({ many }) => ({

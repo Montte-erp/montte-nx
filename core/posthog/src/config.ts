@@ -4,8 +4,6 @@ export const FEATURE_FLAG_KEYS = [
    "servicos-medidores",
    "servicos-beneficios",
    "servicos-cupons",
-   "analises-avancadas",
-   "dados",
 ] as const;
 
 export type FeatureFlagKey = (typeof FEATURE_FLAG_KEYS)[number];
@@ -31,14 +29,6 @@ export const POSTHOG_SURVEYS = {
    feedbackContatos: {
       id: "019d3b2f-a58f-0000-bc30-ac03e413d7fc",
       flagKey: "contatos",
-   },
-   feedbackAnalisesAvancadas: {
-      id: "019d3b2f-b5d7-0000-60aa-b7dd238e70d3",
-      flagKey: "analises-avancadas",
-   },
-   feedbackDados: {
-      id: "019d3b2f-ba55-0000-c8b0-25a1ce21c7f8",
-      flagKey: "dados",
    },
    suggestIntegration: {
       id: "019d3b8e-c77a-0000-fb14-82f93cfb23bd",
