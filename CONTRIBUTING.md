@@ -141,10 +141,10 @@ Prefira rodar tarefas via Nx (`bun nx run`, `bun nx run-many` ou scripts que já
 
 Testes vivem em `core/*`, `modules/*`, `packages/*` e `__tests__/` de workspace. Não adicione testes unitários, integração ou snapshots em `apps/*` enquanto o projeto não tiver E2E padronizado.
 
-Para um arquivo específico, use Vitest diretamente quando não houver target Nx mais adequado:
+Para um arquivo específico, use o target Nx do projeto com o caminho do teste:
 
 ```bash
-npx vitest run modules/billing/src/__tests__/exemplo.test.ts
+bun nx run @modules/classification:test -- __tests__/router/categories.test.ts
 ```
 
 ## Fluxo De PR

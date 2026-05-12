@@ -3,7 +3,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](CONTRIBUTING.md)
 
-**Montte** is an open source, AI-native ERP for SaaS companies and coworking spaces in Brazil. The interface is a chat with **Montte AI**, an assistant that runs your finance, CRM, services and analytics through natural language. Traditional screens are still there as a fallback — but the default is conversation.
+**Montte** is an open source, AI-native ERP for SaaS companies and coworking spaces in Brazil. Today the product focuses on the ERP screens for finance, CRM, analytics, accounts and teams. **Montte AI** is present as the AI layer, but operational skills and automations are not available yet; future skills are planned for finance, classification, contacts, insights and onboarding.
 
 > **Status:** pre-launch private beta. Not on production yet. Expect breaking changes.
 
@@ -39,15 +39,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for staging setup and all available comma
 - **Transactions** — import (CSV/XLSX/OFX), categorize, bulk operations, smart filters; statement import auto-categorizes via AI when enabled
 - **Credit cards** — track cards, statements and totals
 
-### CRM & contacts (`@modules/billing`, `@modules/classification`)
+### CRM & contacts (`@modules/account`, `@modules/classification`)
 
 - **Contacts** — clients, suppliers and service providers
 - **Categories & tags** — custom categories with subcategories; tags double as **centros de custo** (cost centers) for project-level breakdowns
-
-### Services & billing (`@modules/billing`)
-
-- **Services catalog** — recurring and one-time services with usage-based pricing
-- **Meters, prices, subscriptions, subscription items, benefits, coupons** — primitives for usage-based billing
 
 ### Analytics (`@modules/insights`)
 
@@ -58,7 +53,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for staging setup and all available comma
 
 - **Chat-first UX** — Montte AI is a persistent drawer available on every page; ask in Portuguese, get answers backed by your real data
 - **Tools wrap oRPC procedures** — Montte AI reads and writes through the same API your dashboard uses; no parallel implementation
-- **Skills** — domain playbooks loaded on demand (`services` today; `finance`, `classification`, `contacts`, `insights`, `onboarding` shipping next)
+- **Skills** — no operational skills are available today; `finance`, `classification`, `contacts`, `insights`, and `onboarding` are planned next
 - **Multi-model via TanStack AI + OpenRouter** — model selection per call
 
 ### Account & teams (`@modules/account`)

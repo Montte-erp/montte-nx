@@ -6,6 +6,7 @@ import { WebAppError } from "@core/logging/errors";
 import { createAiObservabilityMiddleware } from "@core/ai/middleware";
 import type { Prompts } from "@core/posthog/server";
 import { AGENT_PROMPTS } from "@modules/agents/constants";
+import { SKILLS } from "@modules/agents/skills";
 
 export interface AdvisorToolDeps {
    prompts: Prompts;
@@ -44,9 +45,17 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
    return toolDefinition({
       name: "advisor_consult",
       description:
-         "Consulte o advisor sênior antes de tomar decisões ambíguas: tabela/dado confuso, conflito service vs benefit vs meter, mesma operação falhou 2x, ou pedido fora de skill conhecida. NÃO consulte para CRUD trivial, listagem ou input claro. Budget: até 3 consultas por turno.",
+         "Consulte o advisor sênior antes de tomar decisões ambíguas dentro de uma skill ativa: tabela/dado confuso ou mesma operação falhou 2x. NÃO consulte para CRUD trivial, listagem, input claro ou pedidos sem skill ativa. Budget: até 3 consultas por turno.",
       inputSchema: advisorConsultInputSchema,
    }).server(async ({ situation, question, options }) => {
+      if (SKILLS.length === 0) {
+         return {
+            guidance:
+               "Nenhuma skill operacional está disponível no momento. Não é possível consultar o advisor para este pedido.",
+            fallback: true,
+         };
+      }
+
       const templateResult = await fromPromise(
          deps.prompts.get(AGENT_PROMPTS.advisor, {
             withMetadata: false,
