@@ -27,6 +27,7 @@ import {
    SortableContext,
    arrayMove,
    horizontalListSortingStrategy,
+   sortableKeyboardCoordinates,
    useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -71,7 +72,9 @@ export function DataTableHeader<TData>({ table }: DataTableHeaderProps<TData>) {
    const sensors = useSensors(
       useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
       useSensor(TouchSensor, {}),
-      useSensor(KeyboardSensor, {}),
+      useSensor(KeyboardSensor, {
+         coordinateGetter: sortableKeyboardCoordinates,
+      }),
    );
 
    const leafIds = useMemo(

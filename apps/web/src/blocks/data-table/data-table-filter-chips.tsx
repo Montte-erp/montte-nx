@@ -35,18 +35,18 @@ export function DataTableFilterChips<TData>({
             const col = table.getColumn(f.id);
             const label = col?.columnDef.meta?.label ?? f.id;
             return (
-               <Badge key={f.id} variant="secondary" className="gap-1 pr-1">
+               <Badge key={f.id} variant="secondary" className="gap-2 pr-2">
                   <span className="text-xs">
                      {label}: {formatValue(f.value)}
                   </span>
                   <Button
-                     className="size-4 p-0"
+                     className="size-4"
                      onClick={() => col?.setFilterValue(undefined)}
                      size="icon"
                      type="button"
                      variant="ghost"
                   >
-                     <X className="size-3" />
+                     <X className="size-2" />
                      <span className="sr-only">Remover filtro {label}</span>
                   </Button>
                </Badge>

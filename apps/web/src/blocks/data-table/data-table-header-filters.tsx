@@ -129,7 +129,7 @@ function RangeFilterCell<TData>({
 }: RangeFilterCellProps<TData>) {
    const [min, max] = value ?? [undefined, undefined];
    return (
-      <div className="flex gap-1">
+      <div className="flex gap-2">
          <Input
             className="h-8"
             onChange={(e) =>

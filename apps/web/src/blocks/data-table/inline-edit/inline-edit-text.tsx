@@ -36,11 +36,12 @@ export function InlineEditText({
    async function commit(next: string) {
       const trimmed = next.trim();
       if (trimmed === value.trim()) return;
+      const rollback = value;
       setPending(trimmed);
       const result = await fromPromise(onSave(trimmed), (e) => e);
       if (result.isErr()) {
          setPending(null);
-         setDraft(value);
+         setDraft(rollback);
       }
    }
 

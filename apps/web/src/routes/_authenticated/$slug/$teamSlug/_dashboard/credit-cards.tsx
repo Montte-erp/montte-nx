@@ -610,7 +610,7 @@ function CreditCardsList() {
                   <Empty>
                      <EmptyHeader>
                         <EmptyMedia variant="icon">
-                           <CreditCard className="size-6" />
+                           <CreditCard className="size-4" />
                         </EmptyMedia>
                         <EmptyTitle>Nenhum cartão de crédito</EmptyTitle>
                         <EmptyDescription>

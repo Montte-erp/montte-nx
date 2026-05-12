@@ -37,11 +37,12 @@ export function InlineEditMoney({
    async function commit(next: number | undefined) {
       const normalized = next ?? 0;
       if (normalized === value) return;
+      const rollback = value;
       setPending(normalized);
       const result = await fromPromise(onSave(normalized), (e) => e);
       if (result.isErr()) {
          setPending(null);
-         setDraft(value);
+         setDraft(rollback);
       }
    }
 
