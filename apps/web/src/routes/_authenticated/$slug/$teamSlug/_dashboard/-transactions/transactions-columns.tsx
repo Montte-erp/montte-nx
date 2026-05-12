@@ -150,7 +150,10 @@ export function buildTransactionColumns(options?: {
                { value: "cancelled", label: "Ignorado" },
             ],
             onSave: async (rowId, value) => {
-               await options?.onUpdate?.(rowId, { status: value });
+               await options?.onUpdate?.(rowId, {
+                  ignored: value === "cancelled",
+                  status: value,
+               });
             },
          },
          cell: ({ row }) => (

@@ -77,17 +77,18 @@ const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
    { value: "transfer", label: "Transferência" },
 ];
 
-const STATUS_OPTIONS = [
-   { value: "paid" as const, label: "Efetivado" },
-   { value: "pending" as const, label: "Pendente" },
-   { value: "cancelled" as const, label: "Ignorado" },
+type TransactionStatus = "paid" | "pending" | "cancelled";
+type StatusOption = { value: TransactionStatus; label: string };
+
+const STATUS_OPTIONS: StatusOption[] = [
+   { value: "paid", label: "Efetivado" },
+   { value: "pending", label: "Pendente" },
+   { value: "cancelled", label: "Ignorado" },
 ];
 
 const ATTACHMENT_MAX_FILES = 5;
 
-function parseStatus(
-   value: string,
-): "pending" | "paid" | "cancelled" | undefined {
+function parseStatus(value: string): TransactionStatus | undefined {
    return STATUS_OPTIONS.find((s) => s.value === value)?.value;
 }
 
