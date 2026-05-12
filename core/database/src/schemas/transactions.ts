@@ -274,8 +274,8 @@ export const createTransactionSchema = baseTransactionSchema
    });
 
 export const updateTransactionSchema = baseTransactionSchema
-   .omit({ type: true })
    .extend({
+      type: z.enum(["income", "expense", "transfer"]).optional(),
       name: z
          .string()
          .min(2, "Nome deve ter no mínimo 2 caracteres.")
