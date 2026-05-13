@@ -128,7 +128,7 @@ export const getMembers = protectedProcedure.handler(async ({ context }) => {
       email: m.user.email,
       role: m.role,
       image: m.user.image ?? null,
-      createdAt: new Date(m.createdAt),
+      createdAt: m.createdAt,
    }));
 });
 
