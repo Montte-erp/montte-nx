@@ -675,24 +675,6 @@ function TransactionFormSheetContent() {
                }}
             </form.Subscribe>
 
-            <form.Field name="contactId">
-               {(field) => (
-                  <Field>
-                     <FieldLabel htmlFor={field.name}>Contato</FieldLabel>
-                     <Combobox
-                        emptyMessage="Nenhum contato."
-                        id={field.name}
-                        options={contactOptions}
-                        placeholder="Selecionar contato..."
-                        searchPlaceholder="Buscar contato..."
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onValueChange={(v) => field.handleChange(v)}
-                     />
-                  </Field>
-               )}
-            </form.Field>
-
             <div className="grid grid-cols-2 gap-4">
                <form.Field name="date">
                   {(field) => (
@@ -806,6 +788,24 @@ function TransactionFormSheetContent() {
                   </Button>
                </CollapsibleTrigger>
                <CollapsibleContent className="flex flex-col gap-4 pt-4">
+                  <form.Field name="contactId">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel htmlFor={field.name}>Contato</FieldLabel>
+                           <Combobox
+                              emptyMessage="Nenhum contato."
+                              id={field.name}
+                              options={contactOptions}
+                              placeholder="Selecionar contato..."
+                              searchPlaceholder="Buscar contato..."
+                              value={field.state.value}
+                              onBlur={field.handleBlur}
+                              onValueChange={(v) => field.handleChange(v)}
+                           />
+                        </Field>
+                     )}
+                  </form.Field>
+
                   <form.Field name="status">
                      {(field) => (
                         <Field>
