@@ -264,6 +264,8 @@ export function buildCategoryColumns(options?: {
             },
          },
          cell: ({ row }) => {
+            if (row.original.parentId !== null)
+               return <span className="text-sm text-muted-foreground">—</span>;
             const visual = getInheritedVisual(row.original, categoriesById);
             return (
                <CategoryVisualCell

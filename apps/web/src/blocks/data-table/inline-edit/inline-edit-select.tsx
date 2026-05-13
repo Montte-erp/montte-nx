@@ -21,6 +21,8 @@ interface InlineEditSelectProps {
    ariaLabel: string;
    placeholder?: string;
    className?: string;
+   startContent?: React.ReactNode;
+   hideValue?: boolean;
 }
 
 export function InlineEditSelect({
@@ -30,6 +32,8 @@ export function InlineEditSelect({
    ariaLabel,
    placeholder,
    className,
+   startContent,
+   hideValue,
 }: InlineEditSelectProps) {
    const [pending, setPending] = useState<string | null>(null);
    const lastCommittedRef = useRef(value);
@@ -59,7 +63,14 @@ export function InlineEditSelect({
                className,
             )}
          >
-            <SelectValue placeholder={placeholder} />
+            {startContent ? (
+               <span className="flex items-center gap-2 min-w-0">
+                  {startContent}
+                  {!hideValue && <SelectValue placeholder={placeholder} />}
+               </span>
+            ) : (
+               <SelectValue placeholder={placeholder} />
+            )}
          </SelectTrigger>
          <SelectContent>
             {options.map((opt) => (

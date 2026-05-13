@@ -119,43 +119,46 @@ export function buildBankAccountColumns(
             const account = row.original;
             const issuer = account.bankName?.trim() || account.name;
             const logo = bankLogoUrl(account.bankCode, logoDevToken);
+            const avatar = (
+               <Avatar className="size-4 rounded-lg bg-white ring-1 ring-border">
+                  {logo ? (
+                     <AvatarImage
+                        alt={issuer}
+                        className="object-contain"
+                        src={logo}
+                     />
+                  ) : null}
+                  <AvatarFallback
+                     className="rounded-lg text-xs font-semibold text-white"
+                     style={{ backgroundColor: account.color }}
+                  >
+                     {account.bankName ? (
+                        bankInitials(account.bankName)
+                     ) : (
+                        <Landmark className="size-2" />
+                     )}
+                  </AvatarFallback>
+               </Avatar>
+            );
+            if (canRenameAccount && options?.onRenameAccount) {
+               return (
+                  <InlineEditText
+                     ariaLabel="Nome"
+                     onSave={async (value) => {
+                        const next = value.trim();
+                        if (!next || next === account.name) return;
+                        await options.onRenameAccount?.(account.id, next);
+                     }}
+                     placeholder="—"
+                     startContent={avatar}
+                     value={account.name}
+                  />
+               );
+            }
             return (
                <div className="flex min-w-0 items-center gap-2">
-                  <Avatar className="size-4 shrink-0 rounded-lg bg-white ring-1 ring-border">
-                     {logo ? (
-                        <AvatarImage
-                           alt={issuer}
-                           className="object-contain"
-                           src={logo}
-                        />
-                     ) : null}
-                     <AvatarFallback
-                        className="rounded-lg text-xs font-semibold text-white"
-                        style={{ backgroundColor: account.color }}
-                     >
-                        {account.bankName ? (
-                           bankInitials(account.bankName)
-                        ) : (
-                           <Landmark className="size-2" />
-                        )}
-                     </AvatarFallback>
-                  </Avatar>
-                  {canRenameAccount && options?.onRenameAccount ? (
-                     <InlineEditText
-                        ariaLabel="Nome"
-                        onSave={async (value) => {
-                           const next = value.trim();
-                           if (!next || next === account.name) return;
-                           await options.onRenameAccount?.(account.id, next);
-                        }}
-                        placeholder="—"
-                        value={account.name}
-                     />
-                  ) : (
-                     <span className="font-medium truncate">
-                        {account.name}
-                     </span>
-                  )}
+                  {avatar}
+                  <span className="font-medium truncate">{account.name}</span>
                </div>
             );
          },

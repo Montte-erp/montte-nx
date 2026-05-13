@@ -1,4 +1,9 @@
 import { Input } from "@packages/ui/components/input";
+import {
+   InputGroup,
+   InputGroupAddon,
+   InputGroupInput,
+} from "@packages/ui/components/input-group";
 import { cn } from "@packages/ui/lib/utils";
 import { fromPromise } from "neverthrow";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
@@ -9,6 +14,7 @@ interface InlineEditTextProps {
    ariaLabel: string;
    placeholder?: string;
    className?: string;
+   startContent?: React.ReactNode;
 }
 
 export function InlineEditText({
@@ -17,6 +23,7 @@ export function InlineEditText({
    ariaLabel,
    placeholder,
    className,
+   startContent,
 }: InlineEditTextProps) {
    const [draft, setDraft] = useState(value);
    const [pending, setPending] = useState<string | null>(null);
@@ -57,6 +64,37 @@ export function InlineEditText({
       }
    }
 
+   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      if (cancelledRef.current) {
+         cancelledRef.current = false;
+         return;
+      }
+      commit(e.target.value);
+   };
+
+   if (startContent) {
+      return (
+         <InputGroup
+            className={cn(
+               "h-8 border-0 bg-transparent shadow-none focus-within:ring-1 focus-within:ring-ring",
+               className,
+            )}
+         >
+            <InputGroupAddon align="inline-start">
+               {startContent}
+            </InputGroupAddon>
+            <InputGroupInput
+               aria-label={ariaLabel}
+               onBlur={handleBlur}
+               onChange={(e) => setDraft(e.target.value)}
+               onKeyDown={handleKeyDown}
+               placeholder={placeholder}
+               value={displayed}
+            />
+         </InputGroup>
+      );
+   }
+
    return (
       <Input
          aria-label={ariaLabel}
@@ -64,13 +102,7 @@ export function InlineEditText({
             "h-8 w-full border-0 bg-transparent px-1 shadow-none focus-visible:ring-1 focus-visible:ring-ring",
             className,
          )}
-         onBlur={(e) => {
-            if (cancelledRef.current) {
-               cancelledRef.current = false;
-               return;
-            }
-            commit(e.target.value);
-         }}
+         onBlur={handleBlur}
          onChange={(e) => setDraft(e.target.value)}
          onKeyDown={handleKeyDown}
          placeholder={placeholder}
