@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { z } from "zod";
 import { Users } from "lucide-react";
 import { DefaultHeader } from "../../-layout/default-header";
-import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
+import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
@@ -53,7 +53,7 @@ export const Route = createFileRoute(
    },
    pendingMs: 300,
    pendingComponent: () => (
-      <main className="flex h-full flex-col gap-4">
+      <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden">
          <DataTableSkeleton columns={skeletonColumns} />
       </main>
    ),
@@ -82,7 +82,7 @@ function ContactsPage() {
    );
 
    return (
-      <main className="flex h-full flex-col gap-4">
+      <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden">
          <DefaultHeader
             description="Gerencie clientes e fornecedores"
             title="Contatos"

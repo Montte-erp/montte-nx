@@ -32,16 +32,13 @@ export interface TransactionFilter {
    creditCardId?: string;
    paymentMethod?: string;
    conditionGroup?: ConditionGroup;
-   status?:
-      | "pending"
-      | "paid"
-      | "cancelled"
-      | ("pending" | "paid" | "cancelled")[];
+   status?: "pending" | "paid" | ("pending" | "paid")[];
    dueDateFrom?: string;
    dueDateTo?: string;
    overdueOnly?: boolean;
-   view?: "all" | "payable" | "receivable" | "settled" | "cancelled";
+   view?: "all" | "payable" | "receivable" | "settled" | "ignored";
    includeIgnored?: boolean;
+   ignored?: boolean;
 }
 
 const t = transactions;
@@ -94,7 +91,7 @@ const VIEW_FILTERS: Record<string, SQL[]> = {
    payable: [eq(t.type, "expense"), eq(t.status, "pending")],
    receivable: [eq(t.type, "income"), eq(t.status, "pending")],
    settled: [eq(t.status, "paid")],
-   cancelled: [eq(t.status, "cancelled")],
+   ignored: [eq(t.ignored, true)],
 };
 
 export function buildTransactionWhere(
@@ -102,7 +99,9 @@ export function buildTransactionWhere(
    includeContactSearch: boolean,
 ): SQL {
    const c: SQL[] = [eq(t.teamId, f.teamId)];
-   if (!f.includeIgnored) c.push(eq(t.ignored, false));
+   if (f.ignored === true) c.push(eq(t.ignored, true));
+   else if (f.ignored === false || !f.includeIgnored)
+      c.push(eq(t.ignored, false));
    if (f.type) c.push(eq(t.type, f.type));
    if (f.bankAccountId) c.push(eq(t.bankAccountId, f.bankAccountId));
    if (f.categoryId) c.push(eq(t.categoryId, f.categoryId));

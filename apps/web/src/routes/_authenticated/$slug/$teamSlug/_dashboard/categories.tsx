@@ -1,4 +1,8 @@
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { SearchInput } from "@packages/ui/components/search-input";
+import { Table } from "@packages/ui/components/table";
 import { Button } from "@packages/ui/components/button";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import {
    Empty,
    EmptyDescription,
@@ -6,14 +10,26 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import {
+   SelectionActionButton,
+   useTableBulkActions,
+} from "@/hooks/use-selection-toolbar";
 import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import {
+   getCoreRowModel,
+   getExpandedRowModel,
+   useReactTable,
+   type ColumnDef,
+   type ExpandedState,
+} from "@tanstack/react-table";
 import {
    Archive,
    ArchiveRestore,
    ArrowLeftRight,
+   ChevronDown,
+   ChevronRight,
    FolderOpen,
-   Layers,
    Plus,
    RefreshCw,
    Trash2,
@@ -21,27 +37,25 @@ import {
    TrendingUp,
 } from "lucide-react";
 import { fromPromise } from "neverthrow";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "../-layout/default-header";
-import {
-   DataTableBulkActions,
-   SelectionActionButton,
-} from "@/components/data-table/data-table-bulk-actions";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
-import {
-   DataTableImportButton,
-   type DataTableImportConfig,
-} from "@/components/data-table/data-table-import";
-import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import {
-   DataTableExternalFilter,
-   DataTableRoot,
-} from "@/components/data-table/data-table-root";
-import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { DataTableBody } from "@/blocks/data-table/data-table-body";
+import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { ExportButton } from "@/components/export-button/export-button";
+import { DataTableHeader } from "@/blocks/data-table/data-table-header";
+import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
+import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
+import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
+import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
+import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
+import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
+import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
+import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
+import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
+import { PageFilters } from "@/components/page-filters/page-filters";
+import { PageFilter } from "@/components/page-filters/page-filter";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCsvFile } from "@/hooks/use-csv-file";
@@ -65,7 +79,6 @@ const categoriesSearchSchema = z.object({
       .default([]),
    type: z.enum(["income", "expense", "transfer"]).optional().catch(undefined),
    includeArchived: z.boolean().catch(false).default(false),
-   groupBy: z.boolean().catch(true).default(true),
    search: z.string().catch("").default(""),
    page: z.number().int().min(1).catch(1).default(1),
    pageSize: z.number().int().min(1).max(100).catch(20).default(20),
@@ -76,7 +89,7 @@ function parseCategoryType(raw: unknown): "income" | "expense" | "transfer" {
       .trim()
       .toLowerCase()
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
+      .replace(/[̀-ͯ]/g, "");
    if (str === "income" || str === "expense" || str === "transfer") return str;
    if (str === "receita") return "income";
    if (str === "despesa") return "expense";
@@ -92,13 +105,7 @@ export const Route = createFileRoute(
    validateSearch: categoriesSearchSchema,
    loaderDeps: ({
       search: { type, includeArchived, search, page, pageSize },
-   }) => ({
-      type,
-      includeArchived,
-      search,
-      page,
-      pageSize,
-   }),
+   }) => ({ type, includeArchived, search, page, pageSize }),
    loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
          orpc.categories.getPaginated.queryOptions({
@@ -131,10 +138,27 @@ function CategoriesList() {
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
    const navigate = Route.useNavigate();
-   const { search, type, includeArchived, groupBy, page, pageSize } =
-      Route.useSearch();
+   const {
+      sorting,
+      columnFilters,
+      search,
+      type,
+      includeArchived,
+      page,
+      pageSize,
+   } = Route.useSearch();
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
+   const layout = useDataTableLayout("categories");
+
+   const searchInput = useDebouncedSearch({
+      value: search,
+      onCommit: (value) =>
+         navigate({
+            search: (prev) => ({ ...prev, search: value, page: 1 }),
+            replace: true,
+         }),
+   });
 
    const [{ data: result }, { data: categoryOptions }] = useSuspenseQueries({
       queries: [
@@ -151,9 +175,23 @@ function CategoriesList() {
       ],
    });
    const { data: rows, total } = result;
-   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-   const categories: CategoryRow[] = rows;
+   const rootCategories = useMemo(
+      () => rows.filter((c) => !c.parentId),
+      [rows],
+   );
+   const childrenByParent = useMemo(() => {
+      const m = new Map<string, CategoryRow[]>();
+      for (const cat of rows) {
+         if (!cat.parentId) continue;
+         const list = m.get(cat.parentId);
+         if (list) list.push(cat);
+         else m.set(cat.parentId, [cat]);
+      }
+      return m;
+   }, [rows]);
+
+   const [expanded, setExpanded] = useState<ExpandedState>({});
 
    const deleteMutation = useMutation(
       orpc.categories.remove.mutationOptions({
@@ -240,7 +278,7 @@ function CategoriesList() {
       [updateMutation],
    );
 
-   const importConfig: DataTableImportConfig = useMemo(
+   const importConfig: DataImportConfig = useMemo(
       () => ({
          accept: {
             "text/csv": [".csv"],
@@ -253,7 +291,8 @@ function CategoriesList() {
             if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
             return parseCsv(file);
          },
-         mapRow: (row): Record<string, unknown> => ({
+         mapRow: (row, i) => ({
+            id: `__import_${i + 1}`,
             name: String(row.name ?? "").trim(),
             type: parseCategoryType(row.type),
          }),
@@ -355,295 +394,363 @@ function CategoriesList() {
       [openAlertDialog, unarchiveMutation],
    );
 
-   const columns = useMemo(
-      () =>
-         buildCategoryColumns({
-            categories: categoryOptions,
-            onUpdate: handleUpdateCategory,
-         }),
-      [categoryOptions, handleUpdateCategory],
-   );
-
-   return (
-      <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <DataTableRoot
-            columns={columns}
-            data={categories}
-            exportDateFormat="DD-MM-YYYY"
-            exportFileBase="categorias"
-            getRowId={(row) => row.id}
-            groupBy={groupBy ? (row) => row.type ?? "other" : undefined}
-            renderGroupHeader={(key) =>
-               key === "income"
-                  ? "Receitas"
-                  : key === "expense"
-                    ? "Despesas"
-                    : key === "transfer"
-                      ? "Transferências"
-                      : "Outros"
-            }
-            renderActions={({ row }) => {
-               const isArchived = row.original.isArchived;
-
-               if (isArchived) {
-                  return (
-                     <>
-                        <Button
-                           onClick={() => handleUnarchive(row.original)}
-                           tooltip="Desarquivar"
-                           variant="outline"
-                        >
-                           <ArchiveRestore />
-                        </Button>
-                        <Button
-                           className="text-destructive hover:text-destructive"
-                           onClick={() => handleDelete(row.original)}
-                           tooltip="Excluir"
-                           variant="outline"
-                        >
-                           <Trash2 />
-                        </Button>
-                     </>
-                  );
+   const columns = useMemo<ColumnDef<CategoryRow>[]>(() => {
+      const base = buildCategoryColumns({
+         categories: categoryOptions,
+         onUpdate: handleUpdateCategory,
+      });
+      const expandColumn: ColumnDef<CategoryRow> = {
+         id: "__expand",
+         size: 36,
+         enableSorting: false,
+         enableHiding: false,
+         header: () => null,
+         cell: ({ row }) =>
+            row.getCanExpand() ? (
+               <Button
+                  aria-label={row.getIsExpanded() ? "Recolher" : "Expandir"}
+                  onClick={row.getToggleExpandedHandler()}
+                  size="icon-sm"
+                  variant="ghost"
+               >
+                  {row.getIsExpanded() ? (
+                     <ChevronDown className="size-4" />
+                  ) : (
+                     <ChevronRight className="size-4" />
+                  )}
+               </Button>
+            ) : (
+               <span className="inline-block size-7" aria-hidden />
+            ),
+      };
+      const selectColumn: ColumnDef<CategoryRow> = {
+         id: "__select",
+         size: 40,
+         enableSorting: false,
+         enableHiding: false,
+         header: ({ table }) => (
+            <Checkbox
+               aria-label="Selecionar todas"
+               checked={
+                  table.getIsAllPageRowsSelected()
+                     ? true
+                     : table.getIsSomePageRowsSelected()
+                       ? "indeterminate"
+                       : false
                }
-
+               onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+            />
+         ),
+         cell: ({ row }) => (
+            <Checkbox
+               aria-label="Selecionar linha"
+               checked={row.getIsSelected()}
+               disabled={!row.getCanSelect()}
+               onCheckedChange={(v) => row.toggleSelected(!!v)}
+            />
+         ),
+      };
+      const actionsColumn: ColumnDef<CategoryRow> = {
+         id: "__actions",
+         size: 140,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { align: "right" },
+         cell: ({ row }) => {
+            const category = row.original;
+            if (category.isArchived) {
                return (
-                  <>
-                     {row.original.parentId === null && (
-                        <Button
-                           disabled={regenerateKeywordsMutation.isPending}
-                           onClick={() =>
-                              regenerateKeywordsMutation.mutate({
-                                 id: row.original.id,
-                              })
-                           }
-                           tooltip="Regerar palavras-chave"
-                           variant="outline"
-                        >
-                           <RefreshCw />
-                        </Button>
-                     )}
+                  <div className="flex justify-end gap-2">
                      <Button
-                        onClick={() => handleArchive(row.original)}
-                        tooltip="Arquivar"
+                        onClick={() => handleUnarchive(category)}
+                        size="icon-sm"
+                        tooltip="Desarquivar"
                         variant="outline"
                      >
-                        <Archive />
+                        <ArchiveRestore />
                      </Button>
                      <Button
                         className="text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(row.original)}
+                        onClick={() => handleDelete(category)}
+                        size="icon-sm"
                         tooltip="Excluir"
                         variant="outline"
                      >
                         <Trash2 />
                      </Button>
-                  </>
+                  </div>
                );
-            }}
-            storageKey="montte:datatable:categories"
-         >
-            <DataTableExternalFilter
-               id="includeArchived"
-               label="Mostrar arquivadas"
-               group="Filtros"
-               active={includeArchived}
-               renderIcon={() => <Archive className="size-4" />}
-               onToggle={(checked) =>
-                  navigate({
-                     search: (prev) => ({
-                        ...prev,
-                        includeArchived: checked,
-                        page: 1,
-                     }),
-                     replace: true,
-                  })
-               }
-            />
-            <DataTableExternalFilter
-               id="type-income"
-               label="Somente receitas"
-               group="Tipo"
-               active={type === "income"}
-               renderIcon={() => <TrendingUp className="size-4" />}
-               onToggle={(checked) =>
-                  navigate({
-                     search: (prev) => ({
-                        ...prev,
-                        type: checked ? "income" : undefined,
-                        page: 1,
-                     }),
-                     replace: true,
-                  })
-               }
-            />
-            <DataTableExternalFilter
-               id="type-expense"
-               label="Somente despesas"
-               group="Tipo"
-               active={type === "expense"}
-               renderIcon={() => <TrendingDown className="size-4" />}
-               onToggle={(checked) =>
-                  navigate({
-                     search: (prev) => ({
-                        ...prev,
-                        type: checked ? "expense" : undefined,
-                        page: 1,
-                     }),
-                     replace: true,
-                  })
-               }
-            />
-            <DataTableExternalFilter
-               id="type-transfer"
-               label="Somente transferências"
-               group="Tipo"
-               active={type === "transfer"}
-               renderIcon={() => <ArrowLeftRight className="size-4" />}
-               onToggle={(checked) =>
-                  navigate({
-                     search: (prev) => ({
-                        ...prev,
-                        type: checked ? "transfer" : undefined,
-                        page: 1,
-                     }),
-                     replace: true,
-                  })
-               }
-            />
-            <DataTableExternalFilter
-               id="groupBy"
-               label="Agrupar por tipo"
-               group="Exibição"
-               active={groupBy}
-               renderIcon={() => <Layers className="size-4" />}
-               onToggle={(checked) =>
-                  navigate({
-                     search: (prev) => ({ ...prev, groupBy: checked }),
-                     replace: true,
-                  })
-               }
-            />
-            <DataTableToolbar
-               searchPlaceholder="Buscar categorias..."
-               searchDefaultValue={search}
-               onSearch={(value) =>
-                  navigate({
-                     search: (prev) => ({ ...prev, search: value, page: 1 }),
-                     replace: true,
-                  })
-               }
-            >
-               <DataTableImportButton importConfig={importConfig} />
-               <Button
-                  onClick={handleCreate}
-                  tooltip="Nova Categoria"
-                  variant="outline"
-                  size="icon-sm"
+            }
+            return (
+               <div className="flex justify-end gap-2">
+                  {category.parentId === null && (
+                     <Button
+                        disabled={regenerateKeywordsMutation.isPending}
+                        onClick={() =>
+                           regenerateKeywordsMutation.mutate({
+                              id: category.id,
+                           })
+                        }
+                        size="icon-sm"
+                        tooltip="Regerar palavras-chave"
+                        variant="outline"
+                     >
+                        <RefreshCw />
+                     </Button>
+                  )}
+                  <Button
+                     onClick={() => handleArchive(category)}
+                     size="icon-sm"
+                     tooltip="Arquivar"
+                     variant="outline"
+                  >
+                     <Archive />
+                  </Button>
+                  <Button
+                     className="text-destructive hover:text-destructive"
+                     onClick={() => handleDelete(category)}
+                     size="icon-sm"
+                     tooltip="Excluir"
+                     variant="outline"
+                  >
+                     <Trash2 />
+                  </Button>
+               </div>
+            );
+         },
+      };
+      return [selectColumn, expandColumn, ...base, actionsColumn];
+   }, [
+      categoryOptions,
+      handleUpdateCategory,
+      handleArchive,
+      handleDelete,
+      handleUnarchive,
+      regenerateKeywordsMutation,
+   ]);
+
+   const urlState = useTableUrlState({
+      search: { sorting, columnFilters, page, pageSize },
+      onUpdate: (next) =>
+         navigate({
+            search: (prev) => ({ ...prev, ...next }),
+            replace: true,
+         }),
+      totalRows: total,
+   });
+
+   const table = useReactTable({
+      data: rootCategories,
+      columns,
+      getRowId: (row) => row.id,
+      pageCount: urlState.pageCount,
+      manualPagination: true,
+      manualSorting: true,
+      manualFiltering: true,
+      columnResizeMode: "onChange",
+      defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      state: { ...urlState.state, ...layout.state, expanded },
+      onSortingChange: urlState.onSortingChange,
+      onColumnFiltersChange: urlState.onColumnFiltersChange,
+      onPaginationChange: urlState.onPaginationChange,
+      onRowSelectionChange: urlState.onRowSelectionChange,
+      onColumnSizingChange: layout.onColumnSizingChange,
+      onColumnOrderChange: layout.onColumnOrderChange,
+      onColumnVisibilityChange: layout.onColumnVisibilityChange,
+      onColumnPinningChange: layout.onColumnPinningChange,
+      onExpandedChange: setExpanded,
+      getSubRows: (row) => childrenByParent.get(row.id),
+      getRowCanExpand: (row) => (childrenByParent.get(row.id)?.length ?? 0) > 0,
+      getCoreRowModel: getCoreRowModel(),
+      getExpandedRowModel: getExpandedRowModel(),
+   });
+
+   const importApi = useDataImport({ table, config: importConfig });
+
+   const selectedRows = table.getSelectedRowModel().rows;
+   const archivableIds = selectedRows
+      .filter((r) => !r.original.isArchived)
+      .map((r) => r.original.id);
+   const deletableIds = selectedRows.map((r) => r.original.id);
+
+   useTableBulkActions({
+      selectedCount: selectedRows.length,
+      onClear: () => table.resetRowSelection(),
+      children: (
+         <>
+            {archivableIds.length > 0 && (
+               <SelectionActionButton
+                  icon={<Archive />}
+                  onClick={async () => {
+                     const res = await fromPromise(
+                        bulkArchiveMutation.mutateAsync({ ids: archivableIds }),
+                        (e) => e,
+                     );
+                     if (res.isErr()) return;
+                     toast.success(
+                        `${archivableIds.length} ${archivableIds.length === 1 ? "categoria arquivada" : "categorias arquivadas"}.`,
+                     );
+                     table.resetRowSelection();
+                  }}
                >
-                  <Plus />
-               </Button>
-            </DataTableToolbar>
-            <DataTableEmptyState>
-               <Empty>
-                  <EmptyHeader>
-                     <EmptyMedia variant="icon">
-                        <FolderOpen className="size-6" />
-                     </EmptyMedia>
-                     <EmptyTitle>Nenhuma categoria</EmptyTitle>
-                     <EmptyDescription>
-                        {type || search
-                           ? "Nenhuma categoria encontrada com os filtros atuais."
-                           : "Adicione uma categoria para organizar suas transações."}
-                     </EmptyDescription>
-                  </EmptyHeader>
-               </Empty>
-            </DataTableEmptyState>
-            <DataTableContent className="flex-1 overflow-auto min-h-0" />
-            <DataTableBulkActions<CategoryRow>>
-               {({ selectedRows, clearSelection }) => {
-                  const archivableIds = selectedRows
-                     .filter((r) => !r.isArchived)
-                     .map((r) => r.id);
-                  const deletableIds = selectedRows.map((r) => r.id);
-                  return (
-                     <>
-                        {archivableIds.length > 0 && (
-                           <SelectionActionButton
-                              icon={<Archive />}
-                              onClick={async () => {
-                                 const res = await fromPromise(
-                                    bulkArchiveMutation.mutateAsync({
-                                       ids: archivableIds,
-                                    }),
-                                    (e) => e,
-                                 );
-                                 if (res.isErr()) return;
-                                 toast.success(
-                                    `${archivableIds.length} ${archivableIds.length === 1 ? "categoria arquivada" : "categorias arquivadas"}.`,
-                                 );
-                                 clearSelection();
-                              }}
-                           >
-                              Arquivar
-                           </SelectionActionButton>
-                        )}
-                        {deletableIds.length > 0 && (
-                           <SelectionActionButton
-                              icon={<Trash2 />}
-                              onClick={() => {
-                                 openAlertDialog({
-                                    title: `Excluir ${deletableIds.length} ${deletableIds.length === 1 ? "categoria" : "categorias"}`,
-                                    description:
-                                       "Tem certeza que deseja excluir as categorias selecionadas? Esta ação não pode ser desfeita.",
-                                    actionLabel: "Excluir",
-                                    cancelLabel: "Cancelar",
-                                    variant: "destructive",
-                                    onAction: async () => {
-                                       await bulkDeleteMutation.mutateAsync({
-                                          ids: deletableIds,
-                                       });
-                                       toast.success(
-                                          `${deletableIds.length} ${deletableIds.length === 1 ? "categoria excluída" : "categorias excluídas"} com sucesso.`,
-                                       );
-                                       clearSelection();
-                                    },
-                                 });
-                              }}
-                              variant="destructive"
-                           >
-                              Excluir
-                           </SelectionActionButton>
-                        )}
-                     </>
-                  );
-               }}
-            </DataTableBulkActions>
-         </DataTableRoot>
-         {total > 0 && (
-            <DataTablePagination
-               currentPage={page}
-               totalPages={totalPages}
-               totalCount={total}
-               pageSize={pageSize}
-               onPageChange={(newPage) =>
-                  navigate({
-                     search: (prev) => ({ ...prev, page: newPage }),
-                     replace: true,
-                  })
-               }
-               onPageSizeChange={(newPageSize) =>
-                  navigate({
-                     search: (prev) => ({
-                        ...prev,
-                        pageSize: newPageSize,
-                        page: 1,
-                     }),
-                     replace: true,
-                  })
-               }
-            />
-         )}
+                  Arquivar
+               </SelectionActionButton>
+            )}
+            {deletableIds.length > 0 && (
+               <SelectionActionButton
+                  icon={<Trash2 />}
+                  onClick={() => {
+                     openAlertDialog({
+                        title: `Excluir ${deletableIds.length} ${deletableIds.length === 1 ? "categoria" : "categorias"}`,
+                        description:
+                           "Tem certeza que deseja excluir as categorias selecionadas? Esta ação não pode ser desfeita.",
+                        actionLabel: "Excluir",
+                        cancelLabel: "Cancelar",
+                        variant: "destructive",
+                        onAction: async () => {
+                           await bulkDeleteMutation.mutateAsync({
+                              ids: deletableIds,
+                           });
+                           toast.success(
+                              `${deletableIds.length} ${deletableIds.length === 1 ? "categoria excluída" : "categorias excluídas"} com sucesso.`,
+                           );
+                           table.resetRowSelection();
+                        },
+                     });
+                  }}
+                  variant="destructive"
+               >
+                  Excluir
+               </SelectionActionButton>
+            )}
+         </>
+      ),
+   });
+
+   return (
+      <div className="flex flex-1 flex-col gap-4 min-h-0">
+         <div className="flex flex-1 flex-col gap-4 min-h-0">
+            <div className="flex flex-wrap items-center gap-2 justify-between">
+               <SearchInput
+                  className="max-w-sm"
+                  aria-label="Buscar categorias..."
+                  onChange={(e) => searchInput.onChange(e.target.value)}
+                  placeholder="Buscar categorias..."
+                  value={searchInput.value}
+               />
+               <div className="flex flex-wrap items-center gap-2">
+                  <PageFilters>
+                     <PageFilter
+                        active={includeArchived}
+                        group="Filtros"
+                        icon={<Archive className="size-4" />}
+                        id="includeArchived"
+                        label="Mostrar arquivadas"
+                        onToggle={(checked) =>
+                           navigate({
+                              search: (prev) => ({
+                                 ...prev,
+                                 includeArchived: checked,
+                                 page: 1,
+                              }),
+                              replace: true,
+                           })
+                        }
+                     />
+                     <PageFilter
+                        active={type === "income"}
+                        group="Tipo"
+                        icon={<TrendingUp className="size-4" />}
+                        id="type-income"
+                        label="Somente receitas"
+                        onToggle={(checked) =>
+                           navigate({
+                              search: (prev) => ({
+                                 ...prev,
+                                 type: checked ? "income" : undefined,
+                                 page: 1,
+                              }),
+                              replace: true,
+                           })
+                        }
+                     />
+                     <PageFilter
+                        active={type === "expense"}
+                        group="Tipo"
+                        icon={<TrendingDown className="size-4" />}
+                        id="type-expense"
+                        label="Somente despesas"
+                        onToggle={(checked) =>
+                           navigate({
+                              search: (prev) => ({
+                                 ...prev,
+                                 type: checked ? "expense" : undefined,
+                                 page: 1,
+                              }),
+                              replace: true,
+                           })
+                        }
+                     />
+                     <PageFilter
+                        active={type === "transfer"}
+                        group="Tipo"
+                        icon={<ArrowLeftRight className="size-4" />}
+                        id="type-transfer"
+                        label="Somente transferências"
+                        onToggle={(checked) =>
+                           navigate({
+                              search: (prev) => ({
+                                 ...prev,
+                                 type: checked ? "transfer" : undefined,
+                                 page: 1,
+                              }),
+                              replace: true,
+                           })
+                        }
+                     />
+                  </PageFilters>
+                  <DataTableColumnVisibility table={table} />
+                  <ExportButton table={table} fileBase="categorias" />
+                  <DataImportButton api={importApi} config={importConfig} />
+                  <Button
+                     onClick={handleCreate}
+                     size="icon-sm"
+                     tooltip="Nova Categoria"
+                     variant="outline"
+                  >
+                     <Plus />
+                     <span className="sr-only">Nova Categoria</span>
+                  </Button>
+               </div>
+            </div>
+            <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
+               <Table>
+                  <DataTableHeader table={table} />
+                  <DataTableBody<CategoryRow> table={table} />
+                  <DataImportSection
+                     api={importApi}
+                     config={importConfig}
+                     table={table}
+                  />
+               </Table>
+               {table.getRowCount() === 0 && (
+                  <Empty>
+                     <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                           <FolderOpen className="size-6" />
+                        </EmptyMedia>
+                        <EmptyTitle>Nenhuma categoria</EmptyTitle>
+                        <EmptyDescription>
+                           {type || search
+                              ? "Nenhuma categoria encontrada com os filtros atuais."
+                              : "Adicione uma categoria para organizar suas transações."}
+                        </EmptyDescription>
+                     </EmptyHeader>
+                  </Empty>
+               )}
+            </ScrollArea>
+            <DataTablePagination table={table} />
+         </div>
       </div>
    );
 }

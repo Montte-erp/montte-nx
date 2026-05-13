@@ -1,4 +1,8 @@
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { SearchInput } from "@packages/ui/components/search-input";
+import { Table } from "@packages/ui/components/table";
 import { Button } from "@packages/ui/components/button";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import {
    Empty,
    EmptyDescription,
@@ -7,29 +11,43 @@ import {
    EmptyTitle,
 } from "@packages/ui/components/empty";
 import {
+   SelectionActionButton,
+   useTableBulkActions,
+} from "@/hooks/use-selection-toolbar";
+import {
    useMutation,
    useQueryClient,
    useSuspenseQuery,
 } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
+import {
+   getCoreRowModel,
+   getSortedRowModel,
+   useReactTable,
+   type ColumnDef,
+   type RowSelectionState,
+   type SortingState,
+} from "@tanstack/react-table";
 import { ExternalLink, Plus, Trash2, Users } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-   DataTableBulkActions,
-   SelectionActionButton,
-} from "@/components/data-table/data-table-bulk-actions";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
-import { DataTableImportButton } from "@/components/data-table/data-table-import";
-import type { DataTableImportConfig } from "@/components/data-table/data-table-import";
-import { DataTableRoot } from "@/components/data-table/data-table-root";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { DataTableBody } from "@/blocks/data-table/data-table-body";
+import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { DataTableHeader } from "@/blocks/data-table/data-table-header";
+import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
+import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
+import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
+import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
+import { ExportButton } from "@/components/export-button/export-button";
+import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
+import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { useCsvFile } from "@/hooks/use-csv-file";
+import { useSheet } from "@/hooks/use-sheet";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { orpc } from "@/integrations/orpc/client";
+import { ContactFormSheet } from "./contact-form-sheet";
 import { buildContactColumns, type ContactRow } from "./contacts-columns";
 
 const routeApi = getRouteApi(
@@ -41,22 +59,22 @@ export function ContactsList() {
    const navigate = useNavigate();
    const { typeFilter, search } = routeApi.useSearch();
    const { openAlertDialog } = useAlertDialog();
+   const { openSheet } = useSheet();
    const queryClient = useQueryClient();
    const slug = useOrgSlug();
    const teamSlug = useTeamSlug();
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
-   const [isDraftActive, setIsDraftActive] = useState(false);
+   const layout = useDataTableLayout("contacts");
 
-   const handleSearch = useCallback(
-      (value: string) => {
+   const searchInput = useDebouncedSearch({
+      value: search,
+      onCommit: (value) =>
          routeNavigate({
             search: (prev) => ({ ...prev, search: value }),
             replace: true,
-         });
-      },
-      [routeNavigate],
-   );
+         }),
+   });
 
    const { data: contacts } = useSuspenseQuery(
       orpc.contacts.getAll.queryOptions({
@@ -74,16 +92,6 @@ export function ContactsList() {
             c.phone?.toLowerCase().includes(lower),
       );
    }, [contacts, search]);
-
-   const createMutation = useMutation(
-      orpc.contacts.create.mutationOptions({
-         onSuccess: () => {
-            toast.success("Contato criado com sucesso.");
-            setIsDraftActive(false);
-         },
-         onError: (e) => toast.error(e.message || "Erro ao criar contato."),
-      }),
-   );
 
    const importMutation = useMutation(
       orpc.contacts.create.mutationOptions({
@@ -110,28 +118,9 @@ export function ContactsList() {
       }),
    );
 
-   const handleCreate = useCallback(() => setIsDraftActive(true), []);
-   const handleDiscardDraft = useCallback(() => setIsDraftActive(false), []);
-
-   const handleAddContact = useCallback(
-      async (data: Record<string, string | string[]>) => {
-         const name = String(data.name ?? "").trim();
-         if (!name) return;
-         const rawType = String(data.type ?? "ambos").toLowerCase();
-         const type = (
-            ["cliente", "fornecedor", "ambos"].includes(rawType)
-               ? rawType
-               : "ambos"
-         ) as "cliente" | "fornecedor" | "ambos";
-         await createMutation.mutateAsync({
-            name,
-            type,
-            email: String(data.email ?? "").trim() || null,
-            phone: String(data.phone ?? "").trim() || null,
-         });
-      },
-      [createMutation],
-   );
+   const handleOpenCreate = useCallback(() => {
+      openSheet({ renderChildren: () => <ContactFormSheet /> });
+   }, [openSheet]);
 
    const handleDelete = useCallback(
       (contact: ContactRow) => {
@@ -149,7 +138,7 @@ export function ContactsList() {
       [openAlertDialog, deleteMutation],
    );
 
-   const importConfig: DataTableImportConfig = useMemo(
+   const importConfig: DataImportConfig = useMemo(
       () => ({
          accept: {
             "text/csv": [".csv"],
@@ -250,114 +239,182 @@ export function ContactsList() {
       [updateMutation],
    );
 
-   const columns = useMemo(
-      () => buildContactColumns({ slug, teamSlug }, handleUpdate),
-      [slug, teamSlug, handleUpdate],
-   );
+   const columns = useMemo<ColumnDef<ContactRow>[]>(() => {
+      const base = buildContactColumns({ slug, teamSlug }, handleUpdate);
+      const selectColumn: ColumnDef<ContactRow> = {
+         id: "__select",
+         size: 40,
+         enableSorting: false,
+         enableHiding: false,
+         header: ({ table }) => (
+            <Checkbox
+               aria-label="Selecionar todos"
+               checked={
+                  table.getIsAllPageRowsSelected()
+                     ? true
+                     : table.getIsSomePageRowsSelected()
+                       ? "indeterminate"
+                       : false
+               }
+               onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+            />
+         ),
+         cell: ({ row }) => (
+            <Checkbox
+               aria-label="Selecionar linha"
+               checked={row.getIsSelected()}
+               disabled={!row.getCanSelect()}
+               onCheckedChange={(v) => row.toggleSelected(!!v)}
+            />
+         ),
+      };
+      const actionsColumn: ColumnDef<ContactRow> = {
+         id: "__actions",
+         size: 100,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { align: "right" },
+         cell: ({ row }) => (
+            <div className="flex justify-end gap-2">
+               <Button
+                  size="icon-sm"
+                  tooltip="Ver detalhes"
+                  variant="ghost"
+                  onClick={() =>
+                     navigate({
+                        to: "/$slug/$teamSlug/contacts/$contactId",
+                        params: {
+                           slug,
+                           teamSlug,
+                           contactId: row.original.id,
+                        },
+                     })
+                  }
+               >
+                  <ExternalLink />
+                  <span className="sr-only">Ver detalhes</span>
+               </Button>
+               <Button
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => handleDelete(row.original)}
+                  size="icon-sm"
+                  tooltip="Excluir"
+                  variant="ghost"
+               >
+                  <Trash2 />
+                  <span className="sr-only">Excluir</span>
+               </Button>
+            </div>
+         ),
+      };
+      return [selectColumn, ...base, actionsColumn];
+   }, [slug, teamSlug, handleUpdate, navigate, handleDelete]);
+
+   const [sorting, setSorting] = useState<SortingState>([]);
+   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
+   const table = useReactTable({
+      data: filteredContacts,
+      columns,
+      getRowId: (row) => row.id,
+      columnResizeMode: "onChange",
+      defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      state: { sorting, rowSelection, ...layout.state },
+      onSortingChange: setSorting,
+      onRowSelectionChange: setRowSelection,
+      onColumnSizingChange: layout.onColumnSizingChange,
+      onColumnOrderChange: layout.onColumnOrderChange,
+      onColumnVisibilityChange: layout.onColumnVisibilityChange,
+      onColumnPinningChange: layout.onColumnPinningChange,
+      getCoreRowModel: getCoreRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+   });
+
+   const importApi = useDataImport({ table, config: importConfig });
+
+   const selectedRows = table.getSelectedRowModel().rows;
+   const selectedIds = selectedRows.map((r) => r.original.id);
+
+   useTableBulkActions({
+      selectedCount: selectedRows.length,
+      onClear: () => table.resetRowSelection(),
+      children: (
+         <SelectionActionButton
+            icon={<Trash2 />}
+            variant="destructive"
+            onClick={() =>
+               openAlertDialog({
+                  title: `Excluir ${selectedIds.length} ${selectedIds.length === 1 ? "contato" : "contatos"}`,
+                  description:
+                     "Tem certeza que deseja excluir os contatos selecionados? Esta ação não pode ser desfeita.",
+                  actionLabel: "Excluir",
+                  cancelLabel: "Cancelar",
+                  variant: "destructive",
+                  onAction: async () => {
+                     await bulkDeleteMutation.mutateAsync({ ids: selectedIds });
+                     table.resetRowSelection();
+                  },
+               })
+            }
+         >
+            Excluir
+         </SelectionActionButton>
+      ),
+   });
 
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <DataTableRoot
-            columns={columns}
-            data={filteredContacts}
-            getRowId={(row) => row.id}
-            isDraftRowActive={isDraftActive}
-            onAddRow={handleAddContact}
-            onDiscardAddRow={handleDiscardDraft}
-            renderActions={({ row }) => (
-               <>
+         <div className="flex flex-1 flex-col gap-4 min-h-0">
+            <div className="flex flex-wrap items-center gap-2 justify-between">
+               <SearchInput
+                  className="max-w-sm"
+                  aria-label="Buscar contatos"
+                  onChange={(e) => searchInput.onChange(e.target.value)}
+                  placeholder="Buscar por nome, email ou telefone..."
+                  value={searchInput.value}
+               />
+               <div className="flex flex-wrap items-center gap-2">
+                  <DataTableColumnVisibility table={table} />
+                  <ExportButton table={table} fileBase="contatos" />
+                  <DataImportButton api={importApi} config={importConfig} />
                   <Button
-                     size="icon"
-                     tooltip="Ver detalhes"
-                     variant="ghost"
-                     onClick={() =>
-                        navigate({
-                           to: "/$slug/$teamSlug/contacts/$contactId",
-                           params: {
-                              slug,
-                              teamSlug,
-                              contactId: row.original.id,
-                           },
-                        })
-                     }
+                     onClick={handleOpenCreate}
+                     size="icon-sm"
+                     tooltip="Novo Contato"
+                     variant="outline"
                   >
-                     <ExternalLink className="size-4" />
-                     <span className="sr-only">Ver detalhes</span>
+                     <Plus />
+                     <span className="sr-only">Novo Contato</span>
                   </Button>
-                  <Button
-                     className="text-destructive hover:text-destructive"
-                     onClick={() => handleDelete(row.original)}
-                     size="icon"
-                     tooltip="Excluir"
-                     variant="ghost"
-                  >
-                     <Trash2 className="size-4" />
-                     <span className="sr-only">Excluir</span>
-                  </Button>
-               </>
-            )}
-            storageKey="montte:datatable:contacts"
-         >
-            <DataTableToolbar
-               searchPlaceholder="Buscar por nome, email ou telefone..."
-               searchDefaultValue={search}
-               onSearch={handleSearch}
-            >
-               <DataTableImportButton importConfig={importConfig} />
-               <Button
-                  onClick={handleCreate}
-                  size="icon-sm"
-                  tooltip="Novo Contato"
-                  variant="outline"
-               >
-                  <Plus />
-                  <span className="sr-only">Novo Contato</span>
-               </Button>
-            </DataTableToolbar>
-            <DataTableEmptyState>
-               <Empty>
-                  <EmptyHeader>
-                     <EmptyMedia variant="icon">
-                        <Users className="size-6" />
-                     </EmptyMedia>
-                     <EmptyTitle>Nenhum contato</EmptyTitle>
-                     <EmptyDescription>
-                        {search
-                           ? "Nenhum contato encontrado para a busca."
-                           : "Cadastre clientes e fornecedores para organizar suas transações."}
-                     </EmptyDescription>
-                  </EmptyHeader>
-               </Empty>
-            </DataTableEmptyState>
-            <DataTableContent className="flex-1 overflow-auto min-h-0" />
-            <DataTableBulkActions<ContactRow>>
-               {({ selectedRows, clearSelection }) => {
-                  const ids = selectedRows.map((r) => r.id);
-                  return (
-                     <SelectionActionButton
-                        icon={<Trash2 />}
-                        variant="destructive"
-                        onClick={() =>
-                           openAlertDialog({
-                              title: `Excluir ${ids.length} ${ids.length === 1 ? "contato" : "contatos"}`,
-                              description:
-                                 "Tem certeza que deseja excluir os contatos selecionados? Esta ação não pode ser desfeita.",
-                              actionLabel: "Excluir",
-                              cancelLabel: "Cancelar",
-                              variant: "destructive",
-                              onAction: async () => {
-                                 await bulkDeleteMutation.mutateAsync({ ids });
-                                 clearSelection();
-                              },
-                           })
-                        }
-                     >
-                        Excluir
-                     </SelectionActionButton>
-                  );
-               }}
-            </DataTableBulkActions>
-         </DataTableRoot>
+               </div>
+            </div>
+            <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
+               <Table>
+                  <DataTableHeader table={table} />
+                  <DataTableBody<ContactRow> table={table} />
+                  <DataImportSection
+                     api={importApi}
+                     config={importConfig}
+                     table={table}
+                  />
+               </Table>
+               {table.getRowCount() === 0 && (
+                  <Empty>
+                     <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                           <Users className="size-6" />
+                        </EmptyMedia>
+                        <EmptyTitle>Nenhum contato</EmptyTitle>
+                        <EmptyDescription>
+                           {search
+                              ? "Nenhum contato encontrado para a busca."
+                              : "Cadastre clientes e fornecedores para organizar suas transações."}
+                        </EmptyDescription>
+                     </EmptyHeader>
+                  </Empty>
+               )}
+            </ScrollArea>
+         </div>
       </div>
    );
 }

@@ -45,6 +45,7 @@ const transactionsInputSchema = z.union([
 
 const updatableContactFields = updateContactSchema.pick({
    name: true,
+   type: true,
    email: true,
    phone: true,
    document: true,

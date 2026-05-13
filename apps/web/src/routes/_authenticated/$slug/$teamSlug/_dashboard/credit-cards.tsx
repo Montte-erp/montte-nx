@@ -1,4 +1,8 @@
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { SearchInput } from "@packages/ui/components/search-input";
+import { Table } from "@packages/ui/components/table";
 import { Button } from "@packages/ui/components/button";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import {
    Empty,
    EmptyDescription,
@@ -6,34 +10,50 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import {
+   SelectionActionButton,
+   useTableBulkActions,
+} from "@/hooks/use-selection-toolbar";
 import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { CreditCard, Plus, Trash2 } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import {
+   getCoreRowModel,
+   getExpandedRowModel,
+   useReactTable,
+   type ColumnDef,
+   type ColumnFiltersState,
+} from "@tanstack/react-table";
+import {
+   ChevronDown,
+   ChevronRight,
+   CreditCard,
+   Plus,
+   Trash2,
+} from "lucide-react";
+import { startTransition, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "../-layout/default-header";
+import { DataTableBody } from "@/blocks/data-table/data-table-body";
+import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { ExportButton } from "@/components/export-button/export-button";
+import { DataTableHeader } from "@/blocks/data-table/data-table-header";
+import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
+import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
+import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
+import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
+import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
+import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
+import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
+import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
+import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
-import { CreditCardFormSheet } from "./-credit-cards/credit-card-form-sheet";
-import {
-   DataTableBulkActions,
-   SelectionActionButton,
-} from "@/components/data-table/data-table-bulk-actions";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
-import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import { DataTableRoot } from "@/components/data-table/data-table-root";
-import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import {
-   DataTableImportButton,
-   type DataTableImportConfig,
-} from "@/components/data-table/data-table-import";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
+import { CreditCardFormSheet } from "./-credit-cards/credit-card-form-sheet";
 import {
    buildCreditCardColumns,
    type CreditCardRow,
@@ -41,6 +61,10 @@ import {
 import { CreditCardFaturaRow } from "./-credit-cards/credit-card-fatura-row";
 
 const creditCardsSearchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .catch([])
+      .default([]),
    columnFilters: z
       .array(z.object({ id: z.string(), value: z.unknown() }))
       .catch([])
@@ -70,7 +94,7 @@ function normalizeImportLookup(value: unknown): string {
       .trim()
       .toLowerCase()
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
+      .replace(/[̀-ͯ]/g, "");
 }
 
 function resolveBankAccountId(
@@ -118,7 +142,7 @@ function parseImportDay(value: unknown, fallback: number): number {
 function normalizeLast4(value: unknown): string | null {
    const digits = String(value ?? "")
       .replace(/\D/g, "")
-      .slice(0, 4);
+      .slice(-4);
    return digits.length === 4 ? digits : null;
 }
 
@@ -161,12 +185,23 @@ function CreditCardsSkeleton() {
 
 function CreditCardsList() {
    const navigate = Route.useNavigate();
-   const { columnFilters, page, pageSize, search, status } = Route.useSearch();
+   const { sorting, columnFilters, page, pageSize, search, status } =
+      Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
    const { publicEnv } = Route.useRouteContext();
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
+   const layout = useDataTableLayout("credit-cards");
+
+   const searchInput = useDebouncedSearch({
+      value: search,
+      onCommit: (value) =>
+         navigate({
+            search: (prev) => ({ ...prev, search: value, page: 1 }),
+            replace: true,
+         }),
+   });
 
    const [{ data: result }, { data: bankAccounts }] = useSuspenseQueries({
       queries: [
@@ -186,6 +221,21 @@ function CreditCardsList() {
             toast.error(error.message || "Erro ao excluir cartão de crédito.");
          },
       }),
+   );
+
+   const updateMutation = useMutation(
+      orpc.creditCards.update.mutationOptions({
+         onError: (error) => {
+            toast.error(error.message || "Erro ao atualizar cartão.");
+         },
+      }),
+   );
+
+   const handleInlineUpdate = useCallback(
+      async (id: string, patch: Record<string, unknown>) => {
+         await updateMutation.mutateAsync({ id, ...patch });
+      },
+      [updateMutation],
    );
 
    const bulkCreateMutation = useMutation(
@@ -211,7 +261,7 @@ function CreditCardsList() {
       openSheet({ renderChildren: () => <CreditCardFormSheet /> });
    }, [openSheet]);
 
-   const importConfig: DataTableImportConfig = useMemo(
+   const importConfig: DataImportConfig = useMemo(
       () => ({
          accept: {
             "text/csv": [".csv"],
@@ -225,8 +275,8 @@ function CreditCardsList() {
             return parseCsv(file);
          },
          importColumns: [{ key: "last4", label: "Final" }],
-         mapRow: (row, i): Record<string, unknown> => ({
-            id: `__import_${i}`,
+         mapRow: (row, i) => ({
+            id: `__import_${i + 1}`,
             name: String(row.name ?? "").trim(),
             brand: parseCreditCardBrand(row.brand),
             last4: normalizeLast4(row.last4 ?? row.final),
@@ -359,140 +409,248 @@ function CreditCardsList() {
       [openAlertDialog, deleteMutation],
    );
 
-   const columns = useMemo(
-      () =>
-         buildCreditCardColumns({
-            bankAccounts: (bankAccounts ?? []).map((b) => ({
-               id: b.id,
-               name: b.name,
-               bankName: b.bankName,
-               bankCode: b.bankCode,
-               color: b.color,
-            })),
-            logoDevToken: publicEnv?.LOGO_DEV_TOKEN,
-         }),
-      [bankAccounts, publicEnv?.LOGO_DEV_TOKEN],
-   );
-
-   return (
-      <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <DataTableRoot
-            columns={columns}
-            data={result.data}
-            exportDateFormat="DD-MM-YYYY"
-            exportFileBase="cartoes-de-credito"
-            getRowId={(row) => row.id}
-            storageKey="montte:datatable:credit-cards"
-            columnFilters={columnFilters}
-            onColumnFiltersChange={(updater) => {
-               const next =
-                  typeof updater === "function"
-                     ? updater(columnFilters)
-                     : updater;
-               const statusFilter = next.find((f) => f.id === "status");
-               navigate({
-                  search: (prev) => ({
-                     ...prev,
-                     columnFilters: next,
-                     status: creditCardsSearchSchema.shape.status.parse(
-                        statusFilter?.value,
-                     ),
-                     page: 1,
-                  }),
-                  replace: true,
-               });
-            }}
-            renderExpandedRow={(props) => (
-               <CreditCardFaturaRow creditCardId={props.row.original.id} />
-            )}
-            renderActions={({ row }) => (
+   const columns = useMemo<ColumnDef<CreditCardRow>[]>(() => {
+      const base = buildCreditCardColumns({
+         bankAccounts: (bankAccounts ?? []).map((b) => ({
+            id: b.id,
+            name: b.name,
+            bankName: b.bankName,
+            bankCode: b.bankCode,
+            color: b.color,
+         })),
+         logoDevToken: publicEnv?.LOGO_DEV_TOKEN,
+         onUpdate: handleInlineUpdate,
+      });
+      const selectColumn: ColumnDef<CreditCardRow> = {
+         id: "__select",
+         size: 40,
+         enableSorting: false,
+         enableHiding: false,
+         header: ({ table }) => (
+            <Checkbox
+               aria-label="Selecionar todos"
+               checked={
+                  table.getIsAllPageRowsSelected()
+                     ? true
+                     : table.getIsSomePageRowsSelected()
+                       ? "indeterminate"
+                       : false
+               }
+               onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+            />
+         ),
+         cell: ({ row }) => (
+            <Checkbox
+               aria-label="Selecionar linha"
+               checked={row.getIsSelected()}
+               disabled={!row.getCanSelect()}
+               onCheckedChange={(v) => row.toggleSelected(!!v)}
+            />
+         ),
+      };
+      const expandColumn: ColumnDef<CreditCardRow> = {
+         id: "__expand",
+         size: 40,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { exportIgnore: true },
+         cell: ({ row }) => (
+            <Button
+               aria-label={row.getIsExpanded() ? "Recolher" : "Expandir"}
+               onClick={() => row.toggleExpanded()}
+               size="icon-sm"
+               tooltip={row.getIsExpanded() ? "Recolher fatura" : "Ver fatura"}
+               variant="ghost"
+            >
+               {row.getIsExpanded() ? <ChevronDown /> : <ChevronRight />}
+            </Button>
+         ),
+      };
+      const actionsColumn: ColumnDef<CreditCardRow> = {
+         id: "__actions",
+         size: 60,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { align: "right" },
+         cell: ({ row }) => (
+            <div className="flex justify-end gap-2">
                <Button
                   className="text-destructive hover:text-destructive"
                   onClick={() => handleDelete(row.original)}
+                  size="icon-sm"
                   tooltip="Excluir"
                   variant="outline"
                >
-                  <Trash2 className="size-4" />
+                  <Trash2 />
                </Button>
-            )}
+            </div>
+         ),
+      };
+      return [selectColumn, expandColumn, ...base, actionsColumn];
+   }, [
+      bankAccounts,
+      publicEnv?.LOGO_DEV_TOKEN,
+      handleDelete,
+      handleInlineUpdate,
+   ]);
+
+   const handleColumnFiltersChange = useCallback(
+      (
+         updater:
+            | ColumnFiltersState
+            | ((prev: ColumnFiltersState) => ColumnFiltersState),
+      ) => {
+         const next =
+            typeof updater === "function" ? updater(columnFilters) : updater;
+         const statusFilter = next.find((f) => f.id === "status");
+         startTransition(() => {
+            navigate({
+               search: (prev) => ({
+                  ...prev,
+                  columnFilters: next,
+                  status: creditCardsSearchSchema.shape.status.parse(
+                     statusFilter?.value,
+                  ),
+                  page: 1,
+               }),
+               replace: true,
+            });
+         });
+      },
+      [navigate, columnFilters],
+   );
+
+   const urlState = useTableUrlState({
+      search: { sorting, columnFilters, page, pageSize },
+      onUpdate: (next) =>
+         navigate({
+            search: (prev) => ({ ...prev, ...next }),
+            replace: true,
+         }),
+      totalRows: result.totalCount,
+   });
+
+   const table = useReactTable({
+      data: result.data,
+      columns,
+      getRowId: (row) => row.id,
+      pageCount: urlState.pageCount,
+      manualPagination: true,
+      manualSorting: true,
+      manualFiltering: true,
+      columnResizeMode: "onChange",
+      defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      state: { ...urlState.state, ...layout.state },
+      onSortingChange: urlState.onSortingChange,
+      onColumnFiltersChange: handleColumnFiltersChange,
+      onPaginationChange: urlState.onPaginationChange,
+      onRowSelectionChange: urlState.onRowSelectionChange,
+      onColumnSizingChange: layout.onColumnSizingChange,
+      onColumnOrderChange: layout.onColumnOrderChange,
+      onColumnVisibilityChange: layout.onColumnVisibilityChange,
+      onColumnPinningChange: layout.onColumnPinningChange,
+      getCoreRowModel: getCoreRowModel(),
+      getExpandedRowModel: getExpandedRowModel(),
+      getRowCanExpand: () => true,
+   });
+
+   const importApi = useDataImport({ table, config: importConfig });
+
+   const selectedRows = table.getSelectedRowModel().rows;
+   const selectedIds = selectedRows.map((r) => r.original.id);
+
+   useTableBulkActions({
+      selectedCount: selectedRows.length,
+      onClear: () => table.resetRowSelection(),
+      children: (
+         <SelectionActionButton
+            icon={<Trash2 />}
+            variant="destructive"
+            onClick={() => {
+               openAlertDialog({
+                  title: `Excluir ${selectedIds.length} ${selectedIds.length === 1 ? "cartão" : "cartões"}`,
+                  description:
+                     "Tem certeza que deseja excluir os cartões selecionados? Esta ação não pode ser desfeita.",
+                  actionLabel: "Excluir",
+                  cancelLabel: "Cancelar",
+                  variant: "destructive",
+                  onAction: async () => {
+                     await bulkDeleteMutation.mutateAsync({ ids: selectedIds });
+                     table.resetRowSelection();
+                  },
+               });
+            }}
          >
-            <DataTableToolbar>
-               <DataTableImportButton importConfig={importConfig} />
-               <Button
-                  onClick={handleOpenCreate}
-                  size="icon-sm"
-                  tooltip="Novo Cartão"
-                  variant="outline"
-               >
-                  <Plus />
-               </Button>
-            </DataTableToolbar>
-            <DataTableEmptyState>
-               <Empty>
-                  <EmptyHeader>
-                     <EmptyMedia variant="icon">
-                        <CreditCard className="size-6" />
-                     </EmptyMedia>
-                     <EmptyTitle>Nenhum cartão de crédito</EmptyTitle>
-                     <EmptyDescription>
-                        Adicione um cartão de crédito para controlar seus
-                        gastos.
-                     </EmptyDescription>
-                  </EmptyHeader>
-               </Empty>
-            </DataTableEmptyState>
-            <DataTableContent className="flex-1 overflow-auto min-h-0" />
-            <DataTableBulkActions<CreditCardRow>>
-               {({ selectedRows, clearSelection }) => (
-                  <SelectionActionButton
-                     icon={<Trash2 className="size-4" />}
-                     variant="destructive"
-                     onClick={() => {
-                        const ids = selectedRows.map((r) => r.id);
-                        openAlertDialog({
-                           title: `Excluir ${ids.length} ${ids.length === 1 ? "cartão" : "cartões"}`,
-                           description:
-                              "Tem certeza que deseja excluir os cartões selecionados? Esta ação não pode ser desfeita.",
-                           actionLabel: "Excluir",
-                           cancelLabel: "Cancelar",
-                           variant: "destructive",
-                           onAction: async () => {
-                              await bulkDeleteMutation.mutateAsync({ ids });
-                              clearSelection();
-                           },
-                        });
-                     }}
+            Excluir
+         </SelectionActionButton>
+      ),
+   });
+
+   return (
+      <div className="flex flex-1 flex-col gap-4 min-h-0">
+         <div className="flex flex-1 flex-col gap-4 min-h-0">
+            <div className="flex flex-wrap items-center gap-2 justify-between">
+               <SearchInput
+                  className="max-w-sm"
+                  aria-label="Buscar cartões..."
+                  onChange={(e) => searchInput.onChange(e.target.value)}
+                  placeholder="Buscar cartões..."
+                  value={searchInput.value}
+               />
+               <div className="flex flex-wrap items-center gap-2">
+                  <DataTableColumnVisibility table={table} />
+                  <ExportButton table={table} fileBase="cartoes-credito" />
+                  <DataImportButton api={importApi} config={importConfig} />
+                  <Button
+                     onClick={handleOpenCreate}
+                     size="icon-sm"
+                     tooltip="Novo Cartão"
+                     variant="outline"
                   >
-                     Excluir
-                  </SelectionActionButton>
+                     <Plus />
+                     <span className="sr-only">Novo Cartão</span>
+                  </Button>
+               </div>
+            </div>
+            <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
+               <Table>
+                  <DataTableHeader table={table} />
+                  <DataTableBody<CreditCardRow>
+                     table={table}
+                     renderExpandedRow={({ row }) => (
+                        <CreditCardFaturaRow creditCardId={row.original.id} />
+                     )}
+                  />
+                  <DataImportSection
+                     api={importApi}
+                     config={importConfig}
+                     table={table}
+                  />
+               </Table>
+               {table.getRowCount() === 0 && (
+                  <Empty>
+                     <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                           <CreditCard className="size-4" />
+                        </EmptyMedia>
+                        <EmptyTitle>Nenhum cartão de crédito</EmptyTitle>
+                        <EmptyDescription>
+                           Adicione um cartão de crédito para controlar seus
+                           gastos.
+                        </EmptyDescription>
+                     </EmptyHeader>
+                  </Empty>
                )}
-            </DataTableBulkActions>
-            <DataTablePagination
-               currentPage={page}
-               pageSize={pageSize}
-               totalPages={result.totalPages}
-               totalCount={result.totalCount}
-               onPageChange={(p) =>
-                  navigate({
-                     search: (prev) => ({ ...prev, page: p }),
-                     replace: true,
-                  })
-               }
-               onPageSizeChange={(s) =>
-                  navigate({
-                     search: (prev) => ({ ...prev, pageSize: s, page: 1 }),
-                     replace: true,
-                  })
-               }
-            />
-         </DataTableRoot>
+            </ScrollArea>
+            {result.totalCount > 0 && <DataTablePagination table={table} />}
+         </div>
       </div>
    );
 }
 
 function CreditCardsPage() {
    return (
-      <main className="flex h-full flex-col gap-4">
+      <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden">
          <DefaultHeader
             description="Gerencie seus cartões de crédito"
             title="Cartões de Crédito"

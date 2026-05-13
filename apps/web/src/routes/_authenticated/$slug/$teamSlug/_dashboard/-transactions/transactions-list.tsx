@@ -1,5 +1,9 @@
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { SearchInput } from "@packages/ui/components/search-input";
+import { Table } from "@packages/ui/components/table";
 import { Button } from "@packages/ui/components/button";
 import { Calendar } from "@packages/ui/components/calendar";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
    Empty,
@@ -14,11 +18,20 @@ import {
    PopoverTrigger,
 } from "@packages/ui/components/popover";
 import {
+   SelectionActionButton,
+   useTableBulkActions,
+} from "@/hooks/use-selection-toolbar";
+import {
    useMutation,
    useQueryClient,
    useSuspenseQuery,
 } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
+import {
+   getCoreRowModel,
+   useReactTable,
+   type ColumnDef,
+} from "@tanstack/react-table";
 import dayjs from "dayjs";
 import {
    AlertTriangle,
@@ -34,24 +47,25 @@ import {
    Trash2,
    Undo2,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { DataTableBody } from "@/blocks/data-table/data-table-body";
+import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { DataTableHeader } from "@/blocks/data-table/data-table-header";
+import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
+import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
+import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
+import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
+import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
+import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
+import { ExportButton } from "@/components/export-button/export-button";
+import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
+import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
+import { PageFilters } from "@/components/page-filters/page-filters";
+import { PageFilter } from "@/components/page-filters/page-filter";
+import { PageFilterSelect } from "@/components/page-filters/page-filter-select";
 import { useSheet } from "@/hooks/use-sheet";
 import { TransactionFormSheet } from "./transaction-form-sheet";
-import {
-   DataTableBulkActions,
-   SelectionActionButton,
-} from "@/components/data-table/data-table-bulk-actions";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
-import { DataTableImportButton } from "@/components/data-table/data-table-import";
-import type { DataTableImportConfig } from "@/components/data-table/data-table-import";
-import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import {
-   DataTableExternalFilter,
-   DataTableRoot,
-} from "@/components/data-table/data-table-root";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useOfxFile } from "@/hooks/use-ofx-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
@@ -75,7 +89,7 @@ function normalizeImportLookup(value: unknown): string {
       .trim()
       .toLowerCase()
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
+      .replace(/[̀-ͯ]/g, "");
 }
 
 function resolveImportId(
@@ -135,20 +149,29 @@ function parseImportType(
    return signedAmount < 0 ? "expense" : "income";
 }
 
-function parseImportStatus(value: unknown): "pending" | "paid" | "cancelled" {
+function parseImportStatus(value: unknown): {
+   status: "pending" | "paid";
+   ignored: boolean;
+} {
    const normalized = normalizeImportLookup(value);
+   if (
+      normalized === "cancelled" ||
+      normalized.includes("cancelado") ||
+      normalized.includes("ignorado")
+   ) {
+      return { status: "pending", ignored: true };
+   }
    if (normalized === "paid" || normalized.includes("efetivado")) {
-      return "paid";
+      return { status: "paid", ignored: false };
    }
-   if (normalized === "cancelled" || normalized.includes("cancelado")) {
-      return "cancelled";
-   }
-   return "pending";
+   return { status: "pending", ignored: false };
 }
 
 export function TransactionsList() {
    const navigate = routeApi.useNavigate();
    const {
+      sorting,
+      columnFilters,
       page,
       pageSize,
       view,
@@ -165,11 +188,30 @@ export function TransactionsList() {
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
    const { parse: parseOfx } = useOfxFile();
+   const layout = useDataTableLayout("transactions");
 
-   const handleSearch = useCallback(
-      (value: string) => {
+   const searchInput = useDebouncedSearch({
+      value: search,
+      onCommit: (value) =>
          navigate({
             search: (prev) => ({ ...prev, search: value, page: 1 }),
+            replace: true,
+         }),
+   });
+
+   const handleViewChange = useCallback(
+      (nextView: string) => {
+         navigate({
+            search: (prev) => ({
+               ...prev,
+               view: nextView as
+                  | "all"
+                  | "payable"
+                  | "receivable"
+                  | "settled"
+                  | "ignored",
+               page: 1,
+            }),
             replace: true,
          });
       },
@@ -191,26 +233,6 @@ export function TransactionsList() {
          if (active) return;
          navigate({
             search: (prev) => ({ ...prev, bankId: "", page: 1 }),
-            replace: true,
-         });
-      },
-      [navigate],
-   );
-
-   const handlePageChange = useCallback(
-      (newPage: number) => {
-         navigate({
-            search: (prev) => ({ ...prev, page: newPage }),
-            replace: true,
-         });
-      },
-      [navigate],
-   );
-
-   const handlePageSizeChange = useCallback(
-      (newPageSize: number) => {
-         navigate({
-            search: (prev) => ({ ...prev, pageSize: newPageSize, page: 1 }),
             replace: true,
          });
       },
@@ -255,7 +277,6 @@ export function TransactionsList() {
 
    const transactionData = result.data;
    const total = result.total;
-   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
    const importMutation = useMutation(
       orpc.transactions.importBulk.mutationOptions({
@@ -340,33 +361,33 @@ export function TransactionsList() {
 
    const handleCreateBankAccount = useCallback(
       async (name: string): Promise<string> => {
-         const result = await createBankAccountMutation.mutateAsync({
+         const created = await createBankAccountMutation.mutateAsync({
             name,
             type: "checking",
          });
-         return result.id;
+         return created.id;
       },
       [createBankAccountMutation],
    );
 
    const handleCreateContact = useCallback(
       async (name: string): Promise<string> => {
-         const result = await createContactMutation.mutateAsync({
+         const created = await createContactMutation.mutateAsync({
             name,
             type: "ambos",
          });
-         return result.id;
+         return created.id;
       },
       [createContactMutation],
    );
 
    const handleCreateCategory = useCallback(
       async (name: string): Promise<string> => {
-         const result = await createCategoryMutation.mutateAsync({
+         const created = await createCategoryMutation.mutateAsync({
             name,
             type: "expense",
          });
-         return result.id;
+         return created.id;
       },
       [createCategoryMutation],
    );
@@ -433,7 +454,7 @@ export function TransactionsList() {
       [reactivateMutation],
    );
 
-   const importConfig: DataTableImportConfig = useMemo(
+   const importConfig: DataImportConfig = useMemo(
       () => ({
          accept: {
             "text/csv": [".csv"],
@@ -451,6 +472,7 @@ export function TransactionsList() {
          mapRow: (row, i) => {
             const parsedAmount = parseImportAmount(row.amount);
             const type = parseImportType(row.type, parsedAmount.signedAmount);
+            const parsedStatus = parseImportStatus(row.status);
 
             return {
                id: `__import_${i}`,
@@ -458,7 +480,8 @@ export function TransactionsList() {
                amount: parsedAmount.amount,
                type,
                name: String(row.name ?? "").trim() || null,
-               status: parseImportStatus(row.status),
+               status: parsedStatus.status,
+               ignored: parsedStatus.ignored,
                dueDate: row.dueDate ? parseImportDate(row.dueDate) : null,
                bankAccountName: String(row.bankAccountName ?? "").trim(),
                bankAccountId: resolveImportId(
@@ -501,20 +524,6 @@ export function TransactionsList() {
                               Categoria: categoriesResult[0]?.name ?? "",
                               "Fornecedor/Cliente": contacts[0]?.name ?? "",
                            },
-                           {
-                              Data: dayjs().format("YYYY-MM-DD"),
-                              Nome: "Compra no cartão",
-                              Tipo: "Despesa",
-                              Valor: "250.00",
-                              Status: "Pendente",
-                              Vencimento: dayjs()
-                                 .add(7, "day")
-                                 .format("YYYY-MM-DD"),
-                              Conta: "",
-                              Cartão: creditCardsResult.data[0]?.name ?? "",
-                              Categoria: categoriesResult[0]?.name ?? "",
-                              "Fornecedor/Cliente": contacts[0]?.name ?? "",
-                           },
                         ],
                         [
                            "Data",
@@ -548,20 +557,6 @@ export function TransactionsList() {
                               Categoria: categoriesResult[0]?.name ?? "",
                               "Fornecedor/Cliente": contacts[0]?.name ?? "",
                            },
-                           {
-                              Data: dayjs().format("YYYY-MM-DD"),
-                              Nome: "Compra no cartão",
-                              Tipo: "Despesa",
-                              Valor: "250.00",
-                              Status: "Pendente",
-                              Vencimento: dayjs()
-                                 .add(7, "day")
-                                 .format("YYYY-MM-DD"),
-                              Conta: "",
-                              Cartão: creditCardsResult.data[0]?.name ?? "",
-                              Categoria: categoriesResult[0]?.name ?? "",
-                              "Fornecedor/Cliente": contacts[0]?.name ?? "",
-                           },
                         ],
                         [
                            "Data",
@@ -579,6 +574,32 @@ export function TransactionsList() {
                },
             ],
          },
+         extraBulkActions: ({ selectedIndices, bulkUpdate, clear }) => (
+            <>
+               <ImportBulkStatusButton
+                  bulkUpdate={bulkUpdate}
+                  clear={clear}
+                  selectedIndices={selectedIndices}
+               />
+               <ImportBulkDateButton
+                  bulkUpdate={bulkUpdate}
+                  clear={clear}
+                  selectedIndices={selectedIndices}
+               />
+               <ImportBulkCategoryButton
+                  bulkUpdate={bulkUpdate}
+                  categories={categoriesResult ?? []}
+                  clear={clear}
+                  selectedIndices={selectedIndices}
+               />
+               <ImportBulkAccountButton
+                  bankAccounts={bankAccounts}
+                  bulkUpdate={bulkUpdate}
+                  clear={clear}
+                  selectedIndices={selectedIndices}
+               />
+            </>
+         ),
          onImport: async (rows) => {
             const transactions = rows.flatMap((r) => {
                const date = String(r.date ?? "");
@@ -609,7 +630,10 @@ export function TransactionsList() {
                         resolveImportId(contacts, r.contactName),
                      creditCardId,
                      paymentMethod: null,
-                     status: parseImportStatus(r.status),
+                     status: parseImportStatus(r.status).status,
+                     ignored:
+                        r.ignored === true ||
+                        parseImportStatus(r.status).ignored,
                      dueDate: r.dueDate ? String(r.dueDate) : null,
                   },
                ];
@@ -643,220 +667,312 @@ export function TransactionsList() {
       ],
    );
 
-   const columns = useMemo(
-      () =>
-         buildTransactionColumns({
-            bankAccounts,
-            contacts,
-            categories: categoriesResult,
-            creditCards: creditCardsResult.data,
-            onUpdate: handleUpdate,
-            onCreateBankAccount: handleCreateBankAccount,
-            onCreateContact: handleCreateContact,
-            onCreateCategory: handleCreateCategory,
-            getRowStatus: (id) =>
-               transactionData.find((t) => t.id === id)?.status,
-         }),
-      [
+   const importUpdateRef = useRef<
+      ((index: number, patch: Record<string, unknown>) => void) | null
+   >(null);
+
+   const columns = useMemo<ColumnDef<TransactionRow>[]>(() => {
+      const base = buildTransactionColumns({
          bankAccounts,
          contacts,
-         categoriesResult,
-         creditCardsResult,
-         transactionData,
-         handleUpdate,
-         handleCreateBankAccount,
-         handleCreateContact,
-         handleCreateCategory,
-      ],
-   );
+         categories: categoriesResult,
+         creditCards: creditCardsResult.data,
+         onUpdate: handleUpdate,
+         onUpdateImport: (idx, patch) => importUpdateRef.current?.(idx, patch),
+         onCreateBankAccount: handleCreateBankAccount,
+         onCreateContact: handleCreateContact,
+         onCreateCategory: handleCreateCategory,
+         getRowStatus: (id) => transactionData.find((t) => t.id === id)?.status,
+      });
+      const selectColumn: ColumnDef<TransactionRow> = {
+         id: "__select",
+         size: 40,
+         enableSorting: false,
+         enableHiding: false,
+         header: ({ table }) => (
+            <Checkbox
+               aria-label="Selecionar todos"
+               checked={
+                  table.getIsAllPageRowsSelected()
+                     ? true
+                     : table.getIsSomePageRowsSelected()
+                       ? "indeterminate"
+                       : false
+               }
+               onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+            />
+         ),
+         cell: ({ row }) => (
+            <Checkbox
+               aria-label="Selecionar linha"
+               checked={row.getIsSelected()}
+               disabled={!row.getCanSelect()}
+               onCheckedChange={(v) => row.toggleSelected(!!v)}
+            />
+         ),
+      };
+      const actionsColumn: ColumnDef<TransactionRow> = {
+         id: "__actions",
+         size: 180,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { align: "right" },
+         cell: ({ row }) => {
+            const tx = row.original;
+            const { status: rowStatus, ignored } = tx;
+            return (
+               <div className="flex justify-end gap-2">
+                  {!ignored && rowStatus === "pending" && (
+                     <Button
+                        className="text-green-600 hover:text-green-700"
+                        onClick={() => handleMarkPaid(tx)}
+                        size="icon-sm"
+                        tooltip="Marcar como efetivado"
+                        variant="ghost"
+                     >
+                        <CheckCircle2 />
+                        <span className="sr-only">Marcar como efetivado</span>
+                     </Button>
+                  )}
+                  {!ignored && rowStatus === "paid" && (
+                     <Button
+                        onClick={() => handleMarkUnpaid(tx)}
+                        size="icon-sm"
+                        tooltip="Marcar como pendente"
+                        variant="ghost"
+                     >
+                        <Undo2 />
+                        <span className="sr-only">Marcar como pendente</span>
+                     </Button>
+                  )}
+                  {ignored ? (
+                     <Button
+                        onClick={() => handleReactivate(tx)}
+                        size="icon-sm"
+                        tooltip="Reativar"
+                        variant="ghost"
+                     >
+                        <RotateCcw />
+                        <span className="sr-only">Reativar</span>
+                     </Button>
+                  ) : (
+                     <Button
+                        onClick={() => handleCancel(tx)}
+                        size="icon-sm"
+                        tooltip="Ignorar lançamento"
+                        variant="ghost"
+                     >
+                        <Ban />
+                        <span className="sr-only">Ignorar lançamento</span>
+                     </Button>
+                  )}
+                  <Button
+                     className="text-destructive hover:text-destructive"
+                     onClick={() => handleDelete(tx)}
+                     size="icon-sm"
+                     tooltip="Excluir"
+                     variant="ghost"
+                  >
+                     <Trash2 />
+                     <span className="sr-only">Excluir</span>
+                  </Button>
+               </div>
+            );
+         },
+      };
+      return [selectColumn, ...base, actionsColumn];
+   }, [
+      bankAccounts,
+      contacts,
+      categoriesResult,
+      creditCardsResult,
+      transactionData,
+      handleUpdate,
+      handleCreateBankAccount,
+      handleCreateContact,
+      handleCreateCategory,
+      handleMarkPaid,
+      handleMarkUnpaid,
+      handleReactivate,
+      handleCancel,
+      handleDelete,
+   ]);
+
+   const urlState = useTableUrlState({
+      search: { sorting, columnFilters, page, pageSize },
+      onUpdate: (next) =>
+         navigate({
+            search: (prev) => ({ ...prev, ...next }),
+            replace: true,
+         }),
+      totalRows: total,
+   });
+
+   const table = useReactTable({
+      data: transactionData,
+      columns,
+      getRowId: (row) => row.id,
+      pageCount: urlState.pageCount,
+      manualPagination: true,
+      manualSorting: true,
+      manualFiltering: true,
+      columnResizeMode: "onChange",
+      defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      state: { ...urlState.state, ...layout.state },
+      onSortingChange: urlState.onSortingChange,
+      onColumnFiltersChange: urlState.onColumnFiltersChange,
+      onPaginationChange: urlState.onPaginationChange,
+      onRowSelectionChange: urlState.onRowSelectionChange,
+      onColumnSizingChange: layout.onColumnSizingChange,
+      onColumnOrderChange: layout.onColumnOrderChange,
+      onColumnVisibilityChange: layout.onColumnVisibilityChange,
+      onColumnPinningChange: layout.onColumnPinningChange,
+      getCoreRowModel: getCoreRowModel(),
+   });
+
+   const importApi = useDataImport({ table, config: importConfig });
+   importUpdateRef.current = importApi.updateRow;
+
+   const selectedRows = table.getSelectedRowModel().rows;
+   const selectedIds = selectedRows.map((r) => r.original.id);
+   const resetSelection = () => table.resetRowSelection();
+
+   useTableBulkActions({
+      selectedCount: selectedRows.length,
+      onClear: resetSelection,
+      children: (
+         <>
+            <BulkIgnoreButton ids={selectedIds} onSuccess={resetSelection} />
+            <BulkStatusButton ids={selectedIds} onSuccess={resetSelection} />
+            <BulkDateButton ids={selectedIds} onSuccess={resetSelection} />
+            <BulkCategoryButton
+               categories={categoriesResult ?? []}
+               ids={selectedIds}
+               onSuccess={resetSelection}
+            />
+            <BulkAccountButton
+               bankAccounts={bankAccounts}
+               ids={selectedIds}
+               onSuccess={resetSelection}
+            />
+            <SelectionActionButton
+               icon={<Trash2 />}
+               variant="destructive"
+               onClick={() =>
+                  openAlertDialog({
+                     title: `Excluir ${selectedIds.length} ${selectedIds.length === 1 ? "lançamento" : "lançamentos"}`,
+                     description:
+                        "Tem certeza que deseja excluir os lançamentos selecionados? Esta ação não pode ser desfeita.",
+                     actionLabel: "Excluir",
+                     cancelLabel: "Cancelar",
+                     variant: "destructive",
+                     onAction: async () => {
+                        await Promise.allSettled(
+                           selectedIds.map((id) =>
+                              deleteMutation.mutateAsync({ id }),
+                           ),
+                        );
+                        resetSelection();
+                     },
+                  })
+               }
+            >
+               Excluir
+            </SelectionActionButton>
+         </>
+      ),
+   });
 
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <DataTableRoot
-            columns={columns}
-            data={transactionData}
-            getRowId={(row) => row.id}
-            renderActions={({ row }) => {
-               const tx = row.original;
-               const { status: rowStatus } = tx;
-               return (
-                  <>
-                     {rowStatus === "pending" && (
-                        <Button
-                           className="text-green-600 hover:text-green-700"
-                           onClick={() => handleMarkPaid(tx)}
-                           size="icon"
-                           tooltip="Marcar como efetivado"
-                           variant="ghost"
-                        >
-                           <CheckCircle2 className="size-4" />
-                           <span className="sr-only">
-                              Marcar como efetivado
-                           </span>
-                        </Button>
-                     )}
-                     {rowStatus === "paid" && (
-                        <Button
-                           onClick={() => handleMarkUnpaid(tx)}
-                           size="icon"
-                           tooltip="Marcar como pendente"
-                           variant="ghost"
-                        >
-                           <Undo2 className="size-4" />
-                           <span className="sr-only">Marcar como pendente</span>
-                        </Button>
-                     )}
-                     {rowStatus === "cancelled" && (
-                        <Button
-                           onClick={() => handleReactivate(tx)}
-                           size="icon"
-                           tooltip="Reativar"
-                           variant="ghost"
-                        >
-                           <RotateCcw className="size-4" />
-                           <span className="sr-only">Reativar</span>
-                        </Button>
-                     )}
-                     {(rowStatus === "pending" || rowStatus === "paid") && (
-                        <Button
-                           onClick={() => handleCancel(tx)}
-                           size="icon"
-                           tooltip="Ignorar lançamento"
-                           variant="ghost"
-                        >
-                           <Ban className="size-4" />
-                           <span className="sr-only">Ignorar lançamento</span>
-                        </Button>
-                     )}
-                     <Button
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(tx)}
-                        size="icon"
-                        tooltip="Excluir"
-                        variant="ghost"
-                     >
-                        <Trash2 className="size-4" />
-                        <span className="sr-only">Excluir</span>
-                     </Button>
-                  </>
-               );
-            }}
-            storageKey="montte:datatable:transactions"
-         >
-            {bankId ? (
-               <DataTableExternalFilter
-                  id="bankId"
-                  label={selectedBankAccount?.name ?? "Conta selecionada"}
-                  group="Conta"
-                  active
-                  renderIcon={() => <Landmark className="size-4" />}
-                  onToggle={handleBankFilterToggle}
+         <div className="flex flex-1 flex-col gap-4 min-h-0">
+            <div className="flex flex-wrap items-center gap-2 justify-between">
+               <SearchInput
+                  className="max-w-sm"
+                  aria-label="Buscar lançamentos"
+                  onChange={(e) => searchInput.onChange(e.target.value)}
+                  placeholder="Buscar por nome, descrição ou contato..."
+                  value={searchInput.value}
                />
-            ) : null}
-            <DataTableExternalFilter
-               id="overdueOnly"
-               label="Somente vencidos"
-               group="Filtros"
-               active={overdueOnly}
-               renderIcon={() => <AlertTriangle className="size-4" />}
-               onToggle={handleOverdueToggle}
-            />
-            <DataTableToolbar
-               searchPlaceholder="Buscar por nome, descrição ou contato..."
-               searchDefaultValue={search}
-               onSearch={handleSearch}
-            >
-               <DataTableImportButton importConfig={importConfig} />
-               <Button
-                  onClick={handleCreate}
-                  tooltip="Novo Lançamento"
-                  variant="outline"
-                  size="icon-sm"
-               >
-                  <Plus />
-                  <span className="sr-only">Novo Lançamento</span>
-               </Button>
-            </DataTableToolbar>
-            <DataTableEmptyState>
-               <Empty>
-                  <EmptyHeader>
-                     <EmptyMedia variant="icon">
-                        <ArrowLeftRight className="size-6" />
-                     </EmptyMedia>
-                     <EmptyTitle>Nenhum lançamento</EmptyTitle>
-                     <EmptyDescription>
-                        {search || bankId
-                           ? "Nenhum lançamento encontrado para os filtros aplicados."
-                           : "Registre um novo lançamento para começar a controlar suas finanças."}
-                     </EmptyDescription>
-                  </EmptyHeader>
-               </Empty>
-            </DataTableEmptyState>
-            <DataTableContent className="flex-1 overflow-auto min-h-0" />
-            <DataTableBulkActions<TransactionRow>>
-               {({ selectedRows, clearSelection }) => {
-                  const selectedIds = selectedRows.map((r) => r.id);
-                  return (
-                     <>
-                        <BulkIgnoreButton
-                           ids={selectedIds}
-                           onSuccess={clearSelection}
-                        />
-                        <BulkStatusButton
-                           ids={selectedIds}
-                           onSuccess={clearSelection}
-                        />
-                        <BulkDateButton
-                           ids={selectedIds}
-                           onSuccess={clearSelection}
-                        />
-                        <BulkCategoryButton
-                           categories={categoriesResult ?? []}
-                           ids={selectedIds}
-                           onSuccess={clearSelection}
-                        />
-                        <BulkAccountButton
-                           bankAccounts={bankAccounts}
-                           ids={selectedIds}
-                           onSuccess={clearSelection}
-                        />
-                        <SelectionActionButton
-                           icon={<Trash2 />}
-                           variant="destructive"
-                           onClick={() =>
-                              openAlertDialog({
-                                 title: `Excluir ${selectedIds.length} ${selectedIds.length === 1 ? "lançamento" : "lançamentos"}`,
-                                 description:
-                                    "Tem certeza que deseja excluir os lançamentos selecionados? Esta ação não pode ser desfeita.",
-                                 actionLabel: "Excluir",
-                                 cancelLabel: "Cancelar",
-                                 variant: "destructive",
-                                 onAction: async () => {
-                                    await Promise.allSettled(
-                                       selectedIds.map((id) =>
-                                          deleteMutation.mutateAsync({ id }),
-                                       ),
-                                    );
-                                    clearSelection();
-                                 },
-                              })
+               <div className="flex flex-wrap items-center gap-2">
+                  <PageFilters>
+                     <PageFilterSelect
+                        group="Visualização"
+                        id="view"
+                        label="Visualização"
+                        onChange={handleViewChange}
+                        options={[
+                           { value: "all", label: "Todos" },
+                           { value: "payable", label: "A Pagar" },
+                           { value: "receivable", label: "A Receber" },
+                           { value: "settled", label: "Efetivados" },
+                           { value: "ignored", label: "Ignorados" },
+                        ]}
+                        value={view}
+                     />
+                     <PageFilter
+                        active={overdueOnly}
+                        group="Filtros"
+                        icon={<AlertTriangle className="size-4" />}
+                        id="overdueOnly"
+                        label="Somente vencidos"
+                        onToggle={handleOverdueToggle}
+                     />
+                     {bankId ? (
+                        <PageFilter
+                           active
+                           group="Conta"
+                           icon={<Landmark className="size-4" />}
+                           id="bankId"
+                           label={
+                              selectedBankAccount?.name ?? "Conta selecionada"
                            }
-                        >
-                           Excluir
-                        </SelectionActionButton>
-                     </>
-                  );
-               }}
-            </DataTableBulkActions>
-         </DataTableRoot>
-         <DataTablePagination
-            currentPage={page}
-            totalPages={totalPages}
-            totalCount={total}
-            pageSize={pageSize}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-         />
+                           onToggle={handleBankFilterToggle}
+                        />
+                     ) : null}
+                  </PageFilters>
+                  <DataTableColumnVisibility table={table} />
+                  <ExportButton table={table} fileBase="lancamentos" />
+                  <DataImportButton api={importApi} config={importConfig} />
+                  <Button
+                     onClick={handleCreate}
+                     tooltip="Novo Lançamento"
+                     variant="outline"
+                     size="icon-sm"
+                  >
+                     <Plus />
+                     <span className="sr-only">Novo Lançamento</span>
+                  </Button>
+               </div>
+            </div>
+            <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
+               <Table>
+                  <DataTableHeader table={table} />
+                  <DataTableBody<TransactionRow> table={table} />
+                  <DataImportSection
+                     api={importApi}
+                     config={importConfig}
+                     table={table}
+                  />
+               </Table>
+               {table.getRowCount() === 0 && (
+                  <Empty>
+                     <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                           <ArrowLeftRight className="size-6" />
+                        </EmptyMedia>
+                        <EmptyTitle>Nenhum lançamento</EmptyTitle>
+                        <EmptyDescription>
+                           {search || bankId
+                              ? "Nenhum lançamento encontrado para os filtros aplicados."
+                              : "Registre um novo lançamento para começar a controlar suas finanças."}
+                        </EmptyDescription>
+                     </EmptyHeader>
+                  </Empty>
+               )}
+            </ScrollArea>
+            <DataTablePagination table={table} />
+         </div>
       </div>
    );
 }
@@ -889,11 +1005,7 @@ function BulkIgnoreButton({
                onAction: async () => {
                   const results = await Promise.allSettled(
                      ids.map((id) =>
-                        mutation.mutateAsync({
-                           id,
-                           ignored: true,
-                           status: "cancelled",
-                        }),
+                        mutation.mutateAsync({ id, ignored: true }),
                      ),
                   );
                   if (results.every((r) => r.status === "fulfilled")) {
@@ -1086,6 +1198,165 @@ function BulkAccountButton({
                   );
                   setOpen(false);
                   onSuccess();
+               }}
+            />
+         </PopoverContent>
+      </Popover>
+   );
+}
+
+type ImportBulkProps = {
+   selectedIndices: Set<number>;
+   bulkUpdate: (
+      indices: Set<number>,
+      keyOrPatch: string | Record<string, unknown>,
+      value?: unknown,
+   ) => void;
+   clear: () => void;
+};
+
+function ImportBulkStatusButton({
+   selectedIndices,
+   bulkUpdate,
+   clear,
+}: ImportBulkProps) {
+   const [open, setOpen] = useState(false);
+   const opts = [
+      { value: "pending", label: "Pendente" },
+      { value: "paid", label: "Efetivado" },
+   ];
+   return (
+      <Popover open={open} onOpenChange={setOpen}>
+         <PopoverTrigger asChild>
+            <SelectionActionButton icon={<CircleDot />}>
+               Status
+            </SelectionActionButton>
+         </PopoverTrigger>
+         <PopoverContent align="start" className="w-44 p-1">
+            <div className="flex flex-col">
+               {opts.map((o) => (
+                  <Button
+                     key={o.value}
+                     className="justify-start text-sm"
+                     variant="ghost"
+                     onClick={() => {
+                        bulkUpdate(selectedIndices, "status", o.value);
+                        setOpen(false);
+                        clear();
+                     }}
+                  >
+                     {o.label}
+                  </Button>
+               ))}
+            </div>
+         </PopoverContent>
+      </Popover>
+   );
+}
+
+function ImportBulkDateButton({
+   selectedIndices,
+   bulkUpdate,
+   clear,
+}: ImportBulkProps) {
+   const [open, setOpen] = useState(false);
+   return (
+      <Popover open={open} onOpenChange={setOpen}>
+         <PopoverTrigger asChild>
+            <SelectionActionButton icon={<CalendarDays />}>
+               Data
+            </SelectionActionButton>
+         </PopoverTrigger>
+         <PopoverContent align="start" className="w-auto p-0">
+            <Calendar
+               mode="single"
+               onSelect={(d) => {
+                  if (!d) return;
+                  bulkUpdate(
+                     selectedIndices,
+                     "date",
+                     dayjs(d).format("YYYY-MM-DD"),
+                  );
+                  setOpen(false);
+                  clear();
+               }}
+            />
+         </PopoverContent>
+      </Popover>
+   );
+}
+
+function ImportBulkCategoryButton({
+   selectedIndices,
+   bulkUpdate,
+   clear,
+   categories,
+}: ImportBulkProps & { categories: CategoryOption[] }) {
+   const [open, setOpen] = useState(false);
+   return (
+      <Popover open={open} onOpenChange={setOpen}>
+         <PopoverTrigger asChild>
+            <SelectionActionButton icon={<FolderOpen />}>
+               Categoria
+            </SelectionActionButton>
+         </PopoverTrigger>
+         <PopoverContent align="start" className="w-64 p-2">
+            <Combobox
+               emptyMessage="Nenhuma categoria."
+               options={categories.map((c) => ({ value: c.id, label: c.name }))}
+               placeholder="Selecionar categoria..."
+               searchPlaceholder="Buscar..."
+               value=""
+               onValueChange={(categoryId) => {
+                  const label =
+                     categories.find((c) => c.id === categoryId)?.name ?? "";
+                  bulkUpdate(selectedIndices, {
+                     categoryId,
+                     categoryName: label,
+                  });
+                  setOpen(false);
+                  clear();
+               }}
+            />
+         </PopoverContent>
+      </Popover>
+   );
+}
+
+function ImportBulkAccountButton({
+   selectedIndices,
+   bulkUpdate,
+   clear,
+   bankAccounts,
+}: ImportBulkProps & { bankAccounts: BankAccountOption[] }) {
+   const [open, setOpen] = useState(false);
+   return (
+      <Popover open={open} onOpenChange={setOpen}>
+         <PopoverTrigger asChild>
+            <SelectionActionButton icon={<Landmark />}>
+               Conta
+            </SelectionActionButton>
+         </PopoverTrigger>
+         <PopoverContent align="start" className="w-64 p-2">
+            <Combobox
+               emptyMessage="Nenhuma conta."
+               options={bankAccounts.map((a) => ({
+                  value: a.id,
+                  label: a.name,
+               }))}
+               placeholder="Selecionar conta..."
+               searchPlaceholder="Buscar..."
+               value=""
+               onValueChange={(bankAccountId) => {
+                  const label =
+                     bankAccounts.find((a) => a.id === bankAccountId)?.name ??
+                     "";
+                  bulkUpdate(selectedIndices, {
+                     bankAccountId,
+                     bankAccountName: label,
+                  });
+                  setOpen(false);
+                  clear();
                }}
             />
          </PopoverContent>

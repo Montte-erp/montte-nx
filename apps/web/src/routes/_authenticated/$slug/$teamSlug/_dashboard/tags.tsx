@@ -1,4 +1,8 @@
 import { Button } from "@packages/ui/components/button";
+import { Checkbox } from "@packages/ui/components/checkbox";
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { SearchInput } from "@packages/ui/components/search-input";
+import { Table } from "@packages/ui/components/table";
 import {
    ContextPanel,
    ContextPanelContent,
@@ -12,34 +16,45 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import {
+   SelectionActionButton,
+   useTableBulkActions,
+} from "@/hooks/use-selection-toolbar";
+import {
+   getCoreRowModel,
+   useReactTable,
+   type ColumnDef,
+} from "@tanstack/react-table";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Archive, ArchiveRestore, Plus, Tag, Trash2 } from "lucide-react";
-import { DataTableImportButton } from "@/components/data-table/data-table-import";
-import type { DataTableImportConfig } from "@/components/data-table/data-table-import";
-import { DataTableExternalFilter } from "@/components/data-table/data-table-root";
-import { useCsvFile } from "@/hooks/use-csv-file";
-import { useXlsxFile } from "@/hooks/use-xlsx-file";
-import { startTransition, useCallback, useMemo } from "react";
-
-import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import { z } from "zod";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import { DefaultHeader } from "../-layout/default-header";
-import {
-   DataTableBulkActions,
-   SelectionActionButton,
-} from "@/components/data-table/data-table-bulk-actions";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
-import { DataTableRoot } from "@/components/data-table/data-table-root";
-import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { z } from "zod";
+
+import { DataTableBody } from "@/blocks/data-table/data-table-body";
+import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { ExportButton } from "@/components/export-button/export-button";
+import { DataTableHeader } from "@/blocks/data-table/data-table-header";
+import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
+import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
+import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
+import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
+import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
+import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
+import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
+import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
+import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
+import { PageFilters } from "@/components/page-filters/page-filters";
+import { PageFilter } from "@/components/page-filters/page-filter";
 import { QueryBoundary } from "@/components/query-boundary";
-import { useContextPanelInfo } from "../-context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { useCsvFile } from "@/hooks/use-csv-file";
 import { useSheet } from "@/hooks/use-sheet";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { orpc } from "@/integrations/orpc/client";
+import { useContextPanelInfo } from "../-context-panel/use-context-panel";
+import { DefaultHeader } from "../-layout/default-header";
 import { buildTagColumns, type TagRow } from "./-tags/tags-columns";
 import { TagsFormSheet } from "./-tags/tags-form-sheet";
 
@@ -115,9 +130,20 @@ function TagsList() {
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
    const navigate = Route.useNavigate();
-   const { search, includeArchived, page, pageSize } = Route.useSearch();
+   const { sorting, columnFilters, search, includeArchived, page, pageSize } =
+      Route.useSearch();
    const { generate: generateCsv, parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
+   const layout = useDataTableLayout("tags");
+
+   const searchInput = useDebouncedSearch({
+      value: search,
+      onCommit: (value) =>
+         navigate({
+            search: (prev) => ({ ...prev, search: value, page: 1 }),
+            replace: true,
+         }),
+   });
 
    const { data: result } = useSuspenseQuery(
       orpc.tags.getAll.queryOptions({
@@ -130,34 +156,27 @@ function TagsList() {
       }),
    );
    const { data: tags, total } = result;
-   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
    const deleteMutation = useMutation(
       orpc.tags.remove.mutationOptions({
-         onSuccess: () => {
-            toast.success("Centro de custo excluído com sucesso.");
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao excluir centro de custo.");
-         },
+         onSuccess: () =>
+            toast.success("Centro de custo excluído com sucesso."),
+         onError: (e) =>
+            toast.error(e.message || "Erro ao excluir centro de custo."),
       }),
    );
-
    const bulkDeleteMutation = useMutation(
       orpc.tags.bulkRemove.mutationOptions({
-         onError: (error) => {
-            toast.error(error.message || "Erro ao excluir centros de custo.");
-         },
+         onError: (e) =>
+            toast.error(e.message || "Erro ao excluir centros de custo."),
       }),
    );
-
    const bulkArchiveMutation = useMutation(
       orpc.tags.bulkArchive.mutationOptions({
          onError: (e) =>
             toast.error(e.message || "Erro ao arquivar centros de custo."),
       }),
    );
-
    const archiveMutation = useMutation(
       orpc.tags.archive.mutationOptions({
          onSuccess: () => toast.success("Centro de custo arquivado."),
@@ -165,7 +184,6 @@ function TagsList() {
             toast.error(e.message || "Erro ao arquivar centro de custo."),
       }),
    );
-
    const unarchiveMutation = useMutation(
       orpc.tags.unarchive.mutationOptions({
          onSuccess: () => toast.success("Centro de custo reativado."),
@@ -173,14 +191,12 @@ function TagsList() {
             toast.error(e.message || "Erro ao reativar centro de custo."),
       }),
    );
-
    const bulkCreateMutation = useMutation(
       orpc.tags.bulkCreate.mutationOptions({
          onError: (e) =>
             toast.error(e.message || "Erro ao importar centros de custo."),
       }),
    );
-
    const updateMutation = useMutation(
       orpc.tags.update.mutationOptions({
          onError: (e) =>
@@ -188,21 +204,15 @@ function TagsList() {
       }),
    );
 
-   const importConfig: DataTableImportConfig = useMemo(
+   const importConfig: DataImportConfig = useMemo(
       () => ({
-         accept: {
-            "text/csv": [".csv"],
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-               [".xlsx"],
-            "application/vnd.ms-excel": [".xls"],
-         },
          parseFile: async (file: File) => {
             const ext = file.name.split(".").pop()?.toLowerCase();
             if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
             return parseCsv(file);
          },
          mapRow: (row, i) => ({
-            id: `__import_${i}`,
+            id: `__import_${i + 1}`,
             name: row.name ?? "",
             description: row.description?.trim() || null,
             isArchived: false,
@@ -240,9 +250,7 @@ function TagsList() {
    );
 
    const handleCreate = useCallback(() => {
-      openSheet({
-         renderChildren: () => <TagsFormSheet />,
-      });
+      openSheet({ renderChildren: () => <TagsFormSheet /> });
    }, [openSheet]);
 
    const handleDelete = useCallback(
@@ -291,210 +299,273 @@ function TagsList() {
       [openAlertDialog, unarchiveMutation],
    );
 
-   const columns = useMemo(
-      () =>
-         buildTagColumns({
-            onUpdate: async (id, patch) => {
-               await updateMutation.mutateAsync({ id, ...patch });
-            },
-         }),
-      [updateMutation],
-   );
-
-   useContextPanelInfo(() => <TagsInfoContent />);
-
-   return (
-      <div className="flex flex-1 flex-col gap-4 min-h-0">
-         <DataTableRoot
-            columns={columns}
-            data={tags}
-            getRowId={(row) => row.id}
-            renderActions={({ row }) => {
-               if (row.original.isArchived) {
-                  return (
-                     <>
-                        <Button
-                           onClick={() => handleUnarchive(row.original)}
-                           tooltip="Reativar"
-                           variant="outline"
-                        >
-                           <ArchiveRestore />
-                        </Button>
-                        <Button
-                           className="text-destructive hover:text-destructive"
-                           onClick={() => handleDelete(row.original)}
-                           tooltip="Excluir"
-                           variant="outline"
-                        >
-                           <Trash2 />
-                        </Button>
-                     </>
-                  );
+   const columns = useMemo<ColumnDef<TagRow>[]>(() => {
+      const base = buildTagColumns({
+         onUpdate: async (id, patch) => {
+            await updateMutation.mutateAsync({ id, ...patch });
+         },
+      });
+      const selectColumn: ColumnDef<TagRow> = {
+         id: "__select",
+         size: 40,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { importIgnore: true },
+         header: ({ table }) => (
+            <Checkbox
+               aria-label="Selecionar todas"
+               checked={
+                  table.getIsAllPageRowsSelected()
+                     ? true
+                     : table.getIsSomePageRowsSelected()
+                       ? "indeterminate"
+                       : false
                }
+               onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+            />
+         ),
+         cell: ({ row }) => (
+            <Checkbox
+               aria-label="Selecionar linha"
+               checked={row.getIsSelected()}
+               disabled={!row.getCanSelect()}
+               onCheckedChange={(v) => row.toggleSelected(!!v)}
+            />
+         ),
+      };
+      const actionsColumn: ColumnDef<TagRow> = {
+         id: "__actions",
+         size: 100,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { importIgnore: true, align: "right" },
+         cell: ({ row }) => {
+            const tag = row.original;
+            if (tag.isArchived) {
                return (
-                  <>
+                  <div className="flex justify-end gap-2">
                      <Button
-                        onClick={() => handleArchive(row.original)}
-                        tooltip="Arquivar"
+                        onClick={() => handleUnarchive(tag)}
+                        size="icon-sm"
+                        tooltip="Reativar"
                         variant="outline"
                      >
-                        <Archive />
+                        <ArchiveRestore />
                      </Button>
                      <Button
                         className="text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(row.original)}
+                        onClick={() => handleDelete(tag)}
+                        size="icon-sm"
                         tooltip="Excluir"
                         variant="outline"
                      >
                         <Trash2 />
                      </Button>
-                  </>
+                  </div>
                );
-            }}
-            storageKey="montte:datatable:tags"
-         >
-            <DataTableExternalFilter
-               id="includeArchived"
-               label="Mostrar arquivados"
-               group="Filtros"
-               active={includeArchived}
-               renderIcon={() => <Archive className="size-4" />}
-               onToggle={(checked) =>
-                  navigate({
-                     search: (prev) => ({
-                        ...prev,
-                        includeArchived: checked,
-                        page: 1,
-                     }),
-                     replace: true,
-                  })
-               }
-            />
-            <DataTableToolbar
-               searchPlaceholder="Buscar centros de custo..."
-               searchDefaultValue={search}
-               onSearch={(value) =>
-                  startTransition(() => {
-                     navigate({
-                        search: (prev) => ({ ...prev, search: value, page: 1 }),
-                        replace: true,
+            }
+            return (
+               <div className="flex justify-end gap-2">
+                  <Button
+                     onClick={() => handleArchive(tag)}
+                     size="icon-sm"
+                     tooltip="Arquivar"
+                     variant="outline"
+                  >
+                     <Archive />
+                  </Button>
+                  <Button
+                     className="text-destructive hover:text-destructive"
+                     onClick={() => handleDelete(tag)}
+                     size="icon-sm"
+                     tooltip="Excluir"
+                     variant="outline"
+                  >
+                     <Trash2 />
+                  </Button>
+               </div>
+            );
+         },
+      };
+      return [selectColumn, ...base, actionsColumn];
+   }, [updateMutation, handleArchive, handleDelete, handleUnarchive]);
+
+   const urlState = useTableUrlState({
+      search: { sorting, columnFilters, page, pageSize },
+      onUpdate: (next) =>
+         navigate({
+            search: (prev) => ({ ...prev, ...next }),
+            replace: true,
+         }),
+      totalRows: total,
+   });
+
+   const table = useReactTable({
+      data: tags,
+      columns,
+      getRowId: (row) => row.id,
+      pageCount: urlState.pageCount,
+      manualPagination: true,
+      manualSorting: true,
+      manualFiltering: true,
+      columnResizeMode: "onChange",
+      defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      state: { ...urlState.state, ...layout.state },
+      onSortingChange: urlState.onSortingChange,
+      onColumnFiltersChange: urlState.onColumnFiltersChange,
+      onPaginationChange: urlState.onPaginationChange,
+      onRowSelectionChange: urlState.onRowSelectionChange,
+      onColumnSizingChange: layout.onColumnSizingChange,
+      onColumnOrderChange: layout.onColumnOrderChange,
+      onColumnVisibilityChange: layout.onColumnVisibilityChange,
+      onColumnPinningChange: layout.onColumnPinningChange,
+      getCoreRowModel: getCoreRowModel(),
+   });
+
+   const importApi = useDataImport({ table, config: importConfig });
+
+   const selectedRows = table.getSelectedRowModel().rows;
+   const clearSelection = () => table.resetRowSelection();
+   const archivableIds = selectedRows
+      .filter((r) => !r.original.isDefault && !r.original.isArchived)
+      .map((r) => r.original.id);
+   const deletableIds = selectedRows
+      .filter((r) => !r.original.isDefault)
+      .map((r) => r.original.id);
+
+   useTableBulkActions({
+      selectedCount: selectedRows.length,
+      onClear: clearSelection,
+      children: (
+         <>
+            {archivableIds.length > 0 && (
+               <SelectionActionButton
+                  icon={<Archive />}
+                  onClick={async () => {
+                     await bulkArchiveMutation.mutateAsync({
+                        ids: archivableIds,
                      });
-                  })
-               }
-            >
-               <DataTableImportButton importConfig={importConfig} />
-               <Button
-                  onClick={handleCreate}
-                  tooltip="Novo Centro de Custo"
-                  variant="outline"
-                  size="icon-sm"
+                     toast.success(
+                        `${archivableIds.length} ${archivableIds.length === 1 ? "centro de custo arquivado" : "centros de custo arquivados"}.`,
+                     );
+                     clearSelection();
+                  }}
                >
-                  <Plus />
-                  <span className="sr-only">Novo Centro de Custo</span>
-               </Button>
-            </DataTableToolbar>
-            <DataTableEmptyState>
-               <Empty>
-                  <EmptyHeader>
-                     <EmptyMedia variant="icon">
-                        <Tag className="size-6" />
-                     </EmptyMedia>
-                     <EmptyTitle>Nenhum centro de custo</EmptyTitle>
-                     <EmptyDescription>
-                        Adicione um centro de custo para categorizar suas
-                        transações.
-                     </EmptyDescription>
-                  </EmptyHeader>
-               </Empty>
-            </DataTableEmptyState>
-            <DataTableContent className="flex-1 overflow-auto min-h-0" />
-            <DataTableBulkActions<TagRow>>
-               {({ selectedRows, clearSelection }) => {
-                  const archivableIds = selectedRows
-                     .filter((r) => !r.isDefault && !r.isArchived)
-                     .map((r) => r.id);
-                  const deletableIds = selectedRows
-                     .filter((r) => !r.isDefault)
-                     .map((r) => r.id);
-                  return (
-                     <>
-                        {archivableIds.length > 0 && (
-                           <SelectionActionButton
-                              icon={<Archive />}
-                              onClick={async () => {
-                                 await bulkArchiveMutation.mutateAsync({
-                                    ids: archivableIds,
-                                 });
-                                 toast.success(
-                                    `${archivableIds.length} ${archivableIds.length === 1 ? "centro de custo arquivado" : "centros de custo arquivados"}.`,
-                                 );
-                                 clearSelection();
-                              }}
-                           >
-                              Arquivar
-                           </SelectionActionButton>
-                        )}
-                        {deletableIds.length > 0 && (
-                           <SelectionActionButton
-                              icon={<Trash2 />}
-                              onClick={() => {
-                                 openAlertDialog({
-                                    title: `Excluir ${deletableIds.length} ${deletableIds.length === 1 ? "centro de custo" : "centros de custo"}`,
-                                    description:
-                                       "Tem certeza que deseja excluir os centros de custo selecionados? Esta ação não pode ser desfeita.",
-                                    actionLabel: "Excluir",
-                                    cancelLabel: "Cancelar",
-                                    variant: "destructive",
-                                    onAction: async () => {
-                                       await bulkDeleteMutation.mutateAsync({
-                                          ids: deletableIds,
-                                       });
-                                       toast.success(
-                                          `${deletableIds.length} ${deletableIds.length === 1 ? "centro de custo excluído" : "centros de custo excluídos"} com sucesso.`,
-                                       );
-                                       clearSelection();
-                                    },
-                                 });
-                              }}
-                              variant="destructive"
-                           >
-                              Excluir
-                           </SelectionActionButton>
-                        )}
-                     </>
-                  );
-               }}
-            </DataTableBulkActions>
-         </DataTableRoot>
-         <DataTablePagination
-            currentPage={page}
-            totalPages={totalPages}
-            totalCount={total}
-            pageSize={pageSize}
-            onPageChange={(newPage) =>
-               navigate({
-                  search: (prev) => ({ ...prev, page: newPage }),
-                  replace: true,
-               })
-            }
-            onPageSizeChange={(newPageSize) =>
-               navigate({
-                  search: (prev) => ({
-                     ...prev,
-                     pageSize: newPageSize,
-                     page: 1,
-                  }),
-                  replace: true,
-               })
-            }
-         />
+                  Arquivar
+               </SelectionActionButton>
+            )}
+            {deletableIds.length > 0 && (
+               <SelectionActionButton
+                  icon={<Trash2 />}
+                  onClick={() => {
+                     openAlertDialog({
+                        title: `Excluir ${deletableIds.length} ${deletableIds.length === 1 ? "centro de custo" : "centros de custo"}`,
+                        description:
+                           "Tem certeza que deseja excluir os centros de custo selecionados? Esta ação não pode ser desfeita.",
+                        actionLabel: "Excluir",
+                        cancelLabel: "Cancelar",
+                        variant: "destructive",
+                        onAction: async () => {
+                           await bulkDeleteMutation.mutateAsync({
+                              ids: deletableIds,
+                           });
+                           toast.success(
+                              `${deletableIds.length} ${deletableIds.length === 1 ? "centro de custo excluído" : "centros de custo excluídos"} com sucesso.`,
+                           );
+                           clearSelection();
+                        },
+                     });
+                  }}
+                  variant="destructive"
+               >
+                  Excluir
+               </SelectionActionButton>
+            )}
+         </>
+      ),
+   });
+
+   useContextPanelInfo(() => <TagsInfoContent />);
+
+   return (
+      <div className="flex flex-1 flex-col gap-4 min-h-0">
+         <div className="flex flex-1 flex-col gap-4 min-h-0">
+            <div className="flex flex-wrap items-center gap-2 justify-between">
+               <SearchInput
+                  className="max-w-sm"
+                  aria-label="Buscar centros de custo"
+                  onChange={(e) => searchInput.onChange(e.target.value)}
+                  placeholder="Buscar centros de custo..."
+                  value={searchInput.value}
+               />
+               <div className="flex flex-wrap items-center gap-2">
+                  <PageFilters>
+                     <PageFilter
+                        active={includeArchived}
+                        group="Filtros"
+                        icon={<Archive className="size-4" />}
+                        id="includeArchived"
+                        label="Mostrar arquivados"
+                        onToggle={(checked) =>
+                           navigate({
+                              search: (prev) => ({
+                                 ...prev,
+                                 includeArchived: checked,
+                                 page: 1,
+                              }),
+                              replace: true,
+                           })
+                        }
+                     />
+                  </PageFilters>
+                  <DataTableColumnVisibility table={table} />
+                  <ExportButton table={table} fileBase="centros-custo" />
+                  <DataImportButton api={importApi} config={importConfig} />
+                  <Button
+                     onClick={handleCreate}
+                     size="icon-sm"
+                     tooltip="Novo Centro de Custo"
+                     variant="outline"
+                  >
+                     <Plus />
+                     <span className="sr-only">Novo Centro de Custo</span>
+                  </Button>
+               </div>
+            </div>
+            <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
+               <Table>
+                  <DataTableHeader table={table} />
+                  <DataTableBody<TagRow> table={table} />
+                  <DataImportSection
+                     api={importApi}
+                     config={importConfig}
+                     table={table}
+                  />
+               </Table>
+               {table.getRowCount() === 0 && (
+                  <Empty>
+                     <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                           <Tag className="size-6" />
+                        </EmptyMedia>
+                        <EmptyTitle>Nenhum centro de custo</EmptyTitle>
+                        <EmptyDescription>
+                           Adicione um centro de custo para categorizar suas
+                           transações.
+                        </EmptyDescription>
+                     </EmptyHeader>
+                  </Empty>
+               )}
+            </ScrollArea>
+            <DataTablePagination table={table} />
+         </div>
       </div>
    );
 }
 
 function TagsPage() {
    return (
-      <main className="flex h-full flex-col gap-4">
+      <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden">
          <DefaultHeader
             description="Gerencie seus centros de custo para categorizar transações"
             title="Centros de Custo"

@@ -7,7 +7,7 @@ import {
    PopoverTrigger,
 } from "@packages/ui/components/popover";
 import { useMutation } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, Row } from "@tanstack/react-table";
 import {
    ArrowUpDown,
    CalendarClock,
@@ -18,6 +18,11 @@ import {
    Tag,
    User,
 } from "lucide-react";
+import { InlineEditCombobox } from "@/blocks/data-table/inline-edit/inline-edit-combobox";
+import { InlineEditDate } from "@/blocks/data-table/inline-edit/inline-edit-date";
+import { InlineEditMoney } from "@/blocks/data-table/inline-edit/inline-edit-money";
+import { InlineEditSelect } from "@/blocks/data-table/inline-edit/inline-edit-select";
+import { InlineEditText } from "@/blocks/data-table/inline-edit/inline-edit-text";
 import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -29,12 +34,15 @@ export type CategoryOption = { id: string; name: string };
 export type CreditCardOption = { id: string; name: string };
 
 export function formatBRL(value: string | number): string {
-   return format(of(String(value), "BRL"), "pt-BR");
+   const raw = String(value).trim();
+   return format(of(raw === "" ? "0" : raw, "BRL"), "pt-BR");
 }
 
-function formatDate(dateStr: string): string {
-   const [year, month, day] = dateStr.split("-");
-   return `${day}/${month}/${year}`;
+function isImportRow(row: Row<TransactionRow>): number | null {
+   const id = String(row.id);
+   if (!id.startsWith("__import_")) return null;
+   const idx = Number(id.replace("__import_", ""));
+   return Number.isFinite(idx) ? idx : null;
 }
 
 function SuggestedCategoryCell({
@@ -89,50 +97,57 @@ function SuggestedCategoryCell({
    );
 }
 
-function StatusBadge({
-   ignored,
-   status,
-}: {
-   ignored: boolean;
-   status: "pending" | "paid" | "cancelled";
-}) {
-   if (ignored) {
-      return <Badge variant="secondary">Ignorado</Badge>;
-   }
-   if (status === "pending") {
-      return (
-         <Badge
-            className="border-amber-500 text-amber-600 dark:border-amber-400 dark:text-amber-400"
-            variant="outline"
-         >
-            Pendente
-         </Badge>
-      );
-   }
-   if (status === "cancelled") {
-      return <Badge variant="secondary">Ignorado</Badge>;
-   }
-   return (
-      <Badge
-         className="border-green-600 text-green-600 dark:border-green-500 dark:text-green-500"
-         variant="outline"
-      >
-         Efetivado
-      </Badge>
-   );
-}
-
 export function buildTransactionColumns(options?: {
    bankAccounts?: BankAccountOption[];
    contacts?: ContactOption[];
    categories?: CategoryOption[];
    creditCards?: CreditCardOption[];
    onUpdate?: (id: string, patch: Record<string, unknown>) => Promise<void>;
+   onUpdateImport?: (index: number, patch: Record<string, unknown>) => void;
    onCreateBankAccount?: (name: string) => Promise<string>;
    onCreateContact?: (name: string) => Promise<string>;
    onCreateCategory?: (name: string) => Promise<string>;
    getRowStatus?: (id: string) => string | undefined;
 }): ColumnDef<TransactionRow>[] {
+   const statusOptions = [
+      { value: "pending", label: "Pendente" },
+      { value: "paid", label: "Efetivado" },
+   ];
+   const typeOptions = [
+      { value: "income", label: "Receita" },
+      { value: "expense", label: "Despesa" },
+      { value: "transfer", label: "Transferência" },
+   ];
+
+   async function dispatchPatch(
+      row: Row<TransactionRow>,
+      patch: Record<string, unknown>,
+   ) {
+      const importIdx = isImportRow(row);
+      if (importIdx !== null) {
+         options?.onUpdateImport?.(importIdx, patch);
+         return;
+      }
+      await options?.onUpdate?.(row.original.id, patch);
+   }
+
+   const contactOptions = (options?.contacts ?? []).map((c) => ({
+      value: c.id,
+      label: c.name,
+   }));
+   const categoryOptionsList = (options?.categories ?? []).map((c) => ({
+      value: c.id,
+      label: c.name,
+   }));
+   const bankOptions = (options?.bankAccounts ?? []).map((a) => ({
+      value: a.id,
+      label: a.name,
+   }));
+   const creditCardOptions = (options?.creditCards ?? []).map((c) => ({
+      value: c.id,
+      label: c.name,
+   }));
+
    return [
       {
          accessorKey: "status",
@@ -144,24 +159,31 @@ export function buildTransactionColumns(options?: {
             editMode: "inline",
             bulkEditIcon: CircleDot,
             bulkEditAction: "Alterar status",
-            editOptions: [
-               { value: "pending", label: "Pendente" },
-               { value: "paid", label: "Efetivado" },
-               { value: "cancelled", label: "Ignorado" },
-            ],
-            onSave: async (rowId, value) => {
-               await options?.onUpdate?.(rowId, {
-                  ignored: value === "cancelled",
-                  status: value,
-               });
-            },
+            editOptions: statusOptions,
          },
-         cell: ({ row }) => (
-            <StatusBadge
-               ignored={row.original.ignored}
-               status={row.original.status}
-            />
-         ),
+         cell: ({ row }) => {
+            if (row.original.ignored) {
+               return (
+                  <Badge className="text-xs" variant="secondary">
+                     Ignorado
+                  </Badge>
+               );
+            }
+            const status =
+               row.original.status === "cancelled"
+                  ? "pending"
+                  : row.original.status;
+            return (
+               <InlineEditSelect
+                  ariaLabel="Status"
+                  onSave={async (value) =>
+                     dispatchPatch(row, { status: value })
+                  }
+                  options={statusOptions}
+                  value={status}
+               />
+            );
+         },
       },
       {
          accessorKey: "date",
@@ -179,19 +201,31 @@ export function buildTransactionColumns(options?: {
             editMode: "inline",
             bulkEditIcon: CalendarDays,
             bulkEditAction: "Alterar data",
-            onSave: async (rowId, value) => {
-               const status = options?.getRowStatus?.(rowId);
-               const field = status === "pending" ? "dueDate" : "date";
-               await options?.onUpdate?.(rowId, { [field]: value || null });
-            },
+            required: true,
          },
          cell: ({ row }) => {
             const { status, date, dueDate } = row.original;
             const display = status === "pending" && dueDate ? dueDate : date;
             return (
-               <span className="text-sm tabular-nums">
-                  {formatDate(display)}
-               </span>
+               <InlineEditDate
+                  ariaLabel="Data"
+                  onSave={async (value) => {
+                     const importIdx = isImportRow(row);
+                     if (importIdx !== null) {
+                        const field = status === "pending" ? "dueDate" : "date";
+                        options?.onUpdateImport?.(importIdx, {
+                           [field]: value || null,
+                        });
+                        return;
+                     }
+                     const rowStatus = options?.getRowStatus?.(row.original.id);
+                     const field = rowStatus === "pending" ? "dueDate" : "date";
+                     await options?.onUpdate?.(row.original.id, {
+                        [field]: value || null,
+                     });
+                  }}
+                  value={display ?? null}
+               />
             );
          },
       },
@@ -205,20 +239,16 @@ export function buildTransactionColumns(options?: {
             editMode: "inline",
             bulkEditIcon: CalendarClock,
             bulkEditAction: "Alterar vencimento",
-            onSave: async (rowId, value) => {
-               await options?.onUpdate?.(rowId, { dueDate: value || null });
-            },
          },
-         cell: ({ row }) => {
-            const { dueDate } = row.original;
-            if (!dueDate)
-               return <span className="text-xs text-muted-foreground">—</span>;
-            return (
-               <span className="text-sm tabular-nums">
-                  {formatDate(dueDate)}
-               </span>
-            );
-         },
+         cell: ({ row }) => (
+            <InlineEditDate
+               ariaLabel="Vencimento"
+               onSave={async (value) =>
+                  dispatchPatch(row, { dueDate: value || null })
+               }
+               value={row.original.dueDate ?? null}
+            />
+         ),
       },
       {
          accessorKey: "name",
@@ -228,22 +258,17 @@ export function buildTransactionColumns(options?: {
             cellComponent: "text",
             isEditable: true,
             editMode: "inline",
-            onSave: async (rowId, value) => {
-               await options?.onUpdate?.(rowId, {
-                  name: String(value).trim() || null,
-               });
-            },
          },
-         cell: ({ row }) => {
-            const { name } = row.original;
-            if (!name)
-               return <span className="text-sm text-muted-foreground">—</span>;
-            return (
-               <span className="text-sm font-medium truncate max-w-[200px] block">
-                  {name}
-               </span>
-            );
-         },
+         cell: ({ row }) => (
+            <InlineEditText
+               ariaLabel="Nome"
+               onSave={async (value) =>
+                  dispatchPatch(row, { name: value.trim() || null })
+               }
+               placeholder="—"
+               value={row.original.name ?? ""}
+            />
+         ),
       },
       {
          accessorKey: "type",
@@ -255,32 +280,17 @@ export function buildTransactionColumns(options?: {
             editMode: "inline",
             bulkEditIcon: ArrowUpDown,
             bulkEditAction: "Alterar tipo",
-            editOptions: [
-               { value: "income", label: "Receita" },
-               { value: "expense", label: "Despesa" },
-               { value: "transfer", label: "Transferência" },
-            ],
-            onSave: async (rowId, value) => {
-               await options?.onUpdate?.(rowId, { type: value });
-            },
+            editOptions: typeOptions,
+            required: true,
          },
-         cell: ({ row }) => {
-            const { type } = row.original;
-            if (type === "income") {
-               return (
-                  <Badge
-                     className="border-green-600 text-green-600 dark:border-green-500 dark:text-green-500"
-                     variant="outline"
-                  >
-                     Receita
-                  </Badge>
-               );
-            }
-            if (type === "expense") {
-               return <Badge variant="destructive">Despesa</Badge>;
-            }
-            return <Badge variant="secondary">Transferência</Badge>;
-         },
+         cell: ({ row }) => (
+            <InlineEditSelect
+               ariaLabel="Tipo"
+               onSave={async (value) => dispatchPatch(row, { type: value })}
+               options={typeOptions}
+               value={row.original.type}
+            />
+         ),
       },
       {
          accessorKey: "contactName",
@@ -292,23 +302,36 @@ export function buildTransactionColumns(options?: {
             editMode: "inline",
             bulkEditIcon: User,
             bulkEditAction: "Atribuir contato",
-            editOptions: options?.contacts?.map((c) => ({
-               value: c.id,
-               label: c.name,
-            })),
+            editOptions: contactOptions,
             onCreateOption: options?.onCreateContact,
-            onSave: async (rowId, value) => {
-               await options?.onUpdate?.(rowId, {
-                  contactId: String(value) || null,
-               });
-            },
          },
-         cell: ({ row }) => {
-            const name = row.original.contactName;
-            if (!name)
-               return <span className="text-xs text-muted-foreground">—</span>;
-            return <span className="text-sm">{name}</span>;
-         },
+         cell: ({ row }) => (
+            <InlineEditCombobox
+               ariaLabel="Fornecedor/Cliente"
+               onCreate={options?.onCreateContact}
+               onSave={async (value) => {
+                  const label =
+                     contactOptions.find((o) => o.value === value)?.label ?? "";
+                  const importIdx = isImportRow(row);
+                  if (importIdx !== null) {
+                     options?.onUpdateImport?.(importIdx, {
+                        contactId: value || null,
+                        contactName: label,
+                     });
+                     return;
+                  }
+                  await options?.onUpdate?.(row.original.id, {
+                     contactId: value || null,
+                  });
+               }}
+               options={contactOptions}
+               value={
+                  contactOptions.find(
+                     (o) => o.label === row.original.contactName,
+                  )?.value ?? ""
+               }
+            />
+         ),
       },
       {
          accessorKey: "categoryName",
@@ -320,30 +343,48 @@ export function buildTransactionColumns(options?: {
             editMode: "inline",
             bulkEditIcon: Tag,
             bulkEditAction: "Categorizar",
-            editOptions: options?.categories?.map((c) => ({
-               value: c.id,
-               label: c.name,
-            })),
+            editOptions: categoryOptionsList,
             onCreateOption: options?.onCreateCategory,
-            onSave: async (rowId, value) => {
-               await options?.onUpdate?.(rowId, {
-                  categoryId: String(value) || null,
-               });
-            },
          },
          cell: ({ row }) => {
-            const name = row.original.categoryName;
-            const hasSuggestion = !name && row.original.suggestedCategoryId;
-            if (!name && !hasSuggestion)
-               return <span className="text-xs text-muted-foreground">—</span>;
-            if (hasSuggestion)
+            const hasSuggestion =
+               !row.original.categoryName && row.original.suggestedCategoryId;
+            if (hasSuggestion && isImportRow(row) === null) {
                return (
                   <SuggestedCategoryCell
                      id={row.original.id}
                      categoryName={row.original.suggestedCategoryName ?? null}
                   />
                );
-            return <span className="text-sm">{name}</span>;
+            }
+            return (
+               <InlineEditCombobox
+                  ariaLabel="Categoria"
+                  onCreate={options?.onCreateCategory}
+                  onSave={async (value) => {
+                     const label =
+                        categoryOptionsList.find((o) => o.value === value)
+                           ?.label ?? "";
+                     const importIdx = isImportRow(row);
+                     if (importIdx !== null) {
+                        options?.onUpdateImport?.(importIdx, {
+                           categoryId: value || null,
+                           categoryName: label,
+                        });
+                        return;
+                     }
+                     await options?.onUpdate?.(row.original.id, {
+                        categoryId: value || null,
+                     });
+                  }}
+                  options={categoryOptionsList}
+                  value={
+                     categoryOptionsList.find(
+                        (o) => o.label === row.original.categoryName,
+                     )?.value ?? ""
+                  }
+               />
+            );
          },
       },
       {
@@ -356,23 +397,37 @@ export function buildTransactionColumns(options?: {
             editMode: "inline",
             bulkEditIcon: Landmark,
             bulkEditAction: "Definir conta",
-            editOptions: options?.bankAccounts?.map((a) => ({
-               value: a.id,
-               label: a.name,
-            })),
+            editOptions: bankOptions,
             onCreateOption: options?.onCreateBankAccount,
-            onSave: async (rowId, value) => {
-               await options?.onUpdate?.(rowId, {
-                  bankAccountId: String(value) || null,
-               });
-            },
+            required: true,
          },
-         cell: ({ row }) => {
-            const name = row.original.bankAccountName;
-            if (!name)
-               return <span className="text-xs text-muted-foreground">—</span>;
-            return <span className="text-sm">{name}</span>;
-         },
+         cell: ({ row }) => (
+            <InlineEditCombobox
+               ariaLabel="Conta"
+               onCreate={options?.onCreateBankAccount}
+               onSave={async (value) => {
+                  const label =
+                     bankOptions.find((o) => o.value === value)?.label ?? "";
+                  const importIdx = isImportRow(row);
+                  if (importIdx !== null) {
+                     options?.onUpdateImport?.(importIdx, {
+                        bankAccountId: value || null,
+                        bankAccountName: label,
+                     });
+                     return;
+                  }
+                  await options?.onUpdate?.(row.original.id, {
+                     bankAccountId: value || null,
+                  });
+               }}
+               options={bankOptions}
+               value={
+                  bankOptions.find(
+                     (o) => o.label === row.original.bankAccountName,
+                  )?.value ?? ""
+               }
+            />
+         ),
       },
       {
          accessorKey: "creditCardName",
@@ -384,22 +439,35 @@ export function buildTransactionColumns(options?: {
             editMode: "inline",
             bulkEditIcon: CreditCard,
             bulkEditAction: "Definir cartão",
-            editOptions: options?.creditCards?.map((c) => ({
-               value: c.id,
-               label: c.name,
-            })),
-            onSave: async (rowId, value) => {
-               await options?.onUpdate?.(rowId, {
-                  creditCardId: String(value) || null,
-               });
-            },
+            editOptions: creditCardOptions,
          },
-         cell: ({ row }) => {
-            const name = row.original.creditCardName;
-            if (!name)
-               return <span className="text-xs text-muted-foreground">—</span>;
-            return <span className="text-sm">{name}</span>;
-         },
+         cell: ({ row }) => (
+            <InlineEditCombobox
+               ariaLabel="Cartão"
+               onSave={async (value) => {
+                  const label =
+                     creditCardOptions.find((o) => o.value === value)?.label ??
+                     "";
+                  const importIdx = isImportRow(row);
+                  if (importIdx !== null) {
+                     options?.onUpdateImport?.(importIdx, {
+                        creditCardId: value || null,
+                        creditCardName: label,
+                     });
+                     return;
+                  }
+                  await options?.onUpdate?.(row.original.id, {
+                     creditCardId: value || null,
+                  });
+               }}
+               options={creditCardOptions}
+               value={
+                  creditCardOptions.find(
+                     (o) => o.label === row.original.creditCardName,
+                  )?.value ?? ""
+               }
+            />
+         ),
       },
       {
          accessorKey: "amount",
@@ -412,30 +480,27 @@ export function buildTransactionColumns(options?: {
             cellComponent: "money",
             isEditable: true,
             editMode: "inline",
-            onSave: async (rowId, value) => {
-               await options?.onUpdate?.(rowId, { amount: value });
-            },
+            required: true,
          },
          cell: ({ row }) => {
             const { type, amount } = row.original;
-            if (type === "income") {
-               return (
-                  <span className="text-sm font-medium text-green-600 dark:text-green-500">
-                     {formatBRL(amount)}
-                  </span>
-               );
-            }
-            if (type === "expense") {
-               return (
-                  <span className="text-sm font-medium text-destructive">
-                     - {formatBRL(amount)}
-                  </span>
-               );
-            }
+            const numeric = Number(amount) || 0;
+            const colorClass =
+               type === "income"
+                  ? "[&_input]:text-green-600 dark:[&_input]:text-green-500"
+                  : type === "expense"
+                    ? "[&_input]:text-destructive"
+                    : "[&_input]:text-muted-foreground";
             return (
-               <span className="text-sm font-medium text-muted-foreground">
-                  {formatBRL(amount)}
-               </span>
+               <InlineEditMoney
+                  ariaLabel="Valor"
+                  className={colorClass}
+                  onSave={async (value) =>
+                     dispatchPatch(row, { amount: value })
+                  }
+                  value={numeric}
+                  valueInCents={false}
+               />
             );
          },
       },

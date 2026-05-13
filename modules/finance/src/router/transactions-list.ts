@@ -14,7 +14,7 @@ import {
 } from "@modules/finance/services/transactions-where";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const txStatus = z.enum(["pending", "paid", "cancelled"]);
+const txStatus = z.enum(["pending", "paid"]);
 
 const filterSchema = z
    .object({
@@ -34,8 +34,9 @@ const filterSchema = z
       dueDateTo: isoDate.optional(),
       overdueOnly: z.boolean().optional(),
       view: z
-         .enum(["all", "payable", "receivable", "settled", "cancelled"])
+         .enum(["all", "payable", "receivable", "settled", "ignored"])
          .optional(),
+      ignored: z.boolean().optional(),
       page: z.number().int().positive().default(1),
       pageSize: z.number().int().positive().max(100).default(20),
       conditionGroup: ConditionGroup.optional(),
@@ -46,9 +47,7 @@ export const getAll = protectedProcedure
    .input(filterSchema)
    .handler(async ({ context, input }) => {
       const filtersIgnored =
-         input?.view === "cancelled" ||
-         input?.status === "cancelled" ||
-         (Array.isArray(input?.status) && input.status.includes("cancelled"));
+         input?.ignored === true || input?.view === "ignored";
       const filter: TransactionFilter = {
          teamId: context.teamId,
          ...input,
@@ -96,9 +95,7 @@ export const getSummary = protectedProcedure
    .input(filterSchema)
    .handler(async ({ context, input }) => {
       const filtersIgnored =
-         input?.view === "cancelled" ||
-         input?.status === "cancelled" ||
-         (Array.isArray(input?.status) && input.status.includes("cancelled"));
+         input?.ignored === true || input?.view === "ignored";
       const filter: TransactionFilter = {
          teamId: context.teamId,
          ...input,

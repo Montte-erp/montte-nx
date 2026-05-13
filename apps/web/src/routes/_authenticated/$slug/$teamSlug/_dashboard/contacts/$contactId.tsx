@@ -2,7 +2,7 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { Button } from "@packages/ui/components/button";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { z } from "zod";
 import {
    Archive,
@@ -30,6 +30,8 @@ import {
 } from "@packages/ui/components/tabs";
 import { ContactPropertiesPanel } from "../-contacts/contact-properties-panel";
 import { ContactTransacoesTab } from "../-contacts/contact-transacoes-tab";
+import { TransactionFormSheet } from "../-transactions/transaction-form-sheet";
+import { useSheet } from "@/hooks/use-sheet";
 
 type ContactTab = "transacoes";
 const VALID_TABS: readonly [ContactTab] = ["transacoes"];
@@ -109,7 +111,7 @@ function ContactDetailContent() {
    const teamSlug = useTeamSlug();
    const { openAlertDialog } = useAlertDialog();
    const { tab: activeTab } = Route.useSearch();
-   const [isDraftActive, setIsDraftActive] = useState(false);
+   const { openSheet } = useSheet();
 
    const handleValueChange = useCallback(
       (value: string) => {
@@ -219,7 +221,7 @@ function ContactDetailContent() {
    }
 
    return (
-      <main className="flex flex-col gap-4">
+      <main className="flex flex-1 flex-col gap-4 overflow-y-auto">
          <DefaultHeader
             title={contact.name}
             description={documentDescription}
@@ -240,7 +242,11 @@ function ContactDetailContent() {
                   {activeTab === "transacoes" && (
                      <>
                         <Button
-                           onClick={() => setIsDraftActive(true)}
+                           onClick={() =>
+                              openSheet({
+                                 renderChildren: () => <TransactionFormSheet />,
+                              })
+                           }
                            tooltip="Novo lançamento"
                            variant="outline"
                            size="icon-sm"
@@ -302,8 +308,6 @@ function ContactDetailContent() {
                   <ContactTransacoesTab
                      contactId={contactId}
                      contact={contact}
-                     isDraftActive={isDraftActive}
-                     onDiscardDraft={() => setIsDraftActive(false)}
                   />
                </QueryBoundary>
             </TabsContent>

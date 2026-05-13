@@ -5,44 +5,36 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { Table } from "@packages/ui/components/table";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import {
+   getCoreRowModel,
+   getSortedRowModel,
+   useReactTable,
+   type SortingState,
+} from "@tanstack/react-table";
 import { Receipt } from "lucide-react";
-import dayjs from "dayjs";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { DataTableContent } from "@/components/data-table/data-table-content";
-import { DataTableEmptyState } from "@/components/data-table/data-table-empty-state";
-import { DataTableRoot } from "@/components/data-table/data-table-root";
-import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { DataTableBody } from "@/blocks/data-table/data-table-body";
+import { DataTableHeader } from "@/blocks/data-table/data-table-header";
+import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
 import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
 import { buildTransactionColumns } from "../-transactions/transactions-columns";
 
 type Contact = Outputs["contacts"]["getById"];
 
-const TX_TYPES = ["income", "expense", "transfer"] as const;
-type TxType = (typeof TX_TYPES)[number];
-function isTxType(v: string): v is TxType {
-   return (TX_TYPES as readonly string[]).includes(v);
-}
-
-const TX_STATUSES = ["pending", "paid", "cancelled"] as const;
-type TxStatus = (typeof TX_STATUSES)[number];
-function isTxStatus(v: string): v is TxStatus {
-   return (TX_STATUSES as readonly string[]).includes(v);
-}
-
 export function ContactTransacoesTab({
    contactId,
    contact,
-   isDraftActive,
-   onDiscardDraft,
 }: {
    contactId: string;
    contact: Contact;
-   isDraftActive: boolean;
-   onDiscardDraft: () => void;
 }) {
+   const layout = useDataTableLayout("contact-transactions");
+
    const { data: result } = useSuspenseQuery(
       orpc.transactions.getAll.queryOptions({
          input: { contactId, page: 1, pageSize: 10 },
@@ -67,52 +59,11 @@ export function ContactTransacoesTab({
       }),
    );
 
-   const createMutation = useMutation(
-      orpc.transactions.create.mutationOptions({
-         onSuccess: () => {
-            toast.success("Lançamento criado.");
-            onDiscardDraft();
-         },
-         onError: (e) => toast.error(e.message),
-      }),
-   );
-
    const handleUpdate = useCallback(
       async (id: string, patch: Record<string, unknown>) => {
          await updateMutation.mutateAsync({ id, ...patch });
       },
       [updateMutation],
-   );
-
-   const handleAddTransaction = useCallback(
-      async (data: Record<string, string | string[]>) => {
-         const rawType = String(data.type || "");
-         const type = isTxType(rawType) ? rawType : "income";
-         const name = String(data.name ?? "").trim() || null;
-         const amount = String(data.amount || "");
-         const date =
-            String(data.date || "").trim() || dayjs().format("YYYY-MM-DD");
-         const bankAccountId = String(data.bankAccountName || "") || null;
-         const categoryId = String(data.categoryName || "") || null;
-         const creditCardId = String(data.creditCardName || "") || null;
-         const dueDate = String(data.dueDate || "").trim() || null;
-         const rawStatus = String(data.status || "");
-         const txStatus = isTxStatus(rawStatus) ? rawStatus : "pending";
-
-         await createMutation.mutateAsync({
-            name,
-            type,
-            amount,
-            date,
-            bankAccountId,
-            contactId,
-            categoryId,
-            creditCardId: creditCardId || null,
-            dueDate,
-            status: txStatus,
-         });
-      },
-      [createMutation, contactId],
    );
 
    const columns = useMemo(
@@ -135,19 +86,33 @@ export function ContactTransacoesTab({
       ],
    );
 
+   const [sorting, setSorting] = useState<SortingState>([]);
+
+   const table = useReactTable({
+      data: result.data,
+      columns,
+      getRowId: (row) => row.id,
+      columnResizeMode: "onChange",
+      defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      state: { sorting, ...layout.state },
+      onSortingChange: setSorting,
+      onColumnSizingChange: layout.onColumnSizingChange,
+      onColumnOrderChange: layout.onColumnOrderChange,
+      onColumnVisibilityChange: layout.onColumnVisibilityChange,
+      onColumnPinningChange: layout.onColumnPinningChange,
+      getCoreRowModel: getCoreRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+   });
+
    return (
-      <DataTableRoot
-         storageKey="montte:datatable:contact-transactions"
-         columns={columns}
-         data={result.data}
-         getRowId={(row) => row.id}
-         isDraftRowActive={isDraftActive}
-         onAddRow={handleAddTransaction}
-         onDiscardAddRow={onDiscardDraft}
-         renderActions={() => <></>}
-      >
-         <DataTableToolbar hideExport />
-         <DataTableEmptyState>
+      <div className="flex flex-col gap-4">
+         <ScrollArea className="rounded-md border bg-card">
+            <Table>
+               <DataTableHeader table={table} />
+               <DataTableBody table={table} />
+            </Table>
+         </ScrollArea>
+         {result.data.length === 0 && (
             <Empty>
                <EmptyHeader>
                   <EmptyMedia variant="icon">
@@ -159,8 +124,7 @@ export function ContactTransacoesTab({
                   </EmptyDescription>
                </EmptyHeader>
             </Empty>
-         </DataTableEmptyState>
-         <DataTableContent />
-      </DataTableRoot>
+         )}
+      </div>
    );
 }
