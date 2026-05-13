@@ -64,7 +64,7 @@ async function pickFeature(page: Page, label: RegExp) {
 
 async function maybeCompleteProfileStep(page: Page) {
    const nameField = page.getByRole("textbox", { name: "Seu Nome" });
-   if (!(await nameField.isVisible().catch(() => false))) return;
+   if (!(await nameField.isVisible({ timeout: 3000 }))) return;
    const current = (await nameField.inputValue()).trim();
    if (current.length < 2) await nameField.fill("E2E User");
    const continueButton = page.getByRole("button", { name: "Continuar" });

@@ -120,7 +120,7 @@ function parseImportDate(value: unknown): string {
    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
    if (/^\d+(\.\d+)?$/.test(raw)) {
       const serial = Number.parseFloat(raw);
-      const fromSerial = dayjs("1899-12-30").add(Math.round(serial), "day");
+      const fromSerial = dayjs("1899-12-30").add(Math.trunc(serial), "day");
       if (fromSerial.isValid()) return fromSerial.format("YYYY-MM-DD");
    }
    return raw;
