@@ -526,12 +526,12 @@ function BankAccountsList() {
                <Table>
                   <DataTableHeader table={table} />
                   <DataTableBody<BankAccountRow> table={table} />
+                  <DataImportSection
+                     api={importApi}
+                     config={importConfig}
+                     table={table}
+                  />
                </Table>
-               <DataImportSection
-                  api={importApi}
-                  config={importConfig}
-                  table={table}
-               />
                {table.getRowCount() === 0 && (
                   <Empty>
                      <EmptyMedia>

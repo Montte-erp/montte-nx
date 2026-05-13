@@ -28,7 +28,7 @@ export const markAsPaid = protectedProcedure
       if (existing.status === "paid" && !existing.ignored) {
          throw WebAppError.conflict("Lançamento já está pago.");
       }
-      if (existing.status === "cancelled" || existing.ignored) {
+      if (existing.ignored) {
          throw WebAppError.badRequest("Lançamento ignorado não pode ser pago.");
       }
       if (typeof input.bankAccountId === "string") {
@@ -101,17 +101,14 @@ export const cancel = protectedProcedure
    .input(idSchema)
    .use(requireTransaction, (input) => input.id)
    .handler(async ({ context, input }) => {
-      if (
-         context.transaction.status === "cancelled" ||
-         context.transaction.ignored
-      ) {
+      if (context.transaction.ignored) {
          throw WebAppError.conflict("Lançamento já está ignorado.");
       }
       const result = await fromPromise(
          context.db.transaction(async (tx) =>
             tx
                .update(transactions)
-               .set({ status: "cancelled", ignored: true })
+               .set({ ignored: true })
                .where(eq(transactions.id, input.id))
                .returning(),
          ),
@@ -127,10 +124,7 @@ export const reactivate = protectedProcedure
    .input(z.object({ id: z.string().uuid(), paid: z.boolean().default(false) }))
    .use(requireTransaction, (input) => input.id)
    .handler(async ({ context, input }) => {
-      if (
-         context.transaction.status !== "cancelled" &&
-         !context.transaction.ignored
-      ) {
+      if (!context.transaction.ignored) {
          throw WebAppError.conflict(
             "Apenas lançamentos ignorados podem ser reativados.",
          );
@@ -139,11 +133,7 @@ export const reactivate = protectedProcedure
          context.db.transaction(async (tx) =>
             tx
                .update(transactions)
-               .set({
-                  status: input.paid ? "paid" : "pending",
-                  ignored: false,
-                  paidAt: input.paid ? dayjs().toDate() : null,
-               })
+               .set({ ignored: false })
                .where(eq(transactions.id, input.id))
                .returning(),
          ),

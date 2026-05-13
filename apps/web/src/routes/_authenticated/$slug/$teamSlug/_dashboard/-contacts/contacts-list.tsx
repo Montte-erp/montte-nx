@@ -392,12 +392,12 @@ export function ContactsList() {
                <Table>
                   <DataTableHeader table={table} />
                   <DataTableBody<ContactRow> table={table} />
+                  <DataImportSection
+                     api={importApi}
+                     config={importConfig}
+                     table={table}
+                  />
                </Table>
-               <DataImportSection
-                  api={importApi}
-                  config={importConfig}
-                  table={table}
-               />
                {table.getRowCount() === 0 && (
                   <Empty>
                      <EmptyHeader>

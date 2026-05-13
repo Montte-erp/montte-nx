@@ -1,6 +1,7 @@
 import {
    Tooltip,
    TooltipContent,
+   TooltipProvider,
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import { cn } from "@packages/ui/lib/utils";
@@ -70,10 +71,12 @@ function Button({
 
    if (tooltip) {
       return (
-         <Tooltip>
-            <TooltipTrigger asChild>{button}</TooltipTrigger>
-            <TooltipContent side={tooltipSide}>{tooltip}</TooltipContent>
-         </Tooltip>
+         <TooltipProvider>
+            <Tooltip>
+               <TooltipTrigger asChild>{button}</TooltipTrigger>
+               <TooltipContent side={tooltipSide}>{tooltip}</TooltipContent>
+            </Tooltip>
+         </TooltipProvider>
       );
    }
 

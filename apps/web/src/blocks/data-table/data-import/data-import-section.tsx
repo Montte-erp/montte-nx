@@ -4,7 +4,7 @@ import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
-import { TableCell, TableRow } from "@packages/ui/components/table";
+import { TableBody, TableCell, TableRow } from "@packages/ui/components/table";
 import { cn } from "@packages/ui/lib/utils";
 import { Check, Loader2, TriangleAlert, X } from "lucide-react";
 import { fromPromise } from "neverthrow";
@@ -178,7 +178,7 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
    }, [duplicateIndices, ignoredIndices, openAlertDialog, submit]);
 
    return (
-      <>
+      <TableBody>
          <TableRow className="hover:bg-transparent">
             <TableCell className="bg-muted px-4 py-2" colSpan={colCount}>
                <div className="flex items-center justify-between gap-4">
@@ -269,6 +269,7 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                      : col.id;
                const currentHeader = mapping[accKey] ?? "";
                const isEditing = editingColKey === accKey;
+               const required = col.columnDef.meta?.required;
                return (
                   <TableCell className="py-1 pr-2" key={col.id}>
                      {isEditing ? (
@@ -297,10 +298,25 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                            {currentHeader ? (
                               <span className="flex-1 truncate font-medium text-foreground">
                                  {currentHeader}
+                                 {required && (
+                                    <span
+                                       aria-label="Obrigatório"
+                                       className="ml-0.5 text-destructive"
+                                    >
+                                       *
+                                    </span>
+                                 )}
                               </span>
                            ) : (
-                              <span className="flex-1 truncate italic text-muted-foreground/50">
-                                 Não mapeado
+                              <span
+                                 className={cn(
+                                    "flex-1 truncate italic",
+                                    required
+                                       ? "text-destructive/70"
+                                       : "text-muted-foreground/50",
+                                 )}
+                              >
+                                 {required ? "Não mapeado *" : "Não mapeado"}
                               </span>
                            )}
                         </Button>
@@ -457,6 +473,6 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                </TableRow>
             );
          })}
-      </>
+      </TableBody>
    );
 }

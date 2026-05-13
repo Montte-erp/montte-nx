@@ -600,12 +600,12 @@ function CreditCardsList() {
                         <CreditCardFaturaRow creditCardId={row.original.id} />
                      )}
                   />
+                  <DataImportSection
+                     api={importApi}
+                     config={importConfig}
+                     table={table}
+                  />
                </Table>
-               <DataImportSection
-                  api={importApi}
-                  config={importConfig}
-                  table={table}
-               />
                {table.getRowCount() === 0 && (
                   <Empty>
                      <EmptyHeader>

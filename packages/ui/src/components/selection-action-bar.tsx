@@ -81,19 +81,22 @@ function SelectionActionButton({
    className,
    ...props
 }: SelectionActionButtonProps) {
+   const tooltip = typeof children === "string" ? children : undefined;
    return (
       <Button
          className={cn(
-            "h-8 px-2 md:px-4 text-xs md:text-sm gap-2",
+            "size-8",
             variant === "destructive" &&
                "bg-destructive/10 hover:bg-destructive/20 text-destructive border-destructive/30",
             className,
          )}
+         size="icon-sm"
+         tooltip={tooltip}
          variant="outline"
          {...props}
       >
          {icon}
-         <span className="hidden sm:inline">{children}</span>
+         <span className="sr-only">{children}</span>
       </Button>
    );
 }

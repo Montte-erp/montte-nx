@@ -47,7 +47,7 @@ import {
    Trash2,
    Undo2,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
@@ -63,6 +63,7 @@ import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
 import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
 import { PageFilters } from "@/components/page-filters/page-filters";
 import { PageFilter } from "@/components/page-filters/page-filter";
+import { PageFilterSelect } from "@/components/page-filters/page-filter-select";
 import { useSheet } from "@/hooks/use-sheet";
 import { TransactionFormSheet } from "./transaction-form-sheet";
 import { useCsvFile } from "@/hooks/use-csv-file";
@@ -148,15 +149,22 @@ function parseImportType(
    return signedAmount < 0 ? "expense" : "income";
 }
 
-function parseImportStatus(value: unknown): "pending" | "paid" | "cancelled" {
+function parseImportStatus(value: unknown): {
+   status: "pending" | "paid";
+   ignored: boolean;
+} {
    const normalized = normalizeImportLookup(value);
+   if (
+      normalized === "cancelled" ||
+      normalized.includes("cancelado") ||
+      normalized.includes("ignorado")
+   ) {
+      return { status: "pending", ignored: true };
+   }
    if (normalized === "paid" || normalized.includes("efetivado")) {
-      return "paid";
+      return { status: "paid", ignored: false };
    }
-   if (normalized === "cancelled" || normalized.includes("cancelado")) {
-      return "cancelled";
-   }
-   return "pending";
+   return { status: "pending", ignored: false };
 }
 
 export function TransactionsList() {
@@ -190,6 +198,25 @@ export function TransactionsList() {
             replace: true,
          }),
    });
+
+   const handleViewChange = useCallback(
+      (nextView: string) => {
+         navigate({
+            search: (prev) => ({
+               ...prev,
+               view: nextView as
+                  | "all"
+                  | "payable"
+                  | "receivable"
+                  | "settled"
+                  | "ignored",
+               page: 1,
+            }),
+            replace: true,
+         });
+      },
+      [navigate],
+   );
 
    const handleOverdueToggle = useCallback(
       (checked: boolean) => {
@@ -445,6 +472,7 @@ export function TransactionsList() {
          mapRow: (row, i) => {
             const parsedAmount = parseImportAmount(row.amount);
             const type = parseImportType(row.type, parsedAmount.signedAmount);
+            const parsedStatus = parseImportStatus(row.status);
 
             return {
                id: `__import_${i}`,
@@ -452,7 +480,8 @@ export function TransactionsList() {
                amount: parsedAmount.amount,
                type,
                name: String(row.name ?? "").trim() || null,
-               status: parseImportStatus(row.status),
+               status: parsedStatus.status,
+               ignored: parsedStatus.ignored,
                dueDate: row.dueDate ? parseImportDate(row.dueDate) : null,
                bankAccountName: String(row.bankAccountName ?? "").trim(),
                bankAccountId: resolveImportId(
@@ -545,6 +574,32 @@ export function TransactionsList() {
                },
             ],
          },
+         extraBulkActions: ({ selectedIndices, bulkUpdate, clear }) => (
+            <>
+               <ImportBulkStatusButton
+                  bulkUpdate={bulkUpdate}
+                  clear={clear}
+                  selectedIndices={selectedIndices}
+               />
+               <ImportBulkDateButton
+                  bulkUpdate={bulkUpdate}
+                  clear={clear}
+                  selectedIndices={selectedIndices}
+               />
+               <ImportBulkCategoryButton
+                  bulkUpdate={bulkUpdate}
+                  categories={categoriesResult ?? []}
+                  clear={clear}
+                  selectedIndices={selectedIndices}
+               />
+               <ImportBulkAccountButton
+                  bankAccounts={bankAccounts}
+                  bulkUpdate={bulkUpdate}
+                  clear={clear}
+                  selectedIndices={selectedIndices}
+               />
+            </>
+         ),
          onImport: async (rows) => {
             const transactions = rows.flatMap((r) => {
                const date = String(r.date ?? "");
@@ -575,7 +630,10 @@ export function TransactionsList() {
                         resolveImportId(contacts, r.contactName),
                      creditCardId,
                      paymentMethod: null,
-                     status: parseImportStatus(r.status),
+                     status: parseImportStatus(r.status).status,
+                     ignored:
+                        r.ignored === true ||
+                        parseImportStatus(r.status).ignored,
                      dueDate: r.dueDate ? String(r.dueDate) : null,
                   },
                ];
@@ -609,6 +667,10 @@ export function TransactionsList() {
       ],
    );
 
+   const importUpdateRef = useRef<
+      ((index: number, patch: Record<string, unknown>) => void) | null
+   >(null);
+
    const columns = useMemo<ColumnDef<TransactionRow>[]>(() => {
       const base = buildTransactionColumns({
          bankAccounts,
@@ -616,6 +678,7 @@ export function TransactionsList() {
          categories: categoriesResult,
          creditCards: creditCardsResult.data,
          onUpdate: handleUpdate,
+         onUpdateImport: (idx, patch) => importUpdateRef.current?.(idx, patch),
          onCreateBankAccount: handleCreateBankAccount,
          onCreateContact: handleCreateContact,
          onCreateCategory: handleCreateCategory,
@@ -656,10 +719,10 @@ export function TransactionsList() {
          meta: { align: "right" },
          cell: ({ row }) => {
             const tx = row.original;
-            const { status: rowStatus } = tx;
+            const { status: rowStatus, ignored } = tx;
             return (
                <div className="flex justify-end gap-2">
-                  {rowStatus === "pending" && (
+                  {!ignored && rowStatus === "pending" && (
                      <Button
                         className="text-green-600 hover:text-green-700"
                         onClick={() => handleMarkPaid(tx)}
@@ -671,7 +734,7 @@ export function TransactionsList() {
                         <span className="sr-only">Marcar como efetivado</span>
                      </Button>
                   )}
-                  {rowStatus === "paid" && (
+                  {!ignored && rowStatus === "paid" && (
                      <Button
                         onClick={() => handleMarkUnpaid(tx)}
                         size="icon-sm"
@@ -682,7 +745,7 @@ export function TransactionsList() {
                         <span className="sr-only">Marcar como pendente</span>
                      </Button>
                   )}
-                  {rowStatus === "cancelled" && (
+                  {ignored ? (
                      <Button
                         onClick={() => handleReactivate(tx)}
                         size="icon-sm"
@@ -692,8 +755,7 @@ export function TransactionsList() {
                         <RotateCcw />
                         <span className="sr-only">Reativar</span>
                      </Button>
-                  )}
-                  {(rowStatus === "pending" || rowStatus === "paid") && (
+                  ) : (
                      <Button
                         onClick={() => handleCancel(tx)}
                         size="icon-sm"
@@ -769,6 +831,7 @@ export function TransactionsList() {
    });
 
    const importApi = useDataImport({ table, config: importConfig });
+   importUpdateRef.current = importApi.updateRow;
 
    const selectedRows = table.getSelectedRowModel().rows;
    const selectedIds = selectedRows.map((r) => r.original.id);
@@ -833,6 +896,20 @@ export function TransactionsList() {
                />
                <div className="flex flex-wrap items-center gap-2">
                   <PageFilters>
+                     <PageFilterSelect
+                        group="Visualização"
+                        id="view"
+                        label="Visualização"
+                        onChange={handleViewChange}
+                        options={[
+                           { value: "all", label: "Todos" },
+                           { value: "payable", label: "A Pagar" },
+                           { value: "receivable", label: "A Receber" },
+                           { value: "settled", label: "Efetivados" },
+                           { value: "ignored", label: "Ignorados" },
+                        ]}
+                        value={view}
+                     />
                      <PageFilter
                         active={overdueOnly}
                         group="Filtros"
@@ -872,12 +949,12 @@ export function TransactionsList() {
                <Table>
                   <DataTableHeader table={table} />
                   <DataTableBody<TransactionRow> table={table} />
+                  <DataImportSection
+                     api={importApi}
+                     config={importConfig}
+                     table={table}
+                  />
                </Table>
-               <DataImportSection
-                  api={importApi}
-                  config={importConfig}
-                  table={table}
-               />
                {table.getRowCount() === 0 && (
                   <Empty>
                      <EmptyHeader>
@@ -928,11 +1005,7 @@ function BulkIgnoreButton({
                onAction: async () => {
                   const results = await Promise.allSettled(
                      ids.map((id) =>
-                        mutation.mutateAsync({
-                           id,
-                           ignored: true,
-                           status: "cancelled",
-                        }),
+                        mutation.mutateAsync({ id, ignored: true }),
                      ),
                   );
                   if (results.every((r) => r.status === "fulfilled")) {
@@ -1125,6 +1198,165 @@ function BulkAccountButton({
                   );
                   setOpen(false);
                   onSuccess();
+               }}
+            />
+         </PopoverContent>
+      </Popover>
+   );
+}
+
+type ImportBulkProps = {
+   selectedIndices: Set<number>;
+   bulkUpdate: (
+      indices: Set<number>,
+      keyOrPatch: string | Record<string, unknown>,
+      value?: unknown,
+   ) => void;
+   clear: () => void;
+};
+
+function ImportBulkStatusButton({
+   selectedIndices,
+   bulkUpdate,
+   clear,
+}: ImportBulkProps) {
+   const [open, setOpen] = useState(false);
+   const opts = [
+      { value: "pending", label: "Pendente" },
+      { value: "paid", label: "Efetivado" },
+   ];
+   return (
+      <Popover open={open} onOpenChange={setOpen}>
+         <PopoverTrigger asChild>
+            <SelectionActionButton icon={<CircleDot />}>
+               Status
+            </SelectionActionButton>
+         </PopoverTrigger>
+         <PopoverContent align="start" className="w-44 p-1">
+            <div className="flex flex-col">
+               {opts.map((o) => (
+                  <Button
+                     key={o.value}
+                     className="justify-start text-sm"
+                     variant="ghost"
+                     onClick={() => {
+                        bulkUpdate(selectedIndices, "status", o.value);
+                        setOpen(false);
+                        clear();
+                     }}
+                  >
+                     {o.label}
+                  </Button>
+               ))}
+            </div>
+         </PopoverContent>
+      </Popover>
+   );
+}
+
+function ImportBulkDateButton({
+   selectedIndices,
+   bulkUpdate,
+   clear,
+}: ImportBulkProps) {
+   const [open, setOpen] = useState(false);
+   return (
+      <Popover open={open} onOpenChange={setOpen}>
+         <PopoverTrigger asChild>
+            <SelectionActionButton icon={<CalendarDays />}>
+               Data
+            </SelectionActionButton>
+         </PopoverTrigger>
+         <PopoverContent align="start" className="w-auto p-0">
+            <Calendar
+               mode="single"
+               onSelect={(d) => {
+                  if (!d) return;
+                  bulkUpdate(
+                     selectedIndices,
+                     "date",
+                     dayjs(d).format("YYYY-MM-DD"),
+                  );
+                  setOpen(false);
+                  clear();
+               }}
+            />
+         </PopoverContent>
+      </Popover>
+   );
+}
+
+function ImportBulkCategoryButton({
+   selectedIndices,
+   bulkUpdate,
+   clear,
+   categories,
+}: ImportBulkProps & { categories: CategoryOption[] }) {
+   const [open, setOpen] = useState(false);
+   return (
+      <Popover open={open} onOpenChange={setOpen}>
+         <PopoverTrigger asChild>
+            <SelectionActionButton icon={<FolderOpen />}>
+               Categoria
+            </SelectionActionButton>
+         </PopoverTrigger>
+         <PopoverContent align="start" className="w-64 p-2">
+            <Combobox
+               emptyMessage="Nenhuma categoria."
+               options={categories.map((c) => ({ value: c.id, label: c.name }))}
+               placeholder="Selecionar categoria..."
+               searchPlaceholder="Buscar..."
+               value=""
+               onValueChange={(categoryId) => {
+                  const label =
+                     categories.find((c) => c.id === categoryId)?.name ?? "";
+                  bulkUpdate(selectedIndices, {
+                     categoryId,
+                     categoryName: label,
+                  });
+                  setOpen(false);
+                  clear();
+               }}
+            />
+         </PopoverContent>
+      </Popover>
+   );
+}
+
+function ImportBulkAccountButton({
+   selectedIndices,
+   bulkUpdate,
+   clear,
+   bankAccounts,
+}: ImportBulkProps & { bankAccounts: BankAccountOption[] }) {
+   const [open, setOpen] = useState(false);
+   return (
+      <Popover open={open} onOpenChange={setOpen}>
+         <PopoverTrigger asChild>
+            <SelectionActionButton icon={<Landmark />}>
+               Conta
+            </SelectionActionButton>
+         </PopoverTrigger>
+         <PopoverContent align="start" className="w-64 p-2">
+            <Combobox
+               emptyMessage="Nenhuma conta."
+               options={bankAccounts.map((a) => ({
+                  value: a.id,
+                  label: a.name,
+               }))}
+               placeholder="Selecionar conta..."
+               searchPlaceholder="Buscar..."
+               value=""
+               onValueChange={(bankAccountId) => {
+                  const label =
+                     bankAccounts.find((a) => a.id === bankAccountId)?.name ??
+                     "";
+                  bulkUpdate(selectedIndices, {
+                     bankAccountId,
+                     bankAccountName: label,
+                  });
+                  setOpen(false);
+                  clear();
                }}
             />
          </PopoverContent>

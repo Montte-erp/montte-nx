@@ -60,16 +60,21 @@ export function DataImportBulkEdit<TData>({
             const isOpen = openCol === accKey;
             const colOptions = meta.editOptions ?? [];
 
+            const Icon = meta.bulkEditIcon;
             const triggerBtn = (
                <PopoverTrigger asChild>
                   <Button
-                     className="size-7"
-                     size="icon"
+                     className="size-8"
+                     size="icon-sm"
                      tooltip={tooltipText}
                      type="button"
                      variant="outline"
                   >
-                     {(meta.label ?? accKey).slice(0, 2)}
+                     {Icon ? (
+                        <Icon className="size-3.5" />
+                     ) : (
+                        (meta.label ?? accKey).slice(0, 2)
+                     )}
                      <span className="sr-only">{tooltipText}</span>
                   </Button>
                </PopoverTrigger>

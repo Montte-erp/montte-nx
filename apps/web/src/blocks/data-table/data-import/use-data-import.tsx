@@ -1,7 +1,9 @@
 import type { Table } from "@tanstack/react-table";
 import { SelectionActionButton } from "@packages/ui/components/selection-action-bar";
-import { EyeOff } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { Check, EyeOff, RotateCcw, Trash2 } from "lucide-react";
+import { fromPromise } from "neverthrow";
+import { type ReactNode, useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
 import { useSelectionToolbar } from "@/hooks/use-selection-toolbar";
 import { DataImportBulkEdit } from "./data-import-bulk-edit";
@@ -42,6 +44,15 @@ export interface DataImportConfig {
    ) => Record<string, unknown>;
    onImport: (rows: Record<string, unknown>[]) => Promise<void>;
    template?: ImportTemplate;
+   extraBulkActions?: (ctx: {
+      selectedIndices: Set<number>;
+      bulkUpdate: (
+         indices: Set<number>,
+         keyOrPatch: string | Record<string, unknown>,
+         value?: unknown,
+      ) => void;
+      clear: () => void;
+   }) => ReactNode;
 }
 
 export interface ImportState {
@@ -118,7 +129,11 @@ export interface UseDataImportApi {
    updateMapping: (mapping: Record<string, string>) => void;
    removeRows: (indices: Set<number>) => void;
    updateRow: (index: number, patch: Record<string, unknown>) => void;
-   bulkUpdate: (indices: Set<number>, key: string, value: unknown) => void;
+   bulkUpdate: (
+      indices: Set<number>,
+      keyOrPatch: string | Record<string, unknown>,
+      value?: unknown,
+   ) => void;
    toggleRow: (index: number) => void;
    toggleAll: () => void;
    clearSelection: () => void;
@@ -143,12 +158,20 @@ export function useDataImport<TData>({
    );
 
    const bulkUpdate = useCallback(
-      (indices: Set<number>, key: string, value: unknown) =>
+      (
+         indices: Set<number>,
+         keyOrPatch: string | Record<string, unknown>,
+         value?: unknown,
+      ) =>
          setState((s) => {
             if (!s) return s;
+            const patch =
+               typeof keyOrPatch === "string"
+                  ? { [keyOrPatch]: value }
+                  : keyOrPatch;
             const importRows = [...s.importRows];
             for (const idx of indices) {
-               importRows[idx] = { ...importRows[idx], [key]: value };
+               importRows[idx] = { ...importRows[idx], ...patch };
             }
             return { ...s, importRows };
          }),
@@ -164,6 +187,41 @@ export function useDataImport<TData>({
          clear: () => void;
       }) => {
          if (!state) return null;
+         const indices = [...selectedIndices];
+         const hasIgnored = indices.some((i) => ignoredIndices.has(i));
+         const hasActive = indices.some((i) => !ignoredIndices.has(i));
+         const saveSelected = async () => {
+            const active = indices.filter((i) => !ignoredIndices.has(i));
+            if (active.length === 0) return;
+            const toImport = active
+               .map((i) => state.importRows[i])
+               .filter((r): r is Record<string, unknown> => r != null);
+            const result = await fromPromise(
+               config.onImport(toImport),
+               (e) => (e as Error)?.message || "Erro ao importar dados.",
+            );
+            result.match(
+               () => {
+                  toast.success(
+                     `${toImport.length} linha(s) importada(s) com sucesso.`,
+                  );
+                  setState((s) => {
+                     if (!s) return s;
+                     const toRemove = new Set(active);
+                     const rawRows = s.rawRows.filter(
+                        (_, i) => !toRemove.has(i),
+                     );
+                     const importRows = s.importRows.filter(
+                        (_, i) => !toRemove.has(i),
+                     );
+                     if (rawRows.length === 0) return null;
+                     return { ...s, rawRows, importRows };
+                  });
+                  clear();
+               },
+               (msg) => toast.error(msg),
+            );
+         };
          return (
             <>
                <DataImportBulkEdit
@@ -173,21 +231,76 @@ export function useDataImport<TData>({
                   selectedIndices={selectedIndices}
                   table={table}
                />
+               {config.extraBulkActions?.({
+                  selectedIndices,
+                  bulkUpdate,
+                  clear,
+               })}
+               {hasActive && (
+                  <SelectionActionButton
+                     icon={<Check className="size-3.5" />}
+                     onClick={saveSelected}
+                  >
+                     Salvar
+                  </SelectionActionButton>
+               )}
+               {hasActive && (
+                  <SelectionActionButton
+                     icon={<EyeOff className="size-3.5" />}
+                     onClick={() => {
+                        setIgnoredIndices(
+                           (prev) => new Set([...prev, ...selectedIndices]),
+                        );
+                        clear();
+                     }}
+                  >
+                     Ignorar
+                  </SelectionActionButton>
+               )}
+               {hasIgnored && (
+                  <SelectionActionButton
+                     icon={<RotateCcw className="size-3.5" />}
+                     onClick={() => {
+                        setIgnoredIndices((prev) => {
+                           const next = new Set(prev);
+                           for (const i of selectedIndices) next.delete(i);
+                           return next;
+                        });
+                        clear();
+                     }}
+                  >
+                     Restaurar
+                  </SelectionActionButton>
+               )}
                <SelectionActionButton
-                  icon={<EyeOff className="size-3.5" />}
+                  icon={<Trash2 className="size-3.5" />}
                   onClick={() => {
-                     setIgnoredIndices(
-                        (prev) => new Set([...prev, ...selectedIndices]),
-                     );
+                     setState((s) => {
+                        if (!s) return s;
+                        const rawRows = s.rawRows.filter(
+                           (_, i) => !selectedIndices.has(i),
+                        );
+                        const importRows = s.importRows.filter(
+                           (_, i) => !selectedIndices.has(i),
+                        );
+                        if (rawRows.length === 0) return null;
+                        return { ...s, rawRows, importRows };
+                     });
+                     setIgnoredIndices((prev) => {
+                        const next = new Set(prev);
+                        for (const i of selectedIndices) next.delete(i);
+                        return next;
+                     });
                      clear();
                   }}
+                  variant="destructive"
                >
-                  Ignorar
+                  Remover
                </SelectionActionButton>
             </>
          );
       },
-      [state, table, bulkUpdate],
+      [state, table, bulkUpdate, ignoredIndices, config],
    );
 
    const {

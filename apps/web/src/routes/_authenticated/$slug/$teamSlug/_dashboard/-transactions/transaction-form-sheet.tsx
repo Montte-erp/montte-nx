@@ -77,13 +77,12 @@ const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
    { value: "transfer", label: "Transferência" },
 ];
 
-type TransactionStatus = "paid" | "pending" | "cancelled";
+type TransactionStatus = "paid" | "pending";
 type StatusOption = { value: TransactionStatus; label: string };
 
 const STATUS_OPTIONS: StatusOption[] = [
    { value: "paid", label: "Efetivado" },
    { value: "pending", label: "Pendente" },
-   { value: "cancelled", label: "Ignorado" },
 ];
 
 const ATTACHMENT_MAX_FILES = 5;
@@ -112,7 +111,7 @@ const formSchema = z
          .number({ message: "Valor é obrigatório." })
          .positive("Valor deve ser maior que zero."),
       date: z.string().min(1, "Data é obrigatória."),
-      status: z.enum(["pending", "paid", "cancelled"]),
+      status: z.enum(["pending", "paid"]),
       ignored: z.boolean(),
       dueDate: z.string(),
       bankAccountId: z.string(),

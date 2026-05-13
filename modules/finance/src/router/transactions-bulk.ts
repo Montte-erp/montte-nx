@@ -232,14 +232,14 @@ export const importBulk = protectedProcedure
             tagId,
             date: data.date,
          });
-         const ignored = data.ignored || data.status === "cancelled";
+         const ignored = data.ignored ?? false;
          const inserted = await fromPromise(
             context.db.transaction(async (tx) =>
                tx
                   .insert(transactions)
                   .values({
                      ...data,
-                     status: ignored ? "cancelled" : data.status,
+                     status: data.status,
                      ignored,
                      teamId: context.teamId,
                      tagId: tagId ?? null,

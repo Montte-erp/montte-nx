@@ -727,12 +727,12 @@ function CategoriesList() {
                <Table>
                   <DataTableHeader table={table} />
                   <DataTableBody<CategoryRow> table={table} />
+                  <DataImportSection
+                     api={importApi}
+                     config={importConfig}
+                     table={table}
+                  />
                </Table>
-               <DataImportSection
-                  api={importApi}
-                  config={importConfig}
-                  table={table}
-               />
                {table.getRowCount() === 0 && (
                   <Empty>
                      <EmptyHeader>

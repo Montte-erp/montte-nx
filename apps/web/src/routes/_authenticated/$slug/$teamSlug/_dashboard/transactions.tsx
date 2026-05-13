@@ -1,6 +1,4 @@
-import { Tabs, TabsList, TabsTrigger } from "@packages/ui/components/tabs";
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback } from "react";
 import { z } from "zod";
 import { DefaultHeader } from "../-layout/default-header";
 import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
@@ -24,12 +22,12 @@ const transactionsSearchSchema = z.object({
    pageSize: z.number().int().catch(20).default(20),
    search: z.string().catch("").default(""),
    view: z
-      .enum(["all", "payable", "receivable", "settled", "cancelled"])
+      .enum(["all", "payable", "receivable", "settled", "ignored"])
       .catch("all")
       .default("all"),
    overdueOnly: z.boolean().catch(false).default(false),
    status: z
-      .array(z.enum(["pending", "paid", "cancelled"]))
+      .array(z.enum(["pending", "paid"]))
       .catch([])
       .default([]),
    contactId: z.string().catch("").default(""),
@@ -102,44 +100,12 @@ export const Route = createFileRoute(
 });
 
 function TransactionsPage() {
-   const navigate = Route.useNavigate();
-
-   const handleViewChange = useCallback(
-      (nextView: string) => {
-         navigate({
-            search: (prev) => ({
-               ...prev,
-               view: nextView as
-                  | "all"
-                  | "payable"
-                  | "receivable"
-                  | "settled"
-                  | "cancelled",
-               page: 1,
-            }),
-            replace: true,
-         });
-      },
-      [navigate],
-   );
-
-   const { view } = Route.useSearch();
-
    return (
       <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden">
          <DefaultHeader
             description="Gerencie receitas, despesas e transferências"
             title="Lançamentos"
          />
-         <Tabs onValueChange={handleViewChange} value={view}>
-            <TabsList>
-               <TabsTrigger value="all">Todos</TabsTrigger>
-               <TabsTrigger value="payable">A Pagar</TabsTrigger>
-               <TabsTrigger value="receivable">A Receber</TabsTrigger>
-               <TabsTrigger value="settled">Efetivados</TabsTrigger>
-               <TabsTrigger value="cancelled">Ignorados</TabsTrigger>
-            </TabsList>
-         </Tabs>
          <div className="flex flex-1 flex-col min-h-0">
             <QueryBoundary
                fallback={<DataTableSkeleton columns={skeletonColumns} />}

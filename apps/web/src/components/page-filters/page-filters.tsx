@@ -5,6 +5,8 @@ import {
    DropdownMenuGroup,
    DropdownMenuItem,
    DropdownMenuLabel,
+   DropdownMenuRadioGroup,
+   DropdownMenuRadioItem,
    DropdownMenuSeparator,
    DropdownMenuTrigger,
 } from "@packages/ui/components/dropdown-menu";
@@ -13,36 +15,49 @@ import { cn } from "@packages/ui/lib/utils";
 import { ListFilter } from "lucide-react";
 import { Children, isValidElement, startTransition } from "react";
 import type React from "react";
+import {
+   PageFilterSelect,
+   type PageFilterSelectProps,
+} from "./page-filter-select";
 import { PageFilter, type PageFilterProps } from "./page-filter";
 
-function collectFilters(children: React.ReactNode): PageFilterProps[] {
-   const items: PageFilterProps[] = [];
+type CollectedItem =
+   | { kind: "toggle"; props: PageFilterProps }
+   | { kind: "select"; props: PageFilterSelectProps };
+
+function collectFilters(children: React.ReactNode): CollectedItem[] {
+   const items: CollectedItem[] = [];
    Children.forEach(children, (child) => {
       if (!isValidElement(child)) return;
-      if (
-         (child.type as { displayName?: string })?.displayName !==
-         PageFilter.displayName
-      )
+      const displayName = (child.type as { displayName?: string })?.displayName;
+      if (displayName === PageFilter.displayName) {
+         items.push({ kind: "toggle", props: child.props as PageFilterProps });
          return;
-      items.push(child.props as PageFilterProps);
+      }
+      if (displayName === PageFilterSelect.displayName) {
+         items.push({
+            kind: "select",
+            props: child.props as PageFilterSelectProps,
+         });
+      }
    });
    return items;
 }
 
 export function PageFilters({ children }: { children: React.ReactNode }) {
-   const filters = collectFilters(children);
-   if (filters.length === 0) return null;
+   const items = collectFilters(children);
+   if (items.length === 0) return null;
 
-   const activeCount = filters.filter((f) => f.active).length;
+   const activeCount = items.filter((i) =>
+      i.kind === "toggle" ? i.props.active : false,
+   ).length;
 
-   const groups = filters.reduce<Record<string, PageFilterProps[]>>(
-      (acc, f) => {
-         if (!acc[f.group]) acc[f.group] = [];
-         acc[f.group].push(f);
-         return acc;
-      },
-      {},
-   );
+   const groups = items.reduce<Record<string, CollectedItem[]>>((acc, item) => {
+      const group = item.props.group;
+      if (!acc[group]) acc[group] = [];
+      acc[group].push(item);
+      return acc;
+   }, {});
 
    return (
       <DropdownMenu>
@@ -67,35 +82,54 @@ export function PageFilters({ children }: { children: React.ReactNode }) {
             </Button>
          </DropdownMenuTrigger>
          <DropdownMenuContent align="end" className="w-64">
-            {Object.entries(groups).map(([groupLabel, groupFilters], gi) => (
+            {Object.entries(groups).map(([groupLabel, groupItems], gi) => (
                <DropdownMenuGroup key={groupLabel}>
                   {gi > 0 && <DropdownMenuSeparator />}
                   <DropdownMenuLabel>{groupLabel}</DropdownMenuLabel>
-                  {groupFilters.map((filter) => (
-                     <DropdownMenuItem
-                        className="cursor-pointer justify-between gap-4 py-2.5"
-                        key={filter.id}
-                        onSelect={(e) => {
-                           e.preventDefault();
-                           startTransition(() => {
-                              filter.onToggle(!filter.active);
-                           });
-                        }}
-                     >
-                        <span className="flex items-center gap-2 text-sm">
-                           {filter.icon && (
-                              <span className="text-muted-foreground shrink-0">
-                                 {filter.icon}
-                              </span>
-                           )}
-                           {filter.label}
-                        </span>
-                        <Switch
-                           checked={filter.active}
-                           className="pointer-events-none shrink-0"
-                        />
-                     </DropdownMenuItem>
-                  ))}
+                  {groupItems.map((item) =>
+                     item.kind === "toggle" ? (
+                        <DropdownMenuItem
+                           className="cursor-pointer justify-between gap-4 py-2.5"
+                           key={item.props.id}
+                           onSelect={(e) => {
+                              e.preventDefault();
+                              startTransition(() => {
+                                 item.props.onToggle(!item.props.active);
+                              });
+                           }}
+                        >
+                           <span className="flex items-center gap-2 text-sm">
+                              {item.props.icon && (
+                                 <span className="text-muted-foreground shrink-0">
+                                    {item.props.icon}
+                                 </span>
+                              )}
+                              {item.props.label}
+                           </span>
+                           <Switch
+                              checked={item.props.active}
+                              className="pointer-events-none shrink-0"
+                           />
+                        </DropdownMenuItem>
+                     ) : (
+                        <DropdownMenuRadioGroup
+                           key={item.props.id}
+                           onValueChange={(value) =>
+                              startTransition(() => item.props.onChange(value))
+                           }
+                           value={item.props.value}
+                        >
+                           {item.props.options.map((opt) => (
+                              <DropdownMenuRadioItem
+                                 key={opt.value}
+                                 value={opt.value}
+                              >
+                                 {opt.label}
+                              </DropdownMenuRadioItem>
+                           ))}
+                        </DropdownMenuRadioGroup>
+                     ),
+                  )}
                </DropdownMenuGroup>
             ))}
          </DropdownMenuContent>
