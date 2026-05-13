@@ -8,11 +8,11 @@ import {
 import { Input } from "@packages/ui/components/input";
 import { PasswordInput } from "@packages/ui/components/password-input";
 import { Spinner } from "@packages/ui/components/spinner";
+import { useToastActions } from "@packages/ui/hooks/use-toast";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { type FormEvent, useCallback } from "react";
-import { toast } from "sonner";
 import { z } from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
@@ -36,6 +36,7 @@ export const Route = createFileRoute("/auth/sign-in/email")({
 function SignInEmailPage() {
    const router = useRouter();
    const { redirect: redirectTo } = Route.useSearch();
+   const signInToast = useToastActions("sign-in-email");
 
    const handleSignIn = useCallback(
       async (email: string, password: string) => {
@@ -43,15 +44,13 @@ function SignInEmailPage() {
             { email, password },
             {
                onError: ({ error }) => {
-                  toast.error(error.message);
+                  signInToast.error(error.message);
                },
                onRequest: () => {
-                  toast.loading("Entrando na sua conta...", {
-                     id: "sign-in-email",
-                  });
+                  signInToast.loading("Entrando na sua conta...");
                },
                onSuccess: () => {
-                  toast.success("Bem-vindo de volta!", { id: "sign-in-email" });
+                  signInToast.success("Bem-vindo de volta!");
                   router.navigate({
                      search: { redirect: redirectTo },
                      to: "/auth/callback",
@@ -60,7 +59,7 @@ function SignInEmailPage() {
             },
          );
       },
-      [redirectTo, router],
+      [redirectTo, router, signInToast],
    );
 
    const form = useForm({

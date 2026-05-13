@@ -8,12 +8,12 @@ import {
 } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { Spinner } from "@packages/ui/components/spinner";
+import { useToastActions } from "@packages/ui/hooks/use-toast";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Mail } from "lucide-react";
 import { ResultAsync } from "neverthrow";
-import { type FormEvent, useCallback, useState } from "react";
-import { toast } from "sonner";
+import { type FormEvent, useCallback } from "react";
 import { z } from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
@@ -21,6 +21,7 @@ const magicLinkSearchSchema = z.object({
    redirect: z
       .union([z.string().startsWith("/"), z.undefined()])
       .catch(undefined),
+   sent: z.boolean().catch(false).default(false),
 });
 
 export const Route = createFileRoute("/auth/magic-link")({
@@ -34,8 +35,22 @@ const magicLinkSchema = z.object({
 });
 
 function MagicLinkPage() {
-   const { redirect: redirectTo } = Route.useSearch();
-   const [isSent, setIsSent] = useState(false);
+   const { redirect: redirectTo, sent } = Route.useSearch();
+   const navigate = Route.useNavigate();
+   const magicLinkToast = useToastActions("magic-link");
+
+   const setSent = useCallback(
+      (nextSent: boolean) => {
+         navigate({
+            replace: true,
+            search: (prev) => ({
+               ...prev,
+               sent: nextSent,
+            }),
+         });
+      },
+      [navigate],
+   );
 
    const handleMagicLinkSignIn = useCallback(
       async (email: string) => {
@@ -46,10 +61,10 @@ function MagicLinkPage() {
             },
             {
                onError: ({ error }) => {
-                  toast.error(error.message);
+                  magicLinkToast.error(error.message);
                },
                onRequest: () => {
-                  toast.loading("Enviando link de acesso...");
+                  magicLinkToast.loading("Enviando link de acesso...");
                },
                onSuccess: async () => {
                   const result = await ResultAsync.fromPromise(
@@ -62,8 +77,10 @@ function MagicLinkPage() {
                   );
 
                   if (result.isErr()) {
-                     toast.error("Endpoint de desenvolvimento indisponível.");
-                     setIsSent(true);
+                     magicLinkToast.error(
+                        "Endpoint de desenvolvimento indisponível.",
+                     );
+                     setSent(true);
                      return;
                   }
 
@@ -78,13 +95,13 @@ function MagicLinkPage() {
                      return;
                   }
 
-                  setIsSent(true);
-                  toast.success("Link enviado! Verifique seu e-mail.");
+                  setSent(true);
+                  magicLinkToast.success("Link enviado! Verifique seu e-mail.");
                },
             },
          );
       },
-      [redirectTo],
+      [magicLinkToast, redirectTo, setSent],
    );
 
    const form = useForm({
@@ -108,7 +125,7 @@ function MagicLinkPage() {
       [form],
    );
 
-   if (isSent) {
+   if (sent) {
       return (
          <div className="flex w-full flex-col gap-6">
             <div className="flex items-center justify-center">
@@ -128,7 +145,7 @@ function MagicLinkPage() {
             <div className="flex flex-col gap-2">
                <Button
                   className="h-10"
-                  onClick={() => setIsSent(false)}
+                  onClick={() => setSent(false)}
                   variant="outline"
                >
                   Usar outro email

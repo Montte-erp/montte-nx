@@ -9,16 +9,10 @@ import { Input } from "@packages/ui/components/input";
 import { PasswordInput } from "@packages/ui/components/password-input";
 import { Spinner } from "@packages/ui/components/spinner";
 import { defineStepper } from "@packages/ui/components/stepper";
+import { useToastActions } from "@packages/ui/hooks/use-toast";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import {
-   createContext,
-   type FormEvent,
-   useCallback,
-   useContext,
-   useTransition,
-} from "react";
-import { toast } from "sonner";
+import { createContext, type FormEvent, useCallback, useContext } from "react";
 import z from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { PasswordStrengthCard } from "./-auth/password-strength-card";
@@ -205,7 +199,7 @@ function PasswordStep() {
 function SignUpPage() {
    const router = useRouter();
    const { redirect: redirectTo } = Route.useSearch();
-   const [isPending, startTransition] = useTransition();
+   const signUpToast = useToastActions("sign-up-email");
 
    const handleSignUp = useCallback(
       async (email: string, name: string, password: string) => {
@@ -213,13 +207,13 @@ function SignUpPage() {
             { email, name, password },
             {
                onError: ({ error }) => {
-                  toast.error(error.message);
+                  signUpToast.error(error.message);
                },
                onRequest: () => {
-                  toast.loading("Criando sua conta...");
+                  signUpToast.loading("Criando sua conta...");
                },
                onSuccess: ({ data }) => {
-                  toast.success("Conta criada com sucesso!");
+                  signUpToast.success("Conta criada com sucesso!");
                   if (data?.token) {
                      router.navigate({ to: redirectTo ?? "/auth/callback" });
                      return;
@@ -232,7 +226,7 @@ function SignUpPage() {
             },
          );
       },
-      [redirectTo, router],
+      [redirectTo, router, signUpToast],
    );
 
    const form = useForm({
@@ -255,11 +249,9 @@ function SignUpPage() {
       (e: FormEvent) => {
          e.preventDefault();
          e.stopPropagation();
-         startTransition(async () => {
-            await form.handleSubmit();
-         });
+         form.handleSubmit();
       },
-      [form, startTransition],
+      [form],
    );
 
    return (
@@ -312,14 +304,10 @@ function SignUpPage() {
                               <div className="flex flex-col gap-2">
                                  <Button
                                     className="h-10"
-                                    disabled={isSubmitting || isPending}
+                                    disabled={isSubmitting}
                                     type="submit"
                                  >
-                                    {isPending || isSubmitting ? (
-                                       <Spinner />
-                                    ) : (
-                                       "Criar conta"
-                                    )}
+                                    {isSubmitting ? <Spinner /> : "Criar conta"}
                                  </Button>
                                  <Button
                                     className="h-10"
