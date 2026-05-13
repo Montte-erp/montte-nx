@@ -162,6 +162,7 @@ function CategoryVisualCell({
       >
          <PopoverTrigger asChild>
             <Button
+               aria-label="Abrir seletor de ícone e cor"
                className="h-8 justify-start px-2"
                type="button"
                variant="ghost"
@@ -197,6 +198,7 @@ function CategoryVisualCell({
                            const checked = draftIcon === option.value;
                            return (
                               <CommandItem
+                                 className="flex items-center gap-2"
                                  key={option.value}
                                  onSelect={() => setDraftIcon(option.value)}
                                  value={option.label}
@@ -206,9 +208,7 @@ function CategoryVisualCell({
                                     style={{ color: draftColor }}
                                  />
                                  <span>{option.label}</span>
-                                 {checked && (
-                                    <Check className="ml-auto size-4" />
-                                 )}
+                                 {checked && <Check className="size-4" />}
                               </CommandItem>
                            );
                         })}

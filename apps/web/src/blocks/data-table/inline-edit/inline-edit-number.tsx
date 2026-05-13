@@ -1,7 +1,7 @@
 import { NumberInput } from "@packages/ui/components/number-input";
 import { cn } from "@packages/ui/lib/utils";
 import { fromPromise } from "neverthrow";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface InlineEditNumberProps {
    value: number;
@@ -32,12 +32,15 @@ export function InlineEditNumber({
       }
    }, [value]);
 
-   async function commit(next: number) {
-      setDraft(next);
-      if (next === value) return;
-      const result = await fromPromise(onSave(next), (e) => e);
-      if (result.isErr()) setDraft(value);
-   }
+   const commit = useCallback(
+      async (next: number) => {
+         setDraft(next);
+         if (next === value) return;
+         const result = await fromPromise(onSave(next), (e) => e);
+         if (result.isErr()) setDraft(value);
+      },
+      [onSave, value],
+   );
 
    return (
       <NumberInput

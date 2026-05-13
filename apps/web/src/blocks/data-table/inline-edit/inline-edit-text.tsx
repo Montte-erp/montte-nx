@@ -6,7 +6,14 @@ import {
 } from "@packages/ui/components/input-group";
 import { cn } from "@packages/ui/lib/utils";
 import { fromPromise } from "neverthrow";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import {
+   useCallback,
+   useEffect,
+   useRef,
+   useState,
+   type FocusEvent,
+   type KeyboardEvent,
+} from "react";
 
 interface InlineEditTextProps {
    value: string;
@@ -40,16 +47,19 @@ export function InlineEditText({
 
    const displayed = pending ?? draft;
 
-   async function commit(next: string) {
-      const trimmed = next.trim();
-      if (trimmed === value.trim()) return;
-      setPending(trimmed);
-      const result = await fromPromise(onSave(trimmed), (e) => e);
-      if (result.isErr()) {
-         setPending(null);
-         setDraft(lastCommittedRef.current);
-      }
-   }
+   const commit = useCallback(
+      async (next: string) => {
+         const trimmed = next.trim();
+         if (trimmed === value.trim()) return;
+         setPending(trimmed);
+         const result = await fromPromise(onSave(trimmed), (e) => e);
+         if (result.isErr()) {
+            setPending(null);
+            setDraft(lastCommittedRef.current);
+         }
+      },
+      [onSave, value],
+   );
 
    function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
       if (e.key === "Enter") {
@@ -64,13 +74,16 @@ export function InlineEditText({
       }
    }
 
-   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-      if (cancelledRef.current) {
-         cancelledRef.current = false;
-         return;
-      }
-      commit(e.target.value);
-   };
+   const handleBlur = useCallback(
+      (e: FocusEvent<HTMLInputElement>) => {
+         if (cancelledRef.current) {
+            cancelledRef.current = false;
+            return;
+         }
+         commit(e.target.value);
+      },
+      [commit],
+   );
 
    if (startContent) {
       return (

@@ -96,7 +96,7 @@ export function buildCreditCardColumns(options?: {
          header: "Nome",
          meta: {
             label: "Nome",
-            cellComponent: "text" as const,
+            cellComponent: "text",
             isEditable: true,
             editMode: "inline",
             required: true,
@@ -124,7 +124,7 @@ export function buildCreditCardColumns(options?: {
          header: "Bandeira",
          meta: {
             label: "Bandeira",
-            cellComponent: "select" as const,
+            cellComponent: "select",
             isEditable: true,
             editMode: "inline",
             bulkEditIcon: Tag,
@@ -175,7 +175,7 @@ export function buildCreditCardColumns(options?: {
          meta: {
             label: "Limite",
             align: "right",
-            cellComponent: "money" as const,
+            cellComponent: "money",
             isEditable: true,
             editMode: "inline",
             bulkEditIcon: Banknote,
@@ -203,7 +203,7 @@ export function buildCreditCardColumns(options?: {
          header: "Fechamento",
          meta: {
             label: "Fechamento",
-            cellComponent: "select" as const,
+            cellComponent: "select",
             isEditable: true,
             editMode: "inline",
             bulkEditIcon: CalendarClock,
@@ -229,7 +229,7 @@ export function buildCreditCardColumns(options?: {
          header: "Vencimento",
          meta: {
             label: "Vencimento",
-            cellComponent: "select" as const,
+            cellComponent: "select",
             isEditable: true,
             editMode: "inline",
             bulkEditIcon: Calendar,
@@ -255,7 +255,7 @@ export function buildCreditCardColumns(options?: {
          header: "Conta Bancária",
          meta: {
             label: "Conta Bancária",
-            cellComponent: "combobox" as const,
+            cellComponent: "combobox",
             isEditable: true,
             editMode: "inline",
             bulkEditIcon: Landmark,
@@ -316,7 +316,7 @@ export function buildCreditCardColumns(options?: {
          meta: {
             label: "Status",
             filterVariant: "select",
-            cellComponent: "select" as const,
+            cellComponent: "select",
             isEditable: true,
             editMode: "inline",
             bulkEditIcon: Hash,

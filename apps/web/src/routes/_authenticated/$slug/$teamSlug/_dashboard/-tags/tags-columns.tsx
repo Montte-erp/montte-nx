@@ -33,6 +33,8 @@ type OnUpdate = (
 export function buildTagColumns(options?: {
    onUpdate?: OnUpdate;
 }): ColumnDef<TagRow>[] {
+   const onUpdate = options?.onUpdate;
+
    return [
       {
          accessorKey: "name",
@@ -49,16 +51,15 @@ export function buildTagColumns(options?: {
             bulkEditAction: "Alterar nome",
             isEditableForRow: (row: TagRow) =>
                !row.isDefault && !row.isArchived,
-            onSave: options?.onUpdate
+            onSave: onUpdate
                ? async (rowId, value) => {
-                    await options.onUpdate!(rowId, { name: String(value) });
+                    await onUpdate(rowId, { name: String(value) });
                  }
                : undefined,
          },
          enableSorting: false,
          cell: ({ row }) => {
             const { id, name, isDefault, isArchived } = row.original;
-            const onUpdate = options?.onUpdate;
             const editable = !isDefault && !isArchived && Boolean(onUpdate);
             const archivedIndicator = isArchived ? (
                <Tooltip>
@@ -89,7 +90,7 @@ export function buildTagColumns(options?: {
                <InlineEditText
                   ariaLabel="Nome"
                   onSave={async (v) => {
-                     await onUpdate!(id, { name: v });
+                     await onUpdate?.(id, { name: v });
                   }}
                   placeholder="Nome do centro de custo"
                   value={name}
@@ -112,9 +113,13 @@ export function buildTagColumns(options?: {
             return (
                <Tooltip>
                   <TooltipTrigger asChild>
-                     <span className="inline-flex cursor-default" tabIndex={0}>
-                        <Check className="size-3.5 text-muted-foreground" />
-                     </span>
+                     <button
+                        aria-label="Centro de custo padrão"
+                        className="inline-flex cursor-default border-0 bg-transparent p-0"
+                        type="button"
+                     >
+                        <Check className="size-4 text-muted-foreground" />
+                     </button>
                   </TooltipTrigger>
                   <TooltipContent>Padrão</TooltipContent>
                </Tooltip>
@@ -134,10 +139,10 @@ export function buildTagColumns(options?: {
             bulkEditIcon: FileText,
             bulkEditAction: "Alterar descrição",
             isEditableForRow: (row: TagRow) => !row.isArchived,
-            onSave: options?.onUpdate
+            onSave: onUpdate
                ? async (rowId, value) => {
                     const trimmed = String(value).trim();
-                    await options.onUpdate!(rowId, {
+                    await onUpdate(rowId, {
                        description: trimmed.length > 0 ? trimmed : null,
                     });
                  }
@@ -146,7 +151,7 @@ export function buildTagColumns(options?: {
          enableSorting: false,
          cell: ({ row }) => {
             const { id, description, isArchived } = row.original;
-            if (isArchived || !options?.onUpdate) {
+            if (isArchived || !onUpdate) {
                return description ? (
                   <span className="text-sm text-muted-foreground truncate">
                      {description}
@@ -159,7 +164,7 @@ export function buildTagColumns(options?: {
                <InlineEditText
                   ariaLabel="Descrição"
                   onSave={async (v) => {
-                     await options.onUpdate!(id, {
+                     await onUpdate(id, {
                         description: v.trim() ? v.trim() : null,
                      });
                   }}
