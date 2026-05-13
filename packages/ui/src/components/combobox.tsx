@@ -110,17 +110,23 @@ export function Combobox({
          <PopoverTrigger asChild>
             <Button
                aria-expanded={open}
-               className={cn("flex truncate items-center gap-2", className)}
+               className={cn(
+                  "flex truncate items-center justify-between gap-2",
+                  className,
+               )}
                disabled={disabled}
                id={id}
                onBlur={onBlur}
                role="combobox"
                variant="outline"
             >
-               {selectedOption
-                  ? (renderSelected?.(selectedOption) ?? selectedOption.label)
-                  : placeholder}
-               <ChevronsUpDownIcon className="size-4" />
+               <span className="min-w-0 flex-1 truncate text-left">
+                  {selectedOption
+                     ? (renderSelected?.(selectedOption) ??
+                       selectedOption.label)
+                     : placeholder}
+               </span>
+               <ChevronsUpDownIcon className="size-4 shrink-0" />
             </Button>
          </PopoverTrigger>
          <PopoverContent className=" p-0">

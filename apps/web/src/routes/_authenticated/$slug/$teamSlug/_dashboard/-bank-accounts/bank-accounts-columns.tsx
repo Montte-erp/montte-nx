@@ -5,11 +5,6 @@ import {
    AnnouncementTitle,
 } from "@/components/blocks/announcement";
 import {
-   Avatar,
-   AvatarFallback,
-   AvatarImage,
-} from "@packages/ui/components/avatar";
-import {
    Tooltip,
    TooltipContent,
    TooltipProvider,
@@ -32,7 +27,7 @@ import { z } from "zod";
 import { InlineEditMoney } from "@/blocks/data-table/inline-edit/inline-edit-money";
 import { InlineEditSelect } from "@/blocks/data-table/inline-edit/inline-edit-select";
 import { InlineEditText } from "@/blocks/data-table/inline-edit/inline-edit-text";
-import { bankInitials, bankLogoUrl } from "@/lib/logos";
+import { BankLogoAvatar } from "@/components/bank-logo-avatar";
 
 export type BankAccountRow = {
    id: string;
@@ -102,6 +97,33 @@ export function buildBankAccountColumns(
    const logoDevToken = options?.logoDevToken;
    return [
       {
+         id: "bank",
+         header: "Banco",
+         meta: {
+            label: "Banco",
+            exportValue: (row) => row.bankName ?? "",
+         },
+         cell: ({ row }) => {
+            const account = row.original;
+            const bankName = account.bankName?.trim();
+            if (!bankName)
+               return <span className="text-muted-foreground">—</span>;
+            return (
+               <div className="flex min-w-0 items-center gap-2">
+                  <BankLogoAvatar
+                     bankCode={account.bankCode}
+                     bankName={account.bankName}
+                     color={account.color}
+                     logoDevToken={logoDevToken}
+                     name={bankName}
+                     size="md"
+                  />
+                  <span className="truncate font-medium">{bankName}</span>
+               </div>
+            );
+         },
+      },
+      {
          accessorKey: "name",
          header: "Nome",
          meta: {
@@ -117,29 +139,6 @@ export function buildBankAccountColumns(
          },
          cell: ({ row }) => {
             const account = row.original;
-            const issuer = account.bankName?.trim() || account.name;
-            const logo = bankLogoUrl(account.bankCode, logoDevToken);
-            const avatar = (
-               <Avatar className="size-4 rounded-lg bg-white ring-1 ring-border">
-                  {logo ? (
-                     <AvatarImage
-                        alt={issuer}
-                        className="object-contain"
-                        src={logo}
-                     />
-                  ) : null}
-                  <AvatarFallback
-                     className="rounded-lg text-xs font-semibold text-white"
-                     style={{ backgroundColor: account.color }}
-                  >
-                     {account.bankName ? (
-                        bankInitials(account.bankName)
-                     ) : (
-                        <Landmark className="size-2" />
-                     )}
-                  </AvatarFallback>
-               </Avatar>
-            );
             if (canRenameAccount && options?.onRenameAccount) {
                return (
                   <InlineEditText
@@ -150,17 +149,11 @@ export function buildBankAccountColumns(
                         await options.onRenameAccount?.(account.id, next);
                      }}
                      placeholder="—"
-                     startContent={avatar}
                      value={account.name}
                   />
                );
             }
-            return (
-               <div className="flex min-w-0 items-center gap-2">
-                  {avatar}
-                  <span className="font-medium truncate">{account.name}</span>
-               </div>
-            );
+            return <span className="font-medium truncate">{account.name}</span>;
          },
       },
       {
