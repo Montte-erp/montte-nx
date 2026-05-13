@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { apiKey } from "@better-auth/api-key";
 import { i18n } from "@better-auth/i18n";
 import * as schema from "@core/database/schema";
@@ -324,6 +325,19 @@ export function createAuth(deps: CreateAuthDeps) {
                enabled: true,
                maximumMembersPerTeam: 50,
                maximumTeams: 10,
+            },
+            organizationHooks: {
+               afterCreateTeam: async ({ team, user }) => {
+                  if (!user) return;
+                  await db
+                     .insert(schema.teamMember)
+                     .values({
+                        teamId: team.id,
+                        userId: user.id,
+                        createdAt: dayjs().toDate(),
+                     })
+                     .onConflictDoNothing();
+               },
             },
          }),
 

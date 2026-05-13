@@ -11,6 +11,7 @@ import {
    member,
    organization,
    team,
+   teamMember,
    user as userTable,
 } from "@core/database/schemas/auth";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
@@ -373,6 +374,13 @@ export async function deleteTagById(teamId: string, id: string) {
    await db()
       .delete(tags)
       .where(and(eq(tags.teamId, teamId), eq(tags.id, id)));
+}
+
+export async function findTeamMembership(teamId: string, userId: string) {
+   return db().query.teamMember.findFirst({
+      where: (f, { and, eq: eqOp }) =>
+         and(eqOp(f.teamId, teamId), eqOp(f.userId, userId)),
+   });
 }
 
 export async function countMemberOrgsByEmail(email: string) {

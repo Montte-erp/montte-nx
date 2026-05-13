@@ -3,6 +3,7 @@ import { z } from "zod";
 import { WebAppError } from "@core/logging/errors";
 import { authenticatedProcedure, protectedProcedure } from "@core/orpc/server";
 import { createSlug } from "@core/utils/text";
+import { requireOrganizationTeam } from "@modules/account/router/middlewares";
 
 const authError = (fallback: string) => (e: unknown) => {
    if (e && typeof e === "object") {
@@ -155,6 +156,40 @@ export const getPendingInvitations = protectedProcedure.handler(
          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
    },
 );
+
+export const getTeamMembers = protectedProcedure
+   .input(z.object({ teamId: z.string() }))
+   .use(requireOrganizationTeam, (input) => input.teamId)
+   .handler(async ({ context, input }) => {
+      const result = await fromPromise(
+         context.auth.api.listTeamMembers({
+            headers: context.headers,
+            query: { teamId: input.teamId },
+         }),
+         authError("Falha ao listar membros do espaço."),
+      );
+      if (result.isErr()) throw result.error;
+      const rows = result.value;
+      if (rows.length === 0) return [];
+      const userIds = rows.map((r) => r.userId);
+      const users = await context.db.query.user.findMany({
+         where: (f, { inArray }) => inArray(f.id, userIds),
+         columns: { id: true, name: true, email: true, image: true },
+      });
+      const byId = new Map(users.map((u) => [u.id, u]));
+      return rows.map((r) => {
+         const u = byId.get(r.userId);
+         return {
+            id: r.id,
+            userId: r.userId,
+            teamId: r.teamId,
+            name: u?.name ?? "",
+            email: u?.email ?? "",
+            image: u?.image ?? null,
+            createdAt: r.createdAt,
+         };
+      });
+   });
 
 export const getMemberTeams = protectedProcedure
    .input(z.object({ userId: z.uuid() }))
