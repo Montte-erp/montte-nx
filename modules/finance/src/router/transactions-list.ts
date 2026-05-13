@@ -78,7 +78,9 @@ export const getAll = protectedProcedure
    .input(filterSchema)
    .handler(async ({ context, input }) => {
       const filtersIgnored =
-         input?.ignored === true || input?.view === "ignored";
+         input?.ignored === true ||
+         input?.view === "ignored" ||
+         input?.view === "all";
       const filter: TransactionFilter = {
          teamId: context.teamId,
          ...input,
@@ -134,7 +136,9 @@ export const getSummary = protectedProcedure
    .input(filterSchema)
    .handler(async ({ context, input }) => {
       const filtersIgnored =
-         input?.ignored === true || input?.view === "ignored";
+         input?.ignored === true ||
+         input?.view === "ignored" ||
+         input?.view === "all";
       const filter: TransactionFilter = {
          teamId: context.teamId,
          ...input,
