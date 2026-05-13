@@ -24,10 +24,10 @@ export function buildBankAccountBalanceSql(includePending: boolean) {
    const currentBalanceSql = sql<string>`
       (
          ${a.initialBalance}
-         + COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'income' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
-         - COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'expense' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
-         - COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'transfer' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
-         + COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'transfer' AND ${t.destinationBankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+         + COALESCE(SUM(CASE WHEN ${t.status} = 'paid' AND ${t.type} = 'income' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+         - COALESCE(SUM(CASE WHEN ${t.status} = 'paid' AND ${t.type} = 'expense' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+         - COALESCE(SUM(CASE WHEN ${t.status} = 'paid' AND ${t.type} = 'transfer' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+         + COALESCE(SUM(CASE WHEN ${t.status} = 'paid' AND ${t.type} = 'transfer' AND ${t.destinationBankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
       )
    `;
 
@@ -50,10 +50,10 @@ export async function computeBankAccountBalance(
    const t = transactions;
    const [row] = await db
       .select({
-         income: sql<string>`COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'income' AND ${t.bankAccountId} = ${accountId} THEN ${t.amount} ELSE 0 END), 0)`,
-         expense: sql<string>`COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'expense' AND ${t.bankAccountId} = ${accountId} THEN ${t.amount} ELSE 0 END), 0)`,
-         transferOut: sql<string>`COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'transfer' AND ${t.bankAccountId} = ${accountId} THEN ${t.amount} ELSE 0 END), 0)`,
-         transferIn: sql<string>`COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'transfer' AND ${t.destinationBankAccountId} = ${accountId} THEN ${t.amount} ELSE 0 END), 0)`,
+         income: sql<string>`COALESCE(SUM(CASE WHEN ${t.status} = 'paid' AND ${t.type} = 'income' AND ${t.bankAccountId} = ${accountId} THEN ${t.amount} ELSE 0 END), 0)`,
+         expense: sql<string>`COALESCE(SUM(CASE WHEN ${t.status} = 'paid' AND ${t.type} = 'expense' AND ${t.bankAccountId} = ${accountId} THEN ${t.amount} ELSE 0 END), 0)`,
+         transferOut: sql<string>`COALESCE(SUM(CASE WHEN ${t.status} = 'paid' AND ${t.type} = 'transfer' AND ${t.bankAccountId} = ${accountId} THEN ${t.amount} ELSE 0 END), 0)`,
+         transferIn: sql<string>`COALESCE(SUM(CASE WHEN ${t.status} = 'paid' AND ${t.type} = 'transfer' AND ${t.destinationBankAccountId} = ${accountId} THEN ${t.amount} ELSE 0 END), 0)`,
          pendingReceivable: sql<string>`COALESCE(SUM(CASE WHEN ${t.type} = 'income' AND ${t.status} = 'pending' AND ${t.bankAccountId} = ${accountId} THEN ${t.amount} ELSE 0 END), 0)`,
          pendingPayable: sql<string>`COALESCE(SUM(CASE WHEN ${t.type} = 'expense' AND ${t.status} = 'pending' AND ${t.bankAccountId} = ${accountId} THEN ${t.amount} ELSE 0 END), 0)`,
       })
