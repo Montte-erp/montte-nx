@@ -14,6 +14,7 @@ interface InlineEditComboboxProps {
    ariaLabel: string;
    placeholder?: string;
    className?: string;
+   startContent?: React.ReactNode;
 }
 
 export function InlineEditCombobox({
@@ -23,6 +24,7 @@ export function InlineEditCombobox({
    onCreate,
    placeholder,
    className,
+   startContent,
 }: InlineEditComboboxProps) {
    const [pending, setPending] = useState<string | null>(null);
    const lastCommittedRef = useRef(value);
@@ -59,6 +61,16 @@ export function InlineEditCombobox({
          onValueChange={commit}
          options={options}
          placeholder={placeholder ?? "—"}
+         renderSelected={
+            startContent
+               ? (option) => (
+                    <span className="flex items-center gap-2 min-w-0">
+                       {startContent}
+                       <span className="truncate">{option.label}</span>
+                    </span>
+                 )
+               : undefined
+         }
          value={displayed}
       />
    );

@@ -271,6 +271,8 @@ function CategoriesList() {
             name?: string;
             type?: "income" | "expense" | "transfer";
             parentId?: string | null;
+            icon?: string | null;
+            color?: string | null;
          },
       ) => {
          await updateMutation.mutateAsync({ id: rowId, ...data });
@@ -543,6 +545,7 @@ function CategoriesList() {
       data: rootCategories,
       columns,
       getRowId: (row) => row.id,
+      rowCount: total,
       pageCount: urlState.pageCount,
       manualPagination: true,
       manualSorting: true,

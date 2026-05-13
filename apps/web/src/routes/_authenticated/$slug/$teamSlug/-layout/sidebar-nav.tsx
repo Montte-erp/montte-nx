@@ -174,6 +174,7 @@ function NavSection({ group }: { group: NavGroupDef }) {
    const visibleItems = useVisibleItems(group);
    const editableItems = useEditableItems(group);
 
+   if (isEditingNav && editableItems.length === 0) return null;
    if (!isEditingNav && visibleItems.length === 0) return null;
 
    const isMain = !group.label;

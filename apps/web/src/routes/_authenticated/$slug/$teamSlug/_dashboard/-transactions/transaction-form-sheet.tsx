@@ -835,7 +835,10 @@ function TransactionFormSheetContent() {
 
                   <form.Field name="ignored">
                      {(field) => (
-                        <Field className="flex flex-row items-center gap-2 rounded-md border p-4">
+                        <Field
+                           className="rounded-md border p-4"
+                           orientation="horizontal"
+                        >
                            <Checkbox
                               aria-invalid={isFieldInvalid(field)}
                               checked={field.state.value}

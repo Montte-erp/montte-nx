@@ -4,7 +4,6 @@ import {
    AvatarFallback,
    AvatarImage,
 } from "@packages/ui/components/avatar";
-import { Badge } from "@packages/ui/components/badge";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
    Banknote,
@@ -17,6 +16,7 @@ import {
 } from "lucide-react";
 import { InlineEditCombobox } from "@/blocks/data-table/inline-edit/inline-edit-combobox";
 import { InlineEditMoney } from "@/blocks/data-table/inline-edit/inline-edit-money";
+import { InlineEditNumber } from "@/blocks/data-table/inline-edit/inline-edit-number";
 import { InlineEditSelect } from "@/blocks/data-table/inline-edit/inline-edit-select";
 import { InlineEditText } from "@/blocks/data-table/inline-edit/inline-edit-text";
 import type { Outputs } from "@/integrations/orpc/client";
@@ -47,17 +47,17 @@ type BankAccountOption = {
    color?: string | null;
 };
 
-const STATUS_VARIANT = {
-   active: "success",
-   blocked: "secondary",
-   cancelled: "destructive",
-} as const;
-
 const STATUS_LABEL = {
    active: "Ativo",
    blocked: "Bloqueado",
    cancelled: "Cancelado",
 } as const;
+
+const STATUS_OPTIONS = [
+   { value: "active", label: "Ativo" },
+   { value: "blocked", label: "Bloqueado" },
+   { value: "cancelled", label: "Cancelado" },
+];
 
 const BRAND_OPTIONS = [
    { value: "visa", label: "Visa" },
@@ -96,7 +96,7 @@ export function buildCreditCardColumns(options?: {
          header: "Nome",
          meta: {
             label: "Nome",
-            cellComponent: "text" as const,
+            cellComponent: "text",
             isEditable: true,
             editMode: "inline",
             required: true,
@@ -124,7 +124,7 @@ export function buildCreditCardColumns(options?: {
          header: "Bandeira",
          meta: {
             label: "Bandeira",
-            cellComponent: "select" as const,
+            cellComponent: "select",
             isEditable: true,
             editMode: "inline",
             bulkEditIcon: Tag,
@@ -140,32 +140,32 @@ export function buildCreditCardColumns(options?: {
                brand && (BRAND_COLOR[brand] ?? BRAND_COLOR.other ?? "#000000");
             const logo = brand ? brandLogoUrl(brand) : null;
             return (
-               <div className="flex items-center gap-2 min-w-0">
-                  <Avatar className="size-4 shrink-0 rounded-lg bg-white ring-1 ring-border">
-                     {logo ? (
-                        <AvatarImage
-                           alt={brand ? (BRAND_LABEL[brand] ?? brand) : ""}
-                           className="object-contain"
-                           src={logo}
-                        />
-                     ) : null}
-                     <AvatarFallback
-                        className="rounded-lg text-xs font-semibold text-white"
-                        style={{ backgroundColor: color || "#6366f1" }}
-                     >
-                        <CreditCardIcon className="size-2" />
-                     </AvatarFallback>
-                  </Avatar>
-                  <InlineEditSelect
-                     ariaLabel="Bandeira"
-                     onSave={async (value) =>
-                        onUpdate?.(row.original.id, { brand: value })
-                     }
-                     options={BRAND_OPTIONS}
-                     placeholder="—"
-                     value={brand ?? ""}
-                  />
-               </div>
+               <InlineEditSelect
+                  ariaLabel="Bandeira"
+                  onSave={async (value) =>
+                     onUpdate?.(row.original.id, { brand: value })
+                  }
+                  options={BRAND_OPTIONS}
+                  placeholder="—"
+                  startContent={
+                     <Avatar className="size-4 rounded-lg bg-white ring-1 ring-border">
+                        {logo ? (
+                           <AvatarImage
+                              alt={brand ? (BRAND_LABEL[brand] ?? brand) : ""}
+                              className="object-contain"
+                              src={logo}
+                           />
+                        ) : null}
+                        <AvatarFallback
+                           className="rounded-lg text-xs font-semibold text-white"
+                           style={{ backgroundColor: color || "#6366f1" }}
+                        >
+                           <CreditCardIcon className="size-2" />
+                        </AvatarFallback>
+                     </Avatar>
+                  }
+                  value={brand ?? ""}
+               />
             );
          },
       },
@@ -175,7 +175,7 @@ export function buildCreditCardColumns(options?: {
          meta: {
             label: "Limite",
             align: "right",
-            cellComponent: "money" as const,
+            cellComponent: "money",
             isEditable: true,
             editMode: "inline",
             bulkEditIcon: Banknote,
@@ -203,7 +203,7 @@ export function buildCreditCardColumns(options?: {
          header: "Fechamento",
          meta: {
             label: "Fechamento",
-            cellComponent: "select" as const,
+            cellComponent: "select",
             isEditable: true,
             editMode: "inline",
             bulkEditIcon: CalendarClock,
@@ -213,15 +213,14 @@ export function buildCreditCardColumns(options?: {
             exportValue: (row) => `Dia ${row.closingDay}`,
          },
          cell: ({ row }) => (
-            <InlineEditSelect
+            <InlineEditNumber
                ariaLabel="Fechamento"
+               max={31}
+               min={1}
                onSave={async (value) =>
-                  onUpdate?.(row.original.id, {
-                     closingDay: Number.parseInt(value, 10),
-                  })
+                  onUpdate?.(row.original.id, { closingDay: value })
                }
-               options={DAY_OPTIONS}
-               value={String(row.original.closingDay)}
+               value={row.original.closingDay}
             />
          ),
       },
@@ -230,7 +229,7 @@ export function buildCreditCardColumns(options?: {
          header: "Vencimento",
          meta: {
             label: "Vencimento",
-            cellComponent: "select" as const,
+            cellComponent: "select",
             isEditable: true,
             editMode: "inline",
             bulkEditIcon: Calendar,
@@ -240,15 +239,14 @@ export function buildCreditCardColumns(options?: {
             exportValue: (row) => `Dia ${row.dueDay}`,
          },
          cell: ({ row }) => (
-            <InlineEditSelect
+            <InlineEditNumber
                ariaLabel="Vencimento"
+               max={31}
+               min={1}
                onSave={async (value) =>
-                  onUpdate?.(row.original.id, {
-                     dueDay: Number.parseInt(value, 10),
-                  })
+                  onUpdate?.(row.original.id, { dueDay: value })
                }
-               options={DAY_OPTIONS}
-               value={String(row.original.dueDay)}
+               value={row.original.dueDay}
             />
          ),
       },
@@ -257,7 +255,7 @@ export function buildCreditCardColumns(options?: {
          header: "Conta Bancária",
          meta: {
             label: "Conta Bancária",
-            cellComponent: "combobox" as const,
+            cellComponent: "combobox",
             isEditable: true,
             editMode: "inline",
             bulkEditIcon: Landmark,
@@ -278,37 +276,37 @@ export function buildCreditCardColumns(options?: {
                ? bankLogoUrl(account.bankCode, logoDevToken)
                : null;
             return (
-               <div className="flex items-center gap-2 min-w-0">
-                  <Avatar className="size-4 shrink-0 rounded-lg bg-white ring-1 ring-border">
-                     {logo ? (
-                        <AvatarImage
-                           alt={issuer}
-                           className="object-contain"
-                           src={logo}
-                        />
-                     ) : null}
-                     <AvatarFallback
-                        className="rounded-lg text-xs font-semibold text-white"
-                        style={{
-                           backgroundColor: account?.color ?? "#6366f1",
-                        }}
-                     >
-                        {account?.bankName ? (
-                           bankInitials(account.bankName)
-                        ) : (
-                           <Landmark className="size-2" />
-                        )}
-                     </AvatarFallback>
-                  </Avatar>
-                  <InlineEditCombobox
-                     ariaLabel="Conta Bancária"
-                     onSave={async (value) =>
-                        onUpdate?.(row.original.id, { bankAccountId: value })
-                     }
-                     options={bankComboboxOptions}
-                     value={row.original.bankAccountId}
-                  />
-               </div>
+               <InlineEditCombobox
+                  ariaLabel="Conta Bancária"
+                  onSave={async (value) =>
+                     onUpdate?.(row.original.id, { bankAccountId: value })
+                  }
+                  options={bankComboboxOptions}
+                  startContent={
+                     <Avatar className="size-4 rounded-lg bg-white ring-1 ring-border">
+                        {logo ? (
+                           <AvatarImage
+                              alt={issuer}
+                              className="object-contain"
+                              src={logo}
+                           />
+                        ) : null}
+                        <AvatarFallback
+                           className="rounded-lg text-xs font-semibold text-white"
+                           style={{
+                              backgroundColor: account?.color ?? "#6366f1",
+                           }}
+                        >
+                           {account?.bankName ? (
+                              bankInitials(account.bankName)
+                           ) : (
+                              <Landmark className="size-2" />
+                           )}
+                        </AvatarFallback>
+                     </Avatar>
+                  }
+                  value={row.original.bankAccountId}
+               />
             );
          },
       },
@@ -318,17 +316,24 @@ export function buildCreditCardColumns(options?: {
          meta: {
             label: "Status",
             filterVariant: "select",
+            cellComponent: "select",
+            isEditable: true,
+            editMode: "inline",
             bulkEditIcon: Hash,
+            bulkEditAction: "Alterar status",
+            editOptions: STATUS_OPTIONS,
             exportValue: (row) => STATUS_LABEL[row.status] ?? row.status,
          },
-         cell: ({ row }) => {
-            const status = row.original.status;
-            return (
-               <Badge variant={STATUS_VARIANT[status] ?? "default"}>
-                  {STATUS_LABEL[status] ?? status}
-               </Badge>
-            );
-         },
+         cell: ({ row }) => (
+            <InlineEditSelect
+               ariaLabel="Status"
+               onSave={async (value) =>
+                  onUpdate?.(row.original.id, { status: value })
+               }
+               options={STATUS_OPTIONS}
+               value={row.original.status}
+            />
+         ),
       },
    ];
 }

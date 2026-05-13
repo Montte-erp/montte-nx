@@ -1,7 +1,19 @@
 import { Input } from "@packages/ui/components/input";
+import {
+   InputGroup,
+   InputGroupAddon,
+   InputGroupInput,
+} from "@packages/ui/components/input-group";
 import { cn } from "@packages/ui/lib/utils";
 import { fromPromise } from "neverthrow";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import {
+   useCallback,
+   useEffect,
+   useRef,
+   useState,
+   type FocusEvent,
+   type KeyboardEvent,
+} from "react";
 
 interface InlineEditTextProps {
    value: string;
@@ -9,6 +21,7 @@ interface InlineEditTextProps {
    ariaLabel: string;
    placeholder?: string;
    className?: string;
+   startContent?: React.ReactNode;
 }
 
 export function InlineEditText({
@@ -17,6 +30,7 @@ export function InlineEditText({
    ariaLabel,
    placeholder,
    className,
+   startContent,
 }: InlineEditTextProps) {
    const [draft, setDraft] = useState(value);
    const [pending, setPending] = useState<string | null>(null);
@@ -33,16 +47,19 @@ export function InlineEditText({
 
    const displayed = pending ?? draft;
 
-   async function commit(next: string) {
-      const trimmed = next.trim();
-      if (trimmed === value.trim()) return;
-      setPending(trimmed);
-      const result = await fromPromise(onSave(trimmed), (e) => e);
-      if (result.isErr()) {
-         setPending(null);
-         setDraft(lastCommittedRef.current);
-      }
-   }
+   const commit = useCallback(
+      async (next: string) => {
+         const trimmed = next.trim();
+         if (trimmed === value.trim()) return;
+         setPending(trimmed);
+         const result = await fromPromise(onSave(trimmed), (e) => e);
+         if (result.isErr()) {
+            setPending(null);
+            setDraft(lastCommittedRef.current);
+         }
+      },
+      [onSave, value],
+   );
 
    function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
       if (e.key === "Enter") {
@@ -57,6 +74,40 @@ export function InlineEditText({
       }
    }
 
+   const handleBlur = useCallback(
+      (e: FocusEvent<HTMLInputElement>) => {
+         if (cancelledRef.current) {
+            cancelledRef.current = false;
+            return;
+         }
+         commit(e.target.value);
+      },
+      [commit],
+   );
+
+   if (startContent) {
+      return (
+         <InputGroup
+            className={cn(
+               "h-8 border-0 bg-transparent shadow-none focus-within:ring-1 focus-within:ring-ring",
+               className,
+            )}
+         >
+            <InputGroupAddon align="inline-start">
+               {startContent}
+            </InputGroupAddon>
+            <InputGroupInput
+               aria-label={ariaLabel}
+               onBlur={handleBlur}
+               onChange={(e) => setDraft(e.target.value)}
+               onKeyDown={handleKeyDown}
+               placeholder={placeholder}
+               value={displayed}
+            />
+         </InputGroup>
+      );
+   }
+
    return (
       <Input
          aria-label={ariaLabel}
@@ -64,13 +115,7 @@ export function InlineEditText({
             "h-8 w-full border-0 bg-transparent px-1 shadow-none focus-visible:ring-1 focus-visible:ring-ring",
             className,
          )}
-         onBlur={(e) => {
-            if (cancelledRef.current) {
-               cancelledRef.current = false;
-               return;
-            }
-            commit(e.target.value);
-         }}
+         onBlur={handleBlur}
          onChange={(e) => setDraft(e.target.value)}
          onKeyDown={handleKeyDown}
          placeholder={placeholder}
