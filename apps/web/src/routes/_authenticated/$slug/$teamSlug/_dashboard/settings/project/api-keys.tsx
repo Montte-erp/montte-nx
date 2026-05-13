@@ -1,12 +1,16 @@
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { KeyRound, Plus, Trash2 } from "lucide-react";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import type { DataTableStoredState } from "@packages/ui/components/data-table";
-import { DataTable } from "@packages/ui/components/data-table";
+import {
+   getCoreRowModel,
+   getFilteredRowModel,
+   getSortedRowModel,
+   useReactTable,
+   type ColumnDef,
+} from "@tanstack/react-table";
 import {
    Empty,
    EmptyDescription,
@@ -15,9 +19,15 @@ import {
    EmptyTitle,
 } from "@packages/ui/components/empty";
 import { Button } from "@packages/ui/components/button";
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { Table } from "@packages/ui/components/table";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
+import type { Outputs } from "@/integrations/orpc/client";
 import { QueryBoundary } from "@/components/query-boundary";
+import { DataTableBody } from "@/blocks/data-table/data-table-body";
+import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { buildApiKeysColumns } from "./-api-keys/api-keys-columns";
@@ -42,11 +52,6 @@ export const Route = createFileRoute(
    component: ApiKeysPage,
 });
 
-const [useTableState] = createLocalStorageState<DataTableStoredState | null>(
-   "montte:datatable:api-keys",
-   null,
-);
-
 function ApiKeysSkeleton() {
    return (
       <div className="flex flex-col gap-4">
@@ -56,6 +61,8 @@ function ApiKeysSkeleton() {
    );
 }
 
+type ApiKeyRow = Outputs["apiKeys"]["list"][number];
+
 function ApiKeysContent() {
    const { sorting, columnFilters } = Route.useSearch();
    const navigate = Route.useNavigate();
@@ -63,7 +70,6 @@ function ApiKeysContent() {
    const queryClient = useQueryClient();
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
-   const [tableState, setTableState] = useTableState();
 
    const { data: keys } = useSuspenseQuery(orpc.apiKeys.list.queryOptions());
 
@@ -104,7 +110,69 @@ function ApiKeysContent() {
       });
    }
 
-   const columns = useMemo(() => buildApiKeysColumns(), []);
+   const columns = useMemo<ColumnDef<ApiKeyRow>[]>(() => {
+      const actionsColumn: ColumnDef<ApiKeyRow> = {
+         id: "__actions",
+         header: "",
+         enableHiding: false,
+         enableSorting: false,
+         meta: {
+            label: "Ações",
+            align: "right",
+            reorderable: false,
+            resizable: false,
+         },
+         cell: ({ row }) => (
+            <Button
+               className="text-destructive hover:text-destructive"
+               onClick={() =>
+                  handleRevoke(row.original.id, row.original.name ?? "Sem nome")
+               }
+               size="icon-sm"
+               tooltip="Revogar"
+               variant="outline"
+            >
+               <Trash2 className="size-4" />
+               <span className="sr-only">Revogar</span>
+            </Button>
+         ),
+      };
+      return [...buildApiKeysColumns(), actionsColumn];
+   }, [handleRevoke]);
+
+   const table = useReactTable({
+      data: keys,
+      columns,
+      getRowId: (row) => row.id,
+      columnResizeMode: "onChange",
+      defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      state: { sorting, columnFilters },
+      onSortingChange: (updater) => {
+         const next =
+            typeof updater === "function" ? updater(sorting) : updater;
+         navigate({
+            search: (prev) => ({
+               ...prev,
+               sorting: next,
+            }),
+            replace: true,
+         });
+      },
+      onColumnFiltersChange: (updater) => {
+         const next =
+            typeof updater === "function" ? updater(columnFilters) : updater;
+         navigate({
+            search: (prev) => ({
+               ...prev,
+               columnFilters: next,
+            }),
+            replace: true,
+         });
+      },
+      getCoreRowModel: getCoreRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+      getFilteredRowModel: getFilteredRowModel(),
+   });
 
    return (
       <div className="flex flex-col gap-4">
@@ -139,52 +207,17 @@ function ApiKeysContent() {
                </EmptyHeader>
             </Empty>
          ) : (
-            <DataTable
-               data={keys}
-               columns={columns}
-               getRowId={(row) => row.id}
-               sorting={sorting}
-               onSortingChange={(updater) => {
-                  const next =
-                     typeof updater === "function" ? updater(sorting) : updater;
-                  navigate({
-                     search: (prev: typeof Route.types.fullSearchSchema) => ({
-                        ...prev,
-                        sorting: next,
-                     }),
-                  });
-               }}
-               columnFilters={columnFilters}
-               onColumnFiltersChange={(updater) => {
-                  const next =
-                     typeof updater === "function"
-                        ? updater(columnFilters)
-                        : updater;
-                  navigate({
-                     search: (prev: typeof Route.types.fullSearchSchema) => ({
-                        ...prev,
-                        columnFilters: next,
-                     }),
-                  });
-               }}
-               tableState={tableState}
-               onTableStateChange={setTableState}
-               renderActions={({ row }) => (
-                  <Button
-                     className="text-destructive hover:text-destructive"
-                     onClick={() =>
-                        handleRevoke(
-                           row.original.id,
-                           row.original.name ?? "Sem nome",
-                        )
-                     }
-                     tooltip="Revogar"
-                     variant="outline"
-                  >
-                     <Trash2 className="size-4" />
-                  </Button>
-               )}
-            />
+            <div className="flex flex-col gap-4">
+               <div className="flex justify-end">
+                  <DataTableColumnVisibility table={table} />
+               </div>
+               <ScrollArea className="rounded-md border bg-card">
+                  <Table>
+                     <DataTableHeader table={table} />
+                     <DataTableBody<ApiKeyRow> table={table} />
+                  </Table>
+               </ScrollArea>
+            </div>
          )}
       </div>
    );
