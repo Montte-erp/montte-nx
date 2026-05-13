@@ -291,6 +291,7 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                      ) : (
                         <Button
                            className="flex w-full items-center justify-start gap-2 px-2 py-2 text-left text-xs"
+                           data-testid="mapping-header-button"
                            onClick={() => setEditingColKey(accKey)}
                            type="button"
                            variant="ghost"
@@ -315,6 +316,9 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                                        ? "text-destructive/70"
                                        : "text-muted-foreground/50",
                                  )}
+                                 data-testid={
+                                    required ? "unmapped-required" : undefined
+                                 }
                               >
                                  {required ? "Não mapeado *" : "Não mapeado"}
                               </span>
