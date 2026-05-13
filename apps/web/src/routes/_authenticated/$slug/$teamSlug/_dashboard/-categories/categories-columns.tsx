@@ -14,13 +14,23 @@ import {
 import type { ColumnDef } from "@tanstack/react-table";
 import {
    Archive,
+   ArrowUpDown,
    CornerDownRight,
    ShieldCheck,
    Star,
    Tags,
+   TextCursorInput,
    TriangleAlert,
 } from "lucide-react";
+import { InlineEditSelect } from "@/blocks/data-table/inline-edit/inline-edit-select";
+import { InlineEditText } from "@/blocks/data-table/inline-edit/inline-edit-text";
 import { CATEGORY_ICON_MAP } from "./category-icons";
+
+const TYPE_OPTIONS = [
+   { value: "income", label: "Receita" },
+   { value: "expense", label: "Despesa" },
+   { value: "transfer", label: "Transferência" },
+];
 
 export type CategoryRow = Outputs["categories"]["getPaginated"]["data"][number];
 type CategoryType = "income" | "expense" | "transfer";
@@ -84,6 +94,9 @@ export function buildCategoryColumns(options?: {
             label: "Nome",
             cellComponent: "text" as const,
             isEditable: true,
+            required: true,
+            bulkEditIcon: TextCursorInput,
+            bulkEditAction: "Renomear",
             editSchema: z.string().min(1, "Nome é obrigatório.").max(80),
             isEditableForRow: (row: CategoryRow) => !row.isArchived,
             onSave: options?.onUpdate
@@ -93,14 +106,27 @@ export function buildCategoryColumns(options?: {
                : undefined,
          },
          cell: ({ row }) => {
-            const { name, isDefault } = row.original;
+            const { name, isDefault, id, isArchived } = row.original;
             const { color, icon } = getInheritedVisual(
                row.original,
                categoriesById,
             );
             const IconComponent = icon ? CATEGORY_ICON_MAP[icon] : null;
+            const editable = !isArchived && Boolean(onUpdate);
+            const nameNode = editable ? (
+               <InlineEditText
+                  ariaLabel="Nome"
+                  onSave={async (value) => {
+                     const trimmed = value.trim();
+                     if (!trimmed || trimmed === name) return;
+                     await onUpdate!(id, { name: trimmed });
+                  }}
+                  placeholder="Nome"
+                  value={name}
+               />
+            ) : null;
 
-            const archivedIndicator = row.original.isArchived ? (
+            const archivedIndicator = isArchived ? (
                <Tooltip>
                   <TooltipTrigger asChild>
                      <span
@@ -128,7 +154,7 @@ export function buildCategoryColumns(options?: {
                         )}
                      </AnnouncementTag>
                      <AnnouncementTitle>
-                        {name}
+                        {nameNode ?? name}
                         {isDefault && (
                            <Tooltip>
                               <TooltipTrigger asChild>
@@ -162,15 +188,27 @@ export function buildCategoryColumns(options?: {
                         style={{ color: color ?? undefined }}
                      />
                   )}
-                  <span
-                     className={
-                        isSub
-                           ? "truncate text-muted-foreground"
-                           : "font-medium truncate"
-                     }
-                  >
-                     {name}
-                  </span>
+                  {nameNode ? (
+                     <div
+                        className={
+                           isSub
+                              ? "min-w-0 flex-1 text-muted-foreground"
+                              : "min-w-0 flex-1 font-medium"
+                        }
+                     >
+                        {nameNode}
+                     </div>
+                  ) : (
+                     <span
+                        className={
+                           isSub
+                              ? "truncate text-muted-foreground"
+                              : "font-medium truncate"
+                        }
+                     >
+                        {name}
+                     </span>
+                  )}
                   {isDefault && !isSub && (
                      <Tooltip>
                         <TooltipTrigger asChild>
@@ -196,11 +234,10 @@ export function buildCategoryColumns(options?: {
             label: "Tipo",
             cellComponent: "select" as const,
             isEditable: true,
-            editOptions: [
-               { value: "income", label: "Receita" },
-               { value: "expense", label: "Despesa" },
-               { value: "transfer", label: "Transferência" },
-            ],
+            required: true,
+            bulkEditIcon: ArrowUpDown,
+            bulkEditAction: "Alterar tipo",
+            editOptions: TYPE_OPTIONS,
             editSchema: z.enum(["income", "expense", "transfer"]),
             isEditableForRow: (row: CategoryRow) =>
                !row.isArchived && row.parentId === null,
@@ -219,7 +256,21 @@ export function buildCategoryColumns(options?: {
             },
          },
          cell: ({ row }) => {
-            const { type } = row.original;
+            const { type, parentId, isArchived } = row.original;
+            const isRoot = parentId === null;
+            if (isRoot && !isArchived && onUpdate) {
+               return (
+                  <InlineEditSelect
+                     ariaLabel="Tipo"
+                     onSave={async (value) => {
+                        if (!isCategoryType(value)) return;
+                        await onUpdate(row.original.id, { type: value });
+                     }}
+                     options={TYPE_OPTIONS}
+                     value={type}
+                  />
+               );
+            }
             if (type === "income")
                return (
                   <Badge

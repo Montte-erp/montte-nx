@@ -223,6 +223,21 @@ function CreditCardsList() {
       }),
    );
 
+   const updateMutation = useMutation(
+      orpc.creditCards.update.mutationOptions({
+         onError: (error) => {
+            toast.error(error.message || "Erro ao atualizar cartão.");
+         },
+      }),
+   );
+
+   const handleInlineUpdate = useCallback(
+      async (id: string, patch: Record<string, unknown>) => {
+         await updateMutation.mutateAsync({ id, ...patch });
+      },
+      [updateMutation],
+   );
+
    const bulkCreateMutation = useMutation(
       orpc.creditCards.bulkCreate.mutationOptions({
          onError: (e) => toast.error(e.message),
@@ -404,6 +419,7 @@ function CreditCardsList() {
             color: b.color,
          })),
          logoDevToken: publicEnv?.LOGO_DEV_TOKEN,
+         onUpdate: handleInlineUpdate,
       });
       const selectColumn: ColumnDef<CreditCardRow> = {
          id: "__select",
@@ -471,7 +487,12 @@ function CreditCardsList() {
          ),
       };
       return [selectColumn, expandColumn, ...base, actionsColumn];
-   }, [bankAccounts, publicEnv?.LOGO_DEV_TOKEN, handleDelete]);
+   }, [
+      bankAccounts,
+      publicEnv?.LOGO_DEV_TOKEN,
+      handleDelete,
+      handleInlineUpdate,
+   ]);
 
    const handleColumnFiltersChange = useCallback(
       (

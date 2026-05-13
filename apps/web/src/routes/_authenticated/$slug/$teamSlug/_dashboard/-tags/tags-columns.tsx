@@ -4,13 +4,14 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Archive, Landmark, ShieldCheck } from "lucide-react";
+import { Archive, FileText, Landmark, ShieldCheck, Type } from "lucide-react";
 import { z } from "zod";
 import {
    Announcement,
    AnnouncementTag,
    AnnouncementTitle,
 } from "@/components/blocks/announcement";
+import { InlineEditText } from "@/blocks/data-table/inline-edit/inline-edit-text";
 
 import type { Outputs } from "@/integrations/orpc/client";
 
@@ -45,8 +46,12 @@ export function buildTagColumns(options?: {
             label: "Nome",
             exportable: true,
             isEditable: true,
+            editMode: "inline",
             cellComponent: "text",
             editSchema: tagNameSchema,
+            required: true,
+            bulkEditIcon: Type,
+            bulkEditAction: "Alterar nome",
             isEditableForRow: (row: TagRow) =>
                !row.isDefault && !row.isArchived,
             onSave: options?.onUpdate
@@ -57,7 +62,7 @@ export function buildTagColumns(options?: {
          },
          enableSorting: false,
          cell: ({ row }) => {
-            const { name, isDefault, isArchived } = row.original;
+            const { id, name, isDefault, isArchived } = row.original;
             if (isDefault) {
                return (
                   <Announcement className="cursor-default w-fit">
@@ -88,22 +93,40 @@ export function buildTagColumns(options?: {
                   </Announcement>
                );
             }
-            return (
-               <Tooltip>
-                  <TooltipTrigger asChild>
-                     <Announcement className="cursor-default w-fit">
-                        <AnnouncementTag>
-                           {isArchived ? (
+            if (isArchived) {
+               return (
+                  <Tooltip>
+                     <TooltipTrigger asChild>
+                        <Announcement className="cursor-default w-fit">
+                           <AnnouncementTag>
                               <Archive aria-hidden="true" className="size-4" />
-                           ) : (
-                              <Landmark aria-hidden="true" className="size-4" />
-                           )}
-                        </AnnouncementTag>
-                        <AnnouncementTitle>{name}</AnnouncementTitle>
-                     </Announcement>
-                  </TooltipTrigger>
-                  {isArchived && <TooltipContent>Arquivado</TooltipContent>}
-               </Tooltip>
+                           </AnnouncementTag>
+                           <AnnouncementTitle>{name}</AnnouncementTitle>
+                        </Announcement>
+                     </TooltipTrigger>
+                     <TooltipContent>Arquivado</TooltipContent>
+                  </Tooltip>
+               );
+            }
+            if (!options?.onUpdate) {
+               return (
+                  <Announcement className="cursor-default w-fit">
+                     <AnnouncementTag>
+                        <Landmark aria-hidden="true" className="size-4" />
+                     </AnnouncementTag>
+                     <AnnouncementTitle>{name}</AnnouncementTitle>
+                  </Announcement>
+               );
+            }
+            return (
+               <InlineEditText
+                  ariaLabel="Nome"
+                  onSave={async (v) => {
+                     await options.onUpdate!(id, { name: v });
+                  }}
+                  placeholder="Nome do centro de custo"
+                  value={name}
+               />
             );
          },
       },
@@ -117,6 +140,8 @@ export function buildTagColumns(options?: {
             editMode: "inline",
             cellComponent: "textarea",
             editSchema: tagDescriptionSchema,
+            bulkEditIcon: FileText,
+            bulkEditAction: "Alterar descrição",
             isEditableForRow: (row: TagRow) => !row.isArchived,
             onSave: options?.onUpdate
                ? async (rowId, value) => {
@@ -128,14 +153,30 @@ export function buildTagColumns(options?: {
                : undefined,
          },
          enableSorting: false,
-         cell: ({ row }) =>
-            row.original.description ? (
-               <span className="text-sm text-muted-foreground truncate">
-                  {row.original.description}
-               </span>
-            ) : (
-               <span className="text-sm text-muted-foreground/40">—</span>
-            ),
+         cell: ({ row }) => {
+            const { id, description, isArchived } = row.original;
+            if (isArchived || !options?.onUpdate) {
+               return description ? (
+                  <span className="text-sm text-muted-foreground truncate">
+                     {description}
+                  </span>
+               ) : (
+                  <span className="text-sm text-muted-foreground/40">—</span>
+               );
+            }
+            return (
+               <InlineEditText
+                  ariaLabel="Descrição"
+                  onSave={async (v) => {
+                     await options.onUpdate!(id, {
+                        description: v.trim() ? v.trim() : null,
+                     });
+                  }}
+                  placeholder="—"
+                  value={description ?? ""}
+               />
+            );
+         },
       },
    ];
 }

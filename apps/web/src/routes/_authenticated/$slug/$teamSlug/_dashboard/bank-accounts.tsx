@@ -201,6 +201,13 @@ function BankAccountsList() {
       [updateMutation],
    );
 
+   const handleUpdateAccount = useCallback(
+      async (id: string, patch: Record<string, unknown>) => {
+         await updateMutation.mutateAsync({ id, ...patch });
+      },
+      [updateMutation],
+   );
+
    const handleOpenCreate = useCallback(() => {
       openSheet({ renderChildren: () => <BankAccountFormSheet /> });
    }, [openSheet]);
@@ -329,6 +336,7 @@ function BankAccountsList() {
       const base = buildBankAccountColumns({
          logoDevToken: publicEnv?.LOGO_DEV_TOKEN,
          onRenameAccount: handleRenameAccount,
+         onUpdateAccount: handleUpdateAccount,
       });
       const selectColumn: ColumnDef<BankAccountRow> = {
          id: "__select",
@@ -407,6 +415,7 @@ function BankAccountsList() {
    }, [
       handleDelete,
       handleRenameAccount,
+      handleUpdateAccount,
       publicEnv?.LOGO_DEV_TOKEN,
       slug,
       teamSlug,

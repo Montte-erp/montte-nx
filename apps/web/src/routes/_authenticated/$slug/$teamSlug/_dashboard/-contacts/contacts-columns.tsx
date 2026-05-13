@@ -1,7 +1,9 @@
-import { Badge } from "@packages/ui/components/badge";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "@tanstack/react-router";
+import { ArrowUpDown, Mail, Phone, Type } from "lucide-react";
 import { z } from "zod";
+import { InlineEditSelect } from "@/blocks/data-table/inline-edit/inline-edit-select";
+import { InlineEditText } from "@/blocks/data-table/inline-edit/inline-edit-text";
 
 export type ContactRow = {
    id: string;
@@ -14,20 +16,11 @@ export type ContactRow = {
    notes: string | null;
 };
 
-const TYPE_LABELS: Record<ContactRow["type"], string> = {
-   cliente: "Cliente",
-   fornecedor: "Fornecedor",
-   ambos: "Ambos",
-};
-
-const TYPE_VARIANTS: Record<
-   ContactRow["type"],
-   "default" | "secondary" | "outline"
-> = {
-   cliente: "default",
-   fornecedor: "secondary",
-   ambos: "outline",
-};
+const TYPE_OPTIONS = [
+   { value: "cliente", label: "Cliente" },
+   { value: "fornecedor", label: "Fornecedor" },
+   { value: "ambos", label: "Ambos" },
+];
 
 export function buildContactColumns(
    slugs?: { slug: string; teamSlug: string },
@@ -42,28 +35,41 @@ export function buildContactColumns(
             cellComponent: "text" as const,
             editSchema: z.string().min(2, "Nome é obrigatório."),
             isEditable: !!onUpdate,
-            onSave: onUpdate
-               ? async (rowId, value) => {
-                    await onUpdate(rowId, { name: value });
-                 }
-               : undefined,
+            editMode: "inline",
+            bulkEditIcon: Type,
+            bulkEditAction: "Renomear",
+            required: true,
          },
-         cell: ({ row }) =>
-            slugs ? (
-               <Link
-                  className="font-medium hover:underline"
-                  params={{
-                     slug: slugs.slug,
-                     teamSlug: slugs.teamSlug,
-                     contactId: row.original.id,
+         cell: ({ row }) => {
+            if (!onUpdate) {
+               return slugs ? (
+                  <Link
+                     className="font-medium hover:underline"
+                     params={{
+                        slug: slugs.slug,
+                        teamSlug: slugs.teamSlug,
+                        contactId: row.original.id,
+                     }}
+                     to="/$slug/$teamSlug/contacts/$contactId"
+                  >
+                     {row.original.name}
+                  </Link>
+               ) : (
+                  <span className="font-medium">{row.original.name}</span>
+               );
+            }
+            return (
+               <InlineEditText
+                  ariaLabel="Nome"
+                  onSave={async (value) => {
+                     const next = value.trim();
+                     if (!next) return;
+                     await onUpdate(row.original.id, { name: next });
                   }}
-                  to="/$slug/$teamSlug/contacts/$contactId"
-               >
-                  {row.original.name}
-               </Link>
-            ) : (
-               <span className="font-medium">{row.original.name}</span>
-            ),
+                  value={row.original.name}
+               />
+            );
+         },
       },
       {
          accessorKey: "type",
@@ -71,23 +77,22 @@ export function buildContactColumns(
          meta: {
             label: "Tipo",
             cellComponent: "select" as const,
-            editOptions: [
-               { value: "cliente", label: "Cliente" },
-               { value: "fornecedor", label: "Fornecedor" },
-               { value: "ambos", label: "Ambos" },
-            ],
+            editOptions: TYPE_OPTIONS,
             editSchema: z.enum(["cliente", "fornecedor", "ambos"]),
             isEditable: !!onUpdate,
-            onSave: onUpdate
-               ? async (rowId, value) => {
-                    await onUpdate(rowId, { type: value });
-                 }
-               : undefined,
+            editMode: "inline",
+            bulkEditIcon: ArrowUpDown,
+            bulkEditAction: "Alterar tipo",
          },
          cell: ({ row }) => (
-            <Badge variant={TYPE_VARIANTS[row.original.type]}>
-               {TYPE_LABELS[row.original.type]}
-            </Badge>
+            <InlineEditSelect
+               ariaLabel="Tipo"
+               onSave={async (value) => {
+                  await onUpdate?.(row.original.id, { type: value });
+               }}
+               options={TYPE_OPTIONS}
+               value={row.original.type}
+            />
          ),
       },
       {
@@ -119,20 +124,22 @@ export function buildContactColumns(
                .nullable()
                .optional(),
             isEditable: !!onUpdate,
-            onSave: onUpdate
-               ? async (rowId, value) => {
-                    await onUpdate(rowId, {
-                       email: value === "" ? null : value,
-                    });
-                 }
-               : undefined,
+            editMode: "inline",
+            bulkEditIcon: Mail,
+            bulkEditAction: "Alterar email",
          },
-         cell: ({ row }) =>
-            row.original.email ? (
-               <span className="text-sm">{row.original.email}</span>
-            ) : (
-               <span className="text-muted-foreground">—</span>
-            ),
+         cell: ({ row }) => (
+            <InlineEditText
+               ariaLabel="Email"
+               onSave={async (value) => {
+                  await onUpdate?.(row.original.id, {
+                     email: value.trim() || null,
+                  });
+               }}
+               placeholder="—"
+               value={row.original.email ?? ""}
+            />
+         ),
       },
       {
          accessorKey: "phone",
@@ -142,20 +149,22 @@ export function buildContactColumns(
             cellComponent: "text" as const,
             editSchema: z.string().nullable().optional(),
             isEditable: !!onUpdate,
-            onSave: onUpdate
-               ? async (rowId, value) => {
-                    await onUpdate(rowId, {
-                       phone: value === "" ? null : value,
-                    });
-                 }
-               : undefined,
+            editMode: "inline",
+            bulkEditIcon: Phone,
+            bulkEditAction: "Alterar telefone",
          },
-         cell: ({ row }) =>
-            row.original.phone ? (
-               <span className="text-sm">{row.original.phone}</span>
-            ) : (
-               <span className="text-muted-foreground">—</span>
-            ),
+         cell: ({ row }) => (
+            <InlineEditText
+               ariaLabel="Telefone"
+               onSave={async (value) => {
+                  await onUpdate?.(row.original.id, {
+                     phone: value.trim() || null,
+                  });
+               }}
+               placeholder="—"
+               value={row.original.phone ?? ""}
+            />
+         ),
       },
    ];
 }
