@@ -474,7 +474,6 @@ export function buildTransactionColumns(options?: {
          header: "Valor",
          meta: {
             label: "Valor",
-            align: "right",
             filterVariant: "range",
             exportable: true,
             cellComponent: "money",
