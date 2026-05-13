@@ -170,18 +170,27 @@ const getPaginatedInput = z.object({
 function buildCategoryOrderBy(
    sorting: z.infer<typeof getPaginatedInput>["sorting"],
 ) {
-   const [sort] = sorting ?? [];
-   if (!sort) return [asc(categories.name), desc(categories.createdAt)];
-   const direction = sort.desc ? desc : asc;
+   if (!sorting?.length)
+      return [asc(categories.name), desc(categories.createdAt)];
+   const orderBy: SQL[] = [];
 
-   switch (sort.id) {
-      case "isDefault":
-         return [direction(categories.isDefault), asc(categories.name)];
-      case "name":
-         return [direction(categories.name), desc(categories.createdAt)];
-      case "type":
-         return [direction(categories.type), asc(categories.name)];
+   for (const sort of sorting) {
+      const direction = sort.desc ? desc : asc;
+
+      switch (sort.id) {
+         case "isDefault":
+            orderBy.push(direction(categories.isDefault));
+            break;
+         case "name":
+            orderBy.push(direction(categories.name));
+            break;
+         case "type":
+            orderBy.push(direction(categories.type));
+            break;
+      }
    }
+
+   return [...orderBy, asc(categories.name), desc(categories.createdAt)];
 }
 
 export const getPaginated = protectedProcedure

@@ -146,7 +146,7 @@ function InlineEditableText({
    );
 }
 
-const TITLE_CLASS = "text-2xl font-semibold font-serif leading-tight";
+const TITLE_CLASS = "text-2xl font-semibold leading-tight";
 const DESCRIPTION_CLASS = "text-base text-muted-foreground font-sans";
 
 export function PageHeader({

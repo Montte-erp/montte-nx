@@ -2,6 +2,7 @@ import { Button } from "@packages/ui/components/button";
 import type { LucideIcon } from "lucide-react";
 import { Check, Lock } from "lucide-react";
 import type { ReactNode } from "react";
+import { DefaultHeader } from "../../../-layout/default-header";
 
 interface SettingsAddonGatedPageProps {
    title: string;
@@ -24,10 +25,7 @@ export function SettingsAddonGatedPage({
 }: SettingsAddonGatedPageProps) {
    return (
       <div className="space-y-8">
-         <div>
-            <h1 className="text-2xl font-semibold font-serif">{title}</h1>
-            <p className="text-sm text-muted-foreground mt-1">{description}</p>
-         </div>
+         <DefaultHeader description={description} title={title} />
 
          <div className="rounded-lg border bg-card p-8">
             <div className="flex flex-col items-center text-center max-w-lg mx-auto">

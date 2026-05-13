@@ -7,7 +7,8 @@ export type XlsxData = {
    rows: string[][];
 };
 
-function cellToString(cell: unknown): string {
+function cellToString(cell: unknown) {
+   if (cell === null || cell === undefined) return "";
    if (cell instanceof Date) {
       if (Number.isNaN(cell.getTime())) return "";
       return dayjs(cell).format("YYYY-MM-DD");
@@ -22,14 +23,15 @@ export function useXlsxFile() {
       });
       const ws = wb.Sheets[wb.SheetNames[0]];
       if (!ws) throw new Error("Planilha vazia");
-      const data = xlsxUtils.sheet_to_json<unknown[]>(ws, {
+      const data: unknown[][] = xlsxUtils.sheet_to_json<unknown[]>(ws, {
          header: 1,
          defval: "",
       });
       if (data.length < 2) throw new Error("Planilha sem dados");
       return {
-         headers: (data[0] as unknown[]).map(cellToString),
-         rows: (data.slice(1) as unknown[][])
+         headers: data[0]?.map(cellToString) ?? [],
+         rows: data
+            .slice(1)
             .filter((r) => r.some((c) => cellToString(c).trim() !== ""))
             .map((r) => r.map(cellToString)),
       };

@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { and, asc, desc, eq, ilike, inArray, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { err, fromPromise, ok } from "neverthrow";
 import { z } from "zod";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
@@ -41,35 +42,38 @@ const listCreditCardsSchema = z.object({
 function buildCreditCardOrderBy(
    sorting: z.infer<typeof listCreditCardsSchema>["sorting"],
 ) {
-   const [sort] = sorting ?? [];
-   if (!sort) return [asc(creditCards.name), desc(creditCards.createdAt)];
-   const direction = sort.desc ? desc : asc;
+   if (!sorting?.length)
+      return [asc(creditCards.name), desc(creditCards.createdAt)];
+   const orderBy: SQL[] = [];
 
-   switch (sort.id) {
-      case "bankAccountId":
-         return [
-            direction(creditCards.bankAccountId),
-            desc(creditCards.createdAt),
-         ];
-      case "brand":
-         return [direction(creditCards.brand), desc(creditCards.createdAt)];
-      case "closingDay":
-         return [
-            direction(creditCards.closingDay),
-            desc(creditCards.createdAt),
-         ];
-      case "creditLimit":
-         return [
-            direction(creditCards.creditLimit),
-            desc(creditCards.createdAt),
-         ];
-      case "dueDay":
-         return [direction(creditCards.dueDay), desc(creditCards.createdAt)];
-      case "name":
-         return [direction(creditCards.name), desc(creditCards.createdAt)];
-      case "status":
-         return [direction(creditCards.status), desc(creditCards.createdAt)];
+   for (const sort of sorting) {
+      const direction = sort.desc ? desc : asc;
+      switch (sort.id) {
+         case "bankAccountId":
+            orderBy.push(direction(creditCards.bankAccountId));
+            break;
+         case "brand":
+            orderBy.push(direction(creditCards.brand));
+            break;
+         case "closingDay":
+            orderBy.push(direction(creditCards.closingDay));
+            break;
+         case "creditLimit":
+            orderBy.push(direction(creditCards.creditLimit));
+            break;
+         case "dueDay":
+            orderBy.push(direction(creditCards.dueDay));
+            break;
+         case "name":
+            orderBy.push(direction(creditCards.name));
+            break;
+         case "status":
+            orderBy.push(direction(creditCards.status));
+            break;
+      }
    }
+
+   return [...orderBy, desc(creditCards.createdAt)];
 }
 
 export const create = protectedProcedure

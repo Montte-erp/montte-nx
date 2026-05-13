@@ -29,33 +29,48 @@ function buildTransactionOrderBy(
    sorting: TransactionSortingRule[] | undefined,
 ): SQL[] {
    const displayDate = sql<string>`CASE WHEN ${transactions.status} = 'pending' AND ${transactions.dueDate} IS NOT NULL THEN ${transactions.dueDate} ELSE ${transactions.date} END`;
-   const [sort] = sorting ?? [];
-   if (!sort) return [desc(transactions.date), desc(transactions.createdAt)];
+   if (!sorting?.length)
+      return [desc(transactions.date), desc(transactions.createdAt)];
+   const orderBy: SQL[] = [];
 
-   const direction = sort.desc ? desc : asc;
+   for (const sort of sorting) {
+      const direction = sort.desc ? desc : asc;
 
-   switch (sort.id) {
-      case "amount":
-         return [direction(transactions.amount), desc(transactions.createdAt)];
-      case "bankAccountName":
-         return [direction(bankAccounts.name), desc(transactions.createdAt)];
-      case "categoryName":
-         return [direction(categories.name), desc(transactions.createdAt)];
-      case "contactName":
-         return [direction(contacts.name), desc(transactions.createdAt)];
-      case "creditCardName":
-         return [direction(creditCards.name), desc(transactions.createdAt)];
-      case "date":
-         return [direction(displayDate), desc(transactions.createdAt)];
-      case "dueDate":
-         return [direction(transactions.dueDate), desc(transactions.createdAt)];
-      case "name":
-         return [direction(transactions.name), desc(transactions.createdAt)];
-      case "status":
-         return [direction(transactions.status), desc(transactions.createdAt)];
-      case "type":
-         return [direction(transactions.type), desc(transactions.createdAt)];
+      switch (sort.id) {
+         case "amount":
+            orderBy.push(direction(transactions.amount));
+            break;
+         case "bankAccountName":
+            orderBy.push(direction(bankAccounts.name));
+            break;
+         case "categoryName":
+            orderBy.push(direction(categories.name));
+            break;
+         case "contactName":
+            orderBy.push(direction(contacts.name));
+            break;
+         case "creditCardName":
+            orderBy.push(direction(creditCards.name));
+            break;
+         case "date":
+            orderBy.push(direction(displayDate));
+            break;
+         case "dueDate":
+            orderBy.push(direction(transactions.dueDate));
+            break;
+         case "name":
+            orderBy.push(direction(transactions.name));
+            break;
+         case "status":
+            orderBy.push(direction(transactions.status));
+            break;
+         case "type":
+            orderBy.push(direction(transactions.type));
+            break;
+      }
    }
+
+   return [...orderBy, desc(transactions.createdAt)];
 }
 
 export function selectTransactionsWithJoins(

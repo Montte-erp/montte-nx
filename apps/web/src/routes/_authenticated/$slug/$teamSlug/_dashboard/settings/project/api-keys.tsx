@@ -10,7 +10,12 @@ import {
    getSortedRowModel,
    useReactTable,
    type ColumnDef,
+   type ColumnFiltersState,
+   type SortingState,
+   type VisibilityState,
 } from "@tanstack/react-table";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
+import { err, fromPromise, ok } from "neverthrow";
 import {
    Empty,
    EmptyDescription,
@@ -30,8 +35,27 @@ import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
+import { DefaultHeader } from "../../../-layout/default-header";
 import { buildApiKeysColumns } from "./-api-keys/api-keys-columns";
 import { CreateApiKeyForm } from "./-api-keys/create-api-key-form";
+
+type DataTableStoredState = {
+   sorting: SortingState;
+   columnFilters: ColumnFiltersState;
+   columnVisibility: VisibilityState;
+};
+
+const EMPTY_API_KEYS_TABLE_STATE: DataTableStoredState = {
+   sorting: [],
+   columnFilters: [],
+   columnVisibility: {},
+};
+
+const [useApiKeysTableStorage] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:api-keys",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/api-keys",
@@ -66,6 +90,7 @@ type ApiKeyRow = Outputs["apiKeys"]["list"][number];
 function ApiKeysContent() {
    const { sorting, columnFilters } = Route.useSearch();
    const navigate = Route.useNavigate();
+   const [storedTableState, setStoredTableState] = useApiKeysTableStorage();
    const { data: session } = authClient.useSession();
    const queryClient = useQueryClient();
    const { openCredenza, closeCredenza } = useCredenza();
@@ -85,8 +110,13 @@ function ApiKeysContent() {
             cancelLabel: "Cancelar",
             variant: "destructive",
             onAction: async () => {
-               const result = await authClient.apiKey.delete({ keyId });
-               if (result.error) {
+               const result = await fromPromise(
+                  authClient.apiKey.delete({ keyId }),
+                  () => new Error("Erro ao revogar chave"),
+               ).andThen((response) =>
+                  response.error ? err(response.error) : ok(response.data),
+               );
+               if (result.isErr()) {
                   toast.error("Erro ao revogar chave");
                   return;
                }
@@ -122,6 +152,7 @@ function ApiKeysContent() {
          meta: {
             label: "Ações",
             align: "right",
+            exportable: false,
             reorderable: false,
             resizable: false,
          },
@@ -143,16 +174,32 @@ function ApiKeysContent() {
       return [...buildApiKeysColumns(), actionsColumn];
    }, [handleRevoke]);
 
+   const tableSorting =
+      sorting.length > 0 ? sorting : (storedTableState?.sorting ?? []);
+   const tableColumnFilters =
+      columnFilters.length > 0
+         ? columnFilters
+         : (storedTableState?.columnFilters ?? []);
+   const columnVisibility = storedTableState?.columnVisibility ?? {};
+
    const table = useReactTable({
       data: keys,
       columns,
       getRowId: (row) => row.id,
       columnResizeMode: "onChange",
       defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
-      state: { sorting, columnFilters },
+      state: {
+         sorting: tableSorting,
+         columnFilters: tableColumnFilters,
+         columnVisibility,
+      },
       onSortingChange: (updater) => {
          const next =
-            typeof updater === "function" ? updater(sorting) : updater;
+            typeof updater === "function" ? updater(tableSorting) : updater;
+         setStoredTableState((prev) => ({
+            ...(prev ?? EMPTY_API_KEYS_TABLE_STATE),
+            sorting: next,
+         }));
          navigate({
             search: (prev) => ({
                ...prev,
@@ -163,7 +210,13 @@ function ApiKeysContent() {
       },
       onColumnFiltersChange: (updater) => {
          const next =
-            typeof updater === "function" ? updater(columnFilters) : updater;
+            typeof updater === "function"
+               ? updater(tableColumnFilters)
+               : updater;
+         setStoredTableState((prev) => ({
+            ...(prev ?? EMPTY_API_KEYS_TABLE_STATE),
+            columnFilters: next,
+         }));
          navigate({
             search: (prev) => ({
                ...prev,
@@ -172,6 +225,14 @@ function ApiKeysContent() {
             replace: true,
          });
       },
+      onColumnVisibilityChange: (updater) => {
+         const next =
+            typeof updater === "function" ? updater(columnVisibility) : updater;
+         setStoredTableState((prev) => ({
+            ...(prev ?? EMPTY_API_KEYS_TABLE_STATE),
+            columnVisibility: next,
+         }));
+      },
       getCoreRowModel: getCoreRowModel(),
       getSortedRowModel: getSortedRowModel(),
       getFilteredRowModel: getFilteredRowModel(),
@@ -179,23 +240,19 @@ function ApiKeysContent() {
 
    return (
       <div className="flex flex-col gap-4">
-         <div className="flex items-center justify-between">
-            <div>
-               <h1 className="font-serif text-2xl font-semibold">
-                  Chaves de API
-               </h1>
-               <p className="mt-1 text-sm text-muted-foreground">
-                  Use estas chaves para autenticar webhooks neste espaço.
-               </p>
-            </div>
-            <Button
-               onClick={handleOpenCreate}
-               disabled={!organizationId || !teamId}
-            >
-               <Plus className="size-4" />
-               Nova chave
-            </Button>
-         </div>
+         <DefaultHeader
+            actions={
+               <Button
+                  onClick={handleOpenCreate}
+                  disabled={!organizationId || !teamId}
+               >
+                  <Plus className="size-4" />
+                  Nova chave
+               </Button>
+            }
+            description="Use estas chaves para autenticar webhooks neste espaço."
+            title="Chaves de API"
+         />
 
          {keys.length === 0 ? (
             <Empty>

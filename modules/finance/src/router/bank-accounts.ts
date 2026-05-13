@@ -1,5 +1,16 @@
 import dayjs from "dayjs";
-import { and, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import {
+   and,
+   asc,
+   desc,
+   eq,
+   getTableColumns,
+   ilike,
+   inArray,
+   or,
+   sql,
+} from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { err, fromPromise, fromThrowable, ok } from "neverthrow";
 import { z } from "zod";
 import {
@@ -80,6 +91,28 @@ const defaultBankAccountSort: BankAccountSortRule = {
    desc: false,
 };
 
+const currentBalanceSql = sql<string>`
+   (
+      ${bankAccounts.initialBalance}
+      + COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+      - COALESCE(SUM(CASE WHEN ${transactions.type} = 'expense' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+      - COALESCE(SUM(CASE WHEN ${transactions.type} = 'transfer' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+      + COALESCE(SUM(CASE WHEN ${transactions.type} = 'transfer' AND ${transactions.destinationBankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+   )
+`;
+
+const projectedBalanceSql = sql<string>`
+   (
+      ${bankAccounts.initialBalance}
+      + COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+      - COALESCE(SUM(CASE WHEN ${transactions.type} = 'expense' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+      - COALESCE(SUM(CASE WHEN ${transactions.type} = 'transfer' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+      + COALESCE(SUM(CASE WHEN ${transactions.type} = 'transfer' AND ${transactions.destinationBankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+      + COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' AND ${transactions.status} = 'pending' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+      - COALESCE(SUM(CASE WHEN ${transactions.type} = 'expense' AND ${transactions.status} = 'pending' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+   )
+`;
+
 function compareNullableString(a: string | null, b: string | null) {
    return (a ?? "").localeCompare(b ?? "", "pt-BR");
 }
@@ -89,32 +122,77 @@ function compareNumericString(a: string, b: string) {
 }
 
 function sortBankAccountRows(rows: BankAccountListRow[], sorting: ListSorting) {
-   const [inputSort] = sorting ?? [];
-   const sort = inputSort ?? defaultBankAccountSort;
-   const direction = sort.desc ? -1 : 1;
+   const rules = sorting?.length ? sorting : [defaultBankAccountSort];
    return [...rows].sort((a, b) => {
+      for (const sort of rules) {
+         const direction = sort.desc ? -1 : 1;
+         switch (sort.id) {
+            case "currentBalance": {
+               const result = compareNumericString(
+                  a.currentBalance,
+                  b.currentBalance,
+               );
+               if (result !== 0) return result * direction;
+               break;
+            }
+            case "initialBalance": {
+               const result = compareNumericString(
+                  a.initialBalance,
+                  b.initialBalance,
+               );
+               if (result !== 0) return result * direction;
+               break;
+            }
+            case "name": {
+               const result = compareNullableString(a.name, b.name);
+               if (result !== 0) return result * direction;
+               break;
+            }
+            case "projectedBalance": {
+               const result = compareNumericString(
+                  a.projectedBalance,
+                  b.projectedBalance,
+               );
+               if (result !== 0) return result * direction;
+               break;
+            }
+            case "type": {
+               const result = compareNullableString(a.type, b.type);
+               if (result !== 0) return result * direction;
+               break;
+            }
+         }
+      }
+      return a.id.localeCompare(b.id);
+   });
+}
+
+function buildBankAccountOrderBy(sorting: ListSorting): SQL[] {
+   const rules = sorting?.length ? sorting : [defaultBankAccountSort];
+   const orderBy: SQL[] = [];
+
+   for (const sort of rules) {
+      const direction = sort.desc ? desc : asc;
       switch (sort.id) {
          case "currentBalance":
-            return (
-               compareNumericString(a.currentBalance, b.currentBalance) *
-               direction
-            );
+            orderBy.push(direction(currentBalanceSql));
+            break;
          case "initialBalance":
-            return (
-               compareNumericString(a.initialBalance, b.initialBalance) *
-               direction
-            );
+            orderBy.push(direction(bankAccounts.initialBalance));
+            break;
          case "name":
-            return compareNullableString(a.name, b.name) * direction;
+            orderBy.push(direction(bankAccounts.name));
+            break;
          case "projectedBalance":
-            return (
-               compareNumericString(a.projectedBalance, b.projectedBalance) *
-               direction
-            );
+            orderBy.push(direction(projectedBalanceSql));
+            break;
          case "type":
-            return compareNullableString(a.type, b.type) * direction;
+            orderBy.push(direction(bankAccounts.type));
+            break;
       }
-   });
+   }
+
+   return [...orderBy, asc(bankAccounts.id)];
 }
 
 export const list = protectedProcedure
@@ -131,7 +209,27 @@ export const list = protectedProcedure
 
       const result = await fromPromise(
          Promise.all([
-            context.db.select().from(bankAccounts).where(where),
+            context.db
+               .select(getTableColumns(bankAccounts))
+               .from(bankAccounts)
+               .leftJoin(
+                  transactions,
+                  and(
+                     or(
+                        eq(transactions.bankAccountId, bankAccounts.id),
+                        eq(
+                           transactions.destinationBankAccountId,
+                           bankAccounts.id,
+                        ),
+                     ),
+                     eq(transactions.ignored, false),
+                  ),
+               )
+               .where(where)
+               .groupBy(bankAccounts.id)
+               .orderBy(...buildBankAccountOrderBy(sorting))
+               .limit(pageSize)
+               .offset(offset),
             context.db
                .select({ count: sql<number>`cast(count(*) as int)` })
                .from(bankAccounts)
@@ -155,7 +253,7 @@ export const list = protectedProcedure
                account.initialBalance,
          })),
          sorting,
-      ).slice(offset, offset + pageSize);
+      );
 
       return {
          data,

@@ -40,6 +40,7 @@ import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 import { QueryBoundary } from "@/components/query-boundary";
+import { DefaultHeader } from "../../-layout/default-header";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/profile",
@@ -486,12 +487,10 @@ function ProfileSectionSkeleton() {
 function ProfileSectionErrorFallback(props: FallbackProps) {
    return (
       <div className="flex flex-col gap-4">
-         <div>
-            <h1 className="text-2xl font-semibold font-serif">Perfil</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-               Gerencie suas informações pessoais.
-            </p>
-         </div>
+         <DefaultHeader
+            description="Gerencie suas informações pessoais."
+            title="Perfil"
+         />
          <Card>
             <CardContent className="py-8">
                {createErrorFallback({
@@ -918,12 +917,10 @@ function ProfileSectionContent() {
 
    return (
       <div className="flex flex-col gap-4">
-         <div>
-            <h1 className="text-2xl font-semibold font-serif">Perfil</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-               Gerencie suas informações pessoais.
-            </p>
-         </div>
+         <DefaultHeader
+            description="Gerencie suas informações pessoais."
+            title="Perfil"
+         />
 
          <AvatarUploadSection
             currentImage={user.image ?? null}

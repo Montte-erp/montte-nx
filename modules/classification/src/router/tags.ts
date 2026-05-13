@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { errAsync, fromPromise, okAsync, safeTry } from "neverthrow";
 import { z } from "zod";
 import {
@@ -44,7 +45,13 @@ const getAllInputSchema = z.object({
    sorting: z
       .array(
          z.object({
-            id: z.enum(["description", "isDefault", "name"]),
+            id: z.enum([
+               "createdAt",
+               "description",
+               "dreOrder",
+               "isDefault",
+               "name",
+            ]),
             desc: z.boolean(),
          }),
       )
@@ -54,18 +61,37 @@ const getAllInputSchema = z.object({
 function buildTagOrderBy(
    sorting: z.infer<typeof getAllInputSchema>["sorting"],
 ) {
-   const [sort] = sorting ?? [];
-   if (!sort) return [asc(tags.dreOrder), asc(tags.name)];
-   const direction = sort.desc ? desc : asc;
+   if (!sorting?.length) return [asc(tags.dreOrder), asc(tags.name)];
+   const orderBy: SQL[] = [];
 
-   switch (sort.id) {
-      case "description":
-         return [direction(tags.description), asc(tags.name)];
-      case "isDefault":
-         return [direction(tags.isDefault), asc(tags.name)];
-      case "name":
-         return [direction(tags.name), desc(tags.createdAt)];
+   for (const sort of sorting) {
+      const direction = sort.desc ? desc : asc;
+
+      switch (sort.id) {
+         case "createdAt":
+            orderBy.push(direction(tags.createdAt));
+            break;
+         case "description":
+            orderBy.push(direction(tags.description));
+            break;
+         case "dreOrder":
+            orderBy.push(direction(tags.dreOrder));
+            break;
+         case "isDefault":
+            orderBy.push(direction(tags.isDefault));
+            break;
+         case "name":
+            orderBy.push(direction(tags.name));
+            break;
+      }
    }
+
+   return [
+      ...orderBy,
+      asc(tags.dreOrder),
+      asc(tags.name),
+      desc(tags.createdAt),
+   ];
 }
 
 export const getAll = protectedProcedure

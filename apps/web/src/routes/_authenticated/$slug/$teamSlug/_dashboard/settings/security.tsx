@@ -48,6 +48,7 @@ import { useCredenza } from "@/hooks/use-credenza";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 import { QueryBoundary } from "@/components/query-boundary";
+import { DefaultHeader } from "../../-layout/default-header";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/security",
@@ -111,12 +112,10 @@ function getLoginMethodDisplay(method: string | null | undefined): {
 function SecuritySectionErrorFallback(props: FallbackProps) {
    return (
       <div className="space-y-6">
-         <div>
-            <h1 className="text-2xl font-semibold font-serif">Segurança</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-               Gerencie suas sessões e configurações de segurança.
-            </p>
-         </div>
+         <DefaultHeader
+            description="Gerencie suas sessões e configurações de segurança."
+            title="Segurança"
+         />
          <Card>
             <CardContent className="py-8">
                {createErrorFallback({
@@ -371,12 +370,10 @@ function SecuritySectionContent() {
    return (
       <TooltipProvider>
          <div className="space-y-6">
-            <div>
-               <h1 className="text-2xl font-semibold font-serif">Segurança</h1>
-               <p className="text-sm text-muted-foreground mt-1">
-                  Gerencie suas sessões e configurações de segurança.
-               </p>
-            </div>
+            <DefaultHeader
+               description="Gerencie suas sessões e configurações de segurança."
+               title="Segurança"
+            />
 
             <SessionsSection
                currentSessionId={currentSessionId}

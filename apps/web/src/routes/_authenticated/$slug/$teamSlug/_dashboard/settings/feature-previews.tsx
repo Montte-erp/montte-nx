@@ -33,6 +33,7 @@ import { Fragment, useCallback } from "react";
 import { usePostHog } from "posthog-js/react";
 import { z } from "zod";
 import { useEarlyAccess } from "@/hooks/use-early-access";
+import { DefaultHeader } from "../../-layout/default-header";
 
 const STAGE_FILTERS = ["concept", "alpha", "beta"] as const;
 type StageFilter = (typeof STAGE_FILTERS)[number];
@@ -154,19 +155,21 @@ function FeaturePreviewsPage() {
 
    return (
       <div className="flex flex-col gap-4">
-         <div>
-            <h1 className="text-2xl font-semibold font-serif">
-               Prévias de funcionalidades
-            </h1>
-            <p className="text-sm text-muted-foreground mt-3">
-               As prévias permitem experimentar funcionalidades antes do
-               lançamento oficial. Cada recurso passa por estágios de
-               maturidade.
-            </p>
-
-            <div className="flex flex-col gap-2 mt-4">
-               <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-2">
+         <DefaultHeader
+            actions={
+               <Button
+                  disabled={allEnabled || parentFeatures.length === 0}
+                  onClick={enableAllFeatures}
+                  size="sm"
+                  variant="outline"
+               >
+                  Habilitar todas
+               </Button>
+            }
+            description="As prévias permitem experimentar funcionalidades antes do lançamento oficial. Cada recurso passa por estágios de maturidade."
+            secondaryActions={
+               <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                      <span>Filtrar por estágio:</span>
                      <Button
                         className="px-0"
@@ -176,37 +179,30 @@ function FeaturePreviewsPage() {
                         Mostrar todos
                      </Button>
                   </div>
-                  <Button
-                     disabled={allEnabled || parentFeatures.length === 0}
-                     onClick={enableAllFeatures}
-                     size="sm"
-                     variant="outline"
-                  >
-                     Habilitar todas
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                     <FeatureStageChip
+                        count={stageCounts.concept}
+                        isActive={selectedStages.has("concept")}
+                        onClick={() => toggleStage("concept")}
+                        stage="concept"
+                     />
+                     <FeatureStageChip
+                        count={stageCounts.alpha}
+                        isActive={selectedStages.has("alpha")}
+                        onClick={() => toggleStage("alpha")}
+                        stage="alpha"
+                     />
+                     <FeatureStageChip
+                        count={stageCounts.beta}
+                        isActive={selectedStages.has("beta")}
+                        onClick={() => toggleStage("beta")}
+                        stage="beta"
+                     />
+                  </div>
                </div>
-               <div className="flex flex-wrap gap-2">
-                  <FeatureStageChip
-                     count={stageCounts.concept}
-                     isActive={selectedStages.has("concept")}
-                     onClick={() => toggleStage("concept")}
-                     stage="concept"
-                  />
-                  <FeatureStageChip
-                     count={stageCounts.alpha}
-                     isActive={selectedStages.has("alpha")}
-                     onClick={() => toggleStage("alpha")}
-                     stage="alpha"
-                  />
-                  <FeatureStageChip
-                     count={stageCounts.beta}
-                     isActive={selectedStages.has("beta")}
-                     onClick={() => toggleStage("beta")}
-                     stage="beta"
-                  />
-               </div>
-            </div>
-         </div>
+            }
+            title="Prévias de funcionalidades"
+         />
 
          {filteredFeatures.length === 0 && (
             <p className="text-sm text-muted-foreground">
