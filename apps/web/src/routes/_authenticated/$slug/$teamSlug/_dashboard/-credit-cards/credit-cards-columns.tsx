@@ -12,7 +12,6 @@ import {
    CreditCard as CreditCardIcon,
    Hash,
    Landmark,
-   Tag,
 } from "lucide-react";
 import { InlineEditCombobox } from "@/blocks/data-table/inline-edit/inline-edit-combobox";
 import { InlineEditMoney } from "@/blocks/data-table/inline-edit/inline-edit-money";
@@ -52,15 +51,6 @@ const STATUS_OPTIONS = [
    { value: "active", label: "Ativo" },
    { value: "blocked", label: "Bloqueado" },
    { value: "cancelled", label: "Cancelado" },
-];
-
-const BRAND_OPTIONS = [
-   { value: "visa", label: "Visa" },
-   { value: "mastercard", label: "Mastercard" },
-   { value: "elo", label: "Elo" },
-   { value: "amex", label: "Amex" },
-   { value: "hipercard", label: "Hipercard" },
-   { value: "other", label: "Outro" },
 ];
 
 const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => ({
@@ -119,12 +109,7 @@ export function buildCreditCardColumns(options?: {
          header: "Bandeira",
          meta: {
             label: "Bandeira",
-            cellComponent: "select",
-            isEditable: true,
-            editMode: "inline",
-            bulkEditIcon: Tag,
-            bulkEditAction: "Alterar bandeira",
-            editOptions: BRAND_OPTIONS,
+            align: "center",
             required: true,
             exportValue: (row) =>
                row.brand ? (BRAND_LABEL[row.brand] ?? row.brand) : "",
@@ -135,34 +120,23 @@ export function buildCreditCardColumns(options?: {
                brand && (BRAND_COLOR[brand] ?? BRAND_COLOR.other ?? "#000000");
             const logo = brand ? brandLogoUrl(brand) : null;
             return (
-               <InlineEditSelect
-                  ariaLabel="Bandeira"
-                  className="w-10 justify-center px-2 [&>svg]:hidden"
-                  hideValue
-                  onSave={async (value) =>
-                     onUpdate?.(row.original.id, { brand: value })
-                  }
-                  options={BRAND_OPTIONS}
-                  placeholder="—"
-                  startContent={
-                     <Avatar className="size-6 rounded-lg bg-white ring-1 ring-border">
-                        {logo ? (
-                           <AvatarImage
-                              alt={brand ? (BRAND_LABEL[brand] ?? brand) : ""}
-                              className="object-contain"
-                              src={logo}
-                           />
-                        ) : null}
-                        <AvatarFallback
-                           className="rounded-lg text-xs font-semibold text-white"
-                           style={{ backgroundColor: color || "#6366f1" }}
-                        >
-                           <CreditCardIcon className="size-3" />
-                        </AvatarFallback>
-                     </Avatar>
-                  }
-                  value={brand ?? ""}
-               />
+               <div className="flex justify-center">
+                  <Avatar className="size-6 rounded-lg bg-white ring-1 ring-border">
+                     {logo ? (
+                        <AvatarImage
+                           alt={brand ? (BRAND_LABEL[brand] ?? brand) : ""}
+                           className="object-contain"
+                           src={logo}
+                        />
+                     ) : null}
+                     <AvatarFallback
+                        className="rounded-lg text-xs font-semibold text-white"
+                        style={{ backgroundColor: color || "#6366f1" }}
+                     >
+                        <CreditCardIcon className="size-3" />
+                     </AvatarFallback>
+                  </Avatar>
+               </div>
             );
          },
       },
