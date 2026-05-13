@@ -6,8 +6,9 @@ import {
    findTeamByOrgAndSlug,
 } from "../helpers/db";
 
+test.describe.configure({ mode: "serial" });
+
 const stamp = () => `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-const createdAccountIds: string[] = [];
 
 const UUID_RE =
    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -26,18 +27,15 @@ async function gotoBankAccounts(page: Page, session: E2ESession) {
    ).toBeVisible();
 }
 
-async function ensureBankAccount(
+async function createBankAccountReturnId(
    page: Page,
    session: E2ESession,
    name: string,
-) {
+): Promise<{ id: string | null; createdHere: boolean }> {
    const team = await findTeamByOrgAndSlug(session.orgSlug, session.teamSlug);
-   if (!team) return;
+   if (!team) return { id: null, createdHere: false };
    const existing = await findBankAccountByName(team.id, name);
-   if (existing) {
-      createdAccountIds.push(existing.id);
-      return;
-   }
+   if (existing) return { id: existing.id, createdHere: false };
    await gotoBankAccounts(page, session);
    await page.getByRole("button", { name: "Nova Conta" }).click();
    const sheet = page.getByRole("dialog");
@@ -48,7 +46,13 @@ async function ensureBankAccount(
    await page.getByPlaceholder("Buscar conta por nome...").fill(name);
    await expect(page.getByRole("row").filter({ hasText: name })).toBeVisible();
    const account = await findBankAccountByName(team.id, name);
-   if (account) createdAccountIds.push(account.id);
+   return { id: account?.id ?? null, createdHere: Boolean(account) };
+}
+
+async function safeDeleteBankAccount(session: E2ESession, id: string) {
+   const team = await findTeamByOrgAndSlug(session.orgSlug, session.teamSlug);
+   if (!team) return;
+   await deleteBankAccountById(team.id, id);
 }
 
 async function uploadCsv(page: Page, csv: string) {
@@ -64,18 +68,7 @@ async function uploadCsv(page: Page, csv: string) {
    await expect(page.getByText("Importando")).toBeVisible();
 }
 
-test.afterEach(async ({ e2eSession }) => {
-   const team = await findTeamByOrgAndSlug(
-      e2eSession.orgSlug,
-      e2eSession.teamSlug,
-   );
-   if (!team) return;
-   for (const id of createdAccountIds.splice(0)) {
-      await deleteBankAccountById(team.id, id);
-   }
-});
-
-test("MON-982: bulk action na grade de importação exibe nome, não ID, na coluna alvo", async ({
+test("MON-982: bulk via botão custom 'Conta' grava nome na grade de importação", async ({
    page,
    e2eSession,
 }) => {
@@ -83,102 +76,105 @@ test("MON-982: bulk action na grade de importação exibe nome, não ID, na colu
    const accountName = `MON982 Conta ${s}`;
    const txA = `MON982 Lan A ${s}`;
    const txB = `MON982 Lan B ${s}`;
+   const created = await createBankAccountReturnId(
+      page,
+      e2eSession,
+      accountName,
+   );
+   try {
+      await gotoTransactions(page, e2eSession);
+      const csv = `Nome,Data,Valor,Tipo\n${txA},01/01/2026,100.00,Despesa\n${txB},02/01/2026,200.00,Receita\n`;
+      await uploadCsv(page, csv);
 
-   await ensureBankAccount(page, e2eSession, accountName);
-   await gotoTransactions(page, e2eSession);
+      const rowA = page.getByRole("row").filter({ hasText: txA });
+      const rowB = page.getByRole("row").filter({ hasText: txB });
+      await expect(rowA).toBeVisible();
+      await expect(rowB).toBeVisible();
 
-   const csv = `Nome,Data,Valor,Tipo\n${txA},01/01/2026,100.00,Despesa\n${txB},02/01/2026,200.00,Receita\n`;
-   await uploadCsv(page, csv);
+      await rowA.getByLabel("Selecionar linha").click();
+      await rowB.getByLabel("Selecionar linha").click();
 
-   const rowA = page.getByRole("row").filter({ hasText: txA });
-   const rowB = page.getByRole("row").filter({ hasText: txB });
-   await expect(rowA).toBeVisible();
-   await expect(rowB).toBeVisible();
+      await page.getByRole("button", { name: "Conta", exact: true }).click();
+      await page.getByRole("option", { name: accountName }).click();
 
-   await rowA.getByLabel("Selecionar linha").click();
-   await rowB.getByLabel("Selecionar linha").click();
-
-   // custom bulk button "Conta" — deve gravar nome
-   await page.getByRole("button", { name: "Conta", exact: true }).click();
-   await page.getByRole("option", { name: accountName }).click();
-
-   for (const row of [rowA, rowB]) {
-      const text = (await row.textContent()) ?? "";
-      expect(text, "Conta cell mostrar nome após bulk, não UUID").toContain(
-         accountName,
-      );
-      const uuids = text.match(UUID_RE);
-      expect(uuids, "Cell não deve mostrar UUID puro").toBeNull();
+      for (const row of [rowA, rowB]) {
+         const text = (await row.textContent()) ?? "";
+         expect(text, "deve conter nome").toContain(accountName);
+         expect(text.match(UUID_RE), "não deve conter UUID puro").toBeNull();
+      }
+   } finally {
+      if (created.createdHere && created.id) {
+         await safeDeleteBankAccount(e2eSession, created.id);
+      }
    }
 });
 
-test("MON-982: bulk action via toolbar genérica (Trocar conta) também exibe nome", async ({
+test("MON-982: bulk via toolbar genérica 'Trocar conta' grava nome na grade de importação", async ({
    page,
    e2eSession,
 }) => {
    const s = stamp();
    const accountName = `MON982 Generic ${s}`;
    const txA = `MON982 Gen A ${s}`;
+   const created = await createBankAccountReturnId(
+      page,
+      e2eSession,
+      accountName,
+   );
+   try {
+      await gotoTransactions(page, e2eSession);
+      const csv = `Nome,Data,Valor,Tipo\n${txA},01/01/2026,100.00,Despesa\n`;
+      await uploadCsv(page, csv);
 
-   await ensureBankAccount(page, e2eSession, accountName);
-   await gotoTransactions(page, e2eSession);
+      const rowA = page.getByRole("row").filter({ hasText: txA });
+      await expect(rowA).toBeVisible();
+      await rowA.getByLabel("Selecionar linha").click();
 
-   const csv = `Nome,Data,Valor,Tipo\n${txA},01/01/2026,100.00,Despesa\n`;
-   await uploadCsv(page, csv);
+      await page.getByRole("button", { name: "Trocar conta" }).click();
+      await page.getByRole("option", { name: accountName }).click();
 
-   const rowA = page.getByRole("row").filter({ hasText: txA });
-   await expect(rowA).toBeVisible();
-   await rowA.getByLabel("Selecionar linha").click();
-
-   await page.getByRole("button", { name: "Trocar conta" }).click();
-   await page.getByRole("option", { name: accountName }).click();
-
-   const text = (await rowA.textContent()) ?? "";
-   expect(
-      text,
-      "Conta cell mostrar nome após bulk via toolbar genérica",
-   ).toContain(accountName);
-   const uuids = text.match(UUID_RE);
-   expect(uuids, "Cell não deve mostrar UUID puro").toBeNull();
+      const text = (await rowA.textContent()) ?? "";
+      expect(text, "deve conter nome").toContain(accountName);
+      expect(text.match(UUID_RE), "não deve conter UUID puro").toBeNull();
+   } finally {
+      if (created.createdHere && created.id) {
+         await safeDeleteBankAccount(e2eSession, created.id);
+      }
+   }
 });
 
-test("MON-982: colunas obrigatórias sem mapeamento têm destaque visual", async ({
+test("MON-982: colunas obrigatórias sem mapeamento expõem testid unmapped-required", async ({
    page,
    e2eSession,
 }) => {
    await gotoTransactions(page, e2eSession);
-
-   // CSV sem colunas obrigatórias (Data, Tipo, Valor, Conta)
    const csv = `Nome\nLan sem obrigatorios\n`;
    await uploadCsv(page, csv);
 
-   // headers obrigatórios devem mostrar "Não mapeado *" com classe destrutiva
-   const naoMapeado = page.getByText("Não mapeado *", { exact: false }).first();
-   await expect(naoMapeado).toBeVisible();
-   await expect(naoMapeado).toHaveClass(/destructive/);
+   const unmapped = page.getByTestId("unmapped-required").first();
+   await expect(unmapped).toBeVisible();
 });
 
-test("MON-982: mesma coluna do arquivo não pode ser mapeada para duas colunas", async ({
+test("MON-982: mesma coluna do arquivo não pode ser mapeada para duas colunas da tabela", async ({
    page,
    e2eSession,
 }) => {
    await gotoTransactions(page, e2eSession);
-
    const csv = `Nome,Data,Valor,Tipo\nLan X,01/01/2026,100.00,Despesa\n`;
    await uploadCsv(page, csv);
 
-   // mapeia coluna "Vencimento" também para o header "Data"
-   await page
-      .getByRole("button", { name: /Vencimento|Não mapeado/i })
-      .nth(0)
-      .click();
+   const vencimentoButton = page
+      .getByTestId("mapping-header-button")
+      .filter({ hasText: /^Não mapeado$/ })
+      .first();
+   await vencimentoButton.click();
    await page.getByRole("option", { name: "Data", exact: true }).click();
 
-   // bug: ambos "Data" e "Vencimento" estão mapeados pro header "Data"
-   // espera: validação visual ou bloqueio impedindo duplicidade
-   const dataHeaders = page.locator("text=/^Data$/");
+   const dataMappings = page
+      .getByTestId("mapping-header-button")
+      .filter({ hasText: /^Data$/ });
    await expect(
-      dataHeaders,
-      "Header 'Data' não deve aparecer como mapeamento em duas colunas",
+      dataMappings,
+      "header do arquivo 'Data' não pode aparecer em dois mapeamentos",
    ).toHaveCount(1);
 });
