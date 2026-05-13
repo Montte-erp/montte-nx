@@ -15,11 +15,11 @@ import {
 import { PasswordInput } from "@packages/ui/components/password-input";
 import { Spinner } from "@packages/ui/components/spinner";
 import { defineStepper } from "@packages/ui/components/stepper";
+import { useToastActions } from "@packages/ui/hooks/use-toast";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { createContext, useCallback, useContext } from "react";
-import { toast } from "sonner";
 import z from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
@@ -223,26 +223,29 @@ function PasswordStep() {
 
 function ForgotPasswordPage() {
    const router = useRouter();
+   const sendOtpToast = useToastActions("forgot-password-send-otp");
+   const resetPasswordToast = useToastActions("forgot-password-reset");
 
-   const handleSendOtp = useCallback(async (email: string) => {
-      let success = false;
-      await authClient.emailOtp.sendVerificationOtp(
-         { email, type: "forget-password" },
-         {
-            onError: ({ error }) => {
-               toast.error(error.message);
+   const handleSendOtp = useCallback(
+      async (email: string) => {
+         const result = await authClient.emailOtp.sendVerificationOtp(
+            { email, type: "forget-password" },
+            {
+               onError: ({ error }) => {
+                  sendOtpToast.error(error.message);
+               },
+               onRequest: () => {
+                  sendOtpToast.loading("Processando...");
+               },
+               onSuccess: () => {
+                  sendOtpToast.success("Código enviado!");
+               },
             },
-            onRequest: () => {
-               toast.loading("Processando...");
-            },
-            onSuccess: () => {
-               toast.success("Código enviado!");
-               success = true;
-            },
-         },
-      );
-      return success;
-   }, []);
+         );
+         return !result.error;
+      },
+      [sendOtpToast],
+   );
 
    const handleResetPassword = useCallback(
       async (email: string, otp: string, password: string) => {
@@ -250,13 +253,13 @@ function ForgotPasswordPage() {
             { email, otp, password },
             {
                onError: ({ error }) => {
-                  toast.error(error.message);
+                  resetPasswordToast.error(error.message);
                },
                onRequest: () => {
-                  toast.loading("Redefinindo...");
+                  resetPasswordToast.loading("Redefinindo...");
                },
                onSuccess: () => {
-                  toast.success("Senha redefinida!");
+                  resetPasswordToast.success("Senha redefinida!");
                   router.navigate({
                      search: { redirect: undefined },
                      to: "/auth/sign-in",
@@ -265,7 +268,7 @@ function ForgotPasswordPage() {
             },
          );
       },
-      [router],
+      [resetPasswordToast, router],
    );
 
    const form = useForm({

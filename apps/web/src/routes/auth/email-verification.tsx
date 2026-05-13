@@ -11,10 +11,10 @@ import {
    InputOTPSlot,
 } from "@packages/ui/components/input-otp";
 import { Spinner } from "@packages/ui/components/spinner";
+import { useToastActions } from "@packages/ui/hooks/use-toast";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { type FormEvent, useCallback } from "react";
-import { toast } from "sonner";
 import z from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
@@ -38,23 +38,25 @@ const emailVerificationSchema = z.object({
 function EmailVerificationPage() {
    const { email, redirect: redirectTo } = Route.useSearch();
    const router = useRouter();
+   const resendEmailToast = useToastActions("email-verification-resend");
+   const verifyEmailToast = useToastActions("email-verification-verify");
 
    const handleResendEmail = useCallback(async () => {
       await authClient.emailOtp.sendVerificationOtp(
          { email, type: "email-verification" },
          {
             onError: ({ error }) => {
-               toast.error(error.message);
+               resendEmailToast.error(error.message);
             },
             onRequest: () => {
-               toast.loading("Processando...");
+               resendEmailToast.loading("Processando...");
             },
             onSuccess: () => {
-               toast.success("Email reenviado!");
+               resendEmailToast.success("Email reenviado!");
             },
          },
       );
-   }, [email]);
+   }, [email, resendEmailToast]);
 
    const handleVerifyEmail = useCallback(
       async (otp: string) => {
@@ -62,19 +64,19 @@ function EmailVerificationPage() {
             { email, otp },
             {
                onError: ({ error }) => {
-                  toast.error(error.message);
+                  verifyEmailToast.error(error.message);
                },
                onRequest: () => {
-                  toast.loading("Verificando...");
+                  verifyEmailToast.loading("Verificando...");
                },
                onSuccess: () => {
-                  toast.success("Email verificado!");
+                  verifyEmailToast.success("Email verificado!");
                   router.navigate({ to: redirectTo ?? "/auth/callback" });
                },
             },
          );
       },
-      [email, redirectTo, router],
+      [email, redirectTo, router, verifyEmailToast],
    );
 
    const form = useForm({
