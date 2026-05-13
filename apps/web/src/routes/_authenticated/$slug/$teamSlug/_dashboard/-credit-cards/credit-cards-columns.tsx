@@ -19,14 +19,9 @@ import { InlineEditMoney } from "@/blocks/data-table/inline-edit/inline-edit-mon
 import { InlineEditNumber } from "@/blocks/data-table/inline-edit/inline-edit-number";
 import { InlineEditSelect } from "@/blocks/data-table/inline-edit/inline-edit-select";
 import { InlineEditText } from "@/blocks/data-table/inline-edit/inline-edit-text";
+import { BankLogoAvatar } from "@/components/bank-logo-avatar";
 import type { Outputs } from "@/integrations/orpc/client";
-import {
-   BRAND_COLOR,
-   BRAND_LABEL,
-   bankInitials,
-   bankLogoUrl,
-   brandLogoUrl,
-} from "@/lib/logos";
+import { BRAND_COLOR, BRAND_LABEL, brandLogoUrl } from "@/lib/logos";
 
 export type CreditCardRow = Outputs["creditCards"]["getAll"]["data"][number];
 
@@ -142,13 +137,15 @@ export function buildCreditCardColumns(options?: {
             return (
                <InlineEditSelect
                   ariaLabel="Bandeira"
+                  className="w-10 justify-center px-2 [&>svg]:hidden"
+                  hideValue
                   onSave={async (value) =>
                      onUpdate?.(row.original.id, { brand: value })
                   }
                   options={BRAND_OPTIONS}
                   placeholder="—"
                   startContent={
-                     <Avatar className="size-4 rounded-lg bg-white ring-1 ring-border">
+                     <Avatar className="size-6 rounded-lg bg-white ring-1 ring-border">
                         {logo ? (
                            <AvatarImage
                               alt={brand ? (BRAND_LABEL[brand] ?? brand) : ""}
@@ -160,7 +157,7 @@ export function buildCreditCardColumns(options?: {
                            className="rounded-lg text-xs font-semibold text-white"
                            style={{ backgroundColor: color || "#6366f1" }}
                         >
-                           <CreditCardIcon className="size-2" />
+                           <CreditCardIcon className="size-3" />
                         </AvatarFallback>
                      </Avatar>
                   }
@@ -251,6 +248,38 @@ export function buildCreditCardColumns(options?: {
          ),
       },
       {
+         id: "bankIssuer",
+         header: "Banco",
+         meta: {
+            label: "Banco",
+            exportValue: (row) => {
+               const account = bankAccountsById.get(row.bankAccountId);
+               if (!account) return "";
+               const issuer = account.bankName?.trim() || account.name;
+               return formatBankIssuerName(issuer);
+            },
+         },
+         cell: ({ row }) => {
+            const account = bankAccountsById.get(row.original.bankAccountId);
+            const issuer = account?.bankName?.trim() || account?.name || "";
+            return (
+               <div className="flex min-w-0 items-center gap-2">
+                  <BankLogoAvatar
+                     bankCode={account?.bankCode}
+                     bankName={account?.bankName}
+                     color={account?.color}
+                     logoDevToken={logoDevToken}
+                     name={issuer}
+                     size="md"
+                  />
+                  <span className="truncate font-medium">
+                     {formatBankIssuerName(issuer) || "—"}
+                  </span>
+               </div>
+            );
+         },
+      },
+      {
          accessorKey: "bankAccountId",
          header: "Conta Bancária",
          meta: {
@@ -264,17 +293,10 @@ export function buildCreditCardColumns(options?: {
             required: true,
             exportValue: (row) => {
                const account = bankAccountsById.get(row.bankAccountId);
-               if (!account) return "";
-               const issuer = account.bankName?.trim() || account.name;
-               return formatBankIssuerName(issuer);
+               return account?.name ?? "";
             },
          },
          cell: ({ row }) => {
-            const account = bankAccountsById.get(row.original.bankAccountId);
-            const issuer = account?.bankName?.trim() || account?.name || "";
-            const logo = account
-               ? bankLogoUrl(account.bankCode, logoDevToken)
-               : null;
             return (
                <InlineEditCombobox
                   ariaLabel="Conta Bancária"
@@ -282,29 +304,6 @@ export function buildCreditCardColumns(options?: {
                      onUpdate?.(row.original.id, { bankAccountId: value })
                   }
                   options={bankComboboxOptions}
-                  startContent={
-                     <Avatar className="size-4 rounded-lg bg-white ring-1 ring-border">
-                        {logo ? (
-                           <AvatarImage
-                              alt={issuer}
-                              className="object-contain"
-                              src={logo}
-                           />
-                        ) : null}
-                        <AvatarFallback
-                           className="rounded-lg text-xs font-semibold text-white"
-                           style={{
-                              backgroundColor: account?.color ?? "#6366f1",
-                           }}
-                        >
-                           {account?.bankName ? (
-                              bankInitials(account.bankName)
-                           ) : (
-                              <Landmark className="size-2" />
-                           )}
-                        </AvatarFallback>
-                     </Avatar>
-                  }
                   value={row.original.bankAccountId}
                />
             );

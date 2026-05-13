@@ -59,11 +59,38 @@ const BANK_DOMAIN: Record<string, string> = {
    "756": "sicoobnet.com.br",
 };
 
+const BANK_COLOR: Record<string, string> = {
+   "001": "#FCE300",
+   "033": "#E10000",
+   "070": "#00529B",
+   "077": "#FF7A00",
+   "104": "#005CA9",
+   "208": "#111827",
+   "237": "#CC092F",
+   "260": "#820AD1",
+   "290": "#00A868",
+   "323": "#FFE600",
+   "336": "#111827",
+   "341": "#EC7000",
+   "380": "#11C76F",
+   "422": "#0B1F3A",
+   "623": "#00AEEF",
+   "748": "#00A651",
+   "756": "#003641",
+};
+
 export function bankDomain(
    bankCode: string | null | undefined,
 ): string | undefined {
    if (!bankCode) return undefined;
    return BANK_DOMAIN[bankCode.padStart(3, "0")];
+}
+
+export function bankColor(
+   bankCode: string | null | undefined,
+): string | undefined {
+   if (!bankCode) return undefined;
+   return BANK_COLOR[bankCode.padStart(3, "0")];
 }
 
 export function bankLogoUrl(
@@ -73,6 +100,7 @@ export function bankLogoUrl(
    const domain = bankDomain(bankCode);
    if (!domain) return undefined;
    const token = logoDevToken?.trim();
+   if (!token) return bankFaviconUrl(bankCode);
    const params = new URLSearchParams({
       fallback: "monogram",
       format: "webp",
@@ -81,6 +109,26 @@ export function bankLogoUrl(
    });
    if (token) params.set("token", token);
    return `https://img.logo.dev/${domain}?${params.toString()}`;
+}
+
+export function bankFaviconUrl(
+   bankCode: string | null | undefined,
+): string | undefined {
+   const domain = bankDomain(bankCode);
+   if (!domain) return undefined;
+   return `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+}
+
+export function bankLogoSources(
+   bankCode: string | null | undefined,
+   logoDevToken?: string,
+): string[] {
+   const logo = bankLogoUrl(bankCode, logoDevToken);
+   const favicon = bankFaviconUrl(bankCode);
+   const sources: string[] = [];
+   if (logo) sources.push(logo);
+   if (favicon && favicon !== logo) sources.push(favicon);
+   return sources;
 }
 
 export const LOGO_DEV_ATTRIBUTION = {

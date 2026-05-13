@@ -94,6 +94,12 @@ test("exibe logo do banco emissor e da bandeira na listagem", async ({
       row.locator('img[src*="cdn.simpleicons.org/visa"]'),
    ).toBeVisible();
 
+   await expect(
+      row.locator(
+         'img[src*="img.logo.dev/itau.com.br"], img[src*="icons.duckduckgo.com/ip3/itau.com.br.ico"]',
+      ),
+   ).toBeVisible();
+
    await expect(row.getByText("Itaú")).toBeVisible();
 
    await expect(row.getByText("Final 1234")).toBeVisible();
@@ -119,6 +125,8 @@ test("autocomplete de banco mostra logos nas opções", async ({
    const option = page.getByRole("option", { name: /nubank|260/i });
    await expect(option).toBeVisible();
    await expect(
-      option.locator('img[src*="img.logo.dev/nubank.com.br"]'),
+      option.locator(
+         'img[src*="img.logo.dev/nubank.com.br"], img[src*="icons.duckduckgo.com/ip3/nubank.com.br.ico"]',
+      ),
    ).toBeVisible();
 });

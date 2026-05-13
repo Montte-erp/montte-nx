@@ -2,11 +2,6 @@ import { of, toMajorUnitsString } from "@f-o-t/money";
 import type { MaskitoOptions } from "@maskito/core";
 import { useMaskito } from "@maskito/react";
 import { Autocomplete } from "@packages/ui/components/autocomplete";
-import {
-   Avatar,
-   AvatarFallback,
-   AvatarImage,
-} from "@packages/ui/components/avatar";
 import { Button } from "@packages/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
@@ -39,10 +34,10 @@ import {
 import { fromPromise } from "neverthrow";
 import type { ReactNode } from "react";
 import { z } from "zod";
+import { BankLogoAvatar } from "@/components/bank-logo-avatar";
+import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
-import { QueryBoundary } from "@/components/query-boundary";
-import { bankInitials, bankLogoUrl } from "@/lib/logos";
 
 const BANK_ACCOUNT_TYPES = [
    "checking",
@@ -182,21 +177,14 @@ function BankAccountFormSheetContent() {
    }));
 
    const renderBankOption = (option: { value: string; label: string }) => {
-      const logo = bankLogoUrl(option.value, logoDevToken);
       return (
          <div className="flex min-w-0 items-center gap-2">
-            <Avatar className="size-4 shrink-0 rounded-lg bg-white ring-1 ring-border">
-               {logo ? (
-                  <AvatarImage
-                     alt={option.label}
-                     className="object-contain p-2"
-                     src={logo}
-                  />
-               ) : null}
-               <AvatarFallback className="rounded-lg text-xs font-semibold">
-                  {bankInitials(option.label)}
-               </AvatarFallback>
-            </Avatar>
+            <BankLogoAvatar
+               bankCode={option.value}
+               bankName={option.label}
+               logoDevToken={logoDevToken}
+               name={option.label}
+            />
             <span className="truncate">{option.label}</span>
             <span className="ml-auto text-xs text-muted-foreground tabular-nums">
                {option.value}
