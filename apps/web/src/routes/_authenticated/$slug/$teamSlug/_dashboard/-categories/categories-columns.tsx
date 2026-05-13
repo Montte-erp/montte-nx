@@ -122,10 +122,10 @@ function CategoryIconPreview({
    const tint = color ?? "#71717a";
    return (
       <span
-         className="flex size-7 items-center justify-center rounded-full"
+         className="flex h-8 w-8 items-center justify-center rounded-full"
          style={{ backgroundColor: `${tint}1f`, color: tint }}
       >
-         <IconComponent className="size-3.5" />
+         <IconComponent className="size-4" />
       </span>
    );
 }
@@ -289,9 +289,9 @@ export function buildCategoryColumns(options?: {
             bulkEditAction: "Renomear",
             editSchema: z.string().min(1, "Nome é obrigatório.").max(80),
             isEditableForRow: (row: CategoryRow) => !row.isArchived,
-            onSave: options?.onUpdate
+            onSave: onUpdate
                ? async (rowId: string, value: unknown) => {
-                    await options.onUpdate!(rowId, { name: String(value) });
+                    await onUpdate(rowId, { name: String(value) });
                  }
                : undefined,
          },
@@ -315,10 +315,11 @@ export function buildCategoryColumns(options?: {
                <Tooltip>
                   <TooltipTrigger asChild>
                      <span
+                        aria-label="Arquivada"
                         className="inline-flex shrink-0 cursor-default"
                         tabIndex={0}
                      >
-                        <Archive className="size-3.5 text-muted-foreground" />
+                        <Archive className="size-4 text-muted-foreground" />
                      </span>
                   </TooltipTrigger>
                   <TooltipContent>Arquivada</TooltipContent>
@@ -375,8 +376,12 @@ export function buildCategoryColumns(options?: {
             return (
                <Tooltip>
                   <TooltipTrigger asChild>
-                     <span className="inline-flex cursor-default" tabIndex={0}>
-                        <Check className="size-3.5 text-muted-foreground" />
+                     <span
+                        aria-label="Padrão"
+                        className="inline-flex cursor-default"
+                        tabIndex={0}
+                     >
+                        <Check className="size-4 text-muted-foreground" />
                      </span>
                   </TooltipTrigger>
                   <TooltipContent>Padrão</TooltipContent>

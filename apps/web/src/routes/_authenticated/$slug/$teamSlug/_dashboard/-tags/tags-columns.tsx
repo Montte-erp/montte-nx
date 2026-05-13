@@ -115,7 +115,7 @@ export function buildTagColumns(options?: {
                   <TooltipTrigger asChild>
                      <button
                         aria-label="Centro de custo padrão"
-                        className="inline-flex cursor-default border-0 bg-transparent p-0"
+                        className="inline-flex cursor-default border-0 bg-transparent"
                         type="button"
                      >
                         <Check className="size-4 text-muted-foreground" />

@@ -24,6 +24,7 @@ export function InlineEditNumber({
 }: InlineEditNumberProps) {
    const [draft, setDraft] = useState(value);
    const lastCommittedRef = useRef(value);
+   const latestSaveIdRef = useRef(0);
 
    useEffect(() => {
       if (lastCommittedRef.current !== value) {
@@ -34,9 +35,12 @@ export function InlineEditNumber({
 
    const commit = useCallback(
       async (next: number) => {
+         const saveId = latestSaveIdRef.current + 1;
+         latestSaveIdRef.current = saveId;
          setDraft(next);
          if (next === value) return;
          const result = await fromPromise(onSave(next), (e) => e);
+         if (latestSaveIdRef.current !== saveId) return;
          if (result.isErr()) setDraft(value);
       },
       [onSave, value],
