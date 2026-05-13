@@ -24,6 +24,7 @@ import { getLogger } from "@core/logging/root";
 import { protectedProcedure } from "@core/orpc/server";
 import { requireBankAccount } from "@modules/finance/router/middlewares";
 import {
+   buildBankAccountBalanceSql,
    computeBankAccountBalance,
    computeBankAccountBalances,
 } from "@modules/finance/services/bank-account-balance";
@@ -76,6 +77,7 @@ const listSchema = z.object({
             desc: z.boolean(),
          }),
       )
+      .max(5)
       .optional(),
 });
 
@@ -87,27 +89,8 @@ const defaultBankAccountSort: BankAccountSortRule = {
    desc: false,
 };
 
-const currentBalanceSql = sql<string>`
-   (
-      ${bankAccounts.initialBalance}
-      + COALESCE(SUM(CASE WHEN ${transactions.status} != 'pending' AND ${transactions.type} = 'income' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
-      - COALESCE(SUM(CASE WHEN ${transactions.status} != 'pending' AND ${transactions.type} = 'expense' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
-      - COALESCE(SUM(CASE WHEN ${transactions.status} != 'pending' AND ${transactions.type} = 'transfer' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
-      + COALESCE(SUM(CASE WHEN ${transactions.status} != 'pending' AND ${transactions.type} = 'transfer' AND ${transactions.destinationBankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
-   )
-`;
-
-const projectedBalanceSql = sql<string>`
-   (
-      ${bankAccounts.initialBalance}
-      + COALESCE(SUM(CASE WHEN ${transactions.status} != 'pending' AND ${transactions.type} = 'income' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
-      - COALESCE(SUM(CASE WHEN ${transactions.status} != 'pending' AND ${transactions.type} = 'expense' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
-      - COALESCE(SUM(CASE WHEN ${transactions.status} != 'pending' AND ${transactions.type} = 'transfer' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
-      + COALESCE(SUM(CASE WHEN ${transactions.status} != 'pending' AND ${transactions.type} = 'transfer' AND ${transactions.destinationBankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
-      + COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' AND ${transactions.status} = 'pending' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
-      - COALESCE(SUM(CASE WHEN ${transactions.type} = 'expense' AND ${transactions.status} = 'pending' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
-   )
-`;
+const currentBalanceSql = buildBankAccountBalanceSql(false);
+const projectedBalanceSql = buildBankAccountBalanceSql(true);
 
 function buildBankAccountOrderBy(sorting: ListSorting): SQL[] {
    const rules = sorting?.length ? sorting : [defaultBankAccountSort];

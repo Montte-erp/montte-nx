@@ -18,6 +18,30 @@ function normalizeBalance(value: string | undefined) {
    return toDecimal(of(value ?? "0", "BRL"));
 }
 
+export function buildBankAccountBalanceSql(includePending: boolean) {
+   const a = bankAccounts;
+   const t = transactions;
+   const currentBalanceSql = sql<string>`
+      (
+         ${a.initialBalance}
+         + COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'income' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+         - COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'expense' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+         - COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'transfer' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+         + COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'transfer' AND ${t.destinationBankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+      )
+   `;
+
+   if (!includePending) return currentBalanceSql;
+
+   return sql<string>`
+      (
+         ${currentBalanceSql}
+         + COALESCE(SUM(CASE WHEN ${t.type} = 'income' AND ${t.status} = 'pending' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+         - COALESCE(SUM(CASE WHEN ${t.type} = 'expense' AND ${t.status} = 'pending' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
+      )
+   `;
+}
+
 export async function computeBankAccountBalance(
    db: DatabaseInstance,
    accountId: string,
@@ -70,26 +94,8 @@ export async function computeBankAccountBalances(
    const ids = accounts.map((account) => account.id);
    const a = bankAccounts;
    const t = transactions;
-   const currentBalanceSql = sql<string>`
-      (
-         ${a.initialBalance}
-         + COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'income' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
-         - COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'expense' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
-         - COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'transfer' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
-         + COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'transfer' AND ${t.destinationBankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
-      )::text
-   `;
-   const projectedBalanceSql = sql<string>`
-      (
-         ${a.initialBalance}
-         + COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'income' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
-         - COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'expense' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
-         - COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'transfer' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
-         + COALESCE(SUM(CASE WHEN ${t.status} != 'pending' AND ${t.type} = 'transfer' AND ${t.destinationBankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
-         + COALESCE(SUM(CASE WHEN ${t.type} = 'income' AND ${t.status} = 'pending' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
-         - COALESCE(SUM(CASE WHEN ${t.type} = 'expense' AND ${t.status} = 'pending' AND ${t.bankAccountId} = ${a.id} THEN ${t.amount} ELSE 0 END), 0)
-      )::text
-   `;
+   const currentBalanceSql = sql<string>`${buildBankAccountBalanceSql(false)}::text`;
+   const projectedBalanceSql = sql<string>`${buildBankAccountBalanceSql(true)}::text`;
 
    const rows = await db
       .select({
