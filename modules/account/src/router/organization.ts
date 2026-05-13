@@ -1,8 +1,9 @@
-import { err, fromPromise, ok } from "neverthrow";
+import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { WebAppError } from "@core/logging/errors";
 import { authenticatedProcedure, protectedProcedure } from "@core/orpc/server";
 import { createSlug } from "@core/utils/text";
+import { requireOrganizationTeam } from "@modules/account/router/middlewares";
 
 const authError = (fallback: string) => (e: unknown) => {
    if (e && typeof e === "object") {
@@ -158,20 +159,7 @@ export const getPendingInvitations = protectedProcedure.handler(
 
 export const getTeamMembers = protectedProcedure
    .input(z.object({ teamId: z.string() }))
-   .use(async ({ context, input, next }) => {
-      const result = await fromPromise(
-         context.db.query.team.findFirst({
-            where: (f, { eq }) => eq(f.id, input.teamId),
-         }),
-         () => WebAppError.internal("Falha ao verificar permissão."),
-      ).andThen((team) =>
-         !team || team.organizationId !== context.organizationId
-            ? err(WebAppError.notFound("Espaço não encontrado."))
-            : ok(team),
-      );
-      if (result.isErr()) throw result.error;
-      return next({ context: { team: result.value } });
-   })
+   .use(requireOrganizationTeam, (input) => input.teamId)
    .handler(async ({ context, input }) => {
       const result = await fromPromise(
          context.auth.api.listTeamMembers({
