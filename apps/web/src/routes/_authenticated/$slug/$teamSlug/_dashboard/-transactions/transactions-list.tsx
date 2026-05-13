@@ -115,7 +115,19 @@ function parseImportDate(value: unknown): string {
    if (!raw) return "";
    const slash = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
    if (slash) {
-      return `${slash[3]}-${slash[2].padStart(2, "0")}-${slash[1].padStart(2, "0")}`;
+      const day = Number.parseInt(slash[1], 10);
+      const month = Number.parseInt(slash[2], 10);
+      const year = Number.parseInt(slash[3], 10);
+      const monthStart = dayjs(`${slash[3]}-${slash[2].padStart(2, "0")}-01`);
+      if (
+         month < 1 ||
+         month > 12 ||
+         day < 1 ||
+         day > monthStart.daysInMonth()
+      ) {
+         return "";
+      }
+      return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
    }
    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
    if (/^\d+(\.\d+)?$/.test(raw)) {
