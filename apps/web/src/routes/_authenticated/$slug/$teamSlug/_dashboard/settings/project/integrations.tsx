@@ -5,6 +5,7 @@ import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/components/blocks/early-access-banner";
+import { DefaultHeader } from "../../../-layout/default-header";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations",
@@ -32,13 +33,10 @@ const INTEGRATIONS_BANNER: EarlyAccessBannerTemplate = {
 function ProjectIntegrationsPage() {
    return (
       <div className="space-y-6">
-         <div>
-            <h1 className="text-2xl font-semibold font-serif">Integrações</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-               Conecte ferramentas externas ao seu espaço e centralize sua
-               operação.
-            </p>
-         </div>
+         <DefaultHeader
+            description="Conecte ferramentas externas ao seu espaço e centralize sua operação."
+            title="Integrações"
+         />
 
          <EarlyAccessBanner template={INTEGRATIONS_BANNER} />
       </div>

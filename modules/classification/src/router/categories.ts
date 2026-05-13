@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { and, asc, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { errAsync, fromPromise, okAsync } from "neverthrow";
 import { z } from "zod";
@@ -157,7 +157,42 @@ const getPaginatedInput = z.object({
    search: z.string().optional(),
    page: z.number().int().min(1).default(1),
    pageSize: z.number().int().min(1).max(100).default(20),
+   sorting: z
+      .array(
+         z.object({
+            id: z.enum(["isDefault", "name", "type"]),
+            desc: z.boolean(),
+         }),
+      )
+      .max(3, "Use no máximo 3 critérios de ordenação.")
+      .optional(),
 });
+
+function buildCategoryOrderBy(
+   sorting: z.infer<typeof getPaginatedInput>["sorting"],
+) {
+   if (!sorting?.length)
+      return [asc(categories.name), desc(categories.createdAt)];
+   const orderBy: SQL[] = [];
+
+   for (const sort of sorting) {
+      const direction = sort.desc ? desc : asc;
+
+      switch (sort.id) {
+         case "isDefault":
+            orderBy.push(direction(categories.isDefault));
+            break;
+         case "name":
+            orderBy.push(direction(categories.name));
+            break;
+         case "type":
+            orderBy.push(direction(categories.type));
+            break;
+      }
+   }
+
+   return [...orderBy, asc(categories.name), desc(categories.createdAt)];
+}
 
 export const getPaginated = protectedProcedure
    .input(getPaginatedInput)
@@ -212,7 +247,7 @@ export const getPaginated = protectedProcedure
                .select()
                .from(categories)
                .where(and(...rootFilter))
-               .orderBy(asc(categories.name))
+               .orderBy(...buildCategoryOrderBy(input.sorting))
                .limit(input.pageSize)
                .offset(offset);
 

@@ -1,5 +1,16 @@
 import dayjs from "dayjs";
-import { and, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import {
+   and,
+   asc,
+   desc,
+   eq,
+   getTableColumns,
+   ilike,
+   inArray,
+   or,
+   sql,
+} from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { err, fromPromise, fromThrowable, ok } from "neverthrow";
 import { z } from "zod";
 import {
@@ -13,6 +24,7 @@ import { getLogger } from "@core/logging/root";
 import { protectedProcedure } from "@core/orpc/server";
 import { requireBankAccount } from "@modules/finance/router/middlewares";
 import {
+   buildBankAccountBalanceSql,
    computeBankAccountBalance,
    computeBankAccountBalances,
 } from "@modules/finance/services/bank-account-balance";
@@ -52,12 +64,66 @@ const listSchema = z.object({
    pageSize: z.number().int().positive().max(100).catch(20).default(20),
    search: z.string().max(100).optional(),
    type: z.enum(BANK_ACCOUNT_TYPES).optional(),
+   sorting: z
+      .array(
+         z.object({
+            id: z.enum([
+               "currentBalance",
+               "initialBalance",
+               "name",
+               "projectedBalance",
+               "type",
+            ]),
+            desc: z.boolean(),
+         }),
+      )
+      .max(5)
+      .optional(),
 });
+
+type ListSorting = z.infer<typeof listSchema>["sorting"];
+type BankAccountSortRule = NonNullable<ListSorting>[number];
+
+const defaultBankAccountSort: BankAccountSortRule = {
+   id: "name",
+   desc: false,
+};
+
+const currentBalanceSql = buildBankAccountBalanceSql(false);
+const projectedBalanceSql = buildBankAccountBalanceSql(true);
+
+function buildBankAccountOrderBy(sorting: ListSorting): SQL[] {
+   const rules = sorting?.length ? sorting : [defaultBankAccountSort];
+   const orderBy: SQL[] = [];
+
+   for (const sort of rules) {
+      const direction = sort.desc ? desc : asc;
+      switch (sort.id) {
+         case "currentBalance":
+            orderBy.push(direction(currentBalanceSql));
+            break;
+         case "initialBalance":
+            orderBy.push(direction(bankAccounts.initialBalance));
+            break;
+         case "name":
+            orderBy.push(direction(bankAccounts.name));
+            break;
+         case "projectedBalance":
+            orderBy.push(direction(projectedBalanceSql));
+            break;
+         case "type":
+            orderBy.push(direction(bankAccounts.type));
+            break;
+      }
+   }
+
+   return [...orderBy, asc(bankAccounts.id)];
+}
 
 export const list = protectedProcedure
    .input(listSchema)
    .handler(async ({ context, input }) => {
-      const { page, pageSize, search, type } = input;
+      const { page, pageSize, search, sorting, type } = input;
       const offset = (page - 1) * pageSize;
       const where = and(
          eq(bankAccounts.teamId, context.teamId),
@@ -68,12 +134,27 @@ export const list = protectedProcedure
 
       const result = await fromPromise(
          Promise.all([
-            context.db.query.bankAccounts.findMany({
-               where: () => where,
-               orderBy: (f, { asc }) => [asc(f.name)],
-               limit: pageSize,
-               offset,
-            }),
+            context.db
+               .select(getTableColumns(bankAccounts))
+               .from(bankAccounts)
+               .leftJoin(
+                  transactions,
+                  and(
+                     or(
+                        eq(transactions.bankAccountId, bankAccounts.id),
+                        eq(
+                           transactions.destinationBankAccountId,
+                           bankAccounts.id,
+                        ),
+                     ),
+                     eq(transactions.ignored, false),
+                  ),
+               )
+               .where(where)
+               .groupBy(bankAccounts.id)
+               .orderBy(...buildBankAccountOrderBy(sorting))
+               .limit(pageSize)
+               .offset(offset),
             context.db
                .select({ count: sql<number>`cast(count(*) as int)` })
                .from(bankAccounts)

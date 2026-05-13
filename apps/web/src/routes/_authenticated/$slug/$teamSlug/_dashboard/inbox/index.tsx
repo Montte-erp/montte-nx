@@ -4,6 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { QueryBoundary } from "@/components/query-boundary";
 import { orpc } from "@/integrations/orpc/client";
+import { DefaultHeader } from "../../-layout/default-header";
 import { QuickStartChecklist } from "./-inbox/quick-start-checklist";
 import { InboxFilters, type InboxSeverityFilter } from "./-inbox/inbox-filters";
 import { InboxList } from "./-inbox/inbox-list";
@@ -54,13 +55,10 @@ function InboxPageContent() {
 
    return (
       <main className="flex flex-1 flex-col gap-4 overflow-y-auto">
-         <header className="flex flex-col gap-2">
-            <h1 className="text-2xl font-semibold">Inbox</h1>
-            <p className="text-muted-foreground text-sm">
-               Sinais acionáveis do seu negócio: vencimentos, categorização
-               pendente e eventos do sistema.
-            </p>
-         </header>
+         <DefaultHeader
+            title="Inbox"
+            description="Sinais acionáveis do seu negócio: vencimentos, categorização pendente e eventos do sistema."
+         />
          <QuickStartChecklist />
          <InboxFilters
             value={severity}

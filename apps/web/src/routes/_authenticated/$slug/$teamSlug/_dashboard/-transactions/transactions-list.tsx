@@ -77,6 +77,7 @@ import {
    type CategoryOption,
    type TransactionRow,
 } from "./transactions-columns";
+import { normalizeTransactionSorting } from "./transaction-sorting";
 
 const routeApi = getRouteApi(
    "/_authenticated/$slug/$teamSlug/_dashboard/transactions",
@@ -260,6 +261,7 @@ export function TransactionsList() {
             status: status.length > 0 ? status : undefined,
             page,
             pageSize,
+            sorting: normalizeTransactionSorting(sorting),
             contactId: contactId || undefined,
             bankAccountId: bankId || undefined,
          },

@@ -5,6 +5,7 @@ import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
 import { QueryBoundary } from "@/components/query-boundary";
 import { TransactionsList } from "./-transactions/transactions-list";
 import { buildTransactionColumns } from "./-transactions/transactions-columns";
+import { normalizeTransactionSorting } from "./-transactions/transaction-sorting";
 import { orpc } from "@/integrations/orpc/client";
 
 const skeletonColumns = buildTransactionColumns();
@@ -42,6 +43,7 @@ export const Route = createFileRoute(
       search: {
          page,
          pageSize,
+         sorting,
          view,
          overdueOnly,
          status,
@@ -52,6 +54,7 @@ export const Route = createFileRoute(
    }) => ({
       page,
       pageSize,
+      sorting,
       view,
       overdueOnly,
       status,
@@ -77,6 +80,7 @@ export const Route = createFileRoute(
             input: {
                page: deps.page,
                pageSize: deps.pageSize,
+               sorting: normalizeTransactionSorting(deps.sorting),
                view: deps.view,
                overdueOnly: deps.overdueOnly,
                status: deps.status.length > 0 ? deps.status : undefined,

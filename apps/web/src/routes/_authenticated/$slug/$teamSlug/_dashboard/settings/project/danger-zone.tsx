@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useActiveTeam } from "@/hooks/use-active-team";
+import { DefaultHeader } from "../../../-layout/default-header";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone",
@@ -32,14 +33,10 @@ function ProjectDangerZonePage() {
 
    return (
       <div className="flex flex-col gap-4">
-         <div>
-            <h1 className="text-2xl font-semibold font-serif">
-               Zona de Perigo
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-               Ações irreversíveis para este projeto. Prossiga com cuidado.
-            </p>
-         </div>
+         <DefaultHeader
+            description="Ações irreversíveis para este projeto. Prossiga com cuidado."
+            title="Zona de Perigo"
+         />
          <ItemGroup>
             <Item variant="muted">
                <ItemMedia variant="icon">

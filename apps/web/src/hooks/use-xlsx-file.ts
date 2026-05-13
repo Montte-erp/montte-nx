@@ -8,7 +8,11 @@ export type XlsxData = {
 };
 
 function cellToString(cell: unknown): string {
-   if (cell instanceof Date) return dayjs(cell).format("DD/MM/YYYY");
+   if (cell === null || cell === undefined) return "";
+   if (cell instanceof Date) {
+      if (Number.isNaN(cell.getTime())) return "";
+      return dayjs(cell).format("DD/MM/YYYY");
+   }
    return String(cell);
 }
 
@@ -20,14 +24,14 @@ export function useXlsxFile() {
       });
       const ws = wb.Sheets[wb.SheetNames[0]];
       if (!ws) throw new Error("Planilha vazia");
-      const data = xlsxUtils.sheet_to_json<unknown[]>(ws, {
+      const data: unknown[][] = xlsxUtils.sheet_to_json<unknown[]>(ws, {
          header: 1,
          defval: "",
          raw: false,
          dateNF: "dd/mm/yyyy",
       });
       if (data.length < 2) throw new Error("Planilha sem dados");
-      const [headerRow, ...bodyRows] = data;
+      const [headerRow = [], ...bodyRows] = data;
       return {
          headers: headerRow.map(cellToString),
          rows: bodyRows

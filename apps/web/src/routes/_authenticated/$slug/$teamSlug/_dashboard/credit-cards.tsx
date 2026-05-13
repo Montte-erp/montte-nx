@@ -22,6 +22,7 @@ import {
    useReactTable,
    type ColumnDef,
    type ColumnFiltersState,
+   type SortingState,
 } from "@tanstack/react-table";
 import {
    ChevronDown,
@@ -78,6 +79,29 @@ const creditCardsSearchSchema = z.object({
 });
 
 const skeletonColumns = buildCreditCardColumns();
+
+const creditCardSortIdSchema = z.enum([
+   "bankAccountId",
+   "brand",
+   "closingDay",
+   "creditLimit",
+   "dueDay",
+   "name",
+   "status",
+]);
+
+function normalizeCreditCardSorting(sorting: SortingState) {
+   const normalized: Array<{
+      id: z.infer<typeof creditCardSortIdSchema>;
+      desc: boolean;
+   }> = [];
+   for (const rule of sorting) {
+      const result = creditCardSortIdSchema.safeParse(rule.id);
+      if (!result.success) continue;
+      normalized.push({ id: result.data, desc: rule.desc });
+   }
+   return normalized;
+}
 
 type CreditCardBrand =
    | "visa"
@@ -150,10 +174,11 @@ export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/credit-cards",
 )({
    validateSearch: creditCardsSearchSchema,
-   loaderDeps: ({ search: { page, pageSize, search, status } }) => ({
+   loaderDeps: ({ search: { page, pageSize, search, sorting, status } }) => ({
       page,
       pageSize,
       search,
+      sorting,
       status,
    }),
    loader: ({ context, deps }) => {
@@ -163,6 +188,7 @@ export const Route = createFileRoute(
                page: deps.page,
                pageSize: deps.pageSize,
                search: deps.search || undefined,
+               sorting: normalizeCreditCardSorting(deps.sorting),
                status: deps.status,
             },
          }),
@@ -206,7 +232,13 @@ function CreditCardsList() {
    const [{ data: result }, { data: bankAccounts }] = useSuspenseQueries({
       queries: [
          orpc.creditCards.getAll.queryOptions({
-            input: { page, pageSize, search: search || undefined, status },
+            input: {
+               page,
+               pageSize,
+               search: search || undefined,
+               sorting: normalizeCreditCardSorting(sorting),
+               status,
+            },
          }),
          orpc.bankAccounts.getAll.queryOptions({}),
       ],

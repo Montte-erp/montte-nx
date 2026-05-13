@@ -20,6 +20,7 @@ import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
+import { DefaultHeader } from "../../../-layout/default-header";
 
 dayjs.locale("pt-br");
 
@@ -62,12 +63,10 @@ function ProjectGeneralErrorFallback({
 }: FallbackProps) {
    return (
       <div className="space-y-6">
-         <div>
-            <h1 className="text-2xl font-semibold font-serif">Geral</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-               Gerencie as configurações do espaço.
-            </p>
-         </div>
+         <DefaultHeader
+            description="Gerencie as configurações do espaço."
+            title="Geral"
+         />
          <div className="flex flex-col items-center justify-center py-12 text-center">
             <p className="text-sm text-muted-foreground mb-4">
                Não foi possível carregar as configurações do espaço
@@ -182,12 +181,10 @@ function ProjectGeneralContent() {
 
    return (
       <div className="space-y-8">
-         <div>
-            <h1 className="text-2xl font-semibold font-serif">Geral</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-               Gerencie as configurações do espaço.
-            </p>
-         </div>
+         <DefaultHeader
+            description="Gerencie as configurações do espaço."
+            title="Geral"
+         />
 
          <DisplayNameSection currentName={teamData.name} teamId={teamId} />
 
