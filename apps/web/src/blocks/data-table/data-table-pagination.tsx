@@ -54,7 +54,7 @@ export function DataTablePagination<TData>({
          <div className="text-muted-foreground">
             {from}–{to} de {total}
          </div>
-         <div className="flex items-center gap-1">
+         <div className="flex items-center gap-2">
             <Button
                disabled={!table.getCanPreviousPage()}
                onClick={() => table.setPageIndex(0)}

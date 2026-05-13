@@ -528,6 +528,7 @@ function BankAccountsList() {
                      variant="outline"
                   >
                      <Plus />
+                     <span className="sr-only">Nova Conta</span>
                   </Button>
                </div>
             </div>
