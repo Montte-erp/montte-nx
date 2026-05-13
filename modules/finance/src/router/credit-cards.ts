@@ -36,6 +36,7 @@ const listCreditCardsSchema = z.object({
             desc: z.boolean(),
          }),
       )
+      .max(3, "Use no máximo 3 critérios de ordenação.")
       .optional(),
 });
 

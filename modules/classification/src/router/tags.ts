@@ -55,13 +55,15 @@ const getAllInputSchema = z.object({
             desc: z.boolean(),
          }),
       )
+      .max(3, "Use no máximo 3 critérios de ordenação.")
       .optional(),
 });
 
 function buildTagOrderBy(
    sorting: z.infer<typeof getAllInputSchema>["sorting"],
 ) {
-   if (!sorting?.length) return [asc(tags.dreOrder), asc(tags.name)];
+   if (!sorting?.length)
+      return [asc(tags.dreOrder), asc(tags.name), asc(tags.createdAt)];
    const orderBy: SQL[] = [];
 
    for (const sort of sorting) {

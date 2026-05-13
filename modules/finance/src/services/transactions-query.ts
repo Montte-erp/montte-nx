@@ -27,7 +27,7 @@ export interface TransactionSortingRule {
 
 function buildTransactionOrderBy(
    sorting: TransactionSortingRule[] | undefined,
-): SQL[] {
+) {
    const displayDate = sql<string>`CASE WHEN ${transactions.status} = 'pending' AND ${transactions.dueDate} IS NOT NULL THEN ${transactions.dueDate} ELSE ${transactions.date} END`;
    if (!sorting?.length)
       return [desc(transactions.date), desc(transactions.createdAt)];

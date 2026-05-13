@@ -172,7 +172,6 @@ function FeaturePreviewsPage() {
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                      <span>Filtrar por estágio:</span>
                      <Button
-                        className="px-0"
                         onClick={() => setStages([...STAGE_FILTERS])}
                         variant="link"
                      >

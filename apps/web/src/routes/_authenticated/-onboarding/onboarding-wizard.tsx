@@ -306,7 +306,7 @@ function ProfileStep({
    return (
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
          <div className="flex flex-col gap-2 text-center">
-            <h2 className=" text-2xl font-semibold">Como podemos te chamar?</h2>
+            <h2 className="text-2xl font-semibold">Como podemos te chamar?</h2>
             <p className="text-sm text-muted-foreground">
                Usado para personalizar sua experiência.
             </p>
@@ -394,7 +394,7 @@ function FeaturesStep({
    return (
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
          <div className="flex flex-col gap-2 text-center">
-            <h2 className=" text-2xl font-semibold">
+            <h2 className="text-2xl font-semibold">
                O que você vai usar no Montte?
             </h2>
             <p className="text-sm text-muted-foreground">
@@ -493,7 +493,7 @@ function CompanyStep({
    return (
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
          <div className="flex flex-col gap-2 text-center">
-            <h2 className=" text-2xl font-semibold">
+            <h2 className="text-2xl font-semibold">
                Como se chama sua empresa?
             </h2>
             <p className="text-sm text-muted-foreground">

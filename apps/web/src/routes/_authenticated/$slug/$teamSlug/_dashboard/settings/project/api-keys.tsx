@@ -130,7 +130,7 @@ function ApiKeysContent() {
       [openAlertDialog, queryClient],
    );
 
-   function handleOpenCreate() {
+   const handleOpenCreate = useCallback(() => {
       if (!organizationId || !teamId) return;
       openCredenza({
          renderChildren: () => (
@@ -141,7 +141,7 @@ function ApiKeysContent() {
             />
          ),
       });
-   }
+   }, [closeCredenza, openCredenza, organizationId, teamId]);
 
    const columns = useMemo<ColumnDef<ApiKeyRow>[]>(() => {
       const actionsColumn: ColumnDef<ApiKeyRow> = {

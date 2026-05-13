@@ -79,10 +79,6 @@ const listSchema = z.object({
       .optional(),
 });
 
-type BankAccountListRow = typeof bankAccounts.$inferSelect & {
-   currentBalance: string;
-   projectedBalance: string;
-};
 type ListSorting = z.infer<typeof listSchema>["sorting"];
 type BankAccountSortRule = NonNullable<ListSorting>[number];
 
@@ -94,78 +90,24 @@ const defaultBankAccountSort: BankAccountSortRule = {
 const currentBalanceSql = sql<string>`
    (
       ${bankAccounts.initialBalance}
-      + COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
-      - COALESCE(SUM(CASE WHEN ${transactions.type} = 'expense' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
-      - COALESCE(SUM(CASE WHEN ${transactions.type} = 'transfer' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
-      + COALESCE(SUM(CASE WHEN ${transactions.type} = 'transfer' AND ${transactions.destinationBankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+      + COALESCE(SUM(CASE WHEN ${transactions.status} != 'pending' AND ${transactions.type} = 'income' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+      - COALESCE(SUM(CASE WHEN ${transactions.status} != 'pending' AND ${transactions.type} = 'expense' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+      - COALESCE(SUM(CASE WHEN ${transactions.status} != 'pending' AND ${transactions.type} = 'transfer' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+      + COALESCE(SUM(CASE WHEN ${transactions.status} != 'pending' AND ${transactions.type} = 'transfer' AND ${transactions.destinationBankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
    )
 `;
 
 const projectedBalanceSql = sql<string>`
    (
       ${bankAccounts.initialBalance}
-      + COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
-      - COALESCE(SUM(CASE WHEN ${transactions.type} = 'expense' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
-      - COALESCE(SUM(CASE WHEN ${transactions.type} = 'transfer' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
-      + COALESCE(SUM(CASE WHEN ${transactions.type} = 'transfer' AND ${transactions.destinationBankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+      + COALESCE(SUM(CASE WHEN ${transactions.status} != 'pending' AND ${transactions.type} = 'income' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+      - COALESCE(SUM(CASE WHEN ${transactions.status} != 'pending' AND ${transactions.type} = 'expense' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+      - COALESCE(SUM(CASE WHEN ${transactions.status} != 'pending' AND ${transactions.type} = 'transfer' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
+      + COALESCE(SUM(CASE WHEN ${transactions.status} != 'pending' AND ${transactions.type} = 'transfer' AND ${transactions.destinationBankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
       + COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' AND ${transactions.status} = 'pending' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
       - COALESCE(SUM(CASE WHEN ${transactions.type} = 'expense' AND ${transactions.status} = 'pending' AND ${transactions.bankAccountId} = ${bankAccounts.id} THEN ${transactions.amount} ELSE 0 END), 0)
    )
 `;
-
-function compareNullableString(a: string | null, b: string | null) {
-   return (a ?? "").localeCompare(b ?? "", "pt-BR");
-}
-
-function compareNumericString(a: string, b: string) {
-   return Number(a) - Number(b);
-}
-
-function sortBankAccountRows(rows: BankAccountListRow[], sorting: ListSorting) {
-   const rules = sorting?.length ? sorting : [defaultBankAccountSort];
-   return [...rows].sort((a, b) => {
-      for (const sort of rules) {
-         const direction = sort.desc ? -1 : 1;
-         switch (sort.id) {
-            case "currentBalance": {
-               const result = compareNumericString(
-                  a.currentBalance,
-                  b.currentBalance,
-               );
-               if (result !== 0) return result * direction;
-               break;
-            }
-            case "initialBalance": {
-               const result = compareNumericString(
-                  a.initialBalance,
-                  b.initialBalance,
-               );
-               if (result !== 0) return result * direction;
-               break;
-            }
-            case "name": {
-               const result = compareNullableString(a.name, b.name);
-               if (result !== 0) return result * direction;
-               break;
-            }
-            case "projectedBalance": {
-               const result = compareNumericString(
-                  a.projectedBalance,
-                  b.projectedBalance,
-               );
-               if (result !== 0) return result * direction;
-               break;
-            }
-            case "type": {
-               const result = compareNullableString(a.type, b.type);
-               if (result !== 0) return result * direction;
-               break;
-            }
-         }
-      }
-      return a.id.localeCompare(b.id);
-   });
-}
 
 function buildBankAccountOrderBy(sorting: ListSorting): SQL[] {
    const rules = sorting?.length ? sorting : [defaultBankAccountSort];
@@ -242,18 +184,14 @@ export const list = protectedProcedure
       const totalCount = countRows[0]?.count ?? 0;
 
       const balances = await computeBankAccountBalances(context.db, rows);
-      const data = sortBankAccountRows(
-         rows.map((account) => ({
-            ...account,
-            currentBalance:
-               balances.get(account.id)?.currentBalance ??
-               account.initialBalance,
-            projectedBalance:
-               balances.get(account.id)?.projectedBalance ??
-               account.initialBalance,
-         })),
-         sorting,
-      );
+      const data = rows.map((account) => ({
+         ...account,
+         currentBalance:
+            balances.get(account.id)?.currentBalance ?? account.initialBalance,
+         projectedBalance:
+            balances.get(account.id)?.projectedBalance ??
+            account.initialBalance,
+      }));
 
       return {
          data,
