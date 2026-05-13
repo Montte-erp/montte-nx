@@ -58,8 +58,8 @@ export function buildTagColumns(options?: {
          enableSorting: false,
          cell: ({ row }) => {
             const { id, name, isDefault, isArchived } = row.original;
-            const editable =
-               !isDefault && !isArchived && Boolean(options?.onUpdate);
+            const onUpdate = options?.onUpdate;
+            const editable = !isDefault && !isArchived && Boolean(onUpdate);
             const archivedIndicator = isArchived ? (
                <Tooltip>
                   <TooltipTrigger asChild>
@@ -89,7 +89,7 @@ export function buildTagColumns(options?: {
                <InlineEditText
                   ariaLabel="Nome"
                   onSave={async (v) => {
-                     await options.onUpdate!(id, { name: v });
+                     await onUpdate!(id, { name: v });
                   }}
                   placeholder="Nome do centro de custo"
                   value={name}

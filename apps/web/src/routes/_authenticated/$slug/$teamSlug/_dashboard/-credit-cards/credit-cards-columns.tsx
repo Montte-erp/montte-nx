@@ -4,7 +4,6 @@ import {
    AvatarFallback,
    AvatarImage,
 } from "@packages/ui/components/avatar";
-import { Badge } from "@packages/ui/components/badge";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
    Banknote,
@@ -47,12 +46,6 @@ type BankAccountOption = {
    bankCode?: string | null;
    color?: string | null;
 };
-
-const STATUS_VARIANT = {
-   active: "success",
-   blocked: "secondary",
-   cancelled: "destructive",
-} as const;
 
 const STATUS_LABEL = {
    active: "Ativo",
