@@ -205,9 +205,9 @@ test("acesso a espaço exige team_member; admin gerencia membership explícito",
          { data: { teamId: newTeam!.id } },
       );
       expect(
-         outsiderSwitch.ok(),
+         outsiderSwitch.status(),
          "outsider de outra org não pode trocar para espaço externo",
-      ).toBeFalsy();
+      ).toBe(403);
 
       await outsiderPage.goto(`/${e2eSession.orgSlug}/${newTeam!.slug}/inbox`);
       await outsiderPage.waitForURL(

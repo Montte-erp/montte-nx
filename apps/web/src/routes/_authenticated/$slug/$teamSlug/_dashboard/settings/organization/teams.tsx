@@ -69,7 +69,14 @@ function TeamsContent() {
       (team: Team) => {
          openSheet({
             className: "w-full sm:max-w-md",
-            renderChildren: () => <TeamMembersSheet team={team} />,
+            renderChildren: () => (
+               <QueryBoundary
+                  errorTitle="Erro ao carregar membros do espaço"
+                  fallback={<TeamMembersSheetSkeleton />}
+               >
+                  <TeamMembersSheet team={team} />
+               </QueryBoundary>
+            ),
          });
       },
       [openSheet],
@@ -358,6 +365,16 @@ function TeamsSkeleton() {
       <div className="flex flex-col gap-4">
          <Skeleton className="h-8 w-48" />
          <Skeleton className="h-64 w-full" />
+      </div>
+   );
+}
+
+function TeamMembersSheetSkeleton() {
+   return (
+      <div className="flex flex-col gap-4 p-4">
+         <Skeleton className="h-6 w-40" />
+         <Skeleton className="h-4 w-64" />
+         <Skeleton className="h-32 w-full" />
       </div>
    );
 }

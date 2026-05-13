@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { apiKey } from "@better-auth/api-key";
 import { i18n } from "@better-auth/i18n";
 import * as schema from "@core/database/schema";
@@ -333,7 +334,7 @@ export function createAuth(deps: CreateAuthDeps) {
                      .values({
                         teamId: team.id,
                         userId: user.id,
-                        createdAt: new Date(),
+                        createdAt: dayjs().toDate(),
                      })
                      .onConflictDoNothing();
                },
