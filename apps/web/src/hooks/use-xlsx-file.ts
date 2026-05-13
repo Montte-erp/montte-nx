@@ -1,10 +1,19 @@
 import { read as xlsxRead, utils as xlsxUtils, write as xlsxWrite } from "xlsx";
 import { useCallback } from "react";
+import dayjs from "dayjs";
 
 export type XlsxData = {
    headers: string[];
    rows: string[][];
 };
+
+function cellToString(cell: unknown): string {
+   if (cell instanceof Date) {
+      if (Number.isNaN(cell.getTime())) return "";
+      return dayjs(cell).format("YYYY-MM-DD");
+   }
+   return String(cell);
+}
 
 export function useXlsxFile() {
    const parse = useCallback(async (file: File): Promise<XlsxData> => {
@@ -19,10 +28,10 @@ export function useXlsxFile() {
       });
       if (data.length < 2) throw new Error("Planilha sem dados");
       return {
-         headers: (data[0] as unknown[]).map(String),
+         headers: (data[0] as unknown[]).map(cellToString),
          rows: (data.slice(1) as unknown[][])
-            .filter((r) => r.some((c) => String(c).trim() !== ""))
-            .map((r) => r.map(String)),
+            .filter((r) => r.some((c) => cellToString(c).trim() !== ""))
+            .map((r) => r.map(cellToString)),
       };
    }, []);
 
