@@ -181,6 +181,13 @@ const formSchema = z
             });
          }
       }
+      if (v.type !== "transfer" && !v.categoryId) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["categoryId"],
+            message: "Categoria é obrigatória.",
+         });
+      }
    });
 
 type FormValues = z.input<typeof formSchema>;
@@ -653,8 +660,12 @@ function TransactionFormSheetContent() {
                         {type !== "transfer" ? (
                            <form.Field name="categoryId">
                               {(field) => (
-                                 <Field>
-                                    <FieldLabel htmlFor={field.name}>
+                                 <Field
+                                    data-invalid={
+                                       isFieldInvalid(field) || undefined
+                                    }
+                                 >
+                                    <FieldLabel htmlFor={field.name} required>
                                        Categoria
                                     </FieldLabel>
                                     <CategoryPicker
@@ -666,6 +677,11 @@ function TransactionFormSheetContent() {
                                           field.handleChange(v)
                                        }
                                     />
+                                    {isFieldInvalid(field) ? (
+                                       <FieldError>
+                                          {field.state.meta.errors[0]?.message}
+                                       </FieldError>
+                                    ) : null}
                                  </Field>
                               )}
                            </form.Field>
