@@ -20,6 +20,7 @@ import {
    getCoreRowModel,
    useReactTable,
    type ColumnDef,
+   type SortingState,
 } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Landmark, Plus, ReceiptText, Trash2 } from "lucide-react";
@@ -105,16 +106,38 @@ const searchSchema = z.object({
    pageSize: z.number().int().catch(20).default(20),
 });
 
+const bankAccountSortIdSchema = z.enum([
+   "currentBalance",
+   "initialBalance",
+   "name",
+   "projectedBalance",
+   "type",
+]);
+
+function normalizeBankAccountSorting(sorting: SortingState) {
+   const normalized: Array<{
+      id: z.infer<typeof bankAccountSortIdSchema>;
+      desc: boolean;
+   }> = [];
+   for (const rule of sorting) {
+      const result = bankAccountSortIdSchema.safeParse(rule.id);
+      if (!result.success) continue;
+      normalized.push({ id: result.data, desc: rule.desc });
+   }
+   return normalized;
+}
+
 const skeletonColumns = buildBankAccountColumns();
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts",
 )({
    validateSearch: searchSchema,
-   loaderDeps: ({ search: { page, pageSize, search, type } }) => ({
+   loaderDeps: ({ search: { page, pageSize, search, sorting, type } }) => ({
       page,
       pageSize,
       search,
+      sorting,
       type,
    }),
    loader: ({ context, deps }) => {
@@ -124,6 +147,7 @@ export const Route = createFileRoute(
                page: deps.page,
                pageSize: deps.pageSize,
                search: deps.search || undefined,
+               sorting: normalizeBankAccountSorting(deps.sorting),
                type: deps.type,
             },
          }),
@@ -164,7 +188,13 @@ function BankAccountsList() {
 
    const { data: result } = useSuspenseQuery(
       orpc.bankAccounts.list.queryOptions({
-         input: { page, pageSize, search: search || undefined, type },
+         input: {
+            page,
+            pageSize,
+            search: search || undefined,
+            sorting: normalizeBankAccountSorting(sorting),
+            type,
+         },
       }),
    );
 

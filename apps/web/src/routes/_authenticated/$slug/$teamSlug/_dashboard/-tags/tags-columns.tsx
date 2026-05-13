@@ -57,7 +57,6 @@ export function buildTagColumns(options?: {
                  }
                : undefined,
          },
-         enableSorting: false,
          cell: ({ row }) => {
             const { id, name, isDefault, isArchived } = row.original;
             const editable = !isDefault && !isArchived && Boolean(onUpdate);
@@ -106,7 +105,6 @@ export function buildTagColumns(options?: {
             label: "Padrão",
             exportValue: (row) => (row.isDefault ? "Sim" : ""),
          },
-         enableSorting: false,
          cell: ({ row }) => {
             if (!row.original.isDefault)
                return <span className="text-sm text-muted-foreground">—</span>;
@@ -148,7 +146,6 @@ export function buildTagColumns(options?: {
                  }
                : undefined,
          },
-         enableSorting: false,
          cell: ({ row }) => {
             const { id, description, isArchived } = row.original;
             if (isArchived || !onUpdate) {

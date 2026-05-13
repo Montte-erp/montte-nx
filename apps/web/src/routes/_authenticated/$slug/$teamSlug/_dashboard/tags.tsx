@@ -24,6 +24,7 @@ import {
    getCoreRowModel,
    useReactTable,
    type ColumnDef,
+   type SortingState,
 } from "@tanstack/react-table";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -92,15 +93,33 @@ function TagsInfoContent() {
 
 const skeletonColumns = buildTagColumns();
 
+const tagSortIdSchema = z.enum(["description", "isDefault", "name"]);
+
+function normalizeTagSorting(sorting: SortingState) {
+   const normalized: Array<{
+      id: z.infer<typeof tagSortIdSchema>;
+      desc: boolean;
+   }> = [];
+   for (const rule of sorting) {
+      const result = tagSortIdSchema.safeParse(rule.id);
+      if (!result.success) continue;
+      normalized.push({ id: result.data, desc: rule.desc });
+   }
+   return normalized;
+}
+
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/tags",
 )({
    validateSearch: tagsSearchSchema,
-   loaderDeps: ({ search: { search, includeArchived, page, pageSize } }) => ({
+   loaderDeps: ({
+      search: { search, includeArchived, page, pageSize, sorting },
+   }) => ({
       search,
       includeArchived,
       page,
       pageSize,
+      sorting,
    }),
    loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
@@ -110,6 +129,7 @@ export const Route = createFileRoute(
                includeArchived: deps.includeArchived || undefined,
                page: deps.page,
                pageSize: deps.pageSize,
+               sorting: normalizeTagSorting(deps.sorting),
             },
          }),
       );
@@ -152,6 +172,7 @@ function TagsList() {
             includeArchived: includeArchived || undefined,
             page,
             pageSize,
+            sorting: normalizeTagSorting(sorting),
          },
       }),
    );

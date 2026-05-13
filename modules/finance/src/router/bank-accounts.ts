@@ -52,12 +52,75 @@ const listSchema = z.object({
    pageSize: z.number().int().positive().max(100).catch(20).default(20),
    search: z.string().max(100).optional(),
    type: z.enum(BANK_ACCOUNT_TYPES).optional(),
+   sorting: z
+      .array(
+         z.object({
+            id: z.enum([
+               "currentBalance",
+               "initialBalance",
+               "name",
+               "projectedBalance",
+               "type",
+            ]),
+            desc: z.boolean(),
+         }),
+      )
+      .optional(),
 });
+
+type BankAccountListRow = typeof bankAccounts.$inferSelect & {
+   currentBalance: string;
+   projectedBalance: string;
+};
+type ListSorting = z.infer<typeof listSchema>["sorting"];
+type BankAccountSortRule = NonNullable<ListSorting>[number];
+
+const defaultBankAccountSort: BankAccountSortRule = {
+   id: "name",
+   desc: false,
+};
+
+function compareNullableString(a: string | null, b: string | null) {
+   return (a ?? "").localeCompare(b ?? "", "pt-BR");
+}
+
+function compareNumericString(a: string, b: string) {
+   return Number(a) - Number(b);
+}
+
+function sortBankAccountRows(rows: BankAccountListRow[], sorting: ListSorting) {
+   const [inputSort] = sorting ?? [];
+   const sort = inputSort ?? defaultBankAccountSort;
+   const direction = sort.desc ? -1 : 1;
+   return [...rows].sort((a, b) => {
+      switch (sort.id) {
+         case "currentBalance":
+            return (
+               compareNumericString(a.currentBalance, b.currentBalance) *
+               direction
+            );
+         case "initialBalance":
+            return (
+               compareNumericString(a.initialBalance, b.initialBalance) *
+               direction
+            );
+         case "name":
+            return compareNullableString(a.name, b.name) * direction;
+         case "projectedBalance":
+            return (
+               compareNumericString(a.projectedBalance, b.projectedBalance) *
+               direction
+            );
+         case "type":
+            return compareNullableString(a.type, b.type) * direction;
+      }
+   });
+}
 
 export const list = protectedProcedure
    .input(listSchema)
    .handler(async ({ context, input }) => {
-      const { page, pageSize, search, type } = input;
+      const { page, pageSize, search, sorting, type } = input;
       const offset = (page - 1) * pageSize;
       const where = and(
          eq(bankAccounts.teamId, context.teamId),
@@ -68,12 +131,7 @@ export const list = protectedProcedure
 
       const result = await fromPromise(
          Promise.all([
-            context.db.query.bankAccounts.findMany({
-               where: () => where,
-               orderBy: (f, { asc }) => [asc(f.name)],
-               limit: pageSize,
-               offset,
-            }),
+            context.db.select().from(bankAccounts).where(where),
             context.db
                .select({ count: sql<number>`cast(count(*) as int)` })
                .from(bankAccounts)
@@ -86,14 +144,18 @@ export const list = protectedProcedure
       const totalCount = countRows[0]?.count ?? 0;
 
       const balances = await computeBankAccountBalances(context.db, rows);
-      const data = rows.map((account) => ({
-         ...account,
-         currentBalance:
-            balances.get(account.id)?.currentBalance ?? account.initialBalance,
-         projectedBalance:
-            balances.get(account.id)?.projectedBalance ??
-            account.initialBalance,
-      }));
+      const data = sortBankAccountRows(
+         rows.map((account) => ({
+            ...account,
+            currentBalance:
+               balances.get(account.id)?.currentBalance ??
+               account.initialBalance,
+            projectedBalance:
+               balances.get(account.id)?.projectedBalance ??
+               account.initialBalance,
+         })),
+         sorting,
+      ).slice(offset, offset + pageSize);
 
       return {
          data,

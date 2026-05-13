@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { errAsync, fromPromise, okAsync, safeTry } from "neverthrow";
 import { z } from "zod";
 import {
@@ -41,7 +41,32 @@ const getAllInputSchema = z.object({
    includeArchived: z.boolean().optional(),
    page: z.number().int().positive().default(1),
    pageSize: z.number().int().positive().max(100).default(20),
+   sorting: z
+      .array(
+         z.object({
+            id: z.enum(["description", "isDefault", "name"]),
+            desc: z.boolean(),
+         }),
+      )
+      .optional(),
 });
+
+function buildTagOrderBy(
+   sorting: z.infer<typeof getAllInputSchema>["sorting"],
+) {
+   const [sort] = sorting ?? [];
+   if (!sort) return [asc(tags.dreOrder), asc(tags.name)];
+   const direction = sort.desc ? desc : asc;
+
+   switch (sort.id) {
+      case "description":
+         return [direction(tags.description), asc(tags.name)];
+      case "isDefault":
+         return [direction(tags.isDefault), asc(tags.name)];
+      case "name":
+         return [direction(tags.name), desc(tags.createdAt)];
+   }
+}
 
 export const getAll = protectedProcedure
    .input(getAllInputSchema)
@@ -67,7 +92,7 @@ export const getAll = protectedProcedure
                .select()
                .from(tags)
                .where(whereClause)
-               .orderBy(asc(tags.dreOrder), asc(tags.name))
+               .orderBy(...buildTagOrderBy(input.sorting))
                .limit(input.pageSize)
                .offset((input.page - 1) * input.pageSize);
             return { data, total: countResult?.total ?? 0 };

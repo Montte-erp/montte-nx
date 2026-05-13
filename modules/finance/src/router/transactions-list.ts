@@ -7,7 +7,10 @@ import { count, sql } from "drizzle-orm";
 import { z } from "zod";
 import { transactions } from "@core/database/schemas/transactions";
 import { protectedProcedure } from "@core/orpc/server";
-import { selectTransactionsWithJoins } from "@modules/finance/services/transactions-query";
+import {
+   selectTransactionsWithJoins,
+   type TransactionSortId,
+} from "@modules/finance/services/transactions-query";
 import {
    buildTransactionWhere,
    type TransactionFilter,
@@ -15,6 +18,33 @@ import {
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const txStatus = z.enum(["pending", "paid"]);
+const sortIdSchema = z.enum([
+   "amount",
+   "bankAccountName",
+   "categoryName",
+   "contactName",
+   "creditCardName",
+   "date",
+   "dueDate",
+   "name",
+   "status",
+   "type",
+]);
+const sortingSchema = z.array(
+   z.object({
+      id: sortIdSchema,
+      desc: z.boolean(),
+   }),
+);
+
+type SortingInput = z.infer<typeof sortingSchema>;
+
+function normalizeSorting(sorting: SortingInput | undefined) {
+   return sorting?.map((rule) => ({
+      id: rule.id satisfies TransactionSortId,
+      desc: rule.desc,
+   }));
+}
 
 const filterSchema = z
    .object({
@@ -40,6 +70,7 @@ const filterSchema = z
       page: z.number().int().positive().default(1),
       pageSize: z.number().int().positive().max(100).default(20),
       conditionGroup: ConditionGroup.optional(),
+      sorting: sortingSchema.optional(),
    })
    .optional();
 
@@ -59,7 +90,11 @@ export const getAll = protectedProcedure
       const cg = filter.conditionGroup;
 
       if (cg?.scoringMode === "weighted") {
-         const allRows = await selectTransactionsWithJoins(context.db, where);
+         const allRows = await selectTransactionsWithJoins(
+            context.db,
+            where,
+            normalizeSorting(filter.sorting),
+         );
          const filtered = allRows.filter(
             (row) =>
                evaluateConditionGroup(cg, {
@@ -84,7 +119,11 @@ export const getAll = protectedProcedure
          .from(transactions)
          .where(where);
 
-      const data = await selectTransactionsWithJoins(context.db, where)
+      const data = await selectTransactionsWithJoins(
+         context.db,
+         where,
+         normalizeSorting(filter.sorting),
+      )
          .limit(pageSize)
          .offset((page - 1) * pageSize);
 

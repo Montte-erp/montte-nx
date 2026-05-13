@@ -15,6 +15,7 @@ import {
 import type { Condition, ConditionGroup } from "@f-o-t/condition-evaluator";
 import { contacts } from "@core/database/schemas/contacts";
 import { transactions } from "@core/database/schemas/transactions";
+import type { TransactionSortingRule } from "@modules/finance/services/transactions-query";
 
 export interface TransactionFilter {
    teamId: string;
@@ -39,6 +40,7 @@ export interface TransactionFilter {
    view?: "all" | "payable" | "receivable" | "settled" | "ignored";
    includeIgnored?: boolean;
    ignored?: boolean;
+   sorting?: TransactionSortingRule[];
 }
 
 const t = transactions;
