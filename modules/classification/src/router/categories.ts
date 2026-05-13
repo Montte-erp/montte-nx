@@ -213,26 +213,32 @@ export const getPaginated = protectedProcedure
                : null;
 
             if (pattern) {
-               const matched = await context.db
-                  .selectDistinct({
-                     rootId: sql<string>`COALESCE(${categories.parentId}, ${categories.id})`,
-                  })
+               const searchFilter: SQL[] = [
+                  eq(categories.teamId, context.teamId),
+                  ilike(categories.name, pattern),
+               ];
+               if (input.type)
+                  searchFilter.push(eq(categories.type, input.type));
+               if (!input.includeArchived)
+                  searchFilter.push(eq(categories.isArchived, false));
+
+               const countRows = await context.db
+                  .select({ count: sql<number>`count(*)::int` })
                   .from(categories)
-                  .where(
-                     and(
-                        eq(categories.teamId, context.teamId),
-                        input.type
-                           ? eq(categories.type, input.type)
-                           : undefined,
-                        input.includeArchived
-                           ? undefined
-                           : eq(categories.isArchived, false),
-                        ilike(categories.name, pattern),
-                     ),
-                  );
-               const matchedRootIds = matched.map((r) => r.rootId);
-               if (matchedRootIds.length === 0) return { data: [], total: 0 };
-               rootFilter.push(inArray(categories.id, matchedRootIds));
+                  .where(and(...searchFilter));
+               const total = countRows[0]?.count ?? 0;
+               if (total === 0) return { data: [], total: 0 };
+
+               const offset = Math.max(0, (input.page - 1) * input.pageSize);
+               const data = await context.db
+                  .select()
+                  .from(categories)
+                  .where(and(...searchFilter))
+                  .orderBy(...buildCategoryOrderBy(input.sorting))
+                  .limit(input.pageSize)
+                  .offset(offset);
+
+               return { data, total };
             }
 
             const countRows = await context.db

@@ -193,13 +193,15 @@ function CategoriesList() {
       ],
    });
    const { data: rows, total } = result;
+   const hasSearch = search.trim().length > 0;
 
    const rootCategories = useMemo(
-      () => rows.filter((c) => !c.parentId),
-      [rows],
+      () => (hasSearch ? rows : rows.filter((c) => !c.parentId)),
+      [hasSearch, rows],
    );
    const childrenByParent = useMemo(() => {
       const m = new Map<string, CategoryRow[]>();
+      if (hasSearch) return m;
       for (const cat of rows) {
          if (!cat.parentId) continue;
          const list = m.get(cat.parentId);
@@ -207,7 +209,7 @@ function CategoriesList() {
          else m.set(cat.parentId, [cat]);
       }
       return m;
-   }, [rows]);
+   }, [hasSearch, rows]);
 
    const [expanded, setExpanded] = useState<ExpandedState>({});
 
