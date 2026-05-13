@@ -1,16 +1,10 @@
 ---
 export const prerender = true;
 import BaseLayout from "../layouts/base-layout.astro";
-import { ArrowRight, Megaphone } from "@lucide/astro";
-import {
-   Announcement,
-   AnnouncementTitle,
-   AnnouncementTag,
-} from "@packages/ui/components/announcement";
+import { ArrowRight } from "@lucide/astro";
 import { Button } from "@packages/ui/components/button";
 import { AnimatedTexture } from "../components/animated-texture";
-import { Reveal } from "../components/reveal";
-import { HeroCodeMock } from "../blocks/hero-code-mock";
+import { HeroCarousel } from "../blocks/hero-carousel";
 import SocialProofBlock from "../blocks/social-proof-block.astro";
 import WaitlistBlock from "../blocks/waitlist-block.astro";
 import FooterBlock from "../blocks/footer-block.astro";
@@ -37,45 +31,21 @@ import FooterBlock from "../blocks/footer-block.astro";
       >
       </div>
 
-      <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col justify-start gap-8 overflow-hidden px-2 py-4 sm:px-4 lg:justify-center">
-         <div class="grid min-w-0 items-center gap-8 lg:grid-cols-2 lg:gap-4">
-            <Reveal client:load>
-               <div class="flex min-w-0 flex-col items-center gap-8 text-center sm:gap-4 lg:items-start lg:text-left">
-                  <Announcement>
-                     <AnnouncementTag>
-                        <Megaphone class=" text-primary" aria-hidden="true" />
-                     </AnnouncementTag>
-                     <AnnouncementTitle className="text-foreground">
-                        Waitlist aberta · acesso gradual
-                     </AnnouncementTitle>
-                  </Announcement>
+      <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center gap-8 overflow-hidden px-2 py-4 sm:px-4">
+         <HeroCarousel client:load />
 
-                  <h1
-                     class="max-w-2xl text-3xl leading-tight font-black text-foreground text-balance sm:text-4xl md:text-5xl lg:text-6xl"
-                  >
-                     Coloque sua operação em ordem <span class="text-primary">no Montte</span>.
-                  </h1>
+         <p class="max-w-xl text-center text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Coloque sua operação em ordem no Montte. Uma plataforma brasileira para
+            empresas que querem ver tudo no mesmo lugar.
+         </p>
 
-                  <p class="max-w-xl text-sm leading-relaxed text-foreground/80 sm:text-base lg:text-lg lg:text-muted-foreground">
-                     Financeiro, contatos, serviços e cobranças em uma plataforma brasileira.
-                     Estamos convidando empresas em lotes pequenos para acompanhar de perto a
-                     implantação, ajustar fluxos reais e abrir o produto com consistência.
-                  </p>
-
-                  <div class="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
-                     <a href="#waitlist" data-ph-cta="hero_waitlist">
-                        <Button size="lg" variant="default">
-                           Entrar na lista
-                           <ArrowRight data-icon="inline-end" aria-hidden="true" />
-                        </Button>
-                     </a>
-                  </div>
-               </div>
-            </Reveal>
-
-            <div class="min-w-0">
-               <HeroCodeMock client:load />
-            </div>
+         <div class="flex flex-wrap items-center justify-center gap-2">
+            <a href="#waitlist" data-ph-cta="hero_waitlist">
+               <Button size="lg" variant="default">
+                  Entrar na lista
+                  <ArrowRight data-icon="inline-end" aria-hidden="true" />
+               </Button>
+            </a>
          </div>
       </div>
    </section>
