@@ -112,6 +112,12 @@ export const settingsNavSections: SettingsNavSection[] = [
             icon: Users,
          },
          {
+            id: "org-teams",
+            title: "Espaços",
+            href: "/$slug/$teamSlug/settings/organization/teams",
+            icon: Box,
+         },
+         {
             id: "org-danger-zone",
             title: "Zona de perigo",
             href: "/$slug/$teamSlug/settings/organization/danger-zone",

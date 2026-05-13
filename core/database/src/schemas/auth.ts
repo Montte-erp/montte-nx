@@ -135,6 +135,7 @@ export const teamMember = authSchema.table(
    (table) => [
       index("teamMember_teamId_idx").on(table.teamId),
       index("teamMember_userId_idx").on(table.userId),
+      uniqueIndex("teamMember_team_user_unique").on(table.teamId, table.userId),
    ],
 );
 

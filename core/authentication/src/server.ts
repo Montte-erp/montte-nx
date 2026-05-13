@@ -325,6 +325,19 @@ export function createAuth(deps: CreateAuthDeps) {
                maximumMembersPerTeam: 50,
                maximumTeams: 10,
             },
+            organizationHooks: {
+               afterCreateTeam: async ({ team, user }) => {
+                  if (!user) return;
+                  await db
+                     .insert(schema.teamMember)
+                     .values({
+                        teamId: team.id,
+                        userId: user.id,
+                        createdAt: new Date(),
+                     })
+                     .onConflictDoNothing();
+               },
+            },
          }),
 
          twoFactor({
