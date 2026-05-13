@@ -87,6 +87,7 @@
       "browser-image-compression": "^2.0.2",
       "clsx": "catalog:ui",
       "color": "catalog:ui",
+      "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",
       "drizzle-zod": "catalog:database",
       "foxact": "catalog:ui",

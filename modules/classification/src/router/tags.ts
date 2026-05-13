@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
-import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { errAsync, fromPromise, okAsync, safeTry } from "neverthrow";
 import { z } from "zod";
 import {
@@ -41,7 +42,59 @@ const getAllInputSchema = z.object({
    includeArchived: z.boolean().optional(),
    page: z.number().int().positive().default(1),
    pageSize: z.number().int().positive().max(100).default(20),
+   sorting: z
+      .array(
+         z.object({
+            id: z.enum([
+               "createdAt",
+               "description",
+               "dreOrder",
+               "isDefault",
+               "name",
+            ]),
+            desc: z.boolean(),
+         }),
+      )
+      .max(3, "Use no máximo 3 critérios de ordenação.")
+      .optional(),
 });
+
+function buildTagOrderBy(
+   sorting: z.infer<typeof getAllInputSchema>["sorting"],
+) {
+   if (!sorting?.length)
+      return [asc(tags.dreOrder), asc(tags.name), asc(tags.createdAt)];
+   const orderBy: SQL[] = [];
+
+   for (const sort of sorting) {
+      const direction = sort.desc ? desc : asc;
+
+      switch (sort.id) {
+         case "createdAt":
+            orderBy.push(direction(tags.createdAt));
+            break;
+         case "description":
+            orderBy.push(direction(tags.description));
+            break;
+         case "dreOrder":
+            orderBy.push(direction(tags.dreOrder));
+            break;
+         case "isDefault":
+            orderBy.push(direction(tags.isDefault));
+            break;
+         case "name":
+            orderBy.push(direction(tags.name));
+            break;
+      }
+   }
+
+   return [
+      ...orderBy,
+      asc(tags.dreOrder),
+      asc(tags.name),
+      desc(tags.createdAt),
+   ];
+}
 
 export const getAll = protectedProcedure
    .input(getAllInputSchema)
@@ -67,7 +120,7 @@ export const getAll = protectedProcedure
                .select()
                .from(tags)
                .where(whereClause)
-               .orderBy(asc(tags.dreOrder), asc(tags.name))
+               .orderBy(...buildTagOrderBy(input.sorting))
                .limit(input.pageSize)
                .offset((input.page - 1) * input.pageSize);
             return { data, total: countResult?.total ?? 0 };

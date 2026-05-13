@@ -32,6 +32,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
+import { DefaultHeader } from "../../../-layout/default-header";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone",
@@ -62,14 +63,10 @@ function OrgDangerZonePage() {
 
    return (
       <div className="space-y-6">
-         <div>
-            <h1 className="text-2xl font-semibold font-serif">
-               Zona de Perigo
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-               Ações irreversíveis para esta organização. Prossiga com cuidado.
-            </p>
-         </div>
+         <DefaultHeader
+            description="Ações irreversíveis para esta organização. Prossiga com cuidado."
+            title="Zona de Perigo"
+         />
          <ItemGroup>
             <Item variant="muted">
                <ItemMedia variant="icon">

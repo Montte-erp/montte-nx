@@ -19,6 +19,7 @@ import { useCallback, useState } from "react";
 import type { FallbackProps } from "react-error-boundary";
 import { ThemeSwitcher } from "../../-layout/theme-switcher";
 import { QueryBoundary } from "@/components/query-boundary";
+import { DefaultHeader } from "../../-layout/default-header";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/customization",
@@ -49,14 +50,10 @@ function PreferencesSectionSkeleton() {
 function PreferencesSectionErrorFallback(props: FallbackProps) {
    return (
       <div className="flex flex-col gap-4">
-         <div>
-            <h1 className="text-2xl font-semibold font-serif">
-               Personalização
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-               Personalize sua experiência no aplicativo.
-            </p>
-         </div>
+         <DefaultHeader
+            description="Personalize sua experiência no aplicativo."
+            title="Personalização"
+         />
          <Card>
             <CardContent className="py-8">
                {createErrorFallback({
@@ -169,14 +166,10 @@ function PreferencesSectionContent() {
 
    return (
       <div className="flex flex-col gap-4">
-         <div>
-            <h1 className="text-2xl font-semibold font-serif">
-               Personalização
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-               Personalize sua experiência no aplicativo.
-            </p>
-         </div>
+         <DefaultHeader
+            description="Personalize sua experiência no aplicativo."
+            title="Personalização"
+         />
 
          <AppearanceSection />
 

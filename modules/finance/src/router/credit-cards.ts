@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
-import { and, eq, ilike, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { err, fromPromise, ok } from "neverthrow";
 import { z } from "zod";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
@@ -20,7 +21,61 @@ const listCreditCardsSchema = z.object({
    pageSize: z.number().int().positive().max(1000).catch(20).default(20),
    search: z.string().max(100).optional(),
    status: z.enum(["active", "blocked", "cancelled"]).optional(),
+   sorting: z
+      .array(
+         z.object({
+            id: z.enum([
+               "bankAccountId",
+               "brand",
+               "closingDay",
+               "creditLimit",
+               "dueDay",
+               "name",
+               "status",
+            ]),
+            desc: z.boolean(),
+         }),
+      )
+      .max(3, "Use no máximo 3 critérios de ordenação.")
+      .optional(),
 });
+
+function buildCreditCardOrderBy(
+   sorting: z.infer<typeof listCreditCardsSchema>["sorting"],
+) {
+   if (!sorting?.length)
+      return [asc(creditCards.name), desc(creditCards.createdAt)];
+   const orderBy: SQL[] = [];
+
+   for (const sort of sorting) {
+      const direction = sort.desc ? desc : asc;
+      switch (sort.id) {
+         case "bankAccountId":
+            orderBy.push(direction(creditCards.bankAccountId));
+            break;
+         case "brand":
+            orderBy.push(direction(creditCards.brand));
+            break;
+         case "closingDay":
+            orderBy.push(direction(creditCards.closingDay));
+            break;
+         case "creditLimit":
+            orderBy.push(direction(creditCards.creditLimit));
+            break;
+         case "dueDay":
+            orderBy.push(direction(creditCards.dueDay));
+            break;
+         case "name":
+            orderBy.push(direction(creditCards.name));
+            break;
+         case "status":
+            orderBy.push(direction(creditCards.status));
+            break;
+      }
+   }
+
+   return [...orderBy, desc(creditCards.createdAt)];
+}
 
 export const create = protectedProcedure
    .input(createCreditCardSchema)
@@ -44,7 +99,7 @@ export const create = protectedProcedure
 export const getAll = protectedProcedure
    .input(listCreditCardsSchema)
    .handler(async ({ context, input }) => {
-      const { page, pageSize, search, status } = input;
+      const { page, pageSize, search, sorting, status } = input;
       const offset = (page - 1) * pageSize;
       const where = and(
          eq(creditCards.teamId, context.teamId),
@@ -56,7 +111,7 @@ export const getAll = protectedProcedure
          Promise.all([
             context.db.query.creditCards.findMany({
                where: () => where,
-               orderBy: (f, { asc }) => [asc(f.name)],
+               orderBy: () => buildCreditCardOrderBy(sorting),
                limit: pageSize,
                offset,
             }),

@@ -38,6 +38,7 @@ import { toast } from "sonner";
 import { useFileUpload } from "@/features/file-upload/lib/use-file-upload";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
+import { DefaultHeader } from "../../../-layout/default-header";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general",
@@ -337,12 +338,10 @@ function OrganizationGeneralErrorFallback({
 }: FallbackProps) {
    return (
       <div className="space-y-6">
-         <div>
-            <h1 className="text-2xl font-semibold font-serif">Geral</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-               Gerencie as informações da sua organização.
-            </p>
-         </div>
+         <DefaultHeader
+            description="Gerencie as informações da sua organização."
+            title="Geral"
+         />
          <div className="flex flex-col items-center justify-center py-12 text-center">
             <p className="text-sm text-muted-foreground mb-4">
                Não foi possível carregar as configurações da organização
@@ -370,12 +369,10 @@ function OrganizationGeneralContent() {
 
    return (
       <div className="space-y-8">
-         <div>
-            <h1 className="text-2xl font-semibold font-serif">Geral</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-               Gerencie as informações da sua organização.
-            </p>
-         </div>
+         <DefaultHeader
+            description="Gerencie as informações da sua organização."
+            title="Geral"
+         />
 
          <DisplayNameSection
             currentName={activeOrganization.name}

@@ -22,6 +22,7 @@ import {
    useReactTable,
    type ColumnDef,
    type ExpandedState,
+   type SortingState,
 } from "@tanstack/react-table";
 import {
    Archive,
@@ -99,13 +100,28 @@ function parseCategoryType(raw: unknown): "income" | "expense" | "transfer" {
 
 const skeletonColumns = buildCategoryColumns();
 
+const categorySortIdSchema = z.enum(["isDefault", "name", "type"]);
+
+function normalizeCategorySorting(sorting: SortingState) {
+   const normalized: Array<{
+      id: z.infer<typeof categorySortIdSchema>;
+      desc: boolean;
+   }> = [];
+   for (const rule of sorting) {
+      const result = categorySortIdSchema.safeParse(rule.id);
+      if (!result.success) continue;
+      normalized.push({ id: result.data, desc: rule.desc });
+   }
+   return normalized;
+}
+
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/categories",
 )({
    validateSearch: categoriesSearchSchema,
    loaderDeps: ({
-      search: { type, includeArchived, search, page, pageSize },
-   }) => ({ type, includeArchived, search, page, pageSize }),
+      search: { type, includeArchived, search, page, pageSize, sorting },
+   }) => ({ type, includeArchived, search, page, pageSize, sorting }),
    loader: ({ context, deps }) => {
       context.queryClient.prefetchQuery(
          orpc.categories.getPaginated.queryOptions({
@@ -115,6 +131,7 @@ export const Route = createFileRoute(
                search: deps.search || undefined,
                page: deps.page,
                pageSize: deps.pageSize,
+               sorting: normalizeCategorySorting(deps.sorting),
             },
          }),
       );
@@ -169,6 +186,7 @@ function CategoriesList() {
                search: search || undefined,
                page,
                pageSize,
+               sorting: normalizeCategorySorting(sorting),
             },
          }),
          orpc.categories.getAll.queryOptions({}),
