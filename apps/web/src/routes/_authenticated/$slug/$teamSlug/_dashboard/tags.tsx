@@ -134,7 +134,7 @@ function TagsList() {
       Route.useSearch();
    const { generate: generateCsv, parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
-   const layout = useDataTableLayout("tags");
+   const layout = useDataTableLayout("tags-v2");
 
    const searchInput = useDebouncedSearch({
       value: search,
