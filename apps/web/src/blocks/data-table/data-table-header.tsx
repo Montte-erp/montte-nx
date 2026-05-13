@@ -196,6 +196,8 @@ function SortableTableHead<TData>({ header }: SortableTableHeadProps<TData>) {
                <div
                   className={cn(
                      "flex flex-1 items-center gap-2 truncate",
+                     align === "center" && "justify-center",
+                     align === "right" && "justify-end",
                      canSort &&
                         "cursor-pointer select-none rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   )}
@@ -209,7 +211,13 @@ function SortableTableHead<TData>({ header }: SortableTableHeadProps<TData>) {
                   tabIndex={canSort ? 0 : undefined}
                   role={canSort ? "button" : undefined}
                >
-                  <span className="flex-1 truncate">
+                  <span
+                     className={cn(
+                        "flex-1 truncate",
+                        align === "center" && "text-center",
+                        align === "right" && "text-right",
+                     )}
+                  >
                      {flexRender(col.columnDef.header, header.getContext())}
                   </span>
                   {canSort && sortDir === "asc" && (

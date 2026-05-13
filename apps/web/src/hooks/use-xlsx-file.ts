@@ -1,17 +1,17 @@
 import { read as xlsxRead, utils as xlsxUtils, write as xlsxWrite } from "xlsx";
-import { useCallback } from "react";
 import dayjs from "dayjs";
+import { useCallback } from "react";
 
 export type XlsxData = {
    headers: string[];
    rows: string[][];
 };
 
-function cellToString(cell: unknown) {
+function cellToString(cell: unknown): string {
    if (cell === null || cell === undefined) return "";
    if (cell instanceof Date) {
       if (Number.isNaN(cell.getTime())) return "";
-      return dayjs(cell).format("YYYY-MM-DD");
+      return dayjs(cell).format("DD/MM/YYYY");
    }
    return String(cell);
 }
@@ -20,18 +20,21 @@ export function useXlsxFile() {
    const parse = useCallback(async (file: File): Promise<XlsxData> => {
       const wb = xlsxRead(new Uint8Array(await file.arrayBuffer()), {
          type: "array",
+         cellDates: true,
       });
       const ws = wb.Sheets[wb.SheetNames[0]];
       if (!ws) throw new Error("Planilha vazia");
       const data: unknown[][] = xlsxUtils.sheet_to_json<unknown[]>(ws, {
          header: 1,
          defval: "",
+         raw: false,
+         dateNF: "dd/mm/yyyy",
       });
       if (data.length < 2) throw new Error("Planilha sem dados");
+      const [headerRow = [], ...bodyRows] = data;
       return {
-         headers: data[0]?.map(cellToString) ?? [],
-         rows: data
-            .slice(1)
+         headers: headerRow.map(cellToString),
+         rows: bodyRows
             .filter((r) => r.some((c) => cellToString(c).trim() !== ""))
             .map((r) => r.map(cellToString)),
       };

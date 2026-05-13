@@ -184,6 +184,7 @@
         "drizzle-orm": "catalog:database",
         "pg": "catalog:database",
         "typescript": "catalog:development",
+        "xlsx": "^0.18.5",
         "zod": "catalog:validation",
       },
     },

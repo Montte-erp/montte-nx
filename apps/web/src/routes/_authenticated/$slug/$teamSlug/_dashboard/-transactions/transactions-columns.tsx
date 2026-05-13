@@ -487,10 +487,10 @@ export function buildTransactionColumns(options?: {
             const numeric = Number(amount) || 0;
             const colorClass =
                type === "income"
-                  ? "[&_input]:text-green-600 dark:[&_input]:text-green-500"
+                  ? "[&_input]:text-right [&_input]:text-green-600 dark:[&_input]:text-green-500"
                   : type === "expense"
-                    ? "[&_input]:text-destructive"
-                    : "[&_input]:text-muted-foreground";
+                    ? "[&_input]:text-right [&_input]:text-destructive"
+                    : "[&_input]:text-right [&_input]:text-muted-foreground";
             return (
                <InlineEditMoney
                   ariaLabel="Valor"

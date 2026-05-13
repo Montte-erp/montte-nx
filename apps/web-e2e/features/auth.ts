@@ -62,8 +62,20 @@ async function pickFeature(page: Page, label: RegExp) {
    }).toPass({ timeout: 15_000 });
 }
 
+async function maybeCompleteProfileStep(page: Page) {
+   const nameField = page.getByRole("textbox", { name: "Seu Nome" });
+   if (!(await nameField.isVisible({ timeout: 3000 }))) return;
+   const current = (await nameField.inputValue()).trim();
+   if (current.length < 2) await nameField.fill("E2E User");
+   const continueButton = page.getByRole("button", { name: "Continuar" });
+   await expect(continueButton).toBeEnabled();
+   await continueButton.click();
+   await expect(nameField).toBeHidden({ timeout: 15_000 });
+}
+
 export async function completeOnboarding(page: Page, workspace: string) {
    await page.goto("/");
+   await maybeCompleteProfileStep(page);
 
    await pickFeature(page, /Finanças/);
    const continueButton = page.getByRole("button", { name: "Continuar" });

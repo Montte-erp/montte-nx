@@ -1,4 +1,4 @@
-@import "https://fonts.googleapis.com/css2?family=Sora:wght@100..800&display=swap";
+@import "https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Sora:wght@100..800&display=swap";
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "tw-shimmer";
@@ -52,7 +52,7 @@
    --sidebar-border: oklch(0.9276 0.0058 264.5313);
    --sidebar-ring: oklch(0.7227 0.192 149.5793);
    --font-sans: Sora, ui-sans-serif, system-ui, -apple-system, sans-serif;
-   --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+   --font-serif: "Lora", ui-serif, "Georgia", serif;
    --font-mono:
       ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
    --radius: 0.8rem;
@@ -120,7 +120,7 @@
    --sidebar-border: oklch(0.4461 0.0263 256.8018);
    --sidebar-ring: oklch(0.7729 0.1535 163.2231);
    --font-sans: Sora, ui-sans-serif, system-ui, -apple-system, sans-serif;
-   --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+   --font-serif: "Lora", ui-serif, "Georgia", serif;
    --font-mono:
       ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
    --radius: 0.8rem;

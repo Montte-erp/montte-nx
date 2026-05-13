@@ -64,6 +64,15 @@ export const Route = createRootRouteWithContext<RouterContext>()({
          },
          {
             rel: "preconnect",
+            href: "https://fonts.googleapis.com",
+         },
+         {
+            rel: "preconnect",
+            href: "https://fonts.gstatic.com",
+            crossOrigin: "anonymous",
+         },
+         {
+            rel: "preconnect",
             href: "https://img.logo.dev",
             crossOrigin: "anonymous",
          },
