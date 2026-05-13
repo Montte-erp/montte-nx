@@ -1,7 +1,7 @@
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { KeyRound, Plus, Trash2 } from "lucide-react";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
@@ -76,26 +76,29 @@ function ApiKeysContent() {
    const organizationId = session?.session.activeOrganizationId ?? "";
    const teamId = session?.session.activeTeamId ?? "";
 
-   function handleRevoke(keyId: string, keyName: string) {
-      openAlertDialog({
-         title: "Revogar chave de API",
-         description: `Tem certeza que deseja revogar a chave "${keyName}"? Esta ação não pode ser desfeita.`,
-         actionLabel: "Revogar",
-         cancelLabel: "Cancelar",
-         variant: "destructive",
-         onAction: async () => {
-            const result = await authClient.apiKey.delete({ keyId });
-            if (result.error) {
-               toast.error("Erro ao revogar chave");
-               return;
-            }
-            await queryClient.invalidateQueries(
-               orpc.apiKeys.list.queryOptions(),
-            );
-            toast.success("Chave revogada");
-         },
-      });
-   }
+   const handleRevoke = useCallback(
+      (keyId: string, keyName: string) => {
+         openAlertDialog({
+            title: "Revogar chave de API",
+            description: `Tem certeza que deseja revogar a chave "${keyName}"? Esta ação não pode ser desfeita.`,
+            actionLabel: "Revogar",
+            cancelLabel: "Cancelar",
+            variant: "destructive",
+            onAction: async () => {
+               const result = await authClient.apiKey.delete({ keyId });
+               if (result.error) {
+                  toast.error("Erro ao revogar chave");
+                  return;
+               }
+               await queryClient.invalidateQueries(
+                  orpc.apiKeys.list.queryOptions(),
+               );
+               toast.success("Chave revogada");
+            },
+         });
+      },
+      [openAlertDialog, queryClient],
+   );
 
    function handleOpenCreate() {
       if (!organizationId || !teamId) return;
