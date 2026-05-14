@@ -338,6 +338,58 @@ describe("categories router", () => {
       expect(childIndex).toBeGreaterThan(parentIndex);
    });
 
+   it("getPaginated search returns only matching subcategories", async () => {
+      const { teamId } = await seedTeam(testDb.db);
+      const parent = await makeCategory(testDb.db, teamId, {
+         name: "Benefícios",
+      });
+      const matchedChild = await makeCategory(testDb.db, teamId, {
+         name: "Uniformes",
+         parentId: parent.id,
+         level: 2,
+      });
+      const siblingChild = await makeCategory(testDb.db, teamId, {
+         name: "Vale-Transporte",
+         parentId: parent.id,
+         level: 2,
+      });
+      const ctx = createTestContext(testDb.db, { teamId });
+
+      const result = await call(
+         categoriesRouter.getPaginated,
+         { page: 1, pageSize: 20, search: "uniforme" },
+         { context: ctx },
+      );
+
+      expect(result.total).toBe(1);
+      expect(result.data.map((row) => row.id)).toEqual([matchedChild.id]);
+      expect(result.data.map((row) => row.id)).not.toContain(parent.id);
+      expect(result.data.map((row) => row.id)).not.toContain(siblingChild.id);
+   });
+
+   it("getPaginated search does not include children when only the parent matches", async () => {
+      const { teamId } = await seedTeam(testDb.db);
+      const parent = await makeCategory(testDb.db, teamId, {
+         name: "Benefícios",
+      });
+      const child = await makeCategory(testDb.db, teamId, {
+         name: "Uniformes",
+         parentId: parent.id,
+         level: 2,
+      });
+      const ctx = createTestContext(testDb.db, { teamId });
+
+      const result = await call(
+         categoriesRouter.getPaginated,
+         { page: 1, pageSize: 20, search: "benef" },
+         { context: ctx },
+      );
+
+      expect(result.total).toBe(1);
+      expect(result.data.map((row) => row.id)).toEqual([parent.id]);
+      expect(result.data.map((row) => row.id)).not.toContain(child.id);
+   });
+
    it("update does NOT enqueue derive-keywords when keywords are provided", async () => {
       const { teamId } = await seedTeam(testDb.db);
       const cat = await makeCategory(testDb.db, teamId);
