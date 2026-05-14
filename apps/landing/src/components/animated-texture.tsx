@@ -52,8 +52,8 @@ export function AnimatedTexture(props: AnimatedTextureProps) {
             aria-hidden="true"
          >
             <video
-               className="size-full object-cover opacity-80 mix-blend-screen"
-               src="/videos/montte-hero-texture.webm"
+               className="size-full object-cover"
+               src="/videos/montte-hero-bg.webm"
                autoPlay
                loop
                muted

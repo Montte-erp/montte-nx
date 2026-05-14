@@ -30,17 +30,13 @@ export function HeroCarousel() {
    }, [index]);
 
    const current = TOPICS[index];
-   const stripX = `${((1 - index) * 100) / TOPICS.length}%`;
+   const SLOT_PCT = 50;
+   const STRIP_PCT = TOPICS.length * SLOT_PCT;
+   const txParent = 50 - (index + 0.5) * SLOT_PCT;
+   const stripX = `${(txParent * 100) / STRIP_PCT}%`;
 
    return (
       <div className="flex w-full flex-col items-center gap-8">
-         <img
-            src="/favicon.svg"
-            alt="Montte"
-            width={64}
-            height={42}
-            className="h-12 w-auto md:h-14"
-         />
          <div
             className="w-full py-2"
             style={{ overflowX: "clip", overflowY: "visible" }}
@@ -50,7 +46,7 @@ export function HeroCarousel() {
                className="flex items-center"
                animate={{ x: stripX }}
                transition={{ duration: 0.7, ease: EASE }}
-               style={{ width: `${(TOPICS.length * 100) / 3}%` }}
+               style={{ width: `${STRIP_PCT}%` }}
             >
                {TOPICS.map((t, i) => {
                   const isCenter = i === index;
@@ -66,7 +62,7 @@ export function HeroCarousel() {
                         transition={{ duration: 0.7, ease: EASE }}
                      >
                         <span
-                           className={`font-serif text-5xl italic sm:text-6xl md:text-7xl lg:text-8xl ${isCenter ? "text-foreground" : "text-muted-foreground"}`}
+                           className={`text-5xl font-semibold tracking-tight sm:text-6xl md:text-7xl lg:text-8xl ${isCenter ? "text-foreground" : "text-muted-foreground"}`}
                         >
                            {t.label}
                         </span>
@@ -274,9 +270,9 @@ function Row({
 }) {
    return (
       <motion.tr
-         initial={{ opacity: 0, x: -12 }}
+         initial={{ opacity: 0, x: -8 }}
          animate={{ opacity: 1, x: 0 }}
-         transition={{ duration: 0.4, delay }}
+         transition={{ duration: 0.25, delay: delay * 0.3 }}
          className="border-t border-border/30"
       >
          {children}
@@ -284,95 +280,124 @@ function Row({
    );
 }
 
-const TRANSACTIONS = [
+type FinanceStatus = "Efetivado" | "Pendente" | "Ignorado";
+
+const TRANSACTIONS: Array<{
+   name: string;
+   cat: string;
+   costCenter: string;
+   catColor: string;
+   date: string;
+   status: FinanceStatus;
+   value: string;
+   positive: boolean;
+}> = [
    {
-      name: "Licitei · uso · maio (PAYG)",
-      cat: "Prestação de Serviços",
-      costCenter: "Receita Operacional",
+      name: "Acme · PAYG maio",
+      cat: "Receita de Serviço",
+      costCenter: "Operacional",
       catColor: "#16a34a",
-      date: "Hoje",
-      status: "Pago" as const,
+      date: "14 mai",
+      status: "Efetivado",
       value: "+ R$ 1.284,00",
       positive: true,
    },
    {
-      name: "OpenRouter · tokens · maio",
-      cat: "Software / Licenças (SaaS)",
-      costCenter: "Custo do Serviço e Produto",
-      catColor: "#dc2626",
-      date: "Hoje",
-      status: "Pago" as const,
-      value: "− R$ 487,20",
-      positive: false,
-   },
-   {
-      name: "Soma Hub · uso · maio (PAYG)",
-      cat: "Prestação de Serviços",
-      costCenter: "Receita Operacional",
+      name: "Northwind · PAYG maio",
+      cat: "Receita de Serviço",
+      costCenter: "Operacional",
       catColor: "#16a34a",
-      date: "Ontem",
-      status: "Pago" as const,
+      date: "14 mai",
+      status: "Efetivado",
       value: "+ R$ 312,00",
       positive: true,
    },
    {
-      name: "Railway · infra produção",
-      cat: "Software / Licenças (SaaS)",
-      costCenter: "Despesa Administrativa",
+      name: "OpenRouter · tokens",
+      cat: "Software (SaaS)",
+      costCenter: "Custo do Produto",
+      catColor: "#dc2626",
+      date: "13 mai",
+      status: "Efetivado",
+      value: "− R$ 487,20",
+      positive: false,
+   },
+   {
+      name: "Railway · infra prod",
+      cat: "Software (SaaS)",
+      costCenter: "Administrativo",
       catColor: "#f97316",
-      date: "Ontem",
-      status: "Pago" as const,
+      date: "12 mai",
+      status: "Pendente",
       value: "− R$ 412,30",
       positive: false,
    },
    {
-      name: "Resend · transacional · maio",
-      cat: "Software / Licenças (SaaS)",
-      costCenter: "Despesa Administrativa",
+      name: "Resend · transacional",
+      cat: "Software (SaaS)",
+      costCenter: "Administrativo",
       catColor: "#f97316",
-      date: "12 mai",
-      status: "Pendente" as const,
+      date: "10 mai",
+      status: "Ignorado",
       value: "− R$ 95,00",
       positive: false,
    },
 ];
 
+const FINANCE_STATUS_TONE: Record<FinanceStatus, "ok" | "warn" | "muted"> = {
+   Efetivado: "ok",
+   Pendente: "warn",
+   Ignorado: "muted",
+};
+
 function FinanceMock() {
    return (
       <AppFrame
-         path="/montte/operacao/financas"
+         path="/acme/principal/transactions"
          chips={["Maio 2026", "Conta principal"]}
       >
          <KPIHeader
             label="Receita · maio"
             value={1596}
-            delta="+R$ 312 vs. abril · Soma Hub onboarded"
+            delta="+R$ 312 vs. abril · novo cliente onboarded"
             trend={[0, 0, 280, 420, 580, 780, 890, 1100, 1284, 1596]}
             positive
          />
-         <table className="w-full">
+         <table className="w-full table-fixed">
             <thead className="bg-background/30">
                <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-4 py-2 font-medium">Descrição</th>
-                  <th className="px-4 py-2 font-medium">Categoria</th>
-                  <th className="px-4 py-2 font-medium">Centro de Custo</th>
-                  <th className="px-4 py-2 font-medium">Data</th>
-                  <th className="px-4 py-2 font-medium">Status</th>
-                  <th className="px-4 py-2 text-right font-medium">Valor</th>
+                  <th className="px-3 py-2 font-medium w-[20%]">Status</th>
+                  <th className="px-3 py-2 font-medium w-[10%]">Data</th>
+                  <th className="px-3 py-2 font-medium w-[24%]">Nome</th>
+                  <th className="px-3 py-2 font-medium w-[16%]">Categoria</th>
+                  <th className="px-3 py-2 font-medium w-[16%]">
+                     Centro de Custo
+                  </th>
+                  <th className="px-3 py-2 text-right font-medium w-[14%]">
+                     Valor
+                  </th>
                </tr>
             </thead>
             <tbody>
                {TRANSACTIONS.map((t, i) => (
                   <Row key={t.name} delay={0.3 + i * 0.08}>
-                     <td className="px-4 py-2 text-sm font-medium text-foreground">
+                     <td className="px-3 py-2 whitespace-nowrap">
+                        <StatusPill tone={FINANCE_STATUS_TONE[t.status]}>
+                           {t.status}
+                        </StatusPill>
+                     </td>
+                     <td className="px-3 py-2 text-sm text-muted-foreground whitespace-nowrap">
+                        {t.date}
+                     </td>
+                     <td className="px-3 py-2 text-sm font-medium text-foreground truncate">
                         {t.name}
                      </td>
-                     <td className="px-4 py-2 text-sm text-muted-foreground">
+                     <td className="px-3 py-2 text-sm text-muted-foreground truncate">
                         {t.cat}
                      </td>
-                     <td className="px-4 py-2">
+                     <td className="px-3 py-2">
                         <span
-                           className="rounded-md border px-2 py-1 text-xs"
+                           className="inline-block whitespace-nowrap rounded-md border px-2 py-1 text-xs"
                            style={{
                               borderColor: `color-mix(in oklch, ${t.catColor} 40%, transparent)`,
                               background: `color-mix(in oklch, ${t.catColor} 12%, transparent)`,
@@ -382,16 +407,8 @@ function FinanceMock() {
                            # {t.costCenter}
                         </span>
                      </td>
-                     <td className="px-4 py-2 text-sm text-muted-foreground">
-                        {t.date}
-                     </td>
-                     <td className="px-4 py-2">
-                        <StatusPill tone={t.status === "Pago" ? "ok" : "warn"}>
-                           {t.status}
-                        </StatusPill>
-                     </td>
                      <td
-                        className={`px-4 py-2 text-right text-sm font-semibold tabular-nums ${t.positive ? "text-primary" : "text-destructive"}`}
+                        className={`px-3 py-2 text-right text-sm font-semibold tabular-nums whitespace-nowrap ${t.positive ? "text-primary" : "text-destructive"}`}
                      >
                         {t.value}
                      </td>
@@ -405,18 +422,18 @@ function FinanceMock() {
 
 const CONTACTS = [
    {
-      name: "Licitei",
+      name: "Acme",
       type: "PJ",
-      state: "MA",
+      city: "Juiz de Fora · MG",
       since: "mar/2026",
       costCenter: "Receita Operacional",
       costCenterColor: "#16a34a",
       mrr: "R$ 1.284",
    },
    {
-      name: "Soma Hub",
+      name: "Northwind",
       type: "PJ",
-      state: "MG",
+      city: "Jacobina · BA",
       since: "mai/2026",
       costCenter: "Receita Operacional",
       costCenterColor: "#16a34a",
@@ -427,7 +444,7 @@ const CONTACTS = [
 function ContactsMock() {
    return (
       <AppFrame
-         path="/montte/operacao/contatos"
+         path="/acme/principal/contacts"
          chips={["2 ativos", "0% churn"]}
       >
          <KPIHeader
@@ -442,7 +459,7 @@ function ContactsMock() {
                <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
                   <th className="px-4 py-2 font-medium">Contato</th>
                   <th className="px-4 py-2 font-medium">Tipo</th>
-                  <th className="px-4 py-2 font-medium">UF</th>
+                  <th className="px-4 py-2 font-medium">Cidade</th>
                   <th className="px-4 py-2 font-medium">Centro de Custo</th>
                   <th className="px-4 py-2 font-medium">Ativo desde</th>
                   <th className="px-4 py-2 text-right font-medium">
@@ -459,8 +476,8 @@ function ContactsMock() {
                      <td className="px-4 py-2 text-sm text-muted-foreground">
                         {c.type}
                      </td>
-                     <td className="px-4 py-2 text-sm text-muted-foreground">
-                        {c.state}
+                     <td className="px-4 py-2 text-sm text-muted-foreground whitespace-nowrap">
+                        {c.city}
                      </td>
                      <td className="px-4 py-2">
                         <span
@@ -488,53 +505,113 @@ function ContactsMock() {
    );
 }
 
-const USAGE = [
+type BillingStatus = "Em uso" | "Faturado" | "Pendente";
+
+const USAGE: Array<{
+   customer: string;
+   meter: string;
+   planColor: string;
+   usage: string;
+   rate: string;
+   trend: number[];
+   status: BillingStatus;
+   value: string;
+}> = [
    {
-      customer: "Licitei",
+      customer: "Acme",
       meter: "AI events",
       planColor: "#16a34a",
-      usage: "18.420 eventos",
-      rate: "R$ 0,058 / evento",
-      next: "Fecha 31 mai",
-      status: "Em uso" as const,
+      usage: "18.420",
+      rate: "R$ 0,058",
+      trend: [2, 4, 6, 9, 12, 15, 16, 17, 18, 18],
+      status: "Em uso",
       value: "R$ 1.068,36",
    },
    {
-      customer: "Licitei",
-      meter: "NFS-e emitidas",
-      planColor: "#3b82f6",
-      usage: "108 notas",
-      rate: "R$ 2,00 / nota",
-      next: "Fecha 31 mai",
-      status: "Em uso" as const,
-      value: "R$ 216,00",
-   },
-   {
-      customer: "Soma Hub",
+      customer: "Northwind",
       meter: "AI events",
       planColor: "#16a34a",
-      usage: "4.890 eventos",
-      rate: "R$ 0,058 / evento",
-      next: "Fecha 31 mai",
-      status: "Em uso" as const,
+      usage: "4.890",
+      rate: "R$ 0,058",
+      trend: [0, 0, 1, 2, 3, 3, 4, 4, 4, 5],
+      status: "Em uso",
       value: "R$ 283,62",
    },
    {
-      customer: "Soma Hub",
-      meter: "E-mails transacionais",
+      customer: "Northwind",
+      meter: "E-mails",
       planColor: "#a855f7",
-      usage: "1.420 envios",
-      rate: "R$ 0,02 / envio",
-      next: "Fecha 31 mai",
-      status: "Em uso" as const,
+      usage: "1.420",
+      rate: "R$ 0,02",
+      trend: [10, 8, 12, 9, 14, 11, 15, 12, 16, 14],
+      status: "Faturado",
       value: "R$ 28,40",
    },
+   {
+      customer: "Acme",
+      meter: "NFS-e",
+      planColor: "#3b82f6",
+      usage: "108",
+      rate: "R$ 2,00",
+      trend: [4, 6, 5, 7, 9, 8, 10, 9, 11, 12],
+      status: "Em uso",
+      value: "R$ 216,00",
+   },
+   {
+      customer: "Acme",
+      meter: "Storage GB",
+      planColor: "#f97316",
+      usage: "42 GB",
+      rate: "R$ 0,49 / GB",
+      trend: [20, 22, 24, 28, 30, 32, 36, 38, 40, 42],
+      status: "Pendente",
+      value: "R$ 20,58",
+   },
 ];
+
+const BILLING_STATUS_TONE: Record<BillingStatus, "ok" | "warn" | "muted"> = {
+   "Em uso": "ok",
+   Faturado: "muted",
+   Pendente: "warn",
+};
+
+function MiniBar({ points, color }: { points: number[]; color: string }) {
+   const max = Math.max(...points) || 1;
+   const w = 64;
+   const h = 18;
+   const gap = 1;
+   const bw = (w - gap * (points.length - 1)) / points.length;
+   return (
+      <svg width={w} height={h} aria-hidden="true">
+         {points.map((v, i) => {
+            const bh = Math.max(2, (v / max) * h);
+            const x = i * (bw + gap);
+            const y = h - bh;
+            return (
+               <motion.rect
+                  key={`${i}-${v}`}
+                  x={x}
+                  width={bw}
+                  initial={{ y: h, height: 0, opacity: 0 }}
+                  animate={{ y, height: bh, opacity: 1 }}
+                  transition={{
+                     duration: 0.5,
+                     ease: EASE,
+                     delay: 0.2 + i * 0.03,
+                  }}
+                  fill={color}
+                  rx={1}
+               />
+            );
+         })}
+      </svg>
+   );
+}
 
 function BillingMock() {
    return (
       <AppFrame
-         path="/montte/operacao/cobrancas"
+         path="/acme/principal/transactions"
          chips={["Pay-as-you-go", "Ciclo · maio 2026"]}
       >
          <KPIHeader
@@ -544,15 +621,15 @@ function BillingMock() {
             trend={[0, 80, 180, 340, 540, 760, 980, 1180, 1380, 1596]}
             positive
          />
-         <table className="w-full">
+         <table className="w-full table-fixed">
             <thead className="bg-background/30">
                <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-4 py-2 font-medium">Cliente</th>
-                  <th className="px-4 py-2 font-medium">Meter</th>
-                  <th className="px-4 py-2 font-medium">Uso</th>
-                  <th className="px-4 py-2 font-medium">Tarifa</th>
-                  <th className="px-4 py-2 font-medium">Fechamento</th>
-                  <th className="px-4 py-2 text-right font-medium">
+                  <th className="px-3 py-2 font-medium w-[16%]">Cliente</th>
+                  <th className="px-3 py-2 font-medium w-[18%]">Meter</th>
+                  <th className="px-3 py-2 font-medium w-[14%]">Uso</th>
+                  <th className="px-3 py-2 font-medium w-[18%]">Tendência</th>
+                  <th className="px-3 py-2 font-medium w-[16%]">Status</th>
+                  <th className="px-3 py-2 text-right font-medium w-[18%]">
                      Acumulado
                   </th>
                </tr>
@@ -560,12 +637,12 @@ function BillingMock() {
             <tbody>
                {USAGE.map((u, i) => (
                   <Row key={`${u.customer}-${u.meter}`} delay={0.3 + i * 0.08}>
-                     <td className="px-4 py-2 text-sm font-medium text-foreground">
+                     <td className="px-3 py-2 text-sm font-medium text-foreground whitespace-nowrap">
                         {u.customer}
                      </td>
-                     <td className="px-4 py-2">
+                     <td className="px-3 py-2">
                         <span
-                           className="rounded-md px-2 py-1 text-xs font-semibold"
+                           className="inline-block whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold"
                            style={{
                               background: `color-mix(in oklch, ${u.planColor} 18%, transparent)`,
                               color: u.planColor,
@@ -574,16 +651,21 @@ function BillingMock() {
                            {u.meter}
                         </span>
                      </td>
-                     <td className="px-4 py-2 text-sm tabular-nums text-foreground">
-                        {u.usage}
+                     <td className="px-3 py-2 text-sm tabular-nums text-foreground whitespace-nowrap">
+                        <span className="block">{u.usage}</span>
+                        <span className="block text-[10px] text-muted-foreground">
+                           {u.rate}
+                        </span>
                      </td>
-                     <td className="px-4 py-2 text-xs tabular-nums text-muted-foreground">
-                        {u.rate}
+                     <td className="px-3 py-2">
+                        <MiniBar points={u.trend} color={u.planColor} />
                      </td>
-                     <td className="px-4 py-2 text-sm text-muted-foreground">
-                        {u.next}
+                     <td className="px-3 py-2 whitespace-nowrap">
+                        <StatusPill tone={BILLING_STATUS_TONE[u.status]}>
+                           {u.status}
+                        </StatusPill>
                      </td>
-                     <td className="px-4 py-2 text-right text-sm font-semibold tabular-nums text-foreground">
+                     <td className="px-3 py-2 text-right text-sm font-semibold tabular-nums text-foreground whitespace-nowrap">
                         {u.value}
                      </td>
                   </Row>

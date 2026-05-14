@@ -292,6 +292,7 @@
    "trustedDependencies": [
       "@parcel/watcher",
       "@tailwindcss/oxide",
+      "esbuild",
       "protobufjs"
    ]
 }
