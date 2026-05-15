@@ -1,15 +1,9 @@
 import { format, of } from "@f-o-t/money";
-import {
-   Avatar,
-   AvatarFallback,
-   AvatarImage,
-} from "@packages/ui/components/avatar";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
    Banknote,
    Calendar,
    CalendarClock,
-   CreditCard as CreditCardIcon,
    Hash,
    Landmark,
 } from "lucide-react";
@@ -19,8 +13,9 @@ import { InlineEditNumber } from "@/blocks/data-table/inline-edit/inline-edit-nu
 import { InlineEditSelect } from "@/blocks/data-table/inline-edit/inline-edit-select";
 import { InlineEditText } from "@/blocks/data-table/inline-edit/inline-edit-text";
 import { BankLogoAvatar } from "@/components/bank-logo-avatar";
+import { CreditCardBrandAvatar } from "@/components/credit-card-brand-avatar";
 import type { Outputs } from "@/integrations/orpc/client";
-import { BRAND_COLOR, BRAND_LABEL, brandLogoUrl } from "@/lib/logos";
+import { BRAND_LABEL } from "@/lib/logos";
 
 export type CreditCardRow = Outputs["creditCards"]["getAll"]["data"][number];
 
@@ -116,26 +111,13 @@ export function buildCreditCardColumns(options?: {
          },
          cell: ({ row }) => {
             const brand = row.original.brand;
-            const color =
-               brand && (BRAND_COLOR[brand] ?? BRAND_COLOR.other ?? "#000000");
-            const logo = brand ? brandLogoUrl(brand) : null;
             return (
                <div className="flex justify-center">
-                  <Avatar className="size-6 rounded-lg bg-white ring-1 ring-border">
-                     {logo ? (
-                        <AvatarImage
-                           alt={brand ? (BRAND_LABEL[brand] ?? brand) : ""}
-                           className="object-contain"
-                           src={logo}
-                        />
-                     ) : null}
-                     <AvatarFallback
-                        className="rounded-lg text-xs font-semibold text-white"
-                        style={{ backgroundColor: color || "#6366f1" }}
-                     >
-                        <CreditCardIcon className="size-3" />
-                     </AvatarFallback>
-                  </Avatar>
+                  <CreditCardBrandAvatar
+                     brand={brand}
+                     logoDevToken={logoDevToken}
+                     size="md"
+                  />
                </div>
             );
          },

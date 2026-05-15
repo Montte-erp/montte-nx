@@ -15,6 +15,7 @@ interface InlineEditComboboxProps {
    placeholder?: string;
    className?: string;
    startContent?: React.ReactNode;
+   renderSelected?: (option: ComboboxOption) => React.ReactNode;
 }
 
 export function InlineEditCombobox({
@@ -25,6 +26,7 @@ export function InlineEditCombobox({
    placeholder,
    className,
    startContent,
+   renderSelected,
 }: InlineEditComboboxProps) {
    const [pending, setPending] = useState<string | null>(null);
    const lastCommittedRef = useRef(value);
@@ -62,14 +64,15 @@ export function InlineEditCombobox({
          options={options}
          placeholder={placeholder ?? "—"}
          renderSelected={
-            startContent
+            renderSelected ??
+            (startContent
                ? (option) => (
                     <span className="flex items-center gap-2 min-w-0">
                        {startContent}
                        <span className="truncate">{option.label}</span>
                     </span>
                  )
-               : undefined
+               : undefined)
          }
          value={displayed}
       />

@@ -82,11 +82,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
             crossOrigin: "anonymous",
          },
          {
-            rel: "preconnect",
-            href: "https://icons.duckduckgo.com",
-            crossOrigin: "anonymous",
-         },
-         {
             rel: "stylesheet",
             href: appCss,
             precedence: "default",

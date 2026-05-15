@@ -29,13 +29,14 @@ export function BankLogoAvatar({
    name,
    size = "sm",
 }: BankLogoAvatarProps) {
+   const sourceKey = `${bankCode ?? ""}:${bankName ?? ""}:${logoDevToken ?? ""}`;
    const [failedSource, setFailedSource] = useState({
-      bankCode: "",
+      sourceKey: "",
       index: 0,
    });
-   const sources = bankLogoSources(bankCode, logoDevToken);
+   const sources = bankLogoSources(bankCode, logoDevToken, bankName);
    const sourceIndex =
-      failedSource.bankCode === bankCode ? failedSource.index : 0;
+      failedSource.sourceKey === sourceKey ? failedSource.index : 0;
    const source = sources[sourceIndex];
    const label = bankName?.trim() || name;
    const fallbackLabel = label.trim();
@@ -54,10 +55,11 @@ export function BankLogoAvatar({
                className={cn("object-contain", imageClassName)}
                onError={() =>
                   setFailedSource({
-                     bankCode: bankCode ?? "",
+                     sourceKey,
                      index: sourceIndex + 1,
                   })
                }
+               referrerPolicy="origin"
                src={source}
             />
          ) : null}

@@ -91,7 +91,9 @@ test("exibe logo do banco emissor e da bandeira na listagem", async ({
    const row = page.getByRole("row", { name: new RegExp(name) });
 
    await expect(
-      row.locator('img[src*="cdn.simpleicons.org/visa"]'),
+      row.locator(
+         'img[src*="img.logo.dev/visa.com"], img[src*="img.logo.dev/name/visa"], img[src*="cdn.simpleicons.org/visa"]',
+      ),
    ).toBeVisible();
 
    await expect(
