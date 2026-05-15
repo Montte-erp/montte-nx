@@ -21,16 +21,15 @@ import { PUBLIC_POSTHOG_HOST } from "astro:env/client";
       capture_pageview: true,
       capture_pageleave: true,
       capture_exceptions: true,
-      capture_dead_clicks: true,
+      capture_dead_clicks: false,
       autocapture: true,
       capture_performance: { web_vitals: true },
-      session_recording: {
-         maskAllInputs: false,
-         maskInputOptions: { password: true, email: true },
-      },
-      enable_heatmaps: true,
-      rageclick: true,
-      opt_in_site_apps: true,
+      disable_session_recording: true,
+      disable_surveys: true,
+      disable_external_dependency_loading: true,
+      enable_heatmaps: false,
+      rageclick: false,
+      opt_in_site_apps: false,
    });
 
    window.posthog = posthog;
