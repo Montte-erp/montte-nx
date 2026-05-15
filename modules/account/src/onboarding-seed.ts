@@ -50,7 +50,8 @@ export async function runOnboardingCompletion(args: {
    await db.transaction(async (tx) => {
       await tx
          .insert(teamMember)
-         .values({ teamId, userId, createdAt: dayjs().toDate() });
+         .values({ teamId, userId, createdAt: dayjs().toDate() })
+         .onConflictDoNothing();
 
       const seed = await seedClassificationDefaults(tx, teamId);
       if (seed.isErr()) throw seed.error;
